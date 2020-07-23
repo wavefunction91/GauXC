@@ -3,45 +3,34 @@
 #include <mpi.h>
 #include <memory>
 
-#include "types.hpp"
-
+#include <gauxc/types.hpp>
+#include <gauxc/basisset.hpp>
+#include <gauxc/molecule.hpp>
+#include <gauxc/molgrid.hpp>
 
 namespace GauXC {
 
-class XCIntegratorBase {
+namespace detail {
+  class XCIntegratorImpl;
+}
 
-protected:
-
-  MPI_Comm         comm_;
-  functional_type  func_;
-  BasisSet         basis_;
-  Molecule         mol_;
-  
-  
-public:
-
-  XCIntegratorBase() = delete;
-
-  XCIntegratorBase( MPI_Comm comm, const functional_type& func,
-    const BasisSet& basis, const Molecule& mol );
-
-  XCIntegratorBase( const XCIntegratorBase& ) = default;
-  XCIntegratorBase( XCIntegratorBase&& )      = default;
-
-
-  void genseg_quad( RadialQuad rquad, int64_t n_rad, int64_t n_ang );
-
-
-};
 
 template <typename MatrixType>
 class XCIntegrator : public XCIntegratorBase {
 
 public:
 
-  using value_type = typename MatrixType::value_type;  
+  using matrix_type = MatrixType;
+  using value_type  = typename matrix_type::value_type;  
 
+private:
 
+  std::unique_ptr<XCIntegratorImpl> pimpl_;
+
+public:
+
+  XCIntegraor( MPI_Comm, functional_type, const BasisSet&, const Molecule&,
+    const MolGrid& );
 
 };
 
