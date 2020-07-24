@@ -27,6 +27,9 @@ size_t MolGridImpl::natoms_uniq() const {
 const Grid& MolGridImpl::get_grid( AtomicNumber Z ) const {
   return molgrid_.at(Z);
 }
+Grid& MolGridImpl::get_grid( AtomicNumber Z ) {
+  return molgrid_.at(Z);
+}
 RadialScale MolGridImpl::get_rscal_factor( AtomicNumber Z ) const {
   return scal_factors_.at(Z);
 }
@@ -36,6 +39,21 @@ GridSize MolGridImpl::get_grid_size( AtomicNumber Z ) const {
 RadialQuad MolGridImpl::get_radial_quad( AtomicNumber Z ) const {
   return molgrid_.at(Z).radial_quad();
 }
+
+
+size_t MolGridImpl::max_nbatches() const {
+
+  return std::max_element( molgrid_.begin(), molgrid_.end(),
+  []( const auto &a, const auto& b ) {
+    return a.second.batcher().nbatches() < 
+           b.second.batcher().nbatches();
+  } )->second.batcher().nbatches();
+
+}
+
+
+
+
 
 void MolGridImpl::generate( RadialQuad rq, const Molecule& mol ) { 
 

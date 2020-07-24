@@ -1,6 +1,8 @@
 #pragma once
 
 #include <vector>
+#include <numeric>
+
 #include <gauxc/shell.hpp>
 
 namespace GauXC {

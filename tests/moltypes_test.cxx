@@ -1,5 +1,8 @@
 #include "catch2/catch.hpp"
 #include <gauxc/molecule.hpp>
+#include <gauxc/molmeta.hpp>
+
+#include "standards.hpp"
 
 #include <random>
 
@@ -93,5 +96,30 @@ TEST_CASE("Molecule", "[moltypes]") {
 
   }
 
+
+}
+
+
+TEST_CASE( "MolMeta", "[moltypes]" ) {
+
+  // Water
+  Molecule mol = make_water();
+  MolMeta meta( mol );
+
+  std::vector<double> rab          = meta.rab();
+  std::vector<double> dist_nearest = meta.dist_nearest();
+
+  std::vector<double> rab_ref = {
+    0.00000000000, 2.68755847909, 4.34922211156,
+    2.68755847909, 0.00000000000, 2.68755847909,
+    4.34922211156, 2.68755847909, 0.00000000000 
+  };
+
+  for( auto i = 0; i < mol.natoms() * mol.natoms(); ++i )
+    CHECK( rab[i] == Approx(rab_ref[i]) );
+
+  for( auto i = 0; i < mol.natoms(); ++i )
+    CHECK( dist_nearest[i] == Approx(2.68755847909) );
+  
 
 }

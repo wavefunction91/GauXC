@@ -1,0 +1,233 @@
+#include "default_load_balancer.hpp"
+
+namespace GauXC {
+namespace detail {
+
+DefaultLoadBalancer::DefaultLoadBalancer( const DefaultLoadBalancer& ) = default;
+DefaultLoadBalancer::DefaultLoadBalancer( DefaultLoadBalancer&& ) noexcept = default;
+
+DefaultLoadBalancer::~DefaultLoadBalancer() noexcept = default;
+
+std::unique_ptr<LoadBalancerImpl> DefaultLoadBalancer::clone() const {
+  return std::make_unique<DefaultLoadBalancer>(*this);
+}
+
+bool cube_sphere_intersect( 
+  const std::array<double,3>& lo, 
+  const std::array<double,3>& up,
+  const std::array<double,3>& center,
+  const double                rad
+) {
+
+  double dist = rad * rad;
+
+  if( center[0] < lo[0] ) {
+    const double r_lo = center[0] - lo[0];
+    const double dist_lo = r_lo * r_lo;
+    dist -= dist_lo;
+  } else if( center[0] > up[0] ) {
+    const double r_up = center[0] - up[0];
+    const double dist_up = r_up * r_up;
+    dist -= dist_up;
+  }
+
+  if( dist < 0. ) return false;
+
+  if( center[1] < lo[1] ) {
+    const double r_lo = center[1] - lo[1];
+    const double dist_lo = r_lo * r_lo;
+    dist -= dist_lo;
+  } else if( center[1] > up[1] ) {
+    const double r_up = center[1] - up[1];
+    const double dist_up = r_up * r_up;
+    dist -= dist_up;
+  }
+
+  if( dist < 0. ) return false;
+
+
+  if( center[2] < lo[2] ) {
+    const double r_lo = center[2] - lo[2];
+    const double dist_lo = r_lo * r_lo;
+    dist -= dist_lo;
+  } else if( center[2] > up[2] ) {
+    const double r_up = center[2] - up[2];
+    const double dist_up = r_up * r_up;
+    dist -= dist_up;
+  }
+
+  return dist > 0.;
+
+}
+
+
+auto micro_batch_screen(
+  const BasisSet<double>&      bs,
+  const std::array<double,3>&  box_lo,
+  const std::array<double,3>&  box_up
+) {
+
+
+  std::vector<int32_t> shell_list; shell_list.reserve(bs.nshells());
+  for(auto iSh = 0; iSh < bs.size(); ++iSh) {
+
+    const auto& center = bs[iSh].O();
+    const auto  crad   = bs[iSh].cutoff_radius();
+    const bool intersect = 
+      cube_sphere_intersect( box_lo, box_up, center, crad );
+    
+    // Add shell to list if need be
+    if( intersect )
+      shell_list.emplace_back( iSh );
+
+  }
+
+  size_t nbe = std::accumulate( shell_list.begin(), shell_list.end(), 0ul,
+    [&](const auto& a, const auto& b) { return a + bs[b].size(); } );
+
+  return std::tuple( std::move( shell_list ), nbe );
+
+}
+  
+
+
+
+
+
+
+std::vector< XCTask > DefaultLoadBalancer::create_local_tasks_() const  {
+
+  const int32_t n_deriv = 1;
+
+  int32_t world_rank;
+  int32_t world_size;
+  MPI_Comm_rank( comm_, &world_rank );
+  MPI_Comm_size( comm_, &world_size );
+
+  std::vector< XCTask > local_work;
+  std::vector<size_t> global_workload( world_size, 0 );   
+
+  // Loop over Atoms
+  const auto natoms = this->mol_->natoms();
+  int32_t iCurrent  = 0;
+  int32_t atBatchSz = 1;
+
+  const size_t max_nbatches = mg_->max_nbatches();
+  std::vector< std::pair<size_t, XCTask> > temp_tasks;
+  temp_tasks.reserve( max_nbatches );
+
+ // // Preallocate
+ // std::vector<std::array<double,3>> batch_box_lo, batch_box_up;
+ // if( screen_on_device ) {
+ //   temp_tasks.resize(atBatchSz   * max_nbatches);
+ //   batch_box_lo.resize(atBatchSz * max_nbatches);
+ //   batch_box_up.resize(atBatchSz * max_nbatches);
+ // }
+
+  // For batching of multiple atom screening
+  size_t batch_idx_offset = 0;
+
+  for( const auto& atom : *this->mol_ ) {
+
+
+    const std::array<double,3> center = { atom.x, atom.y, atom.z };
+
+    auto& batcher = mg_->get_grid(atom.Z).batcher();
+    batcher.quadrature().recenter( center );
+
+
+
+
+    const size_t nbatches = batcher.nbatches();
+
+    #pragma omp parallel for
+    for( size_t ibatch = 0; ibatch < nbatches; ++ibatch ) {
+    
+      size_t batch_idx = ibatch + batch_idx_offset;
+
+      // Generate the batch (non-negligible cost)
+      auto [lo, up, points, weights] = std::move(batcher.at(ibatch));
+
+
+      if( points.size() == 0 ) continue;
+
+      // Microbatch Screening
+      auto [shell_list, nbe] = micro_batch_screen( (*this->basis_), lo, up );
+
+      // Course grain screening
+      if( not shell_list.size() ) continue; 
+
+      // Copy task data
+      XCTask task;
+      task.iParent    = iCurrent;
+      task.points     = std::move( points );
+      task.weights    = std::move( weights );
+      task.shell_list = std::move(shell_list);
+      task.nbe        = nbe;
+      //task.dist_nearest = dist_nearest;
+
+      #pragma omp critical
+      temp_tasks.push_back( 
+        std::pair(batch_idx,std::move( task )) 
+      );
+
+    } // omp parallel for over batches
+
+
+
+
+
+
+    if( (iCurrent+1) % atBatchSz == 0 or iCurrent == (natoms-1) ) {
+
+      // Sort based on task index for deterministic assignment
+      std::sort( temp_tasks.begin(), temp_tasks.end(), 
+        []( const auto& a, const auto& b ) {
+          return a.first < b.first;
+        } );
+
+      // Assign batches to MPI ranks
+      for( size_t ibatch = 0; ibatch < temp_tasks.size(); ++ibatch ) {
+
+        XCTask task = std::move(temp_tasks.at(ibatch).second);
+        auto& points = task.points;
+        auto  nbe    = task.nbe;
+
+        // Get rank with minimum work
+        auto min_rank_it = 
+          std::min_element( global_workload.begin(), global_workload.end() );
+        int64_t min_rank = std::distance( global_workload.begin(), min_rank_it );
+
+        global_workload[ min_rank ] += 
+          ( nbe + nbe*nbe + nbe*n_deriv + natoms*natoms ) * points.size();
+
+        if( world_rank == min_rank ) 
+          local_work.push_back( std::move(task) );
+
+      }
+
+      temp_tasks.clear();
+
+    }
+
+
+    // Update counters and offsets
+    iCurrent++;
+    batch_idx_offset += nbatches;
+
+  } // Loop over Atoms
+
+
+
+
+  return local_work;
+}
+
+
+
+
+
+
+
+}
+}

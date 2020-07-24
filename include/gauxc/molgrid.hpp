@@ -56,10 +56,12 @@ public:
 
   size_t natoms_uniq() const;
   const Grid& get_grid( AtomicNumber ) const;
+        Grid& get_grid( AtomicNumber )      ;
   RadialScale get_rscal_factor( AtomicNumber ) const;
   GridSize    get_grid_size( AtomicNumber ) const ;
   RadialQuad  get_radial_quad( AtomicNumber ) const;
 
+  size_t max_nbatches() const;
 
 };
 

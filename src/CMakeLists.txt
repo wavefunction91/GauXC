@@ -50,11 +50,11 @@ find_package( gau2grid QUIET )
 set( GAUXC_HAS_GAU2GRID ${gau2grid_FOUND} )
 
 
-add_library( gauxc STATIC grid.cxx grid_impl.cxx molgrid.cxx molgrid_impl.cxx molgrid_defaults.cxx atomic_radii.cxx )
+add_library( gauxc STATIC grid.cxx grid_impl.cxx molmeta.cxx molgrid.cxx molgrid_impl.cxx molgrid_defaults.cxx atomic_radii.cxx load_balancer_impl.cxx load_balancer.cxx default_load_balancer.cxx )
 
 target_include_directories( gauxc
   PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
 )
 
-target_link_libraries( gauxc PUBLIC ExchCXX::exchcxx IntegratorXX::integratorxx )
+target_link_libraries( gauxc PUBLIC ExchCXX::exchcxx IntegratorXX::integratorxx MPI::MPI_C)

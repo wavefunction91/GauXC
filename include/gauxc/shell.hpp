@@ -2,6 +2,7 @@
 
 #include <array>
 #include <cmath>
+#include <iostream>
 #include "named_type.hpp"
 #include "gauxc_config.hpp"
 
@@ -18,6 +19,8 @@ namespace detail {
        185794560LL, 654729075LL, 3715891200LL, 13749310575LL, 81749606400LL, 
        316234143225LL, 1961990553600LL, 7905853580625LL, 51011754393600LL, 
        213458046676875LL, 1428329123020800LL, 6190283353629375LL }};
+
+  static constexpr double default_shell_tolerance = 1e-10;
 
 }
 
@@ -43,6 +46,9 @@ private:
   prim_array coeff_;
   cart_array O_;
 
+  double cutoff_radius_;
+  double shell_tolerance_{detail::default_shell_tolerance}; 
+
   // Shamelessly adapted from Libint...
   void normalize() {
 
@@ -51,23 +57,54 @@ private:
     constexpr auto sqrt_Pi_cubed = F{5.56832799683170784528481798212};
 
     const auto two_to_l = std::pow(2, l_);
-    const auto df_term  = two_to_l * sqrt_Pi_cubed * detail::df_Kminus1[2*l_];
+    const auto df_term  = two_to_l / sqrt_Pi_cubed / detail::df_Kminus1[2*l_];
 
     for( int32_t i = 0; i < nprim_; ++i ) {
       assert( alpha_[i] >= 0. );
-
       if( alpha_[i] != 0. ) {
-        const auto two_alpha = alpha_[i] * 2.;
+        const auto two_alpha = 2 * alpha_[i];
         const auto two_alpha_to_am32 = 
           std::pow(two_alpha,l_+1) * std::sqrt(two_alpha);
+        const auto normalization_factor = std::sqrt(df_term * two_alpha_to_am32);
 
-        const auto normalization_factor = std::sqrt(two_alpha_to_am32);
+        coeff_[i] *= normalization_factor;
       }
-
     }
+
+    double norm{0};
+    for(int32_t i = 0; i < nprim_; ++i ) {
+    for(int32_t j = 0; j <= i;     ++j ) {
+      const auto gamma = alpha_[i] + alpha_[j];
+      const auto gamma_to_am32 = std::pow(gamma, l_+1) * std::sqrt(gamma);
+      norm += (i==j ? 1 : 2) * coeff_[i] * coeff_[j] /
+              (df_term * gamma_to_am32 );
+    }
+    }
+
+    auto normalization_factor = 1. / std::sqrt(norm);
+    for(int32_t i = 0; i < nprim_; ++i ) {
+      coeff_[i] *= normalization_factor;
+    }
+
 
   }
 
+  void compute_shell_cutoff() {
+
+    // Cutoff radius according to Eq.20 in J. Chem. Theory Comput. 2011, 7, 3097-3104
+    auto cutFunc = [tol=shell_tolerance_] (double alpha) -> double {
+      const double log_tol  = -std::log(tol);
+      const double log_alph =  std::log(alpha);
+      return std::sqrt( (log_tol + 0.5 * log_alph)/alpha );
+    };
+
+    cutoff_radius_ = cutFunc(
+      *std::max_element( alpha_.begin(), alpha_.end(), 
+        [&](F x, F y){ return cutFunc(x) < cutFunc(y); }
+      )
+    );
+
+  }
 public:
 
   Shell() = delete;
@@ -78,9 +115,16 @@ public:
     alpha_( alpha ), coeff_( coeff ), O_( O ) {
 
     if( _normalize ) normalize();
+    compute_shell_cutoff();
 
   }
   
+  void set_shell_tolerance( double tol ) {
+    if( tol != shell_tolerance_ ) {
+      shell_tolerance_ = tol;
+      compute_shell_cutoff();
+    }
+  }
 
 
   ~Shell() noexcept = default;
@@ -95,15 +139,25 @@ public:
   inline HOST_DEVICE_ACCESSIBLE int32_t nprim() const { return nprim_; }
   inline HOST_DEVICE_ACCESSIBLE int32_t l()     const { return l_;     }
   inline HOST_DEVICE_ACCESSIBLE int32_t pure()  const { return pure_;  }
-  
+
   inline HOST_DEVICE_ACCESSIBLE F* alpha_data()  const { return &alpha_[0]; }
   inline HOST_DEVICE_ACCESSIBLE F* coeff_data()  const { return &coeff_[0]; }
   inline HOST_DEVICE_ACCESSIBLE double* O_data() const { return &O_[0];     }
 
+  inline HOST_DEVICE_ACCESSIBLE double cutoff_radius() const { 
+    return cutoff_radius_;
+  }
 
   inline HOST_DEVICE_ACCESSIBLE int32_t size() const {;
     return pure_ ? 2*l_ + 1 : (l_+1)*(l_+2)/2;
   }
+
+  inline const prim_array& alpha()  const { return alpha_; }
+  inline const prim_array& coeff()  const { return coeff_; }
+  inline const cart_array& O()      const { return O_;     }
+  inline       prim_array& alpha()        { return alpha_; }
+  inline       prim_array& coeff()        { return coeff_; }
+  inline       cart_array& O()            { return O_;     }
 
 };
 
