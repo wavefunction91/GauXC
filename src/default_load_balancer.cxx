@@ -225,7 +225,64 @@ std::vector< XCTask > DefaultLoadBalancer::create_local_tasks_() const  {
   } // Loop over Atoms
 
 
+  // Lexicographic ordering of tasks
+  auto task_order = []( const auto& a, const auto& b ) {
 
+    // Sort by iParent first
+    if( a.iParent < b.iParent )      return true;
+    else if( a.iParent > b.iParent ) return false;
+
+    // Equal iParent: lex sort on shell list
+    else return a.shell_list < b.shell_list;
+
+  };
+
+  std::sort( local_work.begin(), local_work.end(),
+    task_order ); 
+
+
+  // Get unique tasks
+  auto task_equiv = []( const auto& a, const auto& b ) {
+    return a.equiv_with(b);
+  };
+
+  auto local_work_unique = local_work;
+  auto last_unique = 
+    std::unique( local_work_unique.begin(),
+                 local_work_unique.end(),
+                 task_equiv );
+  local_work_unique.erase( last_unique, local_work_unique.end() );
+  
+
+  // Merge tasks
+  for( auto&& t : local_work_unique ) {
+    t.points.clear();
+    t.weights.clear();
+  }
+
+  auto cur_lw_begin = local_work.begin();
+  auto cur_uniq_it  = local_work_unique.begin();
+
+  for( auto lw_it = local_work.begin(); lw_it != local_work.end(); ++lw_it ) 
+  if( not task_equiv( *lw_it, *cur_uniq_it ) ) {
+
+    if( cur_uniq_it == local_work_unique.end() )
+      throw std::runtime_error("Messed up in unique");
+
+    cur_uniq_it->merge_with( cur_lw_begin, lw_it );
+
+    cur_lw_begin = lw_it;
+    cur_uniq_it++;
+
+  }
+
+  // Merge the last set of batches
+  for( ; cur_lw_begin != local_work.end(); ++cur_lw_begin )
+    cur_uniq_it->merge_with( *cur_lw_begin );
+  cur_uniq_it++;
+  
+
+  local_work = std::move(local_work_unique);
 
   return local_work;
 }

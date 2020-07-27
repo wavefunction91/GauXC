@@ -18,7 +18,21 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
 
   auto& tasks = lb.get_tasks();
 
+/*
+  std::cout << "TASKS" << std::endl;
+  for( auto& task : tasks ) {
+    std::cout << task.iParent << ", ";
+    std::cout << task.nbe << ", ";
+    std::cout << task.dist_nearest << ", ";
+    for( auto& sh : task.shell_list )
+      std::cout << sh << ", ";
+    std::cout << std::endl;
+  }
+*/
+
+
   std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_cc-pvdz_ufg_tasks.bin";
+
 #ifdef GAUXC_GEN_TESTS
 
   {
