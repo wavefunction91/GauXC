@@ -99,7 +99,7 @@ private:
     };
 
     cutoff_radius_ = cutFunc(
-      *std::max_element( alpha_.begin(), alpha_.end(), 
+      *std::max_element( alpha_.begin(), alpha_.begin() + nprim_, 
         [&](F x, F y){ return cutFunc(x) < cutFunc(y); }
       )
     );

@@ -76,6 +76,14 @@ auto micro_batch_screen(
     const bool intersect = 
       cube_sphere_intersect( box_lo, box_up, center, crad );
     
+
+    std::cout << "  MBS: " << iSh << ", " << 
+              center[0] << ", " << center[1] << ", " << center[2] << ", " <<
+              box_up[0] << ", " << box_up[1] << ", " << box_up[2] << ", " <<
+              box_lo[0] << ", " << box_lo[1] << ", " << box_lo[2] << ", " <<
+              crad << std::boolalpha << ", " << intersect << std::endl;
+              
+
     // Add shell to list if need be
     if( intersect )
       shell_list.emplace_back( iSh );
@@ -148,6 +156,9 @@ std::vector< XCTask > DefaultLoadBalancer::create_local_tasks_() const  {
       // Generate the batch (non-negligible cost)
       auto [lo, up, points, weights] = std::move(batcher.at(ibatch));
 
+              std::cout << "IBatch = " << ibatch << ", " << lo[0] << ", " << lo[1] << ", " << lo[2] <<
+                                              ", " << up[0] << ", " << up[1] << ", " << up[2] << std::endl;
+
 
       if( points.size() == 0 ) continue;
 
@@ -164,7 +175,7 @@ std::vector< XCTask > DefaultLoadBalancer::create_local_tasks_() const  {
       task.weights    = std::move( weights );
       task.shell_list = std::move(shell_list);
       task.nbe        = nbe;
-      //task.dist_nearest = dist_nearest;
+      task.dist_nearest = molmeta_->dist_nearest()[iCurrent];
 
       #pragma omp critical
       temp_tasks.push_back( 
