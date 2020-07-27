@@ -45,6 +45,11 @@ else()
 
 endif()
 
+if( GAUXC_ENABLE_CEREAL )
+  include( BuildFindCereal )
+endif()
+
+
 # Optional Dependencies
 find_package( gau2grid QUIET ) 
 set( GAUXC_HAS_GAU2GRID ${gau2grid_FOUND} )
@@ -58,3 +63,6 @@ target_include_directories( gauxc
 )
 
 target_link_libraries( gauxc PUBLIC ExchCXX::exchcxx IntegratorXX::integratorxx MPI::MPI_C)
+if( GAUXC_ENABLE_CEREAL )
+  target_link_libraries( gauxc PUBLIC cereal )
+endif()

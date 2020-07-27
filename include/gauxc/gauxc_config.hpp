@@ -6,3 +6,7 @@
   #define HOST_DEVICE_ACCESSIBLE
 #endif
   
+#ifdef GAUXC_ENABLE_CEREAL
+  #include <cereal/types/vector.hpp>
+  #include <cereal/types/array.hpp>
+#endif

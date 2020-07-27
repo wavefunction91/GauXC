@@ -3,6 +3,7 @@
 #include <array>
 #include <vector>
 #include <cstdint>
+#include "gauxc_config.hpp"
 
 namespace GauXC {
 
@@ -17,6 +18,14 @@ struct XCTask {
   double                              dist_nearest;
 
   void merge_with( const XCTask& );
+
+
+#ifdef GAUXC_ENABLE_CEREAL
+  template <typename Archive>
+  void serialize( Archive& ar ) {
+    ar( iParent, nbe, dist_nearest, shell_list, points, weights );  
+  }
+#endif
 
 };
 
