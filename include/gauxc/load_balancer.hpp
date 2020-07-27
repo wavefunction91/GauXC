@@ -44,4 +44,25 @@ public:
 };
 
 
+
+
+
+// Factories
+
+namespace factory {
+
+std::shared_ptr<LoadBalancer> make_default_load_balancer(
+  MPI_Comm, const Molecule&, const MolGrid&, const BasisSet<double>&
+);
+std::shared_ptr<LoadBalancer> make_default_load_balancer(
+  MPI_Comm, const Molecule&, const MolGrid&, const BasisSet<double>&, 
+  const MolMeta&
+);
+std::shared_ptr<LoadBalancer> make_default_load_balancer(
+  MPI_Comm, const Molecule&, const MolGrid&, const BasisSet<double>&, 
+  std::shared_ptr<MolMeta>
+);
+
+}
+
 }

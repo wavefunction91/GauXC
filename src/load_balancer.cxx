@@ -41,4 +41,40 @@ std::vector<XCTask>& LoadBalancer::get_tasks() {
   return pimpl_->get_tasks();
 }
 
+
+namespace factory {
+
+template <typename... Args>
+std::shared_ptr<LoadBalancer> fwd_to_default( Args&&... args ) {
+  return std::make_shared<LoadBalancer>( 
+    detail::make_default_load_balancer( std::forward<Args>(args)... )
+  );
+}
+
+std::shared_ptr<LoadBalancer> make_default_load_balancer(
+  MPI_Comm comm, const Molecule& mol, const MolGrid& mg, 
+  const BasisSet<double> &basis
+) {
+  return fwd_to_default( comm, mol, mg, basis );
+}
+
+
+std::shared_ptr<LoadBalancer> make_default_load_balancer(
+  MPI_Comm comm, const Molecule& mol, const MolGrid& mg, 
+  const BasisSet<double> &basis, const MolMeta& meta
+) {
+  return fwd_to_default( comm, mol, mg, basis, meta );
+}
+
+
+std::shared_ptr<LoadBalancer> make_default_load_balancer(
+  MPI_Comm comm, const Molecule& mol, const MolGrid& mg, 
+  const BasisSet<double> &basis, std::shared_ptr<MolMeta> meta
+) {
+  return fwd_to_default( comm, mol, mg, basis, meta );
+}
+
+
+}
+
 }

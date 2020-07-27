@@ -61,6 +61,10 @@ struct XCTask {
   }
 #endif
 
+
+  inline size_t cost(size_t n_deriv, size_t natoms) const {
+    return (nbe * ( 1 + nbe + n_deriv ) + natoms * natoms) * points.size();
+  }
 };
 
 

@@ -205,8 +205,8 @@ std::vector< XCTask > DefaultLoadBalancer::create_local_tasks_() const  {
           std::min_element( global_workload.begin(), global_workload.end() );
         int64_t min_rank = std::distance( global_workload.begin(), min_rank_it );
 
-        global_workload[ min_rank ] += 
-          ( nbe + nbe*nbe + nbe*n_deriv + natoms*natoms ) * points.size();
+        global_workload[ min_rank ] += task.cost( n_deriv, natoms );
+          //( nbe + nbe*nbe + nbe*n_deriv + natoms*natoms ) * points.size();
 
         if( world_rank == min_rank ) 
           local_work.push_back( std::move(task) );
