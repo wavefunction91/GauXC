@@ -184,7 +184,7 @@ std::vector< XCTask > DefaultLoadBalancer::create_local_tasks_() const  {
 
 
 
-
+    // Assign Tasks to MPI ranks
     if( (iCurrent+1) % atBatchSz == 0 or iCurrent == (natoms-1) ) {
 
       // Sort based on task index for deterministic assignment
@@ -206,7 +206,6 @@ std::vector< XCTask > DefaultLoadBalancer::create_local_tasks_() const  {
         int64_t min_rank = std::distance( global_workload.begin(), min_rank_it );
 
         global_workload[ min_rank ] += task.cost( n_deriv, natoms );
-          //( nbe + nbe*nbe + nbe*n_deriv + natoms*natoms ) * points.size();
 
         if( world_rank == min_rank ) 
           local_work.push_back( std::move(task) );

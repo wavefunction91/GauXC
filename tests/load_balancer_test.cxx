@@ -3,52 +3,27 @@
 
 using namespace GauXC;
 
-TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
 
-  MPI_Comm comm          = MPI_COMM_WORLD;
-  Molecule mol           = make_benzene();
-  BasisSet<double> basis = make_ccpvdz( mol, SphericalType(true) );
-
-  for( auto& sh : basis ) 
-    sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
-
-  MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
-
-  LoadBalancer lb(comm, mol, mg, basis);
-
-  auto& tasks = lb.get_tasks();
-
-/*
-  std::cout << "TASKS" << std::endl;
-  for( auto& task : tasks ) {
-    std::cout << task.iParent << ", ";
-    std::cout << task.nbe << ", ";
-    std::cout << task.dist_nearest << ", ";
-    for( auto& sh : task.shell_list )
-      std::cout << sh << ", ";
-    std::cout << std::endl;
-  }
-*/
-
+void gen_ref_lb_data( std::vector<XCTask>& tasks ) {
 
   std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_cc-pvdz_ufg_tasks.bin";
 
-#ifdef GAUXC_GEN_TESTS
-
-  {
-    // Points / Weights not stored in reference data to 
-    // save space
-    for( auto& t : tasks ) {
-      t.points.clear();
-      t.weights.clear();
-    }
-
-    std::ofstream of( ref_file, std::ios::binary );
-    cereal::BinaryOutputArchive ar(of);
-    ar( tasks );
+  // Points / Weights not stored in reference data to 
+  // save space
+  for( auto& t : tasks ) {
+    t.points.clear();
+    t.weights.clear();
   }
 
-#else
+  std::ofstream of( ref_file, std::ios::binary );
+  cereal::BinaryOutputArchive ar(of);
+  ar( tasks );
+
+}
+
+void check_lb_data( const std::vector<XCTask>& tasks ) {
+
+  std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_cc-pvdz_ufg_tasks.bin";
 
   std::vector<XCTask> ref_tasks;
   {
@@ -81,6 +56,78 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
       CHECK( t.weights[j] == Approx(rt.weights[j]) );
     }
     */
+
+  }
+
+}
+
+
+TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
+
+  MPI_Comm comm          = MPI_COMM_WORLD;
+  Molecule mol           = make_benzene();
+  BasisSet<double> basis = make_ccpvdz( mol, SphericalType(true) );
+
+  for( auto& sh : basis ) 
+    sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
+
+  MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
+
+  auto meta = std::make_shared<MolMeta>( mol );
+
+#ifdef GAUXC_GEN_TESTS
+
+  LoadBalancer lb(comm, mol, mg, basis);
+  auto& tasks = lb.get_tasks();
+  gen_ref_lb_data(tasks);
+
+#else
+
+  SECTION("Implicit MolMeta Constructor") {
+
+    LoadBalancer lb(comm, mol, mg, basis);
+    auto& tasks = lb.get_tasks();
+    check_lb_data( tasks );
+
+  }
+
+  SECTION("Explicit MolMeta Constructor") {
+
+    LoadBalancer lb(comm, mol, mg, basis, *meta);
+    auto& tasks = lb.get_tasks();
+    check_lb_data( tasks );
+
+  }
+
+  SECTION("MolMeta PTR Constructor") {
+
+    LoadBalancer lb(comm, mol, mg, basis, meta);
+    auto& tasks = lb.get_tasks();
+    check_lb_data( tasks );
+
+  }
+
+  SECTION("Implicit MolMeta Factory") {
+
+    auto lb_ptr = factory::make_default_load_balancer( comm, mol, mg, basis );
+    auto& tasks = lb_ptr->get_tasks();
+    check_lb_data( tasks );
+
+  }
+
+  SECTION("Explicit MolMeta Factory") {
+
+    auto lb_ptr = factory::make_default_load_balancer( comm, mol, mg, basis, *meta );
+    auto& tasks = lb_ptr->get_tasks();
+    check_lb_data( tasks );
+
+  }
+
+  SECTION("MolMeta PTR Factory") {
+
+    auto lb_ptr = factory::make_default_load_balancer( comm, mol, mg, basis, meta );
+    auto& tasks = lb_ptr->get_tasks();
+    check_lb_data( tasks );
 
   }
 
