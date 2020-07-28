@@ -22,6 +22,9 @@ public:
   BasisSet( Args&&... args ) :
     std::vector<Shell<F>>( std::forward<Args>(args)... )  { }
 
+  BasisSet( const BasisSet& ) = default;
+  BasisSet( BasisSet&& ) noexcept = default;
+
   inline int32_t nshells() const { return this->size(); }; 
   inline int32_t nbf()     const {
     return std::accumulate( this->cbegin(), this->cend(), 0ul,

@@ -41,6 +41,13 @@ public:
   const std::vector< XCTask >& get_tasks() const;
         std::vector< XCTask >& get_tasks()      ;
 
+  size_t max_npts()       const;
+  size_t max_nbe()        const;
+  size_t max_npts_x_nbe() const;
+
+  const Molecule& molecule() const;
+  const MolMeta&  molmeta()  const;
+
   virtual std::unique_ptr<LoadBalancerImpl> clone() const = 0;
 
 };

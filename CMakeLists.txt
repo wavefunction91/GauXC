@@ -4,6 +4,7 @@ include(FetchContent)
 project( GauXC VERSION 0.0.1 LANGUAGES C CXX )
 
 list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
+list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules )
 
 option( GAUXC_ENABLE_CUDA "Enable CUDA Bindings" OFF )
 option( GAUXC_ENABLE_TESTS "Enable Unit Tests"   ON  )

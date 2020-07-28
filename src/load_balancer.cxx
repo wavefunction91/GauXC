@@ -41,6 +41,31 @@ std::vector<XCTask>& LoadBalancer::get_tasks() {
   return pimpl_->get_tasks();
 }
 
+size_t LoadBalancer::max_npts() const {
+  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  return pimpl_->max_npts();
+}
+size_t LoadBalancer::max_nbe() const {
+  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  return pimpl_->max_nbe();
+}
+size_t LoadBalancer::max_npts_x_nbe() const {
+  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  return pimpl_->max_npts_x_nbe();
+}
+
+
+
+const Molecule& LoadBalancer::molecule() const {
+  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  return pimpl_->molecule();
+}
+const MolMeta& LoadBalancer::molmeta() const {
+  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  return pimpl_->molmeta();
+}
+
+
 
 namespace factory {
 

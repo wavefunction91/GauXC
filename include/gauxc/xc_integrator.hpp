@@ -4,9 +4,7 @@
 #include <memory>
 
 #include <gauxc/types.hpp>
-#include <gauxc/basisset.hpp>
-#include <gauxc/molecule.hpp>
-#include <gauxc/molgrid.hpp>
+#include <gauxc/load_balancer.hpp>
 
 namespace GauXC {
 
@@ -14,6 +12,11 @@ namespace detail {
   template <typename MatrixType>
   class XCIntegratorImpl;
 }
+
+enum class XCWeightAlg {
+  Becke,
+  SSF
+};
 
 template <typename MatrixType>
 class XCIntegrator {
@@ -24,6 +27,8 @@ public:
   using value_type    = typename matrix_type::value_type;  
   using basisset_type = BasisSet< value_type >;
 
+  using exc_vxc_type = std::tuple< value_type, matrix_type >;
+
 private:
 
   using pimpl_type    = detail::XCIntegratorImpl<MatrixType>;
@@ -32,13 +37,26 @@ private:
 
 public:
 
-  XCIntegrator( pimpl_type&& pimpl );
+  XCIntegrator();
+  XCIntegrator( std::unique_ptr<pimpl_type>&& pimpl );
 
-  XCIntegrator( MPI_Comm, const functional_type&, const basisset_type&, 
-    const Molecule&, const MolGrid& );
+  XCIntegrator( MPI_Comm, const functional_type&, const basisset_type&,
+    std::shared_ptr<LoadBalancer> );
+  //XCIntegrator( MPI_Comm, const functional_type&, const basisset_type&,
+  //  LoadBalancer&& );
 
-  XCIntegrator() noexcept;
+  //XCIntegrator( MPI_Comm, const functional_type&, const basisset_type&, 
+  //  const Molecule&, const MolGrid& );
+  //XCIntegrator( MPI_Comm, const functional_type&, const basisset_type&, 
+  //  const Molecule&, const MolGrid&, const MolMeta );
+  //XCIntegrator( MPI_Comm, const functional_type&, const basisset_type&, 
+  //  const Molecule&, const MolGrid&, const std::shared_ptr<MolMeta> );
 
+  ~XCIntegrator() noexcept;
+
+
+  exc_vxc_type eval_exc_vxc( const MatrixType& );
 };
+
 
 }

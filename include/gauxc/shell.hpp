@@ -140,9 +140,12 @@ public:
   inline HOST_DEVICE_ACCESSIBLE int32_t l()     const { return l_;     }
   inline HOST_DEVICE_ACCESSIBLE int32_t pure()  const { return pure_;  }
 
-  inline HOST_DEVICE_ACCESSIBLE F* alpha_data()  const { return &alpha_[0]; }
-  inline HOST_DEVICE_ACCESSIBLE F* coeff_data()  const { return &coeff_[0]; }
-  inline HOST_DEVICE_ACCESSIBLE double* O_data() const { return &O_[0];     }
+  inline HOST_DEVICE_ACCESSIBLE const F* alpha_data()  const { return &alpha_[0]; }
+  inline HOST_DEVICE_ACCESSIBLE const F* coeff_data()  const { return &coeff_[0]; }
+  inline HOST_DEVICE_ACCESSIBLE const double* O_data() const { return &O_[0];     }
+  inline HOST_DEVICE_ACCESSIBLE       F* alpha_data()        { return &alpha_[0]; }
+  inline HOST_DEVICE_ACCESSIBLE       F* coeff_data()        { return &coeff_[0]; }
+  inline HOST_DEVICE_ACCESSIBLE       double* O_data()       { return &O_[0];     }
 
   inline HOST_DEVICE_ACCESSIBLE double cutoff_radius() const { 
     return cutoff_radius_;

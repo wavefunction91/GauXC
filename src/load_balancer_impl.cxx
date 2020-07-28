@@ -34,7 +34,47 @@ std::vector<XCTask>& LoadBalancerImpl::get_tasks() {
 }
 
 
+size_t LoadBalancerImpl::max_npts() const {
+
+  if( not local_tasks_.size() ) return 0ul;
+
+  return std::max_element( local_tasks_.cbegin(), local_tasks_.cend(),
+    []( const auto& a, const auto& b ) {
+      return a.points.size() < b.points.size();
+    })->points.size();
+
+}
+size_t LoadBalancerImpl::max_nbe() const {
+
+  if( not local_tasks_.size() ) return 0ul;
+
+  return std::max_element( local_tasks_.cbegin(), local_tasks_.cend(),
+    []( const auto& a, const auto& b ) {
+      return a.nbe < b.nbe;
+    })->nbe;
+
+}
+size_t LoadBalancerImpl::max_npts_x_nbe() const {
+
+  if( not local_tasks_.size() ) return 0ul;
+
+  auto it = std::max_element( local_tasks_.cbegin(), local_tasks_.cend(),
+    []( const auto& a, const auto& b ) {
+      return a.nbe * a.points.size() < b.nbe * b.points.size();
+    });
+
+  return it->nbe * it->points.size();
+
+}
 
 
+
+const Molecule& LoadBalancerImpl::molecule() const {
+  return *mol_;
+}
+
+const MolMeta& LoadBalancerImpl::molmeta() const {
+  return *molmeta_;
+}
 
 }

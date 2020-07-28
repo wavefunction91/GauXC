@@ -1,0 +1,34 @@
+#include "ut_common.hpp"
+#include <gauxc/xc_integrator.hpp>
+#include <gauxc/xc_integrator/impl.hpp>
+
+#include <Eigen/Core>
+
+using namespace GauXC;
+
+TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
+
+  MPI_Comm comm          = MPI_COMM_WORLD;
+  Molecule mol           = make_benzene();
+  BasisSet<double> basis = make_ccpvdz( mol, SphericalType(true) );
+
+  for( auto& sh : basis ) 
+    sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
+  basis.generate_shell_to_ao();
+
+  MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
+
+  auto meta = std::make_shared<MolMeta>( mol );
+
+  auto lb = std::make_shared<LoadBalancer>(comm, mol, mg, basis, meta);
+
+  functional_type func( ExchCXX::XCFunctional::Functional::PBE0, ExchCXX::Spin::Unpolarized );
+
+  using matrix_type = Eigen::MatrixXd;
+  XCIntegrator<matrix_type> integrator( comm, func, basis, lb );
+
+
+  matrix_type P = matrix_type::Zero( basis.nbf(), basis.nbf() );
+  auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
+
+}
