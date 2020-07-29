@@ -111,20 +111,56 @@ typename DefaultXCHostIntegrator<MatrixType>::exc_vxc_type
 
   size_t n_deriv = this->func_->is_gga() ? 1 : 0;
 
+  // Allocate Memory
   host_data_ = std::make_shared<XCHostData<value_type>>( 
     n_deriv, nbf, max_npts, max_npts_x_nbe 
   );
 
 
-
+  // Results
   matrix_type VXC( nbf, nbf );
   value_type  EXC, N_EL;
 
+  // Compute Local contributions to EXC / VXC
   process_batches_host_replicated_p< value_type>(
     n_deriv,XCWeightAlg::SSF, *this->func_, *this->basis_,
     this->load_balancer_->molecule(), this->load_balancer_->molmeta(),
     *host_data_, tasks, P.data(), VXC.data(), &EXC, &N_EL 
   );
+
+
+  int world_size;
+  MPI_Comm_size( this->comm_, &world_size );
+
+  if( world_size > 1 ) {
+    // Test of communicator is an inter-communicator
+    // XXX: Can't think of a case when this would be true, but who knows...
+    int inter_flag;
+    MPI_Comm_test_inter( this->comm_, &inter_flag );
+
+    // Is Intra-communicator, Allreduce can be done inplace
+    if( not inter_flag ) {
+
+      MPI_Allreduce( MPI_IN_PLACE, VXC.data(), nbf*nbf, MPI_DOUBLE,
+                     MPI_SUM, this->comm_ );
+      MPI_Allreduce( MPI_IN_PLACE, &EXC,  1, MPI_DOUBLE, MPI_SUM, this->comm_ );
+      MPI_Allreduce( MPI_IN_PLACE, &N_EL, 1, MPI_DOUBLE, MPI_SUM, this->comm_ );
+
+    // Isn't Intra-communicator (weird), Allreduce can't be done inplace
+    } else {
+
+      matrix_type VXC_cpy = VXC;
+      value_type EXC_cpy = EXC, N_EL_cpy = N_EL;
+
+      MPI_Allreduce( VXC_cpy.data(), VXC.data(), nbf*nbf, MPI_DOUBLE,
+                     MPI_SUM, this->comm_ );
+      MPI_Allreduce( &EXC_cpy,  &EXC,  1, MPI_DOUBLE, MPI_SUM, this->comm_ );
+      MPI_Allreduce( &N_EL_cpy, &N_EL, 1, MPI_DOUBLE, MPI_SUM, this->comm_ );
+      
+
+    }
+  }
+
 
   return exc_vxc_type{EXC, std::move(VXC)};
 

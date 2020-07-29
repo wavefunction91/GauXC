@@ -6,7 +6,11 @@ using namespace GauXC;
 
 void gen_ref_lb_data( std::vector<XCTask>& tasks ) {
 
-  std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_cc-pvdz_ufg_tasks.bin";
+  int world_size;
+  int world_rank;
+  MPI_Comm_size( MPI_COMM_WORLD, &world_size );
+  MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
+  std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_cc-pvdz_ufg_tasks_" + std::to_string(world_size) + "mpi_rank" + std::to_string(world_rank) + ".bin";
 
   // Points / Weights not stored in reference data to 
   // save space
@@ -23,7 +27,11 @@ void gen_ref_lb_data( std::vector<XCTask>& tasks ) {
 
 void check_lb_data( const std::vector<XCTask>& tasks ) {
 
-  std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_cc-pvdz_ufg_tasks.bin";
+  int world_size;
+  int world_rank;
+  MPI_Comm_size( MPI_COMM_WORLD, &world_size );
+  MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
+  std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_cc-pvdz_ufg_tasks_" + std::to_string(world_size) + "mpi_rank" + std::to_string(world_rank) + ".bin";
 
   std::vector<XCTask> ref_tasks;
   {
@@ -75,6 +83,7 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
 
   auto meta = std::make_shared<MolMeta>( mol );
 
+//#define GAUXC_GEN_TESTS
 #ifdef GAUXC_GEN_TESTS
 
   LoadBalancer lb(comm, mol, mg, basis);
