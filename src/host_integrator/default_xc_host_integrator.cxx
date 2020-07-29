@@ -163,6 +163,8 @@ void process_batches_host_replicated_p(
     
   }
 
+  //std::cout << std::scientific << std::setprecision(12);
+  //std::cout << "NEL = " << *n_el << std::endl;
 }
 
 

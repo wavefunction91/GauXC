@@ -28,7 +28,16 @@ TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
   XCIntegrator<matrix_type> integrator( comm, func, basis, lb );
 
 
-  matrix_type P = matrix_type::Zero( basis.nbf(), basis.nbf() );
-  auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
+  matrix_type P,VXC_ref;
+  double EXC_ref;
 
+  {
+    std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_pbe0_cc-pvdz_ufg_ssf.bin";
+    std::ifstream infile( ref_file, std::ios::binary );
+    cereal::BinaryInputArchive ar(infile);
+    ar( EXC_ref, P, VXC_ref );
+  }
+
+  auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
+  CHECK( EXC == Approx( EXC_ref ) );
 }

@@ -6,5 +6,6 @@
 
 #include <fstream>
 #include <cereal/archives/binary.hpp>
+#include "eigen3_matrix_serialization.hpp"
 
 #cmakedefine GAUXC_REF_DATA_PATH "@GAUXC_REF_DATA_PATH@"
