@@ -3,7 +3,7 @@
 #include <array>
 #include <vector>
 #include <cstdint>
-#include "gauxc_config.hpp"
+#include <gauxc/gauxc_config.hpp>
 
 namespace GauXC {
 

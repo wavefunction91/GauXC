@@ -1,7 +1,7 @@
 #pragma once
 
 
-#include "integrator_defaults.hpp"
+#include <gauxc/xc_integrator/integrator_defaults.hpp>
 
 namespace GauXC {
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "default_xc_host_integrator.hpp"
+#include <gauxc/xc_integrator/default_xc_host_integrator.hpp>
 
 namespace GauXC  {
 namespace detail {

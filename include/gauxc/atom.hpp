@@ -1,6 +1,6 @@
 #pragma once
 
-#include "types.hpp"
+#include <gauxc/types.hpp>
 
 namespace GauXC {
 

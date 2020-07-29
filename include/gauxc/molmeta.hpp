@@ -1,6 +1,6 @@
 #pragma once
 
-#include "molecule.hpp"
+#include <gauxc/molecule.hpp>
 
 namespace GauXC {
 

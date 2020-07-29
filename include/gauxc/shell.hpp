@@ -4,8 +4,9 @@
 #include <cmath>
 #include <iostream>
 #include <cassert>
-#include "named_type.hpp"
-#include "gauxc_config.hpp"
+
+#include <gauxc/named_type.hpp>
+#include <gauxc/gauxc_config.hpp>
 
 
 namespace GauXC {

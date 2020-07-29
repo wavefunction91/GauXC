@@ -128,7 +128,13 @@ add_library( gauxc STATIC
 target_include_directories( gauxc
   PUBLIC
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
+    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+)
+
+configure_file( 
+  ${PROJECT_SOURCE_DIR}/include/gauxc/gauxc_config.hpp.in
+  ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
 )
 
 target_link_libraries( gauxc PUBLIC 

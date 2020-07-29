@@ -4,7 +4,7 @@
 #include <integratorxx/quadrature.hpp>
 #include <integratorxx/batch/spherical_micro_batcher.hpp>
 
-#include "named_type.hpp"
+#include <gauxc/named_type.hpp>
 
 namespace GauXC {
 

@@ -1,7 +1,7 @@
 #pragma once
-#include "xc_integrator_impl.hpp"
-#include "xc_host_data.hpp"
-#include "xc_host_util.hpp"
+#include <gauxc/xc_integrator/xc_integrator_impl.hpp>
+#include <gauxc/xc_integrator/xc_host_data.hpp>
+#include <gauxc/xc_integrator/xc_host_util.hpp>
 
 namespace GauXC  {
 namespace detail {

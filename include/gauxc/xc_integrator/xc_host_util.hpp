@@ -1,5 +1,5 @@
 #pragma once
-#include "xc_host_data.hpp"
+#include <gauxc/xc_integrator/xc_host_data.hpp>
 
 #include <gauxc/xc_integrator.hpp>
 

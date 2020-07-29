@@ -1,7 +1,7 @@
 #pragma once
 
-#include "molecule.hpp"
-#include "grid.hpp"
+#include <gauxc/molecule.hpp>
+#include <gauxc/grid.hpp>
 
 #include <unordered_map>
 

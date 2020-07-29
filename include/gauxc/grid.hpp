@@ -1,7 +1,7 @@
 #pragma once
 
-#include "types.hpp"
-#include "memory"
+#include <memory>
+#include <gauxc/types.hpp>
 
 namespace GauXC {
 

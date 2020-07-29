@@ -1,6 +1,6 @@
 #pragma once
 
-#include "atom.hpp"
+#include <gauxc/atom.hpp>
 #include <vector>
 #include <algorithm>
 
