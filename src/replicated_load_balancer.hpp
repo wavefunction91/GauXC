@@ -5,7 +5,7 @@
 namespace GauXC  {
 namespace detail {
 
-class DefaultLoadBalancer : public LoadBalancerImpl {
+class ReplicatedLoadBalancer : public LoadBalancerImpl {
 
 protected:
 
@@ -14,15 +14,15 @@ protected:
 
 public:
 
-  DefaultLoadBalancer() = delete;
+  ReplicatedLoadBalancer() = delete;
   template <typename... Args>
-  DefaultLoadBalancer( Args&&... args ):
+  ReplicatedLoadBalancer( Args&&... args ):
     LoadBalancerImpl( std::forward<Args>(args)... ) { }
 
-  DefaultLoadBalancer( const DefaultLoadBalancer& );
-  DefaultLoadBalancer( DefaultLoadBalancer&& ) noexcept;
+  ReplicatedLoadBalancer( const ReplicatedLoadBalancer& );
+  ReplicatedLoadBalancer( ReplicatedLoadBalancer&& ) noexcept;
 
-  virtual ~DefaultLoadBalancer() noexcept;
+  virtual ~ReplicatedLoadBalancer() noexcept;
 
   std::unique_ptr<LoadBalancerImpl> clone() const override;
 

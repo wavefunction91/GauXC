@@ -116,7 +116,7 @@ add_library( gauxc STATIC
   atomic_radii.cxx 
   load_balancer_impl.cxx 
   load_balancer.cxx 
-  default_load_balancer.cxx 
+  replicated_load_balancer.cxx 
   integrator_common.cxx
   host_integrator/default_xc_host_integrator.cxx
   host_integrator/host_weights.cxx

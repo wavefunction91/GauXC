@@ -1,15 +1,15 @@
-#include "default_load_balancer.hpp"
+#include "replicated_load_balancer.hpp"
 
 namespace GauXC {
 namespace detail {
 
-DefaultLoadBalancer::DefaultLoadBalancer( const DefaultLoadBalancer& ) = default;
-DefaultLoadBalancer::DefaultLoadBalancer( DefaultLoadBalancer&& ) noexcept = default;
+ReplicatedLoadBalancer::ReplicatedLoadBalancer( const ReplicatedLoadBalancer& ) = default;
+ReplicatedLoadBalancer::ReplicatedLoadBalancer( ReplicatedLoadBalancer&& ) noexcept = default;
 
-DefaultLoadBalancer::~DefaultLoadBalancer() noexcept = default;
+ReplicatedLoadBalancer::~ReplicatedLoadBalancer() noexcept = default;
 
-std::unique_ptr<LoadBalancerImpl> DefaultLoadBalancer::clone() const {
-  return std::make_unique<DefaultLoadBalancer>(*this);
+std::unique_ptr<LoadBalancerImpl> ReplicatedLoadBalancer::clone() const {
+  return std::make_unique<ReplicatedLoadBalancer>(*this);
 }
 
 bool cube_sphere_intersect( 
@@ -103,7 +103,7 @@ auto micro_batch_screen(
 
 
 
-std::vector< XCTask > DefaultLoadBalancer::create_local_tasks_() const  {
+std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
 
   const int32_t n_deriv = 1;
 
