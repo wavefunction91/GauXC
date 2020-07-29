@@ -4,10 +4,10 @@
 
 extern "C" {
 
-void dlacpy_( const char* UPLO, const int* M, const int* N, const double* A, 
-              const int* LDA, double* B, const int* LDB );
-void slacpy_( const char* UPLO, const int* M, const int* N, const float* A, 
-              const int* LDA, float* B, const int* LDB );
+//void dlacpy_( const char* UPLO, const int* M, const int* N, const double* A, 
+//              const int* LDA, double* B, const int* LDB );
+//void slacpy_( const char* UPLO, const int* M, const int* N, const float* A, 
+//              const int* LDA, float* B, const int* LDB );
 
 void dgemm_( const char* TA, const char* TB, const int* M, const int* N, 
              const int* K, const double* ALPHA, const double* A, 
@@ -46,11 +46,17 @@ template <typename T>
 void lacpy( char UPLO, int M, int N, const T* A, int LDA, T* B,
             int LDB ) {
 
+/*
   if constexpr ( std::is_same_v<T,float> )
     slacpy_( &UPLO, &M, &N, A, &LDA, B, &LDB );
   else if constexpr ( std::is_same_v<T,double> )
     dlacpy_( &UPLO, &M, &N, A, &LDA, B, &LDB );
   else throw std::runtime_error("LACPY NYI");
+*/
+
+  for( int j = 0; j < N; ++j )
+  for( int i = 0; i < M; ++i )
+    B[i + j*LDB] = A[i + j*LDA];
 
 }
 

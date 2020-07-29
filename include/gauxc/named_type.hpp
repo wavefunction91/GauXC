@@ -1,4 +1,5 @@
 #pragma once
+#include <type_traits>
 
 namespace GauXC {
 namespace detail {
@@ -20,7 +21,7 @@ public:
     value_ = other.get();
     return *this;
   }
-  constexpr NamedType& operator=( NamedType&& other ) {
+  constexpr NamedType& operator=( NamedType&& other ) noexcept {
     value_ = std::move(other.get());
     return *this;
   }
@@ -52,6 +53,27 @@ inline bool operator==(
   const NamedType<T,ParameterType>& n2
 ) { return n2 == n1; }
 
+template <typename T, typename ParameterType, typename U,
+  typename = std::enable_if_t<std::is_convertible_v<U,T>>
+>
+inline bool operator==(
+  const NamedType<T,ParameterType>& n1,
+  const           U               & n2
+) { return n1.get() == T(n2); }
+
+template <typename T, typename ParameterType, typename U,
+  typename = std::enable_if_t<std::is_convertible_v<U,T>>
+>
+inline bool operator==(
+  const           U               & n1,
+  const NamedType<T,ParameterType>& n2
+) { return n2 == n1; }
+
+
+
+
+
+
 template <typename T, typename ParameterType>
 inline bool operator!=( 
   const NamedType<T,ParameterType>& n1,
@@ -70,6 +92,22 @@ inline bool operator!=(
   const NamedType<T,ParameterType>& n2
 ) { return not( n1 == n2 ); }
 
+template <typename T, typename ParameterType, typename U,
+  typename = std::enable_if_t<std::is_convertible_v<U,T>>
+>
+inline bool operator!=(
+  const NamedType<T,ParameterType>& n1,
+  const           U               & n2
+) { return not( n1 == n2 ); }
+
+template <typename T, typename ParameterType, typename U,
+  typename = std::enable_if_t<std::is_convertible_v<U,T>>
+>
+inline bool operator!=(
+  const           U               & n1,
+  const NamedType<T,ParameterType>& n2
+) { return not( n1 == n2 ); }
+
 template <typename T, typename ParameterType>
 inline std::ostream& operator<<( std::ostream&                     out, 
                                  const NamedType<T,ParameterType>& n ) {
@@ -84,7 +122,7 @@ inline std::ostream& operator<<( std::ostream&                     out,
 namespace std {
 
 template <typename T, typename ParameterType>
-struct std::hash< GauXC::detail::NamedType<T,ParameterType> > {
+struct hash< GauXC::detail::NamedType<T,ParameterType> > {
 
   std::size_t 
     operator()( const GauXC::detail::NamedType<T,ParameterType>& key ) const {

@@ -3,6 +3,7 @@
 #include <array>
 #include <cmath>
 #include <iostream>
+#include <cassert>
 #include "named_type.hpp"
 #include "gauxc_config.hpp"
 
