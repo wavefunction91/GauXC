@@ -1,6 +1,8 @@
 cmake_minimum_required( VERSION 3.17 FATAL_ERROR )
 
 include(FetchContent)
+set( FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE BOOL "Disable FC Updates" )
+
 project( GauXC VERSION 0.0.1 LANGUAGES C CXX )
 
 list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
@@ -10,6 +12,11 @@ list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules )
 option( GAUXC_ENABLE_CUDA   "Enable CUDA Bindings"        OFF )
 option( GAUXC_ENABLE_TESTS  "Enable Unit Tests"           ON  )
 option( GAUXC_ENABLE_CEREAL "Enable Cereal serialization" ON  )
+
+# Decided if we're compiling device bindings
+if( GAUXC_ENABLE_CUDA )
+  set( GAUXC_ENABLE_DEVICE TRUE CACHE BOOL "Enable Device Code" )
+endif()
 
 if( GAUXC_ENABLE_CUDA )
   enable_language( CUDA )
