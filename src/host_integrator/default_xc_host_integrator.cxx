@@ -2,6 +2,7 @@
 
 #include "host_weights.hpp"
 #include "host_collocation.hpp"
+#include "host_zmat.hpp"
 #include "integrator_common.hpp"
 #include "blas.hpp"
 
@@ -39,6 +40,37 @@ void submat_set(int32_t M, int32_t N, int32_t MSub,
 
 }
 
+template <typename _F1, typename _F2>
+void inc_by_submat(int32_t M, int32_t N, int32_t MSub, 
+  int32_t NSub, _F1 *ABig, int32_t LDAB, _F2 *ASmall, 
+  int32_t LDAS, 
+  std::vector<std::pair<int32_t,int32_t>> &submat_map) {
+
+
+  int32_t i(0);
+  for( auto& iCut : submat_map ) {
+    int32_t deltaI = iCut.second - iCut.first;
+    int32_t j(0);
+  for( auto& jCut : submat_map ) {
+    int32_t deltaJ = jCut.second - jCut.first;
+  
+    auto* ABig_use   = ABig   + iCut.first + jCut.first * LDAB;
+    auto* ASmall_use = ASmall + i          + j          * LDAS;
+
+
+    for( int32_t jj = 0; jj < deltaJ; ++jj )
+    for( int32_t ii = 0; ii < deltaI; ++ii )
+      ABig_use[ ii + jj * LDAB ] += ASmall_use[ ii + jj * LDAS ];
+
+  
+    j += deltaJ;
+  }
+    i += deltaI;
+  }
+  
+
+}
+
 template <typename F, size_t n_deriv>
 void process_batches_host_replicated_p(
   XCWeightAlg            weight_alg,
@@ -55,6 +87,9 @@ void process_batches_host_replicated_p(
 ) {
 
   partition_weights_host( weight_alg, mol, meta, tasks );
+  const auto nbf = basis.nbf();
+
+  std::fill( VXC, VXC + size_t(nbf)*nbf, F(0.) );
 
   size_t ntasks = tasks.size();
   for( size_t iT = 0; iT < ntasks; ++iT ) {
@@ -65,26 +100,26 @@ void process_batches_host_replicated_p(
     const size_t  nbe     = task.nbe;
     const size_t  nshells = task.shell_list.size();
 
-    const double* points      = task.points.data()->data();
-    const double* weights     = task.weights.data();
+    const F* points      = task.points.data()->data();
+    const F* weights     = task.weights.data();
     const int32_t* shell_list = task.shell_list.data();
 
-    double* basis_eval = host_data.basis_eval.data();
-    double* den_eval   = host_data.den_scr.data();
-    double* nbe_scr    = host_data.nbe_scr.data();
-    double* zmat       = host_data.zmat.data();
+    F* basis_eval = host_data.basis_eval.data();
+    F* den_eval   = host_data.den_scr.data();
+    F* nbe_scr    = host_data.nbe_scr.data();
+    F* zmat       = host_data.zmat.data();
 
-    double* eps        = host_data.eps.data();
-    double* gamma      = host_data.gamma.data();
-    double* vrho       = host_data.vrho.data();
-    double* vgamma     = host_data.vgamma.data();
+    F* eps        = host_data.eps.data();
+    F* gamma      = host_data.gamma.data();
+    F* vrho       = host_data.vrho.data();
+    F* vgamma     = host_data.vgamma.data();
 
-    double* dbasis_x_eval = nullptr;
-    double* dbasis_y_eval = nullptr;
-    double* dbasis_z_eval = nullptr;
-    double* dden_x_eval = nullptr;
-    double* dden_y_eval = nullptr;
-    double* dden_z_eval = nullptr;
+    F* dbasis_x_eval = nullptr;
+    F* dbasis_y_eval = nullptr;
+    F* dbasis_z_eval = nullptr;
+    F* dden_x_eval = nullptr;
+    F* dden_y_eval = nullptr;
+    F* dden_z_eval = nullptr;
 
     if( n_deriv > 0 ) {
       dbasis_x_eval = basis_eval    + npts * nbe;
@@ -111,9 +146,8 @@ void process_batches_host_replicated_p(
 
     // Extrat Submatrix
     const F* den_ptr_use = P;
-    if( nbe != basis.nbf() ) {
-      submat_set( basis.nbf(), basis.nbf(), nbe, nbe, P, basis.nbf(),
-                  nbe_scr, nbe, submat_map );
+    if( nbe != nbf ) {
+      submat_set( nbf, nbf, nbe, nbe, P, nbf, nbe_scr, nbe, submat_map );
       den_ptr_use = nbe_scr;
     } 
 
@@ -132,11 +166,11 @@ void process_batches_host_replicated_p(
         2. * GauXC::blas::dot( nbe, basis_eval + ioff, 1, zmat_i, 1 );
 
       if( n_deriv > 0 ) {
-        const double dx = 
+        const F dx = 
           4. * GauXC::blas::dot( nbe, dbasis_x_eval + ioff, 1, zmat_i, 1 );
-        const double dy = 
+        const F dy = 
           4. * GauXC::blas::dot( nbe, dbasis_y_eval + ioff, 1, zmat_i, 1 );
-        const double dz = 
+        const F dz = 
           4. * GauXC::blas::dot( nbe, dbasis_z_eval + ioff, 1, zmat_i, 1 );
 
         dden_x_eval[i] = dx;
@@ -161,7 +195,28 @@ void process_batches_host_replicated_p(
 
     for( int32_t i = 0; i < npts; ++i ) *exc += weights[i] * den_eval[i] * eps[i];
     
+
+    // Assemble Z
+    if( func.is_gga() )
+      zmat_gga_host( npts, nbe, weights, vrho, vgamma, basis_eval, dbasis_x_eval,
+                     dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval,
+                     dden_z_eval, zmat ); 
+    else
+      zmat_lda_host( npts, nbe, weights, vrho, basis_eval, zmat ); 
+
+
+    // Update VXC
+    GauXC::blas::syr2k( 'L', 'N', nbe, npts, F(1.), basis_eval,
+                        nbe, zmat, nbe, F(0.), nbe_scr, nbe );
+
+    inc_by_submat( nbf, nbf, nbe, nbe, VXC, nbf, nbe_scr, nbe,
+                   submat_map );
   }
+
+  // Symmetrize
+  for( int32_t j = 0;   j < nbf; ++j )
+  for( int32_t i = j+1; i < nbf; ++i )
+    VXC[ j + i*nbf ] = VXC[ i + j*nbf ];
 
   //std::cout << std::scientific << std::setprecision(12);
   //std::cout << "NEL = " << *n_el << std::endl;

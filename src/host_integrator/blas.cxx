@@ -35,6 +35,9 @@ void daxpy_( const int* N, const double* ALPHA, const double* A, const int* INCX
              double* Y, const int* INCY );
 void saxpy_( const int* N, const float* ALPHA, const float* A, const int* INCX, 
              float* Y, const int* INCY );
+
+void dscal_( const int* N, const double* ALPHA, const double* X, const int* INCX );
+void sscal_( const int* N, const float* ALPHA, const float* X, const int* INCX ); 
 }
 
 namespace GauXC::blas {
@@ -163,6 +166,26 @@ template
 void axpy( int N, double ALPHA, const double* A, int INCX, double* Y, 
            int INCY );
             
+
+
+
+
+
+template <typename T>
+void scal( int N, T ALPHA, T* X, int INCX ) {
+
+  if constexpr ( std::is_same_v<T,float> )
+    sscal_(&N, &ALPHA, X, &INCX );
+  else if constexpr ( std::is_same_v<T,double> )
+    dscal_(&N, &ALPHA, X, &INCX );
+  else throw std::runtime_error("SCAL NYI");
+
+}
+
+template
+void scal( int N, float ALPHA, float* X, int INCX ); 
+template
+void scal( int N, double ALPHA, double* X, int INCX );
 
 }
 

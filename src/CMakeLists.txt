@@ -121,6 +121,7 @@ add_library( gauxc STATIC
   host_integrator/default_xc_host_integrator.cxx
   host_integrator/host_weights.cxx
   host_integrator/host_collocation.cxx
+  host_integrator/host_zmat.cxx
   host_integrator/blas.cxx
 )
 

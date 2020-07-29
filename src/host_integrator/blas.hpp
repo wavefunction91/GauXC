@@ -22,7 +22,9 @@ template <typename T>
 T dot( int N, const T* X, int INCX, const T* Y, int INCY );
 
 template <typename T>
-void axpy( int N, T ALPHA, const T* A, int INCX, T* Y, int INCY );
+void axpy( int N, T ALPHA, const T* X, int INCX, T* Y, int INCY );
             
+template <typename T>
+void scal( int N, T ALPHA,  T* X, int INCX );
 
 }
