@@ -118,7 +118,7 @@ add_library( gauxc STATIC
   load_balancer.cxx 
   replicated_load_balancer.cxx 
   integrator_common.cxx
-  host_integrator/default_xc_host_integrator.cxx
+  host_integrator/xc_host_util.cxx
   host_integrator/host_weights.cxx
   host_integrator/host_collocation.cxx
   host_integrator/host_zmat.cxx

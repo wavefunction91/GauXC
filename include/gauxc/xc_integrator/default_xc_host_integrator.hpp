@@ -1,39 +1,12 @@
 #pragma once
 #include "xc_integrator_impl.hpp"
+#include "xc_host_data.hpp"
+#include "xc_host_util.hpp"
 
 namespace GauXC  {
 namespace detail {
 
 
-template <typename F>
-struct XCHostData {
-
-  std::vector<F> eps;
-  std::vector<F> gamma;
-  std::vector<F> vrho;
-  std::vector<F> vgamma;
- 
-  std::vector<F> zmat;
-  std::vector<F> nbe_scr;
-  std::vector<F> den_scr;
-  std::vector<F> basis_eval;
-   
-
-  XCHostData( size_t n_deriv, 
-              size_t nbf,
-              size_t max_npts, 
-              size_t max_npts_x_nbe ) :
-    eps( max_npts ),
-    gamma( (n_deriv > 0) * max_npts ),
-    vrho( max_npts ),
-    vgamma( (n_deriv > 0) * max_npts ),
-    zmat( max_npts_x_nbe ),
-    nbe_scr( nbf * nbf ),
-    den_scr( (3*n_deriv + 1) * max_npts ),
-    basis_eval( (3*n_deriv + 1) * max_npts_x_nbe ) { }
-   
-
-};
 
 template <typename MatrixType>
 class DefaultXCHostIntegrator : public XCIntegratorImpl<MatrixType> {
@@ -60,36 +33,6 @@ public:
   ~DefaultXCHostIntegrator() noexcept = default;
 
 };
-
-
-
-
-template <typename F, size_t n_deriv>
-void process_batches_host_replicated_p(
-  XCWeightAlg            weight_alg,
-  const functional_type& func,
-  const BasisSet<F>&     basis,
-  const Molecule   &     mol,
-  const MolMeta    &     meta,
-  XCHostData<F>    &     host_data,
-  std::vector< XCTask >& local_work,
-  const F*               P,
-  F*                     VXC,
-  F*                     exc,
-  F*                     n_el
-);
-
-
-
-template <typename F, typename... Args>
-void process_batches_host_replicated_p( size_t n_deriv, Args&&... args ) {
-  if( n_deriv == 0 )
-    process_batches_host_replicated_p<F,0>( std::forward<Args>(args)... );
-  else if( n_deriv == 1 )
-    process_batches_host_replicated_p<F,1>( std::forward<Args>(args)... );
-  else
-    throw std::runtime_error("MGGA NYI");
-}
 
 
 
@@ -133,6 +76,7 @@ typename DefaultXCHostIntegrator<MatrixType>::exc_vxc_type
   MPI_Comm_size( this->comm_, &world_size );
 
   if( world_size > 1 ) {
+
     // Test of communicator is an inter-communicator
     // XXX: Can't think of a case when this would be true, but who knows...
     int inter_flag;
@@ -159,6 +103,7 @@ typename DefaultXCHostIntegrator<MatrixType>::exc_vxc_type
       
 
     }
+
   }
 
 
