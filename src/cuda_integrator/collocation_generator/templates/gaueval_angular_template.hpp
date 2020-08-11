@@ -49,26 +49,18 @@ GPGAUEVAL_INLINE __device__ void gaueval_$(name)_angular(
   double*       eval
 ) {
 
-//switch( l ) {
-
 $for( L in range(L_max + 1) )\
-  //case $(L):
   $if( L == 0 )\
     if( l == $(L) ) {
   $else\
     } else if( l == $(L) ) {
   $endif\
       gaueval_$(name)_angular_$(L)( bf, x, y, z, eval );
-      //break;
 
 $endfor\
-    //default: 
     } else {
       assert( false && "L < L_MAX" );
-      //break;
     }
-
-//} // switch(l)
 
 } // gaueval_$(name)_angular
 
@@ -88,10 +80,8 @@ GPGAUEVAL_INLINE __device__ void gaueval_$(name)_angular_deriv1(
   double*       eval_z
 ) {
 
-//switch( l ) {
 
 $for( L in range(L_max + 1) )\
-//  case $(L):
   $if( L == 0 )\
     if( l == $(L) ) {
   $else\
@@ -99,16 +89,11 @@ $for( L in range(L_max + 1) )\
   $endif\
       gaueval_$(name)_angular_$(L)( bf, x, y, z, eval );
       gaueval_$(name)_angular_$(L)_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
-//    break;
 
 $endfor\
-//  default: 
     } else {
       assert( false && "L < L_MAX" );
-//    break;
     }
-
-//} // switch(l)
 
 } // gaueval_$(name)_angular_deriv1
 

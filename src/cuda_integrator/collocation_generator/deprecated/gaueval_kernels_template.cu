@@ -1,4 +1,4 @@
-#include <gpgaueval/device_util.hpp>
+//#include <gpgaueval/device_util.hpp>
 #include <iostream>
 #include <cassert>
 
@@ -10,23 +10,23 @@
 namespace gpgaueval {
 
 __global__
-void gaueval_device_spherical_kernel(
-  const size_t nshells,
-  const size_t nbf,
-  const size_t npts,
+void gaueval_device_$(ang_name)_kernel(
+  size_t             nshells,
+  size_t             nbf,
+  size_t             npts,
   const StaticShell* shells_device,
   const size_t*      offs_device,
-  const double*        pts_device,
-  double*              eval_device
+  const double*      pts_device,
+  double*            eval_device
 ) {
 
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
-  if( tid_x< nshells and tid_y < npts ) {
+  if( tid_x < npts and tid_y < nshells ) {
 
-    const size_t ish = tid_x;
-    const size_t ipt = tid_y;
+    const size_t ipt = tid_x;
+    const size_t ish = tid_y;
 
     const size_t ibf = offs_device[ish];
 
@@ -50,7 +50,7 @@ void gaueval_device_spherical_kernel(
       tmp += coeff[i] * std::exp( - alpha[i] * rsq );
 
     double * bf_eval = eval_device + ibf + ipt*nbf;
-    gaueval_spherical_angular( shell.l, tmp, xc, yc, zc, bf_eval );
+    gaueval_$(ang_name)_angular( shell.l, tmp, xc, yc, zc, bf_eval );
 
   }
 
@@ -59,26 +59,26 @@ void gaueval_device_spherical_kernel(
 
 
 __global__
-void gaueval_device_spherical_kernel_deriv1(
-  const size_t nshells,
-  const size_t nbf,
-  const size_t npts,
+void gaueval_device_$(ang_name)_kernel_deriv1(
+  size_t             nshells,
+  size_t             nbf,
+  size_t             npts,
   const StaticShell* shells_device,
   const size_t*      offs_device,
-  const double*        pts_device,
-  double*              eval_device,
-  double*              deval_device_x,
-  double*              deval_device_y,
-  double*              deval_device_z
+  const double*      pts_device,
+  double*            eval_device,
+  double*            deval_device_x,
+  double*            deval_device_y,
+  double*            deval_device_z
 ) {
 
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
-  if( tid_x< nshells and tid_y < npts ) {
+  if( tid_x < npts and tid_y < nshells ) {
 
-    const size_t ish = tid_x;
-    const size_t ipt = tid_y;
+    const size_t ipt = tid_x;
+    const size_t ish = tid_y;
 
     const size_t ibf = offs_device[ish];
 
@@ -118,7 +118,7 @@ void gaueval_device_spherical_kernel_deriv1(
     double * dy_eval = deval_device_y + ibf + ipt*nbf;
     double * dz_eval = deval_device_z + ibf + ipt*nbf;
 
-    gaueval_spherical_angular_deriv1( shell.l, tmp, tmp_x, tmp_y, tmp_z, xc, yc, zc, bf_eval, dx_eval, dy_eval, dz_eval );
+    gaueval_$(ang_name)_angular_deriv1( shell.l, tmp, tmp_x, tmp_y, tmp_z, xc, yc, zc, bf_eval, dx_eval, dy_eval, dz_eval );
 
   }
 
