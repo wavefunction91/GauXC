@@ -23,11 +23,11 @@ add_library( gauxc STATIC
   load_balancer.cxx 
   replicated_load_balancer.cxx 
   integrator_common.cxx
-  host_integrator/xc_host_util.cxx
-  host_integrator/host_weights.cxx
-  host_integrator/host_collocation.cxx
-  host_integrator/host_zmat.cxx
-  host_integrator/blas.cxx
+  integrator/host/xc_host_util.cxx
+  integrator/host/host_weights.cxx
+  integrator/host/host_collocation.cxx
+  integrator/host/host_zmat.cxx
+  integrator/host/blas.cxx
 )
 
 target_include_directories( gauxc
@@ -57,7 +57,7 @@ endif()
 if( GAUXC_ENABLE_DEVICE )
 
   if( GAUXC_ENABLE_CUDA )
-    include( cuda_integrator/gauxc-cuda_integrator.cmake )
+    include( integrator/cuda/gauxc-cuda_integrator.cmake )
   endif()
 
   get_target_property( DEVICE_TARGET_DEPENDS gauxc_device_integrator
@@ -67,5 +67,7 @@ if( GAUXC_ENABLE_DEVICE )
     $<TARGET_OBJECTS:gauxc_device_integrator> 
     ${DEVICE_TARGET_DEPENDS}
   )
+
+  add_dependencies( gauxc gauxc_device_integrator )
 
 endif()
