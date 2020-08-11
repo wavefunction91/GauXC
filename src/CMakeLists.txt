@@ -53,3 +53,19 @@ target_link_libraries( gauxc PUBLIC
 if( GAUXC_ENABLE_CEREAL )
   target_link_libraries( gauxc PUBLIC cereal )
 endif()
+
+if( GAUXC_ENABLE_DEVICE )
+
+  if( GAUXC_ENABLE_CUDA )
+    include( cuda_integrator/gauxc-cuda_integrator.cmake )
+  endif()
+
+  get_target_property( DEVICE_TARGET_DEPENDS gauxc_device_integrator
+    INTERFACE_LINK_LIBRARIES ) 
+
+  target_link_libraries( gauxc PUBLIC 
+    $<TARGET_OBJECTS:gauxc_device_integrator> 
+    ${DEVICE_TARGET_DEPENDS}
+  )
+
+endif()
