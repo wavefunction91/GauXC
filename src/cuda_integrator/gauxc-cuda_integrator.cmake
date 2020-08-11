@@ -1,6 +1,6 @@
 add_library( gauxc_device_integrator OBJECT 
-  cuda_integrator/cuda_collocation_kernels.cu
-  cuda_integrator/cuda_collocation.cxx
+  cuda_integrator/collocation/gaueval_kernels.cu
+  #cuda_integrator/collocation/.cxx
 )
 target_compile_features( gauxc_device_integrator PUBLIC cuda_std_14 cxx_std_14 )
 target_link_libraries( gauxc_device_integrator PUBLIC ExchCXX::exchcxx )
