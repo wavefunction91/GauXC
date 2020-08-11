@@ -1,9 +1,9 @@
 #pragma once
 
-namespace gpgaueval {
+namespace GauXC {
 
 $for( x in const_lines )\
   $(x)
 $endfor\
 
-} // namespace gpgaueval
+} // namespace GauXC

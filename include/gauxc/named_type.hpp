@@ -54,7 +54,7 @@ inline bool operator==(
 ) { return n2 == n1; }
 
 template <typename T, typename ParameterType, typename U,
-  typename = std::enable_if_t<std::is_convertible_v<U,T>>
+  typename = std::enable_if_t<std::is_convertible<U,T>::value>
 >
 inline bool operator==(
   const NamedType<T,ParameterType>& n1,
@@ -62,7 +62,7 @@ inline bool operator==(
 ) { return n1.get() == T(n2); }
 
 template <typename T, typename ParameterType, typename U,
-  typename = std::enable_if_t<std::is_convertible_v<U,T>>
+  typename = std::enable_if_t<std::is_convertible<U,T>::value>
 >
 inline bool operator==(
   const           U               & n1,
@@ -93,7 +93,7 @@ inline bool operator!=(
 ) { return not( n1 == n2 ); }
 
 template <typename T, typename ParameterType, typename U,
-  typename = std::enable_if_t<std::is_convertible_v<U,T>>
+  typename = std::enable_if_t<std::is_convertible<U,T>::value>
 >
 inline bool operator!=(
   const NamedType<T,ParameterType>& n1,
@@ -101,7 +101,7 @@ inline bool operator!=(
 ) { return not( n1 == n2 ); }
 
 template <typename T, typename ParameterType, typename U,
-  typename = std::enable_if_t<std::is_convertible_v<U,T>>
+  typename = std::enable_if_t<std::is_convertible<U,T>::value>
 >
 inline bool operator!=(
   const           U               & n1,

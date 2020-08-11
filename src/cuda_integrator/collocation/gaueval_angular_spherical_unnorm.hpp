@@ -6,7 +6,7 @@
 #  define GPGAUEVAL_INLINE __inline__
 #endif
 
-namespace gpgaueval {
+namespace GauXC {
 
 GPGAUEVAL_INLINE __device__ void gaueval_spherical_unnorm_angular_0(
   const double bf,
@@ -497,4 +497,4 @@ GPGAUEVAL_INLINE __device__ void gaueval_spherical_unnorm_angular_deriv1(
 
 
 
-} // namespace gpgaueval
+} // namespace GauXC

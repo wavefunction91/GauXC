@@ -259,7 +259,7 @@ preamble = """
 
 #define GPGAUEVAL_INLINE __inline__
 
-namespace gpgaueval {
+namespace GauXC {
 """
 
 
@@ -405,7 +405,7 @@ print(am_dispatch_template_deriv1.format('spherical'))
 
 
 
-footer = "} // namespace gpgaueval"
+footer = "} // namespace GauXC"
 cart_header_file.write( footer )
 sphr_header_file.write( footer )
 
@@ -413,7 +413,7 @@ constant_lines = list(set(constant_lines))
 preamble = """
 #pragma once
 
-namespace gpgaueval {
+namespace GauXC {
 """
 
 cons_header_file.write( preamble )

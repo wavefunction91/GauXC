@@ -6,7 +6,7 @@
 #  define GPGAUEVAL_INLINE __inline__
 #endif
 
-namespace gpgaueval {
+namespace GauXC {
 
 $for( L in range(L_max + 1) )\
 GPGAUEVAL_INLINE __device__ void gaueval_$(name)_angular_$(L)(
@@ -99,4 +99,4 @@ $endfor\
 
 
 
-} // namespace gpgaueval
+} // namespace GauXC

@@ -1,4 +1,4 @@
-//#include <gpgaueval/device_util.hpp>
+//#include <GauXC/device_util.hpp>
 #include <iostream>
 #include <cassert>
 
@@ -7,7 +7,7 @@
 #include "gaueval_angular_spherical.hpp"
 #include "gaueval_angular_spherical_unnorm.hpp"
 
-namespace gpgaueval {
+namespace GauXC {
 
 __global__
 void gaueval_device_$(ang_name)_kernel(

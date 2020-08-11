@@ -1,6 +1,6 @@
 #pragma once
 
-namespace gpgaueval {
+namespace GauXC {
 
   constexpr double sqrt_10 = 3.1622776601683795;
   constexpr double sqrt_14 = 3.7416573867739413;
@@ -17,4 +17,4 @@ namespace gpgaueval {
   constexpr double sqrt_35 = 5.916079783099616;
   constexpr double sqrt_105 = 10.246950765959598;
 
-} // namespace gpgaueval
+} // namespace GauXC
