@@ -4,8 +4,8 @@ from gaueval_angular import generate_spherical_angular, generate_cartesian_angul
 
 from io import StringIO
 
-
 L_max = 6
+if len(sys.argv) > 1: L_max = int(sys.argv[1])
 
 #sphr_bf_body = []
 #sphr_bf_d1_body = []
