@@ -7,6 +7,10 @@
 #else
   #define HOST_DEVICE_ACCESSIBLE
 #endif
+
+#ifdef GAUXC_ENABLE_CUDA
+  #include <cuda_runtime.h>
+#endif
   
 #ifdef GAUXC_ENABLE_CEREAL
   #include <cereal/types/vector.hpp>
