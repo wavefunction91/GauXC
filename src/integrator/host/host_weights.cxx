@@ -1,7 +1,7 @@
 #include "host_weights.hpp"
 #include <integrator_constants.hpp>
 
-namespace GauXC::detail {
+namespace GauXC::integrator::host {
 
 void ssf_weights_host(
   const Molecule&        mol,

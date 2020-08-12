@@ -4,7 +4,9 @@
 #include <gauxc/shell.hpp>
 
 
-namespace GauXC {
+namespace GauXC      {
+namespace integrator {
+namespace cuda       {
 
 __inline__ __device__ void gaueval_device_radial_eval(
   const Shell&   shell,
@@ -76,5 +78,8 @@ __inline__ __device__void gaueval_device_radial_eval_deriv1(
 
 }
 
-}
+} // namespace cuda
+} // namespace integrator
+} // namespace GauXC
+
 

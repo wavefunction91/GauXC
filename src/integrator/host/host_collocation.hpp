@@ -2,7 +2,7 @@
 
 #include <gauxc/basisset.hpp>
 
-namespace GauXC::detail {
+namespace GauXC::integrator::host {
 
 void eval_collocation( size_t                  npts, 
                        size_t                  nshells,

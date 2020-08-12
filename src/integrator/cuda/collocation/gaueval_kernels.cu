@@ -5,7 +5,10 @@
 #include "gaueval_angular_cartesian.hpp"
 #include "gaueval_angular_spherical_unnorm.hpp"
 
-namespace GauXC {
+namespace GauXC      {
+namespace integrator {
+namespace cuda       {
+
 
 
 template <typename T>
@@ -165,4 +168,6 @@ void gaueval_device_kernel_deriv1(
   double*              deval_device_z
 );
 
-}
+} // namespace cuda
+} // namespace integrator
+} // namespace GauXC

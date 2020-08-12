@@ -1,7 +1,9 @@
 #include "gaueval_kernels.hpp"
 #include <gauxc/util/div_ceil.hpp>
 
-namespace GauXC {
+namespace GauXC      {
+namespace integrator {
+namespace cuda       {
 
 template <typename T>
 void gaueval_device(
@@ -83,4 +85,6 @@ void gaueval_device_deriv1(
 );
 
 
-}
+} // namespace cuda
+} // namespace integrator
+} // namespace GauXC

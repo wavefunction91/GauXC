@@ -6,7 +6,9 @@
 #  define GPGAUEVAL_INLINE __inline__
 #endif
 
-namespace GauXC {
+namespace GauXC      {
+namespace integrator {
+namespace cuda       {
 
 $for( L in range(L_max + 1) )\
 GPGAUEVAL_INLINE __device__ void gaueval_$(name)_angular_$(L)(
@@ -98,5 +100,7 @@ $endfor\
 } // gaueval_$(name)_angular_deriv1
 
 
-
+} // namespace cuda
+} // namespace integrator
 } // namespace GauXC
+

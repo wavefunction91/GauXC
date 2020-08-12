@@ -6,6 +6,7 @@
 namespace GauXC  {
 namespace detail {
 
+using namespace GauXC::integrator::host;
 
 
 template <typename MatrixType>

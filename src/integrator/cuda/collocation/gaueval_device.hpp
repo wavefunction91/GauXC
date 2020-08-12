@@ -1,6 +1,8 @@
 #include <gauxc/shell.hpp>
 
-namespace GauXC {
+namespace GauXC      {
+namespace integrator {
+namespace cuda       {
 
 template <typename T>
 void gaueval_device(
@@ -29,4 +31,6 @@ void gaueval_device_deriv1(
   cudaStream_t    stream
 );
 
-}
+} // namespace cuda
+} // namespace integrator
+} // namespace GauXC

@@ -4,7 +4,8 @@
 #include <gauxc/xc_integrator.hpp>
 
 namespace GauXC  {
-namespace detail {
+namespace integrator {
+namespace host {
 
 
 template <typename F, size_t n_deriv>
@@ -33,5 +34,6 @@ inline void process_batches_host_replicated_p( size_t n_deriv, Args&&... args ) 
     throw std::runtime_error("MGGA NYI");
 }
 
+}
 }
 }

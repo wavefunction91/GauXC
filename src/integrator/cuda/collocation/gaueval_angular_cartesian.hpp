@@ -6,7 +6,9 @@
 #  define GPGAUEVAL_INLINE __inline__
 #endif
 
-namespace GauXC {
+namespace GauXC      {
+namespace integrator {
+namespace cuda       {
 
 GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_0(
   const double bf,
@@ -273,4 +275,6 @@ GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_deriv1(
 
 
 
+} // namespace cuda
+} // namespace integrator
 } // namespace GauXC

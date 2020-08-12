@@ -1,6 +1,8 @@
 #include <gauxc/shell.hpp>
 
-namespace GauXC {
+namespace GauXC      {
+namespace integrator {
+namespace cuda       {
 
 template <typename T>
 __global__
@@ -29,4 +31,6 @@ void gaueval_device_kernel_deriv1(
   T*              deval_device_z
 );
 
-}
+} // namespace cuda
+} // namespace integrator
+} // namespace GauXC

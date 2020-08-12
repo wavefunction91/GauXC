@@ -1,7 +1,7 @@
 #include "host_collocation.hpp"
 #include "gau2grid.h"
 
-namespace GauXC::detail {
+namespace GauXC::integrator::host {
 
 void eval_collocation( size_t                  npts, 
                        size_t                  nshells,

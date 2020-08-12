@@ -2,7 +2,7 @@
 #include "blas.hpp"
 
 namespace GauXC  {
-namespace detail {
+namespace integrator::host {
 
 template <typename F>
 void zmat_lda_host( int32_t   npts,

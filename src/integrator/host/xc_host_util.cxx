@@ -8,7 +8,7 @@
 #include "util.hpp"
 
 namespace GauXC  {
-namespace detail {
+namespace integrator::host {
 
 
 
@@ -88,7 +88,7 @@ void process_batches_host_replicated_p(
     // Extrat Submatrix
     const F* den_ptr_use = P;
     if( nbe != nbf ) {
-      submat_set( nbf, nbf, nbe, nbe, P, nbf, nbe_scr, nbe, submat_map );
+      detail::submat_set( nbf, nbf, nbe, nbe, P, nbf, nbe_scr, nbe, submat_map );
       den_ptr_use = nbe_scr;
     } 
 
@@ -150,8 +150,8 @@ void process_batches_host_replicated_p(
     GauXC::blas::syr2k( 'L', 'N', nbe, npts, F(1.), basis_eval,
                         nbe, zmat, nbe, F(0.), nbe_scr, nbe );
 
-    inc_by_submat( nbf, nbf, nbe, nbe, VXC, nbf, nbe_scr, nbe,
-                   submat_map );
+    detail::inc_by_submat( nbf, nbf, nbe, nbe, VXC, nbf, nbe_scr, nbe,
+                           submat_map );
   }
 
   // Symmetrize
