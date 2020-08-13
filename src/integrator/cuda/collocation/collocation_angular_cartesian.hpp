@@ -1,5 +1,5 @@
 #pragma once
-#include "gaueval_device_constants.hpp"
+#include "collocation_device_constants.hpp"
 #include <cassert>
 
 #ifndef GPGAUEVAL_INLINE
@@ -10,7 +10,7 @@ namespace GauXC      {
 namespace integrator {
 namespace cuda       {
 
-GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_0(
+GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_0(
   const double bf,
   const double x,
   const double y,
@@ -22,7 +22,7 @@ GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_0(
 
 }
 
-GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_0_deriv1(
+GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_0_deriv1(
   const double bf,
   const double bf_x,
   const double bf_y,
@@ -43,7 +43,7 @@ GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_0_deriv1(
 
 }
 
-GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_1(
+GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_1(
   const double bf,
   const double x,
   const double y,
@@ -57,7 +57,7 @@ GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_1(
 
 }
 
-GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_1_deriv1(
+GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_1_deriv1(
   const double bf,
   const double bf_x,
   const double bf_y,
@@ -84,7 +84,7 @@ GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_1_deriv1(
 
 }
 
-GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_2(
+GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_2(
   const double bf,
   const double x,
   const double y,
@@ -101,7 +101,7 @@ GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_2(
 
 }
 
-GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_2_deriv1(
+GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_2_deriv1(
   const double bf,
   const double bf_x,
   const double bf_y,
@@ -137,7 +137,7 @@ GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_2_deriv1(
 
 }
 
-GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_3(
+GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_3(
   const double bf,
   const double x,
   const double y,
@@ -158,7 +158,7 @@ GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_3(
 
 }
 
-GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_3_deriv1(
+GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_3_deriv1(
   const double bf,
   const double bf_x,
   const double bf_y,
@@ -207,7 +207,7 @@ GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_3_deriv1(
 }
 
 
-GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular(
+GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular(
   const int64_t l,
   const double  bf,
   const double  x,
@@ -217,25 +217,25 @@ GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular(
 ) {
 
       if( l == 0 ) {
-        gaueval_cartesian_angular_0( bf, x, y, z, eval );
+        collocation_cartesian_angular_0( bf, x, y, z, eval );
 
       } else if( l == 1 ) {
-        gaueval_cartesian_angular_1( bf, x, y, z, eval );
+        collocation_cartesian_angular_1( bf, x, y, z, eval );
 
       } else if( l == 2 ) {
-        gaueval_cartesian_angular_2( bf, x, y, z, eval );
+        collocation_cartesian_angular_2( bf, x, y, z, eval );
 
       } else if( l == 3 ) {
-        gaueval_cartesian_angular_3( bf, x, y, z, eval );
+        collocation_cartesian_angular_3( bf, x, y, z, eval );
 
     } else {
       assert( false && "L < L_MAX" );
     }
 
-} // gaueval_cartesian_angular
+} // collocation_cartesian_angular
 
 
-GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_deriv1(
+GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_deriv1(
   const int64_t l,
   const double  bf,
   const double  bf_x,
@@ -252,26 +252,26 @@ GPGAUEVAL_INLINE __device__ void gaueval_cartesian_angular_deriv1(
 
 
       if( l == 0 ) {
-        gaueval_cartesian_angular_0( bf, x, y, z, eval );
-      gaueval_cartesian_angular_0_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+        collocation_cartesian_angular_0( bf, x, y, z, eval );
+      collocation_cartesian_angular_0_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
       } else if( l == 1 ) {
-        gaueval_cartesian_angular_1( bf, x, y, z, eval );
-      gaueval_cartesian_angular_1_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+        collocation_cartesian_angular_1( bf, x, y, z, eval );
+      collocation_cartesian_angular_1_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
       } else if( l == 2 ) {
-        gaueval_cartesian_angular_2( bf, x, y, z, eval );
-      gaueval_cartesian_angular_2_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+        collocation_cartesian_angular_2( bf, x, y, z, eval );
+      collocation_cartesian_angular_2_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
       } else if( l == 3 ) {
-        gaueval_cartesian_angular_3( bf, x, y, z, eval );
-      gaueval_cartesian_angular_3_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+        collocation_cartesian_angular_3( bf, x, y, z, eval );
+      collocation_cartesian_angular_3_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
     } else {
       assert( false && "L < L_MAX" );
     }
 
-} // gaueval_cartesian_angular_deriv1
+} // collocation_cartesian_angular_deriv1
 
 
 

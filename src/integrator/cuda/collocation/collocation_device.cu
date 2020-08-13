@@ -1,4 +1,4 @@
-#include "gaueval_kernels.hpp"
+#include "collocation_kernels.hpp"
 #include <gauxc/util/div_ceil.hpp>
 
 namespace GauXC      {
@@ -6,7 +6,7 @@ namespace integrator {
 namespace cuda       {
 
 template <typename T>
-void gaueval_device(
+void eval_collocation(
   size_t          nshells,
   size_t          nbf,
   size_t          npts,
@@ -22,7 +22,7 @@ void gaueval_device(
   dim3 blocks( util::div_ceil( npts,    threads.x ),
                util::div_ceil( nshells, threads.y ) );
 
-  gaueval_device_kernel<T>
+  collocation_device_kernel<T>
     <<<blocks, threads, 0, stream>>>
     ( nshells, nbf, npts, shells_device, offs_device,
       pts_device, eval_device );
@@ -30,7 +30,7 @@ void gaueval_device(
 }
  
 template             
-void gaueval_device(
+void eval_collocation(
   size_t               nshells,
   size_t               nbf,
   size_t               npts,
@@ -43,7 +43,7 @@ void gaueval_device(
 
 
 template <typename T>
-void gaueval_device_deriv1(
+void eval_collocation_deriv1(
   size_t          nshells,
   size_t          nbf,
   size_t          npts,
@@ -61,7 +61,7 @@ void gaueval_device_deriv1(
   dim3 blocks( util::div_ceil( npts,    threads.x ),
                util::div_ceil( nshells, threads.y ) );
 
-  gaueval_device_kernel_deriv1<T>
+  collocation_device_kernel_deriv1<T>
     <<<blocks, threads, 0, stream>>>
     ( nshells, nbf, npts, shells_device, offs_device,
       pts_device, eval_device, deval_device_x, deval_device_y,
@@ -70,7 +70,7 @@ void gaueval_device_deriv1(
 }
 
 template
-void gaueval_device_deriv1(
+void eval_collocation_deriv1(
   size_t               nshells,
   size_t               nbf,
   size_t               npts,

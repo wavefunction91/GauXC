@@ -1,9 +1,9 @@
 #include <iostream>
 #include <cassert>
 
-#include "gaueval_kernels.hpp"
-#include "gaueval_angular_cartesian.hpp"
-#include "gaueval_angular_spherical_unnorm.hpp"
+#include "collocation_kernels.hpp"
+#include "collocation_angular_cartesian.hpp"
+#include "collocation_angular_spherical_unnorm.hpp"
 
 namespace GauXC      {
 namespace integrator {
@@ -13,7 +13,7 @@ namespace cuda       {
 
 template <typename T>
 __global__
-void gaueval_device_kernel(
+void collocation_device_kernel(
   size_t          nshells,
   size_t          nbf,
   size_t          npts,
@@ -56,9 +56,9 @@ void gaueval_device_kernel(
 
     const bool do_sph = shell.pure();
     if( do_sph )
-      gaueval_spherical_unnorm_angular( shell.l(), tmp, xc, yc, zc, bf_eval );
+      collocation_spherical_unnorm_angular( shell.l(), tmp, xc, yc, zc, bf_eval );
     else
-      gaueval_cartesian_angular( shell.l(), tmp, xc, yc, zc, bf_eval );
+      collocation_cartesian_angular( shell.l(), tmp, xc, yc, zc, bf_eval );
 
   }
 
@@ -66,7 +66,7 @@ void gaueval_device_kernel(
 
 template
 __global__
-void gaueval_device_kernel(
+void collocation_device_kernel(
   size_t               nshells,
   size_t               nbf,
   size_t               npts,
@@ -79,7 +79,7 @@ void gaueval_device_kernel(
 
 template <typename T>
 __global__
-void gaueval_device_kernel_deriv1(
+void collocation_device_kernel_deriv1(
   size_t          nshells,
   size_t          nbf,
   size_t          npts,
@@ -140,11 +140,11 @@ void gaueval_device_kernel_deriv1(
 
     const bool do_sph = shell.pure();
     if( do_sph ) 
-      gaueval_spherical_unnorm_angular_deriv1( shell.l(), tmp, tmp_x, tmp_y, tmp_z, 
+      collocation_spherical_unnorm_angular_deriv1( shell.l(), tmp, tmp_x, tmp_y, tmp_z, 
                                                xc, yc, zc, bf_eval, dx_eval, 
                                                dy_eval, dz_eval );
     else
-      gaueval_cartesian_angular_deriv1( shell.l(), tmp, tmp_x, tmp_y, tmp_z, 
+      collocation_cartesian_angular_deriv1( shell.l(), tmp, tmp_x, tmp_y, tmp_z, 
                                         xc, yc, zc, bf_eval, dx_eval, 
                                         dy_eval, dz_eval );
 
@@ -155,7 +155,7 @@ void gaueval_device_kernel_deriv1(
 
 template
 __global__
-void gaueval_device_kernel_deriv1(
+void collocation_device_kernel_deriv1(
   size_t               nshells,
   size_t               nbf,
   size_t               npts,

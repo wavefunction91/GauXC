@@ -8,7 +8,7 @@ namespace GauXC      {
 namespace integrator {
 namespace cuda       {
 
-__inline__ __device__ void gaueval_device_radial_eval(
+__inline__ __device__ void collocation_device_radial_eval(
   const Shell&   shell,
   const double*  pt,
   double*        eval_device
@@ -35,7 +35,7 @@ __inline__ __device__ void gaueval_device_radial_eval(
 
 
 
-__inline__ __device__void gaueval_device_radial_eval_deriv1(
+__inline__ __device__void collocation_device_radial_eval_deriv1(
   const Shell&   shell,
   const double*  pt,
   double*        eval_device,

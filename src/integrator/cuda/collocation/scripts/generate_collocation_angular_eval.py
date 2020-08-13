@@ -1,6 +1,6 @@
 import os,sys,re,math
 import pyexpander.lib as expander
-from gaueval_angular import generate_spherical_angular, generate_cartesian_angular, generate_cartesian_ls, generate_eval_lines
+from collocation_angular import generate_spherical_angular, generate_cartesian_angular, generate_cartesian_ls, generate_eval_lines
 
 from io import StringIO
 
@@ -42,7 +42,7 @@ for L in range( L_max + 1 ):
 
 
 
-template_fname = 'templates/gaueval_angular_template.hpp'
+template_fname = 'templates/collocation_angular_template.hpp'
 
 #sphr_var_dict = { 'L_max' : L_max, 'body' : sphr_bf_body, 'body_d1' : sphr_bf_d1_body, 'name' : 'spherical' }
 sphr_unnorm_var_dict = { 'L_max' : L_max, 'body' : sphr_unnorm_bf_body, 'body_d1' : sphr_unnorm_bf_d1_body, 'name' : 'spherical_unnorm' }
@@ -90,7 +90,7 @@ for x in sqrt_finds:
 old_sys_out = sys.stdout
 
 sys.stdout = constant_expand = StringIO()
-expander.expandFile( 'templates/gaueval_device_constants_template.hpp',
+expander.expandFile( 'templates/collocation_device_constants_template.hpp',
   external_definitions={ "const_lines" : constant_lines } )
 
 sys.stdout = old_sys_out
@@ -98,10 +98,10 @@ sys.stdout = old_sys_out
 constant_expand = constant_expand.getvalue()
 
 
-cart_header_fname = "gaueval_angular_cartesian.hpp"
-#sphr_header_fname = "gaueval_angular_spherical.hpp"
-sphr_unnorm_header_fname = "gaueval_angular_spherical_unnorm.hpp"
-cons_header_fname = "gaueval_device_constants.hpp"
+cart_header_fname = "collocation_angular_cartesian.hpp"
+#sphr_header_fname = "collocation_angular_spherical.hpp"
+sphr_unnorm_header_fname = "collocation_angular_spherical_unnorm.hpp"
+cons_header_fname = "collocation_device_constants.hpp"
 
 cart_header_file = open( cart_header_fname, 'w' )
 #sphr_header_file = open( sphr_header_fname, 'w' )
@@ -125,24 +125,24 @@ cons_header_file.write( constant_expand )
 
 #old_sys_out = sys.stdout
 
-#sys.stdout = gaueval_cartesian_kernel_expand = StringIO()
-#expander.expandFile( 'gaueval_kernels_template.cu', external_definitions={ 'ang_name' : 'cartesian' } )
+#sys.stdout = collocation_cartesian_kernel_expand = StringIO()
+#expander.expandFile( 'collocation_kernels_template.cu', external_definitions={ 'ang_name' : 'cartesian' } )
 #
-#sys.stdout = gaueval_spherical_kernel_expand = StringIO()
-#expander.expandFile( 'gaueval_kernels_template.cu', external_definitions={ 'ang_name' : 'spherical' } )
+#sys.stdout = collocation_spherical_kernel_expand = StringIO()
+#expander.expandFile( 'collocation_kernels_template.cu', external_definitions={ 'ang_name' : 'spherical' } )
 #
-#sys.stdout = gaueval_spherical_unnorm_kernel_expand = StringIO()
-#expander.expandFile( 'gaueval_kernels_template.cu', external_definitions={ 'ang_name' : 'spherical_unnorm' } )
+#sys.stdout = collocation_spherical_unnorm_kernel_expand = StringIO()
+#expander.expandFile( 'collocation_kernels_template.cu', external_definitions={ 'ang_name' : 'spherical_unnorm' } )
 #
 #sys.stdout = old_sys_out
 #
-#gaueval_cartesian_kernel_expand = gaueval_cartesian_kernel_expand.getvalue()
-#gaueval_spherical_kernel_expand = gaueval_spherical_kernel_expand.getvalue()
-#gaueval_spherical_unnorm_kernel_expand = gaueval_spherical_unnorm_kernel_expand.getvalue()
+#collocation_cartesian_kernel_expand = collocation_cartesian_kernel_expand.getvalue()
+#collocation_spherical_kernel_expand = collocation_spherical_kernel_expand.getvalue()
+#collocation_spherical_unnorm_kernel_expand = collocation_spherical_unnorm_kernel_expand.getvalue()
 #
-#with open( 'gaueval_kernels_cartesian.cu', 'w' ) as f:
-#  f.write( gaueval_cartesian_kernel_expand )
-#with open( 'gaueval_kernels_spherical.cu', 'w' ) as f:
-#  f.write( gaueval_spherical_kernel_expand )
-#with open( 'gaueval_kernels_spherical_unnorm.cu', 'w' ) as f:
-#  f.write( gaueval_spherical_unnorm_kernel_expand )
+#with open( 'collocation_kernels_cartesian.cu', 'w' ) as f:
+#  f.write( collocation_cartesian_kernel_expand )
+#with open( 'collocation_kernels_spherical.cu', 'w' ) as f:
+#  f.write( collocation_spherical_kernel_expand )
+#with open( 'collocation_kernels_spherical_unnorm.cu', 'w' ) as f:
+#  f.write( collocation_spherical_unnorm_kernel_expand )
