@@ -1,6 +1,7 @@
-#include "collocation_kernels.hpp"
 #include <gauxc/util/div_ceil.hpp>
 
+#include "collocation_petite_kernels.hpp"
+#include "collocation_masked_kernels.hpp"
 
 namespace GauXC      {
 namespace integrator {

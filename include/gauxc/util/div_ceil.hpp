@@ -1,6 +1,8 @@
 #pragma once
 #include <type_traits>
 #include <cstdlib>
+#include <cstdint>
+#include <cassert>
 
 namespace GauXC  {
 

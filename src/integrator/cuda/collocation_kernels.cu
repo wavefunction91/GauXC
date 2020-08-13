@@ -1,7 +1,8 @@
 #include <iostream>
 #include <cassert>
 
-#include "collocation_kernels.hpp"
+//#include "collocation_kernels.hpp"
+#include "collocation_petite_kernels.hpp"
 #include "collocation_angular_cartesian.hpp"
 #include "collocation_angular_spherical_unnorm.hpp"
 
