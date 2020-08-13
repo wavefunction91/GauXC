@@ -371,7 +371,7 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
     test_host_collocation( basis, ref_data );
   }
 
-  SECTION( "Host Evali Grad" ) {
+  SECTION( "Host Eval Grad" ) {
     test_host_collocation_deriv1( basis, ref_data );
   }
 
