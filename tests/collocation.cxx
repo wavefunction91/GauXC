@@ -257,7 +257,7 @@ void test_cuda_collocation_petite( const BasisSet<double>& basis, std::ifstream&
     for( auto idx : mask ) shells.emplace_back(basis[idx]);
     safe_cuda_copy( shells.size(), shells_device, shells.data() );
 
-    integrator::cuda::eval_collocation( shells.size(), nbf, npts,
+    integrator::cuda::eval_collocation_petite( shells.size(), nbf, npts,
                                                shells_device, offs_device, 
                                                pts_device, 
                                                eval_device, stream );
@@ -321,10 +321,10 @@ void test_cuda_collocation_masked( const BasisSet<double>& basis, std::ifstream&
     safe_cuda_copy( offs.size(), offs_device, offs.data()  );
     
 
-    integrator::cuda::eval_collocation( mask.size(), nbf, npts,
-                                        shells_device, mask_device, 
-                                        offs_device, pts_device, 
-                                        eval_device, stream );
+    integrator::cuda::eval_collocation_masked( mask.size(), nbf, npts,
+                                               shells_device, mask_device, 
+                                               offs_device, pts_device, 
+                                               eval_device, stream );
 
     std::vector<double> eval( nbf * npts );
 
@@ -381,12 +381,12 @@ void test_cuda_collocation_deriv1_petite( const BasisSet<double>& basis, std::if
     for( auto idx : mask ) shells.emplace_back(basis[idx]);
     safe_cuda_copy( shells.size(), shells_device, shells.data() );
 
-    integrator::cuda::eval_collocation_deriv1( shells.size(), nbf, npts,
-                                               shells_device, offs_device, 
-                                               pts_device, 
-                                               eval_device, deval_device_x,
-                                               deval_device_y, deval_device_z,
-                                               stream );
+    integrator::cuda::eval_collocation_petite_deriv1( shells.size(), nbf, npts,
+                                                      shells_device, offs_device, 
+                                                      pts_device, 
+                                                      eval_device, deval_device_x,
+                                                      deval_device_y, deval_device_z,
+                                                      stream );
 
     std::vector<double> eval   ( nbf * npts ),
                         deval_x( nbf * npts ),
@@ -461,12 +461,12 @@ void test_cuda_collocation_deriv1_masked( const BasisSet<double>& basis, std::if
     safe_cuda_copy( offs.size(), offs_device, offs.data()  );
     
 
-    integrator::cuda::eval_collocation_deriv1( mask.size(), nbf, npts,
-                                               shells_device, mask_device,
-                                               offs_device, pts_device, 
-                                               eval_device, deval_device_x,
-                                               deval_device_y, deval_device_z,
-                                               stream );
+    integrator::cuda::eval_collocation_masked_deriv1( mask.size(), nbf, npts,
+                                                      shells_device, mask_device,
+                                                      offs_device, pts_device, 
+                                                      eval_device, deval_device_x,
+                                                      deval_device_y, deval_device_z,
+                                                      stream );
 
     std::vector<double> eval   ( nbf * npts ),
                         deval_x( nbf * npts ),

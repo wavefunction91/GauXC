@@ -5,7 +5,7 @@ namespace integrator {
 namespace cuda       {
 
 template <typename T>
-void eval_collocation(
+void eval_collocation_petite(
   size_t          nshells,
   size_t          nbf,
   size_t          npts,
@@ -17,7 +17,7 @@ void eval_collocation(
 );
 
 template <typename T>
-void eval_collocation(
+void eval_collocation_masked(
   size_t          nshells,
   size_t          nbf,
   size_t          npts,
@@ -30,7 +30,7 @@ void eval_collocation(
 );
 
 template <typename T>
-void eval_collocation_deriv1(
+void eval_collocation_petite_deriv1(
   size_t          nshells,
   size_t          nbf,
   size_t          npts,
@@ -45,7 +45,7 @@ void eval_collocation_deriv1(
 );
 
 template <typename T>
-void eval_collocation_deriv1(
+void eval_collocation_masked_deriv1(
   size_t          nshells,
   size_t          nbf,
   size_t          npts,

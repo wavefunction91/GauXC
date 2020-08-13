@@ -13,7 +13,7 @@ namespace cuda       {
 
 template <typename T>
 __global__
-void collocation_device_kernel(
+void collocation_device_petite_kernel(
   size_t          nshells,
   size_t          nbf,
   size_t          npts,
@@ -66,7 +66,7 @@ void collocation_device_kernel(
 
 template
 __global__
-void collocation_device_kernel(
+void collocation_device_petite_kernel(
   size_t               nshells,
   size_t               nbf,
   size_t               npts,
@@ -91,7 +91,7 @@ void collocation_device_kernel(
 
 template <typename T>
 __global__
-void collocation_device_kernel(
+void collocation_device_masked_kernel(
   size_t          nshells,
   size_t          nbf,
   size_t          npts,
@@ -145,7 +145,7 @@ void collocation_device_kernel(
 
 template
 __global__
-void collocation_device_kernel(
+void collocation_device_masked_kernel(
   size_t               nshells,
   size_t               nbf,
   size_t               npts,
@@ -172,7 +172,7 @@ void collocation_device_kernel(
 
 template <typename T>
 __global__
-void collocation_device_kernel_deriv1(
+void collocation_device_petite_kernel_deriv1(
   size_t          nshells,
   size_t          nbf,
   size_t          npts,
@@ -248,7 +248,7 @@ void collocation_device_kernel_deriv1(
 
 template
 __global__
-void collocation_device_kernel_deriv1(
+void collocation_device_petite_kernel_deriv1(
   size_t               nshells,
   size_t               nbf,
   size_t               npts,
@@ -274,7 +274,7 @@ void collocation_device_kernel_deriv1(
 
 template <typename T>
 __global__
-void collocation_device_kernel_deriv1(
+void collocation_device_masked_kernel_deriv1(
   size_t          nshells,
   size_t          nbf,
   size_t          npts,
@@ -351,7 +351,7 @@ void collocation_device_kernel_deriv1(
 
 template
 __global__
-void collocation_device_kernel_deriv1(
+void collocation_device_masked_kernel_deriv1(
   size_t               nshells,
   size_t               nbf,
   size_t               npts,
