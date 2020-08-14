@@ -1,7 +1,10 @@
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/xc_task.hpp>
 
 #include "collocation_petite_kernels.hpp"
 #include "collocation_masked_kernels.hpp"
+#include "collocation_petite_combined_kernels.hpp"
+#include "collocation_masked_combined_kernels.hpp"
 
 namespace GauXC      {
 namespace integrator {
@@ -91,9 +94,78 @@ void eval_collocation_masked(
 
 
 
+template <typename T>
+void eval_collocation_petite_combined(
+  size_t           ntasks,
+  size_t           npts_max,
+  size_t           nshells_max,
+  XCTaskDevice<T>* device_tasks,
+  cudaStream_t     stream
+) {
+
+  dim3 threads(32, 32, 1);
+  dim3 blocks( util::div_ceil( npts_max,    threads.x ),
+               util::div_ceil( nshells_max, threads.y ),
+               ntasks );
+
+  collocation_device_petite_combined_kernel<T>
+    <<<blocks, threads, 0, stream>>>
+    ( ntasks, device_tasks );
+     
+}
+
+template
+void eval_collocation_petite_combined(
+  size_t                ntasks,
+  size_t                npts_max,
+  size_t                nshells_max,
+  XCTaskDevice<double>* device_tasks,
+  cudaStream_t          stream
+);
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+template <typename T>
+void eval_collocation_masked_combined(
+  size_t           ntasks,
+  size_t           npts_max,
+  size_t           nshells_max,
+  Shell<T>*        shells_device,
+  XCTaskDevice<T>* device_tasks,
+  cudaStream_t     stream
+) {
+
+  dim3 threads(32, 32, 1);
+  dim3 blocks( util::div_ceil( npts_max,    threads.x ),
+               util::div_ceil( nshells_max, threads.y ),
+               ntasks );
+
+  collocation_device_masked_combined_kernel<T>
+    <<<blocks, threads, 0, stream>>>
+    ( ntasks, shells_device, device_tasks );
+     
+}
+
+template
+void eval_collocation_masked_combined(
+  size_t                ntasks,
+  size_t                npts_max,
+  size_t                nshells_max,
+  Shell<double>*        shells_device,
+  XCTaskDevice<double>* device_tasks,
+  cudaStream_t          stream
+);
 
 
 
@@ -205,6 +277,93 @@ void eval_collocation_masked_deriv1(
   double*              deval_device_z,
   cudaStream_t         stream
 );
+
+
+
+
+template <typename T>
+void eval_collocation_petite_combined_deriv1(
+  size_t           ntasks,
+  size_t           npts_max,
+  size_t           nshells_max,
+  XCTaskDevice<T>* device_tasks,
+  cudaStream_t     stream
+) {
+
+  dim3 threads(32, 32, 1);
+  dim3 blocks( util::div_ceil( npts_max,    threads.x ),
+               util::div_ceil( nshells_max, threads.y ),
+               ntasks );
+
+  collocation_device_petite_combined_kernel_deriv1<T>
+    <<<blocks, threads, 0, stream>>>
+    ( ntasks, device_tasks );
+     
+}
+
+template
+void eval_collocation_petite_combined_deriv1(
+  size_t                ntasks,
+  size_t                npts_max,
+  size_t                nshells_max,
+  XCTaskDevice<double>* device_tasks,
+  cudaStream_t          stream
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+template <typename T>
+void eval_collocation_masked_combined_deriv1(
+  size_t           ntasks,
+  size_t           npts_max,
+  size_t           nshells_max,
+  Shell<T>*        shells_device,
+  XCTaskDevice<T>* device_tasks,
+  cudaStream_t     stream
+) {
+
+  dim3 threads(32, 32, 1);
+  dim3 blocks( util::div_ceil( npts_max,    threads.x ),
+               util::div_ceil( nshells_max, threads.y ),
+               ntasks );
+
+  collocation_device_masked_combined_kernel_deriv1<T>
+    <<<blocks, threads, 0, stream>>>
+    ( ntasks, shells_device, device_tasks );
+     
+}
+
+template
+void eval_collocation_masked_combined_deriv1(
+  size_t                ntasks,
+  size_t                npts_max,
+  size_t                nshells_max,
+  Shell<double>*        shells_device,
+  XCTaskDevice<double>* device_tasks,
+  cudaStream_t          stream
+);
+
+
+
+
+
+
+
+
+
+
+
 
 
 } // namespace cuda
