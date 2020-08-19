@@ -1,16 +1,16 @@
 #pragma once
 #include <gauxc/xc_integrator/xc_integrator_impl.hpp>
-#include <gauxc/xc_integrator/xc_host_data.hpp>
-#include <gauxc/xc_integrator/xc_host_util.hpp>
+#include <gauxc/xc_integrator/xc_cuda_data.hpp>
+#include <gauxc/xc_integrator/xc_cuda_util.hpp>
 
 namespace GauXC  {
 namespace detail {
 
-using namespace GauXC::integrator::host;
+using namespace GauXC::integrator::cuda;
 
 
 template <typename MatrixType>
-class DefaultXCHostIntegrator : public XCIntegratorImpl<MatrixType> {
+class DefaultXCCudaIntegrator : public XCIntegratorImpl<MatrixType> {
 
   using base_type     = XCIntegratorImpl<MatrixType>;
   using matrix_type   = typename base_type::matrix_type;
@@ -18,20 +18,20 @@ class DefaultXCHostIntegrator : public XCIntegratorImpl<MatrixType> {
   using basisset_type = typename base_type::basisset_type;
   using exc_vxc_type  = typename base_type::exc_vxc_type;
     
-  std::shared_ptr< XCHostData< value_type > > host_data_;
+  std::shared_ptr< XCCudaData< value_type > > cuda_data_;
 
   exc_vxc_type eval_exc_vxc_( const MatrixType& ) override; 
 
 public:
 
   template <typename... Args>
-  DefaultXCHostIntegrator( Args&&... args ) :
+  DefaultXCCudaIntegrator( Args&&... args ) :
     base_type( std::forward<Args>(args)... ) { }
 
-  DefaultXCHostIntegrator( const DefaultXCHostIntegrator& ) = default;
-  DefaultXCHostIntegrator( DefaultXCHostIntegrator&& ) noexcept = default;
+  DefaultXCCudaIntegrator( const DefaultXCCudaIntegrator& ) = default;
+  DefaultXCCudaIntegrator( DefaultXCCudaIntegrator&& ) noexcept = default;
 
-  ~DefaultXCHostIntegrator() noexcept = default;
+  ~DefaultXCCudaIntegrator() noexcept = default;
 
 };
 
@@ -39,8 +39,16 @@ public:
 
 
 template <typename MatrixType>
-typename DefaultXCHostIntegrator<MatrixType>::exc_vxc_type 
-  DefaultXCHostIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P ) {
+typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type 
+  DefaultXCCudaIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P ) {
+
+
+  // Initialize MAGMA
+  {
+    auto ierr = magma_init();
+    GAUXC_MAGMA_ERROR( "MAGMA Init Failed", ierr );
+  }
+
 
   size_t nbf = this->basis_->nbf();
 
@@ -56,7 +64,7 @@ typename DefaultXCHostIntegrator<MatrixType>::exc_vxc_type
   size_t n_deriv = this->func_->is_gga() ? 1 : 0;
 
   // Allocate Memory
-  host_data_ = std::make_shared<XCHostData<value_type>>( 
+  cuda_data_ = std::make_shared<XCCudaData<value_type>>( 
     n_deriv, nbf, max_npts, max_npts_x_nbe 
   );
 
@@ -66,10 +74,10 @@ typename DefaultXCHostIntegrator<MatrixType>::exc_vxc_type
   value_type  EXC, N_EL;
 
   // Compute Local contributions to EXC / VXC
-  process_batches_host_replicated_p< value_type>(
+  process_batches_cuda_replicated_p< value_type>(
     n_deriv, XCWeightAlg::SSF, *this->func_, *this->basis_,
     this->load_balancer_->molecule(), this->load_balancer_->molmeta(),
-    *host_data_, tasks, P.data(), VXC.data(), &EXC, &N_EL 
+    *cuda_data_, tasks, P.data(), VXC.data(), &EXC, &N_EL 
   );
 
 
@@ -107,6 +115,11 @@ typename DefaultXCHostIntegrator<MatrixType>::exc_vxc_type
 
   }
 
+  // Finalize MAGMA
+  {
+    auto ierr = magma_finalize();
+    GAUXC_MAGMA_ERROR( "MAGMA Finalize Failed", ierr );
+  }
 
   return exc_vxc_type{EXC, std::move(VXC)};
 

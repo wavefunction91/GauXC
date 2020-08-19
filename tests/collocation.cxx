@@ -16,51 +16,9 @@
 
 #ifdef GAUXC_ENABLE_CUDA
 
+#include <gauxc/exceptions/cuda_exception.hpp>
+#include <gauxc/util/cuda_util.hpp>
 #include "cuda/collocation_device.hpp"
-template <typename T>
-inline T* safe_cuda_malloc( size_t n ) {
-
-  T* ptr;
-  auto stat = cudaMalloc( (void**)&ptr, n * sizeof(T) );
-  if( stat != cudaSuccess )
-    throw std::runtime_error(std::string("CUDA Malloc Failed: ") + 
-                             cudaGetErrorString(stat));
-
-  return ptr;
-}
-
-template <typename T>
-inline void safe_cuda_free( T*& ptr ) {
-  auto stat = cudaFree( (void*)ptr );
-  if( stat != cudaSuccess )
-    throw std::runtime_error(std::string("CUDA Free Failed: ") + 
-                             cudaGetErrorString(stat));
-  ptr = nullptr;
-}
-
-template <typename T, typename... Args>
-inline void safe_cuda_free( T*& ptr, Args&&... args ) {
-  safe_cuda_free(ptr);
-  safe_cuda_free(std::forward<Args>(args)...);
-}
-
-template <typename T>
-inline void safe_cuda_copy( size_t len, T* dest, const T* src ) {
-
-  auto stat = cudaMemcpy( dest, src, len * sizeof(T), cudaMemcpyDefault );
-  if( stat != cudaSuccess )
-    throw std::runtime_error(std::string("CUDA Memcpy Failed: ") + 
-                             cudaGetErrorString(stat));
-
-}
-
-inline void safe_cuda_device_sync() {
-  auto stat = cudaDeviceSynchronize();
-  if( stat != cudaSuccess )
-    throw std::runtime_error(std::string("CUDA Device Sync Failed: ") + 
-                             cudaGetErrorString(stat));
-
-}
 
 #endif
 
@@ -230,10 +188,10 @@ void test_cuda_collocation_petite( const BasisSet<double>& basis, std::ifstream&
     ar( ref_data );
   }
 
-  auto shells_device  = safe_cuda_malloc<Shell<double>>( basis.size() );
-  auto offs_device    = safe_cuda_malloc<size_t>( basis.size() );
-  auto pts_device     = safe_cuda_malloc<double>( 3 * MAX_NPTS_CHECK );
-  auto eval_device    = safe_cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
+  auto shells_device  = util::cuda_malloc<Shell<double>>( basis.size() );
+  auto offs_device    = util::cuda_malloc<size_t>( basis.size() );
+  auto pts_device     = util::cuda_malloc<double>( 3 * MAX_NPTS_CHECK );
+  auto eval_device    = util::cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
 
 
 
@@ -245,17 +203,17 @@ void test_cuda_collocation_petite( const BasisSet<double>& basis, std::ifstream&
     const auto& mask = d.mask;
     const auto& pts  = d.pts;
 
-    safe_cuda_copy( 3*npts, pts_device, pts.data()->data() );
+    util::cuda_copy( 3*npts, pts_device, pts.data()->data() );
 
     std::vector<size_t> offs( mask.size() );
     offs[0] = 0;
     for( int i = 1; i < mask.size(); ++i )
       offs[i] = offs[i-1] + basis[mask[i-1]].size();
-    safe_cuda_copy( offs.size(), offs_device, offs.data()  );
+    util::cuda_copy( offs.size(), offs_device, offs.data()  );
     
     std::vector<Shell<double>> shells;
     for( auto idx : mask ) shells.emplace_back(basis[idx]);
-    safe_cuda_copy( shells.size(), shells_device, shells.data() );
+    util::cuda_copy( shells.size(), shells_device, shells.data() );
 
     integrator::cuda::eval_collocation_petite( shells.size(), nbf, npts,
                                                shells_device, offs_device, 
@@ -264,14 +222,14 @@ void test_cuda_collocation_petite( const BasisSet<double>& basis, std::ifstream&
 
     std::vector<double> eval( nbf * npts );
 
-    safe_cuda_copy( nbf * npts, eval.data(),    eval_device    );
+    util::cuda_copy( nbf * npts, eval.data(),    eval_device    );
   
     for( auto i = 0; i < npts * nbf; ++i )
       CHECK( eval[i] == Approx( d.eval[i] ) );
 
   }
-  safe_cuda_device_sync();
-  safe_cuda_free(shells_device, offs_device, pts_device, eval_device );
+  util::cuda_device_sync();
+  util::cuda_free(shells_device, offs_device, pts_device, eval_device );
 
 }
 
@@ -289,15 +247,15 @@ void test_cuda_collocation_masked( const BasisSet<double>& basis, std::ifstream&
     ar( ref_data );
   }
 
-  auto shells_device  = safe_cuda_malloc<Shell<double>>( basis.size() );
-  auto offs_device    = safe_cuda_malloc<size_t>( basis.size() );
-  auto mask_device    = safe_cuda_malloc<size_t>( basis.size() );
-  auto pts_device     = safe_cuda_malloc<double>( 3 * MAX_NPTS_CHECK );
-  auto eval_device    = safe_cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
+  auto shells_device  = util::cuda_malloc<Shell<double>>( basis.size() );
+  auto offs_device    = util::cuda_malloc<size_t>( basis.size() );
+  auto mask_device    = util::cuda_malloc<size_t>( basis.size() );
+  auto pts_device     = util::cuda_malloc<double>( 3 * MAX_NPTS_CHECK );
+  auto eval_device    = util::cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
 
 
   std::vector<Shell<double>> shells( basis );
-  safe_cuda_copy( basis.size(), shells_device, shells.data() );
+  util::cuda_copy( basis.size(), shells_device, shells.data() );
 
 
   cudaStream_t stream = 0;
@@ -308,17 +266,17 @@ void test_cuda_collocation_masked( const BasisSet<double>& basis, std::ifstream&
     const auto& mask = d.mask;
     const auto& pts  = d.pts;
 
-    safe_cuda_copy( 3*npts, pts_device, pts.data()->data() );
+    util::cuda_copy( 3*npts, pts_device, pts.data()->data() );
 
     std::vector<size_t> mask_ul( mask.size() );
     std::copy( mask.begin(), mask.end(), mask_ul.begin() );
-    safe_cuda_copy( mask.size(), mask_device, mask_ul.data() );
+    util::cuda_copy( mask.size(), mask_device, mask_ul.data() );
 
     std::vector<size_t> offs( mask.size() );
     offs[0] = 0;
     for( int i = 1; i < mask.size(); ++i )
       offs[i] = offs[i-1] + basis[mask[i-1]].size();
-    safe_cuda_copy( offs.size(), offs_device, offs.data()  );
+    util::cuda_copy( offs.size(), offs_device, offs.data()  );
     
 
     integrator::cuda::eval_collocation_masked( mask.size(), nbf, npts,
@@ -328,14 +286,14 @@ void test_cuda_collocation_masked( const BasisSet<double>& basis, std::ifstream&
 
     std::vector<double> eval( nbf * npts );
 
-    safe_cuda_copy( nbf * npts, eval.data(),    eval_device    );
+    util::cuda_copy( nbf * npts, eval.data(),    eval_device    );
   
     for( auto i = 0; i < npts * nbf; ++i )
       CHECK( eval[i] == Approx( d.eval[i] ) );
 
   }
-  safe_cuda_device_sync();
-  safe_cuda_free(shells_device, offs_device, pts_device, eval_device );
+  util::cuda_device_sync();
+  util::cuda_free(shells_device, offs_device, pts_device, eval_device );
 
 }
 
@@ -383,27 +341,27 @@ void test_cuda_collocation_petite_combined( const BasisSet<double>& basis, std::
     task.npts    = npts;
     task.nshells = mask.size();
 
-    task.points     = safe_cuda_malloc<double>( 3 * npts );
-    task.shell_offs = safe_cuda_malloc<size_t>( mask.size() );
-    task.shells     = safe_cuda_malloc<Shell<double>>(mask.size());
-    task.bf         = safe_cuda_malloc<double>( nbf * npts );
+    task.points     = util::cuda_malloc<double>( 3 * npts );
+    task.shell_offs = util::cuda_malloc<size_t>( mask.size() );
+    task.shells     = util::cuda_malloc<Shell<double>>(mask.size());
+    task.bf         = util::cuda_malloc<double>( nbf * npts );
 
     auto* pts_device = task.points;
     auto* offs_device = task.shell_offs;
     auto* shells_device = task.shells;
     
 
-    safe_cuda_copy( 3*npts, pts_device, pts.data()->data() );
+    util::cuda_copy( 3*npts, pts_device, pts.data()->data() );
 
     std::vector<size_t> offs( mask.size() );
     offs[0] = 0;
     for( int i = 1; i < mask.size(); ++i )
       offs[i] = offs[i-1] + basis[mask[i-1]].size();
-    safe_cuda_copy( offs.size(), offs_device, offs.data()  );
+    util::cuda_copy( offs.size(), offs_device, offs.data()  );
     
     std::vector<Shell<double>> shells;
     for( auto idx : mask ) shells.emplace_back(basis[idx]);
-    safe_cuda_copy( shells.size(), shells_device, shells.data() );
+    util::cuda_copy( shells.size(), shells_device, shells.data() );
 
 
   }
@@ -419,20 +377,20 @@ void test_cuda_collocation_petite_combined( const BasisSet<double>& basis, std::
       return a.npts < b.npts;
     })->npts;
 
-  auto* tasks_device = safe_cuda_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
-  safe_cuda_copy( tasks.size(), tasks_device, tasks.data() );
+  auto* tasks_device = util::cuda_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
+  util::cuda_copy( tasks.size(), tasks_device, tasks.data() );
   
   integrator::cuda::eval_collocation_petite_combined( tasks.size(), npts_max,
     nshells_max, tasks_device, stream );
 
-  safe_cuda_device_sync();
+  util::cuda_device_sync();
 
 
   for( int i = 0; i < tasks.size(); i++ ) {
 
     auto* ref_eval = ref_data[i].eval.data();
     std::vector<double> eval (tasks[i].nbe * tasks[i].npts);
-    safe_cuda_copy( eval.size(), eval.data(), tasks[i].bf );
+    util::cuda_copy( eval.size(), eval.data(), tasks[i].bf );
 
     for( auto i = 0; i < eval.size(); ++i )
       CHECK( eval[i] == Approx( ref_eval[i] ) );
@@ -440,9 +398,9 @@ void test_cuda_collocation_petite_combined( const BasisSet<double>& basis, std::
 
 
   for( auto& t : tasks ) {
-    safe_cuda_free( t.points, t.shell_offs, t.shells, t.bf );
+    util::cuda_free( t.points, t.shell_offs, t.shells, t.bf );
   }
-  safe_cuda_free( tasks_device );
+  util::cuda_free( tasks_device );
 }
 
 
@@ -460,9 +418,9 @@ void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::
 
   std::vector< cuda::XCTaskDevice<double> > tasks;
 
-  auto shells_device  = safe_cuda_malloc<Shell<double>>( basis.size() );
+  auto shells_device  = util::cuda_malloc<Shell<double>>( basis.size() );
   std::vector<Shell<double>> shells( basis );
-  safe_cuda_copy( basis.size(), shells_device, shells.data() );
+  util::cuda_copy( basis.size(), shells_device, shells.data() );
 
   cudaStream_t stream = 0;
   for( auto& d : ref_data ) {
@@ -479,27 +437,27 @@ void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::
     task.npts    = npts;
     task.nshells = mask.size();
 
-    task.points     = safe_cuda_malloc<double>( 3 * npts );
-    task.shell_offs = safe_cuda_malloc<size_t>( mask.size() );
-    task.shell_list = safe_cuda_malloc<size_t>( mask.size() );
-    task.bf         = safe_cuda_malloc<double>( nbf * npts );
+    task.points     = util::cuda_malloc<double>( 3 * npts );
+    task.shell_offs = util::cuda_malloc<size_t>( mask.size() );
+    task.shell_list = util::cuda_malloc<size_t>( mask.size() );
+    task.bf         = util::cuda_malloc<double>( nbf * npts );
 
     auto* pts_device = task.points;
     auto* offs_device = task.shell_offs;
     auto* mask_device = task.shell_list;
     
 
-    safe_cuda_copy( 3*npts, pts_device, pts.data()->data() );
+    util::cuda_copy( 3*npts, pts_device, pts.data()->data() );
 
     std::vector<size_t> mask_ul( mask.size() );
     std::copy( mask.begin(), mask.end(), mask_ul.begin() );
-    safe_cuda_copy( mask.size(), mask_device, mask_ul.data() );
+    util::cuda_copy( mask.size(), mask_device, mask_ul.data() );
 
     std::vector<size_t> offs( mask.size() );
     offs[0] = 0;
     for( int i = 1; i < mask.size(); ++i )
       offs[i] = offs[i-1] + basis[mask[i-1]].size();
-    safe_cuda_copy( offs.size(), offs_device, offs.data()  );
+    util::cuda_copy( offs.size(), offs_device, offs.data()  );
 
 
   }
@@ -515,20 +473,20 @@ void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::
       return a.npts < b.npts;
     })->npts;
 
-  auto* tasks_device = safe_cuda_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
-  safe_cuda_copy( tasks.size(), tasks_device, tasks.data() );
+  auto* tasks_device = util::cuda_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
+  util::cuda_copy( tasks.size(), tasks_device, tasks.data() );
   
   integrator::cuda::eval_collocation_masked_combined( tasks.size(), npts_max,
     nshells_max, shells_device, tasks_device, stream );
 
-  safe_cuda_device_sync();
+  util::cuda_device_sync();
 
 
   for( int i = 0; i < tasks.size(); i++ ) {
 
     auto* ref_eval = ref_data[i].eval.data();
     std::vector<double> eval (tasks[i].nbe * tasks[i].npts);
-    safe_cuda_copy( eval.size(), eval.data(), tasks[i].bf );
+    util::cuda_copy( eval.size(), eval.data(), tasks[i].bf );
 
     for( auto i = 0; i < eval.size(); ++i )
       CHECK( eval[i] == Approx( ref_eval[i] ) );
@@ -536,9 +494,9 @@ void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::
 
 
   for( auto& t : tasks ) {
-    safe_cuda_free( t.points, t.shell_offs, t.shell_list, t.bf );
+    util::cuda_free( t.points, t.shell_offs, t.shell_list, t.bf );
   }
-  safe_cuda_free( tasks_device, shells_device );
+  util::cuda_free( tasks_device, shells_device );
 }
 
 
@@ -570,13 +528,13 @@ void test_cuda_collocation_deriv1_petite( const BasisSet<double>& basis, std::if
     ar( ref_data );
   }
 
-  auto shells_device  = safe_cuda_malloc<Shell<double>>( basis.size() );
-  auto offs_device    = safe_cuda_malloc<size_t>( basis.size() );
-  auto pts_device     = safe_cuda_malloc<double>( 3 * MAX_NPTS_CHECK );
-  auto eval_device    = safe_cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
-  auto deval_device_x = safe_cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
-  auto deval_device_y = safe_cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
-  auto deval_device_z = safe_cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
+  auto shells_device  = util::cuda_malloc<Shell<double>>( basis.size() );
+  auto offs_device    = util::cuda_malloc<size_t>( basis.size() );
+  auto pts_device     = util::cuda_malloc<double>( 3 * MAX_NPTS_CHECK );
+  auto eval_device    = util::cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
+  auto deval_device_x = util::cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
+  auto deval_device_y = util::cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
+  auto deval_device_z = util::cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
 
 
 
@@ -588,17 +546,17 @@ void test_cuda_collocation_deriv1_petite( const BasisSet<double>& basis, std::if
     const auto& mask = d.mask;
     const auto& pts  = d.pts;
 
-    safe_cuda_copy( 3*npts, pts_device, pts.data()->data() );
+    util::cuda_copy( 3*npts, pts_device, pts.data()->data() );
 
     std::vector<size_t> offs( mask.size() );
     offs[0] = 0;
     for( int i = 1; i < mask.size(); ++i )
       offs[i] = offs[i-1] + basis[mask[i-1]].size();
-    safe_cuda_copy( offs.size(), offs_device, offs.data()  );
+    util::cuda_copy( offs.size(), offs_device, offs.data()  );
     
     std::vector<Shell<double>> shells;
     for( auto idx : mask ) shells.emplace_back(basis[idx]);
-    safe_cuda_copy( shells.size(), shells_device, shells.data() );
+    util::cuda_copy( shells.size(), shells_device, shells.data() );
 
     integrator::cuda::eval_collocation_petite_deriv1( shells.size(), nbf, npts,
                                                       shells_device, offs_device, 
@@ -612,10 +570,10 @@ void test_cuda_collocation_deriv1_petite( const BasisSet<double>& basis, std::if
                         deval_y( nbf * npts ),
                         deval_z( nbf * npts );
 
-    safe_cuda_copy( nbf * npts, eval.data(),    eval_device    );
-    safe_cuda_copy( nbf * npts, deval_x.data(), deval_device_x );
-    safe_cuda_copy( nbf * npts, deval_y.data(), deval_device_y );
-    safe_cuda_copy( nbf * npts, deval_z.data(), deval_device_z );
+    util::cuda_copy( nbf * npts, eval.data(),    eval_device    );
+    util::cuda_copy( nbf * npts, deval_x.data(), deval_device_x );
+    util::cuda_copy( nbf * npts, deval_y.data(), deval_device_y );
+    util::cuda_copy( nbf * npts, deval_z.data(), deval_device_z );
   
     for( auto i = 0; i < npts * nbf; ++i )
       CHECK( eval[i] == Approx( d.eval[i] ) );
@@ -627,8 +585,8 @@ void test_cuda_collocation_deriv1_petite( const BasisSet<double>& basis, std::if
       CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
 
   }
-  safe_cuda_device_sync();
-  safe_cuda_free(shells_device, offs_device, pts_device, eval_device,
+  util::cuda_device_sync();
+  util::cuda_free(shells_device, offs_device, pts_device, eval_device,
                  deval_device_x, deval_device_y, deval_device_z);
 }
 
@@ -646,18 +604,18 @@ void test_cuda_collocation_deriv1_masked( const BasisSet<double>& basis, std::if
     ar( ref_data );
   }
 
-  auto shells_device  = safe_cuda_malloc<Shell<double>>( basis.size() );
-  auto offs_device    = safe_cuda_malloc<size_t>( basis.size() );
-  auto mask_device    = safe_cuda_malloc<size_t>( basis.size() );
-  auto pts_device     = safe_cuda_malloc<double>( 3 * MAX_NPTS_CHECK );
-  auto eval_device    = safe_cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
-  auto deval_device_x = safe_cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
-  auto deval_device_y = safe_cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
-  auto deval_device_z = safe_cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
+  auto shells_device  = util::cuda_malloc<Shell<double>>( basis.size() );
+  auto offs_device    = util::cuda_malloc<size_t>( basis.size() );
+  auto mask_device    = util::cuda_malloc<size_t>( basis.size() );
+  auto pts_device     = util::cuda_malloc<double>( 3 * MAX_NPTS_CHECK );
+  auto eval_device    = util::cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
+  auto deval_device_x = util::cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
+  auto deval_device_y = util::cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
+  auto deval_device_z = util::cuda_malloc<double>( basis.nbf() * MAX_NPTS_CHECK );
 
 
   std::vector<Shell<double>> shells( basis );
-  safe_cuda_copy( basis.size(), shells_device, shells.data() );
+  util::cuda_copy( basis.size(), shells_device, shells.data() );
 
   cudaStream_t stream = 0;
   for( auto& d : ref_data ) {
@@ -667,17 +625,17 @@ void test_cuda_collocation_deriv1_masked( const BasisSet<double>& basis, std::if
     const auto& mask = d.mask;
     const auto& pts  = d.pts;
 
-    safe_cuda_copy( 3*npts, pts_device, pts.data()->data() );
+    util::cuda_copy( 3*npts, pts_device, pts.data()->data() );
 
     std::vector<size_t> mask_ul( mask.size() );
     std::copy( mask.begin(), mask.end(), mask_ul.begin() );
-    safe_cuda_copy( mask.size(), mask_device, mask_ul.data() );
+    util::cuda_copy( mask.size(), mask_device, mask_ul.data() );
 
     std::vector<size_t> offs( mask.size() );
     offs[0] = 0;
     for( int i = 1; i < mask.size(); ++i )
       offs[i] = offs[i-1] + basis[mask[i-1]].size();
-    safe_cuda_copy( offs.size(), offs_device, offs.data()  );
+    util::cuda_copy( offs.size(), offs_device, offs.data()  );
     
 
     integrator::cuda::eval_collocation_masked_deriv1( mask.size(), nbf, npts,
@@ -692,10 +650,10 @@ void test_cuda_collocation_deriv1_masked( const BasisSet<double>& basis, std::if
                         deval_y( nbf * npts ),
                         deval_z( nbf * npts );
 
-    safe_cuda_copy( nbf * npts, eval.data(),    eval_device    );
-    safe_cuda_copy( nbf * npts, deval_x.data(), deval_device_x );
-    safe_cuda_copy( nbf * npts, deval_y.data(), deval_device_y );
-    safe_cuda_copy( nbf * npts, deval_z.data(), deval_device_z );
+    util::cuda_copy( nbf * npts, eval.data(),    eval_device    );
+    util::cuda_copy( nbf * npts, deval_x.data(), deval_device_x );
+    util::cuda_copy( nbf * npts, deval_y.data(), deval_device_y );
+    util::cuda_copy( nbf * npts, deval_z.data(), deval_device_z );
   
     for( auto i = 0; i < npts * nbf; ++i )
       CHECK( eval[i] == Approx( d.eval[i] ) );
@@ -707,8 +665,8 @@ void test_cuda_collocation_deriv1_masked( const BasisSet<double>& basis, std::if
       CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
 
   }
-  safe_cuda_device_sync();
-  safe_cuda_free(shells_device, offs_device, pts_device, eval_device,
+  util::cuda_device_sync();
+  util::cuda_free(shells_device, offs_device, pts_device, eval_device,
                  deval_device_x, deval_device_y, deval_device_z);
 }
 
@@ -748,30 +706,30 @@ void test_cuda_collocation_petite_combined_deriv1( const BasisSet<double>& basis
     task.npts    = npts;
     task.nshells = mask.size();
 
-    task.points     = safe_cuda_malloc<double>( 3 * npts );
-    task.shell_offs = safe_cuda_malloc<size_t>( mask.size() );
-    task.shells     = safe_cuda_malloc<Shell<double>>(mask.size());
-    task.bf         = safe_cuda_malloc<double>( nbf * npts );
-    task.dbfx       = safe_cuda_malloc<double>( nbf * npts );
-    task.dbfy       = safe_cuda_malloc<double>( nbf * npts );
-    task.dbfz       = safe_cuda_malloc<double>( nbf * npts );
+    task.points     = util::cuda_malloc<double>( 3 * npts );
+    task.shell_offs = util::cuda_malloc<size_t>( mask.size() );
+    task.shells     = util::cuda_malloc<Shell<double>>(mask.size());
+    task.bf         = util::cuda_malloc<double>( nbf * npts );
+    task.dbfx       = util::cuda_malloc<double>( nbf * npts );
+    task.dbfy       = util::cuda_malloc<double>( nbf * npts );
+    task.dbfz       = util::cuda_malloc<double>( nbf * npts );
 
     auto* pts_device = task.points;
     auto* offs_device = task.shell_offs;
     auto* shells_device = task.shells;
     
 
-    safe_cuda_copy( 3*npts, pts_device, pts.data()->data() );
+    util::cuda_copy( 3*npts, pts_device, pts.data()->data() );
 
     std::vector<size_t> offs( mask.size() );
     offs[0] = 0;
     for( int i = 1; i < mask.size(); ++i )
       offs[i] = offs[i-1] + basis[mask[i-1]].size();
-    safe_cuda_copy( offs.size(), offs_device, offs.data()  );
+    util::cuda_copy( offs.size(), offs_device, offs.data()  );
     
     std::vector<Shell<double>> shells;
     for( auto idx : mask ) shells.emplace_back(basis[idx]);
-    safe_cuda_copy( shells.size(), shells_device, shells.data() );
+    util::cuda_copy( shells.size(), shells_device, shells.data() );
 
 
   }
@@ -787,13 +745,13 @@ void test_cuda_collocation_petite_combined_deriv1( const BasisSet<double>& basis
       return a.npts < b.npts;
     })->npts;
 
-  auto* tasks_device = safe_cuda_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
-  safe_cuda_copy( tasks.size(), tasks_device, tasks.data() );
+  auto* tasks_device = util::cuda_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
+  util::cuda_copy( tasks.size(), tasks_device, tasks.data() );
   
   integrator::cuda::eval_collocation_petite_combined_deriv1( tasks.size(), npts_max,
     nshells_max, tasks_device, stream );
 
-  safe_cuda_device_sync();
+  util::cuda_device_sync();
 
 
   for( int i = 0; i < tasks.size(); i++ ) {
@@ -808,10 +766,10 @@ void test_cuda_collocation_petite_combined_deriv1( const BasisSet<double>& basis
     std::vector<double> deval_y (tasks[i].nbe * tasks[i].npts);
     std::vector<double> deval_z (tasks[i].nbe * tasks[i].npts);
 
-    safe_cuda_copy( eval.size(), eval.data(), tasks[i].bf );
-    safe_cuda_copy( eval.size(), deval_x.data(), tasks[i].dbfx );
-    safe_cuda_copy( eval.size(), deval_y.data(), tasks[i].dbfy );
-    safe_cuda_copy( eval.size(), deval_z.data(), tasks[i].dbfz );
+    util::cuda_copy( eval.size(), eval.data(), tasks[i].bf );
+    util::cuda_copy( eval.size(), deval_x.data(), tasks[i].dbfx );
+    util::cuda_copy( eval.size(), deval_y.data(), tasks[i].dbfy );
+    util::cuda_copy( eval.size(), deval_z.data(), tasks[i].dbfz );
 
     for( auto i = 0; i < eval.size(); ++i )
       CHECK( eval[i] == Approx( ref_eval[i] ) );
@@ -825,10 +783,10 @@ void test_cuda_collocation_petite_combined_deriv1( const BasisSet<double>& basis
 
 
   for( auto& t : tasks ) {
-    safe_cuda_free( t.points, t.shell_offs, t.shells, t.bf, t.dbfx, t.dbfy, 
+    util::cuda_free( t.points, t.shell_offs, t.shells, t.bf, t.dbfx, t.dbfy, 
       t.dbfz );
   }
-  safe_cuda_free( tasks_device );
+  util::cuda_free( tasks_device );
 }
 
 
@@ -846,9 +804,9 @@ void test_cuda_collocation_masked_combined_deriv1( const BasisSet<double>& basis
 
   std::vector< cuda::XCTaskDevice<double> > tasks;
 
-  auto shells_device  = safe_cuda_malloc<Shell<double>>( basis.size() );
+  auto shells_device  = util::cuda_malloc<Shell<double>>( basis.size() );
   std::vector<Shell<double>> shells( basis );
-  safe_cuda_copy( basis.size(), shells_device, shells.data() );
+  util::cuda_copy( basis.size(), shells_device, shells.data() );
 
   cudaStream_t stream = 0;
   for( auto& d : ref_data ) {
@@ -865,13 +823,13 @@ void test_cuda_collocation_masked_combined_deriv1( const BasisSet<double>& basis
     task.npts    = npts;
     task.nshells = mask.size();
 
-    task.points     = safe_cuda_malloc<double>( 3 * npts );
-    task.shell_offs = safe_cuda_malloc<size_t>( mask.size() );
-    task.shell_list = safe_cuda_malloc<size_t>( mask.size() );
-    task.bf         = safe_cuda_malloc<double>( nbf * npts );
-    task.dbfx       = safe_cuda_malloc<double>( nbf * npts );
-    task.dbfy       = safe_cuda_malloc<double>( nbf * npts );
-    task.dbfz       = safe_cuda_malloc<double>( nbf * npts );
+    task.points     = util::cuda_malloc<double>( 3 * npts );
+    task.shell_offs = util::cuda_malloc<size_t>( mask.size() );
+    task.shell_list = util::cuda_malloc<size_t>( mask.size() );
+    task.bf         = util::cuda_malloc<double>( nbf * npts );
+    task.dbfx       = util::cuda_malloc<double>( nbf * npts );
+    task.dbfy       = util::cuda_malloc<double>( nbf * npts );
+    task.dbfz       = util::cuda_malloc<double>( nbf * npts );
 
 
     auto* pts_device = task.points;
@@ -879,17 +837,17 @@ void test_cuda_collocation_masked_combined_deriv1( const BasisSet<double>& basis
     auto* mask_device = task.shell_list;
     
 
-    safe_cuda_copy( 3*npts, pts_device, pts.data()->data() );
+    util::cuda_copy( 3*npts, pts_device, pts.data()->data() );
 
     std::vector<size_t> mask_ul( mask.size() );
     std::copy( mask.begin(), mask.end(), mask_ul.begin() );
-    safe_cuda_copy( mask.size(), mask_device, mask_ul.data() );
+    util::cuda_copy( mask.size(), mask_device, mask_ul.data() );
 
     std::vector<size_t> offs( mask.size() );
     offs[0] = 0;
     for( int i = 1; i < mask.size(); ++i )
       offs[i] = offs[i-1] + basis[mask[i-1]].size();
-    safe_cuda_copy( offs.size(), offs_device, offs.data()  );
+    util::cuda_copy( offs.size(), offs_device, offs.data()  );
 
 
   }
@@ -905,13 +863,13 @@ void test_cuda_collocation_masked_combined_deriv1( const BasisSet<double>& basis
       return a.npts < b.npts;
     })->npts;
 
-  auto* tasks_device = safe_cuda_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
-  safe_cuda_copy( tasks.size(), tasks_device, tasks.data() );
+  auto* tasks_device = util::cuda_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
+  util::cuda_copy( tasks.size(), tasks_device, tasks.data() );
   
   integrator::cuda::eval_collocation_masked_combined_deriv1( tasks.size(), npts_max,
     nshells_max, shells_device, tasks_device, stream );
 
-  safe_cuda_device_sync();
+  util::cuda_device_sync();
 
 
   for( int i = 0; i < tasks.size(); i++ ) {
@@ -926,10 +884,10 @@ void test_cuda_collocation_masked_combined_deriv1( const BasisSet<double>& basis
     std::vector<double> deval_y (tasks[i].nbe * tasks[i].npts);
     std::vector<double> deval_z (tasks[i].nbe * tasks[i].npts);
 
-    safe_cuda_copy( eval.size(), eval.data(), tasks[i].bf );
-    safe_cuda_copy( eval.size(), deval_x.data(), tasks[i].dbfx );
-    safe_cuda_copy( eval.size(), deval_y.data(), tasks[i].dbfy );
-    safe_cuda_copy( eval.size(), deval_z.data(), tasks[i].dbfz );
+    util::cuda_copy( eval.size(), eval.data(), tasks[i].bf );
+    util::cuda_copy( eval.size(), deval_x.data(), tasks[i].dbfx );
+    util::cuda_copy( eval.size(), deval_y.data(), tasks[i].dbfy );
+    util::cuda_copy( eval.size(), deval_z.data(), tasks[i].dbfz );
 
     for( auto i = 0; i < eval.size(); ++i )
       CHECK( eval[i] == Approx( ref_eval[i] ) );
@@ -943,10 +901,10 @@ void test_cuda_collocation_masked_combined_deriv1( const BasisSet<double>& basis
 
 
   for( auto& t : tasks ) {
-    safe_cuda_free( t.points, t.shell_offs, t.shell_list, t.bf, t.dbfx, t.dbfy, 
+    util::cuda_free( t.points, t.shell_offs, t.shell_list, t.bf, t.dbfx, t.dbfy, 
       t.dbfz );
   }
-  safe_cuda_free( tasks_device, shells_device );
+  util::cuda_free( tasks_device, shells_device );
 }
 #endif
 
@@ -966,9 +924,12 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
   for( auto& sh : basis ) sh.set_shell_tolerance( 1e-6 );
 
 #ifdef GENERATE_TESTS
+
   std::ofstream ref_data( "water_cc-pVDZ_collocation.bin", std::ios::binary );
   generate_collocation_data( mol, basis, ref_data );  
+
 #else
+
   std::ifstream ref_data( GAUXC_REF_DATA_PATH "/water_cc-pVDZ_collocation.bin", 
                           std::ios::binary );
 
