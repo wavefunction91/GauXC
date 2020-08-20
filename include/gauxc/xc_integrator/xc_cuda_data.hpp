@@ -2,7 +2,8 @@
 #include <vector>
 #include <cstdint>
 #include <memory>
-#include <gauxc/shell.hpp>
+#include <gauxc/basisset.hpp>
+#include <gauxc/xc_task.hpp>
 
 #include <gauxc/gauxc_config.hpp>
 #include <gauxc/util/cuda_util.hpp>
@@ -80,6 +81,7 @@ struct XCCudaData {
   int32_t*     iparent_device_buffer    = nullptr;
   F*           dist_nearest_buffer      = nullptr;
 
+  cuda::XCTaskDevice<F>* device_tasks  = nullptr;
 
   // Execution management
   std::unique_ptr<util::cuda_stream>   master_stream      = nullptr;
@@ -97,6 +99,15 @@ struct XCCudaData {
   XCCudaData( const XCCudaData& )          = delete;
   XCCudaData( XCCudaData&&      ) noexcept = delete;
 
+
+  using task_iterator = std::vector< XCTask >::iterator;
+  using device_task_container = std::vector< cuda::XCTaskDevice<F> >;
+
+  std::tuple< task_iterator, device_task_container >
+    generate_buffers( const BasisSet<F>& basis,
+                      task_iterator      task_begin,
+                      task_iterator      task_end    );
+ 
 };
 
 }

@@ -69,15 +69,16 @@ inline void cuda_free( T*& ptr, Args&&... args ) {
 
 
 template <typename T>
-inline void cuda_copy( size_t len, T* dest, const T* src ) {
+inline void cuda_copy( size_t len, T* dest, const T* src, std::string m = "") {
   auto stat = cudaMemcpy( dest, src, len * sizeof(T), cudaMemcpyDefault );
-  GAUXC_CUDA_ERROR( "CUDA Memcpy Failed", stat );
+  GAUXC_CUDA_ERROR( "CUDA Memcpy Failed ["+m+"]", stat );
 }
 
 template <typename T>
-inline void cuda_copy_async( size_t len, T* dest, const T* src, cudaStream_t s ) {
+inline void cuda_copy_async( size_t len, T* dest, const T* src, cudaStream_t s,
+                             std::string m = "" ) {
   auto stat = cudaMemcpyAsync( dest, src, len * sizeof(T), cudaMemcpyDefault, s );
-  GAUXC_CUDA_ERROR( "CUDA Memcpy Async Failed", stat );
+  GAUXC_CUDA_ERROR( "CUDA Memcpy Async Failed ["+m+"]", stat );
 }
 
 
