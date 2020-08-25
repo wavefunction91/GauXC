@@ -31,7 +31,12 @@ target_include_directories( gauxc
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
 )
 
-add_subdirectory( integrator )
+target_compile_options( gauxc
+  PRIVATE
+    $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wpedantic -Wnon-virtual-dtor>
+)
+
+
 
 configure_file( 
   ${PROJECT_SOURCE_DIR}/include/gauxc/gauxc_config.hpp.in
@@ -50,3 +55,4 @@ if( GAUXC_ENABLE_CEREAL )
   target_link_libraries( gauxc PUBLIC cereal )
 endif()
 
+add_subdirectory( integrator )

@@ -5,7 +5,7 @@
 #include <string>
 #include <sstream>
 
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_ENABLE_CUDA
 
 namespace GauXC {
 

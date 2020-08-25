@@ -12,7 +12,7 @@ XCIntegrator<MatrixType>::XCIntegrator( std::unique_ptr<pimpl_type>&& pimpl ) :
 template <typename MatrixType>
 XCIntegrator<MatrixType>::XCIntegrator( MPI_Comm comm, const functional_type& func, 
   const basisset_type& basis, std::shared_ptr<LoadBalancer> lb) :
-  XCIntegrator( detail::make_default_host_integrator<MatrixType>(
+  XCIntegrator( detail::make_default_cuda_integrator<MatrixType>(
     comm,
     std::make_shared<functional_type>(func),
     std::make_shared<basisset_type>(basis),

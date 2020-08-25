@@ -1,4 +1,5 @@
 #pragma once
+#include <gauxc/gauxc_config.hpp>
 #include <gauxc/xc_integrator/xc_integrator_impl.hpp>
 #include <gauxc/xc_integrator/xc_cuda_data.hpp>
 #include <gauxc/xc_integrator/xc_cuda_util.hpp>
