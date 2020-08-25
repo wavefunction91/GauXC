@@ -34,6 +34,10 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
   stat = cudaMalloc( &device_ptr, fill_sz );
   GAUXC_CUDA_ERROR( "CUDA Malloc Failed", stat );
 
+  //std::cout << "NS = " << nshells << ", NA = " << natoms << ", NBF = " << nbf << std::endl;
+
+  //std::cout << "XCDeviceData has allocated " << fill_sz << " bytes of data"
+  //          << std::endl;
   // Allocate static memory with proper alignment
   buffer_adaptor mem( device_ptr, fill_sz );
 

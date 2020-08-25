@@ -51,22 +51,28 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
   }
 
 
-  size_t nbf = this->basis_->nbf();
+  size_t nbf     = this->basis_->nbf();
+  size_t nshells = this->basis_->size();
 
   //// TODO: Check that P is sane
 
 
   auto& tasks = this->load_balancer_->get_tasks();
 
-  size_t max_npts       = this->load_balancer_->max_npts();
-  size_t max_nbe        = this->load_balancer_->max_nbe();
-  size_t max_npts_x_nbe = this->load_balancer_->max_npts_x_nbe();
+  //size_t max_npts       = this->load_balancer_->max_npts();
+  //size_t max_nbe        = this->load_balancer_->max_nbe();
+  //size_t max_npts_x_nbe = this->load_balancer_->max_npts_x_nbe();
 
   size_t n_deriv = this->func_->is_gga() ? 1 : 0;
 
   // Allocate Memory
   cuda_data_ = std::make_shared<XCCudaData<value_type>>( 
-    n_deriv, nbf, max_npts, max_npts_x_nbe 
+    this->load_balancer_->molecule().size(),
+    n_deriv,
+    nbf,
+    nshells,
+    false,
+    false 
   );
 
 

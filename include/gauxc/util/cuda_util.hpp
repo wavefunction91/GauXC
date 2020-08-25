@@ -82,6 +82,12 @@ inline void cuda_copy_async( size_t len, T* dest, const T* src, cudaStream_t s,
 }
 
 
+template <typename T>
+inline void cuda_set_zero( size_t len, T* ptr, std::string m = "" ) {
+  auto stat = cudaMemset( ptr, 0, len * sizeof(T) );
+  GAUXC_CUDA_ERROR( "CUDA Memset Async Failed ["+m+"]", stat );
+}
+
 
 
 inline void cuda_device_sync() {

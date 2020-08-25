@@ -7,9 +7,13 @@
 //#include "blas.hpp"
 //#include "util.hpp"
 
+#include <gauxc/util/cuda_util.hpp>
+
 namespace GauXC  {
 namespace integrator::cuda {
 
+//template <typename F, size_t n_deriv>
+//void
 
 
 template <typename F, size_t n_deriv>
@@ -23,9 +27,72 @@ void process_batches_cuda_replicated_p(
   std::vector< XCTask >& tasks,
   const F*               P,
   F*                     VXC,
-  F*                     exc,
-  F*                     n_el
+  F*                     EXC,
+  F*                     NEL
 ) {
+
+
+  auto task_comparator = []( const XCTask& a, const XCTask& b ) {
+    return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
+  };
+  std::sort( tasks.begin(), tasks.end(), task_comparator );
+
+
+  const auto nbf    = basis.nbf();
+  const auto natoms = meta.natoms();
+  // Send static data to the device
+
+  // Density
+  if( not cuda_data.denpack_host )
+    util::cuda_copy( nbf * nbf, cuda_data.dmat_device, P, "P H2D" );
+
+  // Shells: TODO avoid copy?
+  std::vector<Shell<F>> shells( basis );
+  util::cuda_copy( shells.size(), cuda_data.shells_device, shells.data(),
+                   "Shells H2D" );
+
+  // RAB
+  util::cuda_copy( natoms * natoms, cuda_data.rab_device, meta.rab().data(),
+                   "RAB H2D" );
+
+  // Atomic coordinates 
+  std::vector<double> coords( 3*natoms );
+  for( auto i = 0ul; i < natoms; ++i ) {
+    coords[ 3*i + 0 ] = mol[i].x;
+    coords[ 3*i + 1 ] = mol[i].y;
+    coords[ 3*i + 2 ] = mol[i].z;
+  }
+  util::cuda_copy( 3 * natoms, cuda_data.coords_device, coords.data(),
+                   "Coords H2D" );
+
+
+  // Zero out XC quantities
+  util::cuda_set_zero( nbf * nbf, cuda_data.vxc_device, "VXC Zero" ); 
+  util::cuda_set_zero( 1        , cuda_data.exc_device, "EXC Zero" ); 
+  util::cuda_set_zero( 1        , cuda_data.nel_device, "NEL Zero" ); 
+
+
+
+  // Processes batches in groups that saturadate available device memory
+  auto task_it = tasks.begin();
+  while( task_it != tasks.end() ) {
+
+    // Determine next task batch, send relevant data to device
+    auto [it, tasks_device] = 
+      cuda_data.generate_buffers( basis, task_it, tasks.end() );
+
+    // TODO Process the batches
+
+    task_it = it;
+
+  }
+
+  // Receive XC terms from host
+  if( not cuda_data.vxcinc_host )
+    util::cuda_copy( nbf * nbf, VXC, cuda_data.vxc_device, "VXC D2H" );
+
+  util::cuda_copy( 1, EXC, cuda_data.exc_device, "EXC D2H" );
+  util::cuda_copy( 1, NEL, cuda_data.nel_device, "NEL D2H" );
 
 #if 0
   partition_weights_cuda( weight_alg, mol, meta, tasks );
