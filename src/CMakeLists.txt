@@ -47,6 +47,7 @@ target_link_libraries( gauxc PUBLIC
   ExchCXX::exchcxx 
   IntegratorXX::integratorxx 
   MPI::MPI_C 
+  OpenMP::OpenMP_CXX
   Eigen3::Eigen 
   LAPACK::lapack
   gauxc_gau2grid

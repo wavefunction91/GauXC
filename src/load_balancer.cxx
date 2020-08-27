@@ -25,11 +25,11 @@ LoadBalancer::LoadBalancer( MPI_Comm comm, const Molecule& mol, const MolGrid& m
 
 
 LoadBalancer::LoadBalancer( const LoadBalancer& other ) :
-  LoadBalancer(other.pimpl_->clone()){ };
+  LoadBalancer(other.pimpl_->clone()){ }
 
 LoadBalancer::LoadBalancer( LoadBalancer&& ) noexcept = default;
               
-LoadBalancer::~LoadBalancer() noexcept = default;;
+LoadBalancer::~LoadBalancer() noexcept = default;
 
 
 const std::vector<XCTask>& LoadBalancer::get_tasks() const {

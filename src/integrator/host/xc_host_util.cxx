@@ -28,7 +28,7 @@ void process_batches_host_replicated_p(
 ) {
 
   partition_weights_host( weight_alg, mol, meta, tasks );
-  const auto nbf = basis.nbf();
+  const int32_t nbf = basis.nbf();
 
   std::fill( VXC, VXC + size_t(nbf)*nbf, F(0.) );
 
@@ -37,9 +37,9 @@ void process_batches_host_replicated_p(
 
     auto& task = tasks[iT];
 
-    const size_t  npts    = task.points.size();
-    const size_t  nbe     = task.nbe;
-    const size_t  nshells = task.shell_list.size();
+    const int32_t  npts    = task.points.size();
+    const int32_t  nbe     = task.nbe;
+    const int32_t  nshells = task.shell_list.size();
 
     const F* points      = task.points.data()->data();
     const F* weights     = task.weights.data();

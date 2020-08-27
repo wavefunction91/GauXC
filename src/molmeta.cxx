@@ -16,9 +16,9 @@ void MolMeta::compute_rab(const Molecule& mol) {
 
   rab_.resize( natoms_*natoms_ );
 
-  for( int32_t i = 0; i < natoms_; ++i ) {
+  for( size_t i = 0; i < natoms_; ++i ) {
     rab_[i*(natoms_+1)] = 0.;
-    for( int32_t j = 0; j < i; ++j ) {
+    for( size_t j = 0; j < i; ++j ) {
       const double dab_x = mol[i].x - mol[j].x;
       const double dab_y = mol[i].y - mol[j].y;
       const double dab_z = mol[i].z - mol[j].z;
@@ -33,11 +33,11 @@ void MolMeta::compute_rab(const Molecule& mol) {
 void MolMeta::compute_dist_nearest() {
 
   dist_nearest_.resize(natoms_);
-  for( int32_t i = 0; i < natoms_; ++i ) {
+  for( size_t i = 0; i < natoms_; ++i ) {
     double dn = std::numeric_limits<double>::infinity();
 
     auto at_begin = rab_.begin() + i*natoms_;
-    for( int32_t j = 0; j < natoms_; ++j )
+    for( size_t j = 0; j < natoms_; ++j )
     if( i != j and *(at_begin + j) < dn )
       dn = *(at_begin + j);
 
