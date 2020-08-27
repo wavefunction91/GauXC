@@ -18,6 +18,11 @@ enum class XCWeightAlg {
   SSF
 };
 
+enum class ExecutionSpace {
+  Host,
+  Device
+};
+
 template <typename MatrixType>
 class XCIntegrator {
 
@@ -40,8 +45,10 @@ public:
   XCIntegrator();
   XCIntegrator( std::unique_ptr<pimpl_type>&& pimpl );
 
-  XCIntegrator( MPI_Comm, const functional_type&, const basisset_type&,
-    std::shared_ptr<LoadBalancer> );
+  XCIntegrator( ExecutionSpace, MPI_Comm, const functional_type&, 
+                const basisset_type&, std::shared_ptr<LoadBalancer> );
+  XCIntegrator( MPI_Comm, const functional_type&, const basisset_type&, 
+                std::shared_ptr<LoadBalancer> );
   //XCIntegrator( MPI_Comm, const functional_type&, const basisset_type&,
   //  LoadBalancer&& );
 
