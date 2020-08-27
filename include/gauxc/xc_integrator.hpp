@@ -13,15 +13,6 @@ namespace detail {
   class XCIntegratorImpl;
 }
 
-enum class XCWeightAlg {
-  Becke,
-  SSF
-};
-
-enum class ExecutionSpace {
-  Host,
-  Device
-};
 
 template <typename MatrixType>
 class XCIntegrator {

@@ -1,19 +1,84 @@
 #include <gauxc/xc_integrator/xc_cuda_util.hpp>
+#include <gauxc/util/cuda_util.hpp>
 
-//#include "cuda_weights.hpp"
+#include "cuda_weights.hpp"
 #include "collocation_device.hpp"
 //#include "cuda_zmat.hpp"
 #include "integrator_common.hpp"
 //#include "blas.hpp"
 //#include "util.hpp"
 
-#include <gauxc/util/cuda_util.hpp>
 
 namespace GauXC  {
 namespace integrator::cuda {
 
-//template <typename F, size_t n_deriv>
-//void
+using host_task_iterator = std::vector<XCTask>::iterator;
+
+template <typename F>
+using cuda_task_iterator = typename std::vector<XCTaskDevice<F>>::iterator;
+
+template <typename F, size_t n_deriv>
+void process_batches_cuda_replicated_all_device(
+  XCWeightAlg            weight_alg,
+  const functional_type& func,
+  XCCudaData<F>&         cuda_data,
+  cuda_task_iterator<F>  task_begin,
+  cuda_task_iterator<F>  task_end
+) {
+
+
+  // Get batch statistics for batches to process
+  auto nbe_comparator = 
+    []( const auto& a, const auto& b ){ return a.nbe < b.nbe; };
+  auto npts_comparator = 
+    []( const auto& a, const auto& b ){ return a.npts < b.npts; };
+  auto nshells_comparator = 
+    []( const auto& a, const auto& b ){ return a.nshells < b.nshells; };
+
+  auto [min_nbe_it, max_nbe_it] = 
+    std::minmax_element( task_begin, task_end, nbe_comparator );
+  auto [min_npts_it, max_npts_it] = 
+    std::minmax_element( task_begin, task_end, npts_comparator );
+  auto [min_nshells_it, max_nshells_it] = 
+    std::minmax_element( task_begin, task_end, nshells_comparator );
+
+  const auto min_nbe     = min_nbe_it->nbe;
+  const auto max_nbe     = max_nbe_it->nbe;
+  const auto min_npts    = min_npts_it->npts;
+  const auto max_npts    = max_npts_it->npts;
+  const auto min_nshells = min_nshells_it->nshells;
+  const auto max_nshells = max_nshells_it->nshells;
+
+  const size_t total_npts = 
+    std::accumulate( task_begin, task_end, 0ul, 
+                     []( const auto& a, const auto& b ) { return a + b.npts; } );
+                      
+
+
+  // Aliases
+  cudaStream_t   master_stream = *cuda_data.master_stream;
+  cublasHandle_t master_handle = *cuda_data.master_handle;
+  magma_queue_t  master_queue  = *cuda_data.master_magma_queue;
+
+  const auto*  rab_device          = cuda_data.rab_device;
+  const auto*  coords_device       = cuda_data.coords_device;
+  const auto*  points_device       = cuda_data.points_device_buffer;
+  const auto*  iparent_device      = cuda_data.iparent_device_buffer;
+  const auto*  dist_nearest_device = cuda_data.dist_nearest_buffer;
+
+  auto* weights_device      = cuda_data.weights_device_buffer;
+  auto* dist_scratch_device = cuda_data.dist_scratch_device;
+
+
+
+  // Evaluate partition weights
+  partition_weights_cuda_SoA( weight_alg, total_npts, cuda_data.natoms, 
+                              points_device, iparent_device, dist_nearest_device,
+                              rab_device, coords_device, weights_device, 
+                              dist_scratch_device, master_stream );
+
+
+}
 
 
 template <typename F, size_t n_deriv>
@@ -82,6 +147,9 @@ void process_batches_cuda_replicated_p(
       cuda_data.generate_buffers( basis, task_it, tasks.end() );
 
     // TODO Process the batches
+    process_batches_cuda_replicated_all_device<F,n_deriv>( 
+      weight_alg, func, cuda_data, tasks_device.begin(), tasks_device.end() 
+    );
 
     task_it = it;
 
@@ -94,143 +162,6 @@ void process_batches_cuda_replicated_p(
   util::cuda_copy( 1, EXC, cuda_data.exc_device, "EXC D2H" );
   util::cuda_copy( 1, NEL, cuda_data.nel_device, "NEL D2H" );
 
-#if 0
-  partition_weights_cuda( weight_alg, mol, meta, tasks );
-  const auto nbf = basis.nbf();
-
-  std::fill( VXC, VXC + size_t(nbf)*nbf, F(0.) );
-
-  size_t ntasks = tasks.size();
-  for( size_t iT = 0; iT < ntasks; ++iT ) {
-
-    auto& task = tasks[iT];
-
-    const size_t  npts    = task.points.size();
-    const size_t  nbe     = task.nbe;
-    const size_t  nshells = task.shell_list.size();
-
-    const F* points      = task.points.data()->data();
-    const F* weights     = task.weights.data();
-    const int32_t* shell_list = task.shell_list.data();
-
-    F* basis_eval = cuda_data.basis_eval.data();
-    F* den_eval   = cuda_data.den_scr.data();
-    F* nbe_scr    = cuda_data.nbe_scr.data();
-    F* zmat       = cuda_data.zmat.data();
-
-    F* eps        = cuda_data.eps.data();
-    F* gamma      = cuda_data.gamma.data();
-    F* vrho       = cuda_data.vrho.data();
-    F* vgamma     = cuda_data.vgamma.data();
-
-    F* dbasis_x_eval = nullptr;
-    F* dbasis_y_eval = nullptr;
-    F* dbasis_z_eval = nullptr;
-    F* dden_x_eval = nullptr;
-    F* dden_y_eval = nullptr;
-    F* dden_z_eval = nullptr;
-
-    if( n_deriv > 0 ) {
-      dbasis_x_eval = basis_eval    + npts * nbe;
-      dbasis_y_eval = dbasis_x_eval + npts * nbe;
-      dbasis_z_eval = dbasis_y_eval + npts * nbe;
-      dden_x_eval   = den_eval    + npts;
-      dden_y_eval   = dden_x_eval + npts;
-      dden_z_eval   = dden_y_eval + npts;
-    }
-
-
-    // Get the submatrix map for batch
-    auto submat_map = gen_compressed_submat_map( basis, task.shell_list );
-
-
-    // Evaluate Collocation Matrix 
-    if( n_deriv == 1 )
-      eval_collocation_deriv1( npts, nshells, nbe, points, basis, shell_list, 
-                               basis_eval, dbasis_x_eval, dbasis_y_eval, 
-                               dbasis_z_eval );
-    else
-      eval_collocation( npts, nshells, nbe, points, basis, shell_list, basis_eval );
-
-
-    // Extrat Submatrix
-    const F* den_ptr_use = P;
-    if( nbe != nbf ) {
-      detail::submat_set( nbf, nbf, nbe, nbe, P, nbf, nbe_scr, nbe, submat_map );
-      den_ptr_use = nbe_scr;
-    } 
-
-    // Z = P * BF
-    GauXC::blas::gemm( 'N', 'N', nbe, npts, nbe, 1., den_ptr_use, nbe,
-                       basis_eval, nbe, 0., zmat, nbe );
-    
-
-    // Evaluate the density 
-    for( int32_t i = 0; i < npts; ++i ) {
-
-      const size_t ioff = size_t(i) * nbe;
-      const F*     zmat_i = zmat + ioff;
-
-      den_eval[i] = 
-        2. * GauXC::blas::dot( nbe, basis_eval + ioff, 1, zmat_i, 1 );
-
-      if( n_deriv > 0 ) {
-        const F dx = 
-          4. * GauXC::blas::dot( nbe, dbasis_x_eval + ioff, 1, zmat_i, 1 );
-        const F dy = 
-          4. * GauXC::blas::dot( nbe, dbasis_y_eval + ioff, 1, zmat_i, 1 );
-        const F dz = 
-          4. * GauXC::blas::dot( nbe, dbasis_z_eval + ioff, 1, zmat_i, 1 );
-
-        dden_x_eval[i] = dx;
-        dden_y_eval[i] = dy;
-        dden_z_eval[i] = dz;
-
-        gamma[i] = dx*dx + dy*dy + dz*dz;
-      }
-
-    }
-
-
-    // Evaluate XC functional
-    if( func.is_gga() )
-      func.eval_exc_vxc( npts, den_eval, gamma, eps, vrho, vgamma );
-    else
-      func.eval_exc_vxc( npts, den_eval, eps, vrho );
-
-    // Scalar integrations
-    if( n_el )
-      for( int32_t i = 0; i < npts; ++i ) *n_el += weights[i] * den_eval[i];
-
-    for( int32_t i = 0; i < npts; ++i ) *exc += weights[i] * den_eval[i] * eps[i];
-    
-
-    // Assemble Z
-    if( func.is_gga() )
-      zmat_gga_cuda( npts, nbe, weights, vrho, vgamma, basis_eval, dbasis_x_eval,
-                     dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval,
-                     dden_z_eval, zmat ); 
-    else
-      zmat_lda_cuda( npts, nbe, weights, vrho, basis_eval, zmat ); 
-
-
-    // Update VXC
-    GauXC::blas::syr2k( 'L', 'N', nbe, npts, F(1.), basis_eval,
-                        nbe, zmat, nbe, F(0.), nbe_scr, nbe );
-
-    detail::inc_by_submat( nbf, nbf, nbe, nbe, VXC, nbf, nbe_scr, nbe,
-                           submat_map );
-  }
-
-  // Symmetrize
-  for( int32_t j = 0;   j < nbf; ++j )
-  for( int32_t i = j+1; i < nbf; ++i )
-    VXC[ j + i*nbf ] = VXC[ i + j*nbf ];
-
-  //std::cout << std::scientific << std::setprecision(12);
-  //std::cout << "NEL = " << *n_el << std::endl;
-
-#endif
 }
 
 

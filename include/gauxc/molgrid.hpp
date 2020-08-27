@@ -15,12 +15,6 @@ using atomic_grid_size_map =
 
 using atomic_grid_map = std::unordered_map< AtomicNumber, Grid >;
 
-enum class AtomicGridSizeDefault {
-  FineGrid,
-  UltraFineGrid,
-  SuperFineGrid
-};
-
 namespace detail {
   class MolGridImpl;
 }

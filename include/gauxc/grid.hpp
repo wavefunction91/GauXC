@@ -5,13 +5,6 @@
 
 namespace GauXC {
 
-
-enum class RadialQuad {
-  MuraKnowles,
-  MurrayHandyLaming
-};
-
-
 using RadialSize   = detail::NamedType< int64_t, struct RadialSizeType  >;
 using AngularSize  = detail::NamedType< int64_t, struct AngularSizeType >;
 using BatchSize    = detail::NamedType< int64_t, struct BatchSizeType   >;

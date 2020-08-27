@@ -33,6 +33,7 @@ find_package( MAGMA       REQUIRED )
 target_sources( gauxc PRIVATE cuda/collocation_device.cu
                               cuda/xc_cuda_data.cxx
                               cuda/xc_cuda_util.cxx
+                              cuda/cuda_weights.cu
 )
 
 target_compile_features( gauxc PRIVATE cuda_std_14 )
