@@ -39,6 +39,7 @@ add_executable( gauxc_test
   load_balancer_test.cxx 
   xc_integrator.cxx 
   collocation.cxx
+  weights.cxx
   standards.cxx 
 )
 target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 )
