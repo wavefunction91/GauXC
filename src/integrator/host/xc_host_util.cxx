@@ -139,20 +139,31 @@ void process_batches_host_replicated_p(
       func.eval_exc_vxc( npts, den_eval, eps, vrho );
 
 
+    // Factor weights into XC results
+    for( int32_t i = 0; i < npts; ++i ) {
+      eps[i]  *= weights[i];
+      vrho[i] *= weights[i];
+    }
+
+    if( func.is_gga() )
+      for( int32_t i = 0; i < npts; ++i ) vgamma[i] *= weights[i];
+    
+
+
     // Scalar integrations
     if( n_el )
       for( int32_t i = 0; i < npts; ++i ) *n_el += weights[i] * den_eval[i];
 
-    for( int32_t i = 0; i < npts; ++i ) *exc += weights[i] * den_eval[i] * eps[i];
+    for( int32_t i = 0; i < npts; ++i ) *exc += eps[i] * den_eval[i];
     
 
     // Assemble Z
     if( func.is_gga() )
-      zmat_gga_host( npts, nbe, weights, vrho, vgamma, basis_eval, dbasis_x_eval,
+      zmat_gga_host( npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
                      dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval,
                      dden_z_eval, zmat ); 
     else
-      zmat_lda_host( npts, nbe, weights, vrho, basis_eval, zmat ); 
+      zmat_lda_host( npts, nbe, vrho, basis_eval, zmat ); 
 
 
 
