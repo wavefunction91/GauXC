@@ -1,3 +1,4 @@
+#pragma once
 #include <gauxc/shell.hpp>
 #include <gauxc/xc_task.hpp>
 

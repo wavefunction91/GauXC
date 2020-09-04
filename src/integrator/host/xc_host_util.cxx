@@ -7,6 +7,8 @@
 #include "blas.hpp"
 #include "util.hpp"
 
+#include <Eigen/Core>
+
 namespace GauXC  {
 namespace integrator::host {
 
@@ -26,6 +28,12 @@ void process_batches_host_replicated_p(
   F*                     exc,
   F*                     n_el
 ) {
+
+  auto task_comparator = []( const XCTask& a, const XCTask& b ) {
+    return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
+  };
+  std::sort( tasks.begin(), tasks.end(), task_comparator );
+
 
   partition_weights_host( weight_alg, mol, meta, tasks );
   const int32_t nbf = basis.nbf();
@@ -130,6 +138,7 @@ void process_batches_host_replicated_p(
     else
       func.eval_exc_vxc( npts, den_eval, eps, vrho );
 
+
     // Scalar integrations
     if( n_el )
       for( int32_t i = 0; i < npts; ++i ) *n_el += weights[i] * den_eval[i];
@@ -146,21 +155,21 @@ void process_batches_host_replicated_p(
       zmat_lda_host( npts, nbe, weights, vrho, basis_eval, zmat ); 
 
 
-    // Update VXC
+
+    // Update VXC XXX: Only LT
     GauXC::blas::syr2k( 'L', 'N', nbe, npts, F(1.), basis_eval,
                         nbe, zmat, nbe, F(0.), nbe_scr, nbe );
+
 
     detail::inc_by_submat( nbf, nbf, nbe, nbe, VXC, nbf, nbe_scr, nbe,
                            submat_map );
   }
 
-  // Symmetrize
+  // Symmetrize VXC
   for( int32_t j = 0;   j < nbf; ++j )
   for( int32_t i = j+1; i < nbf; ++i )
     VXC[ j + i*nbf ] = VXC[ i + j*nbf ];
 
-  //std::cout << std::scientific << std::setprecision(12);
-  //std::cout << "NEL = " << *n_el << std::endl;
 }
 
 

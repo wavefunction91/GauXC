@@ -42,11 +42,12 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
   buffer_adaptor mem( device_ptr, fill_sz );
 
 
-  shells_device = mem.aligned_alloc<Shell<F>>( nshells );
-  exc_device    = mem.aligned_alloc<F>( 1 );
-  nel_device    = mem.aligned_alloc<F>( 1 );
-  rab_device    = mem.aligned_alloc<F>( natoms * natoms );
-  coords_device = mem.aligned_alloc<F>( 3 * natoms );
+  shells_device     = mem.aligned_alloc<Shell<F>>( nshells );
+  exc_device        = mem.aligned_alloc<F>( 1 );
+  nel_device        = mem.aligned_alloc<F>( 1 );
+  acc_scr_device    = mem.aligned_alloc<F>( 1 );
+  rab_device        = mem.aligned_alloc<F>( natoms * natoms );
+  coords_device     = mem.aligned_alloc<F>( 3 * natoms );
 
   if( not vxcinc_host )
     vxc_device = mem.aligned_alloc<F>( nbf * nbf );
@@ -410,57 +411,61 @@ std::tuple< task_iterator, device_task_container<F> >
 
 
 
+  auto copy_rev = [&]( size_t n, const auto* src, auto* dest, cudaStream_t stream,
+                       std::string m ) {
+    util::cuda_copy_async( n, dest, src, stream, m );
+  };
 
 
 
   try {
 
   // Send the data to the device
-  util::cuda_copy_async( 3*points_pack.size(), points_pack.data()->data(), 
+  copy_rev( 3*points_pack.size(), points_pack.data()->data(), 
                          points_device_buffer, *master_stream, 
                          "send points buffer" ); 
-  util::cuda_copy_async( weights_pack.size(), weights_pack.data(), 
+  copy_rev( weights_pack.size(), weights_pack.data(), 
                          weights_device_buffer, *master_stream, 
                          "send weights buffer" ); 
 
-  util::cuda_copy_async( shell_list_pack.size(), shell_list_pack.data(), 
+  copy_rev( shell_list_pack.size(), shell_list_pack.data(), 
                           shell_list_device_buffer, *master_stream, 
                           "send_shell_list_buffer" );
-  util::cuda_copy_async( shell_offs_pack.size(), shell_offs_pack.data(), 
+  copy_rev( shell_offs_pack.size(), shell_offs_pack.data(), 
                          shell_offs_device_buffer, *master_stream, 
                          "send_shell_offs_buffer" );
-  util::cuda_copy_async( 2*submat_cut_pack.size(), &submat_cut_pack.data()->first, 
+  copy_rev( 2*submat_cut_pack.size(), &submat_cut_pack.data()->first, 
                          submat_cut_device_buffer, *master_stream, 
                          "send_submat_cut_buffer"  ); 
   
-  util::cuda_copy_async( tasks_device.size(), tasks_device.data(), device_tasks, 
+  copy_rev( tasks_device.size(), tasks_device.data(), device_tasks, 
                           *master_stream, "send_tasks_device" );
 
 
-  util::cuda_copy_async( dmat_array.size(), dmat_array.data(), dmat_array_device, 
+  copy_rev( dmat_array.size(), dmat_array.data(), dmat_array_device, 
                          *master_stream, "send dmat_array" );
-  util::cuda_copy_async( zmat_array.size(), zmat_array.data(), zmat_array_device, 
+  copy_rev( zmat_array.size(), zmat_array.data(), zmat_array_device, 
                          *master_stream, "send zmat_array" );
-  util::cuda_copy_async( bf_array.size(), bf_array.data(), bf_array_device, 
+  copy_rev( bf_array.size(), bf_array.data(), bf_array_device, 
                          *master_stream, "send bf_array" );
 
-  util::cuda_copy_async( m_array.size(), m_array.data(), m_array_device, 
+  copy_rev( m_array.size(), m_array.data(), m_array_device, 
                          *master_stream, "send m_array" );
-  util::cuda_copy_async( n_array.size(), n_array.data(), n_array_device, 
+  copy_rev( n_array.size(), n_array.data(), n_array_device, 
                          *master_stream, "send n_array" );
-  util::cuda_copy_async( k_array.size(), k_array.data(), k_array_device, 
+  copy_rev( k_array.size(), k_array.data(), k_array_device, 
                          *master_stream, "send k_array" );
 
-  util::cuda_copy_async( lda_array.size(), lda_array.data(), lda_array_device, 
+  copy_rev( lda_array.size(), lda_array.data(), lda_array_device, 
                          *master_stream, "send lda_array" );
-  util::cuda_copy_async( ldb_array.size(), ldb_array.data(), ldb_array_device, 
+  copy_rev( ldb_array.size(), ldb_array.data(), ldb_array_device, 
                          *master_stream, "send ldb_array" );
-  util::cuda_copy_async( ldc_array.size(), ldc_array.data(), ldc_array_device, 
+  copy_rev( ldc_array.size(), ldc_array.data(), ldc_array_device, 
                          *master_stream, "send ldc_array" );
 
-  util::cuda_copy_async( iparent_pack.size(), iparent_pack.data(), 
+  copy_rev( iparent_pack.size(), iparent_pack.data(), 
                          iparent_device_buffer, *master_stream, "send iparent"  );
-  util::cuda_copy_async( dist_nearest_pack.size(), dist_nearest_pack.data(), 
+  copy_rev( dist_nearest_pack.size(), dist_nearest_pack.data(), 
                          dist_nearest_buffer, *master_stream, "send dist_nearest" );
 
   } catch(...) {

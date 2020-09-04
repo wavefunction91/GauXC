@@ -29,6 +29,14 @@ struct cublas_handle {
 
 };
 
+
+inline static cudaStream_t get_stream( cublasHandle_t handle ) {
+  cudaStream_t stream;
+  auto stat = cublasGetStream(handle, &stream );  
+  GAUXC_CUBLAS_ERROR("CUBLAS GET STREAM FAILED", stat );
+  return stream;
+}
+
 }
 }
 

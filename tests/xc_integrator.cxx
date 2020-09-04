@@ -41,6 +41,13 @@ void test_xc_integrator( ExecutionSpace ex, MPI_Comm comm, Molecule mol ) {
   auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
   CHECK( EXC == Approx( EXC_ref ) );
 
+  //std::cout << "VXC" << std::endl;
+  //std::cout << VXC << std::endl;
+  //std::cout << "VXC_ref" << std::endl;
+  //std::cout << VXC_ref << std::endl;
+  //std::cout << "DIFF" << std::endl;
+  //std::cout << (VXC-VXC_ref) << std::endl;
+
   auto VXC_diff_nrm = ( VXC - VXC_ref ).norm();
   CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 ); 
 }

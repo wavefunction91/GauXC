@@ -55,6 +55,7 @@ struct XCCudaData {
 
   F*     exc_device = nullptr;
   F*     nel_device = nullptr;
+  F*     acc_scr_device = nullptr;
 
   F*     rab_device    = nullptr;
   F*     coords_device = nullptr;
