@@ -94,11 +94,11 @@ namespace GauXC {
                         shared[threadIdx_y + 1024] = parent_weight;
                     }
 
-                    item_ct.barrier();
+                    group_barrier(item_ct.get_group());
                     sum = shared[threadIdx_x];
                     sum = warpReduceSum(sum, item_ct);
 
-                    item_ct.barrier();
+                    group_barrier(item_ct.get_group());
                     parent_weight = shared[threadIdx_x + 1024];
                     parent_weight = item_ct.get_sub_group().shuffle(parent_weight, iParent % 32);
 
