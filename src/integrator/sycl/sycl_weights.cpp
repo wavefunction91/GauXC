@@ -81,7 +81,7 @@ namespace GauXC {
                             ps *= (iCenter == jCenter) ? 1. : s ;
                         }
 
-                        ps = warp_prod_reduce( ps ); // XXX: Assumes blockDim.x == 32
+                        ps = warp_prod_reduce( item_ct.get_group(), ps ); // XXX: Assumes blockDim.x == 32
 
                         if( iCenter == iParent ) parent_weight = ps;
 
@@ -173,7 +173,7 @@ namespace GauXC {
 
                             }
 
-                        ps = warp_prod_reduce( ps ); // XXX: Assumes blockDim.x == 32
+                        ps = warp_prod_reduce( item_ct.get_group(), ps ); // XXX: Assumes blockDim.x == 32
 
                         if( iCenter == iParent ) parent_weight = ps;
 
