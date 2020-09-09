@@ -9,15 +9,15 @@ namespace sycl  {
 namespace blas  {
 
 template <typename T>
-void dot(cl::sycl::queue *handle, int N, const T *X, int INCX, const T *Y, int INCY,
+void dot(sycl::queue *handle, int N, const T *X, int INCX, const T *Y, int INCY,
          T *RES);
 
 template <typename T>
-void gdot(cl::sycl::queue *handle, int N, const T *X, int INCX, const T *Y,
+void gdot(sycl::queue *handle, int N, const T *X, int INCX, const T *Y,
           int INCY, T *SCR, T *RES);
 
 template <typename T>
-void hadamard_product(cl::sycl::queue *handle, int M, int N, const T *A, int LDA,
+void hadamard_product(sycl::queue *handle, int M, int N, const T *A, int LDA,
                       T *B, int LDB);
 
 }

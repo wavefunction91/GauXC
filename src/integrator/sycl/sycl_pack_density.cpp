@@ -9,7 +9,7 @@ namespace sycl       {
                                      XCTaskDevice<T>* device_tasks,
                                      T*               A,
                                      size_t           LDA ,
-                                     cl::sycl::nd_item<3> item_ct) {
+                                     sycl::nd_item<3> item_ct) {
 
         const int batch_id = item_ct.get_group(0);
 
@@ -60,21 +60,21 @@ namespace sycl       {
 
     template <typename T>
     void task_pack_density_matrix(size_t ntasks, XCTaskDevice<T> *device_tasks,
-                                  T *P_device, size_t LDP, cl::sycl::queue *stream) {
+                                  T *P_device, size_t LDP, sycl::queue *stream) {
 
-        cl::sycl::range<3> threads(32, 32, 1), blocks(1, 1, ntasks);
+        sycl::range<3> threads(32, 32, 1), blocks(1, 1, ntasks);
 
-        stream->submit([&](cl::sycl::handler &cgh) {
+        stream->submit([&](sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
-                cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
+                cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(global_range.get(2),
                                                                           global_range.get(1),
                                                                           global_range.get(0)),
-                                                       cl::sycl::range<3>(threads.get(2),
+                                                       sycl::range<3>(threads.get(2),
                                                                           threads.get(1),
                                                                           threads.get(0))),
 
-                                 [=](cl::sycl::nd_item<3> item_ct) {
+                                 [=](sycl::nd_item<3> item_ct) {
                                      submat_set_combined_kernel(ntasks, device_tasks, P_device, LDP, item_ct);
                                  });
             });
@@ -85,7 +85,7 @@ namespace sycl       {
                                    XCTaskDevice<double>* device_tasks,
                                    double*               P_device,
                                    size_t                LDP,
-                                   cl::sycl::queue*      stream );
+                                   sycl::queue*      stream );
 
 }
 }
