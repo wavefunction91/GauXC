@@ -9,7 +9,7 @@
 
 namespace GauXC      {
 namespace integrator {
-namespace cuda       {
+namespace sycl       {
 
 GPGAUEVAL_INLINE void collocation_spherical_unnorm_angular_0(
   const double bf,
@@ -258,6 +258,6 @@ GPGAUEVAL_INLINE void collocation_spherical_unnorm_angular_deriv1(
 
 
 
-} // namespace cuda
+} // namespace sycl
 } // namespace integrator
 } // namespace GauXC
