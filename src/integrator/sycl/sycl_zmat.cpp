@@ -8,7 +8,7 @@ namespace sycl       {
 template <typename T>
 void zmat_lda_kernel( size_t           ntasks,
                       XCTaskDevice<T>* tasks_device ,
-                      sycl::nd_item<3> item_ct) {
+                      cl::sycl::nd_item<3> item_ct) {
 
   const int batch_idx = item_ct.get_group(0);
   if( batch_idx >= ntasks ) return;
@@ -37,24 +37,24 @@ void zmat_lda_kernel( size_t           ntasks,
 
 template <typename T>
 void zmat_lda_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
-                   XCTaskDevice<T> *tasks_device, sycl::queue *stream) {
+                   XCTaskDevice<T> *tasks_device, cl::sycl::queue *stream) {
 
-  sycl::range<3> threads(32, 32, 1);
-  sycl::range<3> blocks(util::div_ceil(max_nbf, threads.get(2)),
+  cl::sycl::range<3> threads(32, 32, 1);
+  cl::sycl::range<3> blocks(util::div_ceil(max_nbf, threads.get(2)),
                             util::div_ceil(max_npts, threads.get(1)),
                             ntasks);
 
-  stream->submit([&](sycl::handler &cgh) {
+  stream->submit([&](cl::sycl::handler &cgh) {
     auto global_range = blocks * threads;
 
-    cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(global_range.get(2),
+    cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
                                                               global_range.get(1),
                                                               global_range.get(0)),
-                                           sycl::range<3>(threads.get(2),
+                                           cl::sycl::range<3>(threads.get(2),
                                                               threads.get(1),
                                                               threads.get(0))),
 
-        [=](sycl::nd_item<3> item_ct) {
+        [=](cl::sycl::nd_item<3> item_ct) {
           zmat_lda_kernel(ntasks, tasks_device, item_ct);
         });
   });
@@ -65,12 +65,12 @@ void zmat_lda_sycl( size_t                ntasks,
                     int32_t               max_nbf,
                     int32_t               max_npts,
                     XCTaskDevice<double>* tasks_device,
-                    sycl::queue*      stream );
+                    cl::sycl::queue*      stream );
 
 template <typename T>
 void zmat_gga_kernel( size_t           ntasks,
                       XCTaskDevice<T>* tasks_device ,
-                      sycl::nd_item<3> item_ct) {
+                      cl::sycl::nd_item<3> item_ct) {
 
   const int batch_idx = item_ct.get_group(0);
   if( batch_idx >= ntasks ) return;
@@ -114,24 +114,24 @@ void zmat_gga_kernel( size_t           ntasks,
 
 template <typename T>
 void zmat_gga_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
-                   XCTaskDevice<T> *tasks_device, sycl::queue *stream) {
+                   XCTaskDevice<T> *tasks_device, cl::sycl::queue *stream) {
 
-  sycl::range<3> threads(32, 32, 1);
-  sycl::range<3> blocks(util::div_ceil(max_nbf, threads.get(2)),
+  cl::sycl::range<3> threads(32, 32, 1);
+  cl::sycl::range<3> blocks(util::div_ceil(max_nbf, threads.get(2)),
                             util::div_ceil(max_npts, threads.get(1)),
                             ntasks);
 
-  stream->submit([&](sycl::handler &cgh) {
+  stream->submit([&](cl::sycl::handler &cgh) {
           auto global_range = blocks * threads;
 
-          cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(global_range.get(2),
+          cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
                                                                     global_range.get(1),
                                                                     global_range.get(0)),
-                                                 sycl::range<3>(threads.get(2),
+                                                 cl::sycl::range<3>(threads.get(2),
                                                                     threads.get(1),
                                                                     threads.get(0))),
 
-                           [=](sycl::nd_item<3> item_ct) {
+                           [=](cl::sycl::nd_item<3> item_ct) {
                                zmat_gga_kernel(ntasks, tasks_device, item_ct);
                            });
       });
@@ -141,7 +141,7 @@ void zmat_gga_sycl( size_t                ntasks,
                     int32_t               max_nbf,
                     int32_t               max_npts,
                     XCTaskDevice<double>* tasks_device,
-                    sycl::queue*      stream );
+                    cl::sycl::queue*      stream );
 
 }
 }

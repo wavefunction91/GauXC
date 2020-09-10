@@ -9,7 +9,7 @@ namespace sycl       {
     template <typename T>
     void eval_uvars_lda_kernel( size_t           ntasks,
                                 XCTaskDevice<T>* tasks_device ,
-                                sycl::nd_item<3> item_ct) {
+                                cl::sycl::nd_item<3> item_ct) {
 
         const int batch_idx = item_ct.get_group(0);
         if( batch_idx >= ntasks ) return;
@@ -53,7 +53,7 @@ namespace sycl       {
     template <typename T>
     void eval_uvars_gga_kernel( size_t           ntasks,
                                 XCTaskDevice<T>* tasks_device ,
-                                sycl::nd_item<3> item_ct) {
+                                cl::sycl::nd_item<3> item_ct) {
 
         const int batch_idx = item_ct.get_group(0);
         if( batch_idx >= ntasks ) return;
@@ -121,7 +121,7 @@ namespace sycl       {
                                const T* den_y_eval_device,
                                const T* den_z_eval_device,
                                T* gamma_eval_device,
-                               sycl::nd_item<3> item_ct) {
+                               cl::sycl::nd_item<3> item_ct) {
 
         const int tid = item_ct.get_local_id(2) + item_ct.get_group(2) * item_ct.get_local_range().get(2);
 
@@ -136,24 +136,24 @@ namespace sycl       {
 
     template <typename T>
     void eval_uvars_lda_device(size_t ntasks, size_t max_nbf, size_t max_npts,
-                               XCTaskDevice<T> *tasks_device, sycl::queue *stream) {
+                               XCTaskDevice<T> *tasks_device, cl::sycl::queue *stream) {
 
-        sycl::range<3> threads(32, 32, 1);
-        sycl::range<3> blocks(util::div_ceil(max_nbf, 32),
+        cl::sycl::range<3> threads(32, 32, 1);
+        cl::sycl::range<3> blocks(util::div_ceil(max_nbf, 32),
                                   util::div_ceil(max_npts, 32),
                                   ntasks);
 
-        stream->submit([&](sycl::handler &cgh) {
+        stream->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
-                cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(global_range.get(2),
+                cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
                                                                           global_range.get(1),
                                                                           global_range.get(0)),
-                                                       sycl::range<3>(threads.get(2),
+                                                       cl::sycl::range<3>(threads.get(2),
                                                                           threads.get(1),
                                                                           threads.get(0))),
 
-                    [=](sycl::nd_item<3> item_ct) {
+                    [=](cl::sycl::nd_item<3> item_ct) {
                         eval_uvars_lda_kernel(ntasks, tasks_device, item_ct);
                     });
             });
@@ -161,24 +161,24 @@ namespace sycl       {
 
     template <typename T>
     void eval_uvars_gga_device(size_t ntasks, size_t max_nbf, size_t max_npts,
-                               XCTaskDevice<T> *tasks_device, sycl::queue *stream) {
+                               XCTaskDevice<T> *tasks_device, cl::sycl::queue *stream) {
 
-        sycl::range<3> threads(32, 32, 1);
-        sycl::range<3> blocks(util::div_ceil(max_nbf, 32),
+        cl::sycl::range<3> threads(32, 32, 1);
+        cl::sycl::range<3> blocks(util::div_ceil(max_nbf, 32),
                                   util::div_ceil(max_npts, 32),
                                   ntasks);
 
-        stream->submit([&](sycl::handler &cgh) {
+        stream->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
-                cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(global_range.get(2),
+                cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
                                                                           global_range.get(1),
                                                                           global_range.get(0)),
-                                                       sycl::range<3>(threads.get(2),
+                                                       cl::sycl::range<3>(threads.get(2),
                                                                           threads.get(1),
                                                                           threads.get(0))),
 
-                    [=](sycl::nd_item<3> item_ct) {
+                    [=](cl::sycl::nd_item<3> item_ct) {
                         eval_uvars_gga_kernel(ntasks, tasks_device, item_ct);
                     });
             });
@@ -190,22 +190,22 @@ namespace sycl       {
                                const T *den_y_device,
                                const T *den_z_device,
                                T *gamma_device,
-                               sycl::queue *stream) {
+                               cl::sycl::queue *stream) {
 
-        sycl::range<3> threads(1024, 1, 1);
-        sycl::range<3> blocks(util::div_ceil(npts, 1024), 1, 1);
+        cl::sycl::range<3> threads(1024, 1, 1);
+        cl::sycl::range<3> blocks(util::div_ceil(npts, 1024), 1, 1);
 
-        stream->submit([&](sycl::handler &cgh) {
+        stream->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
-                cgh.parallel_for(sycl::nd_range<3>(sycl::range<3>(global_range.get(2),
+                cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
                                                                           global_range.get(1),
                                                                           global_range.get(0)),
-                                                       sycl::range<3>(threads.get(2),
+                                                       cl::sycl::range<3>(threads.get(2),
                                                                           threads.get(1),
                                                                           threads.get(0))),
 
-                    [=](sycl::nd_item<3> item_ct) {
+                    [=](cl::sycl::nd_item<3> item_ct) {
                         eval_vvars_gga_kernel(npts, den_x_device, den_y_device, den_z_device,
                                               gamma_device, item_ct);
                     });

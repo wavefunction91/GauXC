@@ -1,5 +1,5 @@
 #pragma once
-#include <SYCL/sycl.hpp>
+#include <CL/sycl.hpp>
 
 #include "collocation_device_constants.hpp"
 #include <cassert>

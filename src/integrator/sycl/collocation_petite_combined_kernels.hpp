@@ -1,4 +1,4 @@
-#include <SYCL/sycl.hpp>
+#include <CL/sycl.hpp>
 
 #include <iostream>
 #include <cassert>
@@ -20,7 +20,7 @@ using namespace GauXC::sycl;
     void collocation_device_petite_combined_kernel(
         size_t           ntasks,
         XCTaskDevice<T>* device_tasks,
-        sycl::nd_item<3> item_ct) {
+        cl::sycl::nd_item<3> item_ct) {
 
         const int tid_x = item_ct.get_group(2) * item_ct.get_local_range().get(2) +
             item_ct.get_local_id(2);
@@ -66,7 +66,7 @@ using namespace GauXC::sycl;
                 const size_t nprim = shell.nprim();
                 auto tmp = 0.;
                 for( size_t i = 0; i < nprim; ++i )
-                    tmp += coeff[i] * sycl::exp(-alpha[i] * rsq);
+                    tmp += coeff[i] * cl::sycl::exp(-alpha[i] * rsq);
 
                 auto * bf_eval = eval_device + ibf + ipt*nbf;
 
@@ -85,7 +85,7 @@ using namespace GauXC::sycl;
     void collocation_device_petite_combined_kernel_deriv1(
         size_t           ntasks,
         XCTaskDevice<T>* device_tasks,
-        sycl::nd_item<3> item_ct) {
+        cl::sycl::nd_item<3> item_ct) {
 
         const int tid_x = item_ct.get_group(2) * item_ct.get_local_range().get(2) +
             item_ct.get_local_id(2);
@@ -138,7 +138,7 @@ using namespace GauXC::sycl;
                 for( size_t i = 0; i < nprim; ++i ) {
 
                     const auto a = alpha[i];
-                    const auto e = coeff[i] * sycl::exp(-a * rsq);
+                    const auto e = coeff[i] * cl::sycl::exp(-a * rsq);
 
                     const auto ae = 2. * a * e;
 

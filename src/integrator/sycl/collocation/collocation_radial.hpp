@@ -1,4 +1,4 @@
-#include <SYCL/sycl.hpp>
+#include <CL/sycl.hpp>
 #include <iostream>
 #include <cassert>
 
@@ -27,7 +27,7 @@ __inline__  void collocation_device_radial_eval(
   const size_t nprim = shell.nprim;
   double tmp = 0.;
   for( size_t i = 0; i < nprim; ++i )
-    tmp += coeff[i] * sycl::exp( - alpha[i] * rsq );
+    tmp += coeff[i] * cl::sycl::exp( - alpha[i] * rsq );
 
   *eval_device = tmp;
 }
@@ -58,7 +58,7 @@ __inline__ void collocation_device_radial_eval_deriv1(
   for( size_t i = 0; i < nprim; ++i ) {
 
     const double a = alpha[i];
-    const double e = coeff[i] * sycl::exp( - a * rsq );
+    const double e = coeff[i] * cl::sycl::exp( - a * rsq );
 
     const double ae = 2. * a * e;
 

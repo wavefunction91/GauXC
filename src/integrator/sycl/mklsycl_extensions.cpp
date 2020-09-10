@@ -6,35 +6,35 @@ namespace sycl  {
 namespace blas  {
 
     template <typename T>
-    void increment_kernel( const T* X, T* Y , sycl::nd_item<3> item_ct) {
+    void increment_kernel( const T* X, T* Y , cl::sycl::nd_item<3> item_ct) {
         const auto tid = item_ct.get_group(2);
         if( tid < 1 ) (*Y) += (*X);
     }
-    template <typename T> void increment(const T *X, T *Y, sycl::queue *stream) {
-        stream->submit([&](sycl::handler &cgh) {
+    template <typename T> void increment(const T *X, T *Y, cl::sycl::queue *stream) {
+        stream->submit([&](cl::sycl::handler &cgh) {
                 cgh.parallel_for(
-                    sycl::nd_range<3>(sycl::range<3>(1, 1, 1), sycl::range<3>(1, 1, 1)),
-                    [=](sycl::nd_item<3> item_ct) {
+                    cl::sycl::nd_range<3>(cl::sycl::range<3>(1, 1, 1), cl::sycl::range<3>(1, 1, 1)),
+                    [=](cl::sycl::nd_item<3> item_ct) {
                         increment_kernel(X, Y, item_ct);
                     });
             });
     }
 
     template <>
-    void dot(sycl::queue *handle, int N, const double *X, int INCX, const double *Y,
+    void dot(cl::sycl::queue *handle, int N, const double *X, int INCX, const double *Y,
              int INCY, double *RES) {
 
         auto stat = ONEAPI::mkl::blas::dot(*handle, N, X, INCX, Y, INCY, RES);
-        handle->wait();
+        handle->wait();  // abb: get rid of wait() after build, test
 
-        // if (sycl::get_pointer_type(RES, handle->get_context()) !=
-        //     sycl::usm::alloc::device &&
-        //     sycl::get_pointer_type(RES, handle->get_context()) !=
-        //     sycl::usm::alloc::shared)
+        // if (cl::sycl::get_pointer_type(RES, handle->get_context()) !=
+        //     cl::sycl::usm::alloc::device &&
+        //     cl::sycl::get_pointer_type(RES, handle->get_context()) !=
+        //     cl::sycl::usm::alloc::shared)
     }
 
     template <typename T>
-    void gdot(sycl::queue *handle, int N, const T *X, int INCX, const T *Y,
+    void gdot(cl::sycl::queue *handle, int N, const T *X, int INCX, const T *Y,
               int INCY, T *SCR, T *RES) {
 
         dot( handle, N, X, INCX, Y, INCY, SCR );
@@ -58,7 +58,7 @@ namespace blas  {
                                   int      LDA,
                                   T*       B,
                                   int      LDB ,
-                                  sycl::nd_item<3> item_ct) {
+                                  cl::sycl::nd_item<3> item_ct) {
 
         const int tid_x = item_ct.get_group(2) * item_ct.get_local_range().get(2) +
             item_ct.get_local_id(2);
@@ -71,28 +71,28 @@ namespace blas  {
     }
 
     template <typename T>
-    void hadamard_product(sycl::queue *handle, int M, int N, const T *A, int LDA,
+    void hadamard_product(cl::sycl::queue *handle, int M, int N, const T *A, int LDA,
                           T *B, int LDB) {
 
-        sycl::range<3> threads(32, 32, 1);
-        sycl::range<3> blocks(util::div_ceil(M, threads[0]),
+        cl::sycl::range<3> threads(32, 32, 1);
+        cl::sycl::range<3> blocks(util::div_ceil(M, threads[0]),
                                   util::div_ceil(N, threads[1]), 1);
 
-        handle->submit([&](sycl::handler &cgh) {
+        handle->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
-                    sycl::nd_range<3>(
-                        sycl::range<3>(global_range.get(2), global_range.get(1),
+                    cl::sycl::nd_range<3>(
+                        cl::sycl::range<3>(global_range.get(2), global_range.get(1),
                                            global_range.get(0)),
-                        sycl::range<3>(threads.get(2), threads.get(1), threads.get(0))),
-                    [=](sycl::nd_item<3> item_ct) {
+                        cl::sycl::range<3>(threads.get(2), threads.get(1), threads.get(0))),
+                    [=](cl::sycl::nd_item<3> item_ct) {
                         hadamard_product_kernel(M, N, A, LDA, B, LDB, item_ct);
                     });
             });
     }
     template
-    void hadamard_product( sycl::queue    *handle,
+    void hadamard_product( cl::sycl::queue    *handle,
                            int            M,
                            int            N,
                            const double*  A,
