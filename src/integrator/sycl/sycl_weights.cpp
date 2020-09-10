@@ -1,4 +1,5 @@
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/exceptions/sycl_exception.hpp>
 
 #include "sycl_weights.hpp"
 #include "integrator_constants.hpp"
@@ -348,7 +349,7 @@ namespace GauXC {
                     cl::sycl::range<3> blocks(util::div_ceil(npts, threads.get(2)),
                                               util::div_ceil(natoms, threads.get(1)));
 
-                    stream->submit([&](cl::sycl::handler &cgh) {
+                    GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
                             auto global_range = blocks * threads;
 
                             cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -363,7 +364,7 @@ namespace GauXC {
                                                               points_device, dist_scratch_device,
                                                               item_ct);
                                 });
-                        });
+                            }) );
                 }
 
                 const bool partition_weights_1d_kernel = true;
@@ -372,7 +373,7 @@ namespace GauXC {
                     cl::sycl::range<3> threads(1024, 1, 1);
                     cl::sycl::range<3> blocks(util::div_ceil(npts, threads.get(2)));
 
-                    stream->submit([&](cl::sycl::handler &cgh) {
+                    GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
                             auto global_range = blocks * threads;
 
                             cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -387,7 +388,7 @@ namespace GauXC {
                                                                  dist_scratch_device, iparent_device, dist_nearest_device,
                                                                  weights_device, item_ct);
                                 });
-                        });
+                            }) );
                 }
                 else {
                     cl::sycl::range<3> threads(32, 32, 1);
@@ -396,7 +397,7 @@ namespace GauXC {
 
                     if( weight_alg == XCWeightAlg::SSF )
                     {
-                        stream->submit([&](cl::sycl::handler &cgh) {
+                        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
 
                                 cl::sycl::accessor<double, 1,
                                                    cl::sycl::access::mode::read_write,
@@ -417,11 +418,11 @@ namespace GauXC {
                                             dist_scratch_device, iparent_device, dist_nearest_device,
                                             weights_device, item_ct, shared_acc.get_pointer());
                                     });
-                            });
+                                }) );
                     }
                     else
                     {
-                        stream->submit([&](cl::sycl::handler &cgh) {
+                        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
 
                                 cl::sycl::accessor<double, 1,
                                                    cl::sycl::access::mode::read_write,
@@ -442,7 +443,7 @@ namespace GauXC {
                                             dist_scratch_device, iparent_device, weights_device, item_ct,
                                             shared_acc.get_pointer());
                                     });
-                            });
+                                }) );
                     }
                 }
             }

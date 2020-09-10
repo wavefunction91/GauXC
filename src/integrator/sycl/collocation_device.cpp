@@ -1,5 +1,6 @@
 #include <gauxc/util/div_ceil.hpp>
 #include <gauxc/xc_task.hpp>
+#include <gauxc/exceptions/sycl_exception.hpp>
 
 #include "collocation_petite_kernels.hpp"
 #include "collocation_masked_kernels.hpp"
@@ -22,7 +23,7 @@ namespace sycl       {
                                   util::div_ceil(nshells, threads[1]),
                                   1);
 
-        stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
@@ -38,7 +39,7 @@ namespace sycl       {
                                                             offs_device, pts_device, eval_device,
                                                             item_ct);
                     });
-            });
+                }) );
     }
     template
     void eval_collocation_petite(size_t nshells, size_t nbf, size_t npts,
@@ -61,7 +62,7 @@ namespace sycl       {
         cl::sycl::range<3> blocks(util::div_ceil(npts, threads[0]),
                                   util::div_ceil(nshells, threads[1]), 1);
 
-        stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
@@ -74,7 +75,7 @@ namespace sycl       {
                                                            mask_device, offs_device, pts_device,
                                                            eval_device, item_ct);
                     });
-            });
+                }) );
     }
     template
     void eval_collocation_masked(size_t nshells, size_t nbf, size_t npts,
@@ -96,7 +97,7 @@ namespace sycl       {
         cl::sycl::range<3> blocks(util::div_ceil(npts_max, threads[0]),
                                   util::div_ceil(nshells_max, threads[1]), ntasks);
 
-        stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
@@ -108,7 +109,7 @@ namespace sycl       {
                         collocation_device_petite_combined_kernel<T>(ntasks, device_tasks,
                                                                      item_ct);
                     });
-            });
+                }) );
     }
     template
     void eval_collocation_petite_combined(size_t ntasks, size_t npts_max,
@@ -130,7 +131,7 @@ namespace sycl       {
         cl::sycl::range<3> blocks(util::div_ceil(npts_max, threads[0]),
                                   util::div_ceil(nshells_max, threads[1]), ntasks);
 
-        stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
@@ -142,7 +143,7 @@ namespace sycl       {
                         collocation_device_masked_combined_kernel<T>(ntasks, shells_device,
                                                                      device_tasks, item_ct);
                     });
-            });
+                }) );
     }
     template
     void eval_collocation_masked_combined(size_t ntasks, size_t npts_max,
@@ -165,7 +166,7 @@ namespace sycl       {
         cl::sycl::range<3> blocks(util::div_ceil(npts, threads[0]),
                                   util::div_ceil(nshells, threads[1]), 1);
 
-        stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
@@ -179,7 +180,7 @@ namespace sycl       {
                             eval_device, deval_device_x, deval_device_y, deval_device_z,
                             item_ct);
                     });
-            });
+                }) );
     }
     template
     void eval_collocation_petite_deriv1(
@@ -201,7 +202,7 @@ namespace sycl       {
         cl::sycl::range<3> blocks(util::div_ceil(npts, threads[0]),
                                   util::div_ceil(nshells, threads[1]), 1);
 
-        stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
@@ -215,7 +216,7 @@ namespace sycl       {
                             pts_device, eval_device, deval_device_x, deval_device_y,
                             deval_device_z, item_ct);
                     });
-            });
+                }) );
     }
     template
     void eval_collocation_masked_deriv1(
@@ -237,7 +238,7 @@ namespace sycl       {
         cl::sycl::range<3> blocks(util::div_ceil(npts_max, threads[0]),
                                   util::div_ceil(nshells_max, threads[1]), ntasks);
 
-        stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
@@ -249,7 +250,7 @@ namespace sycl       {
                         collocation_device_petite_combined_kernel_deriv1<T>(ntasks, device_tasks,
                                                                             item_ct);
                     });
-            });
+                }) );
     }
     template
     void eval_collocation_petite_combined_deriv1(size_t ntasks, size_t npts_max,
@@ -271,7 +272,7 @@ namespace sycl       {
                                   util::div_ceil(nshells_max, threads[1]),
                                   ntasks);
 
-        stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -285,7 +286,7 @@ namespace sycl       {
                                      collocation_device_masked_combined_kernel_deriv1<T>(
                             ntasks, shells_device, device_tasks, item_ct);
                     });
-            });
+                }) );
     }
     template
     void eval_collocation_masked_combined_deriv1(size_t ntasks, size_t npts_max,

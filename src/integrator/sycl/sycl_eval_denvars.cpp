@@ -1,6 +1,7 @@
 #include "sycl_eval_denvars.hpp"
 #include "sycl_extensions.hpp"
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/exceptions/sycl_exception.hpp>
 
 namespace GauXC      {
 namespace integrator {
@@ -143,7 +144,7 @@ namespace sycl       {
                                   util::div_ceil(max_npts, 32),
                                   ntasks);
 
-        stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -156,7 +157,7 @@ namespace sycl       {
                     [=](cl::sycl::nd_item<3> item_ct) {
                         eval_uvars_lda_kernel(ntasks, tasks_device, item_ct);
                     });
-            });
+                }) );
     }
 
     template <typename T>
@@ -168,7 +169,7 @@ namespace sycl       {
                                   util::div_ceil(max_npts, 32),
                                   ntasks);
 
-        stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -181,7 +182,7 @@ namespace sycl       {
                     [=](cl::sycl::nd_item<3> item_ct) {
                         eval_uvars_gga_kernel(ntasks, tasks_device, item_ct);
                     });
-            });
+                }) );
     }
 
     template <typename T>
@@ -195,7 +196,7 @@ namespace sycl       {
         cl::sycl::range<3> threads(1024, 1, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts, 1024), 1, 1);
 
-        stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -209,7 +210,7 @@ namespace sycl       {
                         eval_vvars_gga_kernel(npts, den_x_device, den_y_device, den_z_device,
                                               gamma_device, item_ct);
                     });
-            });
+                }) );
     }
 }
 }

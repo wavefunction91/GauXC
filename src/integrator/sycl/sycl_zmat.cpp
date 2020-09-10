@@ -1,5 +1,6 @@
 #include "sycl_zmat.hpp"
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/exceptions/sycl_exception.hpp>
 
 namespace GauXC      {
 namespace integrator {
@@ -44,20 +45,20 @@ void zmat_lda_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
                             util::div_ceil(max_npts, threads.get(1)),
                             ntasks);
 
-  stream->submit([&](cl::sycl::handler &cgh) {
-    auto global_range = blocks * threads;
+  GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+              auto global_range = blocks * threads;
 
-    cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
-                                                              global_range.get(1),
-                                                              global_range.get(0)),
-                                           cl::sycl::range<3>(threads.get(2),
-                                                              threads.get(1),
-                                                              threads.get(0))),
+              cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
+                                                                        global_range.get(1),
+                                                                        global_range.get(0)),
+                                                     cl::sycl::range<3>(threads.get(2),
+                                                                        threads.get(1),
+                                                                        threads.get(0))),
 
-        [=](cl::sycl::nd_item<3> item_ct) {
-          zmat_lda_kernel(ntasks, tasks_device, item_ct);
-        });
-  });
+                               [=](cl::sycl::nd_item<3> item_ct) {
+                                   zmat_lda_kernel(ntasks, tasks_device, item_ct);
+                               });
+          }) );
 }
 
 template
@@ -121,7 +122,7 @@ void zmat_gga_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
                             util::div_ceil(max_npts, threads.get(1)),
                             ntasks);
 
-  stream->submit([&](cl::sycl::handler &cgh) {
+  GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
           auto global_range = blocks * threads;
 
           cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -134,7 +135,7 @@ void zmat_gga_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
                            [=](cl::sycl::nd_item<3> item_ct) {
                                zmat_gga_kernel(ntasks, tasks_device, item_ct);
                            });
-      });
+          }) );
 }
 template
 void zmat_gga_sycl( size_t                ntasks,

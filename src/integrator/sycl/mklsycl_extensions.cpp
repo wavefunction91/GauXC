@@ -1,5 +1,6 @@
 #include "mklsycl_extensions.hpp"
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/exceptions/sycl_exception.hpp>
 
 namespace GauXC {
 namespace sycl  {
@@ -11,20 +12,21 @@ namespace blas  {
         if( tid < 1 ) (*Y) += (*X);
     }
     template <typename T> void increment(const T *X, T *Y, cl::sycl::queue *stream) {
-        stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
                 cgh.parallel_for(
                     cl::sycl::nd_range<3>(cl::sycl::range<3>(1, 1, 1), cl::sycl::range<3>(1, 1, 1)),
                     [=](cl::sycl::nd_item<3> item_ct) {
                         increment_kernel(X, Y, item_ct);
                     });
-            });
+                }) );
     }
 
     template <>
     void dot(cl::sycl::queue *handle, int N, const double *X, int INCX, const double *Y,
              int INCY, double *RES) {
 
-        auto stat = ONEAPI::mkl::blas::dot(*handle, N, X, INCX, Y, INCY, RES);
+        // NOTE abb: might need to change `oneapi` to `ONEAPI` in future
+        GAUXC_SYCL_ERROR( auto stat = oneapi::mkl::blas::dot(*handle, N, X, INCX, Y, INCY, RES) );
         handle->wait();  // abb: get rid of wait() after build, test
 
         // if (cl::sycl::get_pointer_type(RES, handle->get_context()) !=
@@ -78,7 +80,7 @@ namespace blas  {
         cl::sycl::range<3> blocks(util::div_ceil(M, threads[0]),
                                   util::div_ceil(N, threads[1]), 1);
 
-        handle->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( handle->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
@@ -89,7 +91,7 @@ namespace blas  {
                     [=](cl::sycl::nd_item<3> item_ct) {
                         hadamard_product_kernel(M, N, A, LDA, B, LDB, item_ct);
                     });
-            });
+                }) );
     }
     template
     void hadamard_product( cl::sycl::queue    *handle,

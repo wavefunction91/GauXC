@@ -1,4 +1,5 @@
 #include "sycl_inc_potential.hpp"
+#include <gauxc/exceptions/sycl_exception.hpp>
 
 namespace GauXC      {
 namespace integrator {
@@ -64,7 +65,7 @@ void task_inc_potential(size_t ntasks, XCTaskDevice<T> *device_tasks,
                         T *V_device, size_t LDV, cl::sycl::queue *stream) {
 
     cl::sycl::range<3> threads(32, 32, 1), blocks(1, 1, ntasks);
-    stream->submit([&](cl::sycl::handler &cgh) {
+    GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
             auto global_range = blocks * threads;
 
             cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -78,7 +79,7 @@ void task_inc_potential(size_t ntasks, XCTaskDevice<T> *device_tasks,
                     inc_by_submat_combined_kernel(ntasks, device_tasks, V_device, LDV,
                                                   item_ct);
                 });
-        });
+            }) );
 }
 
 template
