@@ -2,12 +2,11 @@
 #include <cstdint>
 
 namespace GauXC  {
-namespace detail {
+namespace integrator::host {
 
 template <typename F>
 void zmat_lda_host( int32_t   npts,
                     int32_t   nbf,
-                    const F*  weights,
                     const F*  vrho,
                     const F*  basis,
                     F*        z_matrix ); 
@@ -15,7 +14,6 @@ void zmat_lda_host( int32_t   npts,
 template <typename F>
 void zmat_gga_host( int32_t   npts,
                     int32_t   nbf,
-                    const F*  weights,
                     const F*  vrho,
                     const F*  vgamma,
                     const F*  basis,

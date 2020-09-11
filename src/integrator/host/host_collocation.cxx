@@ -1,7 +1,7 @@
 #include "host_collocation.hpp"
 #include "gau2grid.h"
 
-namespace GauXC::detail {
+namespace GauXC::integrator::host {
 
 void eval_collocation( size_t                  npts, 
                        size_t                  nshells,
@@ -15,7 +15,7 @@ void eval_collocation( size_t                  npts,
   auto* rv = a.allocate( npts * nbe );
 
   size_t ncomp = 0;
-  for( int i = 0; i < nshells; ++i ) {
+  for( size_t i = 0; i < nshells; ++i ) {
 
     const auto& sh = basis.at(shell_mask[i]);
     int order = sh.pure() ? GG_SPHERICAL_CCA : GG_CARTESIAN_CCA; 
@@ -49,7 +49,7 @@ void eval_collocation_deriv1( size_t                  npts,
   auto* rv_z = rv_y + npts * nbe;
 
   size_t ncomp = 0;
-  for( int i = 0; i < nshells; ++i ) {
+  for( size_t i = 0; i < nshells; ++i ) {
 
     const auto& sh = basis.at(shell_mask[i]);
     int order = sh.pure() ? GG_SPHERICAL_CCA : GG_CARTESIAN_CCA; 

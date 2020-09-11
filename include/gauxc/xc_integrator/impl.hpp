@@ -1,7 +1,6 @@
 #pragma once
 
-
-#include <gauxc/xc_integrator/integrator_defaults.hpp>
+#include <gauxc/xc_integrator/integrator_factory.hpp>
 
 namespace GauXC {
 
@@ -10,15 +9,19 @@ XCIntegrator<MatrixType>::XCIntegrator( std::unique_ptr<pimpl_type>&& pimpl ) :
   pimpl_( std::move( pimpl ) ) { }
 
 template <typename MatrixType>
-XCIntegrator<MatrixType>::XCIntegrator( MPI_Comm comm, const functional_type& func, 
-  const basisset_type& basis, std::shared_ptr<LoadBalancer> lb) :
-  XCIntegrator( detail::make_default_host_integrator<MatrixType>(
-    comm,
-    std::make_shared<functional_type>(func),
-    std::make_shared<basisset_type>(basis),
-    lb
+XCIntegrator<MatrixType>::XCIntegrator( ExecutionSpace ex, MPI_Comm comm, 
+                                        const functional_type& func, 
+                                        const basisset_type& basis, 
+                                        std::shared_ptr<LoadBalancer> lb) :
+  XCIntegrator( detail::integrator_factory<MatrixType>(
+    ex, comm, func, basis, lb
   )) { }
 
+template <typename MatrixType>
+XCIntegrator<MatrixType>::XCIntegrator( MPI_Comm comm, const functional_type& func, 
+                                        const basisset_type& basis, 
+                                        std::shared_ptr<LoadBalancer> lb) :
+  XCIntegrator( ExecutionSpace::Host, comm, func, basis, lb ) { };
 
 template <typename MatrixType>
 XCIntegrator<MatrixType>::~XCIntegrator() noexcept = default;

@@ -7,8 +7,10 @@
 #include "blas.hpp"
 #include "util.hpp"
 
+#include <Eigen/Core>
+
 namespace GauXC  {
-namespace detail {
+namespace integrator::host {
 
 
 
@@ -27,8 +29,14 @@ void process_batches_host_replicated_p(
   F*                     n_el
 ) {
 
+  auto task_comparator = []( const XCTask& a, const XCTask& b ) {
+    return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
+  };
+  std::sort( tasks.begin(), tasks.end(), task_comparator );
+
+
   partition_weights_host( weight_alg, mol, meta, tasks );
-  const auto nbf = basis.nbf();
+  const int32_t nbf = basis.nbf();
 
   std::fill( VXC, VXC + size_t(nbf)*nbf, F(0.) );
 
@@ -37,9 +45,9 @@ void process_batches_host_replicated_p(
 
     auto& task = tasks[iT];
 
-    const size_t  npts    = task.points.size();
-    const size_t  nbe     = task.nbe;
-    const size_t  nshells = task.shell_list.size();
+    const int32_t  npts    = task.points.size();
+    const int32_t  nbe     = task.nbe;
+    const int32_t  nshells = task.shell_list.size();
 
     const F* points      = task.points.data()->data();
     const F* weights     = task.weights.data();
@@ -88,7 +96,7 @@ void process_batches_host_replicated_p(
     // Extrat Submatrix
     const F* den_ptr_use = P;
     if( nbe != nbf ) {
-      submat_set( nbf, nbf, nbe, nbe, P, nbf, nbe_scr, nbe, submat_map );
+      detail::submat_set( nbf, nbf, nbe, nbe, P, nbf, nbe_scr, nbe, submat_map );
       den_ptr_use = nbe_scr;
     } 
 
@@ -130,37 +138,49 @@ void process_batches_host_replicated_p(
     else
       func.eval_exc_vxc( npts, den_eval, eps, vrho );
 
+
+    // Factor weights into XC results
+    for( int32_t i = 0; i < npts; ++i ) {
+      eps[i]  *= weights[i];
+      vrho[i] *= weights[i];
+    }
+
+    if( func.is_gga() )
+      for( int32_t i = 0; i < npts; ++i ) vgamma[i] *= weights[i];
+    
+
+
     // Scalar integrations
     if( n_el )
       for( int32_t i = 0; i < npts; ++i ) *n_el += weights[i] * den_eval[i];
 
-    for( int32_t i = 0; i < npts; ++i ) *exc += weights[i] * den_eval[i] * eps[i];
+    for( int32_t i = 0; i < npts; ++i ) *exc += eps[i] * den_eval[i];
     
 
     // Assemble Z
     if( func.is_gga() )
-      zmat_gga_host( npts, nbe, weights, vrho, vgamma, basis_eval, dbasis_x_eval,
+      zmat_gga_host( npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
                      dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval,
                      dden_z_eval, zmat ); 
     else
-      zmat_lda_host( npts, nbe, weights, vrho, basis_eval, zmat ); 
+      zmat_lda_host( npts, nbe, vrho, basis_eval, zmat ); 
 
 
-    // Update VXC
+
+    // Update VXC XXX: Only LT
     GauXC::blas::syr2k( 'L', 'N', nbe, npts, F(1.), basis_eval,
                         nbe, zmat, nbe, F(0.), nbe_scr, nbe );
 
-    inc_by_submat( nbf, nbf, nbe, nbe, VXC, nbf, nbe_scr, nbe,
-                   submat_map );
+
+    detail::inc_by_submat( nbf, nbf, nbe, nbe, VXC, nbf, nbe_scr, nbe,
+                           submat_map );
   }
 
-  // Symmetrize
+  // Symmetrize VXC
   for( int32_t j = 0;   j < nbf; ++j )
   for( int32_t i = j+1; i < nbf; ++i )
     VXC[ j + i*nbf ] = VXC[ i + j*nbf ];
 
-  //std::cout << std::scientific << std::setprecision(12);
-  //std::cout << "NEL = " << *n_el << std::endl;
 }
 
 

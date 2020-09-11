@@ -13,6 +13,10 @@ void submat_set(int32_t M, int32_t N, int32_t MSub,
   int32_t LDAS, 
   std::vector<std::pair<int32_t,int32_t>> &submat_map) {
 
+  (void)(M);
+  (void)(N);
+  (void)(MSub);
+  (void)(NSub);
 
   int32_t i(0);
   for( auto& iCut : submat_map ) {
@@ -43,6 +47,10 @@ void inc_by_submat(int32_t M, int32_t N, int32_t MSub,
   int32_t LDAS, 
   std::vector<std::pair<int32_t,int32_t>> &submat_map) {
 
+  (void)(M);
+  (void)(N);
+  (void)(MSub);
+  (void)(NSub);
 
   int32_t i(0);
   for( auto& iCut : submat_map ) {

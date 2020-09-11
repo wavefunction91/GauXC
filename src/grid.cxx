@@ -10,7 +10,7 @@ Grid::Grid( RadialQuad rq, RadialSize rs, AngularSize as, RadialScale rscal,
   pimpl_(std::make_shared<detail::GridImpl>(rq, rs, as, rscal, bs)) { }
 
 Grid::Grid( RadialQuad rq, RadialSize rs, AngularSize as, RadialScale rscal ) :
-  Grid( rq, rs, as, rscal, default_batch_sz ) { };
+  Grid( rq, rs, as, rscal, default_batch_sz ) { }
 
 Grid::Grid( RadialSize rs, AngularSize as, RadialScale rscal, BatchSize bs ) :
   Grid( RadialQuad::MuraKnowles, rs, as, rscal, bs ) { }

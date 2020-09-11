@@ -4,9 +4,11 @@
 #include <cmath>
 #include <iostream>
 #include <cassert>
+#include <algorithm>
 
 #include <gauxc/named_type.hpp>
 #include <gauxc/gauxc_config.hpp>
+#include <gauxc/util/contiguous_container_data.hpp>
 
 
 namespace GauXC {
@@ -142,12 +144,24 @@ public:
   inline HOST_DEVICE_ACCESSIBLE int32_t l()     const { return l_;     }
   inline HOST_DEVICE_ACCESSIBLE int32_t pure()  const { return pure_;  }
 
-  inline HOST_DEVICE_ACCESSIBLE const F* alpha_data()  const { return &alpha_[0]; }
-  inline HOST_DEVICE_ACCESSIBLE const F* coeff_data()  const { return &coeff_[0]; }
-  inline HOST_DEVICE_ACCESSIBLE const double* O_data() const { return &O_[0];     }
-  inline HOST_DEVICE_ACCESSIBLE       F* alpha_data()        { return &alpha_[0]; }
-  inline HOST_DEVICE_ACCESSIBLE       F* coeff_data()        { return &coeff_[0]; }
-  inline HOST_DEVICE_ACCESSIBLE       double* O_data()       { return &O_[0];     }
+  inline HOST_DEVICE_ACCESSIBLE const F* alpha_data()  const { 
+    return detail::contiguous_data(alpha_); 
+  }
+  inline HOST_DEVICE_ACCESSIBLE const F* coeff_data()  const { 
+    return detail::contiguous_data(coeff_); 
+  }
+  inline HOST_DEVICE_ACCESSIBLE const double* O_data() const { 
+    return detail::contiguous_data(O_);     
+  }
+  inline HOST_DEVICE_ACCESSIBLE  F* alpha_data()   { 
+    return detail::contiguous_data(alpha_); 
+  }
+  inline HOST_DEVICE_ACCESSIBLE  F* coeff_data()   { 
+    return detail::contiguous_data(coeff_); 
+  }
+  inline HOST_DEVICE_ACCESSIBLE  double* O_data()  { 
+    return detail::contiguous_data(O_);     
+  }
 
   inline HOST_DEVICE_ACCESSIBLE double cutoff_radius() const { 
     return cutoff_radius_;

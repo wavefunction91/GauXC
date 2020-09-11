@@ -1,7 +1,7 @@
 #include "host_weights.hpp"
 #include <integrator_constants.hpp>
 
-namespace GauXC::detail {
+namespace GauXC::integrator::host {
 
 void ssf_weights_host(
   const Molecule&        mol,
@@ -56,7 +56,7 @@ void becke_weights_host(
   std::vector<double> partitionScratch( natoms );
   std::vector<double> atomDist( natoms );
 
-  #pragma omp for collapse(2)
+  #pragma omp for
   for( size_t iT = 0; iT < ntasks;                  ++iT )
   for( size_t i  = 0; i  < tasks[iT].points.size(); ++i  ) {
 
@@ -127,7 +127,7 @@ void ssf_weights_host(
   std::vector<double> partitionScratch( natoms );
   std::vector<double> atomDist( natoms );
 
-  #pragma omp for collapse(2)
+  #pragma omp for
   for( size_t iT = 0; iT < ntasks;                  ++iT )
   for( size_t i  = 0; i  < tasks[iT].points.size(); ++i  ) {
 
@@ -151,7 +151,7 @@ void ssf_weights_host(
     // Compute distances of each center to point
     for(size_t iA = 0; iA < natoms; iA++) {
 
-      if( iA == task.iParent ) continue;
+      if( iA == (size_t)task.iParent ) continue;
 
       const double da_x = point[0] - mol[iA].x;
       const double da_y = point[1] - mol[iA].y;

@@ -30,7 +30,18 @@ endif()
 #add_executable( gauxc_grid_test grid_test.cxx )
 #target_link_libraries( gauxc_grid_test PUBLIC gauxc catch2_main )
 
-add_executable( gauxc_test ut_main.cxx moltypes_test.cxx grid_test.cxx molgrid_test.cxx basisset_test.cxx load_balancer_test.cxx xc_integrator.cxx standards.cxx )
+add_executable( gauxc_test 
+  ut_main.cxx 
+  moltypes_test.cxx 
+  grid_test.cxx 
+  molgrid_test.cxx 
+  basisset_test.cxx 
+  load_balancer_test.cxx 
+  xc_integrator.cxx 
+  collocation.cxx
+  weights.cxx
+  standards.cxx 
+)
 target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 )
 
 

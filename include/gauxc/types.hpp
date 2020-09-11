@@ -24,3 +24,5 @@ using batcher_type = IntegratorXX::SphericalMicroBatcher<
 >;
 
 }
+
+#include <gauxc/enums.hpp>

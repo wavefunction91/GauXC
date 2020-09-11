@@ -10,7 +10,7 @@ namespace detail {
 
 GridImpl::GridImpl( RadialQuad rq, RadialSize rs, AngularSize as, 
   RadialScale rscal, BatchSize bs ) : 
-  n_rad_(rs), n_ang_(as), max_batch_sz_(bs), rquad_(rq), r_scal_(rscal) {
+  n_rad_(rs), n_ang_(as), max_batch_sz_(bs), r_scal_(rscal), rquad_(rq)  {
 
   generate();
 

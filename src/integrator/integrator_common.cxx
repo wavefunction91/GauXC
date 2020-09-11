@@ -1,7 +1,8 @@
 #include "integrator_common.hpp"
 
 
-namespace GauXC {
+namespace GauXC      {
+namespace integrator {
 
 std::vector< std::pair<int32_t, int32_t> >
   gen_compressed_submat_map( const BasisSet<double>&       basis,
@@ -45,4 +46,5 @@ std::vector< std::pair<int32_t, int32_t> >
 
 
 
+}
 }

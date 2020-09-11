@@ -69,7 +69,7 @@ auto micro_batch_screen(
 
 
   std::vector<int32_t> shell_list; shell_list.reserve(bs.nshells());
-  for(auto iSh = 0; iSh < bs.size(); ++iSh) {
+  for(auto iSh = 0ul; iSh < bs.size(); ++iSh) {
 
     const auto& center = bs[iSh].O();
     const auto  crad   = bs[iSh].cutoff_radius();
@@ -185,7 +185,7 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
 
 
     // Assign Tasks to MPI ranks
-    if( (iCurrent+1) % atBatchSz == 0 or iCurrent == (natoms-1) ) {
+    if( (iCurrent+1) % atBatchSz == 0 or iCurrent == ((int32_t)natoms-1) ) {
 
       // Sort based on task index for deterministic assignment
       std::sort( temp_tasks.begin(), temp_tasks.end(), 
@@ -197,8 +197,8 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
       for( size_t ibatch = 0; ibatch < temp_tasks.size(); ++ibatch ) {
 
         XCTask task = std::move(temp_tasks.at(ibatch).second);
-        auto& points = task.points;
-        auto  nbe    = task.nbe;
+        //auto& points = task.points;
+        //auto  nbe    = task.nbe;
 
         // Get rank with minimum work
         auto min_rank_it = 

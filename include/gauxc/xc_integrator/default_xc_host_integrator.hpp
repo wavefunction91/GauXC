@@ -6,6 +6,7 @@
 namespace GauXC  {
 namespace detail {
 
+using namespace GauXC::integrator::host;
 
 
 template <typename MatrixType>
@@ -66,7 +67,7 @@ typename DefaultXCHostIntegrator<MatrixType>::exc_vxc_type
 
   // Compute Local contributions to EXC / VXC
   process_batches_host_replicated_p< value_type>(
-    n_deriv,XCWeightAlg::SSF, *this->func_, *this->basis_,
+    n_deriv, XCWeightAlg::SSF, *this->func_, *this->basis_,
     this->load_balancer_->molecule(), this->load_balancer_->molmeta(),
     *host_data_, tasks, P.data(), VXC.data(), &EXC, &N_EL 
   );

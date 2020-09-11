@@ -54,9 +54,25 @@ void lacpy( char UPLO, int M, int N, const T* A, int LDA, T* B,
   else throw std::runtime_error("LACPY NYI");
 */
 
-  for( int j = 0; j < N; ++j )
-  for( int i = 0; i < M; ++i )
-    B[i + j*LDB] = A[i + j*LDA];
+  if( UPLO == 'L' ) {
+
+    for( int j = 0; j < N; ++j )
+    for( int i = j; i < M; ++i )
+      B[i + j*LDB] = A[i + j*LDA];
+
+  } else if( UPLO == 'U' ) {
+
+    for( int j = 0; j <  N; ++j )
+    for( int i = 0; i <= j; ++i )
+      B[i + j*LDB] = A[i + j*LDA];
+
+  } else {
+
+    for( int j = 0; j < N; ++j )
+    for( int i = 0; i < M; ++i )
+      B[i + j*LDB] = A[i + j*LDA];
+
+  }
 
 }
 

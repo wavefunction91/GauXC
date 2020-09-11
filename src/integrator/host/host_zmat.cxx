@@ -2,12 +2,11 @@
 #include "blas.hpp"
 
 namespace GauXC  {
-namespace detail {
+namespace integrator::host {
 
 template <typename F>
 void zmat_lda_host( int32_t   npts,
                     int32_t   nbf,
-                    const F*  weights,
                     const F*  vrho,
                     const F*  basis,
                     F*        z_matrix ) {
@@ -19,7 +18,7 @@ void zmat_lda_host( int32_t   npts,
 
     auto* z_col = z_matrix + i*nbf;
 
-    const F fact = 0.5 * vrho[i] * weights[i];
+    const F fact = 0.5 * vrho[i];
     GauXC::blas::scal( nbf, fact, z_col, 1 );
 
   }
@@ -29,14 +28,12 @@ void zmat_lda_host( int32_t   npts,
 template
 void zmat_lda_host( int32_t    npts,
                     int32_t    nbf,
-                    const float*  weights,
                     const float*  vrho,
                     const float*  basis,
                     float*        z_matrix ); 
 template
 void zmat_lda_host( int32_t    npts,
                     int32_t    nbf,
-                    const double*  weights,
                     const double*  vrho,
                     const double*  basis,
                     double*        z_matrix ); 
@@ -46,7 +43,6 @@ void zmat_lda_host( int32_t    npts,
 template <typename F>
 void zmat_gga_host( int32_t   npts,
                     int32_t   nbf,
-                    const F*  weights,
                     const F*  vrho,
                     const F*  vgamma,
                     const F*  basis,
@@ -70,10 +66,10 @@ void zmat_gga_host( int32_t   npts,
     auto* bf_y_col = dbasis_y + ioff; 
     auto* bf_z_col = dbasis_z + ioff; 
 
-    const F lda_fact = 0.5 * vrho[i] * weights[i];
+    const F lda_fact = 0.5 * vrho[i];
     GauXC::blas::scal( nbf, lda_fact, z_col, 1 );
 
-    const F gga_fact = 2. * vgamma[i] * weights[i]; 
+    const F gga_fact = 2. * vgamma[i]; 
     const auto x_fact = gga_fact * dden_x[i];
     const auto y_fact = gga_fact * dden_y[i];
     const auto z_fact = gga_fact * dden_z[i];
@@ -89,7 +85,6 @@ void zmat_gga_host( int32_t   npts,
 template 
 void zmat_gga_host( int32_t    npts,
                     int32_t    nbf,
-                    const float*  weights,
                     const float*  vrho,
                     const float*  vgamma,
                     const float*  basis,
@@ -104,7 +99,6 @@ void zmat_gga_host( int32_t    npts,
 template 
 void zmat_gga_host( int32_t    npts,
                     int32_t    nbf,
-                    const double*  weights,
                     const double*  vrho,
                     const double*  vgamma,
                     const double*  basis,
