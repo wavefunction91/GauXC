@@ -16,14 +16,14 @@ namespace sycl       {
                                  const Shell<T> *shells_device,
                                  const size_t *offs_device,
                                  const T *pts_device, T *eval_device,
-                                 cl::sycl::queue *stream) {
+                                 cl::sycl::queue *queue) {
 
         cl::sycl::range<3> threads(32, 32, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts, threads[0]),
                                   util::div_ceil(nshells, threads[1]),
                                   1);
 
-        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
@@ -46,7 +46,7 @@ namespace sycl       {
                                  const Shell<double> *shells_device,
                                  const size_t *offs_device,
                                  const double *pts_device, double *eval_device,
-                                 cl::sycl::queue *stream);
+                                 cl::sycl::queue *queue);
 
 
 
@@ -56,13 +56,13 @@ namespace sycl       {
                                  const size_t *mask_device,
                                  const size_t *offs_device,
                                  const T *pts_device, T *eval_device,
-                                 cl::sycl::queue *stream) {
+                                 cl::sycl::queue *queue) {
 
         cl::sycl::range<3> threads(32, 32, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts, threads[0]),
                                   util::div_ceil(nshells, threads[1]), 1);
 
-        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
@@ -83,7 +83,7 @@ namespace sycl       {
                                  const size_t *mask_device,
                                  const size_t *offs_device,
                                  const double *pts_device, double *eval_device,
-                                 cl::sycl::queue *stream);
+                                 cl::sycl::queue *queue);
 
 
 
@@ -91,13 +91,13 @@ namespace sycl       {
     void eval_collocation_petite_combined(size_t ntasks, size_t npts_max,
                                           size_t nshells_max,
                                           XCTaskDevice<T> *device_tasks,
-                                          cl::sycl::queue *stream) {
+                                          cl::sycl::queue *queue) {
 
         cl::sycl::range<3> threads(32, 32, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts_max, threads[0]),
                                   util::div_ceil(nshells_max, threads[1]), ntasks);
 
-        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
@@ -115,7 +115,7 @@ namespace sycl       {
     void eval_collocation_petite_combined(size_t ntasks, size_t npts_max,
                                           size_t nshells_max,
                                           XCTaskDevice<double> *device_tasks,
-                                          cl::sycl::queue *stream);
+                                          cl::sycl::queue *queue);
 
 
 
@@ -125,13 +125,13 @@ namespace sycl       {
                                           size_t nshells_max,
                                           Shell<T> *shells_device,
                                           XCTaskDevice<T> *device_tasks,
-                                          cl::sycl::queue *stream) {
+                                          cl::sycl::queue *queue) {
 
         cl::sycl::range<3> threads(32, 32, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts_max, threads[0]),
                                   util::div_ceil(nshells_max, threads[1]), ntasks);
 
-        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
@@ -150,7 +150,7 @@ namespace sycl       {
                                           size_t nshells_max,
                                           Shell<double> *shells_device,
                                           XCTaskDevice<double> *device_tasks,
-                                          cl::sycl::queue *stream);
+                                          cl::sycl::queue *queue);
 
 
 
@@ -160,13 +160,13 @@ namespace sycl       {
         size_t nshells, size_t nbf, size_t npts, const Shell<T> *shells_device,
         const size_t *offs_device, const T *pts_device, T *eval_device,
         T *deval_device_x, T *deval_device_y, T *deval_device_z,
-        cl::sycl::queue *stream) {
+        cl::sycl::queue *queue) {
 
         cl::sycl::range<3> threads(32, 32, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts, threads[0]),
                                   util::div_ceil(nshells, threads[1]), 1);
 
-        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
@@ -187,7 +187,7 @@ namespace sycl       {
         size_t nshells, size_t nbf, size_t npts, const Shell<double> *shells_device,
         const size_t *offs_device, const double *pts_device, double *eval_device,
         double *deval_device_x, double *deval_device_y, double *deval_device_z,
-        cl::sycl::queue *stream);
+        cl::sycl::queue *queue);
 
 
 
@@ -196,13 +196,13 @@ namespace sycl       {
         size_t nshells, size_t nbf, size_t npts, const Shell<T> *shells_device,
         const size_t *mask_device, const size_t *offs_device,
         const T *pts_device, T *eval_device, T *deval_device_x,
-        T *deval_device_y, T *deval_device_z, cl::sycl::queue *stream) {
+        T *deval_device_y, T *deval_device_z, cl::sycl::queue *queue) {
 
         cl::sycl::range<3> threads(32, 32, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts, threads[0]),
                                   util::div_ceil(nshells, threads[1]), 1);
 
-        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
@@ -223,7 +223,7 @@ namespace sycl       {
         size_t nshells, size_t nbf, size_t npts, const Shell<double> *shells_device,
         const size_t *mask_device, const size_t *offs_device,
         const double *pts_device, double *eval_device, double *deval_device_x,
-        double *deval_device_y, double *deval_device_z, cl::sycl::queue *stream);
+        double *deval_device_y, double *deval_device_z, cl::sycl::queue *queue);
 
 
 
@@ -232,13 +232,13 @@ namespace sycl       {
     void eval_collocation_petite_combined_deriv1(size_t ntasks, size_t npts_max,
                                                  size_t nshells_max,
                                                  XCTaskDevice<T> *device_tasks,
-                                                 cl::sycl::queue *stream) {
+                                                 cl::sycl::queue *queue) {
 
         cl::sycl::range<3> threads(32, 32, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts_max, threads[0]),
                                   util::div_ceil(nshells_max, threads[1]), ntasks);
 
-        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(
@@ -256,7 +256,7 @@ namespace sycl       {
     void eval_collocation_petite_combined_deriv1(size_t ntasks, size_t npts_max,
                                                  size_t nshells_max,
                                                  XCTaskDevice<double> *device_tasks,
-                                                 cl::sycl::queue *stream);
+                                                 cl::sycl::queue *queue);
 
 
 
@@ -265,14 +265,14 @@ namespace sycl       {
                                                  size_t nshells_max,
                                                  Shell<T> *shells_device,
                                                  XCTaskDevice<T> *device_tasks,
-                                                 cl::sycl::queue *stream) {
+                                                 cl::sycl::queue *queue) {
 
         cl::sycl::range<3> threads(32, 32, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts_max, threads[0]),
                                   util::div_ceil(nshells_max, threads[1]),
                                   ntasks);
 
-        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -293,7 +293,7 @@ namespace sycl       {
                                                  size_t nshells_max,
                                                  Shell<double> *shells_device,
                                                  XCTaskDevice<double> *device_tasks,
-                                                 cl::sycl::queue *stream) {
+                                                 cl::sycl::queue *queue) {
 
 
 } // namespace sycl

@@ -62,10 +62,10 @@ void inc_by_submat_combined_kernel( size_t           ntasks,
 
 template <typename T>
 void task_inc_potential(size_t ntasks, XCTaskDevice<T> *device_tasks,
-                        T *V_device, size_t LDV, cl::sycl::queue *stream) {
+                        T *V_device, size_t LDV, cl::sycl::queue *queue) {
 
     cl::sycl::range<3> threads(32, 32, 1), blocks(1, 1, ntasks);
-    GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+    GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
             auto global_range = blocks * threads;
 
             cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -87,7 +87,7 @@ void task_inc_potential( size_t                ntasks,
                          XCTaskDevice<double>* device_tasks,
                          double*               V_device,
                          size_t                LDV,
-                         cl::sycl::queue*      stream );
+                         cl::sycl::queue*      queue );
 
 }
 }

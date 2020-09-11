@@ -341,7 +341,7 @@ namespace GauXC {
                                             const F *atomic_coords_device,
                                             F *weights_device,
                                             F *dist_scratch_device,
-                                            cl::sycl::queue *stream) {
+                                            cl::sycl::queue *queue) {
 
                 // Evaluate point-to-atom collocation
                 {
@@ -349,7 +349,7 @@ namespace GauXC {
                     cl::sycl::range<3> blocks(util::div_ceil(npts, threads.get(2)),
                                               util::div_ceil(natoms, threads.get(1)));
 
-                    GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+                    GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                             auto global_range = blocks * threads;
 
                             cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -373,7 +373,7 @@ namespace GauXC {
                     cl::sycl::range<3> threads(1024, 1, 1);
                     cl::sycl::range<3> blocks(util::div_ceil(npts, threads.get(2)));
 
-                    GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+                    GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                             auto global_range = blocks * threads;
 
                             cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -397,7 +397,7 @@ namespace GauXC {
 
                     if( weight_alg == XCWeightAlg::SSF )
                     {
-                        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+                        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
 
                                 cl::sycl::accessor<double, 1,
                                                    cl::sycl::access::mode::read_write,
@@ -422,7 +422,7 @@ namespace GauXC {
                     }
                     else
                     {
-                        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+                        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
 
                                 cl::sycl::accessor<double, 1,
                                                    cl::sycl::access::mode::read_write,
@@ -459,7 +459,7 @@ namespace GauXC {
                                              const double*  atomic_coords_device,
                                              double*  weights_device,
                                              double*  dist_scratch_device,
-                                             cl::sycl::queue *stream);
+                                             cl::sycl::queue *queue);
 
         }
     }

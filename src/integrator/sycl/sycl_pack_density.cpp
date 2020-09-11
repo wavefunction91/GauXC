@@ -61,11 +61,11 @@ namespace sycl       {
 
     template <typename T>
     void task_pack_density_matrix(size_t ntasks, XCTaskDevice<T> *device_tasks,
-                                  T *P_device, size_t LDP, cl::sycl::queue *stream) {
+                                  T *P_device, size_t LDP, cl::sycl::queue *queue) {
 
         cl::sycl::range<3> threads(32, 32, 1), blocks(1, 1, ntasks);
 
-        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -86,7 +86,7 @@ namespace sycl       {
                                    XCTaskDevice<double>* device_tasks,
                                    double*               P_device,
                                    size_t                LDP,
-                                   cl::sycl::queue*      stream );
+                                   cl::sycl::queue*      queue );
 
 }
 }

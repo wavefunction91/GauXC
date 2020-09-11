@@ -1,15 +1,15 @@
-#include <gauxc/xc_integrator/xc_cuda_util.hpp>
-#include <gauxc/util/cuda_util.hpp>
+#include <gauxc/xc_integrator/xc_sycl_util.hpp>
+#include <gauxc/util/sycl_util.hpp>
 
-#include "cuda_weights.hpp"
+#include "sycl_weights.hpp"
 #include "collocation_device.hpp"
-#include "cuda_pack_density.hpp"
-#include "cuda_inc_potential.hpp"
-#include "cuda_eval_denvars.hpp"
-#include "cuda_zmat.hpp"
+#include "sycl_pack_density.hpp"
+#include "sycl_inc_potential.hpp"
+#include "sycl_eval_denvars.hpp"
+#include "sycl_zmat.hpp"
 #include "integrator_common.hpp"
-  
-#include "cublas_extensions.hpp"
+
+#include "mklsycl_extensions.hpp"
 
 #include <Eigen/Core>
 
@@ -21,40 +21,40 @@ inline static void unused( const T& t, Args&&... args ) {
 }
 
 namespace GauXC  {
-namespace integrator::cuda {
+namespace integrator::sycl {
 
-using namespace GauXC::cuda::blas;
+using namespace GauXC::sycl::blas;
 
 using host_task_iterator = std::vector<XCTask>::iterator;
 
 template <typename F>
-using cuda_task_iterator = typename std::vector<XCTaskDevice<F>>::iterator;
+using sycl_task_iterator = typename std::vector<XCTaskDevice<F>>::iterator;
 
 template <typename F, size_t n_deriv>
-void process_batches_cuda_replicated_all_device(
+void process_batches_sycl_replicated_all_device(
   XCWeightAlg            weight_alg,
   const functional_type& func,
-  XCCudaData<F>&         cuda_data,
-  cuda_task_iterator<F>  task_begin,
-  cuda_task_iterator<F>  task_end
+  XCSyclData<F>&         sycl_data,
+  sycl_task_iterator<F>  task_begin,
+  sycl_task_iterator<F>  task_end
 ) {
 
   const auto ntasks = std::distance( task_begin, task_end );
-  const auto nbf    = cuda_data.nbf;
+  const auto nbf    = sycl_data.nbf;
 
   // Get batch statistics for batches to process
-  auto nbe_comparator = 
+  auto nbe_comparator =
     []( const auto& a, const auto& b ){ return a.nbe < b.nbe; };
-  auto npts_comparator = 
+  auto npts_comparator =
     []( const auto& a, const auto& b ){ return a.npts < b.npts; };
-  auto nshells_comparator = 
+  auto nshells_comparator =
     []( const auto& a, const auto& b ){ return a.nshells < b.nshells; };
 
-  auto [min_nbe_it, max_nbe_it] = 
+  auto [min_nbe_it, max_nbe_it] =
     std::minmax_element( task_begin, task_end, nbe_comparator );
-  auto [min_npts_it, max_npts_it] = 
+  auto [min_npts_it, max_npts_it] =
     std::minmax_element( task_begin, task_end, npts_comparator );
-  auto [min_nshells_it, max_nshells_it] = 
+  auto [min_nshells_it, max_nshells_it] =
     std::minmax_element( task_begin, task_end, nshells_comparator );
 
   const auto min_nbe     = min_nbe_it->nbe;
@@ -66,77 +66,75 @@ void process_batches_cuda_replicated_all_device(
 
   unused( min_nbe, min_npts, min_nshells );
 
-  const size_t total_npts = 
-    std::accumulate( task_begin, task_end, 0ul, 
+  const size_t total_npts =
+    std::accumulate( task_begin, task_end, 0ul,
                      []( const auto& a, const auto& b ) { return a + b.npts; } );
 
 
   // Aliases
-  cudaStream_t   master_stream = *cuda_data.master_stream;
-  magma_queue_t  master_queue  = *cuda_data.master_magma_queue;
-  cublasHandle_t master_handle = *cuda_data.master_handle;
+  cl::sycl::queue& master_queue = *(sycl_data.master_queue);
 
-  auto* dmat_device         = cuda_data.dmat_device;
+  auto* dmat_device         = sycl_data.dmat_device;
 
-  auto* shells_device       = cuda_data.shells_device;
-  auto* tasks_device        = cuda_data.device_tasks;
-  auto* dmat_array_device   = cuda_data.dmat_array_device;
-  auto* zmat_array_device   = cuda_data.zmat_array_device;
-  auto* bf_array_device     = cuda_data.bf_array_device;
-  auto* weights_device      = cuda_data.weights_device_buffer;
-  auto* dist_scratch_device = cuda_data.dist_scratch_device;
+  auto* shells_device       = sycl_data.shells_device;
+  auto* tasks_device        = sycl_data.device_tasks;
+  auto* dmat_array_device   = sycl_data.dmat_array_device;
+  auto* zmat_array_device   = sycl_data.zmat_array_device;
+  auto* bf_array_device     = sycl_data.bf_array_device;
+  auto* weights_device      = sycl_data.weights_device_buffer;
+  auto* dist_scratch_device = sycl_data.dist_scratch_device;
 
-  auto* den_eval_device     = cuda_data.den_eval_device;
-  auto* dden_x_eval_device  = cuda_data.den_x_eval_device;
-  auto* dden_y_eval_device  = cuda_data.den_y_eval_device;
-  auto* dden_z_eval_device  = cuda_data.den_z_eval_device;
+  auto* den_eval_device     = sycl_data.den_eval_device;
+  auto* dden_x_eval_device  = sycl_data.den_x_eval_device;
+  auto* dden_y_eval_device  = sycl_data.den_y_eval_device;
+  auto* dden_z_eval_device  = sycl_data.den_z_eval_device;
 
-  auto* eps_eval_device     = cuda_data.eps_eval_device;
-  auto* gamma_eval_device   = cuda_data.gamma_eval_device;
-  auto* vrho_eval_device    = cuda_data.vrho_eval_device;
-  auto* vgamma_eval_device  = cuda_data.vgamma_eval_device;
+  auto* eps_eval_device     = sycl_data.eps_eval_device;
+  auto* gamma_eval_device   = sycl_data.gamma_eval_device;
+  auto* vrho_eval_device    = sycl_data.vrho_eval_device;
+  auto* vgamma_eval_device  = sycl_data.vgamma_eval_device;
 
 
-  auto* exc_device     = cuda_data.exc_device;
-  auto* vxc_device     = cuda_data.vxc_device;
-  auto* nel_device     = cuda_data.nel_device;
-  auto* acc_scr_device = cuda_data.acc_scr_device;
+  auto* exc_device     = sycl_data.exc_device;
+  auto* vxc_device     = sycl_data.vxc_device;
+  auto* nel_device     = sycl_data.nel_device;
+  auto* acc_scr_device = sycl_data.acc_scr_device;
 
-  auto* m_array_device      = cuda_data.m_array_device;
-  auto* n_array_device      = cuda_data.n_array_device;
-  auto* k_array_device      = cuda_data.k_array_device;
-  auto* lda_array_device    = cuda_data.lda_array_device;
-  auto* ldb_array_device    = cuda_data.ldb_array_device;
-  auto* ldc_array_device    = cuda_data.ldc_array_device;
+  auto* m_array_device      = sycl_data.m_array_device;
+  auto* n_array_device      = sycl_data.n_array_device;
+  auto* k_array_device      = sycl_data.k_array_device;
+  auto* lda_array_device    = sycl_data.lda_array_device;
+  auto* ldb_array_device    = sycl_data.ldb_array_device;
+  auto* ldc_array_device    = sycl_data.ldc_array_device;
 
 
-  const auto* rab_device          = cuda_data.rab_device;
-  const auto* coords_device       = cuda_data.coords_device;
-  const auto* points_device       = cuda_data.points_device_buffer;
-  const auto* iparent_device      = cuda_data.iparent_device_buffer;
-  const auto* dist_nearest_device = cuda_data.dist_nearest_buffer;
+  const auto* rab_device          = sycl_data.rab_device;
+  const auto* coords_device       = sycl_data.coords_device;
+  const auto* points_device       = sycl_data.points_device_buffer;
+  const auto* iparent_device      = sycl_data.iparent_device_buffer;
+  const auto* dist_nearest_device = sycl_data.dist_nearest_buffer;
 
 
 
 
   // Evaluate Partition Weights
-  partition_weights_cuda_SoA( weight_alg, total_npts, cuda_data.natoms, 
+  partition_weights_sycl_SoA( weight_alg, total_npts, sycl_data.natoms,
                               points_device, iparent_device, dist_nearest_device,
-                              rab_device, coords_device, weights_device, 
-                              dist_scratch_device, master_stream );
+                              rab_device, coords_device, weights_device,
+                              dist_scratch_device, master_queue );
 
 
   // Evaluate Collocation
   if constexpr ( n_deriv == 1 )
     eval_collocation_masked_combined_deriv1( ntasks, max_npts, max_nshells,
                                              shells_device, tasks_device,
-                                             master_stream );
+                                             master_queue );
   else
-    eval_collocation_masked_combined( ntasks, max_npts, max_nshells, shells_device, 
-                                      tasks_device, master_stream );
+    eval_collocation_masked_combined( ntasks, max_npts, max_nshells, shells_device,
+                                      tasks_device, master_queue );
 
   // Pack Density Submatrices
-  task_pack_density_matrix( ntasks, tasks_device, dmat_device, nbf, master_stream );
+  task_pack_density_matrix( ntasks, tasks_device, dmat_device, nbf, master_queue );
 
 
   // Form Z = P * X
@@ -146,37 +144,37 @@ void process_batches_cuda_replicated_all_device(
                             bf_array_device, ldb_array_device,
                             0., zmat_array_device, ldc_array_device,
                             ntasks, master_queue );
-                
 
-  
+
+
   // Zero UVars
-  util::cuda_set_zero_async( total_npts, den_eval_device, master_stream, "DenZero" );
+  util::sycl_set_zero_async( total_npts, den_eval_device, master_queue, "DenZero" );
   if( func.is_gga() ) {
-    util::cuda_set_zero_async( total_npts, dden_x_eval_device, master_stream, 
+    util::sycl_set_zero_async( total_npts, dden_x_eval_device, master_queue,
                                "DenXZero" );
-    util::cuda_set_zero_async( total_npts, dden_y_eval_device, master_stream, 
+    util::sycl_set_zero_async( total_npts, dden_y_eval_device, master_queue,
                                "DenYZero" );
-    util::cuda_set_zero_async( total_npts, dden_z_eval_device, master_stream, 
+    util::sycl_set_zero_async( total_npts, dden_z_eval_device, master_queue,
                                "DenZZero" );
   }
 
   // Evaluate UVars
   if( func.is_gga() ) {
-    eval_uvars_gga_device( ntasks, max_nbe, max_npts, tasks_device, master_stream );
+    eval_uvars_gga_device( ntasks, max_nbe, max_npts, tasks_device, master_queue );
     eval_vvars_gga_device( total_npts, dden_x_eval_device, dden_y_eval_device,
-                           dden_z_eval_device, gamma_eval_device, master_stream );
+                           dden_z_eval_device, gamma_eval_device, master_queue );
   } else {
-    eval_uvars_lda_device( ntasks, max_nbe, max_npts, tasks_device, master_stream );
+    eval_uvars_lda_device( ntasks, max_nbe, max_npts, tasks_device, master_queue );
   }
 
   // Evaluate XC Functional
   if( func.is_gga() )
-    func.eval_exc_vxc_device( total_npts, den_eval_device, gamma_eval_device, 
-                              eps_eval_device, vrho_eval_device, 
-                              vgamma_eval_device, master_stream );
+    func.eval_exc_vxc_device( total_npts, den_eval_device, gamma_eval_device,
+                              eps_eval_device, vrho_eval_device,
+                              vgamma_eval_device, master_queue );
   else
-    func.eval_exc_vxc_device( total_npts, den_eval_device, eps_eval_device, 
-                              vrho_eval_device, master_stream );
+    func.eval_exc_vxc_device( total_npts, den_eval_device, eps_eval_device,
+                              vrho_eval_device, master_queue );
 
 
   // Factor weights into XC output
@@ -184,7 +182,7 @@ void process_batches_cuda_replicated_all_device(
                     eps_eval_device, 1 );
   hadamard_product( master_handle, total_npts, 1, weights_device, 1,
                     vrho_eval_device, 1 );
-  if( func.is_gga() ) 
+  if( func.is_gga() )
     hadamard_product( master_handle, total_npts, 1, weights_device, 1,
                       vgamma_eval_device, 1 );
 
@@ -193,18 +191,18 @@ void process_batches_cuda_replicated_all_device(
         den_eval_device, 1, acc_scr_device, nel_device );
   gdot( master_handle, total_npts, eps_eval_device, 1,
         den_eval_device, 1, acc_scr_device, exc_device );
-      
+
   // Evaluate Z Matrix
   if( func.is_gga() )
-    zmat_gga_cuda( ntasks, max_nbe, max_npts, tasks_device, master_stream );
+    zmat_gga_sycl( ntasks, max_nbe, max_npts, tasks_device, master_queue );
   else
-    zmat_lda_cuda( ntasks, max_nbe, max_npts, tasks_device, master_stream );
-  
+    zmat_lda_sycl( ntasks, max_nbe, max_npts, tasks_device, master_queue );
+
 
 
   // Accumulate packed VXC = X * Z**T + Z * X**T
   // XXX: Only updates LT
-  magmablas_dsyr2k_vbatched( MagmaLower, MagmaNoTrans, 
+  magmablas_dsyr2k_vbatched( MagmaLower, MagmaNoTrans,
                              m_array_device, n_array_device,
                              1., bf_array_device, lda_array_device,
                              zmat_array_device, ldb_array_device,
@@ -212,25 +210,25 @@ void process_batches_cuda_replicated_all_device(
                              ntasks, master_queue );
 
   // Increment global VXC
-  task_inc_potential( ntasks, tasks_device, vxc_device, nbf, master_stream );
+  task_inc_potential( ntasks, tasks_device, vxc_device, nbf, master_queue );
 
 
-  // Synchronize on master stream
+  // Synchronize on master queue
   // XXX: There's no lifetime issues in this driver, should look into
-  //      avoid this sync to allow for overlap with the host packing 
-  cudaStreamSynchronize( master_stream );
+  //      avoid this sync to allow for overlap with the host packing
+  util::sycl_device_sync( master_queue );
 
 }
 
 
 template <typename F, size_t n_deriv>
-void process_batches_cuda_replicated_p(
+void process_batches_sycl_replicated_p(
   XCWeightAlg            weight_alg,
   const functional_type& func,
   const BasisSet<F>&     basis,
   const Molecule   &     mol,
   const MolMeta    &     meta,
-  XCCudaData<F>    &     cuda_data,
+  XCSyclData<F>    &     sycl_data,
   std::vector< XCTask >& tasks,
   const F*               P,
   F*                     VXC,
@@ -251,33 +249,33 @@ void process_batches_cuda_replicated_p(
   // Send static data to the device
 
   // Density
-  if( not cuda_data.denpack_host )
-    util::cuda_copy( nbf * nbf, cuda_data.dmat_device, P, "P H2D" );
+  if( not sycl_data.denpack_host )
+    util::sycl_copy( nbf * nbf, sycl_data.dmat_device, P, "P H2D" );
 
   // Shells: TODO avoid host copy?
   std::vector<Shell<F>> shells( basis );
-  util::cuda_copy( shells.size(), cuda_data.shells_device, shells.data(),
+  util::sycl_copy( shells.size(), sycl_data.shells_device, shells.data(),
                    "Shells H2D" );
 
   // RAB
-  util::cuda_copy( natoms * natoms, cuda_data.rab_device, meta.rab().data(),
+  util::sycl_copy( natoms * natoms, sycl_data.rab_device, meta.rab().data(),
                    "RAB H2D" );
 
-  // Atomic coordinates 
+  // Atomic coordinates
   std::vector<double> coords( 3*natoms );
   for( auto i = 0ul; i < natoms; ++i ) {
     coords[ 3*i + 0 ] = mol[i].x;
     coords[ 3*i + 1 ] = mol[i].y;
     coords[ 3*i + 2 ] = mol[i].z;
   }
-  util::cuda_copy( 3 * natoms, cuda_data.coords_device, coords.data(),
+  util::sycl_copy( 3 * natoms, sycl_data.coords_device, coords.data(),
                    "Coords H2D" );
 
 
   // Zero out XC quantities
-  util::cuda_set_zero( nbf * nbf, cuda_data.vxc_device, "VXC Zero" ); 
-  util::cuda_set_zero( 1        , cuda_data.exc_device, "EXC Zero" ); 
-  util::cuda_set_zero( 1        , cuda_data.nel_device, "NEL Zero" ); 
+  util::sycl_set_zero( nbf * nbf, sycl_data.vxc_device, "VXC Zero" );
+  util::sycl_set_zero( 1        , sycl_data.exc_device, "EXC Zero" );
+  util::sycl_set_zero( 1        , sycl_data.nel_device, "NEL Zero" );
 
 
 
@@ -286,13 +284,13 @@ void process_batches_cuda_replicated_p(
   while( task_it != tasks.end() ) {
 
     // Determine next task batch, send relevant data to device
-    auto [it, tasks_device] = 
-      cuda_data.generate_buffers( basis, task_it, tasks.end() );
+    auto [it, tasks_device] =
+      sycl_data.generate_buffers( basis, task_it, tasks.end() );
 
 
     // Process the batches
-    process_batches_cuda_replicated_all_device<F,n_deriv>( 
-      weight_alg, func, cuda_data, tasks_device.begin(), tasks_device.end() 
+    process_batches_sycl_replicated_all_device<F,n_deriv>(
+      weight_alg, func, sycl_data, tasks_device.begin(), tasks_device.end()
     );
 
     task_it = it;
@@ -300,11 +298,11 @@ void process_batches_cuda_replicated_p(
   }
 
   // Receive XC terms from host
-  if( not cuda_data.vxcinc_host )
-    util::cuda_copy( nbf * nbf, VXC, cuda_data.vxc_device, "VXC D2H" );
+  if( not sycl_data.vxcinc_host )
+    util::sycl_copy( nbf * nbf, VXC, sycl_data.vxc_device, "VXC D2H" );
 
-  util::cuda_copy( 1, EXC, cuda_data.exc_device, "EXC D2H" );
-  util::cuda_copy( 1, NEL, cuda_data.nel_device, "NEL D2H" );
+  util::sycl_copy( 1, EXC, sycl_data.exc_device, "EXC D2H" );
+  util::sycl_copy( 1, NEL, sycl_data.nel_device, "NEL D2H" );
 
   // Symmetrize VXC
   for( int32_t j = 0;   j < nbf; ++j )
@@ -314,25 +312,24 @@ void process_batches_cuda_replicated_p(
 }
 
 
-#define CUDA_IMPL( F, ND ) \
+#define SYCL_IMPL( F, ND ) \
 template \
-void process_batches_cuda_replicated_p<F, ND>(\
+void process_batches_sycl_replicated_p<F, ND>(\
   XCWeightAlg            weight_alg,\
   const functional_type& func,\
   const BasisSet<F>&     basis,\
   const Molecule   &     mol,\
   const MolMeta    &     meta,\
-  XCCudaData<F>    &     cuda_data,\
+  XCSyclData<F>    &     sycl_data,\
   std::vector< XCTask >& local_work,\
   const F*               P,\
   F*                     VXC,\
   F*                     exc,\
   F*                     n_el\
-) 
+)
 
-CUDA_IMPL( double, 0 );
-CUDA_IMPL( double, 1 );
+SYCL_IMPL( double, 0 );
+SYCL_IMPL( double, 1 );
 
 }
 }
-

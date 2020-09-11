@@ -1,38 +1,31 @@
-#include <gauxc/xc_integrator/xc_cuda_data.hpp>
+#include <gauxc/xc_integrator/xc_sycl_data.hpp>
 #include "buffer_adaptor.hpp"
 #include "integrator_common.hpp"
 
 namespace GauXC {
 
 template <typename F>
-XCCudaData<F>::XCCudaData( size_t _natoms,
-                           size_t _n_deriv, 
+XCSyclData<F>::XCSyclData( size_t _natoms,
+                           size_t _n_deriv,
                            size_t _nbf,
                            size_t _nshells,
                            bool _denpack_host,
                            bool _vxcinc_host  ):
-  nshells(_nshells), 
-  nbf(_nbf), 
-  n_deriv(_n_deriv), 
+  nshells(_nshells),
+  nbf(_nbf),
+  n_deriv(_n_deriv),
   natoms(_natoms),
-  denpack_host(_denpack_host), 
+  denpack_host(_denpack_host),
   vxcinc_host(_vxcinc_host)  {
 
-
-  // TODO: Expose this
-  double fill_fraction = 0.9;
-
-  cudaError_t stat;
-
-  // Get Total Available Memory
-  size_t cuda_avail, cuda_total;
-  stat = cudaMemGetInfo( &cuda_avail, &cuda_total );
-  GAUXC_CUDA_ERROR( "MemInfo Failed", stat );
+  // Create SYCL queue
+  cl::sycl::gpu_selector device_selector;
+  master_queue.reset( new cl::sycl::queue(device_selector,
+                                          cl::sycl::property_list{cl::sycl::property::queue::in_order{}}) );
 
   // Allocate up to fill_fraction
-  size_t fill_sz = fill_fraction * cuda_total;
-  stat = cudaMalloc( &device_ptr, fill_sz );
-  GAUXC_CUDA_ERROR( "CUDA Malloc Failed", stat );
+  size_t fill_sz = master_queue.get_device().get_info<cl::sycl::info::device::max_mem_alloc_size>();
+  device_ptr = (void *)cl::sycl::malloc_device(fill_sz, *master_queue);
 
   //std::cout << "NS = " << nshells << ", NA = " << natoms << ", NBF = " << nbf << std::endl;
 
@@ -40,7 +33,6 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
   //          << std::endl;
   // Allocate static memory with proper alignment
   buffer_adaptor mem( device_ptr, fill_sz );
-
 
   shells_device     = mem.aligned_alloc<Shell<F>>( nshells );
   exc_device        = mem.aligned_alloc<F>( 1 );
@@ -56,49 +48,39 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
 
   // Get current stack location
   dynmem_ptr = mem.stack();
-  dynmem_sz  = mem.nleft(); 
-
-  // Create CUDA Stream and CUBLAS Handles and make them talk to eachother
-  master_stream = std::make_unique< util::cuda_stream >();
-  master_handle = std::make_unique< util::cublas_handle >();
-
-  cublasSetStream( *master_handle, *master_stream );
-
-  // Create MAGMA Queue from CUDA Stream and CUBLAS Handle
-  master_magma_queue = 
-    std::make_unique< util::magma_queue >( 0, *master_stream, *master_handle );
+  dynmem_sz  = mem.nleft();
 
 }
 
 
 
 template <typename F>
-XCCudaData<F>::~XCCudaData() noexcept {
-  if( device_ptr ) util::cuda_free( device_ptr );
-} 
+XCSyclData<F>::~XCSyclData() noexcept {
+  if( device_ptr ) util::sycl_free( device_ptr, *master_queue );
+}
 
 
 using task_iterator = std::vector< XCTask >::iterator;
 template <typename F>
-using device_task_container = std::vector< cuda::XCTaskDevice<F> >;
+using device_task_container = std::vector< sycl::XCTaskDevice<F> >;
 
 template <typename F>
 std::tuple< task_iterator, device_task_container<F> >
-  XCCudaData<F>::generate_buffers( const BasisSet<F>& basis,
+  XCSyclData<F>::generate_buffers( const BasisSet<F>& basis,
                                    task_iterator      task_begin,
                                    task_iterator      task_end    ) {
 
   // Host data packing arrays
-  std::vector< std::array<double,3> > points_pack;
-  std::vector< double > weights_pack;
+  std::vector< std::array<F,3> > points_pack;
+  std::vector< F > weights_pack;
   std::vector< size_t > shell_list_pack;
   std::vector< size_t > shell_offs_pack;
   std::vector< std::pair<int64_t, int64_t> > submat_cut_pack;
   std::vector< int32_t > iparent_pack;
-  std::vector< double >  dist_nearest_pack;
+  std::vector< F >  dist_nearest_pack;
 
   // Host copies for batched GEMM/SYRK arrays
-  std::vector< double* > dmat_array, bf_array, zmat_array;
+  std::vector< F* > dmat_array, bf_array, zmat_array;
   std::vector< int > m_array, n_array, k_array, lda_array, ldb_array, ldc_array;
 
 
@@ -118,7 +100,7 @@ std::tuple< task_iterator, device_task_container<F> >
   size_t total_ncut     = 0;
   size_t memleft = dynmem_sz;
 
-  // Offset memory by the static requirement of an extra pointer element 
+  // Offset memory by the static requirement of an extra pointer element
   // for each of the size batch arrays in MAGMA
   memleft -= 6 * sizeof(int); //M,N,K,LDA,LDB,LDC
 
@@ -139,8 +121,8 @@ std::tuple< task_iterator, device_task_container<F> >
     size_t npts     = points.size();
 
 
-    size_t mem_points  = 3 * npts; 
-    size_t mem_weights = npts;     
+    size_t mem_points  = 3 * npts;
+    size_t mem_weights = npts;
 
     size_t mem_shells     = nshells;
     size_t mem_shell_list = nshells;
@@ -175,39 +157,39 @@ std::tuple< task_iterator, device_task_container<F> >
     size_t mem_task      = 1;
 
 
-    size_t mem_req_batch = 
-      mem_points            * sizeof(double) + 
-      mem_weights           * sizeof(double) +    
-      mem_shells            * sizeof(Shell<F>) +             
+    size_t mem_req_batch =
+      mem_points            * sizeof(F) +
+      mem_weights           * sizeof(F) +
+      mem_shells            * sizeof(Shell<F>) +
       mem_shell_list        * sizeof(size_t) +
-      mem_shell_offs        * sizeof(size_t) + 
+      mem_shell_offs        * sizeof(size_t) +
       mem_submat_cut        * sizeof(int64_t) +
-      mem_nbe_scr           * sizeof(double) +
-      mem_zmat              * sizeof(double) +
-      mem_bf                * sizeof(double) +
-      mem_dbfx              * sizeof(double) +
-      mem_dbfy              * sizeof(double) +
-      mem_dbfz              * sizeof(double) +
-      mem_den               * sizeof(double) +
-      mem_denx              * sizeof(double) +
-      mem_deny              * sizeof(double) +
-      mem_denz              * sizeof(double) +
-      mem_eps               * sizeof(double) +
-      mem_gamma             * sizeof(double) +
-      mem_vrho              * sizeof(double) +
-      mem_vgamma            * sizeof(double) +
-      //mem_partition_scr     * sizeof(double) +
-      mem_dist_scr          * sizeof(double) +
+      mem_nbe_scr           * sizeof(F) +
+      mem_zmat              * sizeof(F) +
+      mem_bf                * sizeof(F) +
+      mem_dbfx              * sizeof(F) +
+      mem_dbfy              * sizeof(F) +
+      mem_dbfz              * sizeof(F) +
+      mem_den               * sizeof(F) +
+      mem_denx              * sizeof(F) +
+      mem_deny              * sizeof(F) +
+      mem_denz              * sizeof(F) +
+      mem_eps               * sizeof(F) +
+      mem_gamma             * sizeof(F) +
+      mem_vrho              * sizeof(F) +
+      mem_vgamma            * sizeof(F) +
+      //mem_partition_scr     * sizeof(F) +
+      mem_dist_scr          * sizeof(F) +
       mem_iparent           * sizeof(int32_t) +
-      mem_dist_nearest      * sizeof(double) +
-      mem_batch_mat_arr     * sizeof(double*) +
+      mem_dist_nearest      * sizeof(F) +
+      mem_batch_mat_arr     * sizeof(F*) +
       mem_batch_sz_arr      * sizeof(int32_t) +
-      mem_task              * sizeof(cuda::XCTaskDevice<F>);
+      mem_task              * sizeof(sycl::XCTaskDevice<F>);
 
     //std::cout << "Memory requirement for task " << ntask+1 << " " << mem_req_batch << " memleft " << memleft << std::endl;
 
     if( mem_req_batch > memleft ) break;
-    
+
     // Update memory and increment task iterator
     memleft -= mem_req_batch;
     ntask++;
@@ -224,7 +206,7 @@ std::tuple< task_iterator, device_task_container<F> >
     std::vector< size_t > shell_offs( nshells );
     shell_offs.at(0) = 0;
     for( auto i = 1ul; i < nshells; ++i )
-      shell_offs.at(i) = shell_offs.at(i-1) + 
+      shell_offs.at(i) = shell_offs.at(i-1) +
                            basis.at( shell_list.at(i-1) ).size();
 
 
@@ -258,45 +240,45 @@ std::tuple< task_iterator, device_task_container<F> >
   }
 
 
-  std::cout << "XCDeviceData will stack allocate for " << tasks_device.size() << " tasks" << std::endl; 
+  std::cout << "XCDeviceData will stack allocate for " << tasks_device.size() << " tasks" << std::endl;
 
   // Allocate out of dynamic memory
   buffer_adaptor mem( dynmem_ptr, dynmem_sz );
 
   // (possibly) Large types
   important_shells_device = mem.aligned_alloc<Shell<F>>( total_nshells );
-  device_tasks            = mem.aligned_alloc<cuda::XCTaskDevice<F>>( ntask );
+  device_tasks            = mem.aligned_alloc<sycl::XCTaskDevice<F>>( ntask );
 
   // 64-bit types
-  nbe_scr_device     = mem.aligned_alloc<double>( total_nbe_nbe  );
-  zmat_device        = mem.aligned_alloc<double>( total_nbe_npts );
-  bf_eval_device     = mem.aligned_alloc<double>( total_nbe_npts );
-  dbf_x_eval_device  = mem.aligned_alloc<double>( total_nbe_npts );
-  dbf_y_eval_device  = mem.aligned_alloc<double>( total_nbe_npts );
-  dbf_z_eval_device  = mem.aligned_alloc<double>( total_nbe_npts );
+  nbe_scr_device     = mem.aligned_alloc<F>( total_nbe_nbe  );
+  zmat_device        = mem.aligned_alloc<F>( total_nbe_npts );
+  bf_eval_device     = mem.aligned_alloc<F>( total_nbe_npts );
+  dbf_x_eval_device  = mem.aligned_alloc<F>( total_nbe_npts );
+  dbf_y_eval_device  = mem.aligned_alloc<F>( total_nbe_npts );
+  dbf_z_eval_device  = mem.aligned_alloc<F>( total_nbe_npts );
 
-  den_eval_device   = mem.aligned_alloc<double>( total_npts );
-  eps_eval_device   = mem.aligned_alloc<double>( total_npts );
-  vrho_eval_device  = mem.aligned_alloc<double>( total_npts );
+  den_eval_device   = mem.aligned_alloc<F>( total_npts );
+  eps_eval_device   = mem.aligned_alloc<F>( total_npts );
+  vrho_eval_device  = mem.aligned_alloc<F>( total_npts );
 
-  den_x_eval_device  = mem.aligned_alloc<double>( total_npts );
-  den_y_eval_device  = mem.aligned_alloc<double>( total_npts );
-  den_z_eval_device  = mem.aligned_alloc<double>( total_npts );
-  gamma_eval_device  = mem.aligned_alloc<double>( total_npts );
-  vgamma_eval_device = mem.aligned_alloc<double>( total_npts );
+  den_x_eval_device  = mem.aligned_alloc<F>( total_npts );
+  den_y_eval_device  = mem.aligned_alloc<F>( total_npts );
+  den_z_eval_device  = mem.aligned_alloc<F>( total_npts );
+  gamma_eval_device  = mem.aligned_alloc<F>( total_npts );
+  vgamma_eval_device = mem.aligned_alloc<F>( total_npts );
 
-  points_device_buffer     = mem.aligned_alloc<double>( 3 * total_npts );
-  weights_device_buffer    = mem.aligned_alloc<double>( total_npts );
+  points_device_buffer     = mem.aligned_alloc<F>( 3 * total_npts );
+  weights_device_buffer    = mem.aligned_alloc<F>( total_npts );
   shell_list_device_buffer = mem.aligned_alloc<size_t>( total_nshells );
   shell_offs_device_buffer = mem.aligned_alloc<size_t>( total_nshells );
   submat_cut_device_buffer = mem.aligned_alloc<int64_t>( 2 * total_ncut );
 
-  dist_scratch_device = mem.aligned_alloc<double>( natoms * total_npts );
-  dist_nearest_buffer = mem.aligned_alloc<double>( total_npts );
+  dist_scratch_device = mem.aligned_alloc<F>( natoms * total_npts );
+  dist_nearest_buffer = mem.aligned_alloc<F>( total_npts );
 
-  dmat_array_device = mem.aligned_alloc<double*>( ntask );
-  zmat_array_device = mem.aligned_alloc<double*>( ntask );
-  bf_array_device   = mem.aligned_alloc<double*>( ntask );
+  dmat_array_device = mem.aligned_alloc<F*>( ntask );
+  zmat_array_device = mem.aligned_alloc<F*>( ntask );
+  bf_array_device   = mem.aligned_alloc<F*>( ntask );
 
   // 32-bit types
   m_array_device   = mem.aligned_alloc<int32_t>( ntask + 1 );
@@ -325,7 +307,7 @@ std::tuple< task_iterator, device_task_container<F> >
   double*      dbfx_ptr   = dbf_x_eval_device;
   double*      dbfy_ptr   = dbf_y_eval_device;
   double*      dbfz_ptr   = dbf_z_eval_device;
-  
+
   double*      den_ptr    = den_eval_device;
   double*      ddenx_ptr  = den_x_eval_device;
   double*      ddeny_ptr  = den_y_eval_device;
@@ -346,7 +328,7 @@ std::tuple< task_iterator, device_task_container<F> >
     task.shell_list = shell_list_ptr;
     task.shell_offs = shell_offs_ptr;
     task.submat_cut = submat_cut_ptr;
-    
+
     task.shells  = shells_ptr;
     task.nbe_scr = nbe_ptr;
     task.zmat    = zmat_ptr;
@@ -376,7 +358,7 @@ std::tuple< task_iterator, device_task_container<F> >
     shell_list_ptr += nshells;
     shell_offs_ptr += nshells;
     submat_cut_ptr += 2 * ncut;
-    
+
     shells_ptr += nshells;
     nbe_ptr    += nbe * nbe;
     zmat_ptr   += nbe * npts;
@@ -411,9 +393,9 @@ std::tuple< task_iterator, device_task_container<F> >
 
 
 
-  auto copy_rev = [&]( size_t n, const auto* src, auto* dest, cudaStream_t stream,
+  auto copy_rev = [&]( size_t n, const auto* src, auto* dest, cl::sycl::queue& queue,
                        std::string m ) {
-    util::cuda_copy_async( n, dest, src, stream, m );
+    util::sycl_copy_async( n, dest, src, queue, m );
   };
 
 
@@ -421,52 +403,52 @@ std::tuple< task_iterator, device_task_container<F> >
   try {
 
   // Send the data to the device
-  copy_rev( 3*points_pack.size(), points_pack.data()->data(), 
-                         points_device_buffer, *master_stream, 
-                         "send points buffer" ); 
-  copy_rev( weights_pack.size(), weights_pack.data(), 
-                         weights_device_buffer, *master_stream, 
-                         "send weights buffer" ); 
+  copy_rev( 3*points_pack.size(), points_pack.data()->data(),
+                         points_device_buffer, *master_queue,
+                         "send points buffer" );
+  copy_rev( weights_pack.size(), weights_pack.data(),
+                         weights_device_buffer, *master_queue,
+                         "send weights buffer" );
 
-  copy_rev( shell_list_pack.size(), shell_list_pack.data(), 
-                          shell_list_device_buffer, *master_stream, 
+  copy_rev( shell_list_pack.size(), shell_list_pack.data(),
+                          shell_list_device_buffer, *master_queue,
                           "send_shell_list_buffer" );
-  copy_rev( shell_offs_pack.size(), shell_offs_pack.data(), 
-                         shell_offs_device_buffer, *master_stream, 
+  copy_rev( shell_offs_pack.size(), shell_offs_pack.data(),
+                         shell_offs_device_buffer, *master_queue,
                          "send_shell_offs_buffer" );
-  copy_rev( 2*submat_cut_pack.size(), &submat_cut_pack.data()->first, 
-                         submat_cut_device_buffer, *master_stream, 
-                         "send_submat_cut_buffer"  ); 
-  
-  copy_rev( tasks_device.size(), tasks_device.data(), device_tasks, 
-                          *master_stream, "send_tasks_device" );
+  copy_rev( 2*submat_cut_pack.size(), &submat_cut_pack.data()->first,
+                         submat_cut_device_buffer, *master_queue,
+                         "send_submat_cut_buffer"  );
+
+  copy_rev( tasks_device.size(), tasks_device.data(), device_tasks,
+                          *master_queue, "send_tasks_device" );
 
 
-  copy_rev( dmat_array.size(), dmat_array.data(), dmat_array_device, 
-                         *master_stream, "send dmat_array" );
-  copy_rev( zmat_array.size(), zmat_array.data(), zmat_array_device, 
-                         *master_stream, "send zmat_array" );
-  copy_rev( bf_array.size(), bf_array.data(), bf_array_device, 
-                         *master_stream, "send bf_array" );
+  copy_rev( dmat_array.size(), dmat_array.data(), dmat_array_device,
+                         *master_queue, "send dmat_array" );
+  copy_rev( zmat_array.size(), zmat_array.data(), zmat_array_device,
+                         *master_queue, "send zmat_array" );
+  copy_rev( bf_array.size(), bf_array.data(), bf_array_device,
+                         *master_queue, "send bf_array" );
 
-  copy_rev( m_array.size(), m_array.data(), m_array_device, 
-                         *master_stream, "send m_array" );
-  copy_rev( n_array.size(), n_array.data(), n_array_device, 
-                         *master_stream, "send n_array" );
-  copy_rev( k_array.size(), k_array.data(), k_array_device, 
-                         *master_stream, "send k_array" );
+  copy_rev( m_array.size(), m_array.data(), m_array_device,
+                         *master_queue, "send m_array" );
+  copy_rev( n_array.size(), n_array.data(), n_array_device,
+                         *master_queue, "send n_array" );
+  copy_rev( k_array.size(), k_array.data(), k_array_device,
+                         *master_queue, "send k_array" );
 
-  copy_rev( lda_array.size(), lda_array.data(), lda_array_device, 
-                         *master_stream, "send lda_array" );
-  copy_rev( ldb_array.size(), ldb_array.data(), ldb_array_device, 
-                         *master_stream, "send ldb_array" );
-  copy_rev( ldc_array.size(), ldc_array.data(), ldc_array_device, 
-                         *master_stream, "send ldc_array" );
+  copy_rev( lda_array.size(), lda_array.data(), lda_array_device,
+                         *master_queue, "send lda_array" );
+  copy_rev( ldb_array.size(), ldb_array.data(), ldb_array_device,
+                         *master_queue, "send ldb_array" );
+  copy_rev( ldc_array.size(), ldc_array.data(), ldc_array_device,
+                         *master_queue, "send ldc_array" );
 
-  copy_rev( iparent_pack.size(), iparent_pack.data(), 
-                         iparent_device_buffer, *master_stream, "send iparent"  );
-  copy_rev( dist_nearest_pack.size(), dist_nearest_pack.data(), 
-                         dist_nearest_buffer, *master_stream, "send dist_nearest" );
+  copy_rev( iparent_pack.size(), iparent_pack.data(),
+                         iparent_device_buffer, *master_queue, "send iparent"  );
+  copy_rev( dist_nearest_pack.size(), dist_nearest_pack.data(),
+                         dist_nearest_buffer, *master_queue, "send dist_nearest" );
 
   } catch(...) {
     //teardown_();  throw;
@@ -475,13 +457,13 @@ std::tuple< task_iterator, device_task_container<F> >
 
 
   // To avoid packed vectors going out of scope
-  cudaStreamSynchronize( *master_stream );
+  util::sycl_device_sync( *master_queue );
 
   return std::make_tuple(task_it, tasks_device);
 }
 
 
 // Explicit Instantiations
-template struct XCCudaData<double>;
+template struct XCSyclData<double>;
 
 }

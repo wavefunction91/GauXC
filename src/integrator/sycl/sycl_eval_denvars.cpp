@@ -137,14 +137,14 @@ namespace sycl       {
 
     template <typename T>
     void eval_uvars_lda_device(size_t ntasks, size_t max_nbf, size_t max_npts,
-                               XCTaskDevice<T> *tasks_device, cl::sycl::queue *stream) {
+                               XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
         cl::sycl::range<3> threads(32, 32, 1);
         cl::sycl::range<3> blocks(util::div_ceil(max_nbf, 32),
                                   util::div_ceil(max_npts, 32),
                                   ntasks);
 
-        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -162,14 +162,14 @@ namespace sycl       {
 
     template <typename T>
     void eval_uvars_gga_device(size_t ntasks, size_t max_nbf, size_t max_npts,
-                               XCTaskDevice<T> *tasks_device, cl::sycl::queue *stream) {
+                               XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
         cl::sycl::range<3> threads(32, 32, 1);
         cl::sycl::range<3> blocks(util::div_ceil(max_nbf, 32),
                                   util::div_ceil(max_npts, 32),
                                   ntasks);
 
-        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -191,12 +191,12 @@ namespace sycl       {
                                const T *den_y_device,
                                const T *den_z_device,
                                T *gamma_device,
-                               cl::sycl::queue *stream) {
+                               cl::sycl::queue *queue) {
 
         cl::sycl::range<3> threads(1024, 1, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts, 1024), 1, 1);
 
-        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
                 cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),

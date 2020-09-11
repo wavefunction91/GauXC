@@ -11,8 +11,8 @@ namespace blas  {
         const auto tid = item_ct.get_group(2);
         if( tid < 1 ) (*Y) += (*X);
     }
-    template <typename T> void increment(const T *X, T *Y, cl::sycl::queue *stream) {
-        GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+    template <typename T> void increment(const T *X, T *Y, cl::sycl::queue *queue) {
+        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 cgh.parallel_for(
                     cl::sycl::nd_range<3>(cl::sycl::range<3>(1, 1, 1), cl::sycl::range<3>(1, 1, 1)),
                     [=](cl::sycl::nd_item<3> item_ct) {

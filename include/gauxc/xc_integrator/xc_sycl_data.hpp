@@ -2,13 +2,12 @@
 #include <vector>
 #include <cstdint>
 #include <memory>
-#include "basisset.hpp"
-#include "xc_task.hpp"
+#include <gauxc/basisset.hpp>
+#include <gauxc/xc_task.hpp>
 
-#include "gauxc_config.hpp"
-#include "sycl_util.hpp"
-//#include "cublas_util.hpp"
-//#include <gauxc/util/magma_util.hpp>
+#include <gauxc/gauxc_config.hpp>
+#include <gauxc/util/sycl_util.hpp>
+
 
 #ifdef GAUXC_ENABLE_SYCL
 
@@ -85,7 +84,7 @@ public:
   sycl::XCTaskDevice<F>* device_tasks  = nullptr;
 
   // // Execution management
-  std::unique_ptr<util::sycl_queue> master_queue = nullptr;
+  std::unique_ptr<cl::sycl::queue> master_queue = nullptr;
 
   XCSyclData( size_t _natoms,
               size_t _n_deriv,

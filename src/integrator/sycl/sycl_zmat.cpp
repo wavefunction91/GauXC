@@ -38,14 +38,14 @@ void zmat_lda_kernel( size_t           ntasks,
 
 template <typename T>
 void zmat_lda_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
-                   XCTaskDevice<T> *tasks_device, cl::sycl::queue *stream) {
+                   XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
   cl::sycl::range<3> threads(32, 32, 1);
   cl::sycl::range<3> blocks(util::div_ceil(max_nbf, threads.get(2)),
                             util::div_ceil(max_npts, threads.get(1)),
                             ntasks);
 
-  GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+  GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
               auto global_range = blocks * threads;
 
               cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -66,7 +66,7 @@ void zmat_lda_sycl( size_t                ntasks,
                     int32_t               max_nbf,
                     int32_t               max_npts,
                     XCTaskDevice<double>* tasks_device,
-                    cl::sycl::queue*      stream );
+                    cl::sycl::queue*      queue );
 
 template <typename T>
 void zmat_gga_kernel( size_t           ntasks,
@@ -115,14 +115,14 @@ void zmat_gga_kernel( size_t           ntasks,
 
 template <typename T>
 void zmat_gga_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
-                   XCTaskDevice<T> *tasks_device, cl::sycl::queue *stream) {
+                   XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
   cl::sycl::range<3> threads(32, 32, 1);
   cl::sycl::range<3> blocks(util::div_ceil(max_nbf, threads.get(2)),
                             util::div_ceil(max_npts, threads.get(1)),
                             ntasks);
 
-  GAUXC_SYCL_ERROR( stream->submit([&](cl::sycl::handler &cgh) {
+  GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
           auto global_range = blocks * threads;
 
           cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
@@ -142,7 +142,7 @@ void zmat_gga_sycl( size_t                ntasks,
                     int32_t               max_nbf,
                     int32_t               max_npts,
                     XCTaskDevice<double>* tasks_device,
-                    cl::sycl::queue*      stream );
+                    cl::sycl::queue*      queue );
 
 }
 }
