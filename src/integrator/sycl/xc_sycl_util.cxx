@@ -36,8 +36,7 @@ void process_batches_sycl_replicated_all_device(
   const functional_type& func,
   XCSyclData<F>&         sycl_data,
   sycl_task_iterator<F>  task_begin,
-  sycl_task_iterator<F>  task_end
-) {
+  sycl_task_iterator<F>  task_end) {
 
   const auto ntasks = std::distance( task_begin, task_end );
   const auto nbf    = sycl_data.nbf;
@@ -106,6 +105,10 @@ void process_batches_sycl_replicated_all_device(
   auto* lda_array_device    = sycl_data.lda_array_device;
   auto* ldb_array_device    = sycl_data.ldb_array_device;
   auto* ldc_array_device    = sycl_data.ldc_array_device;
+  auto* transA_array_device = sycl_data.transA_array_device;
+  auto* transB_array_device = sycl_data.transB_array_device;
+  auto* alpha_array_device  = sycl_data.alpha_array_device;
+  auto* beta_array_device   = sycl_data.beta_array_device;
 
 
   const auto* rab_device          = sycl_data.rab_device;
@@ -138,12 +141,19 @@ void process_batches_sycl_replicated_all_device(
 
 
   // Form Z = P * X
-  magmablas_dgemm_vbatched( MagmaNoTrans, MagmaNoTrans,
-                            m_array_device, n_array_device, k_array_device,
-                            1., dmat_array_device, lda_array_device,
-                            bf_array_device, ldb_array_device,
-                            0., zmat_array_device, ldc_array_device,
-                            ntasks, master_queue );
+  oneapi::mkl::blas::column_major::gemm_batch(master_queue,
+                                              transA_array_device, transB_array_device,
+                                              m_array_device, n_array_device, k_array_device,
+                                              alpha_array_device, dmat_array_device, lda_array_device,
+                                              bf_array_device, ldb_array_device,
+                                              beta_array_device, zmat_array_device, ldc_array_device,
+                                              ntasks);
+  // magmablas_dgemm_vbatched( MagmaNoTrans, MagmaNoTrans,
+  //                           m_array_device, n_array_device, k_array_device,
+  //                           1., dmat_array_device, lda_array_device,
+  //                           bf_array_device, ldb_array_device,
+  //                           0., zmat_array_device, ldc_array_device,
+  //                           ntasks, master_queue );
 
 
 
@@ -200,14 +210,14 @@ void process_batches_sycl_replicated_all_device(
 
 
 
-  // Accumulate packed VXC = X * Z**T + Z * X**T
-  // XXX: Only updates LT
-  magmablas_dsyr2k_vbatched( MagmaLower, MagmaNoTrans,
-                             m_array_device, n_array_device,
-                             1., bf_array_device, lda_array_device,
-                             zmat_array_device, ldb_array_device,
-                             0., dmat_array_device, ldc_array_device,
-                             ntasks, master_queue );
+  // // Accumulate packed VXC = X * Z**T + Z * X**T
+  // // XXX: Only updates LT
+  // magmablas_dsyr2k_vbatched( MagmaLower, MagmaNoTrans,
+  //                            m_array_device, n_array_device,
+  //                            1., bf_array_device, lda_array_device,
+  //                            zmat_array_device, ldb_array_device,
+  //                            0., dmat_array_device, ldc_array_device,
+  //                            ntasks, master_queue );
 
   // Increment global VXC
   task_inc_potential( ntasks, tasks_device, vxc_device, nbf, master_queue );

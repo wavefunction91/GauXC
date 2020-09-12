@@ -69,6 +69,10 @@ public:
   int*        lda_array_device = nullptr;
   int*        ldb_array_device = nullptr;
   int*        ldc_array_device = nullptr;
+    F*        alpha_array_device = nullptr;
+    F*        beta_array_device  = nullptr;
+  oneapi::mkl::tranpose* transA_array_device = nullptr;
+  oneapi::mkl::tranpose* transB_array_device = nullptr;
 
   F*     dist_scratch_device = nullptr;
 

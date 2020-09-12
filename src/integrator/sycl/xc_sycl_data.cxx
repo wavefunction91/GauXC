@@ -82,7 +82,8 @@ std::tuple< task_iterator, device_task_container<F> >
   // Host copies for batched GEMM/SYRK arrays
   std::vector< F* > dmat_array, bf_array, zmat_array;
   std::vector< int > m_array, n_array, k_array, lda_array, ldb_array, ldc_array;
-
+  std::vector< F > alpha_array, beta_array;
+  std::vector< oneapi::mkl::transpose > transA_array, transB_array;
 
   device_task_container tasks_device;
 
@@ -92,7 +93,7 @@ std::tuple< task_iterator, device_task_container<F> >
   };
 
 
-  size_t ntask          = 0;
+  size_t group_count    = 0;
   size_t total_npts     = 0;
   size_t total_nbe_nbe  = 0;
   size_t total_nbe_npts = 0;
@@ -186,13 +187,13 @@ std::tuple< task_iterator, device_task_container<F> >
       mem_batch_sz_arr      * sizeof(int32_t) +
       mem_task              * sizeof(sycl::XCTaskDevice<F>);
 
-    //std::cout << "Memory requirement for task " << ntask+1 << " " << mem_req_batch << " memleft " << memleft << std::endl;
+    //std::cout << "Memory requirement for task " << group_count+1 << " " << mem_req_batch << " memleft " << memleft << std::endl;
 
     if( mem_req_batch > memleft ) break;
 
     // Update memory and increment task iterator
     memleft -= mem_req_batch;
-    ntask++;
+    group_count++;
     task_it++;
 
     // Update counters
@@ -225,6 +226,11 @@ std::tuple< task_iterator, device_task_container<F> >
     ldb_array.emplace_back( nbe  );
     ldc_array.emplace_back( nbe  );
 
+    alpha_array.emplace_back( 1. );
+    beta_array.emplace_back( 0. );
+    transA_array.emplace_back( oneapi::mkl::transpose::nontrans );
+    transB_array.emplace_back( oneapi::mkl::transpose::nontrans );
+
     iparent_pack.insert( iparent_pack.end(), npts, iAtom );
     dist_nearest_pack.insert( dist_nearest_pack.end(), npts, dist_nearest );
 
@@ -247,7 +253,7 @@ std::tuple< task_iterator, device_task_container<F> >
 
   // (possibly) Large types
   important_shells_device = mem.aligned_alloc<Shell<F>>( total_nshells );
-  device_tasks            = mem.aligned_alloc<sycl::XCTaskDevice<F>>( ntask );
+  device_tasks            = mem.aligned_alloc<sycl::XCTaskDevice<F>>( group_count );
 
   // 64-bit types
   nbe_scr_device     = mem.aligned_alloc<F>( total_nbe_nbe  );
@@ -276,19 +282,24 @@ std::tuple< task_iterator, device_task_container<F> >
   dist_scratch_device = mem.aligned_alloc<F>( natoms * total_npts );
   dist_nearest_buffer = mem.aligned_alloc<F>( total_npts );
 
-  dmat_array_device = mem.aligned_alloc<F*>( ntask );
-  zmat_array_device = mem.aligned_alloc<F*>( ntask );
-  bf_array_device   = mem.aligned_alloc<F*>( ntask );
+  dmat_array_device = mem.aligned_alloc<F*>( group_count );
+  zmat_array_device = mem.aligned_alloc<F*>( group_count );
+  bf_array_device   = mem.aligned_alloc<F*>( group_count );
 
-  // 32-bit types
-  m_array_device   = mem.aligned_alloc<int32_t>( ntask + 1 );
-  n_array_device   = mem.aligned_alloc<int32_t>( ntask + 1 );
-  k_array_device   = mem.aligned_alloc<int32_t>( ntask + 1 );
-  lda_array_device = mem.aligned_alloc<int32_t>( ntask + 1 );
-  ldb_array_device = mem.aligned_alloc<int32_t>( ntask + 1 );
-  ldc_array_device = mem.aligned_alloc<int32_t>( ntask + 1 );
+  alpha_array_device = mem.aligned_alloc<F>( group_count );
+  beta_array_device  = mem.aligned_alloc<F>( group_count );
 
-  iparent_device_buffer = mem.aligned_alloc<int32_t>( total_npts );
+  transA_array_device = mem.aligned_alloc<oneapi::mkl::transpose*>( group_count );
+  transB_array_device = mem.aligned_alloc<oneapi::mkl::transpose*>( group_count );
+
+  m_array_device   = mem.aligned_alloc<int64_t>( group_count );
+  n_array_device   = mem.aligned_alloc<int64_t>( group_count );
+  k_array_device   = mem.aligned_alloc<int64_t>( group_count );
+  lda_array_device = mem.aligned_alloc<int64_t>( group_count );
+  ldb_array_device = mem.aligned_alloc<int64_t>( group_count );
+  ldc_array_device = mem.aligned_alloc<int64_t>( group_count );
+
+  iparent_device_buffer = mem.aligned_alloc<int64_t>( total_npts );
 
 
   // Update tasks with allocated pointers
@@ -444,6 +455,16 @@ std::tuple< task_iterator, device_task_container<F> >
                          *master_queue, "send ldb_array" );
   copy_rev( ldc_array.size(), ldc_array.data(), ldc_array_device,
                          *master_queue, "send ldc_array" );
+
+  copy_rev( alpha_array.size(), alpha_array.data(), alpha_array_device,
+                         *master_queue, "send alpha_array" );
+  copy_rev( beta_array.size(), beta_array.data(), beta_array_device,
+                         *master_queue, "send beta_array" );
+
+  copy_rev( transA_array.size(), transA_array.data(), transA_array_device,
+                         *master_queue, "send transA_array" );
+  copy_rev( transB_array.size(), transB_array.data(), transB_array_device,
+                         *master_queue, "send transB_array" );
 
   copy_rev( iparent_pack.size(), iparent_pack.data(),
                          iparent_device_buffer, *master_queue, "send iparent"  );
