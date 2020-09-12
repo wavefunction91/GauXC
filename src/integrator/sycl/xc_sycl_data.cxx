@@ -289,17 +289,17 @@ std::tuple< task_iterator, device_task_container<F> >
   alpha_array_device = mem.aligned_alloc<F>( group_count );
   beta_array_device  = mem.aligned_alloc<F>( group_count );
 
-  transA_array_device = mem.aligned_alloc<oneapi::mkl::transpose*>( group_count );
-  transB_array_device = mem.aligned_alloc<oneapi::mkl::transpose*>( group_count );
+  transA_array_device = mem.aligned_alloc<oneapi::mkl::transpose>( group_count );
+  transB_array_device = mem.aligned_alloc<oneapi::mkl::transpose>( group_count );
 
-  m_array_device   = mem.aligned_alloc<int64_t>( group_count );
-  n_array_device   = mem.aligned_alloc<int64_t>( group_count );
-  k_array_device   = mem.aligned_alloc<int64_t>( group_count );
-  lda_array_device = mem.aligned_alloc<int64_t>( group_count );
-  ldb_array_device = mem.aligned_alloc<int64_t>( group_count );
-  ldc_array_device = mem.aligned_alloc<int64_t>( group_count );
+  m_array_device   = mem.aligned_alloc<std::int64_t>( group_count );
+  n_array_device   = mem.aligned_alloc<std::int64_t>( group_count );
+  k_array_device   = mem.aligned_alloc<std::int64_t>( group_count );
+  lda_array_device = mem.aligned_alloc<std::int64_t>( group_count );
+  ldb_array_device = mem.aligned_alloc<std::int64_t>( group_count );
+  ldc_array_device = mem.aligned_alloc<std::int64_t>( group_count );
 
-  iparent_device_buffer = mem.aligned_alloc<int64_t>( total_npts );
+  iparent_device_buffer = mem.aligned_alloc<std::int64_t>( total_npts );
 
 
   // Update tasks with allocated pointers
