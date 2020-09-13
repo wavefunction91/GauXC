@@ -14,6 +14,12 @@
 #include "cuda/cuda_weights.hpp"
 #endif
 
+#ifdef GAUXC_ENABLE_SYCL
+#include <gauxc/exceptions/sycl_exception.hpp>
+#include <gauxc/util/sycl_util.hpp>
+#include "sycl/sycl_weights.hpp"
+#endif
+
 using namespace GauXC;
 
 struct ref_weights_data {
@@ -39,7 +45,7 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
 
 
   MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
-  LoadBalancer lb(MPI_COMM_WORLD, mol, mg, basis); 
+  LoadBalancer lb(MPI_COMM_WORLD, mol, mg, basis);
   auto& tasks = lb.get_tasks();
 
   ref_weights_data   ref_data;
@@ -49,13 +55,13 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
     return std::abs(a) < std::abs(b);
   };
 
-  std::sort( tasks.begin(), tasks.end(), 
+  std::sort( tasks.begin(), tasks.end(),
     [&]( const auto& a, const auto& b ) {
-      auto a_max = 
-        *std::max_element( a.weights.begin(), a.weights.end(), 
+      auto a_max =
+        *std::max_element( a.weights.begin(), a.weights.end(),
                            abs_comparator );
-      auto b_max = 
-        *std::max_element( b.weights.begin(), b.weights.end(), 
+      auto b_max =
+        *std::max_element( b.weights.begin(), b.weights.end(),
                            abs_comparator );
 
       return a_max < b_max;
@@ -68,14 +74,14 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
 
   integrator::host::partition_weights_host( XCWeightAlg::SSF,
     mol, lb.molmeta(), tasks );
-  
+
   // Clear out unneeded data
   for( auto& task : tasks ) {
     task.points.clear();
     task.shell_list.clear();
   }
   ref_data.tasks_mod = tasks;
-  
+
   {
     cereal::BinaryOutputArchive ar( out_file );
     ar( ref_data );
@@ -103,7 +109,7 @@ void test_host_weights( std::ifstream& in_file ) {
 
     size_t npts = task.weights.size();
     for( size_t i = 0; i < npts; ++i ) {
-      CHECK( task.weights.at(i) == 
+      CHECK( task.weights.at(i) ==
              Approx(ref_task.weights.at(i)) );
     }
   }
@@ -125,11 +131,11 @@ void test_cuda_weights( std::ifstream& in_file ) {
   std::vector< int32_t >              iparent;
 
   for( auto& task : ref_data.tasks_unm ) {
-    points.insert( points.end(), 
-                   task.points.begin(), 
+    points.insert( points.end(),
+                   task.points.begin(),
                    task.points.end() );
-    weights.insert( weights.end(), 
-                    task.weights.begin(), 
+    weights.insert( weights.end(),
+                    task.weights.begin(),
                     task.weights.end() );
 
     size_t npts = task.points.size();
@@ -139,8 +145,8 @@ void test_cuda_weights( std::ifstream& in_file ) {
   }
 
   for( auto& task : ref_data.tasks_mod ) {
-    weights_ref.insert( weights_ref.end(), 
-                        task.weights.begin(), 
+    weights_ref.insert( weights_ref.end(),
+                        task.weights.begin(),
                         task.weights.end() );
   }
 
@@ -167,12 +173,12 @@ void test_cuda_weights( std::ifstream& in_file ) {
   util::cuda_copy( npts,   weights_d, weights.data() );
   util::cuda_copy( npts,   iparent_d, iparent.data() );
   util::cuda_copy( npts,   distnea_d, dist_nearest.data() );
-  util::cuda_copy( natoms*natoms, rab_d, 
+  util::cuda_copy( natoms*natoms, rab_d,
                    ref_data.meta->rab().data() );
   util::cuda_copy( 3*natoms, coords_d, coords.data() );
 
   cudaStream_t stream = 0;
-  integrator::cuda::partition_weights_cuda_SoA( 
+  integrator::cuda::partition_weights_cuda_SoA(
     XCWeightAlg::SSF, npts, natoms, points_d,
     iparent_d, distnea_d, rab_d, coords_d,
     weights_d, dist_scr_d, stream );
@@ -186,7 +192,91 @@ void test_cuda_weights( std::ifstream& in_file ) {
     CHECK( weights.at(i) == Approx( weights_ref.at(i) ) );
 
 }
-#endif
+#endif // GAUXC_ENABLE_CUDA
+
+
+#ifdef GAUXC_ENABLE_SYCL
+void test_sycl_weights( std::ifstream& in_file ) {
+  cl::sycl::gpu_selector device_selector;
+  cl::sycl::queue syclQueue = cl::sycl::queue(device_selector,
+                                              cl::sycl::property_list{cl::sycl::property::queue::in_order{}});
+
+  ref_weights_data ref_data;
+  {
+    cereal::BinaryInputArchive ar( in_file );
+    ar( ref_data );
+  }
+
+  std::vector< std::array<double,3> > points;
+  std::vector< double >               weights, weights_ref;
+  std::vector< double >               dist_nearest;
+  std::vector< int32_t >              iparent;
+
+  for( auto& task : ref_data.tasks_unm ) {
+    points.insert( points.end(),
+                   task.points.begin(),
+                   task.points.end() );
+    weights.insert( weights.end(),
+                    task.weights.begin(),
+                    task.weights.end() );
+
+    size_t npts = task.points.size();
+    dist_nearest.insert( dist_nearest.end(), npts,
+                         task.dist_nearest );
+    iparent.insert( iparent.end(), npts, task.iParent );
+  }
+
+  for( auto& task : ref_data.tasks_mod ) {
+    weights_ref.insert( weights_ref.end(),
+                        task.weights.begin(),
+                        task.weights.end() );
+  }
+
+  size_t npts   = points.size();
+  size_t natoms = ref_data.mol.natoms();
+
+  std::vector< double >  coords( 3 * natoms );
+  for( auto iat = 0 ; iat < natoms; ++iat ) {
+    coords[ 3*iat + 0 ] = ref_data.mol.at(iat).x;
+    coords[ 3*iat + 1 ] = ref_data.mol.at(iat).y;
+    coords[ 3*iat + 2 ] = ref_data.mol.at(iat).z;
+  }
+
+  auto* points_d  = util::sycl_malloc<double>( 3*npts, syclQueue );
+  auto* weights_d = util::sycl_malloc<double>( npts  , syclQueue );
+  auto* iparent_d = util::sycl_malloc<int32_t>( npts , syclQueue );
+  auto* distnea_d = util::sycl_malloc<double>( npts  , syclQueue );
+  auto* rab_d     = util::sycl_malloc<double>( natoms*natoms, syclQueue );
+  auto* coords_d  = util::sycl_malloc<double>( 3*natoms, syclQueue );
+  auto* dist_scr_d= util::sycl_malloc<double>( npts*natoms, syclQueue );
+
+  util::sycl_copy( 3*npts, points_d,  points.data()->data(), syclQueue );
+  util::sycl_copy( npts,   weights_d, weights.data(), syclQueue );
+  util::sycl_copy( npts,   iparent_d, iparent.data(), syclQueue );
+  util::sycl_copy( npts,   distnea_d, dist_nearest.data(), syclQueue );
+  util::sycl_copy( natoms*natoms, rab_d, ref_data.meta->rab().data(), syclQueue );
+  util::sycl_copy( 3*natoms, coords_d, coords.data(), syclQueue );
+
+  integrator::sycl::partition_weights_sycl_SoA(
+      XCWeightAlg::SSF, npts, natoms, points_d,
+      iparent_d, distnea_d, rab_d, coords_d,
+      weights_d, dist_scr_d, syclQueue);
+
+  util::sycl_device_sync(syclQueue);
+  util::sycl_copy( npts, weights.data(), weights_d, syclQueue );
+  util::sycl_free( points_d, syclQueue );
+  util::sycl_free( weights_d, syclQueue );
+  util::sycl_free( iparent_d, syclQueue );
+  util::sycl_free( distnea_d, syclQueue );
+  util::sycl_free( rab_d, syclQueue );
+  util::sycl_free( coords_d, syclQueue );
+  util::sycl_free( dist_scr_d, syclQueue );
+
+  for( auto i = 0ul; i < npts; ++i )
+    CHECK( weights.at(i) == Approx( weights_ref.at(i) ) );
+}
+#endif // GAUXC_ENABLE_SYCL
+
 
 //#define GENERATE_TESTS
 TEST_CASE( "Benzene", "[weights]" ) {
@@ -202,12 +292,12 @@ TEST_CASE( "Benzene", "[weights]" ) {
 #ifdef GENERATE_TESTS
   BasisSet<double> basis = make_631Gd( mol, SphericalType(true) );
   for( auto& sh : basis ) sh.set_shell_tolerance( 1e-6 );
-  
+
   std::ofstream ref_data( "benzene_weights_ssf.bin", std::ios::binary );
-  generate_weights_data( mol, basis, ref_data );  
+  generate_weights_data( mol, basis, ref_data );
 #else
 
-  std::ifstream ref_data( GAUXC_REF_DATA_PATH "/benzene_weights_ssf.bin", 
+  std::ifstream ref_data( GAUXC_REF_DATA_PATH "/benzene_weights_ssf.bin",
                           std::ios::binary );
 
   SECTION( "Host Weights" ) {
@@ -220,7 +310,11 @@ TEST_CASE( "Benzene", "[weights]" ) {
   }
 #endif
 
+#ifdef GAUXC_ENABLE_SYCL
+  SECTION( "Device Weights" ) {
+    test_sycl_weights( ref_data );
+  }
+#endif
+
 #endif
 }
-
-

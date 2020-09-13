@@ -62,7 +62,7 @@ TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
     test_xc_integrator( ExecutionSpace::Host, comm, mol );
   }
 
-#ifdef GAUXC_ENABLE_CUDA
+#if defined(GAUXC_ENABLE_CUDA) || defined(GAUXC_ENABLE_SYCL)
   SECTION( "Device" ) {
     test_xc_integrator( ExecutionSpace::Device, comm, mol );
   }
