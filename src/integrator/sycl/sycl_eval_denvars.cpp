@@ -12,7 +12,7 @@ namespace sycl       {
                                 XCTaskDevice<T>* tasks_device ,
                                 cl::sycl::nd_item<3> item_ct) {
 
-        const int batch_idx = item_ct.get_group(0);
+        const size_t batch_idx = item_ct.get_group(0);
         if( batch_idx >= ntasks ) return;
 
         auto& task = tasks_device[ batch_idx ];
@@ -44,10 +44,11 @@ namespace sycl       {
         den_reg = 2 * warpReduceSum(den_reg, item_ct);
 
         if (item_ct.get_local_id(2) == 0 && tid_y < npts) {
-            // depricated 2020
-            // double atomicAdd(double* address, double val);
+            // atomic_fetch_add() to be depricated 2020 and replaced with
+            // C++20 styled atomic_ref<>::fetch_add()
+            // double atomicAdd(double* address, double val); // from CUDA
             // https://github.com/intel/llvm/blob/d4948b01ffbe8134ad8ebc5671e828ddbb3bd672/sycl/include/CL/sycl/atomic.hpp
-            atomic_fetch_add(den_eval_device + tid_y, den_reg);
+            cl::sycl::atomic_fetch_add(den_eval_device + tid_y, den_reg);
         }
     }
 
@@ -56,7 +57,7 @@ namespace sycl       {
                                 XCTaskDevice<T>* tasks_device ,
                                 cl::sycl::nd_item<3> item_ct) {
 
-        const int batch_idx = item_ct.get_group(0);
+        const size_t batch_idx = item_ct.get_group(0);
         if( batch_idx >= ntasks ) return;
 
         auto& task = tasks_device[ batch_idx ];
@@ -108,10 +109,10 @@ namespace sycl       {
         dz_reg = 4 * warpReduceSum(dz_reg, item_ct);
 
         if (item_ct.get_local_id(2) == 0 && tid_y < npts) {
-            atomic_fetch_add(den_eval_device + tid_y, den_reg);
-            atomic_fetch_add(den_x_eval_device + tid_y, dx_reg);
-            atomic_fetch_add(den_y_eval_device + tid_y, dy_reg);
-            atomic_fetch_add(den_z_eval_device + tid_y, dz_reg);
+            cl::sycl::atomic_fetch_add(den_eval_device + tid_y, den_reg);
+            cl::sycl::atomic_fetch_add(den_x_eval_device + tid_y, dx_reg);
+            cl::sycl::atomic_fetch_add(den_y_eval_device + tid_y, dy_reg);
+            cl::sycl::atomic_fetch_add(den_z_eval_device + tid_y, dz_reg);
         }
     }
 
@@ -124,7 +125,7 @@ namespace sycl       {
                                T* gamma_eval_device,
                                cl::sycl::nd_item<3> item_ct) {
 
-        const int tid = item_ct.get_local_id(2) + item_ct.get_group(2) * item_ct.get_local_range().get(2);
+        const size_t tid = item_ct.get_local_id(2) + item_ct.get_group(2) * item_ct.get_local_range().get(2);
 
         if( tid < npts ) {
             const T dx = den_x_eval_device[ tid ];

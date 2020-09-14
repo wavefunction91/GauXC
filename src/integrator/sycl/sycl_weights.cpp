@@ -82,7 +82,7 @@ namespace GauXC {
                             ps *= (iCenter == jCenter) ? 1. : s ;
                         }
 
-                        ps = warp_prod_reduce( item_ct.get_group(), ps ); // XXX: Assumes blockDim.x == 32
+                        ps = warp_prod_reduce( item_ct.get_sub_group(), ps ); // XXX: Assumes blockDim.x == 32
 
                         if( iCenter == iParent ) parent_weight = ps;
 
@@ -95,11 +95,13 @@ namespace GauXC {
                         shared[threadIdx_y + 1024] = parent_weight;
                     }
 
-                    group_barrier(item_ct.get_group());
+                    item_ct.barrier();
+                    //group_barrier(item_ct.get_group()); // valid SYCL
+                    //2020 only
                     sum = shared[threadIdx_x];
                     sum = warpReduceSum(sum, item_ct);
 
-                    group_barrier(item_ct.get_group());
+                    item_ct.barrier();
                     parent_weight = shared[threadIdx_x + 1024];
                     parent_weight = item_ct.get_sub_group().shuffle(parent_weight, iParent % 32);
 
@@ -174,7 +176,7 @@ namespace GauXC {
 
                             }
 
-                        ps = warp_prod_reduce( item_ct.get_group(), ps ); // XXX: Assumes blockDim.x == 32
+                        ps = warp_prod_reduce( item_ct.get_sub_group(), ps ); // XXX: Assumes blockDim.x == 32
 
                         if( iCenter == iParent ) parent_weight = ps;
 
@@ -347,7 +349,7 @@ namespace GauXC {
                 {
                     cl::sycl::range<3> threads(32, 32, 1);
                     cl::sycl::range<3> blocks(util::div_ceil(npts, threads.get(2)),
-                                              util::div_ceil(natoms, threads.get(1)));
+                                              util::div_ceil(natoms, threads.get(1)), 1);
 
                     GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                             auto global_range = blocks * threads;
@@ -371,7 +373,7 @@ namespace GauXC {
 
                 if( partition_weights_1d_kernel ) {
                     cl::sycl::range<3> threads(1024, 1, 1);
-                    cl::sycl::range<3> blocks(util::div_ceil(npts, threads.get(2)));
+                    cl::sycl::range<3> blocks(util::div_ceil(npts, threads.get(2)), 1, 1);
 
                     GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                             auto global_range = blocks * threads;

@@ -11,7 +11,7 @@ void zmat_lda_kernel( size_t           ntasks,
                       XCTaskDevice<T>* tasks_device ,
                       cl::sycl::nd_item<3> item_ct) {
 
-  const int batch_idx = item_ct.get_group(0);
+  const size_t batch_idx = item_ct.get_group(0);
   if( batch_idx >= ntasks ) return;
 
   auto& task = tasks_device[ batch_idx ];
@@ -23,9 +23,9 @@ void zmat_lda_kernel( size_t           ntasks,
 
   auto* z_matrix_device = task.zmat;
 
-  const int tid_x = item_ct.get_group(2) * item_ct.get_local_range().get(2) +
+  const size_t tid_x = item_ct.get_group(2) * item_ct.get_local_range().get(2) +
                     item_ct.get_local_id(2);
-  const int tid_y = item_ct.get_group(1) * item_ct.get_local_range().get(1) +
+  const size_t tid_y = item_ct.get_group(1) * item_ct.get_local_range().get(1) +
                     item_ct.get_local_id(1);
 
   if( tid_x < nbf and tid_y < npts ) {
@@ -73,7 +73,7 @@ void zmat_gga_kernel( size_t           ntasks,
                       XCTaskDevice<T>* tasks_device ,
                       cl::sycl::nd_item<3> item_ct) {
 
-  const int batch_idx = item_ct.get_group(0);
+  const size_t batch_idx = item_ct.get_group(0);
   if( batch_idx >= ntasks ) return;
 
   auto& task = tasks_device[ batch_idx ];
@@ -92,9 +92,9 @@ void zmat_gga_kernel( size_t           ntasks,
 
   auto* z_matrix_device = task.zmat;
 
-  const int tid_x = item_ct.get_group(2) * item_ct.get_local_range().get(2) +
+  const size_t tid_x = item_ct.get_group(2) * item_ct.get_local_range().get(2) +
                     item_ct.get_local_id(2);
-  const int tid_y = item_ct.get_group(1) * item_ct.get_local_range().get(1) +
+  const size_t tid_y = item_ct.get_group(1) * item_ct.get_local_range().get(1) +
                     item_ct.get_local_id(1);
 
   if( tid_x < nbf and tid_y < npts ) {

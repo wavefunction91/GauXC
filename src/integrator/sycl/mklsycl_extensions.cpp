@@ -43,7 +43,7 @@ namespace blas  {
         increment( SCR, RES, syclQue );
     }
     template
-    void gdot( cublasSyclQue_t syclQue,
+    void gdot( cl::sycl::queue *syclQue,
                int            N,
                const double*  X,
                int            INCX,

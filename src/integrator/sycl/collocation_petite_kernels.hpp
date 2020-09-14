@@ -23,9 +23,9 @@ namespace sycl       {
         T*              eval_device,
         cl::sycl::nd_item<3> item_ct) {
 
-        const int tid_x = item_ct.get_group(2) * item_ct.get_local_range().get(2) +
+        const size_t tid_x = item_ct.get_group(2) * item_ct.get_local_range().get(2) +
             item_ct.get_local_id(2);
-        const int tid_y = item_ct.get_group(1) * item_ct.get_local_range().get(1) +
+        const size_t tid_y = item_ct.get_group(1) * item_ct.get_local_range().get(1) +
             item_ct.get_local_id(1);
 
         if( tid_x < npts and tid_y < nshells ) {
@@ -80,9 +80,9 @@ namespace sycl       {
         T*              deval_device_z,
         cl::sycl::nd_item<3> item_ct) {
 
-        const int tid_x = item_ct.get_group(2) * item_ct.get_local_range().get(2) +
+        const size_t tid_x = item_ct.get_group(2) * item_ct.get_local_range().get(2) +
             item_ct.get_local_id(2);
-        const int tid_y = item_ct.get_group(1) * item_ct.get_local_range().get(1) +
+        const size_t tid_y = item_ct.get_group(1) * item_ct.get_local_range().get(1) +
             item_ct.get_local_id(1);
 
         if( tid_x < npts and tid_y < nshells ) {

@@ -12,7 +12,7 @@ namespace sycl       {
                                      size_t           LDA ,
                                      cl::sycl::nd_item<3> item_ct) {
 
-        const int batch_id = item_ct.get_group(0);
+        const size_t batch_id = item_ct.get_group(0);
 
         if( batch_id < ntasks ) {
 
@@ -25,10 +25,10 @@ namespace sycl       {
 
             //if( LDAS == LDAB ) return;
 
-            const int tid_x =
+            const size_t tid_x =
                 item_ct.get_local_range().get(2) * item_ct.get_group(2) +
                 item_ct.get_local_id(2);
-            const int tid_y =
+            const size_t tid_y =
                 item_ct.get_local_range().get(1) * item_ct.get_group(1) +
                 item_ct.get_local_id(1);
 
@@ -47,8 +47,8 @@ namespace sycl       {
                     auto* ASmall_begin = ASmall_device + i           + j          *LDAS;
                     auto* ABig_begin   = A             + i_cut_first + j_cut_first*LDA ;
 
-                    for( size_t J = tid_y; J < delta_j; J += blockDim.y )
-                        for( size_t I = tid_x; I < delta_i; I += blockDim.x )
+                    for( int64_t J = tid_y; J < delta_j; J += item_ct.get_local_range().get(1) )
+                        for( int64_t I = tid_x; I < delta_i; I += item_ct.get_local_range().get(2) )
                             ASmall_begin[I + J*LDAS] = ABig_begin[I + J*LDA];
 
                     j += delta_j;

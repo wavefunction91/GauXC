@@ -10,9 +10,9 @@ void inc_by_submat_combined_kernel( size_t           ntasks,
                                     XCTaskDevice<T>* device_tasks,
                                     T*               A,
                                     size_t           LDA ,
-                                    cl::sycl::nd_item<3> item_ct1) {
+                                    cl::sycl::nd_item<3> item_ct) {
 
-    const int batch_id = item_ct1.get_group(0);
+    const size_t batch_id = item_ct.get_group(0);
 
     if( batch_id < ntasks ) {
 
@@ -21,16 +21,16 @@ void inc_by_submat_combined_kernel( size_t           ntasks,
         const auto  ncut              = task.ncut;
         const auto* submat_cut_device = task.submat_cut;
         const auto  LDAS              = task.nbe;
-        auto* ASmall_device     = task.nbe_scr;
+        auto* ASmall_device           = task.nbe_scr;
 
         //if( LDAS == LDAB ) return;
 
         const int tid_x =
-            item_ct1.get_local_range().get(2) * item_ct1.get_group(2) +
-            item_ct1.get_local_id(2);
+            item_ct.get_local_range().get(2) * item_ct.get_group(2) +
+            item_ct.get_local_id(2);
         const int tid_y =
-            item_ct1.get_local_range().get(1) * item_ct1.get_group(1) +
-            item_ct1.get_local_id(1);
+            item_ct.get_local_range().get(1) * item_ct.get_group(1) +
+            item_ct.get_local_id(1);
 
         int64_t i(0);
         for( size_t i_cut = 0; i_cut < ncut; ++i_cut ) {
@@ -47,11 +47,13 @@ void inc_by_submat_combined_kernel( size_t           ntasks,
                 auto* ASmall_begin = ASmall_device + i           + j          *LDAS;
                 auto* ABig_begin   = A             + i_cut_first + j_cut_first*LDA ;
 
-                for( size_t J = tid_y; J < delta_j; J += blockDim.y )
-                    for( size_t I = tid_x; I < delta_i; I += blockDim.x )
-                        //ABig_begin[I + J*LDA] += ASmall_begin[I + J*LDAS];
-                        atomicAdd( ABig_begin + I + J*LDA, ASmall_begin[I+J*LDAS] );
-
+                for( int64_t J = tid_y; J < delta_j; J += item_ct.get_local_range().get(1) )
+                    for( int64_t I = tid_x; I < delta_i; I += item_ct.get_local_range().get(2) ) {
+                        //cl::sycl::atomic_fetch_add( ABig_begin + I + J*LDA, ASmall_begin[I+J*LDAS] );
+                        auto atm = cl::sycl::intel::atomic_ref<T, cl::sycl::intel::memory_order::relaxed,
+                                                               cl::sycl::intel::memory_scope::device, cl::sycl::access::address_space::global_space>( *(ABig_begin + I + J*LDA) );
+                        atm.fetch_add( ASmall_begin[I+J*LDAS] );
+                    }
                 j += delta_j;
             }
             i += delta_i;
@@ -81,7 +83,6 @@ void task_inc_potential(size_t ntasks, XCTaskDevice<T> *device_tasks,
                 });
             }) );
 }
-
 template
 void task_inc_potential( size_t                ntasks,
                          XCTaskDevice<double>* device_tasks,

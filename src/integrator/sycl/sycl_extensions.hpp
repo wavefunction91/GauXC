@@ -53,7 +53,8 @@ __inline__ T block_prod_reduce( T val , cl::sycl::nd_item<3> item_ct, T *shared)
   val = warp_prod_reduce( sub_g, val );
 
   if( lane == 0 ) shared[ wid ] = val;
-  group_barrier(item_ct.get_group());
+  item_ct.barrier();
+  // group_barrier(item_ct.get_group()); // valid only with SYCL 2020
 
   val = (item_ct.get_local_id(2) < item_ct.get_local_range().get(2) / 32)
             ? shared[lane]
