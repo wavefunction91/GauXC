@@ -71,9 +71,9 @@ namespace sycl       {
                                            global_range.get(0)),
                         cl::sycl::range<3>(threads.get(2), threads.get(1), threads.get(0))),
                     [=](cl::sycl::nd_item<3> item_ct) {
-                        collocation_device_masked_kerne<T>(nshells, nbf, npts, shells_device,
-                                                           mask_device, offs_device, pts_device,
-                                                           eval_device, item_ct);
+                        collocation_device_masked_kernel<T>(nshells, nbf, npts, shells_device,
+                                                            mask_device, offs_device, pts_device,
+                                                            eval_device, item_ct);
                     });
                 }) );
     }
@@ -293,7 +293,7 @@ namespace sycl       {
                                                  size_t nshells_max,
                                                  Shell<double> *shells_device,
                                                  XCTaskDevice<double> *device_tasks,
-                                                 cl::sycl::queue *queue) {
+                                                 cl::sycl::queue *queue);
 
 
 } // namespace sycl

@@ -26,7 +26,7 @@ endforeach()
 fill_out_prefix( blas )
 
 if( NOT BLAS_PREFERENCE_LIST )
-  set( BLAS_PREFERENCE_LIST "IntelMKL" "IBMESSL" "BLIS" "OpenBLAS" "ReferenceBLAS" )
+  set( BLAS_PREFERENCE_LIST "InteloneMKL" "IntelMKL" "IBMESSL" "BLIS" "OpenBLAS" "ReferenceBLAS" )
 endif()
 
 if( NOT blas_LIBRARIES )
@@ -38,16 +38,18 @@ if( NOT blas_LIBRARIES )
     copy_meta_data( blas ${blas_lower_case} )
 
 
-    find_package( ${blas_type} 
-      COMPONENTS          ${BLAS_REQUIRED_COMPONENTS} 
-      OPTIONAL_COMPONENTS ${BLAS_OPTIONAL_COMPONENTS} 
+    find_package( ${blas_type}
+      COMPONENTS          ${BLAS_REQUIRED_COMPONENTS}
+      OPTIONAL_COMPONENTS ${BLAS_OPTIONAL_COMPONENTS}
     )
 
     if( ${blas_type}_FOUND )
 
       set( BLAS_VENDOR ${blas_type} )
 
-      if    ( ${blas_type} MATCHES "IntelMKL" )
+      if    ( ${blas_type} MATCHES "InteloneMKL" )
+        set( blas_LIBRARIES InteloneMKL::mkl )
+      elseif( ${blas_type} MATCHES "IntelMKL" )
         set( blas_LIBRARIES IntelMKL::mkl )
       elseif( ${blas_type} MATCHES "IBMESSL" )
         set( blas_LIBRARIES IBMESSL::essl )
@@ -55,7 +57,7 @@ if( NOT blas_LIBRARIES )
         set( blas_LIBRARIES BLIS::blis )
       elseif( ${blas_type} MATCHES "OpenBLAS" )
         set( blas_LIBRARIES OpenBLAS::openblas )
-      elseif( ${blas_type} MATCHES "ReferenceBLAS" ) 
+      elseif( ${blas_type} MATCHES "ReferenceBLAS" )
         set( blas_LIBRARIES ReferenceBLAS::blas )
       endif()
 
@@ -112,8 +114,8 @@ if( blas_LIBRARIES )
 endif()
 set( CMAKE_REQUIRED_QUIET ON )
 
-check_library_exists( "" dgemm       "" BLAS_NO_UNDERSCORE   ) 
-check_library_exists( "" dgemm_      "" BLAS_USES_UNDERSCORE ) 
+check_library_exists( "" dgemm       "" BLAS_NO_UNDERSCORE   )
+check_library_exists( "" dgemm_      "" BLAS_USES_UNDERSCORE )
 
 set( TEST_USES_UNDERSCORE_STR "Performing Test BLAS_USES_UNDERSCORE" )
 set( TEST_NO_UNDERSCORE_STR   "Performing Test BLAS_NO_UNDERSCORE"   )
@@ -151,7 +153,7 @@ find_package_handle_standard_args( BLAS
 if( BLAS_FOUND AND NOT TARGET BLAS::blas )
 
   set( BLAS_LIBRARIES ${blas_LIBRARIES} )
-  
+
   add_library( BLAS::blas INTERFACE IMPORTED )
   set_target_properties( BLAS::blas PROPERTIES
     INTERFACE_LINK_LIBRARIES "${BLAS_LIBRARIES}"

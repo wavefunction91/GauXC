@@ -1,5 +1,10 @@
 #pragma once
 
+#ifdef GAUXC_ENABLE_CEREAL
+  #include <cereal/types/vector.hpp>
+  #include <cereal/types/array.hpp>
+#endif
+
 #cmakedefine GAUXC_ENABLE_CUDA
 
 #ifdef __CUDACC__
@@ -13,8 +18,12 @@
   #include <cublas_v2.h>
   #include <magma_v2.h>
 #endif
-  
-#ifdef GAUXC_ENABLE_CEREAL
-  #include <cereal/types/vector.hpp>
-  #include <cereal/types/array.hpp>
+
+#cmakedefine GAUXC_ENABLE_SYCL
+
+#ifdef GAUXC_ENABLE_SYCL
+  #include <CL/sycl.hpp>
+  #include <mkl_blas_sycl.hpp>
+  #include <mkl_lapack_sycl.hpp>
 #endif
+

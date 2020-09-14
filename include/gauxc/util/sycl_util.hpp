@@ -35,13 +35,12 @@ inline void sycl_copy_async(size_t len, T *dest, const T *src, cl::sycl::queue& 
 template <typename T>
 inline void sycl_set_zero( size_t len, T* ptr, cl::sycl::queue& q, std::string m = "") {
   auto stat = q.memset(ptr, 0, len * sizeof(T));
-  q.wait()
+  q.wait();
 }
 template <typename T>
 inline void sycl_set_zero_async(size_t len, T *ptr, cl::sycl::queue& q, std::string m = "") {
   auto stat = q.memset(ptr, 0, len * sizeof(T));
 }
-
 
 inline void sycl_device_sync(cl::sycl::queue& q) {
   q.wait_and_throw();

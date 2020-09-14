@@ -10,7 +10,8 @@ list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules )
 
 # GauXC Options
 option( GAUXC_ENABLE_CUDA   "Enable CUDA Bindings"        OFF )
-option( GAUXC_ENABLE_TESTS  "Enable Unit Tests"           ON  )
+option( GAUXC_ENABLE_SYCL   "Enable SYCL Bindings"        ON  )
+option( GAUXC_ENABLE_TESTS  "Enable Unit Tests"           OFF )
 option( GAUXC_ENABLE_CEREAL "Enable Cereal serialization" ON  )
 
 # Decided if we're compiling device bindings

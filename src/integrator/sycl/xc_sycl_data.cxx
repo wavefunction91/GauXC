@@ -24,7 +24,7 @@ XCSyclData<F>::XCSyclData( size_t _natoms,
                                           cl::sycl::property_list{cl::sycl::property::queue::in_order{}}) );
 
   // Allocate up to fill_fraction
-  size_t fill_sz = master_queue.get_device().get_info<cl::sycl::info::device::max_mem_alloc_size>();
+  size_t fill_sz = (*master_queue).get_device().get_info<cl::sycl::info::device::max_mem_alloc_size>();
   device_ptr = (void *)cl::sycl::malloc_device(fill_sz, *master_queue);
 
   //std::cout << "NS = " << nshells << ", NA = " << natoms << ", NBF = " << nbf << std::endl;
@@ -292,14 +292,14 @@ std::tuple< task_iterator, device_task_container<F> >
   transA_array_device = mem.aligned_alloc<oneapi::mkl::transpose>( group_count );
   transB_array_device = mem.aligned_alloc<oneapi::mkl::transpose>( group_count );
 
-  m_array_device   = mem.aligned_alloc<std::int64_t>( group_count );
-  n_array_device   = mem.aligned_alloc<std::int64_t>( group_count );
-  k_array_device   = mem.aligned_alloc<std::int64_t>( group_count );
-  lda_array_device = mem.aligned_alloc<std::int64_t>( group_count );
-  ldb_array_device = mem.aligned_alloc<std::int64_t>( group_count );
-  ldc_array_device = mem.aligned_alloc<std::int64_t>( group_count );
+  m_array_device   = mem.aligned_alloc<int32_t>( group_count );
+  n_array_device   = mem.aligned_alloc<int32_t>( group_count );
+  k_array_device   = mem.aligned_alloc<int32_t>( group_count );
+  lda_array_device = mem.aligned_alloc<int32_t>( group_count );
+  ldb_array_device = mem.aligned_alloc<int32_t>( group_count );
+  ldc_array_device = mem.aligned_alloc<int32_t>( group_count );
 
-  iparent_device_buffer = mem.aligned_alloc<std::int64_t>( total_npts );
+  iparent_device_buffer = mem.aligned_alloc<int32_t>( total_npts );
 
 
   // Update tasks with allocated pointers

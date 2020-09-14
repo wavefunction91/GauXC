@@ -71,8 +71,8 @@ public:
   int*        ldc_array_device = nullptr;
     F*        alpha_array_device = nullptr;
     F*        beta_array_device  = nullptr;
-  oneapi::mkl::tranpose* transA_array_device = nullptr;
-  oneapi::mkl::tranpose* transB_array_device = nullptr;
+  oneapi::mkl::transpose* transA_array_device = nullptr;
+  oneapi::mkl::transpose* transB_array_device = nullptr;
 
   F*     dist_scratch_device = nullptr;
 

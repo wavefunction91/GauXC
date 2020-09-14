@@ -53,14 +53,14 @@ struct XCTask {
 
 
   inline bool equiv_with( const XCTask& other ) const {
-    return iParent == other.iParent and 
+    return iParent == other.iParent and
            shell_list == other.shell_list;
   }
 
 #ifdef GAUXC_ENABLE_CEREAL
   template <typename Archive>
   void serialize( Archive& ar ) {
-    ar( iParent, nbe, dist_nearest, shell_list, points, weights );  
+    ar( iParent, nbe, dist_nearest, shell_list, points, weights );
   }
 #endif
 
@@ -103,6 +103,41 @@ struct XCTaskDevice {
 };
 
 }
-#endif
+#endif // GAUXC_ENABLE_CUDA
+
+#ifdef GAUXC_ENABLE_SYCL
+namespace sycl {
+
+template <typename T>
+struct XCTaskDevice {
+
+  size_t nbe;
+  size_t npts;
+  size_t ncut;
+  size_t nshells;
+
+  double* points;
+  double* weights;
+  size_t* shell_list;
+  size_t* shell_offs;
+  int64_t* submat_cut;
+
+  Shell<T>* shells;
+  double*   nbe_scr;
+  double*   zmat;
+  double*   bf, *dbfx, *dbfy, *dbfz;
+  double*   den, *ddenx, *ddeny, *ddenz;
+  double*   eps, *gamma;
+  double*   vrho, *vgamma;
+
+  size_t iParent;
+  double dist_nearest;
+  double * dist_scratch;
+};
+
+}
+#endif // GAUXC_ENABLE_SYCL
+
+
 
 }

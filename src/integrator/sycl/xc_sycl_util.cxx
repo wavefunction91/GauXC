@@ -71,7 +71,7 @@ void process_batches_sycl_replicated_all_device(
 
 
   // Aliases
-  cl::sycl::queue& master_queue = *(sycl_data.master_queue);
+  cl::sycl::queue syclQue = *(sycl_data.master_queue);
 
   auto* dmat_device         = sycl_data.dmat_device;
 
@@ -118,111 +118,125 @@ void process_batches_sycl_replicated_all_device(
   const auto* dist_nearest_device = sycl_data.dist_nearest_buffer;
 
 
-
-
   // Evaluate Partition Weights
   partition_weights_sycl_SoA( weight_alg, total_npts, sycl_data.natoms,
                               points_device, iparent_device, dist_nearest_device,
                               rab_device, coords_device, weights_device,
-                              dist_scratch_device, master_queue );
+                              dist_scratch_device, &syclQue );
 
 
   // Evaluate Collocation
   if constexpr ( n_deriv == 1 )
     eval_collocation_masked_combined_deriv1( ntasks, max_npts, max_nshells,
                                              shells_device, tasks_device,
-                                             master_queue );
+                                             &syclQue );
   else
     eval_collocation_masked_combined( ntasks, max_npts, max_nshells, shells_device,
-                                      tasks_device, master_queue );
+                                      tasks_device, &syclQue );
 
   // Pack Density Submatrices
-  task_pack_density_matrix( ntasks, tasks_device, dmat_device, nbf, master_queue );
+  task_pack_density_matrix( ntasks, tasks_device, dmat_device, nbf, &syclQue );
 
 
   // Form Z = P * X
-  oneapi::mkl::blas::column_major::gemm_batch(master_queue,
-                                              transA_array_device, transB_array_device,
-                                              m_array_device, n_array_device, k_array_device,
-                                              alpha_array_device, dmat_array_device, lda_array_device,
-                                              bf_array_device, ldb_array_device,
-                                              beta_array_device, zmat_array_device, ldc_array_device,
-                                              ntasks);
+  // // Group API
+  // sycl::event oneapi::mkl::blas::column_major::gemm_batch(sycl::queue &queue,
+  //                                                         onemkl::transpose *transa, onemkl::transpose *transb,
+  //                                                         std::int64_t *m, std::int64_t *n, std::int64_t *k,
+  //                                                         T *alpha, const T **a, std::int64_t *lda,
+  //                                                         const T **b, std::int64_t *ldb,
+  //                                                         T *beta, T **c, std::int64_t *ldc,
+  //                                                         std::int64_t group_count, std::int64_t *group_size, const sycl::vector_class<sycl::event> &dependencies = {});
+  // // Strided API
+  // sycl::event oneapi::mkl::blas::column_major::gemm_batch(sycl::queue &queue,
+  //                                                         onemkl::transpose transa, onemkl::transpose transb,
+  //                                                         std::int64_t m, std::int64_t n, std::int64_t k,
+  //                                                         T alpha, const T *a, std::int64_t lda, std::int64_t stridea,
+  //                                                         const T *b, std::int64_t ldb, std::int64_t strideb,
+  //                                                         T beta, T *c, std::int64_t ldc, std::int64_t stridec,
+  //                                                         std::int64_t batch_size, const sycl::vector_class<sycl::event> &dependencies = {});
+
+
+  // oneapi::mkl::blas::column_major::gemm_batch(syclQue,
+  //                                             transA_array_device, transB_array_device,
+  //                                             m_array_device, n_array_device, k_array_device,
+  //                                             alpha_array_device, dmat_array_device, lda_array_device,
+  //                                             bf_array_device, ldb_array_device,
+  //                                             beta_array_device, zmat_array_device, ldc_array_device,
+  //                                             ntasks);
 
 
   // Zero UVars
-  util::sycl_set_zero_async( total_npts, den_eval_device, master_queue, "DenZero" );
+  util::sycl_set_zero_async( total_npts, den_eval_device, syclQue, "DenZero" );
   if( func.is_gga() ) {
-    util::sycl_set_zero_async( total_npts, dden_x_eval_device, master_queue,
+    util::sycl_set_zero_async( total_npts, dden_x_eval_device, syclQue,
                                "DenXZero" );
-    util::sycl_set_zero_async( total_npts, dden_y_eval_device, master_queue,
+    util::sycl_set_zero_async( total_npts, dden_y_eval_device, syclQue,
                                "DenYZero" );
-    util::sycl_set_zero_async( total_npts, dden_z_eval_device, master_queue,
+    util::sycl_set_zero_async( total_npts, dden_z_eval_device, syclQue,
                                "DenZZero" );
   }
 
   // Evaluate UVars
   if( func.is_gga() ) {
-    eval_uvars_gga_device( ntasks, max_nbe, max_npts, tasks_device, master_queue );
+    eval_uvars_gga_device( ntasks, max_nbe, max_npts, tasks_device, &syclQue );
     eval_vvars_gga_device( total_npts, dden_x_eval_device, dden_y_eval_device,
-                           dden_z_eval_device, gamma_eval_device, master_queue );
+                           dden_z_eval_device, gamma_eval_device, &syclQue );
   } else {
-    eval_uvars_lda_device( ntasks, max_nbe, max_npts, tasks_device, master_queue );
+    eval_uvars_lda_device( ntasks, max_nbe, max_npts, tasks_device, &syclQue );
   }
 
   // Evaluate XC Functional
   if( func.is_gga() )
     func.eval_exc_vxc_device( total_npts, den_eval_device, gamma_eval_device,
                               eps_eval_device, vrho_eval_device,
-                              vgamma_eval_device, master_queue );
+                              vgamma_eval_device, &syclQue );
   else
     func.eval_exc_vxc_device( total_npts, den_eval_device, eps_eval_device,
-                              vrho_eval_device, master_queue );
-
+                              vrho_eval_device, &syclQue );
 
   // Factor weights into XC output
-  hadamard_product( master_handle, total_npts, 1, weights_device, 1,
+  hadamard_product( &syclQue, total_npts, 1, weights_device, 1,
                     eps_eval_device, 1 );
-  hadamard_product( master_handle, total_npts, 1, weights_device, 1,
+  hadamard_product( &syclQue, total_npts, 1, weights_device, 1,
                     vrho_eval_device, 1 );
   if( func.is_gga() )
-    hadamard_product( master_handle, total_npts, 1, weights_device, 1,
+    hadamard_product( &syclQue, total_npts, 1, weights_device, 1,
                       vgamma_eval_device, 1 );
 
   // Accumulate EXC / NEL
-  gdot( master_handle, total_npts, weights_device, 1,
+  gdot( &syclQue, total_npts, weights_device, 1,
         den_eval_device, 1, acc_scr_device, nel_device );
-  gdot( master_handle, total_npts, eps_eval_device, 1,
+  gdot( &syclQue, total_npts, eps_eval_device, 1,
         den_eval_device, 1, acc_scr_device, exc_device );
 
   // Evaluate Z Matrix
   if( func.is_gga() )
-    zmat_gga_sycl( ntasks, max_nbe, max_npts, tasks_device, master_queue );
+    zmat_gga_sycl( ntasks, max_nbe, max_npts, tasks_device, &syclQue );
   else
-    zmat_lda_sycl( ntasks, max_nbe, max_npts, tasks_device, master_queue );
-
+    zmat_lda_sycl( ntasks, max_nbe, max_npts, tasks_device, &syclQue );
 
 
   // // Accumulate packed VXC = X * Z**T + Z * X**T
   // // XXX: Only updates LT
-  for( int i=0, i < ntasks; i++ ) {
-      oneapi::mkl::blas::column_major::syr2k(master_queue,
+  for( int task=0; task < ntasks; task++ ) {
+      oneapi::mkl::blas::column_major::syr2k(syclQue,
                                              oneapi::mkl::uplo::lower, oneapi::mkl::transpose::nontrans,
-                                             m_array_device[i], n_array_device[i],
-                                             1., bf_array_device[i], lda_array_device[i],
-                                             zmat_array_device[i], ldb_array_device[i],
-                                             0., dmat_array_device[i], ldc_array_device[i]);
+                                             m_array_device[task], n_array_device[task],
+                                             1., bf_array_device[task], lda_array_device[task],
+                                             zmat_array_device[task], ldb_array_device[task],
+                                             0., dmat_array_device[task], ldc_array_device[task]);
   }
 
 
   // Increment global VXC
-  task_inc_potential( ntasks, tasks_device, vxc_device, nbf, master_queue );
+  task_inc_potential( ntasks, tasks_device, vxc_device, nbf, &syclQue );
 
 
   // Synchronize on master queue
   // XXX: There's no lifetime issues in this driver, should look into
   //      avoid this sync to allow for overlap with the host packing
-  util::sycl_device_sync( master_queue );
+  util::sycl_device_sync( syclQue );
 
 }
 
@@ -239,15 +253,14 @@ void process_batches_sycl_replicated_p(
   const F*               P,
   F*                     VXC,
   F*                     EXC,
-  F*                     NEL
-) {
-
+  F*                     NEL) {
 
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
     return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
   };
   std::sort( tasks.begin(), tasks.end(), task_comparator );
 
+  cl::sycl::queue syclQue = *(sycl_data.master_queue);
 
   const auto nbf    = basis.nbf();
   const auto natoms = meta.natoms();
@@ -256,16 +269,16 @@ void process_batches_sycl_replicated_p(
 
   // Density
   if( not sycl_data.denpack_host )
-    util::sycl_copy( nbf * nbf, sycl_data.dmat_device, P, "P H2D" );
+      util::sycl_copy( nbf * nbf, sycl_data.dmat_device, P, syclQue, "P H2D" );
 
   // Shells: TODO avoid host copy?
   std::vector<Shell<F>> shells( basis );
   util::sycl_copy( shells.size(), sycl_data.shells_device, shells.data(),
-                   "Shells H2D" );
+                   syclQue, "Shells H2D" );
 
   // RAB
   util::sycl_copy( natoms * natoms, sycl_data.rab_device, meta.rab().data(),
-                   "RAB H2D" );
+                   syclQue, "RAB H2D" );
 
   // Atomic coordinates
   std::vector<double> coords( 3*natoms );
@@ -275,15 +288,13 @@ void process_batches_sycl_replicated_p(
     coords[ 3*i + 2 ] = mol[i].z;
   }
   util::sycl_copy( 3 * natoms, sycl_data.coords_device, coords.data(),
-                   "Coords H2D" );
+                   syclQue, "Coords H2D" );
 
 
   // Zero out XC quantities
-  util::sycl_set_zero( nbf * nbf, sycl_data.vxc_device, "VXC Zero" );
-  util::sycl_set_zero( 1        , sycl_data.exc_device, "EXC Zero" );
-  util::sycl_set_zero( 1        , sycl_data.nel_device, "NEL Zero" );
-
-
+  util::sycl_set_zero( nbf * nbf, sycl_data.vxc_device, syclQue, "VXC Zero" );
+  util::sycl_set_zero( 1        , sycl_data.exc_device, syclQue, "EXC Zero" );
+  util::sycl_set_zero( 1        , sycl_data.nel_device, syclQue, "NEL Zero" );
 
   // Processes batches in groups that saturadate available device memory
   auto task_it = tasks.begin();
@@ -293,22 +304,20 @@ void process_batches_sycl_replicated_p(
     auto [it, tasks_device] =
       sycl_data.generate_buffers( basis, task_it, tasks.end() );
 
-
     // Process the batches
     process_batches_sycl_replicated_all_device<F,n_deriv>(
       weight_alg, func, sycl_data, tasks_device.begin(), tasks_device.end()
     );
 
     task_it = it;
-
   }
 
   // Receive XC terms from host
   if( not sycl_data.vxcinc_host )
-    util::sycl_copy( nbf * nbf, VXC, sycl_data.vxc_device, "VXC D2H" );
+    util::sycl_copy( nbf * nbf, VXC, sycl_data.vxc_device, syclQue, "VXC D2H" );
 
-  util::sycl_copy( 1, EXC, sycl_data.exc_device, "EXC D2H" );
-  util::sycl_copy( 1, NEL, sycl_data.nel_device, "NEL D2H" );
+  util::sycl_copy( 1, EXC, sycl_data.exc_device, syclQue, "EXC D2H" );
+  util::sycl_copy( 1, NEL, sycl_data.nel_device, syclQue, "NEL D2H" );
 
   // Symmetrize VXC
   for( int32_t j = 0;   j < nbf; ++j )
