@@ -49,3 +49,7 @@ set( GAUXC_REF_DATA_PATH "${PROJECT_SOURCE_DIR}/tests/ref_data" )
 configure_file( ut_common.hpp.in ${PROJECT_BINARY_DIR}/tests/ut_common.hpp )
 target_include_directories( gauxc_test PRIVATE ${PROJECT_BINARY_DIR}/tests )
 target_include_directories( gauxc_test PRIVATE ${PROJECT_SOURCE_DIR}/tests )
+
+
+add_executable( standalone_driver standalone_driver.cxx standards.cxx )
+target_link_libraries( standalone_driver PUBLIC gauxc )

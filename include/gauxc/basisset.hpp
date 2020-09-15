@@ -25,6 +25,9 @@ public:
   BasisSet( const BasisSet& ) = default;
   BasisSet( BasisSet&& ) noexcept = default;
 
+  BasisSet& operator=( const BasisSet& ) = default;
+  BasisSet& operator=( BasisSet&& ) noexcept = default;
+
   inline int32_t nshells() const { return this->size(); }; 
   inline int32_t nbf()     const {
     return std::accumulate( this->cbegin(), this->cend(), 0ul,
