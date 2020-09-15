@@ -10,6 +10,7 @@ list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules )
 
 # GauXC Options
 option( GAUXC_ENABLE_CUDA   "Enable CUDA Bindings"        OFF )
+option( GAUXC_ENABLE_MAGMA  "Enable MAGMA Linear Algebra" ON  )
 option( GAUXC_ENABLE_TESTS  "Enable Unit Tests"           ON  )
 option( GAUXC_ENABLE_CEREAL "Enable Cereal serialization" ON  )
 

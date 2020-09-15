@@ -73,8 +73,11 @@ void process_batches_cuda_replicated_all_device(
 
   // Aliases
   cudaStream_t   master_stream = *cuda_data.master_stream;
-  magma_queue_t  master_queue  = *cuda_data.master_magma_queue;
   cublasHandle_t master_handle = *cuda_data.master_handle;
+
+#ifdef GAUXC_ENABLE_MAGMA
+  magma_queue_t  master_queue  = *cuda_data.master_magma_queue;
+#endif
 
   auto* dmat_device         = cuda_data.dmat_device;
 
@@ -142,12 +145,20 @@ void process_batches_cuda_replicated_all_device(
   // Form Z = P * X
   if( cuda_data.batch_l3_blas ) {
 
+#ifdef GAUXC_ENABLE_MAGMA
+
     magmablas_dgemm_vbatched( MagmaNoTrans, MagmaNoTrans,
                               m_array_device, n_array_device, k_array_device,
                               1., dmat_array_device, lda_array_device,
                               bf_array_device, ldb_array_device,
                               0., zmat_array_device, ldc_array_device,
                               ntasks, master_queue );
+
+#else
+
+    throw std::runtime_error("BATCHED BLAS API NOT SUPPORTED");
+
+#endif
 
   } else {
 
@@ -238,6 +249,8 @@ void process_batches_cuda_replicated_all_device(
   
   if( cuda_data.batch_l3_blas ) {
 
+#ifdef GAUXC_ENABLE_MAGMA
+
     // XXX: Only updates LT
     magmablas_dsyr2k_vbatched( MagmaLower, MagmaNoTrans, 
                                m_array_device, n_array_device,
@@ -245,6 +258,12 @@ void process_batches_cuda_replicated_all_device(
                                zmat_array_device, ldb_array_device,
                                0., dmat_array_device, ldc_array_device,
                                ntasks, master_queue );
+
+#else
+
+    throw std::runtime_error("BATCHED BLAS API NOT SUPPORTED");
+
+#endif
   } else {
 
     int nstream = cuda_data.blas_streams.size();

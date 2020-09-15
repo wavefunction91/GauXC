@@ -88,7 +88,10 @@ struct XCCudaData {
   // Execution management
   std::unique_ptr<util::cuda_stream>   master_stream      = nullptr;
   std::unique_ptr<util::cublas_handle> master_handle      = nullptr;
+
+#ifdef GAUXC_ENABLE_MAGMA
   std::unique_ptr<util::magma_queue>   master_magma_queue = nullptr;
+#endif
 
   std::vector<util::cuda_stream>       blas_streams;
   std::vector<util::cublas_handle>     blas_handles;

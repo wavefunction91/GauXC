@@ -18,7 +18,12 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
   natoms(_natoms),
   denpack_host(_denpack_host), 
   vxcinc_host(_vxcinc_host),
-  batch_l3_blas(_batch_l3_blas)  {
+#ifdef GAUXC_ENABLE_MAGMA
+  batch_l3_blas(_batch_l3_blas)  
+#else
+  batch_l3_blas(false)  
+#endif
+{
 
 
   // TODO: Expose this
@@ -66,9 +71,11 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
 
   cublasSetStream( *master_handle, *master_stream );
 
+#ifdef GAUXC_ENABLE_MAGMA
   // Create MAGMA Queue from CUDA Stream and CUBLAS Handle
   master_magma_queue = 
     std::make_unique< util::magma_queue >( 0, *master_stream, *master_handle );
+#endif
 
   if( not batch_l3_blas ) {
 

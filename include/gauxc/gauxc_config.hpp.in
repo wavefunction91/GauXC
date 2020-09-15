@@ -1,6 +1,7 @@
 #pragma once
 
 #cmakedefine GAUXC_ENABLE_CUDA
+#cmakedefine GAUXC_ENABLE_MAGMA
 
 #ifdef __CUDACC__
   #define HOST_DEVICE_ACCESSIBLE __host__ __device__
@@ -11,6 +12,9 @@
 #ifdef GAUXC_ENABLE_CUDA
   #include <cuda_runtime.h>
   #include <cublas_v2.h>
+#endif
+
+#ifdef GAUXC_ENABLE_MAGMA
   #include <magma_v2.h>
 #endif
   
