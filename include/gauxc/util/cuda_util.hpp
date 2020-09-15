@@ -7,6 +7,9 @@
 namespace GauXC {
 namespace util  {
 
+struct cuda_stream;
+struct cuda_event;
+
 struct cuda_stream {
 
   cudaStream_t stream;
@@ -27,10 +30,39 @@ struct cuda_stream {
 
   inline operator cudaStream_t() const { return stream; }
 
+  inline void wait( cudaEvent_t event ) {
+    auto stat = cudaStreamWaitEvent( stream, event, 0 );
+    GAUXC_CUDA_ERROR("STREAM WAIT FAILED", stat );
+  }
 };
 
 
+struct cuda_event {
 
+  cudaEvent_t event;
+  inline cuda_event() {
+    auto stat = cudaEventCreate( &event );
+    GAUXC_CUDA_ERROR("CUDA Event Create Failed", stat);
+  }
+
+  inline ~cuda_event() noexcept {
+    if( event != 0 ) cudaEventDestroy( event );
+  }
+
+  cuda_event( const cuda_event& ) = delete;
+  inline cuda_event( cuda_event&& other ) noexcept {
+    event = other.event;
+    other.event = 0;
+  };
+
+  inline operator cudaEvent_t() const { return event; }
+
+  inline void record( cudaStream_t stream ) {
+    auto stat = cudaEventRecord( event, stream );
+    GAUXC_CUDA_ERROR("Event Record Failed", stat );
+  }
+
+};
 
 
 
