@@ -2,6 +2,7 @@
 
 #cmakedefine GAUXC_ENABLE_CUDA
 #cmakedefine GAUXC_ENABLE_MAGMA
+#cmakedefine GAUXC_ENABLE_GAU2GRID
 
 #ifdef __CUDACC__
   #define HOST_DEVICE_ACCESSIBLE __host__ __device__

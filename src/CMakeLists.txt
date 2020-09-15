@@ -50,8 +50,12 @@ target_link_libraries( gauxc PUBLIC
   OpenMP::OpenMP_CXX
   Eigen3::Eigen 
   LAPACK::lapack
-  gauxc_gau2grid
 )
+
+if( GAUXC_ENABLE_GAU2GRID )
+  target_link_libraries( gauxc PUBLIC gauxc_gau2grid )
+endif()
+
 if( GAUXC_ENABLE_CEREAL )
   target_link_libraries( gauxc PUBLIC cereal )
 endif()
