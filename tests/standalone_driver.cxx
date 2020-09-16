@@ -1,4 +1,6 @@
 #include "standards.hpp"
+#include "basis/parse_basis.hpp"
+
 #include <random>
 #include <algorithm>
 
@@ -21,6 +23,7 @@ int main(int argc, char** argv) {
   MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
   MPI_Comm_size( MPI_COMM_WORLD, &world_size );
   {
+
 
     //std::string test_case = "benzene";
     //std::string basis_set = "cc-pvdz";
@@ -46,6 +49,7 @@ int main(int argc, char** argv) {
     MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
     auto meta = std::make_shared<MolMeta>( mol );
 
+    parse_basis( mol, "/global/homes/d/dbwy/devel/GauXC/tests/basis/old/6-31g*.g94", SphericalType(false) );
 
     // Construct BasisSet
     BasisSet<double> basis; 
