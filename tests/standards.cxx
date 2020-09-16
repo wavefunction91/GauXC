@@ -1500,8 +1500,8 @@ BasisSet<double> make_631Gd( const Molecule& mol, SphericalType sph ) {
       basis.emplace_back(
         Shell<double>( 
           PrimSize(3), AngularMomentum(0), SphericalType(false),
-          {0.3349460434e-01, 0.2347269535e+00, 0.8137573261e+00},
           {0.1873113696e+02, 0.2825394365e+01, 0.6401216923e+00},
+          {0.3349460434e-01, 0.2347269535e+00, 0.8137573261e+00},
           { atom.x, atom.y, atom.z }
         )
       );
