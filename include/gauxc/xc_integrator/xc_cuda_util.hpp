@@ -1,8 +1,8 @@
 #pragma once
 #include <gauxc/xc_integrator/xc_cuda_data.hpp>
-
 #include <gauxc/xc_integrator.hpp>
 
+#ifdef GAUXC_ENABLE_CUDA
 namespace GauXC  {
 namespace integrator {
 namespace cuda {
@@ -37,3 +37,4 @@ inline void process_batches_cuda_replicated_p( size_t n_deriv, Args&&... args ) 
 }
 }
 }
+#endif
