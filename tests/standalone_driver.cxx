@@ -97,11 +97,22 @@ int main(int argc, char** argv) {
       ar( EXC_ref, P, VXC_ref );
     }
 
-    std::cout << "NBF = " << basis.nbf() << std::endl;
+    //std::cout << "NBF = " << basis.nbf() << std::endl;
+    
+    MPI_Barrier( MPI_COMM_WORLD );
+    auto xc_int_start = std::chrono::high_resolution_clock::now();
+
     auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
+
+    MPI_Barrier( MPI_COMM_WORLD );
+    auto xc_int_end   = std::chrono::high_resolution_clock::now();
+    double xc_int_dur = std::chrono::duration<double>( xc_int_end - xc_int_start ).count();
 
     if( !world_rank ) {
       std::cout << std::scientific << std::setprecision(16);
+
+      std::cout << "XC Int Duration  = " << xc_int_dur << " s" << std::endl;
+
       std::cout << "EXC (ref)        = " << EXC_ref << std::endl;
       std::cout << "EXC (calc)       = " << EXC     << std::endl;
       std::cout << "EXC Diff         = " << std::abs(EXC_ref - EXC) / EXC_ref 
