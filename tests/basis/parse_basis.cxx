@@ -170,7 +170,7 @@ BasisSet<double> parse_basis( const Molecule& mol,
     std::transform( atom_symb.begin(), atom_symb.end(), atom_symb.begin(),
                     [](auto a){ return std::toupper(a); } );
     
-    std::cout << atom_symb << std::endl;
+    //std::cout << atom_symb << std::endl;
     int Z = atomic_number_map.at(atom_symb);
 
     BasisSet<double> atom_basis;
@@ -186,6 +186,7 @@ BasisSet<double> parse_basis( const Molecule& mol,
       std::vector<double> coeff_primary(nprim), coeff_secondary(nprim);
       for( int i = 0; i < nprim; ++i ) {
         std::string prim_line = *rec_it; rec_it++; // Read prim line
+        for( auto& c : prim_line ) if( c == 'D' or c == 'd' ) c = 'e';
         auto prim_tokens = detail::tokenize( prim_line );
 
         alpha[i]         = std::stod( prim_tokens.at(0) );

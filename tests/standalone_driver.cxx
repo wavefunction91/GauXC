@@ -18,12 +18,10 @@ using namespace ExchCXX;
 
 int main(int argc, char** argv) {
 
-#if 0
   MPI_Init( NULL, NULL );
   int world_rank, world_size;
   MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
   MPI_Comm_size( MPI_COMM_WORLD, &world_size );
-#endif
   {
 
 
@@ -52,23 +50,6 @@ int main(int argc, char** argv) {
     MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
     auto meta = std::make_shared<MolMeta>( mol );
 
-    auto b = parse_basis( mol, "/autofs/nccs-svm1_home1/dbwy/devel/GauXC/tests/basis/old/6-31g*.g94", SphericalType(false) );
-
-    for( auto& sh : b ) 
-      sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
-    b.generate_shell_to_ao();
-    std::cout << "Basis" << std::endl;
-    for( auto i = 0; i < b.size(); ++i ) {
-      const auto& sh = b[i];
-      std::cout << "CEN = " << sh.O()[0] << ", " << sh.O()[1] << ", " << sh.O()[2] << std::endl;
-      std::cout << "L = " << sh.l() << std::endl;
-      std::cout << "CR = " << sh.cutoff_radius() << std::endl;
-      std::cout << "PRIMS" << std::endl;
-      for( auto p = 0; p < sh.nprim(); ++p )
-        std::cout << "  " << sh.alpha()[p] << ", " << sh.coeff()[p] << std::endl;
-      std::cout << std::endl;
-    }
-#if 0
     // Construct BasisSet
     BasisSet<double> basis; 
     if( basis_set.find("6-31gd") != std::string::npos ) 
@@ -131,10 +112,7 @@ int main(int argc, char** argv) {
       std::cout << "RMS VXC Diff     = " << (VXC_ref - VXC).norm() / basis.nbf()
                                          << std::endl;
     }
- #endif 
   }
-#if 0
   MPI_Finalize();
-#endif
 
 }
