@@ -24,11 +24,12 @@ int main(int argc, char** argv) {
   MPI_Comm_size( MPI_COMM_WORLD, &world_size );
   {
 
+    std::vector< std::string > opts( argc );
+    for( int i = 0; i < argc; ++i ) opts[i] = argv[i];
 
-    //std::string test_case = "benzene";
-    //std::string basis_set = "cc-pvdz";
-    std::string test_case = "taxol";
-    std::string basis_set = "6-31gd";
+    std::string test_case = opts.at(1);
+    std::string basis_set = opts.at(2);
+    std::string ref_file  = opts.at(3);
 
     std::transform( test_case.begin(), test_case.end(), test_case.begin(),
                     [](const auto c){ return std::tolower(c); } );
@@ -63,17 +64,17 @@ int main(int argc, char** argv) {
       sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
     basis.generate_shell_to_ao();
 
-    std::cout << "Basis" << std::endl;
-    for( auto i = 0; i < basis.size(); ++i ) {
-      const auto& sh = basis[i];
-      std::cout << "CEN = " << sh.O()[0] << ", " << sh.O()[1] << ", " << sh.O()[2] << std::endl;
-      std::cout << "L = " << sh.l() << std::endl;
-      std::cout << "CR = " << sh.cutoff_radius() << std::endl;
-      std::cout << "PRIMS" << std::endl;
-      for( auto p = 0; p < sh.nprim(); ++p )
-        std::cout << "  " << sh.alpha()[p] << ", " << sh.coeff()[p] << std::endl;
-      std::cout << std::endl;
-    }
+    //std::cout << "Basis" << std::endl;
+    //for( auto i = 0; i < basis.size(); ++i ) {
+    //  const auto& sh = basis[i];
+    //  std::cout << "CEN = " << sh.O()[0] << ", " << sh.O()[1] << ", " << sh.O()[2] << std::endl;
+    //  std::cout << "L = " << sh.l() << std::endl;
+    //  std::cout << "CR = " << sh.cutoff_radius() << std::endl;
+    //  std::cout << "PRIMS" << std::endl;
+    //  for( auto p = 0; p < sh.nprim(); ++p )
+    //    std::cout << "  " << sh.alpha()[p] << ", " << sh.coeff()[p] << std::endl;
+    //  std::cout << std::endl;
+    //}
 
     // Setup load balancer
     auto lb = std::make_shared<LoadBalancer>(MPI_COMM_WORLD, mol, mg, basis, meta);
@@ -89,7 +90,6 @@ int main(int argc, char** argv) {
     matrix_type P,VXC_ref;
     double EXC_ref;
     {
-      std::string ref_file = test_case + "_pbe0_" + basis_set + "_ufg_ssf.bin";
       std::ifstream infile( ref_file, std::ios::binary );
 
       if( !infile.good() ) throw std::runtime_error(ref_file + " not found");
