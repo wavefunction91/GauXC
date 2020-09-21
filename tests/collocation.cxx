@@ -956,7 +956,7 @@ void test_sycl_collocation_petite( const BasisSet<double>& basis, std::ifstream&
     integrator::sycl::eval_collocation_petite( shells.size(), nbf, npts,
                                                shells_device, offs_device,
                                                pts_device,
-                                               eval_device, syclQueue );
+                                               eval_device, &syclQueue );
 
     std::vector<double> eval( nbf * npts );
 
@@ -1016,7 +1016,7 @@ void test_sycl_collocation_masked( const BasisSet<double>& basis, std::ifstream&
     integrator::sycl::eval_collocation_masked( mask.size(), nbf, npts,
                                                shells_device, mask_device,
                                                offs_device, pts_device,
-                                               eval_device, syclQueue );
+                                               eval_device, &syclQueue );
 
     std::vector<double> eval( nbf * npts );
 
@@ -1044,7 +1044,7 @@ void test_sycl_collocation_petite_combined( const BasisSet<double>& basis, std::
     ar( ref_data );
   }
 
-  std::vector< sycl::XCTaskDevice<double> > tasks;
+  std::vector< GauXC::sycl::XCTaskDevice<double> > tasks;
 
   for( auto& d : ref_data ) {
     const auto npts = d.pts.size();
@@ -1092,11 +1092,11 @@ void test_sycl_collocation_petite_combined( const BasisSet<double>& basis, std::
       return a.npts < b.npts;
     })->npts;
 
-  auto* tasks_device = util::sycl_malloc<sycl::XCTaskDevice<double>>( tasks.size(), syclQueue );
+  auto* tasks_device = util::sycl_malloc<GauXC::sycl::XCTaskDevice<double>>( tasks.size(), syclQueue );
   util::sycl_copy( tasks.size(), tasks_device, tasks.data(), syclQueue );
 
   integrator::sycl::eval_collocation_petite_combined( tasks.size(), npts_max,
-    nshells_max, tasks_device, syclQueue );
+    nshells_max, tasks_device, &syclQueue );
 
   util::sycl_device_sync(syclQueue);
 
@@ -1131,7 +1131,7 @@ void test_sycl_collocation_masked_combined( const BasisSet<double>& basis, std::
     ar( ref_data );
   }
 
-  std::vector< sycl::XCTaskDevice<double> > tasks;
+  std::vector< GauXC::sycl::XCTaskDevice<double> > tasks;
 
   auto shells_device  = util::sycl_malloc<Shell<double>>( basis.size(), syclQueue );
   std::vector<Shell<double>> shells( basis );
@@ -1183,11 +1183,11 @@ void test_sycl_collocation_masked_combined( const BasisSet<double>& basis, std::
       return a.npts < b.npts;
     })->npts;
 
-  auto* tasks_device = util::sycl_malloc<sycl::XCTaskDevice<double>>( tasks.size() );
+  auto* tasks_device = util::sycl_malloc<GauXC::sycl::XCTaskDevice<double>>( tasks.size(), syclQueue );
   util::sycl_copy( tasks.size(), tasks_device, tasks.data(), syclQueue );
 
   integrator::sycl::eval_collocation_masked_combined( tasks.size(), npts_max,
-    nshells_max, shells_device, tasks_device, syclQueue );
+    nshells_max, shells_device, tasks_device, &syclQueue );
 
   util::sycl_device_sync(syclQueue);
 
@@ -1253,7 +1253,7 @@ void test_sycl_collocation_deriv1_petite( const BasisSet<double>& basis, std::if
                                                       pts_device,
                                                       eval_device, deval_device_x,
                                                       deval_device_y, deval_device_z,
-                                                      syclQueue );
+                                                      &syclQueue );
 
     std::vector<double> eval   ( nbf * npts ),
                         deval_x( nbf * npts ),
@@ -1332,7 +1332,7 @@ void test_sycl_collocation_deriv1_masked( const BasisSet<double>& basis, std::if
                                                       offs_device, pts_device,
                                                       eval_device, deval_device_x,
                                                       deval_device_y, deval_device_z,
-                                                      syclQueue );
+                                                      &syclQueue );
 
     std::vector<double> eval   ( nbf * npts ),
                         deval_x( nbf * npts ),
@@ -1377,7 +1377,7 @@ void test_sycl_collocation_petite_combined_deriv1( const BasisSet<double>& basis
     ar( ref_data );
   }
 
-  std::vector< sycl::XCTaskDevice<double> > tasks;
+  std::vector< GauXC::sycl::XCTaskDevice<double> > tasks;
 
   for( auto& d : ref_data ) {
     const auto npts = d.pts.size();
@@ -1395,7 +1395,7 @@ void test_sycl_collocation_petite_combined_deriv1( const BasisSet<double>& basis
 
     task.points     = util::sycl_malloc<double>( 3 * npts, syclQueue );
     task.shell_offs = util::sycl_malloc<size_t>( mask.size(), syclQueue );
-    task.shells     = util::sycl_malloc<Shell<double>>(mask.size());
+    task.shells     = util::sycl_malloc<Shell<double>>(mask.size(), syclQueue);
     task.bf         = util::sycl_malloc<double>( nbf * npts, syclQueue );
     task.dbfx       = util::sycl_malloc<double>( nbf * npts, syclQueue );
     task.dbfy       = util::sycl_malloc<double>( nbf * npts, syclQueue );
@@ -1428,11 +1428,11 @@ void test_sycl_collocation_petite_combined_deriv1( const BasisSet<double>& basis
       return a.npts < b.npts;
     })->npts;
 
-  auto* tasks_device = util::sycl_malloc<sycl::XCTaskDevice<double>>( tasks.size() );
+  auto* tasks_device = util::sycl_malloc<GauXC::sycl::XCTaskDevice<double>>( tasks.size(), syclQueue );
   util::sycl_copy( tasks.size(), tasks_device, tasks.data(), syclQueue );
 
   integrator::sycl::eval_collocation_petite_combined_deriv1( tasks.size(), npts_max,
-    nshells_max, tasks_device, syclQueue );
+    nshells_max, tasks_device, &syclQueue );
 
   util::sycl_device_sync(syclQueue);
 
@@ -1486,7 +1486,7 @@ void test_sycl_collocation_masked_combined_deriv1( const BasisSet<double>& basis
     ar( ref_data );
   }
 
-  std::vector< sycl::XCTaskDevice<double> > tasks;
+  std::vector< GauXC::sycl::XCTaskDevice<double> > tasks;
 
   auto shells_device  = util::sycl_malloc<Shell<double>>( basis.size(), syclQueue );
   std::vector<Shell<double>> shells( basis );
@@ -1541,11 +1541,11 @@ void test_sycl_collocation_masked_combined_deriv1( const BasisSet<double>& basis
       return a.npts < b.npts;
     })->npts;
 
-  auto* tasks_device = util::sycl_malloc<sycl::XCTaskDevice<double>>( tasks.size() );
+  auto* tasks_device = util::sycl_malloc<GauXC::sycl::XCTaskDevice<double>>( tasks.size(), syclQueue );
   util::sycl_copy( tasks.size(), tasks_device, tasks.data(), syclQueue );
 
   integrator::sycl::eval_collocation_masked_combined_deriv1( tasks.size(), npts_max,
-    nshells_max, shells_device, tasks_device, syclQueue );
+    nshells_max, shells_device, tasks_device, &syclQueue );
 
   util::sycl_device_sync(syclQueue);
 
@@ -1585,7 +1585,8 @@ void test_sycl_collocation_masked_combined_deriv1( const BasisSet<double>& basis
       util::sycl_free( t.dbfy, syclQueue );
       util::sycl_free( t.dbfz, syclQueue );
   }
-  util::sycl_free( tasks_device, shells_device );
+  util::sycl_free( tasks_device, syclQueue );
+  util::sycl_free( shells_device, syclQueue );
 }
 
 #endif // GAUXC_ENABLE_SYCL

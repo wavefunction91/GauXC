@@ -10,7 +10,7 @@ if( NOT ${ExchCXX_FOUND} )
     GIT_REPOSITORY 
       https://github.com/wavefunction91/ExchCXX.git
     GIT_TAG 
-      master
+      perf_port
   )
 
   FetchContent_MakeAvailable( exchcxx )

@@ -260,7 +260,7 @@ void test_sycl_weights( std::ifstream& in_file ) {
   integrator::sycl::partition_weights_sycl_SoA(
       XCWeightAlg::SSF, npts, natoms, points_d,
       iparent_d, distnea_d, rab_d, coords_d,
-      weights_d, dist_scr_d, syclQueue);
+      weights_d, dist_scr_d, &syclQueue);
 
   util::sycl_device_sync(syclQueue);
   util::sycl_copy( npts, weights.data(), weights_d, syclQueue );

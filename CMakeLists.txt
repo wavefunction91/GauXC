@@ -11,7 +11,7 @@ list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules )
 # GauXC Options
 option( GAUXC_ENABLE_CUDA     "Enable CUDA Bindings"        OFF )
 option( GAUXC_ENABLE_SYCL     "Enable SYCL Bindings"        ON  )
-option( GAUXC_ENABLE_MAGMA    "Enable MAGMA Linear Algebra" ON  )
+option( GAUXC_ENABLE_MAGMA    "Enable MAGMA Linear Algebra" OFF )
 option( GAUXC_ENABLE_TESTS    "Enable Unit Tests"           ON  )
 option( GAUXC_ENABLE_CEREAL   "Enable Cereal serialization" ON  )
 option( GAUXC_ENABLE_GAU2GRID "Enable Gau2Grid Collocation" ON  )
@@ -27,12 +27,14 @@ if( GAUXC_ENABLE_CUDA AND GAUXC_ENABLE_SYCL )
 endif()
 
 # Decided if we're compiling device bindings
-if( GAUXC_ENABLE_CUDA )
+if( GAUXC_ENABLE_CUDA OR GAUXC_ENABLE_SYCL )
   set( GAUXC_ENABLE_DEVICE TRUE CACHE BOOL "Enable Device Code" )
 endif()
 
 if( GAUXC_ENABLE_CUDA )
   enable_language( CUDA )
+else()
+  set( GAUXC_ENABLE_MAGMA OFF CACHE BOOL "" )
 endif()
 
 add_subdirectory( src )
