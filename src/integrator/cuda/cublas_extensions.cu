@@ -116,6 +116,32 @@ void hadamard_product( cublasHandle_t handle,
 
 
 
+template <>
+void gemm( cublasHandle_t handle, 
+           cublasOperation_t TA, cublasOperation_t TB,
+           int M, int N, int K, double ALPHA, 
+           const double* A, int LDA, const double* B, int LDB,
+           double BETA, double* C, int LDC ) {
+
+  auto stat = cublasDgemm( handle, TA, TB, M, N, K, &ALPHA, A, LDA,
+                           B, LDB, &BETA, C, LDC );
+  GAUXC_CUBLAS_ERROR("CUBLAS DGEMM FAILED", stat);
+
+}
+
+
+template <>
+void syr2k( cublasHandle_t handle, 
+            cublasFillMode_t UPLO, cublasOperation_t Trans,
+            int M, int K, double ALPHA, 
+            const double* A, int LDA, const double* B, int LDB,
+            double BETA, double* C, int LDC ) {
+
+  auto stat = cublasDsyr2k( handle, UPLO, Trans, M, K, &ALPHA, A, LDA, B, LDB,
+                           &BETA, C, LDC );
+  GAUXC_CUBLAS_ERROR("CUBLAS DSYR2K FAILED", stat);
+
+}
 
 }
 }

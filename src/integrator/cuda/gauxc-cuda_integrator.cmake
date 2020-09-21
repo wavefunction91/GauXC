@@ -1,5 +1,4 @@
 find_package( CUDAToolkit REQUIRED )
-find_package( MAGMA       REQUIRED )
 
 
 
@@ -26,6 +25,17 @@ target_compile_options( gauxc
     $<$<COMPILE_LANGUAGE:CUDA>: -Xcudafe --diag_suppress=partial_override -Xptxas -v > 
 )
 
-target_link_libraries( gauxc PUBLIC MAGMA::magma CUDA::cublas )
 
+if( GAUXC_ENABLE_MAGMA )
 
+  message( STATUS "MAGMA Has Been Enabled" )
+  find_package( MAGMA REQUIRED )
+  target_link_libraries( gauxc PUBLIC MAGMA::magma )
+
+else()
+
+  message( STATUS "MAGMA Has Been Explicitly Disabled" )
+
+endif()
+
+target_link_libraries( gauxc PUBLIC CUDA::cublas )

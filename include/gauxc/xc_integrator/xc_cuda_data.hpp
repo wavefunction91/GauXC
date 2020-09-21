@@ -22,8 +22,9 @@ struct XCCudaData {
   size_t n_deriv  = 0;
   size_t natoms   = 0;
 
-  bool denpack_host = false;
-  bool vxcinc_host  = false;
+  bool denpack_host  = false;
+  bool vxcinc_host   = false;
+  bool batch_l3_blas = true;
   
   void* device_ptr = nullptr;
   void* dynmem_ptr = nullptr;
@@ -87,14 +88,21 @@ struct XCCudaData {
   // Execution management
   std::unique_ptr<util::cuda_stream>   master_stream      = nullptr;
   std::unique_ptr<util::cublas_handle> master_handle      = nullptr;
+
+#ifdef GAUXC_ENABLE_MAGMA
   std::unique_ptr<util::magma_queue>   master_magma_queue = nullptr;
+#endif
+
+  std::vector<util::cuda_stream>       blas_streams;
+  std::vector<util::cublas_handle>     blas_handles;
 
   XCCudaData( size_t _natoms,
               size_t _n_deriv, 
               size_t _nbf,
               size_t _nshells,
               bool _denpack_host = false,
-              bool _vxcinc_host  = false );
+              bool _vxcinc_host  = false,
+              bool _batch_l3_blas = true );
 
   ~XCCudaData() noexcept;
   XCCudaData( const XCCudaData& )          = delete;

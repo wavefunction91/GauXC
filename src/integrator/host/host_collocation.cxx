@@ -1,5 +1,13 @@
 #include "host_collocation.hpp"
-#include "gau2grid.h"
+
+
+#ifdef GAUXC_ENABLE_GAU2GRID
+  #include "gau2grid.h"
+#else
+  #include "collocation/collocation_angular_cartesian.hpp"
+  #include "collocation/collocation_angular_spherical_unnorm.hpp"
+  #include "collocation/collocation_radial.hpp"
+#endif
 
 namespace GauXC::integrator::host {
 
@@ -10,6 +18,8 @@ void eval_collocation( size_t                  npts,
                        const BasisSet<double>& basis,
                        const int32_t*          shell_mask,
                        double*                 basis_eval ) {
+
+#ifdef GAUXC_ENABLE_GAU2GRID
 
   std::allocator<double> a;
   auto* rv = a.allocate( npts * nbe );
@@ -29,6 +39,30 @@ void eval_collocation( size_t                  npts,
   gg_fast_transpose( ncomp, npts, rv, basis_eval );
   a.deallocate( rv, npts*nbe );
 
+#else
+  
+  for( size_t ipt = 0; ipt < npts;  ++ipt )
+  for( size_t i = 0;   i < nshells; ++i   ) {
+    
+    const auto ish = shell_mask[i];
+    const auto& sh = basis.at(ish);
+    auto* eval = basis_eval + ipt*nbe + basis.shell_to_first_ao( ish );
+
+    double x,y,z, bf;
+    integrator::cuda::collocation_device_radial_eval( sh, points + 3*ipt, 
+                                                      &x, &y, &z, &bf );
+
+    if( sh.pure() )
+      integrator::cuda::collocation_spherical_unnorm_angular( sh.l(), bf, x, y, z,
+                                                              eval );
+    else
+      integrator::cuda::collocation_cartesian_angular( sh.l(), bf, x, y, z, eval );
+                                                              
+                                                              
+  }
+
+#endif
+
 }
 
 void eval_collocation_deriv1( size_t                  npts, 
@@ -41,6 +75,8 @@ void eval_collocation_deriv1( size_t                  npts,
                               double*                 dbasis_x_eval, 
                               double*                 dbasis_y_eval,
                               double*                 dbasis_z_eval ) {
+
+#ifdef GAUXC_ENABLE_GAU2GRID
 
   std::allocator<double> a;
   auto* rv = a.allocate( 4 * npts * nbe );
@@ -68,6 +104,33 @@ void eval_collocation_deriv1( size_t                  npts,
 
   a.deallocate( rv, 4*npts*nbe );
 
+#else 
+
+  for( size_t ipt = 0; ipt < npts;  ++ipt )
+  for( size_t i = 0;   i < nshells; ++i   ) {
+    
+    const auto ish = shell_mask[i];
+    const auto& sh = basis.at(ish);
+    auto* eval = basis_eval + ipt*nbe + basis.shell_to_first_ao( ish );
+    auto* deval_x = dbasis_x_eval + ipt*nbe + basis.shell_to_first_ao( ish );
+    auto* deval_y = dbasis_y_eval + ipt*nbe + basis.shell_to_first_ao( ish );
+    auto* deval_z = dbasis_z_eval + ipt*nbe + basis.shell_to_first_ao( ish );
+
+    double x,y,z, bf, dbf_x, dbf_y, dbf_z;
+    integrator::cuda::collocation_device_radial_eval_deriv1( sh, points + 3*ipt, 
+                                                      &x, &y, &z, &bf, &dbf_x,
+                                                      &dbf_y, &dbf_z);
+
+    if( sh.pure() )
+      integrator::cuda::collocation_spherical_unnorm_angular_deriv1( 
+        sh.l(), bf, dbf_x, dbf_y, dbf_z, x, y, z, eval, deval_x, deval_y, deval_z );
+    else
+      integrator::cuda::collocation_cartesian_angular_deriv1( 
+        sh.l(), bf, dbf_x, dbf_y, dbf_z, x, y, z, eval, deval_x, deval_y, deval_z );
+                                                              
+  }
+
+#endif
 }
 
 

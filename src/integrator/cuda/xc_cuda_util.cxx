@@ -73,8 +73,11 @@ void process_batches_cuda_replicated_all_device(
 
   // Aliases
   cudaStream_t   master_stream = *cuda_data.master_stream;
-  magma_queue_t  master_queue  = *cuda_data.master_magma_queue;
   cublasHandle_t master_handle = *cuda_data.master_handle;
+
+#ifdef GAUXC_ENABLE_MAGMA
+  magma_queue_t  master_queue  = *cuda_data.master_magma_queue;
+#endif
 
   auto* dmat_device         = cuda_data.dmat_device;
 
@@ -140,12 +143,51 @@ void process_batches_cuda_replicated_all_device(
 
 
   // Form Z = P * X
-  magmablas_dgemm_vbatched( MagmaNoTrans, MagmaNoTrans,
-                            m_array_device, n_array_device, k_array_device,
-                            1., dmat_array_device, lda_array_device,
-                            bf_array_device, ldb_array_device,
-                            0., zmat_array_device, ldc_array_device,
-                            ntasks, master_queue );
+  if( cuda_data.batch_l3_blas ) {
+
+#ifdef GAUXC_ENABLE_MAGMA
+
+    magmablas_dgemm_vbatched( MagmaNoTrans, MagmaNoTrans,
+                              m_array_device, n_array_device, k_array_device,
+                              1., dmat_array_device, lda_array_device,
+                              bf_array_device, ldb_array_device,
+                              0., zmat_array_device, ldc_array_device,
+                              ntasks, master_queue );
+
+#else
+
+    throw std::runtime_error("BATCHED BLAS API NOT SUPPORTED");
+
+#endif
+
+  } else {
+
+    int nstream = cuda_data.blas_streams.size();
+
+    // Wait for collocation etc
+    util::cuda_event master_event;
+    master_event.record( master_stream );
+    for( int iS = 0; iS < nstream; ++iS ) 
+      cuda_data.blas_streams[iS].wait( master_event );
+
+    // Do GEMM in round-robin
+    for( auto iT = 0; iT < ntasks; ++iT ) {
+      auto& task = *(task_begin + iT);
+      gemm( cuda_data.blas_handles[iT % nstream], CUBLAS_OP_N, CUBLAS_OP_N,
+            task.nbe, task.npts, task.nbe, 1., task.nbe_scr, task.nbe,
+            task.bf, task.nbe, 0., task.zmat, task.nbe );
+    }
+
+    // Record completion of BLAS ops
+    std::vector< util::cuda_event > blas_events( nstream );
+    for( int iS = 0; iS < nstream; ++iS ) 
+      blas_events[iS].record( cuda_data.blas_streams[iS] );
+
+    // Wait on master stream for all BLAS ops to complete
+    for( int iS = 0; iS < nstream; ++iS )
+      cuda_data.master_stream->wait( blas_events[iS] );
+
+  }
                 
 
   
@@ -203,13 +245,52 @@ void process_batches_cuda_replicated_all_device(
 
 
   // Accumulate packed VXC = X * Z**T + Z * X**T
-  // XXX: Only updates LT
-  magmablas_dsyr2k_vbatched( MagmaLower, MagmaNoTrans, 
-                             m_array_device, n_array_device,
-                             1., bf_array_device, lda_array_device,
-                             zmat_array_device, ldb_array_device,
-                             0., dmat_array_device, ldc_array_device,
-                             ntasks, master_queue );
+
+  
+  if( cuda_data.batch_l3_blas ) {
+
+#ifdef GAUXC_ENABLE_MAGMA
+
+    // XXX: Only updates LT
+    magmablas_dsyr2k_vbatched( MagmaLower, MagmaNoTrans, 
+                               m_array_device, n_array_device,
+                               1., bf_array_device, lda_array_device,
+                               zmat_array_device, ldb_array_device,
+                               0., dmat_array_device, ldc_array_device,
+                               ntasks, master_queue );
+
+#else
+
+    throw std::runtime_error("BATCHED BLAS API NOT SUPPORTED");
+
+#endif
+  } else {
+
+    int nstream = cuda_data.blas_streams.size();
+
+    // Wait for zmat, etc
+    util::cuda_event master_event;
+    master_event.record( master_stream );
+    for( int iS = 0; iS < nstream; ++iS ) 
+      cuda_data.blas_streams[iS].wait( master_event );
+
+    // Do SYR2K in round-robin
+    for( auto iT = 0; iT < ntasks; ++iT ) {
+      auto& task = *(task_begin + iT);
+      syr2k( cuda_data.blas_handles[iT % nstream], CUBLAS_FILL_MODE_LOWER, 
+             CUBLAS_OP_N, task.nbe, task.npts, 1., task.bf, task.nbe,
+             task.zmat, task.nbe, 0., task.nbe_scr, task.nbe );
+    }
+
+    // Record completion of BLAS ops
+    std::vector< util::cuda_event > blas_events( nstream );
+    for( int iS = 0; iS < nstream; ++iS ) 
+      blas_events[iS].record( cuda_data.blas_streams[iS] );
+
+    // Wait on master stream for all BLAS ops to complete
+    for( int iS = 0; iS < nstream; ++iS )
+      cuda_data.master_stream->wait( blas_events[iS] );
+  }
 
   // Increment global VXC
   task_inc_potential( ntasks, tasks_device, vxc_device, nbf, master_stream );

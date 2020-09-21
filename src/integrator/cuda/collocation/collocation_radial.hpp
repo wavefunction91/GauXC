@@ -9,8 +9,11 @@ namespace integrator {
 namespace cuda       {
 
 __inline__ __device__ void collocation_device_radial_eval(
-  const Shell&   shell,
+  const Shell<double>&   shell,
   const double*  pt,
+  double*        x,
+  double*        y,
+  double*        z,
   double*        eval_device
 ) {
 
@@ -21,10 +24,13 @@ __inline__ __device__ void collocation_device_radial_eval(
   const double xc = pt[0] - O[0];
   const double yc = pt[1] - O[1];
   const double zc = pt[2] - O[2];
+  *x = xc;
+  *y = yc;
+  *z = zc;
   
   const double rsq = xc*xc + yc*yc + zc*zc;
   
-  const size_t nprim = shell.nprim; 
+  const size_t nprim = shell.nprim(); 
   double tmp = 0.;
   for( size_t i = 0; i < nprim; ++i )
     tmp += coeff[i] * std::exp( - alpha[i] * rsq );
@@ -35,9 +41,12 @@ __inline__ __device__ void collocation_device_radial_eval(
 
 
 
-__inline__ __device__void collocation_device_radial_eval_deriv1(
-  const Shell&   shell,
+__inline__ __device__ void collocation_device_radial_eval_deriv1(
+  const Shell<double>&   shell,
   const double*  pt,
+  double*        x,
+  double*        y,
+  double*        z,
   double*        eval_device,
   double*        deval_device_x,
   double*        deval_device_y,
@@ -51,10 +60,13 @@ __inline__ __device__void collocation_device_radial_eval_deriv1(
   const double xc = pt[0] - O[0];
   const double yc = pt[1] - O[1];
   const double zc = pt[2] - O[2];
+  *x = xc;
+  *y = yc;
+  *z = zc;
   
   const double rsq = xc*xc + yc*yc + zc*zc;
   
-  const size_t nprim = shell.nprim; 
+  const size_t nprim = shell.nprim(); 
   double tmp = 0.;
   double tmp_x = 0., tmp_y = 0., tmp_z = 0.;
   for( size_t i = 0; i < nprim; ++i ) {
