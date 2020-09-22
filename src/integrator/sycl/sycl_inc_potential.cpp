@@ -66,7 +66,7 @@ template <typename T>
 void task_inc_potential(size_t ntasks, XCTaskDevice<T> *device_tasks,
                         T *V_device, size_t LDV, cl::sycl::queue *queue) {
 
-    cl::sycl::range<3> threads(32, 32, 1), blocks(1, 1, ntasks);
+    cl::sycl::range<3> threads(16, 16, 1), blocks(1, 1, ntasks);
     GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
             auto global_range = blocks * threads;
 

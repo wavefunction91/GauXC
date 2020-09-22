@@ -23,8 +23,14 @@ std::unique_ptr<XCIntegratorImpl<MatrixType>>
     } else {
 
 #ifdef GAUXC_ENABLE_CUDA
-
       return make_default_cuda_integrator<MatrixType>(
+        comm,
+        std::make_shared<functional_type>(func),
+        std::make_shared<BasisSet<typename MatrixType::value_type>>(basis),
+        lb
+      );
+#elif defined(GAUXC_ENABLE_SYCL)
+      return make_default_sycl_integrator<MatrixType>(
         comm,
         std::make_shared<functional_type>(func),
         std::make_shared<BasisSet<typename MatrixType::value_type>>(basis),

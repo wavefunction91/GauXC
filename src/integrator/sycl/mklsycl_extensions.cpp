@@ -76,7 +76,7 @@ namespace blas  {
     void hadamard_product(cl::sycl::queue *syclQue, int M, int N, const T *A, int LDA,
                           T *B, int LDB) {
 
-        cl::sycl::range<3> threads(32, 32, 1);
+        cl::sycl::range<3> threads(16, 16, 1);
         cl::sycl::range<3> blocks(util::div_ceil(M, threads[0]),
                                   util::div_ceil(N, threads[1]), 1);
 

@@ -18,7 +18,7 @@ namespace sycl       {
                                  const T *pts_device, T *eval_device,
                                  cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(32, 32, 1);
+        cl::sycl::range<3> threads(16, 16, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts, threads[0]),
                                   util::div_ceil(nshells, threads[1]),
                                   1);
@@ -58,7 +58,7 @@ namespace sycl       {
                                  const T *pts_device, T *eval_device,
                                  cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(32, 32, 1);
+        cl::sycl::range<3> threads(16, 16, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts, threads[0]),
                                   util::div_ceil(nshells, threads[1]), 1);
 
@@ -93,7 +93,7 @@ namespace sycl       {
                                           XCTaskDevice<T> *device_tasks,
                                           cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(32, 32, 1);
+        cl::sycl::range<3> threads(16, 16, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts_max, threads[0]),
                                   util::div_ceil(nshells_max, threads[1]), ntasks);
 
@@ -127,7 +127,7 @@ namespace sycl       {
                                           XCTaskDevice<T> *device_tasks,
                                           cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(32, 32, 1);
+        cl::sycl::range<3> threads(16, 16, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts_max, threads[0]),
                                   util::div_ceil(nshells_max, threads[1]), ntasks);
 
@@ -162,7 +162,7 @@ namespace sycl       {
         T *deval_device_x, T *deval_device_y, T *deval_device_z,
         cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(32, 32, 1);
+        cl::sycl::range<3> threads(16, 16, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts, threads[0]),
                                   util::div_ceil(nshells, threads[1]), 1);
 
@@ -198,7 +198,7 @@ namespace sycl       {
         const T *pts_device, T *eval_device, T *deval_device_x,
         T *deval_device_y, T *deval_device_z, cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(32, 32, 1);
+        cl::sycl::range<3> threads(16, 16, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts, threads[0]),
                                   util::div_ceil(nshells, threads[1]), 1);
 
@@ -234,7 +234,7 @@ namespace sycl       {
                                                  XCTaskDevice<T> *device_tasks,
                                                  cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(32, 32, 1);
+        cl::sycl::range<3> threads(16, 16, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts_max, threads[0]),
                                   util::div_ceil(nshells_max, threads[1]), ntasks);
 
@@ -267,7 +267,7 @@ namespace sycl       {
                                                  XCTaskDevice<T> *device_tasks,
                                                  cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(32, 32, 1);
+        cl::sycl::range<3> threads(16, 16, 1);
         cl::sycl::range<3> blocks(util::div_ceil(npts_max, threads[0]),
                                   util::div_ceil(nshells_max, threads[1]),
                                   ntasks);

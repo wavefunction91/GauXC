@@ -11,7 +11,7 @@ include( gauxc-eigen3       )
 include( gauxc-gau2grid     )
 
 
-add_library( gauxc STATIC 
+add_library( gauxc SHARED 
   grid.cxx 
   grid_impl.cxx 
   molmeta.cxx 
@@ -36,6 +36,10 @@ target_compile_options( gauxc
     $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wpedantic -Wnon-virtual-dtor>
 )
 
+# TODO: MAKE MORE GENERAL
+if( GAUXC_ENABLE_SYCL )
+  set( GAUXC_BLAS_ILP64 ON )
+endif()
 
 
 configure_file( 

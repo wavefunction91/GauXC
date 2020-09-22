@@ -3,6 +3,12 @@
 #include <gauxc/util/div_ceil.hpp>
 #include <gauxc/exceptions/sycl_exception.hpp>
 
+template <typename T>
+using relaxed_atomic_ref = 
+  cl::sycl::intel::atomic_ref< T, cl::sycl::intel::memory_order::relaxed,
+                                  cl::sycl::intel::memory_scope::device,
+                                  cl::sycl::access::address_space::global_space>;
+
 namespace GauXC      {
 namespace integrator {
 namespace sycl       {
@@ -48,7 +54,8 @@ namespace sycl       {
             // C++20 styled atomic_ref<>::fetch_add()
             // double atomicAdd(double* address, double val); // from CUDA
             // https://github.com/intel/llvm/blob/d4948b01ffbe8134ad8ebc5671e828ddbb3bd672/sycl/include/CL/sycl/atomic.hpp
-            cl::sycl::atomic_fetch_add(den_eval_device + tid_y, den_reg);
+            //cl::sycl::atomic_fetch_add(den_eval_device + tid_y, den_reg);
+            relaxed_atomic_ref<T>( den_eval_device[tid_y] ).fetch_add( den_reg );  
         }
     }
 
@@ -109,10 +116,14 @@ namespace sycl       {
         dz_reg = 4 * warpReduceSum(dz_reg, item_ct);
 
         if (item_ct.get_local_id(2) == 0 && tid_y < npts) {
-            cl::sycl::atomic_fetch_add(den_eval_device + tid_y, den_reg);
-            cl::sycl::atomic_fetch_add(den_x_eval_device + tid_y, dx_reg);
-            cl::sycl::atomic_fetch_add(den_y_eval_device + tid_y, dy_reg);
-            cl::sycl::atomic_fetch_add(den_z_eval_device + tid_y, dz_reg);
+            //cl::sycl::atomic_fetch_add(den_eval_device + tid_y, den_reg);
+            //cl::sycl::atomic_fetch_add(den_x_eval_device + tid_y, dx_reg);
+            //cl::sycl::atomic_fetch_add(den_y_eval_device + tid_y, dy_reg);
+            //cl::sycl::atomic_fetch_add(den_z_eval_device + tid_y, dz_reg);
+            relaxed_atomic_ref<T>( den_eval_device[tid_y] ).  fetch_add( den_reg );  
+            relaxed_atomic_ref<T>( den_x_eval_device[tid_y] ).fetch_add( dx_reg );  
+            relaxed_atomic_ref<T>( den_y_eval_device[tid_y] ).fetch_add( dy_reg );  
+            relaxed_atomic_ref<T>( den_z_eval_device[tid_y] ).fetch_add( dz_reg );  
         }
     }
 
@@ -140,9 +151,9 @@ namespace sycl       {
     void eval_uvars_lda_device(size_t ntasks, size_t max_nbf, size_t max_npts,
                                XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(32, 32, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(max_nbf, 32),
-                                  util::div_ceil(max_npts, 32),
+        cl::sycl::range<3> threads(16, 16, 1);
+        cl::sycl::range<3> blocks(util::div_ceil(max_nbf, 16),
+                                  util::div_ceil(max_npts, 16),
                                   ntasks);
 
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
@@ -165,9 +176,9 @@ namespace sycl       {
     void eval_uvars_gga_device(size_t ntasks, size_t max_nbf, size_t max_npts,
                                XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(32, 32, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(max_nbf, 32),
-                                  util::div_ceil(max_npts, 32),
+        cl::sycl::range<3> threads(16, 16, 1);
+        cl::sycl::range<3> blocks(util::div_ceil(max_nbf, 16),
+                                  util::div_ceil(max_npts, 16),
                                   ntasks);
 
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
@@ -194,8 +205,8 @@ namespace sycl       {
                                T *gamma_device,
                                cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(1024, 1, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(npts, 1024), 1, 1);
+        cl::sycl::range<3> threads(256, 1, 1);
+        cl::sycl::range<3> blocks(util::div_ceil(npts, 256), 1, 1);
 
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
@@ -213,6 +224,32 @@ namespace sycl       {
                     });
                 }) );
     }
+
+
+
+
+
+template
+void eval_uvars_lda_device( size_t                ntasks,
+                            size_t                max_nbf,
+                            size_t                max_npts,
+                            XCTaskDevice<double>* tasks_device,
+                            cl::sycl::queue*          stream );
+
+template
+void eval_uvars_gga_device( size_t                ntasks,
+                            size_t                max_nbf,
+                            size_t                max_npts,
+                            XCTaskDevice<double>* tasks_device,
+                            cl::sycl::queue*          stream );
+
+template
+void eval_vvars_gga_device( size_t            npts,
+                            const double*     den_x_device,
+                            const double*     den_y_device,
+                            const double*     den_z_device,
+                                  double*     gamma_device,
+                            cl::sycl::queue*      stream );
 }
 }
 }

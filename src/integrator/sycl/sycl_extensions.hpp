@@ -6,7 +6,7 @@ namespace sycl  {
 
 __inline__
 double warpReduceSum(double val, cl::sycl::nd_item<3> item_ct) {
-  for(int i=16; i>=1; i/=2)
+  for(int i=8; i>=1; i/=2)
     val += item_ct.get_sub_group().shuffle_xor(val, i);
 
   return val;
