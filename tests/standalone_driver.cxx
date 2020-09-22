@@ -18,10 +18,15 @@ using namespace ExchCXX;
 
 int main(int argc, char** argv) {
 
+#ifdef GAUXC_ENABLE_MPI
   MPI_Init( NULL, NULL );
   int world_rank, world_size;
   MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
   MPI_Comm_size( MPI_COMM_WORLD, &world_size );
+#else
+  int world_rank = 0;
+  int world_size = 1;
+#endif
   {
 
     std::vector< std::string > opts( argc );
@@ -77,15 +82,23 @@ int main(int argc, char** argv) {
     //}
 
     // Setup load balancer
+#ifdef GAUXC_ENABLE_MPI
     auto lb = std::make_shared<LoadBalancer>(MPI_COMM_WORLD, mol, mg, basis, meta);
+#else
+    auto lb = std::make_shared<LoadBalancer>(mol, mg, basis, meta);
+#endif
 
     // Setup XC functional
     functional_type func( XCFunctional::Functional::PBE0, Spin::Unpolarized );
 
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;
+#ifdef GAUXC_ENABLE_MPI
     XCIntegrator<matrix_type> integrator( ExecutionSpace::Device, MPI_COMM_WORLD, func, 
                                           basis, lb );
+#else
+    XCIntegrator<matrix_type> integrator( ExecutionSpace::Device, func, basis, lb );
+#endif
 
     matrix_type P,VXC_ref;
     double EXC_ref;
@@ -99,12 +112,16 @@ int main(int argc, char** argv) {
 
     //std::cout << "NBF = " << basis.nbf() << std::endl;
     
+#ifdef GAUXC_ENABLE_MPI
     MPI_Barrier( MPI_COMM_WORLD );
+#endif
     auto xc_int_start = std::chrono::high_resolution_clock::now();
 
     auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
 
+#ifdef GAUXC_ENABLE_MPI
     MPI_Barrier( MPI_COMM_WORLD );
+#endif
     auto xc_int_end   = std::chrono::high_resolution_clock::now();
     double xc_int_dur = std::chrono::duration<double>( xc_int_end - xc_int_start ).count();
 
@@ -124,6 +141,8 @@ int main(int argc, char** argv) {
                                          << std::endl;
     }
   }
+#ifdef GAUXC_ENABLE_MPI
   MPI_Finalize();
+#endif
 
 }

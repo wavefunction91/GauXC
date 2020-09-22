@@ -1,6 +1,5 @@
 #pragma once
 
-#include <CL/sycl.hpp>
 #include <string>
 #include <gauxc/gauxc_config.hpp>
 

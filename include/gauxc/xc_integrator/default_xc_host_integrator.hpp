@@ -73,6 +73,8 @@ typename DefaultXCHostIntegrator<MatrixType>::exc_vxc_type
   );
 
 
+#ifdef GAUXC_ENABLE_MPI
+
   int world_size;
   MPI_Comm_size( this->comm_, &world_size );
 
@@ -106,6 +108,8 @@ typename DefaultXCHostIntegrator<MatrixType>::exc_vxc_type
     }
 
   }
+
+#endif
 
 
   return exc_vxc_type{EXC, std::move(VXC)};

@@ -8,7 +8,12 @@ using namespace GauXC;
 
 
 
-void test_xc_integrator( ExecutionSpace ex, MPI_Comm comm, Molecule mol ) {
+#ifdef GAUXC_ENABLE_MPI
+void test_xc_integrator( ExecutionSpace ex, MPI_Comm comm, Molecule mol ) 
+#else
+void test_xc_integrator( ExecutionSpace ex, Molecule mol ) 
+#endif
+{
 
   BasisSet<double> basis = make_ccpvdz( mol, SphericalType(true) );
 
@@ -20,12 +25,20 @@ void test_xc_integrator( ExecutionSpace ex, MPI_Comm comm, Molecule mol ) {
 
   auto meta = std::make_shared<MolMeta>( mol );
 
+#ifdef GAUXC_ENABLE_MPI
   auto lb = std::make_shared<LoadBalancer>(comm, mol, mg, basis, meta);
+#else
+  auto lb = std::make_shared<LoadBalancer>(mol, mg, basis, meta);
+#endif
 
   functional_type func( ExchCXX::XCFunctional::Functional::PBE0, ExchCXX::Spin::Unpolarized );
 
   using matrix_type = Eigen::MatrixXd;
+#ifdef GAUXC_ENABLE_MPI
   XCIntegrator<matrix_type> integrator( ex, comm, func, basis, lb );
+#else
+  XCIntegrator<matrix_type> integrator( ex, func, basis, lb );
+#endif
 
 
   matrix_type P,VXC_ref;
@@ -55,16 +68,26 @@ void test_xc_integrator( ExecutionSpace ex, MPI_Comm comm, Molecule mol ) {
 
 TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
 
+#ifdef GAUXC_ENABLE_MPI
   MPI_Comm comm = MPI_COMM_WORLD;
+#endif
   Molecule mol  = make_benzene();
 
   SECTION( "Host" ) {
+#ifdef GAUXC_ENABLE_MPI
     test_xc_integrator( ExecutionSpace::Host, comm, mol );
+#else
+    test_xc_integrator( ExecutionSpace::Host, mol );
+#endif
   }
 
 #if defined(GAUXC_ENABLE_CUDA) || defined(GAUXC_ENABLE_SYCL)
   SECTION( "Device" ) {
+#ifdef GAUXC_ENABLE_MPI
     test_xc_integrator( ExecutionSpace::Device, comm, mol );
+#else
+    test_xc_integrator( ExecutionSpace::Device, mol );
+#endif
   }
 #endif
 

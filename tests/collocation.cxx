@@ -4,7 +4,6 @@
 #include <gauxc/load_balancer.hpp>
 #include <fstream>
 #include <string>
-#include <mpi.h>
 
 
 #define MAX_NPTS_CHECK 67
@@ -53,7 +52,11 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
 
 
   MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
+#ifdef GAUXC_ENABLE_MPI
   LoadBalancer lb(MPI_COMM_WORLD, mol, mg, basis);
+#else
+  LoadBalancer lb(mol, mg, basis);
+#endif
   auto& tasks = lb.get_tasks();
 
 
@@ -1600,9 +1603,11 @@ void test_sycl_collocation_masked_combined_deriv1( const BasisSet<double>& basis
 TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
 
 #ifdef GENERATE_TESTS
+#ifdef GAUXC_ENABLE_MPI
   int world_size;
   MPI_Comm_size( MPI_COMM_WORLD, &world_size );
   if( world_size > 1 ) return;
+#endif
 #endif
 
   Molecule mol           = make_water();

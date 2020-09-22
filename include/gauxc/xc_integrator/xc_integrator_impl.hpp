@@ -17,7 +17,9 @@ public:
 
 protected:
 
+#ifdef GAUXC_ENABLE_MPI
   MPI_Comm comm_;
+#endif
   std::shared_ptr<functional_type> func_;
   std::shared_ptr<basisset_type>   basis_;
 
@@ -26,6 +28,8 @@ protected:
   virtual exc_vxc_type eval_exc_vxc_( const MatrixType& ) = 0;
   
 public:
+
+#ifdef GAUXC_ENABLE_MPI
 
   XCIntegratorImpl( MPI_Comm                         comm, 
                     std::shared_ptr<functional_type> func, 
@@ -42,6 +46,24 @@ public:
       load_balancer_(
         factory::make_default_load_balancer(std::forward<Args>(args)...)
       ) { };
+
+#else
+
+  XCIntegratorImpl( std::shared_ptr<functional_type> func, 
+                    std::shared_ptr<basisset_type>   basis,
+                    std::shared_ptr<LoadBalancer>    lb 
+  ) : func_(func), basis_(basis), load_balancer_(lb) { };
+
+  template <typename... Args>
+  XCIntegratorImpl( std::shared_ptr<functional_type> func, 
+                    std::shared_ptr<basisset_type>   basis,
+                    Args&&...                        args
+  ) : func_(func), basis_(basis), 
+      load_balancer_(
+        factory::make_default_load_balancer(std::forward<Args>(args)...)
+      ) { };
+
+#endif
   
 
 

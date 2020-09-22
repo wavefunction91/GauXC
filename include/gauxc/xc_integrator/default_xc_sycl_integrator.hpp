@@ -4,6 +4,7 @@
 #include <gauxc/xc_integrator/xc_sycl_data.hpp>
 #include <gauxc/xc_integrator/xc_sycl_util.hpp>
 
+#ifdef GAUXC_ENABLE_SYCL
 namespace GauXC  {
 namespace detail {
 
@@ -77,6 +78,7 @@ typename DefaultXCSyclIntegrator<MatrixType>::exc_vxc_type
     *sycl_data_, tasks, P.data(), VXC.data(), &EXC, &N_EL
   );
 
+#ifdef GAUXC_ENABLE_MPI
 
   int world_size;
   MPI_Comm_size( this->comm_, &world_size );
@@ -112,9 +114,12 @@ typename DefaultXCSyclIntegrator<MatrixType>::exc_vxc_type
 
   }
 
+#endif
+
   return exc_vxc_type{EXC, std::move(VXC)};
 
 }
 
 }
 }
+#endif

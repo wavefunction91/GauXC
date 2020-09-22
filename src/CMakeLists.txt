@@ -1,7 +1,9 @@
 # Parallelism
 #find_package( OpenMP  REQUIRED )
-find_package( MPI     REQUIRED )
-find_package( LAPACK  REQUIRED )
+if( GAUXC_ENABLE_MPI )
+  find_package( MPI REQUIRED )
+endif()
+find_package( LAPACK REQUIRED )
 
 # Required Dependencies
 include( gauxc-integratorxx )
@@ -11,7 +13,7 @@ include( gauxc-eigen3       )
 include( gauxc-gau2grid     )
 
 
-add_library( gauxc SHARED 
+add_library( gauxc  
   grid.cxx 
   grid_impl.cxx 
   molmeta.cxx 
@@ -50,10 +52,13 @@ configure_file(
 target_link_libraries( gauxc PUBLIC 
   ExchCXX::exchcxx 
   IntegratorXX::integratorxx 
-  MPI::MPI_C 
   Eigen3::Eigen 
   LAPACK::lapack
 )
+
+if( GAUXC_ENABLE_MPI )
+  target_link_libraries( gauxc PUBLIC MPI::MPI_C )
+endif()
 
 if( GAUXC_ENABLE_GAU2GRID )
   target_link_libraries( gauxc PUBLIC gauxc_gau2grid )
