@@ -105,11 +105,6 @@ void process_batches_sycl_replicated_all_device(
   auto* lda_array_device    = sycl_data.lda_array_device;
   auto* ldb_array_device    = sycl_data.ldb_array_device;
   auto* ldc_array_device    = sycl_data.ldc_array_device;
-  auto* transA_array_device = sycl_data.transA_array_device;
-  auto* transB_array_device = sycl_data.transB_array_device;
-  auto* alpha_array_device  = sycl_data.alpha_array_device;
-  auto* beta_array_device   = sycl_data.beta_array_device;
-
 
   const auto* rab_device          = sycl_data.rab_device;
   const auto* coords_device       = sycl_data.coords_device;
@@ -142,31 +137,6 @@ void process_batches_sycl_replicated_all_device(
   std::cout << "AFTER PACK" << std::endl;
 
   // Form Z = P * X
-  // // Group API
-  // sycl::event oneapi::mkl::blas::column_major::gemm_batch(sycl::queue &queue,
-  //                                                         onemkl::transpose *transa, onemkl::transpose *transb,
-  //                                                         std::int64_t *m, std::int64_t *n, std::int64_t *k,
-  //                                                         T *alpha, const T **a, std::int64_t *lda,
-  //                                                         const T **b, std::int64_t *ldb,
-  //                                                         T *beta, T **c, std::int64_t *ldc,
-  //                                                         std::int64_t group_count, std::int64_t *group_size, const sycl::vector_class<sycl::event> &dependencies = {});
-  // // Strided API
-  // sycl::event oneapi::mkl::blas::column_major::gemm_batch(sycl::queue &queue,
-  //                                                         onemkl::transpose transa, onemkl::transpose transb,
-  //                                                         std::int64_t m, std::int64_t n, std::int64_t k,
-  //                                                         T alpha, const T *a, std::int64_t lda, std::int64_t stridea,
-  //                                                         const T *b, std::int64_t ldb, std::int64_t strideb,
-  //                                                         T beta, T *c, std::int64_t ldc, std::int64_t stridec,
-  //                                                         std::int64_t batch_size, const sycl::vector_class<sycl::event> &dependencies = {});
-
-
-  // oneapi::mkl::blas::column_major::gemm_batch(syclQue,
-  //                                             transA_array_device, transB_array_device,
-  //                                             m_array_device, n_array_device, k_array_device,
-  //                                             alpha_array_device, dmat_array_device, lda_array_device,
-  //                                             bf_array_device, ldb_array_device,
-  //                                             beta_array_device, zmat_array_device, ldc_array_device,
-  //                                             ntasks);
   for( auto it = task_begin; it != task_end; ++it )
     oneapi::mkl::blas::column_major::gemm( syclQue, oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::nontrans,
 		                           it->nbe, it->npts, it->nbe, 1., it->nbe_scr, it->nbe, it->bf, it->nbe,
@@ -231,14 +201,13 @@ void process_batches_sycl_replicated_all_device(
 
   // // Accumulate packed VXC = X * Z**T + Z * X**T
   // // XXX: Only updates LT
-  for( int task=0; task < ntasks; task++ ) {
-      oneapi::mkl::blas::column_major::syr2k(syclQue,
-                                             oneapi::mkl::uplo::lower, oneapi::mkl::transpose::nontrans,
-                                             m_array_device[task], n_array_device[task],
-                                             1., bf_array_device[task], lda_array_device[task],
-                                             zmat_array_device[task], ldb_array_device[task],
-                                             0., dmat_array_device[task], ldc_array_device[task]);
-  }
+  for( auto it = task_begin; it != task_end; ++it )
+    oneapi::mkl::blas::column_major::syr2k( syclQue,
+                                            oneapi::mkl::uplo::lower, oneapi::mkl::transpose::nontrans,
+                                            it->nbe, it->npts,
+                                            1., it->bf, it->nbe,
+                                            it->zmat, it->nbe,
+                                            0., it->nbe_scr, it->nbe );
 
   std::cout << "AFTER SYR2K" << std::endl;
 
