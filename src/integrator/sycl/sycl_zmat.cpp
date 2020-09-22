@@ -40,7 +40,7 @@ template <typename T>
 void zmat_lda_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
                    XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
-  cl::sycl::range<3> threads(32, 32, 1);
+  cl::sycl::range<3> threads(16, 16, 1);
   cl::sycl::range<3> blocks(util::div_ceil(max_nbf, threads.get(2)),
                             util::div_ceil(max_npts, threads.get(1)),
                             ntasks);
@@ -117,7 +117,7 @@ template <typename T>
 void zmat_gga_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
                    XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
-  cl::sycl::range<3> threads(32, 32, 1);
+  cl::sycl::range<3> threads(16, 16, 1);
   cl::sycl::range<3> blocks(util::div_ceil(max_nbf, threads.get(2)),
                             util::div_ceil(max_npts, threads.get(1)),
                             ntasks);

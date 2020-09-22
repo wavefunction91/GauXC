@@ -58,7 +58,6 @@ TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
   MPI_Comm comm = MPI_COMM_WORLD;
   Molecule mol  = make_benzene();
 
-  /*
   SECTION( "Host" ) {
     test_xc_integrator( ExecutionSpace::Host, comm, mol );
   }
@@ -68,6 +67,5 @@ TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
     test_xc_integrator( ExecutionSpace::Device, comm, mol );
   }
 #endif
-*/
 
 }

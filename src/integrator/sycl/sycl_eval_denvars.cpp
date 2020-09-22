@@ -151,9 +151,9 @@ namespace sycl       {
     void eval_uvars_lda_device(size_t ntasks, size_t max_nbf, size_t max_npts,
                                XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(32, 32, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(max_nbf, 32),
-                                  util::div_ceil(max_npts, 32),
+        cl::sycl::range<3> threads(16, 16, 1);
+        cl::sycl::range<3> blocks(util::div_ceil(max_nbf, 16),
+                                  util::div_ceil(max_npts, 16),
                                   ntasks);
 
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
@@ -176,9 +176,9 @@ namespace sycl       {
     void eval_uvars_gga_device(size_t ntasks, size_t max_nbf, size_t max_npts,
                                XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(32, 32, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(max_nbf, 32),
-                                  util::div_ceil(max_npts, 32),
+        cl::sycl::range<3> threads(16, 16, 1);
+        cl::sycl::range<3> blocks(util::div_ceil(max_nbf, 16),
+                                  util::div_ceil(max_npts, 16),
                                   ntasks);
 
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
@@ -205,8 +205,8 @@ namespace sycl       {
                                T *gamma_device,
                                cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(1024, 1, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(npts, 1024), 1, 1);
+        cl::sycl::range<3> threads(256, 1, 1);
+        cl::sycl::range<3> blocks(util::div_ceil(npts, 256), 1, 1);
 
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
