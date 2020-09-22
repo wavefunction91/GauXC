@@ -39,6 +39,7 @@ endif()
 # Decided if we're compiling device bindings
 if( GAUXC_ENABLE_CUDA OR GAUXC_ENABLE_SYCL OR GAUXC_ENABLE_HIP )
   set( GAUXC_ENABLE_DEVICE TRUE CACHE BOOL "Enable Device Code" )
+  set( CMAKE_CXX_EXTENSIONS OFF CACHE BOOL "" )
 endif()
 
 if( GAUXC_ENABLE_CUDA )

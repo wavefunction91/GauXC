@@ -20,6 +20,7 @@
 
 #ifdef GAUXC_ENABLE_HIP
   #include <hip/hip_runtime_api.h>
+  #include <hipblas.h>
 #endif
 
 #ifdef GAUXC_ENABLE_MPI

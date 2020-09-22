@@ -41,8 +41,6 @@ static std::string hipblasGetErrorString(hipblasStatus_t error) {
         case HIPBLAS_STATUS_NOT_SUPPORTED:
             return "HIPBLAS_STATUS_NOT_SUPPORTED";
 
-        case HIPBLAS_STATUS_LICENSE_ERROR:
-            return "HIPBLAS_STATUS_LICENSE_ERROR";
     }
 
     return "<unknown>";

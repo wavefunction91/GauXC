@@ -81,7 +81,7 @@ TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
 #endif
   }
 
-#if defined(GAUXC_ENABLE_CUDA) || defined(GAUXC_ENABLE_SYCL)
+#if defined(GAUXC_ENABLE_CUDA) || defined(GAUXC_ENABLE_SYCL) || defined(GAUXC_ENABLE_HIP)
   SECTION( "Device" ) {
 #ifdef GAUXC_ENABLE_MPI
     test_xc_integrator( ExecutionSpace::Device, comm, mol );

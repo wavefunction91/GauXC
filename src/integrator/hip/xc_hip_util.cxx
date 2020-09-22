@@ -11,8 +11,6 @@
   
 #include "hipblas_extensions.hpp"
 
-#include <Eigen/Core>
-
 inline static void unused() { }
 template <typename T, typename... Args>
 inline static void unused( const T& t, Args&&... args ) {

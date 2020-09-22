@@ -15,7 +15,7 @@ void process_batches_hip_replicated_p(
   const BasisSet<F>&     basis,
   const Molecule   &     mol,
   const MolMeta    &     meta,
-  XCCudaData<F>    &     hip_data,
+  XCHipData<F>    &     hip_data,
   std::vector< XCTask >& local_work,
   const F*               P,
   F*                     VXC,

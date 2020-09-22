@@ -33,10 +33,10 @@ target_include_directories( gauxc
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
 )
 
-target_compile_options( gauxc
-  PRIVATE
-    $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wpedantic -Wnon-virtual-dtor>
-)
+#target_compile_options( gauxc
+#  PRIVATE
+#    $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wpedantic -Wnon-virtual-dtor>
+#)
 
 # TODO: MAKE MORE GENERAL
 if( GAUXC_ENABLE_SYCL )
