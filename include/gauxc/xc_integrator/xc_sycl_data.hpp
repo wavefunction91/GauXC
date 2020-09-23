@@ -23,6 +23,7 @@ public:
 
   bool denpack_host = false;
   bool vxcinc_host  = false;
+  bool batch_l3_blas = true;
 
   void* device_ptr = nullptr;
   void* dynmem_ptr = nullptr;
@@ -69,10 +70,6 @@ public:
   int*        lda_array_device = nullptr;
   int*        ldb_array_device = nullptr;
   int*        ldc_array_device = nullptr;
-    F*        alpha_array_device = nullptr;
-    F*        beta_array_device  = nullptr;
-  oneapi::mkl::transpose* transA_array_device = nullptr;
-  oneapi::mkl::transpose* transB_array_device = nullptr;
 
   F*     dist_scratch_device = nullptr;
 
@@ -95,7 +92,7 @@ public:
               size_t _nbf,
               size_t _nshells,
               bool _denpack_host = false,
-              bool _vxcinc_host  = false );
+              bool _vxcinc_host  = false);
 
   ~XCSyclData() noexcept;
   XCSyclData( const XCSyclData& )          = delete;

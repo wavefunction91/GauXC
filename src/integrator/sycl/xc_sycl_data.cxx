@@ -10,17 +10,17 @@ XCSyclData<F>::XCSyclData( size_t _natoms,
                            size_t _nbf,
                            size_t _nshells,
                            bool _denpack_host,
-                           bool _vxcinc_host  ):
+                           bool _vxcinc_host ):
   nshells(_nshells),
   nbf(_nbf),
   n_deriv(_n_deriv),
   natoms(_natoms),
   denpack_host(_denpack_host),
-  vxcinc_host(_vxcinc_host)  {
+  vxcinc_host(_vxcinc_host)
+{
 
   // Create SYCL queue
-  cl::sycl::gpu_selector device_selector;
-  master_queue.reset( new cl::sycl::queue(device_selector,
+  master_queue.reset( new cl::sycl::queue(cl::sycl::gpu_selector{},
                                           cl::sycl::property_list{cl::sycl::property::queue::in_order{}}) );
 
   // Allocate up to fill_fraction
@@ -82,8 +82,6 @@ std::tuple< task_iterator, device_task_container<F> >
   // Host copies for batched GEMM/SYRK arrays
   std::vector< F* > dmat_array, bf_array, zmat_array;
   std::vector< int > m_array, n_array, k_array, lda_array, ldb_array, ldc_array;
-  std::vector< F > alpha_array, beta_array;
-  std::vector< oneapi::mkl::transpose > transA_array, transB_array;
 
   device_task_container tasks_device;
 
@@ -226,11 +224,6 @@ std::tuple< task_iterator, device_task_container<F> >
     ldb_array.emplace_back( nbe  );
     ldc_array.emplace_back( nbe  );
 
-    alpha_array.emplace_back( 1. );
-    beta_array.emplace_back( 0. );
-    transA_array.emplace_back( oneapi::mkl::transpose::nontrans );
-    transB_array.emplace_back( oneapi::mkl::transpose::nontrans );
-
     iparent_pack.insert( iparent_pack.end(), npts, iAtom );
     dist_nearest_pack.insert( dist_nearest_pack.end(), npts, dist_nearest );
 
@@ -285,12 +278,6 @@ std::tuple< task_iterator, device_task_container<F> >
   dmat_array_device = mem.aligned_alloc<F*>( group_count );
   zmat_array_device = mem.aligned_alloc<F*>( group_count );
   bf_array_device   = mem.aligned_alloc<F*>( group_count );
-
-  alpha_array_device = mem.aligned_alloc<F>( group_count );
-  beta_array_device  = mem.aligned_alloc<F>( group_count );
-
-  transA_array_device = mem.aligned_alloc<oneapi::mkl::transpose>( group_count );
-  transB_array_device = mem.aligned_alloc<oneapi::mkl::transpose>( group_count );
 
   m_array_device   = mem.aligned_alloc<int32_t>( group_count );
   n_array_device   = mem.aligned_alloc<int32_t>( group_count );
@@ -455,16 +442,6 @@ std::tuple< task_iterator, device_task_container<F> >
                          *master_queue, "send ldb_array" );
   copy_rev( ldc_array.size(), ldc_array.data(), ldc_array_device,
                          *master_queue, "send ldc_array" );
-
-  copy_rev( alpha_array.size(), alpha_array.data(), alpha_array_device,
-                         *master_queue, "send alpha_array" );
-  copy_rev( beta_array.size(), beta_array.data(), beta_array_device,
-                         *master_queue, "send beta_array" );
-
-  copy_rev( transA_array.size(), transA_array.data(), transA_array_device,
-                         *master_queue, "send transA_array" );
-  copy_rev( transB_array.size(), transB_array.data(), transB_array_device,
-                         *master_queue, "send transB_array" );
 
   copy_rev( iparent_pack.size(), iparent_pack.data(),
                          iparent_device_buffer, *master_queue, "send iparent"  );
