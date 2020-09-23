@@ -53,6 +53,27 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
   }
 #endif
 
+  int32_t device_count, cur_device;
+  cudaGetDeviceCount( &device_count );
+  cudaGetDevice( &cur_device );
+ 
+  int32_t world_rank, world_size;
+  MPI_Comm_rank( this->comm_, &world_rank );
+  MPI_Comm_size( this->comm_, &world_size );
+
+  MPI_Comm node_comm;
+  MPI_Comm_split_type(this->comm_, MPI_COMM_TYPE_SHARED, 0,
+                      MPI_INFO_NULL, &node_comm);
+
+  int32_t node_rank, node_size;
+  MPI_Comm_rank( node_comm, &node_rank );
+  MPI_Comm_size( node_comm, &node_size );
+
+  if( node_size > device_count )
+    throw std::runtime_error("GauXC + CUDA Assumes MPI <-> GPU is 1-to-1");
+
+  cudaSetDevice( node_rank );
+
 
   size_t nbf     = this->basis_->nbf();
   size_t nshells = this->basis_->size();
@@ -91,8 +112,6 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
   );
 
 
-  int world_size;
-  MPI_Comm_size( this->comm_, &world_size );
 
   if( world_size > 1 ) {
 
