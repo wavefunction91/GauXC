@@ -5,7 +5,7 @@ namespace GauXC {
 namespace sycl  {
 
 __inline__
-double warpReduceSum(double val, cl::sycl::nd_item<3> item_ct) {
+double warpReduceSum(double val, cl::sycl::nd_item<3>& item_ct) {
   for(int i=8; i>=1; i/=2)
     val += item_ct.get_sub_group().shuffle_xor(val, i);
 
@@ -13,10 +13,10 @@ double warpReduceSum(double val, cl::sycl::nd_item<3> item_ct) {
 }
 
 __inline__
-double blockReduceSum( double val , cl::sycl::nd_item<3> item_ct, double *shared) {
+double blockReduceSum( double val , cl::sycl::nd_item<3>& item_ct, double *shared) {
 
-  int lane = item_ct.get_local_id(2) % 32;
-  int wid = item_ct.get_local_id(2) / 32;
+  int lane = item_ct.get_local_id(0) % 32;
+  int wid = item_ct.get_local_id(0) / 32;
 
   val = warpReduceSum(val, item_ct);
 
@@ -25,7 +25,7 @@ double blockReduceSum( double val , cl::sycl::nd_item<3> item_ct, double *shared
   item_ct.barrier();
   //group_barrier(item_ct.get_group()); // for SYCL 2020 onwards
 
-  val = (item_ct.get_local_id(2) < item_ct.get_local_range().get(2) / 32)
+  val = (item_ct.get_local_id(0) < item_ct.get_local_range(0) / 32)
             ? shared[lane]
             : 0;
     if (wid == 0) val = warpReduceSum(val, item_ct);
@@ -44,10 +44,10 @@ __inline__ T warp_prod_reduce( cl::sycl::intel::sub_group sub_g, T val ) {
 }
 
 template <typename T, int warp_size = 32 >
-__inline__ T block_prod_reduce( T val , cl::sycl::nd_item<3> item_ct, T *shared) {
+__inline__ T block_prod_reduce( T val , cl::sycl::nd_item<3>& item_ct, T *shared) {
 
-  const int lane = item_ct.get_local_id(2) % 32;
-  const int wid = item_ct.get_local_id(2) / 32;
+  const int lane = item_ct.get_local_id(0) % 32;
+  const int wid = item_ct.get_local_id(0) / 32;
   cl::sycl::intel::sub_group sub_g = item_ct.get_sub_group();
 
   val = warp_prod_reduce( sub_g, val );
@@ -56,7 +56,7 @@ __inline__ T block_prod_reduce( T val , cl::sycl::nd_item<3> item_ct, T *shared)
   item_ct.barrier();
   // group_barrier(item_ct.get_group()); // valid only with SYCL 2020
 
-  val = (item_ct.get_local_id(2) < item_ct.get_local_range().get(2) / 32)
+  val = (item_ct.get_local_id(0) < item_ct.get_local_range(0) / 32)
             ? shared[lane]
             : 0;
   if( wid == 0 ) val = warp_prod_reduce( sub_g, val );
