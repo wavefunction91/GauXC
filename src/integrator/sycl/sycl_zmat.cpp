@@ -39,8 +39,8 @@ void zmat_lda_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
                    XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
   cl::sycl::range<3> threads(16, 16, 1);
-  cl::sycl::range<3> blocks(util::div_ceil(max_nbf, threads.get(2)),
-                            util::div_ceil(max_npts, threads.get(1)),
+  cl::sycl::range<3> blocks(util::div_ceil(max_nbf, threads[0]),
+                            util::div_ceil(max_npts, threads[1]),
                             ntasks);
 
   GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
@@ -108,8 +108,8 @@ void zmat_gga_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
                    XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
   cl::sycl::range<3> threads(16, 16, 1);
-  cl::sycl::range<3> blocks(util::div_ceil(max_nbf, threads.get(2)),
-                            util::div_ceil(max_npts, threads.get(1)),
+  cl::sycl::range<3> blocks(util::div_ceil(max_nbf, threads[0]),
+                            util::div_ceil(max_npts, threads[1]),
                             ntasks);
 
   GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
