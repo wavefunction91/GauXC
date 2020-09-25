@@ -16,8 +16,8 @@ using namespace GauXC::cuda;
 template <typename T>
 __global__
 void collocation_device_petite_combined_kernel(
-  size_t           ntasks,
-  XCTaskDevice<T>* device_tasks
+  size_t                        ntasks,
+  XCTaskDevice<T>* __restrict__ device_tasks
 ) {
 
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -29,12 +29,12 @@ void collocation_device_petite_combined_kernel(
 
     auto& task = device_tasks[ batch_id ];
   
-    const auto nshells         = task.nshells;
-    const auto nbf             = task.nbe;
-    const auto npts            = task.npts;
-    const auto*  shells_device = task.shells;
-    const auto*  pts_device    = task.points;
-    const auto*  offs_device   = task.shell_offs;
+    const auto nshells                     = task.nshells;
+    const auto nbf                         = task.nbe;
+    const auto npts                        = task.npts;
+    const auto* __restrict__ shells_device = task.shells;
+    const auto* __restrict__ pts_device    = task.points;
+    const auto* __restrict__ offs_device   = task.shell_offs;
 
     auto* eval_device    = task.bf;
 
@@ -49,9 +49,9 @@ void collocation_device_petite_combined_kernel(
     const auto* pt    = pts_device + 3*ipt;
   
 
-    const auto* O     = shell.O_data();
-    const auto* alpha = shell.alpha_data();
-    const auto* coeff = shell.coeff_data();
+    const auto* __restrict__ O     = shell.O_data();
+    const auto* __restrict__ alpha = shell.alpha_data();
+    const auto* __restrict__ coeff = shell.coeff_data();
 
     const auto xc = pt[0] - O[0];
     const auto yc = pt[1] - O[1];
@@ -95,8 +95,8 @@ void collocation_device_petite_combined_kernel(
 template <typename T>
 __global__
 void collocation_device_petite_combined_kernel_deriv1(
-  size_t           ntasks,
-  XCTaskDevice<T>* device_tasks
+  size_t                        ntasks,
+  XCTaskDevice<T>* __restrict__ device_tasks
 ) {
 
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -108,17 +108,17 @@ void collocation_device_petite_combined_kernel_deriv1(
 
     auto& task = device_tasks[ batch_id ];
   
-    const auto nshells         = task.nshells;
-    const auto nbf             = task.nbe;
-    const auto npts            = task.npts;
-    const auto*  shells_device = task.shells;
-    const auto*  pts_device    = task.points;
-    const auto*  offs_device   = task.shell_offs;
+    const auto nshells                     = task.nshells;
+    const auto nbf                         = task.nbe;
+    const auto npts                        = task.npts;
+    const auto* __restrict__ shells_device = task.shells;
+    const auto* __restrict__ pts_device    = task.points;
+    const auto* __restrict__ offs_device   = task.shell_offs;
 
-    auto* eval_device    = task.bf;
-    auto* deval_device_x = task.dbfx;
-    auto* deval_device_y = task.dbfy;
-    auto* deval_device_z = task.dbfz;
+    auto* __restrict__ eval_device    = task.bf;
+    auto* __restrict__ deval_device_x = task.dbfx;
+    auto* __restrict__ deval_device_y = task.dbfy;
+    auto* __restrict__ deval_device_z = task.dbfz;
 
 
   if( tid_x < npts and tid_y < nshells ) {
@@ -132,9 +132,9 @@ void collocation_device_petite_combined_kernel_deriv1(
     const auto* pt    = pts_device + 3*ipt;
   
 
-    const auto* O     = shell.O_data();
-    const auto* alpha = shell.alpha_data();
-    const auto* coeff = shell.coeff_data();
+    const auto* __restrict__ O     = shell.O_data();
+    const auto* __restrict__ alpha = shell.alpha_data();
+    const auto* __restrict__ coeff = shell.coeff_data();
 
     const auto xc = pt[0] - O[0];
     const auto yc = pt[1] - O[1];

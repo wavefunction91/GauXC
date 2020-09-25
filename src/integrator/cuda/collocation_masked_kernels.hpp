@@ -14,14 +14,14 @@ namespace cuda       {
 template <typename T>
 __global__
 void collocation_device_masked_kernel(
-  size_t          nshells,
-  size_t          nbf,
-  size_t          npts,
-  const Shell<T>* shells_device,
-  const size_t*   mask_device,
-  const size_t*   offs_device,
-  const T*        pts_device,
-  T*              eval_device
+  size_t                       nshells,
+  size_t                       nbf,
+  size_t                       npts,
+  const Shell<T>* __restrict__ shells_device,
+  const size_t*   __restrict__ mask_device,
+  const size_t*   __restrict__ offs_device,
+  const T*        __restrict__ pts_device,
+  T*              __restrict__ eval_device
 ) {
 
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -38,9 +38,9 @@ void collocation_device_masked_kernel(
     const auto* pt    = pts_device + 3*ipt;
   
 
-    const auto* O     = shell.O_data();
-    const auto* alpha = shell.alpha_data();
-    const auto* coeff = shell.coeff_data();
+    const auto* __restrict__ O     = shell.O_data();
+    const auto* __restrict__ alpha = shell.alpha_data();
+    const auto* __restrict__ coeff = shell.coeff_data();
 
     const auto xc = pt[0] - O[0];
     const auto yc = pt[1] - O[1];
@@ -75,17 +75,17 @@ void collocation_device_masked_kernel(
 template <typename T>
 __global__
 void collocation_device_masked_kernel_deriv1(
-  size_t          nshells,
-  size_t          nbf,
-  size_t          npts,
-  const Shell<T>* shells_device,
-  const size_t*   mask_device,
-  const size_t*   offs_device,
-  const T*        pts_device,
-  T*              eval_device,
-  T*              deval_device_x,
-  T*              deval_device_y,
-  T*              deval_device_z
+  size_t                       nshells,
+  size_t                       nbf,
+  size_t                       npts,
+  const Shell<T>* __restrict__ shells_device,
+  const size_t*   __restrict__ mask_device,
+  const size_t*   __restrict__ offs_device,
+  const T*        __restrict__ pts_device,
+  T*              __restrict__ eval_device,
+  T*              __restrict__ deval_device_x,
+  T*              __restrict__ deval_device_y,
+  T*              __restrict__ deval_device_z
 ) {
 
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -102,9 +102,9 @@ void collocation_device_masked_kernel_deriv1(
     const auto* pt    = pts_device + 3*ipt;
   
 
-    const auto* O     = shell.O_data();
-    const auto* alpha = shell.alpha_data();
-    const auto* coeff = shell.coeff_data();
+    const auto* __restrict__ O     = shell.O_data();
+    const auto* __restrict__ alpha = shell.alpha_data();
+    const auto* __restrict__ coeff = shell.coeff_data();
 
     const auto xc = pt[0] - O[0];
     const auto yc = pt[1] - O[1];
