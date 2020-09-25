@@ -361,7 +361,7 @@ namespace GauXC {
 
                 if( partition_weights_1d_kernel ) {
                     cl::sycl::range<1> threads( 256 );
-                    cl::sycl::range<1> blocks( util::div_ceil(npts, threads[0]) );
+                    cl::sycl::range<1> blocks( util::div_ceil(npts, threads.get(2)) );
 
                     GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                             auto global_range = blocks * threads;
