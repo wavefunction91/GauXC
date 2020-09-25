@@ -19,12 +19,14 @@ using namespace GauXC::sycl;
     void collocation_device_masked_combined_kernel(size_t           ntasks,
                                                    Shell<T>*        shells_device,
                                                    XCTaskDevice<T>* device_tasks,
-                                                   cl::sycl::nd_item<3>& item_ct) {
+                                                   cl::sycl::nd_item<3> item_ct) {
 
-        const size_t tid_x = item_ct.get_global_id(0);
-        const size_t tid_y = item_ct.get_global_id(1);
+        const size_t tid_x = item_ct.get_group(2) * item_ct.get_local_range().get(2) +
+            item_ct.get_local_id(2);
+        const size_t tid_y = item_ct.get_group(1) * item_ct.get_local_range().get(1) +
+            item_ct.get_local_id(1);
 
-        const size_t batch_id = item_ct.get_group(2);
+        const size_t batch_id = item_ct.get_group(0);
 
         if( batch_id < ntasks ) {
 
@@ -84,12 +86,14 @@ using namespace GauXC::sycl;
         size_t           ntasks,
         Shell<T>*        shells_device,
         XCTaskDevice<T>* device_tasks,
-        cl::sycl::nd_item<3>& item_ct) {
+        cl::sycl::nd_item<3> item_ct) {
 
-        const size_t tid_x = item_ct.get_global_id(0);
-        const size_t tid_y = item_ct.get_global_id(1);
+        const size_t tid_x = item_ct.get_group(2) * item_ct.get_local_range().get(2) +
+            item_ct.get_local_id(2);
+        const size_t tid_y = item_ct.get_group(1) * item_ct.get_local_range().get(1) +
+            item_ct.get_local_id(1);
 
-        const size_t batch_id = item_ct.get_group(2);
+        const size_t batch_id = item_ct.get_group(0);
 
         if( batch_id < ntasks ) {
 
