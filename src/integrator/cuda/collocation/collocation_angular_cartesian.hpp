@@ -10,29 +10,31 @@ namespace GauXC      {
 namespace integrator {
 namespace cuda       {
 
+template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_0(
-  const double bf,
-  const double x,
-  const double y,
-  const double z,
-  double*      eval
+  const T          bf,
+  const T          x,
+  const T          y,
+  const T          z,
+  T* __restrict__  eval
 ) {
 
   eval[0] = bf;
 
 }
 
+template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_0_deriv1(
-  const double bf,
-  const double bf_x,
-  const double bf_y,
-  const double bf_z,
-  const double x,
-  const double y,
-  const double z,
-  double* eval_x,
-  double* eval_y,
-  double* eval_z
+  const T         bf,
+  const T         bf_x,
+  const T         bf_y,
+  const T         bf_z,
+  const T         x,
+  const T         y,
+  const T         z,
+  T* __restrict__ eval_x,
+  T* __restrict__ eval_y,
+  T* __restrict__ eval_z
 ) {
 
   eval_x[0] = bf_x;
@@ -43,12 +45,13 @@ GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_0_deriv1(
 
 }
 
+template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_1(
-  const double bf,
-  const double x,
-  const double y,
-  const double z,
-  double*      eval
+  const T          bf,
+  const T          x,
+  const T          y,
+  const T          z,
+  T* __restrict__  eval
 ) {
 
   eval[0] = bf*x;
@@ -57,17 +60,18 @@ GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_1(
 
 }
 
+template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_1_deriv1(
-  const double bf,
-  const double bf_x,
-  const double bf_y,
-  const double bf_z,
-  const double x,
-  const double y,
-  const double z,
-  double* eval_x,
-  double* eval_y,
-  double* eval_z
+  const T         bf,
+  const T         bf_x,
+  const T         bf_y,
+  const T         bf_z,
+  const T         x,
+  const T         y,
+  const T         z,
+  T* __restrict__ eval_x,
+  T* __restrict__ eval_y,
+  T* __restrict__ eval_z
 ) {
 
   eval_x[0] = bf + bf_x*x;
@@ -84,12 +88,13 @@ GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_1_deriv1(
 
 }
 
+template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_2(
-  const double bf,
-  const double x,
-  const double y,
-  const double z,
-  double*      eval
+  const T          bf,
+  const T          x,
+  const T          y,
+  const T          z,
+  T* __restrict__  eval
 ) {
 
   eval[0] = bf*x*x;
@@ -101,17 +106,18 @@ GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_2(
 
 }
 
+template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_2_deriv1(
-  const double bf,
-  const double bf_x,
-  const double bf_y,
-  const double bf_z,
-  const double x,
-  const double y,
-  const double z,
-  double* eval_x,
-  double* eval_y,
-  double* eval_z
+  const T         bf,
+  const T         bf_x,
+  const T         bf_y,
+  const T         bf_z,
+  const T         x,
+  const T         y,
+  const T         z,
+  T* __restrict__ eval_x,
+  T* __restrict__ eval_y,
+  T* __restrict__ eval_z
 ) {
 
   eval_x[0] = x*(2*bf + bf_x*x);
@@ -137,12 +143,13 @@ GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_2_deriv1(
 
 }
 
+template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_3(
-  const double bf,
-  const double x,
-  const double y,
-  const double z,
-  double*      eval
+  const T          bf,
+  const T          x,
+  const T          y,
+  const T          z,
+  T* __restrict__  eval
 ) {
 
   eval[0] = bf*x*x*x;
@@ -158,17 +165,18 @@ GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_3(
 
 }
 
+template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_3_deriv1(
-  const double bf,
-  const double bf_x,
-  const double bf_y,
-  const double bf_z,
-  const double x,
-  const double y,
-  const double z,
-  double* eval_x,
-  double* eval_y,
-  double* eval_z
+  const T         bf,
+  const T         bf_x,
+  const T         bf_y,
+  const T         bf_z,
+  const T         x,
+  const T         y,
+  const T         z,
+  T* __restrict__ eval_x,
+  T* __restrict__ eval_y,
+  T* __restrict__ eval_z
 ) {
 
   eval_x[0] = x*x*(3*bf + bf_x*x);
@@ -207,25 +215,30 @@ GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_3_deriv1(
 }
 
 
+template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular(
-  const int64_t l,
-  const double  bf,
-  const double  x,
-  const double  y,
-  const double  z,
-  double*       eval
+  const int32_t    l,
+  const T          bf,
+  const T          x,
+  const T          y,
+  const T          z,
+  T* __restrict__  eval
 ) {
 
       if( l == 0 ) {
+  
         collocation_cartesian_angular_0( bf, x, y, z, eval );
 
       } else if( l == 1 ) {
+  
         collocation_cartesian_angular_1( bf, x, y, z, eval );
 
       } else if( l == 2 ) {
+  
         collocation_cartesian_angular_2( bf, x, y, z, eval );
 
       } else if( l == 3 ) {
+  
         collocation_cartesian_angular_3( bf, x, y, z, eval );
 
     } else {
@@ -235,37 +248,42 @@ GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular(
 } // collocation_cartesian_angular
 
 
+template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_deriv1(
-  const int64_t l,
-  const double  bf,
-  const double  bf_x,
-  const double  bf_y,
-  const double  bf_z,
-  const double  x,
-  const double  y,
-  const double  z,
-  double*       eval,
-  double*       eval_x,
-  double*       eval_y,
-  double*       eval_z
+  const int32_t    l,
+  const T          bf,
+  const T          bf_x,
+  const T          bf_y,
+  const T          bf_z,
+  const T          x,
+  const T          y,
+  const T          z,
+  T* __restrict__ eval,
+  T* __restrict__ eval_x,
+  T* __restrict__ eval_y,
+  T* __restrict__ eval_z
 ) {
 
 
       if( l == 0 ) {
+  
         collocation_cartesian_angular_0( bf, x, y, z, eval );
-      collocation_cartesian_angular_0_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+        collocation_cartesian_angular_0_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
       } else if( l == 1 ) {
+  
         collocation_cartesian_angular_1( bf, x, y, z, eval );
-      collocation_cartesian_angular_1_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+        collocation_cartesian_angular_1_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
       } else if( l == 2 ) {
+  
         collocation_cartesian_angular_2( bf, x, y, z, eval );
-      collocation_cartesian_angular_2_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+        collocation_cartesian_angular_2_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
       } else if( l == 3 ) {
+  
         collocation_cartesian_angular_3( bf, x, y, z, eval );
-      collocation_cartesian_angular_3_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+        collocation_cartesian_angular_3_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
     } else {
       assert( false && "L < L_MAX" );
@@ -274,7 +292,7 @@ GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_deriv1(
 } // collocation_cartesian_angular_deriv1
 
 
-
 } // namespace cuda
 } // namespace integrator
 } // namespace GauXC
+
