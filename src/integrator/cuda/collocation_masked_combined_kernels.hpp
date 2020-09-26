@@ -23,12 +23,10 @@ void collocation_device_masked_combined_kernel(
 
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
-  
-  const int batch_id = blockIdx.z;
 
-  if( batch_id < ntasks ) {
+  if( blockIdx.z < ntasks ) {
 
-    auto& task = device_tasks[ batch_id ];
+    auto& task = device_tasks[ blockIdx.z ];
   
     const auto               nshells     = task.nshells;
     const auto               nbf         = task.nbe;
@@ -69,9 +67,9 @@ void collocation_device_masked_combined_kernel(
 
     const bool do_sph = shell.pure();
     if( do_sph )
-      collocation_spherical_unnorm_angular( shell.l(), tmp, xc, yc, zc, bf_eval );
+      collocation_spherical_unnorm_angular( npts, shell.l(), tmp, xc, yc, zc, bf_eval );
     else
-      collocation_cartesian_angular( shell.l(), tmp, xc, yc, zc, bf_eval );
+      collocation_cartesian_angular( npts, shell.l(), tmp, xc, yc, zc, bf_eval );
 
   } // shell / point idx check
 
@@ -104,11 +102,9 @@ void collocation_device_masked_combined_kernel_deriv1(
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
-  const int batch_id = blockIdx.z;
+  if( blockIdx.z < ntasks ) {
 
-  if( batch_id < ntasks ) {
-
-    auto& task = device_tasks[ batch_id ];
+    auto& task = device_tasks[ blockIdx.z ];
   
     const auto               nshells     = task.nshells;
     const auto               nbf         = task.nbe;
@@ -168,11 +164,11 @@ void collocation_device_masked_combined_kernel_deriv1(
 
     const bool do_sph = shell.pure();
     if( do_sph ) 
-      collocation_spherical_unnorm_angular_deriv1( shell.l(), tmp, tmp_x, tmp_y, 
+      collocation_spherical_unnorm_angular_deriv1( npts, shell.l(), tmp, tmp_x, tmp_y, 
                                                tmp_z, xc, yc, zc, bf_eval, dx_eval, 
                                                dy_eval, dz_eval );
     else
-      collocation_cartesian_angular_deriv1( shell.l(), tmp, tmp_x, tmp_y, tmp_z, 
+      collocation_cartesian_angular_deriv1( npts, shell.l(), tmp, tmp_x, tmp_y, tmp_z, 
                                         xc, yc, zc, bf_eval, dx_eval, 
                                         dy_eval, dz_eval );
 

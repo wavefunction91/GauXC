@@ -3,7 +3,7 @@
 #include <cassert>
 
 #ifndef GPGAUEVAL_INLINE
-#  define GPGAUEVAL_INLINE __inline__
+#  define GPGAUEVAL_INLINE __noinline__
 #endif
 
 namespace GauXC      {
@@ -13,6 +13,7 @@ namespace cuda       {
 $for( L in range(L_max + 1) )\
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular_$(L)(
+  int32_t          npts,
   const T          bf,
   const T          x,
   const T          y,
@@ -26,6 +27,7 @@ GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular_$(L)(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular_$(L)_deriv1(
+  int32_t         npts,
   const T         bf,
   const T         bf_x,
   const T         bf_y,
@@ -46,6 +48,7 @@ $endfor\
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular(
+  int32_t          npts,
   const int32_t    l,
   const T          bf,
   const T          x,
@@ -60,7 +63,7 @@ $for( L in range(L_max + 1) )\
   $else\
     } else if( l == $(L) ) {
   $endif
-        collocation_$(name)_angular_$(L)( bf, x, y, z, eval );
+        collocation_$(name)_angular_$(L)( npts, bf, x, y, z, eval );
 
 $endfor\
     } else {
@@ -72,6 +75,7 @@ $endfor\
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular_deriv1(
+  int32_t          npts,
   const int32_t    l,
   const T          bf,
   const T          bf_x,
@@ -93,8 +97,8 @@ $for( L in range(L_max + 1) )\
   $else\
     } else if( l == $(L) ) {
   $endif
-        collocation_$(name)_angular_$(L)( bf, x, y, z, eval );
-        collocation_$(name)_angular_$(L)_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+        collocation_$(name)_angular_$(L)( npts, bf, x, y, z, eval );
+        collocation_$(name)_angular_$(L)_deriv1( npts, bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
 $endfor\
     } else {

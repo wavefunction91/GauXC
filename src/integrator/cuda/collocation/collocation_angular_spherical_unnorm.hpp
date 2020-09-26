@@ -3,7 +3,7 @@
 #include <cassert>
 
 #ifndef GPGAUEVAL_INLINE
-#  define GPGAUEVAL_INLINE __inline__
+#  define GPGAUEVAL_INLINE __noinline__
 #endif
 
 namespace GauXC      {
@@ -12,6 +12,7 @@ namespace cuda       {
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_0(
+  int32_t          npts,
   const T          bf,
   const T          x,
   const T          y,
@@ -25,6 +26,7 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_0(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_0_deriv1(
+  int32_t         npts,
   const T         bf,
   const T         bf_x,
   const T         bf_y,
@@ -47,6 +49,7 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_0_deriv1(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_1(
+  int32_t          npts,
   const T          bf,
   const T          x,
   const T          y,
@@ -62,6 +65,7 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_1(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_1_deriv1(
+  int32_t         npts,
   const T         bf,
   const T         bf_x,
   const T         bf_y,
@@ -90,6 +94,7 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_1_deriv1(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_2(
+  int32_t          npts,
   const T          bf,
   const T          x,
   const T          y,
@@ -107,6 +112,7 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_2(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_2_deriv1(
+  int32_t         npts,
   const T         bf,
   const T         bf_x,
   const T         bf_y,
@@ -141,6 +147,7 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_2_deriv1(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_3(
+  int32_t          npts,
   const T          bf,
   const T          x,
   const T          y,
@@ -160,6 +167,7 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_3(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_3_deriv1(
+  int32_t         npts,
   const T         bf,
   const T         bf_x,
   const T         bf_y,
@@ -201,6 +209,7 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_3_deriv1(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular(
+  int32_t          npts,
   const int32_t    l,
   const T          bf,
   const T          x,
@@ -211,19 +220,19 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular(
 
       if( l == 0 ) {
   
-        collocation_spherical_unnorm_angular_0( bf, x, y, z, eval );
+        collocation_spherical_unnorm_angular_0( npts, bf, x, y, z, eval );
 
       } else if( l == 1 ) {
   
-        collocation_spherical_unnorm_angular_1( bf, x, y, z, eval );
+        collocation_spherical_unnorm_angular_1( npts, bf, x, y, z, eval );
 
       } else if( l == 2 ) {
   
-        collocation_spherical_unnorm_angular_2( bf, x, y, z, eval );
+        collocation_spherical_unnorm_angular_2( npts, bf, x, y, z, eval );
 
       } else if( l == 3 ) {
   
-        collocation_spherical_unnorm_angular_3( bf, x, y, z, eval );
+        collocation_spherical_unnorm_angular_3( npts, bf, x, y, z, eval );
 
     } else {
       assert( false && "L < L_MAX" );
@@ -234,6 +243,7 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_deriv1(
+  int32_t          npts,
   const int32_t    l,
   const T          bf,
   const T          bf_x,
@@ -251,23 +261,23 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_deriv1(
 
       if( l == 0 ) {
   
-        collocation_spherical_unnorm_angular_0( bf, x, y, z, eval );
-        collocation_spherical_unnorm_angular_0_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+        collocation_spherical_unnorm_angular_0( npts, bf, x, y, z, eval );
+        collocation_spherical_unnorm_angular_0_deriv1( npts, bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
       } else if( l == 1 ) {
   
-        collocation_spherical_unnorm_angular_1( bf, x, y, z, eval );
-        collocation_spherical_unnorm_angular_1_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+        collocation_spherical_unnorm_angular_1( npts, bf, x, y, z, eval );
+        collocation_spherical_unnorm_angular_1_deriv1( npts, bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
       } else if( l == 2 ) {
   
-        collocation_spherical_unnorm_angular_2( bf, x, y, z, eval );
-        collocation_spherical_unnorm_angular_2_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+        collocation_spherical_unnorm_angular_2( npts, bf, x, y, z, eval );
+        collocation_spherical_unnorm_angular_2_deriv1( npts, bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
       } else if( l == 3 ) {
   
-        collocation_spherical_unnorm_angular_3( bf, x, y, z, eval );
-        collocation_spherical_unnorm_angular_3_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+        collocation_spherical_unnorm_angular_3( npts, bf, x, y, z, eval );
+        collocation_spherical_unnorm_angular_3_deriv1( npts, bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
     } else {
       assert( false && "L < L_MAX" );
