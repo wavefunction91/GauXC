@@ -61,7 +61,7 @@ for flexible and agile development in the field of KS-DFT.
 
 # Build Instructions
 
-GauXC provides a CMake build system with automatic dependency management (through [FetchContent]()).
+GauXC provides a CMake build system with automatic dependency management (through [FetchContent](https://cmake.org/cmake/help/latest/module/FetchContent.html)).
 As such, a simple CMake invocation will often suffice for most purposes
 ```
 cmake -H/path/to/gauxc -B/path/to/build [GauXC configure options]
