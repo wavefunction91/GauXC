@@ -92,6 +92,8 @@ target_link_libraries( my_target PUBLIC gauxc )
 | `GAUXC_ENABLE_CEREAL` | Enable Cereal serialization  (required for testing)            | `ON`     |
 | `GAUXC_ENABLE_CUDA`   | Enable CUDA XC integrator                                      | `OFF`    |
 | `GAUXC_ENABLE_MAGMA`  | Enable MAGMA for batched BLAS (No effect if CUDA disabled)     | `ON`     | 
+| `lapack_LIBRARIES`    | Full LAPACK linker. If unspecified, will attempt to deduce.    |  --      |
+|
 
 # Example Usage
 
