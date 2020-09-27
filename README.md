@@ -26,10 +26,11 @@ the [CUDA](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)
 framework and is only accessible to NVIDIA GPUs. However, work is underway to
 provide portable interfaces to these implementations as to allow for use with
 emerging exascale and post-exascale compute resources (See e.g. PRs for
-[SYCL](https://github.com/wavefunction91/GauXC/pull/4) and 
+[SYCL/DPC++](https://github.com/wavefunction91/GauXC/pull/4) and 
 [HIP](https://github.com/wavefunction91/GauXC/pull/5) ports of GauXC). Evaluation
 of the XC functional CPU/accelerator architectures is provided by the
-[ExchCXX](https://github.com/wavefunction91/ExchCXX) library.
+[ExchCXX](https://github.com/wavefunction91/ExchCXX) library. Quadratures generated
+by the [IntegratorXX](https://github.com/wavefunction91/IntegratorXX).
 
 GauXC is a work in progress. Its development has been funded by the U.S.
 Department of Energy Exascale Computing Project 
@@ -42,6 +43,55 @@ integrators optimized for the evaluation of XC related quantities in Gaussian
 basis set KS-DFT on CPU and accelerator based architectures.
 * Develop a modern, modular, extensible C++ software infrastructure which allows
 for flexible and agile development in the field of KS-DFT.
+
+# Dependencies
+
+* CMake (3.17+)
+* BLAS / LAPACK
+* [ExchCXX](https://github.com/wavefunction91/ExchCXX)
+* [IntegratorXX](https://github.com/wavefunction91/IntegratorXX)
+* [Gau2Grid](https://github.com/dgasmith/gau2grid)
+* MPI (Optional)
+* [Cereal](https://github.com/USCiLab/cereal) (Optional)
+* [Eigen3](https://eigen.tuxfamily.org/dox/) (Testing Only)
+* [CUDA](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)/[cuBLAS](https://docs.nvidia.com/cuda/cublas/index.html) (Required only if CUDA enabled)
+* [MAGMA](https://icl.utk.edu/magma/) (Optional if CUDA enabled)
+
+
+
+# Build Instructions
+
+GauXC provides a CMake build system with automatic dependency management (through [FetchContent]()).
+As such, a simple CMake invocation will often suffice for most purposes
+```
+cmake -H/path/to/gauxc -B/path/to/build [GauXC configure options]
+cmake --build /path/to/build
+```
+
+Currently, GauXC is not installable as a separate library (Coming Soon). GauXC may be integrated 
+into existing CMake projects via `FetchContent` with the following
+```
+include(FetchContent)
+
+set( GAUXC_ENABLE_TESTS OFF CACHE BOOL "Disable GauXC Tests" )
+# Other GauXC Options (see below)
+
+FetchContent_Declare( gauxc GIT_REPOSITORY https://github/com/wavefunction91/GauXC.git GIT_TAG master )
+FetchContent_MakeAvailable( gauxc )
+
+
+# Create my_target
+target_link_libraries( my_target PUBLIC gauxc )
+```
+
+## Influential CMake Variables
+
+| Variable Name         | Description                                                    | Default  |
+|-----------------------|----------------------------------------------------------------|----------|
+| `GAUXC_ENABLE_TESTS`  | Enable Testing Framework (Catch2)                              | `ON`     |
+| `GAUXC_ENABLE_CEREAL` | Enable Cereal serialization  (required for testing)            | `ON`     |
+| `GAUXC_ENABLE_CUDA`   | Enable CUDA XC integrator                                      | `OFF`    |
+| `GAUXC_ENABLE_MAGMA`  | Enable MAGMA for batched BLAS (No effect if CUDA disabled)     | `ON`     | 
 
 # Example Usage
 
