@@ -36,6 +36,7 @@ GauXC is a work in progress. Its development has been funded by the U.S.
 Department of Energy Exascale Computing Project 
 ([NWChemEx](https://github.com/NWChemEx-Project)).
 
+
 # Design Goals
 
 * Provide a stable, portable and high-performance implementation of numerical
@@ -57,6 +58,40 @@ for flexible and agile development in the field of KS-DFT.
 * [CUDA](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)/[cuBLAS](https://docs.nvidia.com/cuda/cublas/index.html) (Required only if CUDA enabled)
 * [MAGMA](https://icl.utk.edu/magma/) (Optional if CUDA enabled)
 
+
+# Publications
+
+Please cite the following publications if GauXC was used in your publication:
+```
+% Algorithm for XC potential assembly and shared-memory CPU implementation
+@article{ petrone18_an,
+  author={Alessio Petrone and David B. Williams--Young and Shichao Sun and
+          Torin F. Stetina and Xiaosong Li},
+  title={An Efficient Implementation of Two-Component Relativistic Density 
+         Functional Theory with Torque-Free Auxiliary Variables},
+  journal={The European Physical Journal B},
+  volume={91},
+  number={169},
+  pages={},
+  year={2018},
+  doi={10.1140/epjb/e2018-90170-1},
+  url={https://link.springer.com/article/10.1140/epjb/e2018-90170-1}
+}
+
+% CUDA and distributed memory implementation (CPU/GPU)
+@article{ williams20_on,
+  author={David B. Williams--Young and Wibe A. de Jong and Hubertus J.J. van Dam and
+          Chao Yang},
+  title={On the Efficient Evaluation of the Exchange Correlation Potential on 
+         Graphics Processing Unit Clusters},
+  jorunal={Frontiers in Chemistry},
+  pages={Accepted},
+  year={2020},
+  doi={10.3389/fchem.2020.581058},
+  url={https://www.frontiersin.org/articles/10.3389/fchem.2020.581058/abstract},
+  preprint={https://arxiv.org/abs/2007.03143}
+}
+```
 
 
 # Build Instructions
