@@ -200,16 +200,25 @@ void process_batches_sycl_replicated_all_device(
   std::cout << "AFTER ZMAT" << std::endl;
 
   // // Accumulate packed VXC = X * Z**T + Z * X**T
-  // // XXX: Only updates LT
-  for( auto it = task_begin; it != task_end; ++it )
+  // // XXX: Only updates LT with SYR2K
+  for( auto it = task_begin; it != task_end; ++it ) {
+#if 0
     oneapi::mkl::blas::column_major::syr2k( syclQue,
                                             oneapi::mkl::uplo::lower, oneapi::mkl::transpose::nontrans,
                                             it->nbe, it->npts,
                                             1., it->bf, it->nbe,
                                             it->zmat, it->nbe,
                                             0., it->nbe_scr, it->nbe );
-
-  std::cout << "AFTER SYR2K" << std::endl;
+#else
+    oneapi::mkl::blas::column_major::gemm( syclQue, oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::trans,
+		                           it->nbe, it->nbe, it->npts, 1., it->bf, it->nbe, it->zmat, it->nbe,
+					   0., it->nbe_scr, it->nbe );
+    oneapi::mkl::blas::column_major::gemm( syclQue, oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::trans,
+		                           it->nbe, it->nbe, it->npts, 1., it->zmat, it->nbe, it->bf, it->nbe,
+					   1., it->nbe_scr, it->nbe );
+#endif
+  }
+  std::cout << "AFTER \"SYR2K\"" << std::endl;
 
   // Increment global VXC
   task_inc_potential( ntasks, tasks_device, vxc_device, nbf, &syclQue );
