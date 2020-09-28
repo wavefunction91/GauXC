@@ -19,8 +19,7 @@ jobs:
 
     - name: Install Newer CMake
       env:
-        CMAKE_VERSION: 3.17.0
-        CMAKE_URL: "https://cmake.org/files/v${CMAKE_VERSION%.[0-9]}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz"
+        CMAKE_URL: "https://cmake.org/files/v3.17/cmake-3.17.0-Linux-x86_64.tar.gz"
         CMAKE_PREFIX: ${{runner.workspace}}/install/cmake
       run: mkdir -p ${{runner.workspace}}/install &&
            wget --no-check-certificate -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C ${CMAKE_PREFIX} &&
