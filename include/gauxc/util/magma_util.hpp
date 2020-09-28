@@ -2,6 +2,7 @@
 #include <gauxc/gauxc_config.hpp>
 #include <gauxc/exceptions/magma_exception.hpp>
 
+#ifdef GAUXC_ENABLE_CUDA
 #ifdef GAUXC_ENABLE_MAGMA
 
 namespace GauXC {
@@ -43,4 +44,5 @@ struct magma_queue {
 }
 }
 
+#endif
 #endif
