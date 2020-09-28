@@ -14,7 +14,7 @@ if( NOT Eigen3_FOUND )
   #message( FATAL_ERROR "Eigen3 Pull Not Yet Configured" )
   add_library( Eigen3::Eigen INTERFACE IMPORTED )
   set_target_properties( Eigen3::Eigen PROPERTIES
-    INTERFACE_INCLUDE_DIRECTORIES ${eigen_SOURCE_DIR}
+    INTERFACE_INCLUDE_DIRECTORIES ${eigen3_SOURCE_DIR}
   )
 
 endif()
