@@ -8,7 +8,7 @@ using namespace GauXC;
 
 
 
-void test_xc_integrator( ExecutionSpace ex, MPI_Comm comm, Molecule mol ) {
+void test_xc_integrator( ExecutionSpace ex, MPI_Comm comm, Molecule mol, const bool check_state_propagation = false ) {
 
   BasisSet<double> basis = make_ccpvdz( mol, SphericalType(true) );
 
@@ -50,6 +50,14 @@ void test_xc_integrator( ExecutionSpace ex, MPI_Comm comm, Molecule mol ) {
 
   auto VXC_diff_nrm = ( VXC - VXC_ref ).norm();
   CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 ); 
+
+  // Check if the integrator propagates state correctly
+  if( check_state_propagation ) {
+    auto [ EXC1, VXC1 ] = integrator.eval_exc_vxc( P );
+    CHECK( EXC1 == Approx( EXC_ref ) );
+    auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
+    CHECK( VXC1_diff_nrm / basis.nbf() < 1e-10 ); 
+  }
 }
 
 
@@ -59,7 +67,7 @@ TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
   Molecule mol  = make_benzene();
 
   SECTION( "Host" ) {
-    test_xc_integrator( ExecutionSpace::Host, comm, mol );
+    test_xc_integrator( ExecutionSpace::Host, comm, mol, true );
   }
 
 #ifdef GAUXC_ENABLE_CUDA
