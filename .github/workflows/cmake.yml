@@ -33,6 +33,9 @@ jobs:
            
     - name: Install MPICH
       run: sudo apt-get install mpich
+    
+    - name: Install NumPy
+      run: sudo pip3 install numpy
 
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
