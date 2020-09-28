@@ -63,4 +63,4 @@ jobs:
       shell: bash
       # Execute tests defined by the CMake configuration.  
       # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ./test/gauxc_test
+      run: ./tests/gauxc_test
