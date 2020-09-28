@@ -27,9 +27,8 @@ jobs:
            export PATH=${CMAKE_PREFIX}/bin:${PATH} && cmake --version
 
     - name: Install MKL
-      run: sudo sh -c 'echo deb https://apt.repos.intel.com/mkl all main > /etc/apt/sources.list.d/intel-mkl.list'
-      run: sudo apt-get update
-      run: sudo apt-get install intel-mkl-64bit
+      run: sudo sh -c 'echo deb https://apt.repos.intel.com/mkl all main > /etc/apt/sources.list.d/intel-mkl.list' &&
+           sudo apt-get update &&  sudo apt-get install intel-mkl-64bit
 
     - name: Create Build Environment
       # Some projects don't allow in-source building, so create a separate build directory
