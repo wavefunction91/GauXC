@@ -18,12 +18,13 @@ jobs:
     - uses: actions/checkout@v2
 
     - name: Install Newer CMake
-      run: mkdir -p ${{runner.workspace}}/install
-      run: export CMAKE_VERSION=3.17.0
-      run: export CMAKE_PREFIX=${{runner.workspace}}/install/cmake
-      run: export CMAKE_URL="https://cmake.org/files/v${CMAKE_VERSION%.[0-9]}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz" 
-      run: wget --no-check-certificate -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C ${CMAKE_PREFIX}
-      run: export PATH=${CMAKE_PREFIX}/bin:${PATH} && cmake --version
+      env:
+        CMAKE_VERSION: 3.17.0
+        CMAKE_URL: "https://cmake.org/files/v${CMAKE_VERSION%.[0-9]}/cmake-${CMAKE_VERSION}-Linux-x86_64.tar.gz"
+        CMAKE_PREFIX: ${{runner.workspace}}/install/cmake
+      run: mkdir -p ${{runner.workspace}}/install &&
+           wget --no-check-certificate -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C ${CMAKE_PREFIX} &&
+           export PATH=${CMAKE_PREFIX}/bin:${PATH} && cmake --version
 
     - name: Install MKL
       run: sudo sh -c 'echo deb https://apt.repos.intel.com/mkl all main > /etc/apt/sources.list.d/intel-mkl.list'
