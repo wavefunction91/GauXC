@@ -10,7 +10,7 @@ namespace sycl       {
                                      XCTaskDevice<T>* device_tasks,
                                      T*               A,
                                      size_t           LDA ,
-                                     cl::sycl::nd_item<3> item_ct) {
+                                     cl::sycl::nd_item<3>& item_ct) {
 
         const size_t batch_id = item_ct.get_group(0);
 
@@ -25,12 +25,8 @@ namespace sycl       {
 
             //if( LDAS == LDAB ) return;
 
-            const size_t tid_x =
-                item_ct.get_local_range().get(2) * item_ct.get_group(2) +
-                item_ct.get_local_id(2);
-            const size_t tid_y =
-                item_ct.get_local_range().get(1) * item_ct.get_group(1) +
-                item_ct.get_local_id(1);
+            const size_t tid_x = item_ct.get_global_id(2);
+            const size_t tid_y = item_ct.get_global_id(1);
 
             int64_t i(0);
             for( size_t i_cut = 0; i_cut < ncut; ++i_cut ) {
@@ -47,8 +43,8 @@ namespace sycl       {
                     auto* ASmall_begin = ASmall_device + i           + j          *LDAS;
                     auto* ABig_begin   = A             + i_cut_first + j_cut_first*LDA ;
 
-                    for( int64_t J = tid_y; J < delta_j; J += item_ct.get_local_range().get(1) )
-                        for( int64_t I = tid_x; I < delta_i; I += item_ct.get_local_range().get(2) )
+                    for( int64_t J = tid_y; J < delta_j; J += item_ct.get_local_range(1) )
+                        for( int64_t I = tid_x; I < delta_i; I += item_ct.get_local_range(2) )
                             ASmall_begin[I + J*LDAS] = ABig_begin[I + J*LDA];
 
                     j += delta_j;
