@@ -38,21 +38,15 @@ template <typename T>
 void zmat_lda_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
                    XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
-  cl::sycl::range<3> threads(16, 16, 1);
-  cl::sycl::range<3> blocks(util::div_ceil(max_nbf, threads[0]),
+  cl::sycl::range<3> threads(1, 16, 16);
+  cl::sycl::range<3> blocks(ntasks,
                             util::div_ceil(max_npts, threads[1]),
-                            ntasks);
+                            util::div_ceil(max_nbf,  threads[2]) );
 
   GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
               auto global_range = blocks * threads;
 
-              cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
-                                                                        global_range.get(1),
-                                                                        global_range.get(0)),
-                                                     cl::sycl::range<3>(threads.get(2),
-                                                                        threads.get(1),
-                                                                        threads.get(0))),
-
+              cgh.parallel_for(cl::sycl::nd_range<3>(global_range, threads),
                                [=](cl::sycl::nd_item<3> item_ct) {
                                    zmat_lda_kernel(ntasks, tasks_device, item_ct);
                                });
@@ -71,7 +65,7 @@ void zmat_gga_kernel( size_t           ntasks,
                       XCTaskDevice<T>* tasks_device ,
                       cl::sycl::nd_item<3>& item_ct) {
 
-  const size_t batch_idx = item_ct.get_group(2);
+  const size_t batch_idx = item_ct.get_group(0);
   if( batch_idx >= ntasks ) return;
 
   auto& task = tasks_device[ batch_idx ];
@@ -90,7 +84,7 @@ void zmat_gga_kernel( size_t           ntasks,
 
   auto* z_matrix_device = task.zmat;
 
-  const size_t tid_x = item_ct.get_global_id(0);
+  const size_t tid_x = item_ct.get_global_id(2);
   const size_t tid_y = item_ct.get_global_id(1);
 
   if( tid_x < nbf and tid_y < npts ) {
@@ -112,10 +106,10 @@ template <typename T>
 void zmat_gga_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
                    XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
-  cl::sycl::range<3> threads(16, 16, 1);
-  cl::sycl::range<3> blocks(util::div_ceil(max_nbf, threads[0]),
+  cl::sycl::range<3> threads(1, 16, 16);
+  cl::sycl::range<3> blocks(ntasks,
                             util::div_ceil(max_npts, threads[1]),
-                            ntasks);
+                            util::div_ceil(max_nbf,  threads[2]) );
 
   GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
           auto global_range = blocks * threads;

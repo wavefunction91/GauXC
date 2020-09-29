@@ -42,7 +42,7 @@ namespace GauXC {
                                              const double* dist_scratch,
                                              const int32_t* iparent_device,
                                              double* weights_device,
-                                             cl::sycl::nd_item<3> item_ct,
+                                             cl::sycl::nd_item<3>& item_ct,
                                              double *shared) {
 
                 auto threadIdx_x = item_ct.get_local_id(2);
@@ -116,7 +116,7 @@ namespace GauXC {
                                            const int32_t* iparent_device,
                                            const double* dist_nearest_device,
                                            double* weights_device,
-                                           cl::sycl::nd_item<3> item_ct,
+                                           cl::sycl::nd_item<3>& item_ct,
                                            double *shared) {
 
                 auto threadIdx_x = item_ct.get_local_id(2);
@@ -357,13 +357,10 @@ namespace GauXC {
                 const bool partition_weights_1d_kernel = true;
 
                 if( partition_weights_1d_kernel ) {
-                    cl::sycl::range<1> threads(256);
-                    cl::sycl::range<1> blocks(util::div_ceil(npts, threads[0]));
 
                     GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-                            auto global_range = blocks * threads;
 
-                            cgh.parallel_for(cl::sycl::range<1>(global_range), [=](cl::sycl::item<1> item_ct) {
+                            cgh.parallel_for(cl::sycl::range<1>(npts), [=](cl::sycl::item<1> item_ct) {
                                     modify_weights_ssf_kernel_1d(npts, natoms, rab_device, atomic_coords_device,
                                                                  dist_scratch_device, iparent_device, dist_nearest_device,
                                                                  weights_device, item_ct);
@@ -371,9 +368,9 @@ namespace GauXC {
                             }) );
                 }
                 else {
-		    throw std::runtime_error("Untested codepath");
-                    cl::sycl::range<3> threads(16, 16, 1);
-                    cl::sycl::range<3> blocks(npts, 1, 1);
+                    throw std::runtime_error("Untested codepath");
+                    cl::sycl::range<3> threads(1, 16, 16);
+                    cl::sycl::range<3> blocks(1, 1, npts);
                     auto global_range = blocks * threads;
 
                     if( weight_alg == XCWeightAlg::SSF )
@@ -385,14 +382,7 @@ namespace GauXC {
                                                    cl::sycl::access::target::local>
                                     shared_acc(cl::sycl::range<1>(2048), cgh);
 
-                                cgh.parallel_for(
-                                    cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
-                                                                             global_range.get(1),
-                                                                             global_range.get(0)),
-                                                          cl::sycl::range<3>(threads.get(2),
-                                                                             threads.get(1),
-                                                                             threads.get(0))),
-
+                                cgh.parallel_for( cl::sycl::nd_range<3>(global_range, threads),
                                     [=](cl::sycl::nd_item<3> item_ct) {
                                         modify_weights_ssf_kernel(
                                             npts, natoms, rab_device, atomic_coords_device,
@@ -410,14 +400,7 @@ namespace GauXC {
                                                    cl::sycl::access::target::local>
                                     shared_acc(cl::sycl::range<1>(2048), cgh);
 
-                                cgh.parallel_for(
-                                    cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
-                                                                             global_range.get(1),
-                                                                             global_range.get(0)),
-                                                          cl::sycl::range<3>(threads.get(2),
-                                                                             threads.get(1),
-                                                                             threads.get(0))),
-
+                                cgh.parallel_for( cl::sycl::nd_range<3>(global_range, threads),
                                     [=](cl::sycl::nd_item<3> item_ct) {
                                         modify_weights_becke_kernel(
                                             npts, natoms, rab_device, atomic_coords_device,

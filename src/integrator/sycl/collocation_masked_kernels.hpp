@@ -22,10 +22,10 @@ namespace sycl       {
                                           const size_t*   offs_device,
                                           const T*        pts_device,
                                           T*              eval_device,
-                                          cl::sycl::nd_item<3>& item_ct) {
+                                          cl::sycl::item<2>& item_ct) {
 
-        const size_t tid_x = item_ct.get_global_id(2);
-        const size_t tid_y = item_ct.get_global_id(1);
+        const size_t tid_x = item_ct.get_id(1);
+        const size_t tid_y = item_ct.get_id(0);
 
         if( tid_x < npts and tid_y < nshells ) {
 
@@ -82,10 +82,10 @@ namespace sycl       {
                                                  T*              deval_device_x,
                                                  T*              deval_device_y,
                                                  T*              deval_device_z,
-                                                 cl::sycl::nd_item<3>& item_ct) {
+                                                 cl::sycl::item<2>& item_ct) {
 
-  const size_t tid_x = item_ct.get_global_id(2);
-  const size_t tid_y = item_ct.get_global_id(1);
+  const size_t tid_x = item_ct.get_id(1);
+  const size_t tid_y = item_ct.get_id(0);
 
   if( tid_x < npts and tid_y < nshells ) {
 

@@ -18,27 +18,14 @@ namespace sycl       {
                                  const T *pts_device, T *eval_device,
                                  cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(16, 16, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(npts, threads[0]),
-                                  util::div_ceil(nshells, threads[1]),
-                                  1);
-
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-                auto global_range = blocks * threads;
 
-                cgh.parallel_for(
-                    cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
-                                                             global_range.get(1),
-                                                             global_range.get(0)),
-                                          cl::sycl::range<3>(threads.get(2),
-                                                             threads.get(1),
-                                                             threads.get(0))),
+                    cgh.parallel_for( cl::sycl::range<2> {nshells, npts}, [=](cl::sycl::item<2> item_ct) {
 
-                    [=](cl::sycl::nd_item<3> item_ct) {
-                        collocation_device_petite_kernel<T>(nshells, nbf, npts, shells_device,
-                                                            offs_device, pts_device, eval_device,
-                                                            item_ct);
-                    });
+                            collocation_device_petite_kernel<T>(nshells, nbf, npts, shells_device,
+                                                                offs_device, pts_device, eval_device,
+                                                                item_ct);
+                        });
                 }) );
     }
     template
@@ -58,19 +45,10 @@ namespace sycl       {
                                  const T *pts_device, T *eval_device,
                                  cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(16, 16, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(npts, threads[0]),
-                                  util::div_ceil(nshells, threads[1]), 1);
-
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-                auto global_range = blocks * threads;
 
-                cgh.parallel_for(
-                    cl::sycl::nd_range<3>(
-                        cl::sycl::range<3>(global_range.get(2), global_range.get(1),
-                                           global_range.get(0)),
-                        cl::sycl::range<3>(threads.get(2), threads.get(1), threads.get(0))),
-                    [=](cl::sycl::nd_item<3> item_ct) {
+                cgh.parallel_for( cl::sycl::range<2> {nshells, npts}, [=](cl::sycl::item<2> item_ct) {
+
                         collocation_device_masked_kernel<T>(nshells, nbf, npts, shells_device,
                                                             mask_device, offs_device, pts_device,
                                                             eval_device, item_ct);
@@ -93,18 +71,15 @@ namespace sycl       {
                                           XCTaskDevice<T> *device_tasks,
                                           cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(16, 16, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(npts_max, threads[0]),
-                                  util::div_ceil(nshells_max, threads[1]), ntasks);
+        cl::sycl::range<3> threads(1, 16, 16);
+        cl::sycl::range<3> blocks(ntasks,
+                                  util::div_ceil(nshells_max, threads[1]),
+                                  util::div_ceil(npts_max, threads[2]) );
 
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-                auto global_range = blocks * threads;
+                auto global_range = threads * blocks;
 
-                cgh.parallel_for(
-                    cl::sycl::nd_range<3>(
-                        cl::sycl::range<3>(global_range.get(2), global_range.get(1),
-                                           global_range.get(0)),
-                        cl::sycl::range<3>(threads.get(2), threads.get(1), threads.get(0))),
+                cgh.parallel_for( cl::sycl::nd_range<3>(global_range, threads),
                     [=](cl::sycl::nd_item<3> item_ct) {
                         collocation_device_petite_combined_kernel<T>(ntasks, device_tasks,
                                                                      item_ct);
@@ -127,18 +102,15 @@ namespace sycl       {
                                           XCTaskDevice<T> *device_tasks,
                                           cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(16, 16, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(npts_max, threads[0]),
-                                  util::div_ceil(nshells_max, threads[1]), ntasks);
+        cl::sycl::range<3> threads(1, 16, 16);
+        cl::sycl::range<3> blocks(ntasks,
+                                  util::div_ceil(nshells_max, threads[1]),
+                                  util::div_ceil(npts_max,    threads[2]) );
 
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
-                cgh.parallel_for(
-                    cl::sycl::nd_range<3>(
-                        cl::sycl::range<3>(global_range.get(2), global_range.get(1),
-                                           global_range.get(0)),
-                        cl::sycl::range<3>(threads.get(2), threads.get(1), threads.get(0))),
+                cgh.parallel_for( cl::sycl::nd_range<3>(global_range, threads),
                     [=](cl::sycl::nd_item<3> item_ct) {
                         collocation_device_masked_combined_kernel<T>(ntasks, shells_device,
                                                                      device_tasks, item_ct);
@@ -162,19 +134,10 @@ namespace sycl       {
         T *deval_device_x, T *deval_device_y, T *deval_device_z,
         cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(16, 16, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(npts, threads[0]),
-                                  util::div_ceil(nshells, threads[1]), 1);
-
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-                auto global_range = blocks * threads;
 
-                cgh.parallel_for(
-                    cl::sycl::nd_range<3>(
-                        cl::sycl::range<3>(global_range.get(2), global_range.get(1),
-                                           global_range.get(0)),
-                        cl::sycl::range<3>(threads.get(2), threads.get(1), threads.get(0))),
-                    [=](cl::sycl::nd_item<3> item_ct) {
+                cgh.parallel_for( cl::sycl::range<2> {nshells, npts}, [=](cl::sycl::item<2> item_ct) {
+
                         collocation_device_petite_kernel_deriv1<T>(
                             nshells, nbf, npts, shells_device, offs_device, pts_device,
                             eval_device, deval_device_x, deval_device_y, deval_device_z,
@@ -198,19 +161,10 @@ namespace sycl       {
         const T *pts_device, T *eval_device, T *deval_device_x,
         T *deval_device_y, T *deval_device_z, cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(16, 16, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(npts, threads[0]),
-                                  util::div_ceil(nshells, threads[1]), 1);
-
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-                auto global_range = blocks * threads;
 
-                cgh.parallel_for(
-                    cl::sycl::nd_range<3>(
-                        cl::sycl::range<3>(global_range.get(2), global_range.get(1),
-                                           global_range.get(0)),
-                        cl::sycl::range<3>(threads.get(2), threads.get(1), threads.get(0))),
-                    [=](cl::sycl::nd_item<3> item_ct) {
+                cgh.parallel_for( cl::sycl::range<2> {nshells, npts}, [=](cl::sycl::item<2> item_ct) {
+
                         collocation_device_masked_kernel_deriv1<T>(
                             nshells, nbf, npts, shells_device, mask_device, offs_device,
                             pts_device, eval_device, deval_device_x, deval_device_y,
@@ -234,18 +188,15 @@ namespace sycl       {
                                                  XCTaskDevice<T> *device_tasks,
                                                  cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(16, 16, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(npts_max, threads[0]),
-                                  util::div_ceil(nshells_max, threads[1]), ntasks);
+        cl::sycl::range<3> threads(1, 16, 16);
+        cl::sycl::range<3> blocks(ntasks,
+                                  util::div_ceil(nshells_max, threads[1]),
+                                  util::div_ceil(npts_max, threads[2]) );
 
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
-                cgh.parallel_for(
-                    cl::sycl::nd_range<3>(
-                        cl::sycl::range<3>(global_range.get(2), global_range.get(1),
-                                           global_range.get(0)),
-                        cl::sycl::range<3>(threads.get(2), threads.get(1), threads.get(0))),
+                cgh.parallel_for( cl::sycl::nd_range<3>(global_range, threads),
                     [=](cl::sycl::nd_item<3> item_ct) {
                         collocation_device_petite_combined_kernel_deriv1<T>(ntasks, device_tasks,
                                                                             item_ct);
@@ -267,23 +218,17 @@ namespace sycl       {
                                                  XCTaskDevice<T> *device_tasks,
                                                  cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(16, 16, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(npts_max, threads[0]),
+        cl::sycl::range<3> threads(1, 16, 16);
+        cl::sycl::range<3> blocks(ntasks,
                                   util::div_ceil(nshells_max, threads[1]),
-                                  ntasks);
+                                  util::div_ceil(npts_max, threads[2]) );
 
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
 
-                cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
-                                                                          global_range.get(1),
-                                                                          global_range.get(0)),
-                                                       cl::sycl::range<3>(threads.get(2),
-                                                                          threads.get(1),
-                                                                          threads.get(0))),
-
-                    [=](cl::sycl::nd_item<3> item_ct) {
-                                     collocation_device_masked_combined_kernel_deriv1<T>(
+                cgh.parallel_for(cl::sycl::nd_range<3>(global_range, threads),
+                                 [=](cl::sycl::nd_item<3> item_ct) {
+                   collocation_device_masked_combined_kernel_deriv1<T>(
                             ntasks, shells_device, device_tasks, item_ct);
                     });
                 }) );

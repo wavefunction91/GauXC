@@ -62,17 +62,11 @@ template <typename T>
 void task_inc_potential(size_t ntasks, XCTaskDevice<T> *device_tasks,
                         T *V_device, size_t LDV, cl::sycl::queue *queue) {
 
-    cl::sycl::range<3> threads(16, 16, 1), blocks(1, 1, ntasks);
+    cl::sycl::range<3> threads(1, 16, 16), blocks(ntasks, 1, 1);
     GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
             auto global_range = blocks * threads;
 
-            cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
-                                                                      global_range.get(1),
-                                                                      global_range.get(0)),
-                                                   cl::sycl::range<3>(threads.get(2),
-                                                                      threads.get(1),
-                                                                      threads.get(0))),
-
+            cgh.parallel_for(cl::sycl::nd_range<3>(global_range, threads),
                 [=](cl::sycl::nd_item<3> item_ct) {
                     inc_by_submat_combined_kernel(ntasks, device_tasks, V_device, LDV,
                                                   item_ct);
