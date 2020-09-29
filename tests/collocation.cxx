@@ -175,7 +175,14 @@ void test_host_collocation_deriv1( const BasisSet<double>& basis, std::ifstream&
 
 #ifdef GAUXC_ENABLE_CUDA
 
+void cuda_check_collocation( int npts, int nbf, const double* ref_val, const double* comp_val ) {
 
+  // Check transpose
+  for( int i = 0; i < nbf;  ++i )
+  for( int j = 0; j < npts; ++j )
+    CHECK( ref_val[ i + j*nbf ] == Approx( comp_val[ i*npts + j ] ) );
+
+}
 
 void test_cuda_collocation_petite( const BasisSet<double>& basis, std::ifstream& in_file) {
 
@@ -224,8 +231,9 @@ void test_cuda_collocation_petite( const BasisSet<double>& basis, std::ifstream&
 
     util::cuda_copy( nbf * npts, eval.data(),    eval_device    );
   
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( eval[i] == Approx( d.eval[i] ) );
+    //for( auto i = 0; i < npts * nbf; ++i )
+    //  CHECK( eval[i] == Approx( d.eval[i] ) );
+    cuda_check_collocation( npts, nbf, d.eval.data(), eval.data() );
 
   }
   util::cuda_device_sync();
@@ -288,8 +296,9 @@ void test_cuda_collocation_masked( const BasisSet<double>& basis, std::ifstream&
 
     util::cuda_copy( nbf * npts, eval.data(),    eval_device    );
   
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( eval[i] == Approx( d.eval[i] ) );
+    //for( auto i = 0; i < npts * nbf; ++i )
+    //  CHECK( eval[i] == Approx( d.eval[i] ) );
+    cuda_check_collocation( npts, nbf, d.eval.data(), eval.data() );
 
   }
   util::cuda_device_sync();
@@ -392,8 +401,9 @@ void test_cuda_collocation_petite_combined( const BasisSet<double>& basis, std::
     std::vector<double> eval (tasks[i].nbe * tasks[i].npts);
     util::cuda_copy( eval.size(), eval.data(), tasks[i].bf );
 
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( eval[i] == Approx( ref_eval[i] ) );
+    //for( auto i = 0; i < eval.size(); ++i )
+    //  CHECK( eval[i] == Approx( ref_eval[i] ) );
+    cuda_check_collocation( tasks[i].npts, tasks[i].nbe, ref_eval, eval.data() );
   }
 
 
@@ -488,8 +498,9 @@ void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::
     std::vector<double> eval (tasks[i].nbe * tasks[i].npts);
     util::cuda_copy( eval.size(), eval.data(), tasks[i].bf );
 
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( eval[i] == Approx( ref_eval[i] ) );
+    //for( auto i = 0; i < eval.size(); ++i )
+    //  CHECK( eval[i] == Approx( ref_eval[i] ) );
+    cuda_check_collocation( tasks[i].npts, tasks[i].nbe, ref_eval, eval.data() );
   }
 
 
@@ -575,14 +586,19 @@ void test_cuda_collocation_deriv1_petite( const BasisSet<double>& basis, std::if
     util::cuda_copy( nbf * npts, deval_y.data(), deval_device_y );
     util::cuda_copy( nbf * npts, deval_z.data(), deval_device_z );
   
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( eval[i] == Approx( d.eval[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_x[i] == Approx( d.deval_x[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_y[i] == Approx( d.deval_y[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
+    //for( auto i = 0; i < npts * nbf; ++i )
+    //  CHECK( eval[i] == Approx( d.eval[i] ) );
+    //for( auto i = 0; i < npts * nbf; ++i )
+    //  CHECK( deval_x[i] == Approx( d.deval_x[i] ) );
+    //for( auto i = 0; i < npts * nbf; ++i )
+    //  CHECK( deval_y[i] == Approx( d.deval_y[i] ) );
+    //for( auto i = 0; i < npts * nbf; ++i )
+    //  CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
+
+    cuda_check_collocation( npts, nbf, d.eval.data(), eval.data() );
+    cuda_check_collocation( npts, nbf, d.deval_x.data(), deval_x.data() );
+    cuda_check_collocation( npts, nbf, d.deval_y.data(), deval_y.data() );
+    cuda_check_collocation( npts, nbf, d.deval_z.data(), deval_z.data() );
 
   }
   util::cuda_device_sync();
@@ -655,14 +671,19 @@ void test_cuda_collocation_deriv1_masked( const BasisSet<double>& basis, std::if
     util::cuda_copy( nbf * npts, deval_y.data(), deval_device_y );
     util::cuda_copy( nbf * npts, deval_z.data(), deval_device_z );
   
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( eval[i] == Approx( d.eval[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_x[i] == Approx( d.deval_x[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_y[i] == Approx( d.deval_y[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
+    //for( auto i = 0; i < npts * nbf; ++i )
+    //  CHECK( eval[i] == Approx( d.eval[i] ) );
+    //for( auto i = 0; i < npts * nbf; ++i )
+    //  CHECK( deval_x[i] == Approx( d.deval_x[i] ) );
+    //for( auto i = 0; i < npts * nbf; ++i )
+    //  CHECK( deval_y[i] == Approx( d.deval_y[i] ) );
+    //for( auto i = 0; i < npts * nbf; ++i )
+    //  CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
+      
+    cuda_check_collocation( npts, nbf, d.eval.data(), eval.data() );
+    cuda_check_collocation( npts, nbf, d.deval_x.data(), deval_x.data() );
+    cuda_check_collocation( npts, nbf, d.deval_y.data(), deval_y.data() );
+    cuda_check_collocation( npts, nbf, d.deval_z.data(), deval_z.data() );
 
   }
   util::cuda_device_sync();
@@ -771,14 +792,21 @@ void test_cuda_collocation_petite_combined_deriv1( const BasisSet<double>& basis
     util::cuda_copy( eval.size(), deval_y.data(), tasks[i].dbfy );
     util::cuda_copy( eval.size(), deval_z.data(), tasks[i].dbfz );
 
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( eval[i] == Approx( ref_eval[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_x[i] == Approx( ref_deval_x[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_y[i] == Approx( ref_deval_y[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_z[i] == Approx( ref_deval_z[i] ) );
+    //for( auto i = 0; i < eval.size(); ++i )
+    //  CHECK( eval[i] == Approx( ref_eval[i] ) );
+    //for( auto i = 0; i < eval.size(); ++i )
+    //  CHECK( deval_x[i] == Approx( ref_deval_x[i] ) );
+    //for( auto i = 0; i < eval.size(); ++i )
+    //  CHECK( deval_y[i] == Approx( ref_deval_y[i] ) );
+    //for( auto i = 0; i < eval.size(); ++i )
+    //  CHECK( deval_z[i] == Approx( ref_deval_z[i] ) );
+
+    auto npts = tasks[i].npts;
+    auto nbe  = tasks[i].nbe;
+    cuda_check_collocation( npts, nbe, ref_eval, eval.data() );
+    cuda_check_collocation( npts, nbe, ref_deval_x, deval_x.data() );
+    cuda_check_collocation( npts, nbe, ref_deval_y, deval_y.data() );
+    cuda_check_collocation( npts, nbe, ref_deval_z, deval_z.data() );
   }
 
 
@@ -889,14 +917,21 @@ void test_cuda_collocation_masked_combined_deriv1( const BasisSet<double>& basis
     util::cuda_copy( eval.size(), deval_y.data(), tasks[i].dbfy );
     util::cuda_copy( eval.size(), deval_z.data(), tasks[i].dbfz );
 
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( eval[i] == Approx( ref_eval[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_x[i] == Approx( ref_deval_x[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_y[i] == Approx( ref_deval_y[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_z[i] == Approx( ref_deval_z[i] ) );
+    //for( auto i = 0; i < eval.size(); ++i )
+    //  CHECK( eval[i] == Approx( ref_eval[i] ) );
+    //for( auto i = 0; i < eval.size(); ++i )
+    //  CHECK( deval_x[i] == Approx( ref_deval_x[i] ) );
+    //for( auto i = 0; i < eval.size(); ++i )
+    //  CHECK( deval_y[i] == Approx( ref_deval_y[i] ) );
+    //for( auto i = 0; i < eval.size(); ++i )
+    //  CHECK( deval_z[i] == Approx( ref_deval_z[i] ) );
+
+    auto npts = tasks[i].npts;
+    auto nbe  = tasks[i].nbe;
+    cuda_check_collocation( npts, nbe, ref_eval, eval.data() );
+    cuda_check_collocation( npts, nbe, ref_deval_x, deval_x.data() );
+    cuda_check_collocation( npts, nbe, ref_deval_y, deval_y.data() );
+    cuda_check_collocation( npts, nbe, ref_deval_z, deval_z.data() );
   }
 
 

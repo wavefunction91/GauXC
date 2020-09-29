@@ -35,10 +35,10 @@ __global__ void eval_uvars_lda_kernel( size_t           ntasks,
 
   if( tid_x < nbf and tid_y < npts ) {
 
-    const double* bf_col   = basis_eval_device     + tid_y*nbf;
-    const double* db_col   = den_basis_prod_device + tid_y*nbf;
+    const double* bf_col   = basis_eval_device     + tid_x*npts;
+    const double* db_col   = den_basis_prod_device + tid_x*npts;
 
-    den_reg = bf_col[ tid_x ]   * db_col[ tid_x ];
+    den_reg = bf_col[ tid_y ]   * db_col[ tid_y ];
 
   }
 
@@ -87,16 +87,16 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
 
   if( tid_x < nbf and tid_y < npts ) {
 
-    const double* bf_col   = basis_eval_device     + tid_y*nbf;
-    const double* bf_x_col = dbasis_x_eval_device  + tid_y*nbf;
-    const double* bf_y_col = dbasis_y_eval_device  + tid_y*nbf;
-    const double* bf_z_col = dbasis_z_eval_device  + tid_y*nbf;
-    const double* db_col   = den_basis_prod_device + tid_y*nbf;
+    const double* bf_col   = basis_eval_device     + tid_x*npts;
+    const double* bf_x_col = dbasis_x_eval_device  + tid_x*npts;
+    const double* bf_y_col = dbasis_y_eval_device  + tid_x*npts;
+    const double* bf_z_col = dbasis_z_eval_device  + tid_x*npts;
+    const double* db_col   = den_basis_prod_device + tid_x*npts;
 
-    den_reg = bf_col[ tid_x ]   * db_col[ tid_x ];
-    dx_reg  = bf_x_col[ tid_x ] * db_col[ tid_x ];
-    dy_reg  = bf_y_col[ tid_x ] * db_col[ tid_x ];
-    dz_reg  = bf_z_col[ tid_x ] * db_col[ tid_x ];
+    den_reg = bf_col[ tid_y ]   * db_col[ tid_y ];
+    dx_reg  = bf_x_col[ tid_y ] * db_col[ tid_y ];
+    dy_reg  = bf_y_col[ tid_y ] * db_col[ tid_y ];
+    dz_reg  = bf_z_col[ tid_y ] * db_col[ tid_y ];
 
   }
 

@@ -64,7 +64,7 @@ void collocation_device_petite_combined_kernel(
     for( size_t i = 0; i < nprim; ++i )
       tmp += coeff[i] * std::exp( - alpha[i] * rsq );
 
-    auto * bf_eval = eval_device + ibf + ipt*nbf;
+    auto * bf_eval = eval_device + ibf*npts + ipt;
 
     const bool do_sph = shell.pure();
     if( do_sph )
@@ -159,10 +159,10 @@ void collocation_device_petite_combined_kernel_deriv1(
 
     }
 
-    auto * bf_eval = eval_device    + ibf + ipt*nbf;
-    auto * dx_eval = deval_device_x + ibf + ipt*nbf;
-    auto * dy_eval = deval_device_y + ibf + ipt*nbf;
-    auto * dz_eval = deval_device_z + ibf + ipt*nbf;
+    auto * bf_eval = eval_device    + ibf*npts + ipt;
+    auto * dx_eval = deval_device_x + ibf*npts + ipt;
+    auto * dy_eval = deval_device_y + ibf*npts + ipt;
+    auto * dz_eval = deval_device_z + ibf*npts + ipt;
 
     const bool do_sph = shell.pure();
     if( do_sph ) 

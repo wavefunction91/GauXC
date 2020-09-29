@@ -30,10 +30,10 @@ __global__ void zmat_lda_kernel( size_t           ntasks,
 
   if( tid_x < nbf and tid_y < npts ) {
 
-    const size_t ibfoff = tid_x + tid_y * nbf;
+    const size_t ibfoff = tid_x * npts + tid_y;
     const double fact = 0.5 * vrho_device[tid_y];
 
-    z_matrix_device[ tid_x + tid_y * nbf ] = fact * basis_eval_device[ ibfoff ];
+    z_matrix_device[ ibfoff ] = fact * basis_eval_device[ ibfoff ];
 
   }
 
@@ -97,7 +97,7 @@ __global__ void zmat_gga_kernel( size_t           ntasks,
 
   if( tid_x < nbf and tid_y < npts ) {
 
-    const size_t ibfoff = tid_x + tid_y * nbf;
+    const size_t ibfoff = tid_x * npts + tid_y;
     const double fact_1 = 0.5 * vrho_device[tid_y]  ;
     const double fact_2 = 2.0 * vgamma_device[tid_y];
 
@@ -105,7 +105,7 @@ __global__ void zmat_gga_kernel( size_t           ntasks,
     const double dy = den_y_eval_device[ tid_y ] * dbasis_y_eval_device[ ibfoff ];
     const double dz = den_z_eval_device[ tid_y ] * dbasis_z_eval_device[ ibfoff ];
 
-    z_matrix_device[ tid_x + tid_y * nbf ] = 
+    z_matrix_device[ ibfoff ] = 
       fact_1 * basis_eval_device[ ibfoff ] + fact_2 * ( dx + dy + dz ); 
 
   }
