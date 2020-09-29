@@ -3,10 +3,12 @@
 #include "hip_extensions.hpp"
 #include <gauxc/util/div_ceil.hpp>
 
+#include "hip_device_properties.hpp"
 
 namespace GauXC      {
 namespace integrator {
 namespace hip       {
+using namespace GauXC::hip;
 
 template <typename T>
 __global__ void eval_uvars_lda_kernel( size_t           ntasks,
@@ -148,9 +150,9 @@ void eval_uvars_lda_device( size_t           ntasks,
                             XCTaskDevice<T>* tasks_device,
                             hipStream_t     stream ) {
 
-  dim3 threads( 32, 32, 1 );
-  dim3 blocks( util::div_ceil( max_nbf , 32 ),
-               util::div_ceil( max_npts , 32 ),
+  dim3 threads(warp_size, max_warps_per_thread_block, 1);
+  dim3 blocks( util::div_ceil( max_nbf , threads.x ),
+               util::div_ceil( max_npts , threads.y ),
                ntasks );
 
   hipLaunchKernelGGL(eval_uvars_lda_kernel, dim3(blocks), dim3(threads), 0, stream ,  ntasks, tasks_device );
@@ -164,9 +166,9 @@ void eval_uvars_gga_device( size_t           ntasks,
                             XCTaskDevice<T>* tasks_device,
                             hipStream_t     stream ) {
 
-  dim3 threads( 32, 32, 1 );
-  dim3 blocks( util::div_ceil( max_nbf , 32 ),
-               util::div_ceil( max_npts , 32 ),
+  dim3 threads(warp_size, max_warps_per_thread_block, 1);
+  dim3 blocks( util::div_ceil( max_nbf , threads.x ),
+               util::div_ceil( max_npts , threads.y ),
                ntasks );
 
   hipLaunchKernelGGL(eval_uvars_gga_kernel, dim3(blocks), dim3(threads), 0, stream ,  ntasks, tasks_device );
@@ -182,8 +184,8 @@ void eval_vvars_gga_device( size_t       npts,
                                   T*     gamma_device,
                             hipStream_t stream ) {
 
-  dim3 threads( 1024 );
-  dim3 blocks( util::div_ceil( npts, 1024 ) );
+  dim3 threads( max_threads_per_thread_block );
+  dim3 blocks( util::div_ceil( npts, threads.x ) );
 
   hipLaunchKernelGGL(eval_vvars_gga_kernel, dim3(blocks), dim3(threads), 0, stream , 
     npts, den_x_device, den_y_device, den_z_device, gamma_device

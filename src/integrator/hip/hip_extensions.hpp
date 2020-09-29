@@ -1,18 +1,23 @@
-#include "hip/hip_runtime.h"
 #pragma once
 #include <hip/hip_runtime.h>
+#include <hipcub/hipcub.hpp>
 
 namespace GauXC {
 namespace hip  {
 
 __inline__ __device__
 double warpReduceSum(double val) {
-  for(int i=16; i>=1; i/=2)
-    val += __shfl_xor_sync(0xffffffff, val, i, 32);
+
+  using warp_reducer = hipcub::WarpReduce<double>;
+  static __shared__ typename warp_reducer::TempStorage temp_storage[max_warps_per_thread_block];
+  int tid = threadIdx.x + threadIdx.y * blockDim.x + threadIdx.z * blockDim.x * blockDim.y;
+  int warp_lane = tid / warp_size;
+  val = warp_reducer( temp_storage[warp_lane] ).Sum( val );
 
   return val;
 }
 
+#if 0
 __inline__ __device__
 double blockReduceSum( double val ) {
 
@@ -79,6 +84,7 @@ __inline__ __device__ double atomicMul(double* address, double val)
 
     return __longlong_as_double(old);
 }
+#endif
 
 }
 }

@@ -4,10 +4,12 @@
 #include <gauxc/util/div_ceil.hpp>
 #include <gauxc/exceptions/hipblas_exception.hpp>
 
+#include "hip_device_properties.hpp"
 namespace GauXC {
 namespace hip  {
 namespace blas  {
 
+using namespace GauXC::hip;
 template <typename T>
 __global__ void increment_kernel( const T* X, T* Y ) {
   const auto tid = blockIdx.x;
@@ -97,7 +99,7 @@ void hadamard_product( hipblasHandle_t handle,
                        int            LDB ) {
 
   auto stream = util::get_stream(handle);
-  dim3 threads( 32, 32 );
+  dim3 threads(warp_size, max_warps_per_thread_block);
   dim3 blocks( util::div_ceil( M, threads.x ),
                util::div_ceil( N, threads.y ) );
 

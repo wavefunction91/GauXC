@@ -7,9 +7,13 @@
 #include "collocation_petite_combined_kernels.hpp"
 #include "collocation_masked_combined_kernels.hpp"
 
+#include "hip_device_properties.hpp"
+
 namespace GauXC      {
 namespace integrator {
 namespace hip       {
+
+using namespace GauXC::hip;
 
 template <typename T>
 void eval_collocation_petite(
@@ -24,7 +28,7 @@ void eval_collocation_petite(
 ) {
 
 
-  dim3 threads(32, 32, 1);
+  dim3 threads(warp_size, max_warps_per_thread_block, 1);
   dim3 blocks( util::div_ceil( npts,    threads.x ),
                util::div_ceil( nshells, threads.y ) );
 
@@ -66,7 +70,7 @@ void eval_collocation_masked(
   hipStream_t    stream
 ) {
 
-  dim3 threads(32, 32, 1);
+  dim3 threads(warp_size, max_warps_per_thread_block, 1);
   dim3 blocks( util::div_ceil( npts,    threads.x ),
                util::div_ceil( nshells, threads.y ) );
 
@@ -100,7 +104,7 @@ void eval_collocation_petite_combined(
   hipStream_t     stream
 ) {
 
-  dim3 threads(32, 32, 1);
+  dim3 threads(warp_size, max_warps_per_thread_block, 1);
   dim3 blocks( util::div_ceil( npts_max,    threads.x ),
                util::div_ceil( nshells_max, threads.y ),
                ntasks );
@@ -141,7 +145,7 @@ void eval_collocation_masked_combined(
   hipStream_t     stream
 ) {
 
-  dim3 threads(32, 32, 1);
+  dim3 threads(warp_size, max_warps_per_thread_block, 1);
   dim3 blocks( util::div_ceil( npts_max,    threads.x ),
                util::div_ceil( nshells_max, threads.y ),
                ntasks );
@@ -185,7 +189,7 @@ void eval_collocation_petite_deriv1(
   hipStream_t    stream
 ) {
 
-  dim3 threads(32, 32, 1);
+  dim3 threads(warp_size, max_warps_per_thread_block, 1);
   dim3 blocks( util::div_ceil( npts,    threads.x ),
                util::div_ceil( nshells, threads.y ) );
 
@@ -241,7 +245,7 @@ void eval_collocation_masked_deriv1(
   hipStream_t    stream
 ) {
 
-  dim3 threads(32, 32, 1);
+  dim3 threads(warp_size, max_warps_per_thread_block, 1);
   dim3 blocks( util::div_ceil( npts,    threads.x ),
                util::div_ceil( nshells, threads.y ) );
 
@@ -279,7 +283,7 @@ void eval_collocation_petite_combined_deriv1(
   hipStream_t     stream
 ) {
 
-  dim3 threads(32, 32, 1);
+  dim3 threads(warp_size, max_warps_per_thread_block, 1);
   dim3 blocks( util::div_ceil( npts_max,    threads.x ),
                util::div_ceil( nshells_max, threads.y ),
                ntasks );

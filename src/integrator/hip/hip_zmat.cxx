@@ -1,11 +1,13 @@
 #include "hip/hip_runtime.h"
 #include "hip_zmat.hpp"
 #include <gauxc/util/div_ceil.hpp>
+#include "hip_device_properties.hpp"
 
 namespace GauXC      {
 namespace integrator {
 namespace hip       {
 
+using namespace GauXC::hip;
 
 
 template <typename T>
@@ -49,7 +51,7 @@ void zmat_lda_hip( size_t           ntasks,
                     hipStream_t     stream ) {
 
 
-  dim3 threads(32,32,1);
+  dim3 threads(warp_size,max_warps_per_thread_block,1);
   dim3 blocks( util::div_ceil( max_nbf,  threads.x ),
                util::div_ceil( max_npts, threads.y ),
                ntasks );
@@ -118,7 +120,7 @@ void zmat_gga_hip( size_t           ntasks,
                     hipStream_t     stream ) {
 
 
-  dim3 threads(32,32,1);
+  dim3 threads(warp_size,max_warps_per_thread_block,1);
   dim3 blocks( util::div_ceil( max_nbf,  threads.x ),
                util::div_ceil( max_npts, threads.y ),
                ntasks );

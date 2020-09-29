@@ -1,10 +1,12 @@
 #include "hip/hip_runtime.h"
 #include "hip_pack_density.hpp"
+#include "hip_device_properties.hpp"
 
 namespace GauXC      {
 namespace integrator {
 namespace hip       {
 
+using namespace GauXC::hip;
 
 template <typename T>
 __global__ void submat_set_combined_kernel( size_t           ntasks,
@@ -64,7 +66,7 @@ void task_pack_density_matrix( size_t           ntasks,
                                size_t           LDP,
                                hipStream_t     stream ) {
 
-  dim3 threads(32,32,1), blocks(1,1,ntasks);
+  dim3 threads(warp_size,max_warps_per_thread_block,1), blocks(1,1,ntasks);
   hipLaunchKernelGGL(submat_set_combined_kernel, dim3(blocks), dim3(threads), 0, stream , 
     ntasks, device_tasks, P_device, LDP
   );

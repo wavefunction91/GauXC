@@ -1,10 +1,12 @@
 #include "hip/hip_runtime.h"
 #include "hip_inc_potential.hpp"
+#include "hip_device_properties.hpp"
 
 namespace GauXC      {
 namespace integrator {
 namespace hip       {
 
+using namespace GauXC::hip;
 
 template <typename T>
 __global__ void inc_by_submat_combined_kernel( size_t           ntasks,
@@ -65,7 +67,7 @@ void task_inc_potential( size_t           ntasks,
                          size_t           LDV,
                          hipStream_t     stream ) {
 
-  dim3 threads(32,32,1), blocks(1,1,ntasks);
+  dim3 threads(warp_size,max_warps_per_thread_block,1), blocks(1,1,ntasks);
   hipLaunchKernelGGL(inc_by_submat_combined_kernel, dim3(blocks), dim3(threads), 0, stream , 
     ntasks, device_tasks, V_device, LDV
   );
