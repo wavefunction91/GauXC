@@ -3,9 +3,13 @@
 #include <gauxc/util/div_ceil.hpp>
 #include <gauxc/exceptions/cublas_exception.hpp>
 
+#include "cuda_device_properties.hpp"
+
 namespace GauXC {
 namespace cuda  {
 namespace blas  {
+
+using namespace GauXC::cuda;
 
 template <typename T>
 __global__ void increment_kernel( const T* X, T* Y ) {
@@ -96,7 +100,7 @@ void hadamard_product( cublasHandle_t handle,
                        int            LDB ) {
 
   auto stream = util::get_stream(handle);
-  dim3 threads( 32, 32 );
+  dim3 threads(warp_size, max_warps_per_thread_block);
   dim3 blocks( util::div_ceil( M, threads.x ),
                util::div_ceil( N, threads.y ) );
 
