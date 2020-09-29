@@ -1,10 +1,12 @@
 #include "cuda_zmat.hpp"
 #include <gauxc/util/div_ceil.hpp>
+#include "cuda_device_properties.hpp"
 
 namespace GauXC      {
 namespace integrator {
 namespace cuda       {
 
+using namespace GauXC::cuda;
 
 
 template <typename T>
@@ -48,7 +50,7 @@ void zmat_lda_cuda( size_t           ntasks,
                     cudaStream_t     stream ) {
 
 
-  dim3 threads(32,32,1);
+  dim3 threads(warp_size,max_warps_per_thread_block,1);
   dim3 blocks( util::div_ceil( max_nbf,  threads.x ),
                util::div_ceil( max_npts, threads.y ),
                ntasks );
@@ -117,7 +119,7 @@ void zmat_gga_cuda( size_t           ntasks,
                     cudaStream_t     stream ) {
 
 
-  dim3 threads(32,32,1);
+  dim3 threads(warp_size,max_warps_per_thread_block,1);
   dim3 blocks( util::div_ceil( max_nbf,  threads.x ),
                util::div_ceil( max_npts, threads.y ),
                ntasks );
