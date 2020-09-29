@@ -113,6 +113,7 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
     *cuda_data_, tasks, P.data(), VXC.data(), &EXC, &N_EL 
   );
 
+  cuda_data_.reset(); // Free up CUDA memory
 
 
   if( world_size > 1 ) {
