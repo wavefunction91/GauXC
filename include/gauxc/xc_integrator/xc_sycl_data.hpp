@@ -64,14 +64,18 @@ public:
   F**    zmat_array_device = nullptr;
   F**    bf_array_device   = nullptr;
 
-  int*        m_array_device   = nullptr;
-  int*        n_array_device   = nullptr;
-  int*        k_array_device   = nullptr;
-  int*        lda_array_device = nullptr;
-  int*        ldb_array_device = nullptr;
-  int*        ldc_array_device = nullptr;
+  int64_t*        m_array_device  = nullptr;
+  int64_t*        n_array_device  = nullptr;
+  int64_t*        k_array_device  = nullptr;
+  int64_t*        ld_array_device = nullptr;
 
   F*     dist_scratch_device = nullptr;
+
+  F*        alpha_array_device = nullptr;
+  F*        beta_array_device  = nullptr;
+  oneapi::mkl::transpose* trans_array_device = nullptr;
+  oneapi::mkl::transpose* nontrans_array_device = nullptr;
+  int64_t*  groupsize_array_device = nullptr;
 
   // Buffer Vars
   F*           points_device_buffer     = nullptr;
@@ -92,7 +96,8 @@ public:
               size_t _nbf,
               size_t _nshells,
               bool _denpack_host = false,
-              bool _vxcinc_host  = false);
+              bool _vxcinc_host  = false,
+              bool _batch_l3_blas = true );
 
   ~XCSyclData() noexcept;
   XCSyclData( const XCSyclData& )          = delete;

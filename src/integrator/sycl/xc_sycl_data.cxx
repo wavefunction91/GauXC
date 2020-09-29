@@ -10,13 +10,15 @@ XCSyclData<F>::XCSyclData( size_t _natoms,
                            size_t _nbf,
                            size_t _nshells,
                            bool _denpack_host,
-                           bool _vxcinc_host ):
+                           bool _vxcinc_host,
+                           bool _batch_l3_blas ):
   nshells(_nshells),
   nbf(_nbf),
   n_deriv(_n_deriv),
   natoms(_natoms),
   denpack_host(_denpack_host),
-  vxcinc_host(_vxcinc_host)
+  vxcinc_host(_vxcinc_host),
+  batch_l3_blas(_batch_l3_blas)
 {
 
   // Create SYCL queue
@@ -81,7 +83,12 @@ std::tuple< task_iterator, device_task_container<F> >
 
   // Host copies for batched GEMM/SYRK arrays
   std::vector< F* > dmat_array, bf_array, zmat_array;
-  std::vector< int > m_array, n_array, k_array, lda_array, ldb_array, ldc_array;
+  std::vector< int64_t > m_array, n_array, k_array, ld_array;
+
+  // abb: can get rid of these variables
+  std::vector< F > alpha_array;
+  std::vector< oneapi::mkl::transpose > trans_array, nontrans_array;
+  std::vector< int64_t > groupsize_array;
 
   device_task_container tasks_device;
 
@@ -91,7 +98,7 @@ std::tuple< task_iterator, device_task_container<F> >
   };
 
 
-  size_t group_count    = 0;
+  size_t ntask    = 0;
   size_t total_npts     = 0;
   size_t total_nbe_nbe  = 0;
   size_t total_nbe_npts = 0;
@@ -101,7 +108,7 @@ std::tuple< task_iterator, device_task_container<F> >
 
   // Offset memory by the static requirement of an extra pointer element
   // for each of the size batch arrays in MAGMA
-  memleft -= 6 * sizeof(int); //M,N,K,LDA,LDB,LDC
+  memleft -= 4 * sizeof(int64_t); //M,N,K,LDA[LDB,LDC]
 
   auto task_it = task_begin;
   while( task_it != task_end ) {
@@ -152,7 +159,7 @@ std::tuple< task_iterator, device_task_container<F> >
     size_t mem_dist_nearest  = npts;
 
     size_t mem_batch_mat_arr = 3; // dmat/zmat/bf
-    size_t mem_batch_sz_arr  = 6; // M/N/K/LDA/LDB/LDC
+    size_t mem_batch_sz_arr  = 4; // M/N/K/LDA/[LDB/LDC]
     size_t mem_task      = 1;
 
 
@@ -182,16 +189,16 @@ std::tuple< task_iterator, device_task_container<F> >
       mem_iparent           * sizeof(int32_t) +
       mem_dist_nearest      * sizeof(F) +
       mem_batch_mat_arr     * sizeof(F*) +
-      mem_batch_sz_arr      * sizeof(int32_t) +
+      mem_batch_sz_arr      * sizeof(int64_t) +
       mem_task              * sizeof(sycl::XCTaskDevice<F>);
 
-    //std::cout << "Memory requirement for task " << group_count+1 << " " << mem_req_batch << " memleft " << memleft << std::endl;
+    //std::cout << "Memory requirement for task " << ntask+1 << " " << mem_req_batch << " memleft " << memleft << std::endl;
 
     if( mem_req_batch > memleft ) break;
 
     // Update memory and increment task iterator
     memleft -= mem_req_batch;
-    group_count++;
+    ntask++;
     task_it++;
 
     // Update counters
@@ -220,9 +227,12 @@ std::tuple< task_iterator, device_task_container<F> >
     n_array.emplace_back( npts );
     k_array.emplace_back( nbe  );
 
-    lda_array.emplace_back( nbe  );
-    ldb_array.emplace_back( nbe  );
-    ldc_array.emplace_back( nbe  );
+    ld_array.emplace_back( nbe  );
+
+    alpha_array.emplace_back( 1. );
+    nontrans_array.emplace_back( oneapi::mkl::transpose::nontrans );
+    trans_array.emplace_back( oneapi::mkl::transpose::trans );
+    groupsize_array.emplace_back( 1. );
 
     iparent_pack.insert( iparent_pack.end(), npts, iAtom );
     dist_nearest_pack.insert( dist_nearest_pack.end(), npts, dist_nearest );
@@ -246,7 +256,7 @@ std::tuple< task_iterator, device_task_container<F> >
 
   // (possibly) Large types
   important_shells_device = mem.aligned_alloc<Shell<F>>( total_nshells );
-  device_tasks            = mem.aligned_alloc<sycl::XCTaskDevice<F>>( group_count );
+  device_tasks            = mem.aligned_alloc<sycl::XCTaskDevice<F>>( ntask );
 
   // 64-bit types
   nbe_scr_device     = mem.aligned_alloc<F>( total_nbe_nbe  );
@@ -275,19 +285,25 @@ std::tuple< task_iterator, device_task_container<F> >
   dist_scratch_device = mem.aligned_alloc<F>( natoms * total_npts );
   dist_nearest_buffer = mem.aligned_alloc<F>( total_npts );
 
-  dmat_array_device = mem.aligned_alloc<F*>( group_count );
-  zmat_array_device = mem.aligned_alloc<F*>( group_count );
-  bf_array_device   = mem.aligned_alloc<F*>( group_count );
+  dmat_array_device = mem.aligned_alloc<F*>( ntask );
+  zmat_array_device = mem.aligned_alloc<F*>( ntask );
+  bf_array_device   = mem.aligned_alloc<F*>( ntask );
 
-  m_array_device   = mem.aligned_alloc<int32_t>( group_count );
-  n_array_device   = mem.aligned_alloc<int32_t>( group_count );
-  k_array_device   = mem.aligned_alloc<int32_t>( group_count );
-  lda_array_device = mem.aligned_alloc<int32_t>( group_count );
-  ldb_array_device = mem.aligned_alloc<int32_t>( group_count );
-  ldc_array_device = mem.aligned_alloc<int32_t>( group_count );
+  m_array_device   = mem.aligned_alloc<int64_t>( ntask );
+  n_array_device   = mem.aligned_alloc<int64_t>( ntask );
+  k_array_device   = mem.aligned_alloc<int64_t>( ntask );
+  ld_array_device = mem.aligned_alloc<int64_t>( ntask );
+
+  // following 3 arrays are required for batched oneMKL gemm
+  alpha_array_device     = mem.aligned_alloc<F>( ntask );
+  beta_array_device      = mem.aligned_alloc<F>( ntask );
+  trans_array_device     = mem.aligned_alloc<oneapi::mkl::transpose>( ntask );
+  nontrans_array_device  = mem.aligned_alloc<oneapi::mkl::transpose>( ntask );
+  groupsize_array_device = mem.aligned_alloc<int64_t>( ntask );
 
   iparent_device_buffer = mem.aligned_alloc<int32_t>( total_npts );
 
+  device_stride = ntask;
 
   // Update tasks with allocated pointers
   {
@@ -436,12 +452,30 @@ std::tuple< task_iterator, device_task_container<F> >
   copy_rev( k_array.size(), k_array.data(), k_array_device,
                          *master_queue, "send k_array" );
 
-  copy_rev( lda_array.size(), lda_array.data(), lda_array_device,
-                         *master_queue, "send lda_array" );
-  copy_rev( ldb_array.size(), ldb_array.data(), ldb_array_device,
-                         *master_queue, "send ldb_array" );
-  copy_rev( ldc_array.size(), ldc_array.data(), ldc_array_device,
-                         *master_queue, "send ldc_array" );
+  copy_rev( ld_array.size(), ld_array.data(), ld_array_device,
+                         *master_queue, "send ld_array" );
+
+  util::sycl_set_zero_async( ntask, beta_array_device, *master_queue, "betaZero" );
+
+  // abb: uncomment this when `-sycl-std=2020` is supported
+  // constexpr F alpha_pattern = 1.0;
+  // constexpr oneapi::mkl::transpose nontrans_pattern = oneapi::mkl::transpose::nontrans;
+  // constexpr oneapi::mkl::transpose trans_pattern    = oneapi::mkl::transpose::trans;
+  // constexpr int64_t gs_pattern = 1.0;
+  // master_queue->fill(alpha_array_device, alpha_pattern, ntask);
+  // master_queue->fill(trans_array_device, trans_pattern, ntask);
+  // master_queue->fill(nontrans_array_device, nontrans_pattern, ntask);
+  // master_queue->fill(groupsize_array_device, gs_pattern, ntask);
+
+  // abb: remove the next 4 copy statements when `-sycl-std=2020` is supported
+  copy_rev( alpha_array.size(), alpha_array.data(), alpha_array_device,
+            *master_queue, "send alpha_array" );
+  copy_rev( trans_array.size(), trans_array.data(), trans_array_device,
+            *master_queue, "send trans_array" );
+  copy_rev( nontrans_array.size(), nontrans_array.data(), nontrans_array_device,
+            *master_queue, "send nontrans_array" );
+  copy_rev( groupsize_array.size(), groupsize_array.data(), groupsize_array_device,
+            *master_queue, "send groupsize_array" );
 
   copy_rev( iparent_pack.size(), iparent_pack.data(),
                          iparent_device_buffer, *master_queue, "send iparent"  );
@@ -462,6 +496,6 @@ std::tuple< task_iterator, device_task_container<F> >
 
 
 // Explicit Instantiations
-template struct XCSyclData<double>;
+template class XCSyclData<double>;
 
 }
