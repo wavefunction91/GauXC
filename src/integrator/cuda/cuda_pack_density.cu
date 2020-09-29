@@ -1,9 +1,11 @@
 #include "cuda_pack_density.hpp"
+#include "cuda_device_properties.hpp"
 
 namespace GauXC      {
 namespace integrator {
 namespace cuda       {
 
+using namespace GauXC::cuda;
 
 template <typename T>
 __global__ void submat_set_combined_kernel( size_t           ntasks,
@@ -63,7 +65,7 @@ void task_pack_density_matrix( size_t           ntasks,
                                size_t           LDP,
                                cudaStream_t     stream ) {
 
-  dim3 threads(32,32,1), blocks(1,1,ntasks);
+  dim3 threads(warp_size,max_warps_per_thread_block,1), blocks(1,1,ntasks);
   submat_set_combined_kernel<<< blocks, threads, 0, stream >>>(
     ntasks, device_tasks, P_device, LDP
   );
