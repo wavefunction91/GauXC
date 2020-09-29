@@ -16,6 +16,7 @@ namespace integrator::host {
 
 template <typename F, size_t n_deriv>
 void process_batches_host_replicated_p(
+  XCIntegratorState      integrator_state,
   XCWeightAlg            weight_alg,
   const functional_type& func,
   const BasisSet<F>&     basis,
@@ -29,16 +30,20 @@ void process_batches_host_replicated_p(
   F*                     n_el
 ) {
 
+  const int32_t nbf = basis.nbf();
+
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
     return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
   };
   std::sort( tasks.begin(), tasks.end(), task_comparator );
 
 
-  partition_weights_host( weight_alg, mol, meta, tasks );
-  const int32_t nbf = basis.nbf();
+  if( not integrator_state.modified_weights_are_stored )
+    partition_weights_host( weight_alg, mol, meta, tasks );
+
 
   std::fill( VXC, VXC + size_t(nbf)*nbf, F(0.) );
+  *exc = 0.;
 
   size_t ntasks = tasks.size();
   for( size_t iT = 0; iT < ntasks; ++iT ) {
@@ -187,6 +192,7 @@ void process_batches_host_replicated_p(
 #define HOST_IMPL( F, ND ) \
 template \
 void process_batches_host_replicated_p<F, ND>(\
+  XCIntegratorState      integrator_state, \
   XCWeightAlg            weight_alg,\
   const functional_type& func,\
   const BasisSet<F>&     basis,\

@@ -2,6 +2,7 @@
 #include <gauxc/xc_integrator/xc_host_data.hpp>
 
 #include <gauxc/xc_integrator.hpp>
+#include "xc_integrator_state.hpp"
 
 namespace GauXC  {
 namespace integrator {
@@ -10,6 +11,7 @@ namespace host {
 
 template <typename F, size_t n_deriv>
 void process_batches_host_replicated_p(
+  XCIntegratorState      integrator_state,
   XCWeightAlg            weight_alg,
   const functional_type& func,
   const BasisSet<F>&     basis,
