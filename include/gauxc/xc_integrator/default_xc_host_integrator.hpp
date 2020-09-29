@@ -67,12 +67,17 @@ typename DefaultXCHostIntegrator<MatrixType>::exc_vxc_type
 
   // Compute Local contributions to EXC / VXC
   process_batches_host_replicated_p< value_type>(
-    n_deriv, XCWeightAlg::SSF, *this->func_, *this->basis_,
-    this->load_balancer_->molecule(), this->load_balancer_->molmeta(),
-    *host_data_, tasks, P.data(), VXC.data(), &EXC, &N_EL 
+    n_deriv, this->integrator_state_, XCWeightAlg::SSF, *this->func_, 
+    *this->basis_, this->load_balancer_->molecule(), 
+    this->load_balancer_->molmeta(), *host_data_, tasks, P.data(), 
+    VXC.data(), &EXC, &N_EL 
   );
 
+  // Update State of Integrator
+  this->integrator_state_.load_balancer_populated     = true;
+  this->integrator_state_.modified_weights_are_stored = true;
 
+            
 #ifdef GAUXC_ENABLE_MPI
 
   int world_size;

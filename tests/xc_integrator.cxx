@@ -9,9 +9,9 @@ using namespace GauXC;
 
 
 #ifdef GAUXC_ENABLE_MPI
-void test_xc_integrator( ExecutionSpace ex, MPI_Comm comm, Molecule mol ) 
+void test_xc_integrator( ExecutionSpace ex, MPI_Comm comm, Molecule mol, const bool check_state_propagation = true ) 
 #else
-void test_xc_integrator( ExecutionSpace ex, Molecule mol ) 
+void test_xc_integrator( ExecutionSpace ex, Molecule mol, const bool check_state_propagation = true ) 
 #endif
 {
 
@@ -63,6 +63,14 @@ void test_xc_integrator( ExecutionSpace ex, Molecule mol )
 
   auto VXC_diff_nrm = ( VXC - VXC_ref ).norm();
   CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 ); 
+
+  // Check if the integrator propagates state correctly
+  if( check_state_propagation ) {
+    auto [ EXC1, VXC1 ] = integrator.eval_exc_vxc( P );
+    CHECK( EXC1 == Approx( EXC_ref ) );
+    auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
+    CHECK( VXC1_diff_nrm / basis.nbf() < 1e-10 ); 
+  }
 }
 
 

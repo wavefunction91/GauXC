@@ -37,7 +37,7 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
   GAUXC_CUDA_ERROR( "MemInfo Failed", stat );
 
   // Allocate up to fill_fraction
-  size_t fill_sz = fill_fraction * cuda_total;
+  size_t fill_sz = fill_fraction * cuda_avail;
   stat = cudaMalloc( &device_ptr, fill_sz );
   GAUXC_CUDA_ERROR( "CUDA Malloc Failed", stat );
 

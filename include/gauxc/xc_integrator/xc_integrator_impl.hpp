@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gauxc/xc_integrator.hpp>
+#include "xc_integrator_state.hpp"
 
 namespace GauXC {
 namespace detail {
@@ -24,6 +25,7 @@ protected:
   std::shared_ptr<basisset_type>   basis_;
 
   std::shared_ptr<LoadBalancer>    load_balancer_;
+  XCIntegratorState                integrator_state_;
 
   virtual exc_vxc_type eval_exc_vxc_( const MatrixType& ) = 0;
   
