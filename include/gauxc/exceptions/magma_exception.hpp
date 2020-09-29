@@ -5,6 +5,7 @@
 #include <string>
 #include <sstream>
 
+#ifdef GAUXC_ENABLE_CUDA
 #ifdef GAUXC_ENABLE_MAGMA
 
 namespace GauXC {
@@ -42,4 +43,5 @@ public:
   if( ERR != MAGMA_SUCCESS ) \
     throw magma_exception( __FILE__, __LINE__, MSG, ERR );
 
+#endif
 #endif
