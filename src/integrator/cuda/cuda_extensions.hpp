@@ -1,17 +1,35 @@
 #pragma once
 #include <cuda.h>
+#include <cub/cub.cuh>
+#include "cuda_device_properties.hpp"
+
+//#define GAUXC_ENABLE_WARP_REDUCTIONS
 
 namespace GauXC {
 namespace cuda  {
 
 __inline__ __device__
 double warpReduceSum(double val) {
-  for(int i=16; i>=1; i/=2)
-    val += __shfl_xor_sync(0xffffffff, val, i, 32);
+ 
+#ifdef GAUXC_ENABLE_WARP_REDUCTIONS
+
+  for(int i=(warp_size/2); i>=1; i/=2)
+    val += __shfl_xor_sync(0xffffffff, val, i, warp_size);
+
+#else
+
+  using warp_reducer = cub::WarpReduce<double>;
+  static __shared__ typename warp_reducer::TempStorage temp_storage[max_warps_per_thread_block];
+  int tid = threadIdx.x + threadIdx.y * blockDim.x + threadIdx.z * blockDim.x * blockDim.y;
+  int warp_lane = tid / warp_size;
+  val = warp_reducer( temp_storage[warp_lane] ).Sum( val );
+
+#endif
 
   return val;
 }
 
+#if 0
 __inline__ __device__
 double blockReduceSum( double val ) {
 
@@ -78,6 +96,7 @@ __inline__ __device__ double atomicMul(double* address, double val)
 
     return __longlong_as_double(old);
 }
+#endif
 
 }
 }
