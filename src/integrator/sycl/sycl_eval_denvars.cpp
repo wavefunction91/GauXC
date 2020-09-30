@@ -3,6 +3,8 @@
 #include <gauxc/util/div_ceil.hpp>
 #include <gauxc/exceptions/sycl_exception.hpp>
 
+#include "sycl_device_properties.hpp"
+
 template <typename T>
 using relaxed_atomic_ref =
   cl::sycl::intel::atomic_ref< T, cl::sycl::intel::memory_order::relaxed,
@@ -12,6 +14,8 @@ using relaxed_atomic_ref =
 namespace GauXC      {
 namespace integrator {
 namespace sycl       {
+
+    using namespace GauXC::sycl;
 
     template <typename T>
     void eval_uvars_lda_kernel( size_t           ntasks,
@@ -136,7 +140,7 @@ namespace sycl       {
     void eval_uvars_lda_device(size_t ntasks, size_t max_nbf, size_t max_npts,
                                XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(1, 16, 16);
+        cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
         cl::sycl::range<3> blocks(ntasks,
                                   util::div_ceil(max_npts, threads[1]),
                                   util::div_ceil(max_nbf,  threads[2]) );
@@ -155,7 +159,7 @@ namespace sycl       {
     void eval_uvars_gga_device(size_t ntasks, size_t max_nbf, size_t max_npts,
                                XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(1, 16, 16);
+        cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
         cl::sycl::range<3> blocks(ntasks,
                                   util::div_ceil(max_npts, threads[1]),
                                   util::div_ceil(max_nbf,  threads[2]) );

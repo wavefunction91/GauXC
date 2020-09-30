@@ -2,9 +2,13 @@
 #include <gauxc/util/div_ceil.hpp>
 #include <gauxc/exceptions/sycl_exception.hpp>
 
+#include "sycl_device_properties.hpp"
+
 namespace GauXC      {
 namespace integrator {
 namespace sycl       {
+
+using namespace GauXC::sycl;
 
 template <typename T>
 void zmat_lda_kernel( size_t           ntasks,
@@ -38,7 +42,7 @@ template <typename T>
 void zmat_lda_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
                    XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
-  cl::sycl::range<3> threads(1, 16, 16);
+  cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
   cl::sycl::range<3> blocks(ntasks,
                             util::div_ceil(max_npts, threads[1]),
                             util::div_ceil(max_nbf,  threads[2]) );
@@ -106,7 +110,7 @@ template <typename T>
 void zmat_gga_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
                    XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
-  cl::sycl::range<3> threads(1, 16, 16);
+  cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
   cl::sycl::range<3> blocks(ntasks,
                             util::div_ceil(max_npts, threads[1]),
                             util::div_ceil(max_nbf,  threads[2]) );

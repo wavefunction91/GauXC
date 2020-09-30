@@ -1,9 +1,13 @@
 #include "sycl_pack_density.hpp"
 #include <gauxc/exceptions/sycl_exception.hpp>
 
+#include "sycl_device_properties.hpp"
+
 namespace GauXC      {
 namespace integrator {
 namespace sycl       {
+
+    using namespace GauXC::sycl;
 
     template <typename T>
     void submat_set_combined_kernel( size_t ntasks,
@@ -59,7 +63,7 @@ namespace sycl       {
     void task_pack_density_matrix(size_t ntasks, XCTaskDevice<T> *device_tasks,
                                   T *P_device, size_t LDP, cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(1, 16, 16), blocks(ntasks, 1, 1);
+        cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size), blocks(ntasks, 1, 1);
 
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;

@@ -62,7 +62,7 @@ namespace blas  {
                           T *B, int LDB) {
 
         GAUXC_SYCL_ERROR( syclQue->submit([&](cl::sycl::handler &cgh) {
-                    cgh.parallel_for( cl::sycl::range<2>{N, M}, [=](cl::sycl::item<2> item_ct) {
+                    cgh.parallel_for( cl::sycl::range<2>(N, M), [=](cl::sycl::item<2> item_ct) {
                             hadamard_product_kernel(M, N, A, LDA, B, LDB, item_ct);
                         });
                 }) );
