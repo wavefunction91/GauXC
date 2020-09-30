@@ -60,6 +60,7 @@ std::unique_ptr<XCIntegratorImpl<MatrixType>>
         std::make_shared<functional_type>(func),
         std::make_shared<BasisSet<typename MatrixType::value_type>>(basis),
         lb
+      );
 #else
       throw std::runtime_error("GAUXC_ENABLE_DEVICE is FALSE");
       return nullptr;
