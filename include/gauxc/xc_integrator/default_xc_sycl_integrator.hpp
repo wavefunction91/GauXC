@@ -4,6 +4,7 @@
 #include <gauxc/xc_integrator/xc_sycl_data.hpp>
 #include <gauxc/xc_integrator/xc_sycl_util.hpp>
 
+#ifdef GAUXC_ENABLE_SYCL
 namespace GauXC  {
 namespace detail {
 
@@ -121,3 +122,4 @@ typename DefaultXCSyclIntegrator<MatrixType>::exc_vxc_type
 
 }
 }
+#endif

@@ -3,6 +3,7 @@
 
 #include <gauxc/xc_integrator.hpp>
 
+#ifdef GAUXC_ENABLE_SYCL
 namespace GauXC  {
 namespace integrator {
 namespace sycl {
@@ -37,3 +38,4 @@ inline void process_batches_sycl_replicated_p( size_t n_deriv, Args&&... args ) 
 }
 }
 }
+#endif

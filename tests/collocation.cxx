@@ -60,7 +60,6 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
 #else
   LoadBalancer lb(mol, mg, basis);
 #endif
-              
   auto& tasks = lb.get_tasks();
 
 
