@@ -53,6 +53,7 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
   }
 #endif
 
+#ifdef GAUXC_ENABLE_MPI
   int32_t device_count, cur_device;
   cudaGetDeviceCount( &device_count );
   cudaGetDevice( &cur_device );
@@ -75,6 +76,7 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
 
   cudaSetDevice( node_rank );
 */
+#endif
 
 
   size_t nbf     = this->basis_->nbf();
@@ -115,6 +117,8 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
 
   cuda_data_.reset(); // Free up CUDA memory
 
+#ifdef GAUXC_ENABLE_MPI
+
 
   if( world_size > 1 ) {
 
@@ -146,6 +150,8 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
     }
 
   }
+
+#endif
 
 #ifdef GAUXC_ENABLE_MAGMA
   // Finalize MAGMA
