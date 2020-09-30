@@ -1,9 +1,13 @@
 #include "sycl_inc_potential.hpp"
 #include <gauxc/exceptions/sycl_exception.hpp>
 
+#include "sycl_device_properties.hpp"
+
 namespace GauXC      {
 namespace integrator {
 namespace sycl       {
+
+using namespace GauXC::sycl;
 
 template <typename T>
 void inc_by_submat_combined_kernel( size_t           ntasks,
@@ -62,7 +66,8 @@ template <typename T>
 void task_inc_potential(size_t ntasks, XCTaskDevice<T> *device_tasks,
                         T *V_device, size_t LDV, cl::sycl::queue *queue) {
 
-    cl::sycl::range<3> threads(1, 16, 16), blocks(ntasks, 1, 1);
+    cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size), blocks(ntasks, 1, 1);
+
     GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
             auto global_range = blocks * threads;
 

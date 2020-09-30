@@ -303,8 +303,6 @@ std::tuple< task_iterator, device_task_container<F> >
 
   iparent_device_buffer = mem.aligned_alloc<int32_t>( total_npts );
 
-  device_stride = ntask;
-
   // Update tasks with allocated pointers
   {
   double* points_ptr  = points_device_buffer;

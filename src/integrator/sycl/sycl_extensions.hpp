@@ -35,7 +35,7 @@ double blockReduceSum( double val , cl::sycl::nd_item<3>& item_ct, double *share
 }
 
 template <typename T, int warp_size = 32>
-__inline__ T warp_prod_reduce( cl::sycl::intel::sub_group& sub_g, T val ) {
+__inline__ T warp_prod_reduce( cl::sycl::intel::sub_group sub_g, T val ) {
 
   for( int i = warp_size / 2; i >= 1; i /= 2 )
       val *= sub_g.shuffle_xor( val, i );

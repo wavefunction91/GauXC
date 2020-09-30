@@ -5,6 +5,8 @@
 #include "integrator_constants.hpp"
 #include "sycl_extensions.hpp"
 
+#include "sycl_device_properties.hpp"
+
 constexpr double eps_d = std::numeric_limits<double>::epsilon();
 
 namespace GauXC {
@@ -38,7 +40,6 @@ namespace GauXC {
             void modify_weights_becke_kernel(size_t npts,
                                              size_t natoms,
                                              const double* RAB,
-                                             const double* coords,
                                              const double* dist_scratch,
                                              const int32_t* iparent_device,
                                              double* weights_device,
@@ -61,7 +62,7 @@ namespace GauXC {
                     double parent_weight = 0.;
 
                     const double* const local_dist_scratch = dist_scratch + ipt * natoms;
-                    for (size_t iCenter = threadIdx_y; iCenter < natoms;
+                    for (int iCenter = threadIdx_y; iCenter < natoms;
                          iCenter += item_ct.get_local_range().get(1)) {
 
                         const double ri = local_dist_scratch[ iCenter ];
@@ -69,7 +70,7 @@ namespace GauXC {
                         const double* const local_rab = RAB + iCenter * natoms;
 
                         double ps = 1.;
-                        for (size_t jCenter = threadIdx_x; jCenter < natoms;
+                        for (int jCenter = threadIdx_x; jCenter < natoms;
                              jCenter += item_ct.get_local_range().get(2)) {
 
                             const double rj = local_dist_scratch[ jCenter ];
@@ -111,7 +112,6 @@ namespace GauXC {
             void modify_weights_ssf_kernel(size_t npts,
                                            size_t natoms,
                                            const double* RAB,
-                                           const double* coords,
                                            const double* dist_scratch,
                                            const int32_t* iparent_device,
                                            const double* dist_nearest_device,
@@ -204,7 +204,6 @@ namespace GauXC {
             void modify_weights_ssf_kernel_1d(size_t npts,
                                               size_t natoms,
                                               const double* RAB,
-                                              const double* coords,
                                               const double* dist_scratch,
                                               const int32_t* iparent_device,
                                               const double* dist_nearest_device,
@@ -361,7 +360,7 @@ namespace GauXC {
                     GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
 
                             cgh.parallel_for(cl::sycl::range<1>(npts), [=](cl::sycl::item<1> item_ct) {
-                                    modify_weights_ssf_kernel_1d(npts, natoms, rab_device, atomic_coords_device,
+                                    modify_weights_ssf_kernel_1d(npts, natoms, rab_device,
                                                                  dist_scratch_device, iparent_device, dist_nearest_device,
                                                                  weights_device, item_ct);
                                 });
@@ -369,7 +368,7 @@ namespace GauXC {
                 }
                 else {
                     throw std::runtime_error("Untested codepath");
-                    cl::sycl::range<3> threads(1, 16, 16);
+                    cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
                     cl::sycl::range<3> blocks(1, 1, npts);
                     auto global_range = blocks * threads;
 
@@ -385,7 +384,7 @@ namespace GauXC {
                                 cgh.parallel_for( cl::sycl::nd_range<3>(global_range, threads),
                                     [=](cl::sycl::nd_item<3> item_ct) {
                                         modify_weights_ssf_kernel(
-                                            npts, natoms, rab_device, atomic_coords_device,
+                                            npts, natoms, rab_device,
                                             dist_scratch_device, iparent_device, dist_nearest_device,
                                             weights_device, item_ct, shared_acc.get_pointer());
                                     });
@@ -403,7 +402,7 @@ namespace GauXC {
                                 cgh.parallel_for( cl::sycl::nd_range<3>(global_range, threads),
                                     [=](cl::sycl::nd_item<3> item_ct) {
                                         modify_weights_becke_kernel(
-                                            npts, natoms, rab_device, atomic_coords_device,
+                                            npts, natoms, rab_device,
                                             dist_scratch_device, iparent_device, weights_device, item_ct,
                                             shared_acc.get_pointer());
                                     });

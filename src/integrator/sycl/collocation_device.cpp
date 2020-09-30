@@ -7,9 +7,13 @@
 #include "collocation_petite_combined_kernels.hpp"
 #include "collocation_masked_combined_kernels.hpp"
 
+#include "sycl_device_properties.hpp"
+
 namespace GauXC      {
 namespace integrator {
 namespace sycl       {
+
+    using namespace GauXC::sycl;
 
     template <typename T>
     void eval_collocation_petite(size_t nshells, size_t nbf, size_t npts,
@@ -71,10 +75,10 @@ namespace sycl       {
                                           XCTaskDevice<T> *device_tasks,
                                           cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(1, 16, 16);
+        cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
         cl::sycl::range<3> blocks(ntasks,
                                   util::div_ceil(nshells_max, threads[1]),
-                                  util::div_ceil(npts_max, threads[2]) );
+                                  util::div_ceil(npts_max,    threads[2]) );
 
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = threads * blocks;
@@ -102,7 +106,7 @@ namespace sycl       {
                                           XCTaskDevice<T> *device_tasks,
                                           cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(1, 16, 16);
+        cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
         cl::sycl::range<3> blocks(ntasks,
                                   util::div_ceil(nshells_max, threads[1]),
                                   util::div_ceil(npts_max,    threads[2]) );
@@ -188,7 +192,7 @@ namespace sycl       {
                                                  XCTaskDevice<T> *device_tasks,
                                                  cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(1, 16, 16);
+        cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
         cl::sycl::range<3> blocks(ntasks,
                                   util::div_ceil(nshells_max, threads[1]),
                                   util::div_ceil(npts_max, threads[2]) );
@@ -218,7 +222,7 @@ namespace sycl       {
                                                  XCTaskDevice<T> *device_tasks,
                                                  cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(1, 16, 16);
+        cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
         cl::sycl::range<3> blocks(ntasks,
                                   util::div_ceil(nshells_max, threads[1]),
                                   util::div_ceil(npts_max, threads[2]) );
