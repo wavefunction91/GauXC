@@ -1,14 +1,12 @@
 # Parallelism
 find_package( OpenMP  REQUIRED )
 find_package( MPI     REQUIRED )
-find_package( LAPACK  REQUIRED )
 
 # Required Dependencies
 include( gauxc-integratorxx )
 include( gauxc-exchcxx      )
 include( gauxc-cereal       )
 include( gauxc-eigen3       )
-include( gauxc-gau2grid     )
 
 
 add_library( gauxc STATIC 
@@ -49,12 +47,7 @@ target_link_libraries( gauxc PUBLIC
   MPI::MPI_C 
   OpenMP::OpenMP_CXX
   Eigen3::Eigen 
-  LAPACK::lapack
 )
-
-if( GAUXC_ENABLE_GAU2GRID )
-  target_link_libraries( gauxc PUBLIC gauxc_gau2grid )
-endif()
 
 if( GAUXC_ENABLE_CEREAL )
   target_link_libraries( gauxc PUBLIC cereal )
