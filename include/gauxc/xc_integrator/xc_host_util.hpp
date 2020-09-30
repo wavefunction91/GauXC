@@ -4,6 +4,7 @@
 #include <gauxc/xc_integrator.hpp>
 #include "xc_integrator_state.hpp"
 
+#ifdef GAUXC_ENABLE_HOST
 namespace GauXC  {
 namespace integrator {
 namespace host {
@@ -39,3 +40,4 @@ inline void process_batches_host_replicated_p( size_t n_deriv, Args&&... args ) 
 }
 }
 }
+#endif
