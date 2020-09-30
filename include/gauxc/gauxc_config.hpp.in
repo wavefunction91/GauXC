@@ -5,6 +5,7 @@
   #include <cereal/types/array.hpp>
 #endif
 
+#cmakedefine GAUXC_ENABLE_HOST
 #cmakedefine GAUXC_ENABLE_CUDA
 #cmakedefine GAUXC_ENABLE_MAGMA
 #cmakedefine GAUXC_ENABLE_SYCL

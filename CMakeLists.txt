@@ -9,6 +9,7 @@ list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
 list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules )
 
 # GauXC Options
+option( GAUXC_ENABLE_HOST     "Enable Host Integrator"      ON  )
 option( GAUXC_ENABLE_CUDA     "Enable CUDA Bindings"        OFF )
 option( GAUXC_ENABLE_SYCL     "Enable SYCL Bindings"        ON  )
 option( GAUXC_ENABLE_MAGMA    "Enable MAGMA Linear Algebra" OFF )
@@ -29,6 +30,14 @@ endif()
 # Decided if we're compiling device bindings
 if( GAUXC_ENABLE_CUDA OR GAUXC_ENABLE_SYCL )
   set( GAUXC_ENABLE_DEVICE TRUE CACHE BOOL "Enable Device Code" )
+else()
+  set( GAUXC_ENABLE_DEVICE FALSE CACHE BOOL "Enable Device Code" )
+endif()
+
+
+
+if( NOT (${GAUXC_ENABLE_HOST} OR ${GAUXC_ENABLE_DEVICE}) )
+  message( FATAL_ERROR "Neither Host nor Device Integrators have been enabled!" )
 endif()
 
 if( GAUXC_ENABLE_CUDA )

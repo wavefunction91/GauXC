@@ -66,9 +66,11 @@ TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
   MPI_Comm comm = MPI_COMM_WORLD;
   Molecule mol  = make_benzene();
 
+#ifdef GAUXC_ENABLE_HOST
   SECTION( "Host" ) {
     test_xc_integrator( ExecutionSpace::Host, comm, mol );
   }
+#endif
 
 #if defined(GAUXC_ENABLE_CUDA) || defined(GAUXC_ENABLE_SYCL)
   SECTION( "Device" ) {
