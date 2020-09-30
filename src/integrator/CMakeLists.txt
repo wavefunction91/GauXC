@@ -100,7 +100,9 @@ target_include_directories( gauxc
 )
 
 # Host Integrator Utilities
-include( host/gauxc-host_integrator.cmake )
+if( GAUXC_ENABLE_HOST )
+  include( host/gauxc-host_integrator.cmake )
+endif()
 
 if( GAUXC_ENABLE_CUDA )
   include( cuda/gauxc-cuda_integrator.cmake )
