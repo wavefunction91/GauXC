@@ -24,6 +24,8 @@ endif()
 # Decided if we're compiling device bindings
 if( GAUXC_ENABLE_CUDA )
   set( GAUXC_ENABLE_DEVICE TRUE CACHE BOOL "Enable Device Code" )
+else()
+  set( GAUXC_ENABLE_DEVICE FALSE CACHE BOOL "Enable Device Code" )
 endif()
 
 
