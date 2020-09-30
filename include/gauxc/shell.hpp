@@ -53,6 +53,7 @@ private:
   double cutoff_radius_;
   double shell_tolerance_{detail::default_shell_tolerance}; 
 
+  double _pad_; // Pad to be a multiple of 16
   // Shamelessly adapted from Libint...
   void normalize() {
 
@@ -111,7 +112,6 @@ private:
   }
 public:
 
-  Shell() = delete;
 
   Shell( PrimSize nprim, AngularMomentum l, SphericalType pure,
     prim_array alpha, prim_array coeff, cart_array O, bool _normalize = true ) :
@@ -122,6 +122,8 @@ public:
     compute_shell_cutoff();
 
   }
+
+  Shell() = delete; 
   
   void set_shell_tolerance( double tol ) {
     if( tol != shell_tolerance_ ) {

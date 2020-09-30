@@ -6,6 +6,7 @@
 
 #include "collocation_angular_cartesian.hpp"
 #include "collocation_angular_spherical_unnorm.hpp"
+#include "cuda_alg_variant_control.hpp"
 
 namespace GauXC      {
 namespace integrator {
@@ -102,6 +103,12 @@ void collocation_device_masked_combined_kernel_deriv1(
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
+#ifdef GAUXC_CUDA_ENABLE_COLLOCATION_SHMEM_COPY
+  using vec_int_type = int4;
+  constexpr int ncpy = sizeof(Shell<T>) / sizeof(vec_int_type);
+  __shared__ vec_int_type shmem[32 * ncpy];
+  Shell<T>* sh_shell = (Shell<T>*)shmem;
+#endif
   if( blockIdx.z < ntasks ) {
 
     auto& task = device_tasks[ blockIdx.z ];
@@ -119,14 +126,35 @@ void collocation_device_masked_combined_kernel_deriv1(
     auto* __restrict__ deval_device_z = task.dbfz;
 
 
-  if( tid_x < npts and tid_y < nshells ) {
+  if( tid_y < nshells ) {
 
-    const size_t ipt = tid_x;
     const size_t ish = tid_y;
-
     const size_t ibf = offs_device[ish];
 
+#ifdef GAUXC_CUDA_ENABLE_COLLOCATION_SHMEM_COPY
+
+    {
+      const auto* shell = shells_device + mask_device[ish];
+      const vec_int_type* src   = (vec_int_type*)shell;
+            vec_int_type* dst   = shmem + threadIdx.y*ncpy;
+      // Copy shell into shared memory
+      for( int i = threadIdx.x; i < ncpy; i += blockDim.x ) {
+        dst[i] = src[i];
+      }
+      __syncwarp();
+    }
+
+    const auto& shell = sh_shell[threadIdx.y];
+
+#else
+
     const auto& shell = shells_device[mask_device[ish]];
+
+#endif
+
+  if( tid_x < npts  ) {
+
+    const size_t ipt = tid_x;
     const auto* pt    = pts_device + 3*ipt;
   
 
@@ -173,6 +201,7 @@ void collocation_device_masked_combined_kernel_deriv1(
                                         dy_eval, dz_eval );
 
   } // shell / point idx check
+  }
 
   } // Batch idx check
 
