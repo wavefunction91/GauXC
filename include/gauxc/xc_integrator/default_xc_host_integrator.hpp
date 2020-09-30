@@ -1,8 +1,10 @@
 #pragma once
+#include <gauxc/gauxc_config.hpp>
 #include <gauxc/xc_integrator/xc_integrator_impl.hpp>
 #include <gauxc/xc_integrator/xc_host_data.hpp>
 #include <gauxc/xc_integrator/xc_host_util.hpp>
 
+#ifdef GAUXC_ENABLE_HOST
 namespace GauXC  {
 namespace detail {
 
@@ -120,3 +122,4 @@ typename DefaultXCHostIntegrator<MatrixType>::exc_vxc_type
 
 }
 }
+#endif
