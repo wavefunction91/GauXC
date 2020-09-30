@@ -319,7 +319,6 @@ void process_batches_cuda_replicated_p(
   F*                     NEL
 ) {
 
-
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
     return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
   };
