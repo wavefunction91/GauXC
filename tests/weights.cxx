@@ -4,7 +4,6 @@
 #include <gauxc/load_balancer.hpp>
 #include <fstream>
 #include <string>
-#include <mpi.h>
 
 #ifdef GAUXC_ENABLE_HOST
 #include "host/host_weights.hpp"
@@ -48,7 +47,11 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
 
 
   MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
+#ifdef GAUXC_ENABLE_MPI
   LoadBalancer lb(MPI_COMM_WORLD, mol, mg, basis);
+#else
+  LoadBalancer lb(mol, mg, basis);
+#endif
   auto& tasks = lb.get_tasks();
 
   ref_weights_data   ref_data;
@@ -286,9 +289,11 @@ void test_sycl_weights( std::ifstream& in_file ) {
 TEST_CASE( "Benzene", "[weights]" ) {
 
 #ifdef GENERATE_TESTS
+#ifdef GAUXC_ENABLE_MPI
   int world_size;
   MPI_Comm_size( MPI_COMM_WORLD, &world_size );
   if( world_size > 1 ) return;
+#endif
 #endif
 
   Molecule mol = make_benzene();

@@ -75,11 +75,12 @@ typename DefaultXCHostIntegrator<MatrixType>::exc_vxc_type
     VXC.data(), &EXC, &N_EL 
   );
 
-
   // Update State of Integrator
   this->integrator_state_.load_balancer_populated     = true;
   this->integrator_state_.modified_weights_are_stored = true;
 
+            
+#ifdef GAUXC_ENABLE_MPI
 
   int world_size;
   MPI_Comm_size( this->comm_, &world_size );
@@ -114,6 +115,8 @@ typename DefaultXCHostIntegrator<MatrixType>::exc_vxc_type
     }
 
   }
+
+#endif
 
 
   return exc_vxc_type{EXC, std::move(VXC)};
