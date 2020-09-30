@@ -1664,7 +1664,7 @@ void test_hip_collocation_masked_combined_deriv1( const BasisSet<double>& basis,
   }
   util::hip_free( tasks_device, shells_device );
 }
-#endif
+#endif // GAUXC_ENABLE_SYCL
 
 
 

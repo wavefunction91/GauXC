@@ -61,7 +61,7 @@ std::unique_ptr<XCIntegratorImpl<MatrixType>>
         std::make_shared<BasisSet<typename MatrixType::value_type>>(basis),
         lb
       );
-
+            
 #elif defined(GAUXC_ENABLE_SYCL)
       return make_default_sycl_integrator<MatrixType>(
 #ifdef GAUXC_ENABLE_MPI

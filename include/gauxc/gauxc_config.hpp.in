@@ -7,17 +7,16 @@
 
 #cmakedefine GAUXC_ENABLE_HOST
 #cmakedefine GAUXC_ENABLE_CUDA
-#cmakedefine GAUXC_ENABLE_SYCL
-#cmakedefine GAUXC_ENABLE_HIP
 #cmakedefine GAUXC_ENABLE_MPI
 #cmakedefine GAUXC_ENABLE_MAGMA
+#cmakedefine GAUXC_ENABLE_SYCL
+#cmakedefine GAUXC_ENABLE_HIP
 #cmakedefine GAUXC_ENABLE_GAU2GRID
 #cmakedefine GAUXC_BLAS_ILP64
 
 #ifdef GAUXC_ENABLE_CUDA
   #include <cuda_runtime.h>
   #include <cublas_v2.h>
-
 #ifdef GAUXC_ENABLE_MAGMA
   #include <magma_v2.h>
 #endif
