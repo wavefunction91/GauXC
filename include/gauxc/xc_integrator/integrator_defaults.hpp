@@ -21,10 +21,12 @@ std::unique_ptr<XCIntegratorImpl<MatrixType>> make_default_cuda_integrator( Args
 }
 #endif
 
+#ifdef GAUXC_ENABLE_SYCL
 template <typename MatrixType, typename... Args>
 std::unique_ptr<XCIntegratorImpl<MatrixType>> make_default_sycl_integrator( Args&&... args ) {
   return std::make_unique<DefaultXCSyclIntegrator<MatrixType>>( std::forward<Args>(args)... );
 }
+#endif
 
 }
 }
