@@ -109,8 +109,14 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
 
   int32_t world_rank;
   int32_t world_size;
+
+#ifdef GAUXC_ENABLE_MPI
   MPI_Comm_rank( comm_, &world_rank );
   MPI_Comm_size( comm_, &world_size );
+#else
+  world_rank = 0;
+  world_size = 1;
+#endif
 
   std::vector< XCTask > local_work;
   std::vector<size_t> global_workload( world_size, 0 );   
@@ -154,7 +160,7 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
       size_t batch_idx = ibatch + batch_idx_offset;
 
       // Generate the batch (non-negligible cost)
-      auto [lo, up, points, weights] = std::move(batcher.at(ibatch));
+      auto [lo, up, points, weights] = batcher.at(ibatch);
 
       if( points.size() == 0 ) continue;
 

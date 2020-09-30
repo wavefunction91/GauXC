@@ -1,6 +1,8 @@
 # Parallelism
 find_package( OpenMP  REQUIRED )
-find_package( MPI     REQUIRED )
+if( GAUXC_ENABLE_MPI )
+  find_package( MPI REQUIRED )
+endif()
 
 # Required Dependencies
 include( gauxc-integratorxx )
@@ -44,10 +46,13 @@ configure_file(
 target_link_libraries( gauxc PUBLIC 
   ExchCXX::exchcxx 
   IntegratorXX::integratorxx 
-  MPI::MPI_C 
   OpenMP::OpenMP_CXX
   Eigen3::Eigen 
 )
+
+if( GAUXC_ENABLE_MPI )
+  target_link_libraries( gauxc PUBLIC MPI::MPI_C )
+endif()
 
 if( GAUXC_ENABLE_CEREAL )
   target_link_libraries( gauxc PUBLIC cereal )
