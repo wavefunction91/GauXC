@@ -9,7 +9,9 @@
 #define MAX_NPTS_CHECK 67
 
 
+#ifdef GAUXC_ENABLE_HOST
 #include "host/host_collocation.hpp"
+#endif
 
 
 
@@ -55,6 +57,7 @@ struct ref_collocation_data {
 
 };
 
+#ifdef GAUXC_ENABLE_HOST
 void generate_collocation_data( const Molecule& mol, const BasisSet<double>& basis,
                                 std::ofstream& out_file, size_t ntask_save = 10 ) {
 
@@ -190,6 +193,7 @@ void test_host_collocation_deriv1( const BasisSet<double>& basis, std::ifstream&
   }
 
 }
+#endif
 
 
 #ifdef GAUXC_ENABLE_CUDA
@@ -2343,6 +2347,10 @@ void test_sycl_collocation_masked_combined_deriv1( const BasisSet<double>& basis
 
 //#define GENERATE_TESTS
 
+#if defined(GENERATE_TESTS) && !defined(GAUXC_ENABLE_HOST)
+  #error "Host Integrator Must Be Enabled to Generate Tests"
+#endif
+
 TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
 
 #ifdef GENERATE_TESTS
@@ -2368,6 +2376,7 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
   std::ifstream ref_data( GAUXC_REF_DATA_PATH "/water_cc-pVDZ_collocation.bin",
                           std::ios::binary );
 
+#ifdef GAUXC_ENABLE_HOST
   SECTION( "Host Eval" ) {
     test_host_collocation( basis, ref_data );
   }
@@ -2375,6 +2384,7 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
   SECTION( "Host Eval Grad" ) {
     test_host_collocation_deriv1( basis, ref_data );
   }
+#endif
 
 #ifdef GAUXC_ENABLE_CUDA
   SECTION( "CUDA Eval: Petite Shell List" ) {

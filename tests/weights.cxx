@@ -5,7 +5,9 @@
 #include <fstream>
 #include <string>
 
+#ifdef GAUXC_ENABLE_HOST
 #include "host/host_weights.hpp"
+#endif
 
 #ifdef GAUXC_ENABLE_CUDA
 #include <gauxc/exceptions/cuda_exception.hpp>
@@ -45,6 +47,7 @@ struct ref_weights_data {
 };
 
 
+#ifdef GAUXC_ENABLE_HOST
 void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
                                 std::ofstream& out_file, size_t ntask_save = 15 ) {
 
@@ -124,6 +127,7 @@ void test_host_weights( std::ifstream& in_file ) {
   }
 
 }
+#endif
 
 #ifdef GAUXC_ENABLE_CUDA
 void test_cuda_weights( std::ifstream& in_file ) {
@@ -389,9 +393,11 @@ TEST_CASE( "Benzene", "[weights]" ) {
   std::ifstream ref_data( GAUXC_REF_DATA_PATH "/benzene_weights_ssf.bin",
                           std::ios::binary );
 
+#ifdef GAUXC_ENABLE_HOST
   SECTION( "Host Weights" ) {
     test_host_weights( ref_data );
   }
+#endif
 
 #ifdef GAUXC_ENABLE_CUDA
   SECTION( "Device Weights" ) {

@@ -3,14 +3,12 @@
 if( GAUXC_ENABLE_MPI )
   find_package( MPI REQUIRED )
 endif()
-find_package( LAPACK REQUIRED )
 
 # Required Dependencies
 include( gauxc-integratorxx )
 include( gauxc-exchcxx      )
 include( gauxc-cereal       )
 include( gauxc-eigen3       )
-include( gauxc-gau2grid     )
 
 
 add_library( gauxc  
@@ -53,15 +51,10 @@ target_link_libraries( gauxc PUBLIC
   ExchCXX::exchcxx 
   IntegratorXX::integratorxx 
   Eigen3::Eigen 
-  LAPACK::lapack
 )
 
 if( GAUXC_ENABLE_MPI )
   target_link_libraries( gauxc PUBLIC MPI::MPI_C )
-endif()
-
-if( GAUXC_ENABLE_GAU2GRID )
-  target_link_libraries( gauxc PUBLIC gauxc_gau2grid )
 endif()
 
 if( GAUXC_ENABLE_CEREAL )
