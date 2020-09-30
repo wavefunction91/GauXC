@@ -2,6 +2,9 @@
 #include <vector>
 #include <cstdint>
 
+#include <gauxc/gauxc_config.hpp>
+
+#ifdef GAUXC_ENABLE_HOST
 namespace GauXC {
 
 template <typename F>
@@ -35,3 +38,4 @@ struct XCHostData {
 };
 
 }
+#endif

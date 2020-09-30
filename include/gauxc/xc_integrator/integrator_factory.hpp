@@ -23,6 +23,8 @@ std::unique_ptr<XCIntegratorImpl<MatrixType>>
 
     if( ex == ExecutionSpace::Host ) {
 
+#ifdef GAUXC_ENABLE_HOST
+
       return make_default_host_integrator<MatrixType>(
 #ifdef GAUXC_ENABLE_MPI
         comm,
@@ -31,6 +33,12 @@ std::unique_ptr<XCIntegratorImpl<MatrixType>>
         std::make_shared<BasisSet<typename MatrixType::value_type>>(basis),
         lb
       );
+#else
+
+      throw std::runtime_error("GAUXC_ENABLE_HOST is FALSE");
+      return nullptr;
+
+#endif
 
     } else {
 
@@ -53,7 +61,7 @@ std::unique_ptr<XCIntegratorImpl<MatrixType>>
         std::make_shared<BasisSet<typename MatrixType::value_type>>(basis),
         lb
       );
-
+            
 #elif defined(GAUXC_ENABLE_SYCL)
       return make_default_sycl_integrator<MatrixType>(
 #ifdef GAUXC_ENABLE_MPI

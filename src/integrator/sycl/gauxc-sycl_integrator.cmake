@@ -1,4 +1,3 @@
-#find_package( CUDAToolkit REQUIRED )
 
 target_sources( gauxc PRIVATE sycl/collocation_device.cpp
                               sycl/xc_sycl_data.cxx
@@ -18,9 +17,8 @@ target_include_directories( gauxc
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/integrator/sycl/collocation>
 )
 
-# target_compile_options( gauxc
-#   PRIVATE
-#     $<$<COMPILE_LANGUAGE:CUDA>: -Xcudafe --diag_suppress=partial_override -Xptxas -v >
-# )
-# 
-# target_link_libraries( gauxc PUBLIC CUDA::cublas )
+# Handle the case when HOST is disabled but we still need oneMKL
+if( NOT GAUXC_ENABLE_HOST )
+  find_package( LAPACK REQUIRED )
+  target_link_libraries( gauxc PUBLIC LAPACK::lapack )
+endif()
