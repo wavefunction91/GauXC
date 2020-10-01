@@ -49,7 +49,7 @@ jobs:
         MPI_FLAG: ${{matrix.mpi_flag}}
       shell: bash
       working-directory: ${{runner.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DGAUXC_ENABLE_MPI=$MPI_FLAG
+      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DGAUXC_ENABLE_MPI=$MPI_FLAG -DGAUXC_ENABLE_SYCL=OFF
 
     - name: Build
       working-directory: ${{runner.workspace}}/build
