@@ -20,9 +20,13 @@ target_include_directories( gauxc
 #find_package( hipblas REQUIRED )
 #target_link_libraries( gauxc PUBLIC roc::hipblas )
 
-if( NOT HIPBLAS_LIBRARIES OR NOT HIPBLAS_INCLUDE_DIRECTORES )
-  message( FATAL_ERROR "hipBLAS is not automatically discovered, you must set both HIPBLAS_LIBRARIES and HIPBLAS_INCLUDE_DIRECTORIES" )
+if( NOT HIPBLAS_LIBRARIES )
+  message( FATAL_ERROR "hipBLAS is not automatically discovered, HIPBLAS_LIBRARIES must be set" )
 endif()
+if( NOT HIPBLAS_INCLUDE_DIRECTORIES )
+  message( FATAL_ERROR "hipBLAS is not automatically discovered, HIPBLAS_INCLUDE_DIRECTORIES must be set" )
+endif()
+
 add_library( hipblas INTERFACE IMPORTED )
 set_target_properties( hipblas PROPERTIES
   INTERFACE_LINK_LIBRARIES      "${HIPBLAS_LIBRARIES}"
