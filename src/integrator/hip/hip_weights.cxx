@@ -43,6 +43,7 @@ __global__ void compute_point_center_dist(
 
 }
 
+#if 0
 __global__ void modify_weights_becke_kernel(
         size_t                            npts,
         size_t                            natoms,
@@ -209,6 +210,7 @@ __global__ void modify_weights_ssf_kernel(
 
 
 }
+#endif
 
 // SIMT over points: 1D kernel
 __global__ void modify_weights_ssf_kernel_1d(
@@ -400,7 +402,9 @@ void partition_weights_hip_SoA( XCWeightAlg    weight_alg,
       iparent_device, dist_nearest_device, weights_device
     );
 
-  } else {
+  } 
+#if 0
+  else {
 
     dim3 threads( 32, 32 );
     dim3 blocks ( npts, 1 );
@@ -417,6 +421,7 @@ void partition_weights_hip_SoA( XCWeightAlg    weight_alg,
       );
 
   }
+#endif
 
 
 }

@@ -21,8 +21,8 @@ target_include_directories( gauxc
 
 add_library( hipblas INTERFACE IMPORTED )
 set_target_properties( hipblas PROPERTIES
-  INTERFACE_LINK_LIBRARIES "-L/global/project/projectdirs/mpccc/dwdoerf/cori-gpu/hip/install/rocm-3.8.0/hipblas/lib -lhipblas"
-  INTERFACE_INCLUDE_DIRECTORIES "/global/project/projectdirs/mpccc/dwdoerf/cori-gpu/hip/install/rocm-3.8.0/hipblas/include"
+  INTERFACE_LINK_LIBRARIES "-L/opt/rocm-3.8.0/hipblas/lib -lhipblas"
+  INTERFACE_INCLUDE_DIRECTORIES "/opt/rocm-3.8.0/hipblas/include"
 )
 
 target_link_libraries( gauxc PUBLIC hipblas )
