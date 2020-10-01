@@ -4,7 +4,6 @@
 #include <gauxc/load_balancer.hpp>
 #include <fstream>
 #include <string>
-#include <mpi.h>
 
 #ifdef GAUXC_ENABLE_HOST
 #include "host/host_weights.hpp"
@@ -42,7 +41,11 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
 
 
   MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
-  LoadBalancer lb(MPI_COMM_WORLD, mol, mg, basis); 
+#ifdef GAUXC_ENABLE_MPI
+  LoadBalancer lb(MPI_COMM_WORLD, mol, mg, basis);
+#else
+  LoadBalancer lb(mol, mg, basis);
+#endif
   auto& tasks = lb.get_tasks();
 
   ref_weights_data   ref_data;
@@ -52,13 +55,13 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
     return std::abs(a) < std::abs(b);
   };
 
-  std::sort( tasks.begin(), tasks.end(), 
+  std::sort( tasks.begin(), tasks.end(),
     [&]( const auto& a, const auto& b ) {
-      auto a_max = 
-        *std::max_element( a.weights.begin(), a.weights.end(), 
+      auto a_max =
+        *std::max_element( a.weights.begin(), a.weights.end(),
                            abs_comparator );
-      auto b_max = 
-        *std::max_element( b.weights.begin(), b.weights.end(), 
+      auto b_max =
+        *std::max_element( b.weights.begin(), b.weights.end(),
                            abs_comparator );
 
       return a_max < b_max;
@@ -71,14 +74,14 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
 
   integrator::host::partition_weights_host( XCWeightAlg::SSF,
     mol, lb.molmeta(), tasks );
-  
+
   // Clear out unneeded data
   for( auto& task : tasks ) {
     task.points.clear();
     task.shell_list.clear();
   }
   ref_data.tasks_mod = tasks;
-  
+
   {
     cereal::BinaryOutputArchive ar( out_file );
     ar( ref_data );
@@ -106,7 +109,7 @@ void test_host_weights( std::ifstream& in_file ) {
 
     size_t npts = task.weights.size();
     for( size_t i = 0; i < npts; ++i ) {
-      CHECK( task.weights.at(i) == 
+      CHECK( task.weights.at(i) ==
              Approx(ref_task.weights.at(i)) );
     }
   }
@@ -129,11 +132,11 @@ void test_cuda_weights( std::ifstream& in_file ) {
   std::vector< int32_t >              iparent;
 
   for( auto& task : ref_data.tasks_unm ) {
-    points.insert( points.end(), 
-                   task.points.begin(), 
+    points.insert( points.end(),
+                   task.points.begin(),
                    task.points.end() );
-    weights.insert( weights.end(), 
-                    task.weights.begin(), 
+    weights.insert( weights.end(),
+                    task.weights.begin(),
                     task.weights.end() );
 
     size_t npts = task.points.size();
@@ -143,8 +146,8 @@ void test_cuda_weights( std::ifstream& in_file ) {
   }
 
   for( auto& task : ref_data.tasks_mod ) {
-    weights_ref.insert( weights_ref.end(), 
-                        task.weights.begin(), 
+    weights_ref.insert( weights_ref.end(),
+                        task.weights.begin(),
                         task.weights.end() );
   }
 
@@ -171,12 +174,12 @@ void test_cuda_weights( std::ifstream& in_file ) {
   util::cuda_copy( npts,   weights_d, weights.data() );
   util::cuda_copy( npts,   iparent_d, iparent.data() );
   util::cuda_copy( npts,   distnea_d, dist_nearest.data() );
-  util::cuda_copy( natoms*natoms, rab_d, 
+  util::cuda_copy( natoms*natoms, rab_d,
                    ref_data.meta->rab().data() );
   util::cuda_copy( 3*natoms, coords_d, coords.data() );
 
   cudaStream_t stream = 0;
-  integrator::cuda::partition_weights_cuda_SoA( 
+  integrator::cuda::partition_weights_cuda_SoA(
     XCWeightAlg::SSF, npts, natoms, points_d,
     iparent_d, distnea_d, rab_d, coords_d,
     weights_d, dist_scr_d, stream );
@@ -196,9 +199,11 @@ void test_cuda_weights( std::ifstream& in_file ) {
 TEST_CASE( "Benzene", "[weights]" ) {
 
 #ifdef GENERATE_TESTS
+#ifdef GAUXC_ENABLE_MPI
   int world_size;
   MPI_Comm_size( MPI_COMM_WORLD, &world_size );
   if( world_size > 1 ) return;
+#endif
 #endif
 
   Molecule mol = make_benzene();
@@ -206,7 +211,7 @@ TEST_CASE( "Benzene", "[weights]" ) {
 #ifdef GENERATE_TESTS
   BasisSet<double> basis = make_631Gd( mol, SphericalType(true) );
   for( auto& sh : basis ) sh.set_shell_tolerance( 1e-6 );
-  
+
   std::ofstream ref_data( "benzene_weights_ssf.bin", std::ios::binary );
   generate_weights_data( mol, basis, ref_data );  
 #else

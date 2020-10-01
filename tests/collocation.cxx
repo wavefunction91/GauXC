@@ -4,7 +4,6 @@
 #include <gauxc/load_balancer.hpp>
 #include <fstream>
 #include <string>
-#include <mpi.h>
 
 
 #define MAX_NPTS_CHECK 67
@@ -48,12 +47,16 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
 
 
   MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
-  LoadBalancer lb(MPI_COMM_WORLD, mol, mg, basis); 
+#ifdef GAUXC_ENABLE_MPI
+  LoadBalancer lb(MPI_COMM_WORLD, mol, mg, basis);
+#else
+  LoadBalancer lb(mol, mg, basis);
+#endif
   auto& tasks = lb.get_tasks();
 
 
   std::vector< ref_collocation_data > ref_data;
-  
+
   for( size_t i = 0; i < ntask_save; ++i ) {
     auto& task = tasks[i];
 
@@ -73,17 +76,17 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
                         deval_z( nbf * npts );
 
     integrator::host::eval_collocation_deriv1( npts, mask.size(), nbf,
-                                               pts.data()->data(), basis, 
-                                               mask.data(), 
+                                               pts.data()->data(), basis,
+                                               mask.data(),
                                                eval.data(), deval_x.data(),
                                                deval_y.data(), deval_z.data() );
 
-    auto max_abs = *std::max_element( eval.begin(), eval.end(), 
+    auto max_abs = *std::max_element( eval.begin(), eval.end(),
                    [](auto a, auto b){ return std::abs(a) < std::abs(b); } );
     if( std::abs(max_abs) < 1e-9 ) continue;
 
-    ref_collocation_data d{ std::move(mask), std::move(pts), std::move(eval), 
-                            std::move(deval_x), std::move(deval_y), 
+    ref_collocation_data d{ std::move(mask), std::move(pts), std::move(eval),
+                            std::move(deval_x), std::move(deval_y),
                             std::move(deval_z) };
 
     ref_data.emplace_back( std::move(d) );
@@ -110,7 +113,7 @@ void test_host_collocation( const BasisSet<double>& basis, std::ifstream& in_fil
   }
 
   for( auto& d : ref_data ) {
-  
+
     const auto npts = d.pts.size();
     const auto nbf  = d.eval.size() / npts;
 
@@ -121,8 +124,8 @@ void test_host_collocation( const BasisSet<double>& basis, std::ifstream& in_fil
 
 
     integrator::host::eval_collocation( npts, mask.size(), nbf,
-                                        pts.data()->data(), basis, 
-                                        mask.data(), 
+                                        pts.data()->data(), basis,
+                                        mask.data(),
                                         eval.data() );
 
     for( auto i = 0; i < npts * nbf; ++i )
@@ -144,7 +147,7 @@ void test_host_collocation_deriv1( const BasisSet<double>& basis, std::ifstream&
   }
 
   for( auto& d : ref_data ) {
-  
+
     const auto npts = d.pts.size();
     const auto nbf  = d.eval.size() / npts;
 
@@ -158,8 +161,8 @@ void test_host_collocation_deriv1( const BasisSet<double>& basis, std::ifstream&
 
 
     integrator::host::eval_collocation_deriv1( npts, mask.size(), nbf,
-                                               pts.data()->data(), basis, 
-                                               mask.data(), 
+                                               pts.data()->data(), basis,
+                                               mask.data(),
                                                eval.data(), deval_x.data(),
                                                deval_y.data(), deval_z.data() );
 
@@ -222,22 +225,20 @@ void test_cuda_collocation_petite( const BasisSet<double>& basis, std::ifstream&
     for( int i = 1; i < mask.size(); ++i )
       offs[i] = offs[i-1] + basis[mask[i-1]].size();
     util::cuda_copy( offs.size(), offs_device, offs.data()  );
-    
+
     std::vector<Shell<double>> shells;
     for( auto idx : mask ) shells.emplace_back(basis[idx]);
     util::cuda_copy( shells.size(), shells_device, shells.data() );
 
     integrator::cuda::eval_collocation_petite( shells.size(), nbf, npts,
-                                               shells_device, offs_device, 
-                                               pts_device, 
+                                               shells_device, offs_device,
+                                               pts_device,
                                                eval_device, stream );
 
     std::vector<double> eval( nbf * npts );
 
     util::cuda_copy( nbf * npts, eval.data(),    eval_device    );
   
-    //for( auto i = 0; i < npts * nbf; ++i )
-    //  CHECK( eval[i] == Approx( d.eval[i] ) );
     cuda_check_collocation( npts, nbf, d.eval.data(), eval.data() );
 
   }
@@ -290,19 +291,17 @@ void test_cuda_collocation_masked( const BasisSet<double>& basis, std::ifstream&
     for( int i = 1; i < mask.size(); ++i )
       offs[i] = offs[i-1] + basis[mask[i-1]].size();
     util::cuda_copy( offs.size(), offs_device, offs.data()  );
-    
+
 
     integrator::cuda::eval_collocation_masked( mask.size(), nbf, npts,
-                                               shells_device, mask_device, 
-                                               offs_device, pts_device, 
+                                               shells_device, mask_device,
+                                               offs_device, pts_device,
                                                eval_device, stream );
 
     std::vector<double> eval( nbf * npts );
 
     util::cuda_copy( nbf * npts, eval.data(),    eval_device    );
-  
-    //for( auto i = 0; i < npts * nbf; ++i )
-    //  CHECK( eval[i] == Approx( d.eval[i] ) );
+
     cuda_check_collocation( npts, nbf, d.eval.data(), eval.data() );
 
   }
@@ -363,7 +362,7 @@ void test_cuda_collocation_petite_combined( const BasisSet<double>& basis, std::
     auto* pts_device = task.points;
     auto* offs_device = task.shell_offs;
     auto* shells_device = task.shells;
-    
+
 
     util::cuda_copy( 3*npts, pts_device, pts.data()->data() );
 
@@ -372,7 +371,7 @@ void test_cuda_collocation_petite_combined( const BasisSet<double>& basis, std::
     for( int i = 1; i < mask.size(); ++i )
       offs[i] = offs[i-1] + basis[mask[i-1]].size();
     util::cuda_copy( offs.size(), offs_device, offs.data()  );
-    
+
     std::vector<Shell<double>> shells;
     for( auto idx : mask ) shells.emplace_back(basis[idx]);
     util::cuda_copy( shells.size(), shells_device, shells.data() );
@@ -393,7 +392,7 @@ void test_cuda_collocation_petite_combined( const BasisSet<double>& basis, std::
 
   auto* tasks_device = util::cuda_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
   util::cuda_copy( tasks.size(), tasks_device, tasks.data() );
-  
+
   integrator::cuda::eval_collocation_petite_combined( tasks.size(), npts_max,
     nshells_max, tasks_device, stream );
 
@@ -460,7 +459,7 @@ void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::
     auto* pts_device = task.points;
     auto* offs_device = task.shell_offs;
     auto* mask_device = task.shell_list;
-    
+
 
     util::cuda_copy( 3*npts, pts_device, pts.data()->data() );
 
@@ -490,7 +489,7 @@ void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::
 
   auto* tasks_device = util::cuda_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
   util::cuda_copy( tasks.size(), tasks_device, tasks.data() );
-  
+
   integrator::cuda::eval_collocation_masked_combined( tasks.size(), npts_max,
     nshells_max, shells_device, tasks_device, stream );
 
@@ -569,14 +568,14 @@ void test_cuda_collocation_deriv1_petite( const BasisSet<double>& basis, std::if
     for( int i = 1; i < mask.size(); ++i )
       offs[i] = offs[i-1] + basis[mask[i-1]].size();
     util::cuda_copy( offs.size(), offs_device, offs.data()  );
-    
+
     std::vector<Shell<double>> shells;
     for( auto idx : mask ) shells.emplace_back(basis[idx]);
     util::cuda_copy( shells.size(), shells_device, shells.data() );
 
     integrator::cuda::eval_collocation_petite_deriv1( shells.size(), nbf, npts,
-                                                      shells_device, offs_device, 
-                                                      pts_device, 
+                                                      shells_device, offs_device,
+                                                      pts_device,
                                                       eval_device, deval_device_x,
                                                       deval_device_y, deval_device_z,
                                                       stream );
@@ -590,15 +589,6 @@ void test_cuda_collocation_deriv1_petite( const BasisSet<double>& basis, std::if
     util::cuda_copy( nbf * npts, deval_x.data(), deval_device_x );
     util::cuda_copy( nbf * npts, deval_y.data(), deval_device_y );
     util::cuda_copy( nbf * npts, deval_z.data(), deval_device_z );
-  
-    //for( auto i = 0; i < npts * nbf; ++i )
-    //  CHECK( eval[i] == Approx( d.eval[i] ) );
-    //for( auto i = 0; i < npts * nbf; ++i )
-    //  CHECK( deval_x[i] == Approx( d.deval_x[i] ) );
-    //for( auto i = 0; i < npts * nbf; ++i )
-    //  CHECK( deval_y[i] == Approx( d.deval_y[i] ) );
-    //for( auto i = 0; i < npts * nbf; ++i )
-    //  CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
 
     cuda_check_collocation( npts, nbf, d.eval.data(), eval.data() );
     cuda_check_collocation( npts, nbf, d.deval_x.data(), deval_x.data() );
@@ -657,11 +647,11 @@ void test_cuda_collocation_deriv1_masked( const BasisSet<double>& basis, std::if
     for( int i = 1; i < mask.size(); ++i )
       offs[i] = offs[i-1] + basis[mask[i-1]].size();
     util::cuda_copy( offs.size(), offs_device, offs.data()  );
-    
+
 
     integrator::cuda::eval_collocation_masked_deriv1( mask.size(), nbf, npts,
                                                       shells_device, mask_device,
-                                                      offs_device, pts_device, 
+                                                      offs_device, pts_device,
                                                       eval_device, deval_device_x,
                                                       deval_device_y, deval_device_z,
                                                       stream );
@@ -675,15 +665,6 @@ void test_cuda_collocation_deriv1_masked( const BasisSet<double>& basis, std::if
     util::cuda_copy( nbf * npts, deval_x.data(), deval_device_x );
     util::cuda_copy( nbf * npts, deval_y.data(), deval_device_y );
     util::cuda_copy( nbf * npts, deval_z.data(), deval_device_z );
-  
-    //for( auto i = 0; i < npts * nbf; ++i )
-    //  CHECK( eval[i] == Approx( d.eval[i] ) );
-    //for( auto i = 0; i < npts * nbf; ++i )
-    //  CHECK( deval_x[i] == Approx( d.deval_x[i] ) );
-    //for( auto i = 0; i < npts * nbf; ++i )
-    //  CHECK( deval_y[i] == Approx( d.deval_y[i] ) );
-    //for( auto i = 0; i < npts * nbf; ++i )
-    //  CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
       
     cuda_check_collocation( npts, nbf, d.eval.data(), eval.data() );
     cuda_check_collocation( npts, nbf, d.deval_x.data(), deval_x.data() );
@@ -743,7 +724,7 @@ void test_cuda_collocation_petite_combined_deriv1( const BasisSet<double>& basis
     auto* pts_device = task.points;
     auto* offs_device = task.shell_offs;
     auto* shells_device = task.shells;
-    
+
 
     util::cuda_copy( 3*npts, pts_device, pts.data()->data() );
 
@@ -752,7 +733,7 @@ void test_cuda_collocation_petite_combined_deriv1( const BasisSet<double>& basis
     for( int i = 1; i < mask.size(); ++i )
       offs[i] = offs[i-1] + basis[mask[i-1]].size();
     util::cuda_copy( offs.size(), offs_device, offs.data()  );
-    
+
     std::vector<Shell<double>> shells;
     for( auto idx : mask ) shells.emplace_back(basis[idx]);
     util::cuda_copy( shells.size(), shells_device, shells.data() );
@@ -773,7 +754,7 @@ void test_cuda_collocation_petite_combined_deriv1( const BasisSet<double>& basis
 
   auto* tasks_device = util::cuda_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
   util::cuda_copy( tasks.size(), tasks_device, tasks.data() );
-  
+
   integrator::cuda::eval_collocation_petite_combined_deriv1( tasks.size(), npts_max,
     nshells_max, tasks_device, stream );
 
@@ -816,7 +797,7 @@ void test_cuda_collocation_petite_combined_deriv1( const BasisSet<double>& basis
 
 
   for( auto& t : tasks ) {
-    util::cuda_free( t.points, t.shell_offs, t.shells, t.bf, t.dbfx, t.dbfy, 
+    util::cuda_free( t.points, t.shell_offs, t.shells, t.bf, t.dbfx, t.dbfy,
       t.dbfz );
   }
   util::cuda_free( tasks_device );
@@ -868,7 +849,7 @@ void test_cuda_collocation_masked_combined_deriv1( const BasisSet<double>& basis
     auto* pts_device = task.points;
     auto* offs_device = task.shell_offs;
     auto* mask_device = task.shell_list;
-    
+
 
     util::cuda_copy( 3*npts, pts_device, pts.data()->data() );
 
@@ -898,7 +879,7 @@ void test_cuda_collocation_masked_combined_deriv1( const BasisSet<double>& basis
 
   auto* tasks_device = util::cuda_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
   util::cuda_copy( tasks.size(), tasks_device, tasks.data() );
-  
+
   integrator::cuda::eval_collocation_masked_combined_deriv1( tasks.size(), npts_max,
     nshells_max, shells_device, tasks_device, stream );
 
@@ -941,7 +922,7 @@ void test_cuda_collocation_masked_combined_deriv1( const BasisSet<double>& basis
 
 
   for( auto& t : tasks ) {
-    util::cuda_free( t.points, t.shell_offs, t.shell_list, t.bf, t.dbfx, t.dbfy, 
+    util::cuda_free( t.points, t.shell_offs, t.shell_list, t.bf, t.dbfx, t.dbfy,
       t.dbfz );
   }
   util::cuda_free( tasks_device, shells_device );
@@ -957,9 +938,11 @@ void test_cuda_collocation_masked_combined_deriv1( const BasisSet<double>& basis
 TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
 
 #ifdef GENERATE_TESTS
+#ifdef GAUXC_ENABLE_MPI
   int world_size;
   MPI_Comm_size( MPI_COMM_WORLD, &world_size );
   if( world_size > 1 ) return;
+#endif
 #endif
 
   Molecule mol           = make_water();
