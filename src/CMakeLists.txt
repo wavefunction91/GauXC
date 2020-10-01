@@ -7,8 +7,6 @@ endif()
 # Required Dependencies
 include( gauxc-integratorxx )
 include( gauxc-exchcxx      )
-include( gauxc-cereal       )
-include( gauxc-eigen3       )
 
 
 add_library( gauxc STATIC 
@@ -47,15 +45,13 @@ target_link_libraries( gauxc PUBLIC
   ExchCXX::exchcxx 
   IntegratorXX::integratorxx 
   OpenMP::OpenMP_CXX
-  Eigen3::Eigen 
 )
 
 if( GAUXC_ENABLE_MPI )
   target_link_libraries( gauxc PUBLIC MPI::MPI_C )
 endif()
 
-if( GAUXC_ENABLE_CEREAL )
-  target_link_libraries( gauxc PUBLIC cereal )
-endif()
-
 add_subdirectory( integrator )
+
+
+

@@ -31,12 +31,10 @@ public:
   const auto& dist_nearest() const { return dist_nearest_; }
         auto& dist_nearest()       { return dist_nearest_; }
 
-#ifdef GAUXC_ENABLE_CEREAL
   template <typename Archive>
   void serialize( Archive& ar ) {
     ar( natoms_, rab_, dist_nearest_ );
   }
-#endif
 
 };
 

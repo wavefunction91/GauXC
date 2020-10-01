@@ -57,12 +57,10 @@ struct XCTask {
            shell_list == other.shell_list;
   }
 
-#ifdef GAUXC_ENABLE_CEREAL
   template <typename Archive>
   void serialize( Archive& ar ) {
     ar( iParent, nbe, dist_nearest, shell_list, points, weights );  
   }
-#endif
 
 
   inline size_t cost(size_t n_deriv, size_t natoms) const {

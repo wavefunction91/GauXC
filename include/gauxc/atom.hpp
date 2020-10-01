@@ -20,12 +20,10 @@ struct Atom {
   Atom( AtomicNumber _Z, double _x, double _y, double _z ) :
     Z(_Z), x(_x), y(_y), z(_z) { }
 
-#ifdef GAUXC_ENABLE_CEREAL
   template <typename Archive>
   void serialize( Archive& ar ) {
     ar(  Z, x, y, z );
   }
-#endif
 
 };
 

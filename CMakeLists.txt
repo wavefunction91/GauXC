@@ -14,7 +14,6 @@ option( GAUXC_ENABLE_CUDA     "Enable CUDA Bindings"        OFF )
 option( GAUXC_ENABLE_MAGMA    "Enable MAGMA Linear Algebra" ON  )
 option( GAUXC_ENABLE_MPI      "Enable MPI Bindings"         ON  )
 option( GAUXC_ENABLE_TESTS    "Enable Unit Tests"           ON  )
-option( GAUXC_ENABLE_CEREAL   "Enable Cereal serialization" ON  )
 option( GAUXC_ENABLE_GAU2GRID "Enable Gau2Grid Collocation" ON  )
 
 if( NOT GAUXC_ENABLE_GAU2GRID )
