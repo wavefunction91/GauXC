@@ -403,7 +403,9 @@ void partition_weights_hip_SoA( XCWeightAlg    weight_alg,
       iparent_device, dist_nearest_device, weights_device
     );
 
-  } else {
+  } 
+#if 0
+  else {
 
 #if 0
     dim3 threads( 32, 32 );
@@ -422,6 +424,7 @@ void partition_weights_hip_SoA( XCWeightAlg    weight_alg,
 #endif
 
   }
+#endif
 
 
 }

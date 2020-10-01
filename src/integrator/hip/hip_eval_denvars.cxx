@@ -31,7 +31,7 @@ __global__ void eval_uvars_lda_kernel( size_t           ntasks,
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
-  register double den_reg = 0.;
+  double den_reg = 0.;
 
   if( tid_x < nbf and tid_y < npts ) {
 
@@ -80,10 +80,10 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
-  register double den_reg = 0.;
-  register double dx_reg  = 0.;
-  register double dy_reg  = 0.;
-  register double dz_reg  = 0.;
+  double den_reg = 0.;
+  double dx_reg  = 0.;
+  double dy_reg  = 0.;
+  double dz_reg  = 0.;
 
   if( tid_x < nbf and tid_y < npts ) {
 

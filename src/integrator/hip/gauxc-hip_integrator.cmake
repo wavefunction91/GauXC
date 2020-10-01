@@ -16,13 +16,17 @@ target_include_directories( gauxc
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/integrator/hip/collocation>
 )
 
+# XXX: Need to create a good find module for this
 #find_package( hipblas REQUIRED )
 #target_link_libraries( gauxc PUBLIC roc::hipblas )
 
+if( NOT HIPBLAS_LIBRARIES OR NOT HIPBLAS_INCLUDE_DIRECTORES )
+  message( FATAL_ERROR "hipBLAS is not automatically discovered, you must set both HIPBLAS_LIBRARIES and HIPBLAS_INCLUDE_DIRECTORIES" )
+endif()
 add_library( hipblas INTERFACE IMPORTED )
 set_target_properties( hipblas PROPERTIES
-  INTERFACE_LINK_LIBRARIES "-L/global/project/projectdirs/mpccc/dwdoerf/cori-gpu/hip/install/rocm-3.8.0/hipblas/lib -lhipblas"
-  INTERFACE_INCLUDE_DIRECTORIES "/global/project/projectdirs/mpccc/dwdoerf/cori-gpu/hip/install/rocm-3.8.0/hipblas/include"
+  INTERFACE_LINK_LIBRARIES      "${HIPBLAS_LIBRARIES}"
+  INTERFACE_INCLUDE_DIRECTORIES "${HIPBLAS_INCLUDE_DIRECTORIES}"
 )
 
 target_link_libraries( gauxc PUBLIC hipblas )
