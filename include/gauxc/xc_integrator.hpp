@@ -32,7 +32,7 @@ private:
 
 public:
 
-  XCIntegrator();
+  XCIntegrator() = default;
   XCIntegrator( std::unique_ptr<pimpl_type>&& pimpl );
 
 #ifdef GAUXC_ENABLE_MPI
