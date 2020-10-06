@@ -4,6 +4,17 @@
 
 namespace GauXC {
 
+auto gauxc_asynchandler = [] (cl::sycl::exception_list exceptions) {
+    for (std::exception_ptr const& e : exceptions) {
+        try {
+            std::rethrow_exception(e);
+        } catch (cl::sycl::exception const& ex) {
+            std::cout << "Caught asynchronous SYCL exception:" << std::endl
+            << ex.what() << std::endl;
+        }
+    }
+};
+
 template <typename F>
 XCSyclData<F>::XCSyclData( size_t _natoms,
                            size_t _n_deriv,
@@ -23,6 +34,7 @@ XCSyclData<F>::XCSyclData( size_t _natoms,
 
   // Create SYCL queue
   master_queue.reset( new cl::sycl::queue(cl::sycl::gpu_selector{},
+                                          gauxc_asynchandler,
                                           cl::sycl::property_list{cl::sycl::property::queue::in_order{}}) );
 
   // Allocate up to fill_fraction

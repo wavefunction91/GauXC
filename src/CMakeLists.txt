@@ -11,7 +11,7 @@ include( gauxc-cereal       )
 include( gauxc-eigen3       )
 
 
-add_library( gauxc SHARED 
+add_library( gauxc 
   grid.cxx 
   grid_impl.cxx 
   molmeta.cxx 
