@@ -2,6 +2,7 @@
 
 #include <stdexcept>
 #include <string>
+#include <string.h>
 #include <sstream>
 
 namespace GauXC {
