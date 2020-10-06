@@ -24,7 +24,7 @@ if( NOT gau2grid_FOUND )
 
 
   target_link_libraries( gauxc_gau2grid INTERFACE gg )
-  target_include_directories( gauxc_gau2grid INTERFACE ${gau2grid_BINARY_DIR} )
+  target_include_directories( gauxc_gau2grid INTERFACE $<BUILD_INTERFACE:${gau2grid_BINARY_DIR}> )
 
 else()
 
