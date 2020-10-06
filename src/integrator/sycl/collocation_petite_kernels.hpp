@@ -1,7 +1,7 @@
 #include <CL/sycl.hpp>
 
 #include <iostream>
-#include <cassert>
+
 
 #include <gauxc/shell.hpp>
 

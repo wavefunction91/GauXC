@@ -1,7 +1,6 @@
 #include <CL/sycl.hpp>
 
 #include <iostream>
-#include <cassert>
 
 #include <gauxc/shell.hpp>
 #include <gauxc/xc_task.hpp>
