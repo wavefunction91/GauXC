@@ -1,9 +1,13 @@
 #include "sycl_pack_density.hpp"
 #include <gauxc/exceptions/sycl_exception.hpp>
 
+#include "sycl_device_properties.hpp"
+
 namespace GauXC      {
 namespace integrator {
 namespace sycl       {
+
+    using namespace GauXC::sycl;
 
     template <typename T>
     void submat_set_combined_kernel( size_t ntasks,
@@ -12,7 +16,7 @@ namespace sycl       {
                                      size_t           LDA ,
                                      cl::sycl::nd_item<3>& item_ct) {
 
-        const size_t batch_id = item_ct.get_group(2);
+        const size_t batch_id = item_ct.get_group(0);
 
         if( batch_id < ntasks ) {
 
@@ -25,7 +29,7 @@ namespace sycl       {
 
             //if( LDAS == LDAB ) return;
 
-            const size_t tid_x = item_ct.get_global_id(0);
+            const size_t tid_x = item_ct.get_global_id(2);
             const size_t tid_y = item_ct.get_global_id(1);
 
             int64_t i(0);
@@ -44,7 +48,7 @@ namespace sycl       {
                     auto* ABig_begin   = A             + i_cut_first + j_cut_first*LDA ;
 
                     for( int64_t J = tid_y; J < delta_j; J += item_ct.get_local_range(1) )
-                        for( int64_t I = tid_x; I < delta_i; I += item_ct.get_local_range(0) )
+                        for( int64_t I = tid_x; I < delta_i; I += item_ct.get_local_range(2) )
                             ASmall_begin[I + J*LDAS] = ABig_begin[I + J*LDA];
 
                     j += delta_j;
@@ -59,7 +63,7 @@ namespace sycl       {
     void task_pack_density_matrix(size_t ntasks, XCTaskDevice<T> *device_tasks,
                                   T *P_device, size_t LDP, cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(16, 16, 1), blocks(1, 1, ntasks);
+        cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size), blocks(ntasks, 1, 1);
 
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;

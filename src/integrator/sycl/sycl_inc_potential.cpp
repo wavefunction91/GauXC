@@ -1,9 +1,13 @@
 #include "sycl_inc_potential.hpp"
 #include <gauxc/exceptions/sycl_exception.hpp>
 
+#include "sycl_device_properties.hpp"
+
 namespace GauXC      {
 namespace integrator {
 namespace sycl       {
+
+using namespace GauXC::sycl;
 
 template <typename T>
 void inc_by_submat_combined_kernel( size_t           ntasks,
@@ -12,7 +16,7 @@ void inc_by_submat_combined_kernel( size_t           ntasks,
                                     size_t           LDA ,
                                     cl::sycl::nd_item<3>& item_ct) {
 
-    const size_t batch_id = item_ct.get_group(2);
+    const size_t batch_id = item_ct.get_group(0);
 
     if( batch_id < ntasks ) {
 
@@ -25,7 +29,7 @@ void inc_by_submat_combined_kernel( size_t           ntasks,
 
         //if( LDAS == LDAB ) return;
 
-        const int tid_x = item_ct.get_global_id(0);
+        const int tid_x = item_ct.get_global_id(2);
         const int tid_y = item_ct.get_global_id(1);
 
         int64_t i(0);
@@ -44,7 +48,7 @@ void inc_by_submat_combined_kernel( size_t           ntasks,
                 auto* ABig_begin   = A             + i_cut_first + j_cut_first*LDA ;
 
                 for( int64_t J = tid_y; J < delta_j; J += item_ct.get_local_range(1) )
-                    for( int64_t I = tid_x; I < delta_i; I += item_ct.get_local_range(0) ) {
+                    for( int64_t I = tid_x; I < delta_i; I += item_ct.get_local_range(2) ) {
                         //cl::sycl::atomic_fetch_add( ABig_begin + I + J*LDA, ASmall_begin[I+J*LDAS] );
                         auto atm = cl::sycl::intel::atomic_ref<T, cl::sycl::intel::memory_order::relaxed,
                                                                cl::sycl::intel::memory_scope::device, cl::sycl::access::address_space::global_space>( *(ABig_begin + I + J*LDA) );
@@ -62,7 +66,8 @@ template <typename T>
 void task_inc_potential(size_t ntasks, XCTaskDevice<T> *device_tasks,
                         T *V_device, size_t LDV, cl::sycl::queue *queue) {
 
-    cl::sycl::range<3> threads(16, 16, 1), blocks(1, 1, ntasks);
+    cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size), blocks(ntasks, 1, 1);
+
     GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
             auto global_range = blocks * threads;
 

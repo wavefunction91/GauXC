@@ -3,6 +3,8 @@
 #include <gauxc/util/div_ceil.hpp>
 #include <gauxc/exceptions/sycl_exception.hpp>
 
+#include "sycl_device_properties.hpp"
+
 template <typename T>
 using relaxed_atomic_ref =
   cl::sycl::intel::atomic_ref< T, cl::sycl::intel::memory_order::relaxed,
@@ -13,12 +15,14 @@ namespace GauXC      {
 namespace integrator {
 namespace sycl       {
 
+    using namespace GauXC::sycl;
+
     template <typename T>
     void eval_uvars_lda_kernel( size_t           ntasks,
                                 XCTaskDevice<T>* tasks_device ,
                                 cl::sycl::nd_item<3>& item_ct) {
 
-        const size_t batch_idx = item_ct.get_group(2);
+        const size_t batch_idx = item_ct.get_group(0);
         if( batch_idx >= ntasks ) return;
 
         auto& task = tasks_device[ batch_idx ];
@@ -32,7 +36,7 @@ namespace sycl       {
 
         const auto* den_basis_prod_device = task.zmat;
 
-        const size_t tid_x = item_ct.get_global_id(0);
+        const size_t tid_x = item_ct.get_global_id(2);
         const size_t tid_y = item_ct.get_global_id(1);
 
         T den_reg = 0.;
@@ -47,7 +51,7 @@ namespace sycl       {
         // Warp blocks are stored col major
         den_reg = 2 * warpReduceSum(den_reg, item_ct);
 
-        if (item_ct.get_local_id(0) == 0 && tid_y < npts) {
+        if (item_ct.get_local_id(2) == 0 && tid_y < npts) {
             relaxed_atomic_ref<T>( den_eval_device[tid_y] ).fetch_add( den_reg );
         }
     }
@@ -121,7 +125,7 @@ namespace sycl       {
                                const T* den_y_eval_device,
                                const T* den_z_eval_device,
                                T* gamma_eval_device,
-                               cl::sycl::id<1> tid) {
+                               cl::sycl::id<1>& tid) {
 
         if( tid < npts ) {
             const T dx = den_x_eval_device[ tid ];
@@ -136,10 +140,10 @@ namespace sycl       {
     void eval_uvars_lda_device(size_t ntasks, size_t max_nbf, size_t max_npts,
                                XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(16, 16, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(max_nbf, 16),
-                                  util::div_ceil(max_npts, 16),
-                                  ntasks);
+        cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
+        cl::sycl::range<3> blocks(ntasks,
+                                  util::div_ceil(max_npts, threads[1]),
+                                  util::div_ceil(max_nbf,  threads[2]) );
 
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
                 auto global_range = blocks * threads;
@@ -155,35 +159,20 @@ namespace sycl       {
     void eval_uvars_gga_device(size_t ntasks, size_t max_nbf, size_t max_npts,
                                XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
-        cl::sycl::range<3> threads(16, 16, 1);
-        cl::sycl::range<3> blocks(util::div_ceil(max_nbf, 16),
-                                  util::div_ceil(max_npts, 16),
-                                  ntasks);
+        cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
+        cl::sycl::range<3> blocks(ntasks,
+                                  util::div_ceil(max_npts, threads[1]),
+                                  util::div_ceil(max_nbf,  threads[2]) );
+
 
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-          auto global_range = blocks * threads;
+                auto global_range = blocks * threads;
 
-          cgh.parallel_for(cl::sycl::nd_range<3>(cl::sycl::range<3>(global_range.get(2),
-                                                                    global_range.get(1),
-                                                                    global_range.get(0)),
-                                                 cl::sycl::range<3>(threads.get(2),
-                                                                    threads.get(1),
-                                                                    threads.get(0))),
-                           [=](cl::sycl::nd_item<3> item_ct)
-                           {
-
-                               eval_uvars_gga_kernel(ntasks, tasks_device, item_ct);
-                           });
-                }));
-
-        // GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-        //         auto global_range = blocks * threads;
-        //
-        //         cgh.parallel_for(cl::sycl::nd_range<3>(global_range, threads),
-        //             [=](cl::sycl::nd_item<3> item_ct) {
-        //                 eval_uvars_gga_kernel(ntasks, tasks_device, item_ct);
-        //             });
-        //         }) );
+                cgh.parallel_for(cl::sycl::nd_range<3>(global_range, threads),
+                    [=](cl::sycl::nd_item<3> item_ct) {
+                        eval_uvars_gga_kernel(ntasks, tasks_device, item_ct);
+                    });
+                }) );
     }
 
     template <typename T>
@@ -194,16 +183,12 @@ namespace sycl       {
                                T *gamma_device,
                                cl::sycl::queue *queue) {
 
-        cl::sycl::range<1> threads(256);
-        cl::sycl::range<1> blocks(util::div_ceil(npts, 256));
-
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-                auto global_range = blocks * threads;
 
-                cgh.parallel_for(cl::sycl::range<1>(global_range),
-                    [=](cl::sycl::id<1> index) {
+                cgh.parallel_for(cl::sycl::range<1>(npts), [=](cl::sycl::id<1> item_ct) {
+
                         eval_vvars_gga_kernel(npts, den_x_device, den_y_device, den_z_device,
-                                              gamma_device, index);
+                                              gamma_device, item_ct);
                     });
                 }) );
     }

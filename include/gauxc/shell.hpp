@@ -3,12 +3,12 @@
 #include <array>
 #include <cmath>
 #include <iostream>
-#include <cassert>
 #include <algorithm>
 
 #include <gauxc/named_type.hpp>
 #include <gauxc/gauxc_config.hpp>
 #include <gauxc/util/contiguous_container_data.hpp>
+#include <gauxc/exceptions/gauxc_exception.hpp>
 
 
 namespace GauXC {
@@ -56,7 +56,7 @@ private:
   // Shamelessly adapted from Libint...
   void normalize() {
 
-    assert( l_ <= 15 );
+    GAUXC_BOOL_CHECK( "L > 15 Unsupported", (l_ <= 15) );
 
     constexpr auto sqrt_Pi_cubed = F{5.56832799683170784528481798212};
 
@@ -64,7 +64,7 @@ private:
     const auto df_term  = two_to_l / sqrt_Pi_cubed / detail::df_Kminus1[2*l_];
 
     for( int32_t i = 0; i < nprim_; ++i ) {
-      assert( alpha_[i] >= 0. );
+      //assert( alpha_[i] >= 0. );
       if( alpha_[i] != 0. ) {
         const auto two_alpha = 2 * alpha_[i];
         const auto two_alpha_to_am32 = 

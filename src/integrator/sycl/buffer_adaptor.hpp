@@ -4,9 +4,7 @@ namespace GauXC {
 
 class buffer_adaptor {
 
-  size_t nalloc_;
   size_t nleft_;
-  void*  top_;
   void*  stack_;
 
 public:
@@ -14,9 +12,7 @@ public:
   buffer_adaptor() = delete;
 
   inline buffer_adaptor( void* ptr, size_t len ) :
-    nalloc_(len),
     nleft_(len),
-    top_(ptr),
     stack_(ptr) { }
 
   template <typename T>

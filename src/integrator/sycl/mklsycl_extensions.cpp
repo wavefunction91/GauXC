@@ -9,7 +9,7 @@ namespace blas  {
     template <typename T> void increment(const T *X, T *Y, cl::sycl::queue *queue) {
         GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
            cgh.single_task([=] () {
-             (*Y) += (*X);
+               (*Y) += (*X);
            });
         }) );
     }
@@ -18,7 +18,7 @@ namespace blas  {
     void dot(cl::sycl::queue *syclQue, int N, const double *X, int INCX, const double *Y,
              int INCY, double *RES) {
 
-        // NOTE abb: might need to change `oneapi` to `ONEAPI` in future
+        // abb: might need to change `oneapi` to `ONEAPI` in future
         GAUXC_SYCL_ERROR( auto stat = oneapi::mkl::blas::dot(*syclQue, N, X, INCX, Y, INCY, RES) );
     }
 
@@ -47,10 +47,10 @@ namespace blas  {
                                   int      LDA,
                                   T*       B,
                                   int      LDB ,
-                                  cl::sycl::nd_item<2>& item_ct) {
+                                  cl::sycl::item<2>& item_ct) {
 
-        const int tid_x = item_ct.get_global_id(0);
-        const int tid_y = item_ct.get_global_id(1);
+        const int tid_x = item_ct.get_id(1);
+        const int tid_y = item_ct.get_id(0);
 
         if( tid_x < M and tid_y < N ) {
             B[ tid_x + tid_y*LDB ] *= A[ tid_x + tid_y*LDA ];
@@ -61,18 +61,10 @@ namespace blas  {
     void hadamard_product(cl::sycl::queue *syclQue, int M, int N, const T *A, int LDA,
                           T *B, int LDB) {
 
-        cl::sycl::range<2> threads(16, 16);
-        cl::sycl::range<2> blocks(util::div_ceil(M, threads[0]),
-                                  util::div_ceil(N, threads[1]));
-
         GAUXC_SYCL_ERROR( syclQue->submit([&](cl::sycl::handler &cgh) {
-                auto global_range = blocks * threads;
-
-                cgh.parallel_for(
-                    cl::sycl::nd_range<2>(global_range, threads),
-                    [=](cl::sycl::nd_item<2> item_ct) {
-                        hadamard_product_kernel(M, N, A, LDA, B, LDB, item_ct);
-                    });
+                    cgh.parallel_for( cl::sycl::range<2>(N, M), [=](cl::sycl::item<2> item_ct) {
+                            hadamard_product_kernel(M, N, A, LDA, B, LDB, item_ct);
+                        });
                 }) );
     }
     template

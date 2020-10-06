@@ -1,7 +1,6 @@
 #include <CL/sycl.hpp>
 
 #include <iostream>
-#include <cassert>
 
 #include <gauxc/shell.hpp>
 #include <gauxc/xc_task.hpp>
@@ -22,10 +21,10 @@ using namespace GauXC::sycl;
         XCTaskDevice<T>* device_tasks,
         cl::sycl::nd_item<3>& item_ct) {
 
-        const size_t tid_x = item_ct.get_global_id(0);
+        const size_t tid_x = item_ct.get_global_id(2);
         const size_t tid_y = item_ct.get_global_id(1);
 
-        const size_t batch_id = item_ct.get_group(2);
+        const size_t batch_id = item_ct.get_group(0);
 
         if( batch_id < ntasks ) {
 
@@ -85,10 +84,10 @@ using namespace GauXC::sycl;
         XCTaskDevice<T>* device_tasks,
         cl::sycl::nd_item<3>& item_ct) {
 
-        const size_t tid_x = item_ct.get_global_id(0);
+        const size_t tid_x = item_ct.get_global_id(2);
         const size_t tid_y = item_ct.get_global_id(1);
 
-        const size_t batch_id = item_ct.get_group(2);
+        const size_t batch_id = item_ct.get_group(0);
 
         if( batch_id < ntasks ) {
 
