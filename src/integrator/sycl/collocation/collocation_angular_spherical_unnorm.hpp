@@ -1,7 +1,7 @@
 #pragma once
 
 #include "collocation_device_constants.hpp"
-#include <cassert>
+#include <gauxc/exceptions/gauxc_exception.hpp>
 
 #ifndef GPGAUEVAL_INLINE
 #  define GPGAUEVAL_INLINE __inline__
@@ -214,7 +214,7 @@ GPGAUEVAL_INLINE void collocation_spherical_unnorm_angular(
         collocation_spherical_unnorm_angular_3( bf, x, y, z, eval );
 
     } else {
-      assert( false && "L < L_MAX" );
+      //GAUXC_BOOL_CHECK( "L < L_MAX", false );
     }
 
 } // collocation_spherical_unnorm_angular
@@ -251,7 +251,7 @@ GPGAUEVAL_INLINE void collocation_spherical_unnorm_angular_deriv1(
       collocation_spherical_unnorm_angular_3_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
     } else {
-      assert( false && "L < L_MAX" );
+      //GAUXC_BOOL_CHECK( "L < L_MAX", false );
     }
 
 } // collocation_spherical_unnorm_angular_deriv1

@@ -1,6 +1,5 @@
 #pragma once
 #include <CL/sycl.hpp>
-//#include <cassert>
 
 namespace GauXC {
 namespace sycl  {
