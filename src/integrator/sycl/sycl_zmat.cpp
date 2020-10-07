@@ -30,9 +30,9 @@ void zmat_lda_kernel( size_t           ntasks,
   const size_t tid_x = item_ct.get_global_id(2);
   const size_t tid_y = item_ct.get_global_id(1);
 
-  if( tid_x < nbf and tid_y < npts ) {
-    const size_t ibfoff = tid_x + tid_y * nbf;
-    const double fact = 0.5 * vrho_device[tid_y];
+  if( tid_x < npts and tid_y < nbf ) {
+    const size_t ibfoff = tid_y * npts + tid_x;
+    const double fact = 0.5 * vrho_device[tid_x];
 
     z_matrix_device[ ibfoff ] = fact * basis_eval_device[ ibfoff ];
   }
@@ -44,8 +44,8 @@ void zmat_lda_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
 
   cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
   cl::sycl::range<3> blocks(ntasks,
-                            util::div_ceil(max_npts, threads[1]),
-                            util::div_ceil(max_nbf,  threads[2]) );
+                            util::div_ceil(max_nbf,   threads[1]),
+                            util::div_ceil(max_npts,  threads[2]) );
 
   GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
               auto global_range = blocks * threads;
@@ -91,15 +91,15 @@ void zmat_gga_kernel( size_t           ntasks,
   const size_t tid_x = item_ct.get_global_id(2);
   const size_t tid_y = item_ct.get_global_id(1);
 
-  if( tid_x < nbf and tid_y < npts ) {
+  if( tid_x < npts and tid_y < nbf ) {
 
-    const size_t ibfoff = tid_x + tid_y * nbf;
-    const double fact_1 = 0.5 * vrho_device[tid_y]  ;
-    const double fact_2 = 2.0 * vgamma_device[tid_y];
+    const size_t ibfoff = tid_y * npts + tid_x;
+    const double fact_1 = 0.5 * vrho_device[tid_x]  ;
+    const double fact_2 = 2.0 * vgamma_device[tid_x];
 
-    const double dx = den_x_eval_device[ tid_y ] * dbasis_x_eval_device[ ibfoff ];
-    const double dy = den_y_eval_device[ tid_y ] * dbasis_y_eval_device[ ibfoff ];
-    const double dz = den_z_eval_device[ tid_y ] * dbasis_z_eval_device[ ibfoff ];
+    const double dx = den_x_eval_device[ tid_x ] * dbasis_x_eval_device[ ibfoff ];
+    const double dy = den_y_eval_device[ tid_x ] * dbasis_y_eval_device[ ibfoff ];
+    const double dz = den_z_eval_device[ tid_x ] * dbasis_z_eval_device[ ibfoff ];
 
     z_matrix_device[ ibfoff ] = fact_1 * basis_eval_device[ ibfoff ] + fact_2 * ( dx + dy + dz );
 
@@ -112,8 +112,8 @@ void zmat_gga_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
 
   cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
   cl::sycl::range<3> blocks(ntasks,
-                            util::div_ceil(max_npts, threads[1]),
-                            util::div_ceil(max_nbf,  threads[2]) );
+                            util::div_ceil(max_nbf,   threads[1]),
+                            util::div_ceil(max_npts,  threads[2]) );
 
   GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
           auto global_range = blocks * threads;

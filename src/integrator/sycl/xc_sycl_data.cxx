@@ -95,7 +95,7 @@ std::tuple< task_iterator, device_task_container<F> >
 
   // Host copies for batched GEMM/SYRK arrays
   std::vector< F* > dmat_array, bf_array, zmat_array;
-  std::vector< int64_t > m_array, n_array, k_array, ld_array;
+  std::vector< int64_t > m_array, n_array, k_array, lda_array, ldb_array;
 
   // abb: can get rid of these variables
   std::vector< F > alpha_array;
@@ -120,7 +120,7 @@ std::tuple< task_iterator, device_task_container<F> >
 
   // Offset memory by the static requirement of an extra pointer element
   // for each of the size batch arrays in MAGMA
-  memleft -= 4 * sizeof(int64_t); //M,N,K,LDA[LDB,LDC]
+  memleft -= 5 * sizeof(int64_t); //M,N,K,LDA,LDB
 
   auto task_it = task_begin;
   while( task_it != task_end ) {
@@ -171,7 +171,7 @@ std::tuple< task_iterator, device_task_container<F> >
     size_t mem_dist_nearest  = npts;
 
     size_t mem_batch_mat_arr = 3; // dmat/zmat/bf
-    size_t mem_batch_sz_arr  = 4; // M/N/K/LDA/[LDB/LDC]
+    size_t mem_batch_sz_arr  = 5; // M/N/K/LDA/LDB
     size_t mem_task      = 1;
 
 
@@ -239,7 +239,8 @@ std::tuple< task_iterator, device_task_container<F> >
     n_array.emplace_back( npts );
     k_array.emplace_back( nbe  );
 
-    ld_array.emplace_back( nbe  );
+    lda_array.emplace_back( nbe   );
+    ldb_array.emplace_back( npts  );
 
     alpha_array.emplace_back( 1. );
     nontrans_array.emplace_back( oneapi::mkl::transpose::nontrans );
@@ -304,7 +305,8 @@ std::tuple< task_iterator, device_task_container<F> >
   m_array_device   = mem.aligned_alloc<int64_t>( ntask );
   n_array_device   = mem.aligned_alloc<int64_t>( ntask );
   k_array_device   = mem.aligned_alloc<int64_t>( ntask );
-  ld_array_device = mem.aligned_alloc<int64_t>( ntask );
+  lda_array_device = mem.aligned_alloc<int64_t>( ntask );
+  ldb_array_device = mem.aligned_alloc<int64_t>( ntask );
 
   // following 3 arrays are required for batched oneMKL gemm
   alpha_array_device     = mem.aligned_alloc<F>( ntask );
@@ -462,8 +464,10 @@ std::tuple< task_iterator, device_task_container<F> >
   copy_rev( k_array.size(), k_array.data(), k_array_device,
                          *master_queue, "send k_array" );
 
-  copy_rev( ld_array.size(), ld_array.data(), ld_array_device,
-                         *master_queue, "send ld_array" );
+  copy_rev( lda_array.size(), lda_array.data(), lda_array_device,
+                         *master_queue, "send lda_array" );
+  copy_rev( ldb_array.size(), ldb_array.data(), ldb_array_device,
+                         *master_queue, "send ldb_array" );
 
   util::sycl_set_zero_async( ntask, beta_array_device, *master_queue, "betaZero" );
 
