@@ -14,6 +14,7 @@ namespace hip       {
 
 template <typename T>
 __global__
+__launch_bounds__(1024, 1)
 void collocation_device_masked_kernel(
   size_t          nshells,
   size_t          nbf,
@@ -75,6 +76,7 @@ void collocation_device_masked_kernel(
 
 template <typename T>
 __global__
+__launch_bounds__(1024, 1)
 void collocation_device_masked_kernel_deriv1(
   size_t          nshells,
   size_t          nbf,

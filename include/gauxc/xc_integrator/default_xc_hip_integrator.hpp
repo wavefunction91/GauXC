@@ -83,6 +83,7 @@ typename DefaultXCHipIntegrator<MatrixType>::exc_vxc_type
     *hip_data_, tasks, P.data(), VXC.data(), &EXC, &N_EL 
   );
 
+  hip_data_.reset(); // Free up HIP memory
 
 #ifdef GAUXC_ENABLE_MPI
 

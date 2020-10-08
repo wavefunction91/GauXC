@@ -16,6 +16,7 @@ using namespace GauXC::hip;
 
 template <typename T>
 __global__
+__launch_bounds__(1024, 1)
 void collocation_device_petite_combined_kernel(
   size_t           ntasks,
   XCTaskDevice<T>* device_tasks
@@ -95,6 +96,7 @@ void collocation_device_petite_combined_kernel(
 
 template <typename T>
 __global__
+__launch_bounds__(1024, 1)
 void collocation_device_petite_combined_kernel_deriv1(
   size_t           ntasks,
   XCTaskDevice<T>* device_tasks

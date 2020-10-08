@@ -37,7 +37,7 @@ XCHipData<F>::XCHipData( size_t _natoms,
   GAUXC_HIP_ERROR( "MemInfo Failed", stat );
 
   // Allocate up to fill_fraction
-  size_t fill_sz = fill_fraction * hip_total;
+  size_t fill_sz = fill_fraction * hip_avail;
   stat = hipMalloc( &device_ptr, fill_sz );
   GAUXC_HIP_ERROR( "HIP Malloc Failed", stat );
 

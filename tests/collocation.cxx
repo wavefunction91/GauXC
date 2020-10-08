@@ -938,7 +938,6 @@ void test_cuda_collocation_masked_combined_deriv1( const BasisSet<double>& basis
 void test_hip_collocation_petite( const BasisSet<double>& basis, std::ifstream& in_file) {
 
 
-
   std::vector<ref_collocation_data> ref_data;
 
   {

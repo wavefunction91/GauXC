@@ -1,6 +1,7 @@
 #pragma once
 #include <hip/hip_runtime.h>
 #include <hipcub/hipcub.hpp>
+#include "hip_device_properties.hpp"
 
 namespace GauXC {
 namespace hip  {

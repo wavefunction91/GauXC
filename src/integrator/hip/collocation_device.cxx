@@ -8,6 +8,7 @@
 #include "collocation_masked_combined_kernels.hpp"
 
 #include "hip_device_properties.hpp"
+#include <gauxc/exceptions/hip_exception.hpp>
 
 namespace GauXC      {
 namespace integrator {
@@ -27,10 +28,10 @@ void eval_collocation_petite(
   hipStream_t    stream
 ) {
 
-
   dim3 threads(warp_size, max_warps_per_thread_block, 1);
   dim3 blocks( util::div_ceil( npts,    threads.x ),
                util::div_ceil( nshells, threads.y ) );
+
 
   hipLaunchKernelGGL(HIP_KERNEL_NAME(collocation_device_petite_kernel<T>), dim3(blocks), dim3(threads), 0, stream,  nshells, nbf, npts, shells_device, offs_device,
       pts_device, eval_device );

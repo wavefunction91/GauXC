@@ -34,3 +34,8 @@ set_target_properties( hipblas PROPERTIES
 )
 
 target_link_libraries( gauxc PUBLIC hipblas )
+
+#find_package( hip     REQUIRED )
+#find_package( rocprim REQUIRED )
+#find_package( hipcub  REQUIRED )
+#target_link_libraries( gauxc PUBLIC hip::hipcub )
