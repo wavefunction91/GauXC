@@ -1,0 +1,3 @@
+#pragma once
+
+//#define GAUXC_HIP_ENABLE_COLLOCATION_SHMEM_COPY
