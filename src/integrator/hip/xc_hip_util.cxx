@@ -147,8 +147,8 @@ void process_batches_hip_replicated_all_device(
 
     magmablas_dgemm_vbatched( MagmaNoTrans, MagmaNoTrans,
                               m_array_device, n_array_device, k_array_device,
-                              1., dmat_array_device, lda_array_device,
-                              bf_array_device, ldb_array_device,
+                              1., bf_array_device, ldb_array_device,
+                              dmat_array_device, lda_array_device,
                               0., zmat_array_device, ldc_array_device,
                               ntasks, master_queue );
 
@@ -172,8 +172,8 @@ void process_batches_hip_replicated_all_device(
     for( auto iT = 0; iT < ntasks; ++iT ) {
       auto& task = *(task_begin + iT);
       gemm( hip_data.blas_handles[iT % nstream], HIPBLAS_OP_N, HIPBLAS_OP_N,
-            task.nbe, task.npts, task.nbe, 1., task.nbe_scr, task.nbe,
-            task.bf, task.nbe, 0., task.zmat, task.nbe );
+            task.npts, task.nbe, task.nbe, 1., task.bf, task.npts,
+            task.nbe_scr, task.nbe, 0., task.zmat, task.npts );
     }
 
     // Record completion of BLAS ops
@@ -250,11 +250,11 @@ void process_batches_hip_replicated_all_device(
 #ifdef GAUXC_ENABLE_MAGMA
 
     // XXX: Only updates LT
-    magmablas_dsyr2k_vbatched( MagmaLower, MagmaNoTrans, 
-                               m_array_device, n_array_device,
-                               1., bf_array_device, lda_array_device,
-                               zmat_array_device, ldb_array_device,
-                               0., dmat_array_device, ldc_array_device,
+    magmablas_dsyr2k_vbatched( MagmaLower, MagmaTrans, 
+                               n_array_device, m_array_device,
+                               1., bf_array_device, ldb_array_device,
+                               zmat_array_device, ldc_array_device,
+                               0., dmat_array_device, lda_array_device,
                                ntasks, master_queue );
 
 #else
@@ -276,8 +276,8 @@ void process_batches_hip_replicated_all_device(
     for( auto iT = 0; iT < ntasks; ++iT ) {
       auto& task = *(task_begin + iT);
       syr2k( hip_data.blas_handles[iT % nstream], HIPBLAS_FILL_MODE_LOWER, 
-             HIPBLAS_OP_N, task.nbe, task.npts, 1., task.bf, task.nbe,
-             task.zmat, task.nbe, 0., task.nbe_scr, task.nbe );
+             HIPBLAS_OP_T, task.nbe, task.npts, 1., task.bf, task.npts,
+             task.zmat, task.npts, 0., task.nbe_scr, task.nbe );
     }
 
     // Record completion of BLAS ops
