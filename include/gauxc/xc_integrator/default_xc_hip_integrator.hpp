@@ -45,6 +45,13 @@ typename DefaultXCHipIntegrator<MatrixType>::exc_vxc_type
   DefaultXCHipIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P ) {
 
 
+#ifdef GAUXC_ENABLE_MAGMA
+  // Initialize MAGMA
+  {
+    auto ierr = magma_init();
+    GAUXC_MAGMA_ERROR( "MAGMA Init Failed", ierr );
+  }
+#endif
 
 
   size_t nbf     = this->basis_->nbf();
@@ -121,6 +128,14 @@ typename DefaultXCHipIntegrator<MatrixType>::exc_vxc_type
 
   }
 
+#endif
+
+#ifdef GAUXC_ENABLE_MAGMA
+  // Finalize MAGMA
+  {
+    auto ierr = magma_finalize();
+    GAUXC_MAGMA_ERROR( "MAGMA Finalize Failed", ierr );
+  }
 #endif
 
   return exc_vxc_type{EXC, std::move(VXC)};

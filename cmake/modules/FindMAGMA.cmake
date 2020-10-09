@@ -10,6 +10,7 @@ find_path( MAGMA_INCLUDE_DIR magma.h
            PATH_SUFFIXES include
 )
 
+
 find_library( MAGMA_LIBRARY NAMES magma
               HINTS ${PC_MAGMA_LIBDIR}
                     ${PC_MAGMA_LIBRARY_DIRS}

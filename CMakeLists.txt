@@ -54,8 +54,6 @@ endif()
 
 if( GAUXC_ENABLE_CUDA )
   enable_language( CUDA )
-else()
-  set( GAUXC_ENABLE_MAGMA OFF CACHE BOOL "" )
 endif()
 
 add_subdirectory( src )

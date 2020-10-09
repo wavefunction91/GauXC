@@ -16,6 +16,18 @@ target_include_directories( gauxc
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/integrator/hip/collocation>
 )
 
+if( GAUXC_ENABLE_MAGMA )
+
+  message( STATUS "MAGMA Has Been Enabled" )
+  find_package( MAGMA REQUIRED )
+  target_link_libraries( gauxc PUBLIC MAGMA::magma )
+
+else()
+
+  message( STATUS "MAGMA Has Been Explicitly Disabled" )
+
+endif()
+
 # XXX: Need to create a good find module for this
 #find_package( hipblas REQUIRED )
 #target_link_libraries( gauxc PUBLIC roc::hipblas )
