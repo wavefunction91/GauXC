@@ -29,12 +29,12 @@ __global__ void zmat_lda_kernel( size_t           ntasks,
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
-  if( tid_x < nbf and tid_y < npts ) {
+  if( tid_x < npts and tid_y < nbf ) {
 
-    const size_t ibfoff = tid_x + tid_y * nbf;
-    const double fact = 0.5 * vrho_device[tid_y];
+    const size_t ibfoff = tid_y * npts + tid_x;
+    const double fact = 0.5 * vrho_device[tid_x];
 
-    z_matrix_device[ tid_x + tid_y * nbf ] = fact * basis_eval_device[ ibfoff ];
+    z_matrix_device[ ibfoff ] = fact * basis_eval_device[ ibfoff ];
 
   }
 
@@ -52,8 +52,8 @@ void zmat_lda_hip( size_t           ntasks,
 
 
   dim3 threads(warp_size,max_warps_per_thread_block,1);
-  dim3 blocks( util::div_ceil( max_nbf,  threads.x ),
-               util::div_ceil( max_npts, threads.y ),
+  dim3 blocks( util::div_ceil( max_npts, threads.x ),
+               util::div_ceil( max_nbf,  threads.y ),
                ntasks );
 
   hipLaunchKernelGGL(zmat_lda_kernel, dim3(blocks), dim3(threads), 0, stream ,  ntasks, tasks_device );
@@ -96,17 +96,17 @@ __global__ void zmat_gga_kernel( size_t           ntasks,
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
-  if( tid_x < nbf and tid_y < npts ) {
+  if( tid_x < npts and tid_y < nbf ) {
 
-    const size_t ibfoff = tid_x + tid_y * nbf;
-    const double fact_1 = 0.5 * vrho_device[tid_y]  ;
-    const double fact_2 = 2.0 * vgamma_device[tid_y];
+    const size_t ibfoff = tid_y * npts + tid_x;
+    const double fact_1 = 0.5 * vrho_device[tid_x]  ;
+    const double fact_2 = 2.0 * vgamma_device[tid_x];
 
-    const double dx = den_x_eval_device[ tid_y ] * dbasis_x_eval_device[ ibfoff ];
-    const double dy = den_y_eval_device[ tid_y ] * dbasis_y_eval_device[ ibfoff ];
-    const double dz = den_z_eval_device[ tid_y ] * dbasis_z_eval_device[ ibfoff ];
+    const double dx = den_x_eval_device[ tid_x ] * dbasis_x_eval_device[ ibfoff ];
+    const double dy = den_y_eval_device[ tid_x ] * dbasis_y_eval_device[ ibfoff ];
+    const double dz = den_z_eval_device[ tid_x ] * dbasis_z_eval_device[ ibfoff ];
 
-    z_matrix_device[ tid_x + tid_y * nbf ] = 
+    z_matrix_device[ ibfoff ] = 
       fact_1 * basis_eval_device[ ibfoff ] + fact_2 * ( dx + dy + dz ); 
 
   }
@@ -121,8 +121,8 @@ void zmat_gga_hip( size_t           ntasks,
 
 
   dim3 threads(warp_size,max_warps_per_thread_block,1);
-  dim3 blocks( util::div_ceil( max_nbf,  threads.x ),
-               util::div_ceil( max_npts, threads.y ),
+  dim3 blocks( util::div_ceil( max_npts, threads.x ),
+               util::div_ceil( max_nbf,  threads.y ),
                ntasks );
 
   hipLaunchKernelGGL(zmat_gga_kernel, dim3(blocks), dim3(threads), 0, stream ,  ntasks, tasks_device );

@@ -252,13 +252,13 @@ std::tuple< task_iterator, std::vector< hip::XCTaskDevice<F> > >
     concat_iterable( shell_offs_pack, shell_offs );
     concat_iterable( submat_cut_pack, submat_cut );
 
-    m_array.emplace_back( nbe  );
-    n_array.emplace_back( npts );
+    m_array.emplace_back( npts  );
+    n_array.emplace_back( nbe );
     k_array.emplace_back( nbe  );
 
     lda_array.emplace_back( nbe  );
-    ldb_array.emplace_back( nbe  );
-    ldc_array.emplace_back( nbe  );
+    ldb_array.emplace_back( npts );
+    ldc_array.emplace_back( npts );
 
     iparent_pack.insert( iparent_pack.end(), npts, iAtom );
     dist_nearest_pack.insert( dist_nearest_pack.end(), npts, dist_nearest );
