@@ -1,6 +1,7 @@
 #pragma once
 #include "collocation_device_constants.hpp"
 #include <cassert>
+#include <type_traits>
 
 #ifndef GPGAUEVAL_INLINE
 #  define GPGAUEVAL_INLINE __inline__
@@ -10,29 +11,35 @@ namespace GauXC      {
 namespace integrator {
 namespace cuda       {
 
-GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_0(
-  const double bf,
-  const double x,
-  const double y,
-  const double z,
-  double*      eval
+template <typename T, typename U>
+struct collocation_spherical_unnorm_angular_impl;
+
+template <typename T>
+struct collocation_spherical_unnorm_angular_impl<T, std::integral_constant<int,0>> {
+
+static GPGAUEVAL_INLINE __device__ void flat(
+  const T bf,
+  const T x,
+  const T y,
+  const T z,
+  T*      eval
 ) {
 
   eval[0] = bf;
 
 }
 
-GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_0_deriv1(
-  const double bf,
-  const double bf_x,
-  const double bf_y,
-  const double bf_z,
-  const double x,
-  const double y,
-  const double z,
-  double* eval_x,
-  double* eval_y,
-  double* eval_z
+static GPGAUEVAL_INLINE __device__ void deriv1(
+  const T bf,
+  const T bf_x,
+  const T bf_y,
+  const T bf_z,
+  const T x,
+  const T y,
+  const T z,
+  T* eval_x,
+  T* eval_y,
+  T* eval_z
 ) {
 
   eval_x[0] = bf_x;
@@ -43,12 +50,17 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_0_deriv1(
 
 }
 
-GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_1(
-  const double bf,
-  const double x,
-  const double y,
-  const double z,
-  double*      eval
+};
+
+template <typename T>
+struct collocation_spherical_unnorm_angular_impl<T, std::integral_constant<int,1>> {
+
+static GPGAUEVAL_INLINE __device__ void flat(
+  const T bf,
+  const T x,
+  const T y,
+  const T z,
+  T*      eval
 ) {
 
   eval[0] = bf*y;
@@ -57,17 +69,17 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_1(
 
 }
 
-GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_1_deriv1(
-  const double bf,
-  const double bf_x,
-  const double bf_y,
-  const double bf_z,
-  const double x,
-  const double y,
-  const double z,
-  double* eval_x,
-  double* eval_y,
-  double* eval_z
+static GPGAUEVAL_INLINE __device__ void deriv1(
+  const T bf,
+  const T bf_x,
+  const T bf_y,
+  const T bf_z,
+  const T x,
+  const T y,
+  const T z,
+  T* eval_x,
+  T* eval_y,
+  T* eval_z
 ) {
 
   eval_x[0] = bf_x*y;
@@ -84,12 +96,17 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_1_deriv1(
 
 }
 
-GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_2(
-  const double bf,
-  const double x,
-  const double y,
-  const double z,
-  double*      eval
+};
+
+template <typename T>
+struct collocation_spherical_unnorm_angular_impl<T, std::integral_constant<int,2>> {
+
+static GPGAUEVAL_INLINE __device__ void flat(
+  const T bf,
+  const T x,
+  const T y,
+  const T z,
+  T*      eval
 ) {
 
   eval[0] = sqrt_3*bf*x*y;
@@ -100,17 +117,17 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_2(
 
 }
 
-GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_2_deriv1(
-  const double bf,
-  const double bf_x,
-  const double bf_y,
-  const double bf_z,
-  const double x,
-  const double y,
-  const double z,
-  double* eval_x,
-  double* eval_y,
-  double* eval_z
+static GPGAUEVAL_INLINE __device__ void deriv1(
+  const T bf,
+  const T bf_x,
+  const T bf_y,
+  const T bf_z,
+  const T x,
+  const T y,
+  const T z,
+  T* eval_x,
+  T* eval_y,
+  T* eval_z
 ) {
 
   eval_x[0] = sqrt_3*y*(bf + bf_x*x);
@@ -133,12 +150,17 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_2_deriv1(
 
 }
 
-GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_3(
-  const double bf,
-  const double x,
-  const double y,
-  const double z,
-  double*      eval
+};
+
+template <typename T>
+struct collocation_spherical_unnorm_angular_impl<T, std::integral_constant<int,3>> {
+
+static GPGAUEVAL_INLINE __device__ void flat(
+  const T bf,
+  const T x,
+  const T y,
+  const T z,
+  T*      eval
 ) {
 
   eval[0] = sqrt_10*bf*y*(3*x*x - y*y)/4;
@@ -151,17 +173,17 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_3(
 
 }
 
-GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_3_deriv1(
-  const double bf,
-  const double bf_x,
-  const double bf_y,
-  const double bf_z,
-  const double x,
-  const double y,
-  const double z,
-  double* eval_x,
-  double* eval_y,
-  double* eval_z
+static GPGAUEVAL_INLINE __device__ void deriv1(
+  const T bf,
+  const T bf_x,
+  const T bf_y,
+  const T bf_z,
+  const T x,
+  const T y,
+  const T z,
+  T* eval_x,
+  T* eval_y,
+  T* eval_z
 ) {
 
   eval_x[0] = sqrt_10*y*(6*bf*x + bf_x*(3*x*x - y*y))/4;
@@ -190,27 +212,74 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_3_deriv1(
 
 }
 
+};
 
+
+template <typename T, int L>
 GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular(
-  const int64_t l,
-  const double  bf,
-  const double  x,
-  const double  y,
-  const double  z,
-  double*       eval
+  const T  bf,
+  const T  x,
+  const T  y,
+  const T  z,
+  T*       eval
+) {
+
+  collocation_spherical_unnorm_angular_impl<T, std::integral_constant<int, L>>::
+    flat( bf, x, y, z, eval );
+
+} // collocation_spherical_unnorm_angular
+
+
+template <typename T, int L>
+GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_deriv1(
+  const T  bf,
+  const T  bf_x,
+  const T  bf_y,
+  const T  bf_z,
+  const T  x,
+  const T  y,
+  const T  z,
+  T*       eval,
+  T*       eval_x,
+  T*       eval_y,
+  T*       eval_z
+) {
+
+  collocation_spherical_unnorm_angular_impl<T, std::integral_constant<int, L>>::
+    flat( bf, x, y, z, eval );
+  collocation_spherical_unnorm_angular_impl<T, std::integral_constant<int, L>>::
+    deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+
+} // collocation_spherical_unnorm_angular_deriv1
+
+
+
+
+template <typename T>
+GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular(
+  const int32_t    l,
+  const T          bf,
+  const T          x,
+  const T          y,
+  const T          z,
+  T*  eval
 ) {
 
       if( l == 0 ) {
-        collocation_spherical_unnorm_angular_0( bf, x, y, z, eval );
+  
+        collocation_spherical_unnorm_angular<T,0>( bf, x, y, z, eval );
 
       } else if( l == 1 ) {
-        collocation_spherical_unnorm_angular_1( bf, x, y, z, eval );
+  
+        collocation_spherical_unnorm_angular<T,1>( bf, x, y, z, eval );
 
       } else if( l == 2 ) {
-        collocation_spherical_unnorm_angular_2( bf, x, y, z, eval );
+  
+        collocation_spherical_unnorm_angular<T,2>( bf, x, y, z, eval );
 
       } else if( l == 3 ) {
-        collocation_spherical_unnorm_angular_3( bf, x, y, z, eval );
+  
+        collocation_spherical_unnorm_angular<T,3>( bf, x, y, z, eval );
 
     } else {
       assert( false && "L < L_MAX" );
@@ -219,37 +288,42 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular(
 } // collocation_spherical_unnorm_angular
 
 
+template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_deriv1(
-  const int64_t l,
-  const double  bf,
-  const double  bf_x,
-  const double  bf_y,
-  const double  bf_z,
-  const double  x,
-  const double  y,
-  const double  z,
-  double*       eval,
-  double*       eval_x,
-  double*       eval_y,
-  double*       eval_z
+  const int32_t    l,
+  const T          bf,
+  const T          bf_x,
+  const T          bf_y,
+  const T          bf_z,
+  const T          x,
+  const T          y,
+  const T          z,
+  T*  eval,
+  T*  eval_x,
+  T*  eval_y,
+  T*  eval_z
 ) {
 
 
       if( l == 0 ) {
-        collocation_spherical_unnorm_angular_0( bf, x, y, z, eval );
-      collocation_spherical_unnorm_angular_0_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+  
+
+        collocation_spherical_unnorm_angular_deriv1<T,0>( bf, bf_x, bf_y, bf_z, x, y, z, eval, eval_x, eval_y, eval_z );
 
       } else if( l == 1 ) {
-        collocation_spherical_unnorm_angular_1( bf, x, y, z, eval );
-      collocation_spherical_unnorm_angular_1_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+  
+
+        collocation_spherical_unnorm_angular_deriv1<T,1>( bf, bf_x, bf_y, bf_z, x, y, z, eval, eval_x, eval_y, eval_z );
 
       } else if( l == 2 ) {
-        collocation_spherical_unnorm_angular_2( bf, x, y, z, eval );
-      collocation_spherical_unnorm_angular_2_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+  
+
+        collocation_spherical_unnorm_angular_deriv1<T,2>( bf, bf_x, bf_y, bf_z, x, y, z, eval, eval_x, eval_y, eval_z );
 
       } else if( l == 3 ) {
-        collocation_spherical_unnorm_angular_3( bf, x, y, z, eval );
-      collocation_spherical_unnorm_angular_3_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+  
+
+        collocation_spherical_unnorm_angular_deriv1<T,3>( bf, bf_x, bf_y, bf_z, x, y, z, eval, eval_x, eval_y, eval_z );
 
     } else {
       assert( false && "L < L_MAX" );
@@ -258,7 +332,7 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_deriv1(
 } // collocation_spherical_unnorm_angular_deriv1
 
 
-
 } // namespace cuda
 } // namespace integrator
 } // namespace GauXC
+
