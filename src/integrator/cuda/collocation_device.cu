@@ -346,8 +346,6 @@ void eval_collocation_masked_combined_deriv1(
   GAUXC_CUDA_ERROR( "GetAttr Failed", stat ); 
   int nmax_threads = attr.maxThreadsPerBlock;
 
-  std::cout << sizeof(Shell<T>) << std::endl;
-
   dim3 threads(warp_size, nmax_threads/warp_size, 1);
   dim3 blocks( util::div_ceil( npts_max,    threads.x ),
                util::div_ceil( nshells_max, threads.y ),
