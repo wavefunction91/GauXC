@@ -6,6 +6,7 @@
 
 #include "collocation_angular_cartesian.hpp"
 #include "collocation_angular_spherical_unnorm.hpp"
+#include "collocation_radial.hpp"
 
 namespace GauXC      {
 namespace integrator {
@@ -58,12 +59,9 @@ void collocation_device_masked_combined_kernel(
     const auto yc = pt[1] - O[1];
     const auto zc = pt[2] - O[2];
   
-    const auto rsq = xc*xc + yc*yc + zc*zc;
-  
-    const size_t nprim = shell.nprim(); 
-    auto tmp = 0.;
-    for( size_t i = 0; i < nprim; ++i )
-      tmp += coeff[i] * std::exp( - alpha[i] * rsq );
+    T tmp;
+    collocation_device_radial_eval( shell.nprim(), alpha, coeff, xc, yc, zc,
+                                    &tmp );
 
     auto * bf_eval = eval_device + ibf + ipt*nbf;
 
@@ -142,24 +140,11 @@ void collocation_device_masked_combined_kernel_deriv1(
     const auto yc = pt[1] - O[1];
     const auto zc = pt[2] - O[2];
   
-    const auto rsq = xc*xc + yc*yc + zc*zc;
-  
-    const size_t nprim = shell.nprim(); 
-    auto tmp = 0.;
-    auto tmp_x = 0., tmp_y = 0., tmp_z = 0.;
-    for( size_t i = 0; i < nprim; ++i ) {
+    T tmp = 0., tmp_x = 0., tmp_y = 0., tmp_z = 0.;
+    collocation_device_radial_eval_deriv1( shell.nprim(), alpha, coeff,
+                                           xc, yc, zc, &tmp, &tmp_x, &tmp_y,
+                                           &tmp_z );
 
-      const auto a = alpha[i];
-      const auto e = coeff[i] * std::exp( - a * rsq );
-
-      const auto ae = 2. * a * e;
-
-      tmp   += e;
-      tmp_x -= ae * xc;
-      tmp_y -= ae * yc;
-      tmp_z -= ae * zc;
-
-    }
 
     auto * bf_eval = eval_device    + ibf + ipt*nbf;
     auto * dx_eval = deval_device_x + ibf + ipt*nbf;
