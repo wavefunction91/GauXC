@@ -4,14 +4,13 @@
 #include <gauxc/molmeta.hpp>
 #include <gauxc/basisset.hpp>
 #include <gauxc/xc_task.hpp>
+#include <gauxc/util/timer.hpp>
 
 namespace GauXC {
 
 namespace detail {
   class LoadBalancerImpl;
 }
-
-
 
 
 class LoadBalancer {
@@ -53,6 +52,7 @@ public:
   const std::vector<XCTask>& get_tasks() const;
         std::vector<XCTask>& get_tasks()      ;
   
+  const util::Timer& get_timings() const;
 
   size_t max_npts()       const;
   size_t max_nbe()        const;
