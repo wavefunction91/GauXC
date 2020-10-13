@@ -72,6 +72,9 @@ public:
 
 
   exc_vxc_type eval_exc_vxc( const MatrixType& );
+
+
+  const util::Timer& get_timings() const;
 };
 
 

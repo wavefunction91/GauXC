@@ -126,6 +126,19 @@ int main(int argc, char** argv) {
     double xc_int_dur = std::chrono::duration<double>( xc_int_end - xc_int_start ).count();
 
     if( !world_rank ) {
+
+      std::cout << "Load Balancer Timings" << std::endl;
+      for( const auto& [name, dur] : lb->get_timings().all_timings() ) {
+        std::cout << "  " << std::setw(30) << name << ": " 
+                  << std::setw(10) << dur.count() << " ms" << std::endl;
+      }
+
+      std::cout << "Integrator Timings" << std::endl;
+      for( const auto& [name, dur] : integrator.get_timings().all_timings() ) {
+        std::cout << "  " << std::setw(30) << name << ": " 
+                  << std::setw(10) << dur.count() << " ms" << std::endl;
+      }
+
       std::cout << std::scientific << std::setprecision(16);
 
       std::cout << "XC Int Duration  = " << xc_int_dur << " s" << std::endl;
