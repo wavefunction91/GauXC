@@ -340,13 +340,9 @@ void eval_collocation_masked_combined_deriv1(
   cudaStream_t     stream
 ) {
 
-  cudaFuncAttributes attr;
-  auto stat = cudaFuncGetAttributes(&attr,
+  auto nmax_threads = util::cuda_kernel_max_threads_per_block( 
     collocation_device_masked_combined_radial_kernel_deriv1<T>
   );
-
-  GAUXC_CUDA_ERROR( "GetAttr Failed", stat ); 
-  int nmax_threads = attr.maxThreadsPerBlock;
 
   dim3 threads(warp_size, nmax_threads/warp_size, 1);
   dim3 blocks( util::div_ceil( npts_max,    threads.x ),
