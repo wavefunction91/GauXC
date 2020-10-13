@@ -53,6 +53,7 @@ private:
   double cutoff_radius_;
   double shell_tolerance_{detail::default_shell_tolerance}; 
 
+  double _pad_; // Pad to be a multiple of 16
   // Shamelessly adapted from Libint...
   void normalize() {
 

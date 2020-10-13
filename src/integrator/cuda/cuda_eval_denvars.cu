@@ -35,10 +35,10 @@ __global__ void eval_uvars_lda_kernel( size_t           ntasks,
 
   if( tid_x < nbf and tid_y < npts ) {
 
-    const double* bf_col   = basis_eval_device     + tid_y*nbf;
-    const double* db_col   = den_basis_prod_device + tid_y*nbf;
+    const double* bf_col   = basis_eval_device     + tid_x*npts;
+    const double* db_col   = den_basis_prod_device + tid_x*npts;
 
-    den_reg = bf_col[ tid_x ]   * db_col[ tid_x ];
+    den_reg = bf_col[ tid_y ]   * db_col[ tid_y ];
 
   }
 
@@ -52,6 +52,11 @@ __global__ void eval_uvars_lda_kernel( size_t           ntasks,
   
 
 }
+
+
+
+#define GGA_KERNEL_SM_BLOCK_X 32
+#define GGA_KERNEL_SM_BLOCK_Y 32
 
 template <typename T>
 __global__ void eval_uvars_gga_kernel( size_t           ntasks,
@@ -77,44 +82,62 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
 
   const auto* den_basis_prod_device = task.zmat;
 
-  const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
-  const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
+  __shared__ double den_shared[4][GGA_KERNEL_SM_BLOCK_X][GGA_KERNEL_SM_BLOCK_Y+1];
 
-  register double den_reg = 0.;
-  register double dx_reg  = 0.;
-  register double dy_reg  = 0.;
-  register double dz_reg  = 0.;
+  for ( int bid_x = blockIdx.x * blockDim.x; 
+        bid_x < nbf;
+        bid_x += blockDim.x * gridDim.x ) {
+    
+    for ( int bid_y = blockIdx.y * GGA_KERNEL_SM_BLOCK_Y; 
+          bid_y < npts;
+          bid_y += GGA_KERNEL_SM_BLOCK_Y * gridDim.y ) {
+        
+      for (int sm_y = threadIdx.y; sm_y < GGA_KERNEL_SM_BLOCK_Y; sm_y += blockDim.y) {
+        den_shared[0][threadIdx.x][sm_y] = 0.;
+        den_shared[1][threadIdx.x][sm_y] = 0.;
+        den_shared[2][threadIdx.x][sm_y] = 0.;
+        den_shared[3][threadIdx.x][sm_y] = 0.;
 
-  if( tid_x < nbf and tid_y < npts ) {
+        if (bid_y + threadIdx.x < npts and bid_x + sm_y < nbf) { 
+          const double* db_col   = den_basis_prod_device + (bid_x + sm_y)*npts;
+          const double* bf_col   = basis_eval_device     + (bid_x + sm_y)*npts;
+          const double* bf_x_col = dbasis_x_eval_device  + (bid_x + sm_y)*npts;
+          const double* bf_y_col = dbasis_y_eval_device  + (bid_x + sm_y)*npts;
+          const double* bf_z_col = dbasis_z_eval_device  + (bid_x + sm_y)*npts;
 
-    const double* bf_col   = basis_eval_device     + tid_y*nbf;
-    const double* bf_x_col = dbasis_x_eval_device  + tid_y*nbf;
-    const double* bf_y_col = dbasis_y_eval_device  + tid_y*nbf;
-    const double* bf_z_col = dbasis_z_eval_device  + tid_y*nbf;
-    const double* db_col   = den_basis_prod_device + tid_y*nbf;
+          den_shared[0][threadIdx.x][sm_y] = bf_col  [ bid_y + threadIdx.x ] * db_col[ bid_y + threadIdx.x ];
+          den_shared[1][threadIdx.x][sm_y] = bf_x_col[ bid_y + threadIdx.x ] * db_col[ bid_y + threadIdx.x ];
+          den_shared[2][threadIdx.x][sm_y] = bf_y_col[ bid_y + threadIdx.x ] * db_col[ bid_y + threadIdx.x ];
+          den_shared[3][threadIdx.x][sm_y] = bf_z_col[ bid_y + threadIdx.x ] * db_col[ bid_y + threadIdx.x ];
+        }
+      }
+      __syncthreads();
 
-    den_reg = bf_col[ tid_x ]   * db_col[ tid_x ];
-    dx_reg  = bf_x_col[ tid_x ] * db_col[ tid_x ];
-    dy_reg  = bf_y_col[ tid_x ] * db_col[ tid_x ];
-    dz_reg  = bf_z_col[ tid_x ] * db_col[ tid_x ];
 
+      for (int sm_y = threadIdx.y; sm_y < GGA_KERNEL_SM_BLOCK_Y; sm_y += blockDim.y) {
+        const int tid_y = bid_y + sm_y;
+        register double den_reg = den_shared[0][sm_y][threadIdx.x];
+        register double dx_reg  = den_shared[1][sm_y][threadIdx.x];
+        register double dy_reg  = den_shared[2][sm_y][threadIdx.x];
+        register double dz_reg  = den_shared[3][sm_y][threadIdx.x];
+
+        // Warp blocks are stored col major
+        den_reg = 2 * warpReduceSum( den_reg );
+        dx_reg  = 4 * warpReduceSum( dx_reg );
+        dy_reg  = 4 * warpReduceSum( dy_reg );
+        dz_reg  = 4 * warpReduceSum( dz_reg );
+
+
+        if( threadIdx.x == 0 and tid_y < npts ) {
+          atomicAdd( den_eval_device   + tid_y, den_reg );
+          atomicAdd( den_x_eval_device + tid_y, dx_reg  );
+          atomicAdd( den_y_eval_device + tid_y, dy_reg  );
+          atomicAdd( den_z_eval_device + tid_y, dz_reg  );
+        }
+      }
+      __syncthreads();
+    }
   }
-
-  // Warp blocks are stored col major
-  den_reg = 2 * warpReduceSum( den_reg );
-  dx_reg  = 4 * warpReduceSum( dx_reg );
-  dy_reg  = 4 * warpReduceSum( dy_reg );
-  dz_reg  = 4 * warpReduceSum( dz_reg );
-
-
-  if( threadIdx.x == 0 and tid_y < npts ) {
-    atomicAdd( den_eval_device   + tid_y, den_reg );
-    atomicAdd( den_x_eval_device + tid_y, dx_reg  );
-    atomicAdd( den_y_eval_device + tid_y, dy_reg  );
-    atomicAdd( den_z_eval_device + tid_y, dz_reg  );
-  }
-  
-
 }
 
 
@@ -139,8 +162,6 @@ __global__ void eval_vvars_gga_kernel(
   }
 
 }
-
-
 
 
 template <typename T>

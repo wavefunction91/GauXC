@@ -4,7 +4,7 @@
 #include <type_traits>
 
 #ifndef GPGAUEVAL_INLINE
-#  define GPGAUEVAL_INLINE __inline__
+#  define GPGAUEVAL_INLINE __noinline__
 #endif
 
 namespace GauXC      {
@@ -19,11 +19,12 @@ template <typename T>
 struct collocation_$(name)_angular_impl<T, std::integral_constant<int,$(L)>> {
 
 static GPGAUEVAL_INLINE __device__ void flat(
-  const T bf,
-  const T x,
-  const T y,
-  const T z,
-  T*      eval
+  uint32_t npts,
+  const T  bf,
+  const T  x,
+  const T  y,
+  const T  z,
+  T*       eval
 ) {
 
   $(body[L])
@@ -31,6 +32,7 @@ static GPGAUEVAL_INLINE __device__ void flat(
 }
 
 static GPGAUEVAL_INLINE __device__ void deriv1(
+  uint32_t npts,
   const T bf,
   const T bf_x,
   const T bf_y,
@@ -53,6 +55,7 @@ $endfor\
 
 template <typename T, int L>
 GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular(
+  uint32_t npts,
   const T  bf,
   const T  x,
   const T  y,
@@ -61,13 +64,14 @@ GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular(
 ) {
 
   collocation_$(name)_angular_impl<T, std::integral_constant<int, L>>::
-    flat( bf, x, y, z, eval );
+    flat( npts, bf, x, y, z, eval );
 
 } // collocation_$(name)_angular
 
 
 template <typename T, int L>
 GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular_deriv1(
+  uint32_t npts,
   const T  bf,
   const T  bf_x,
   const T  bf_y,
@@ -82,9 +86,9 @@ GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular_deriv1(
 ) {
 
   collocation_$(name)_angular_impl<T, std::integral_constant<int, L>>::
-    flat( bf, x, y, z, eval );
+    flat( npts, bf, x, y, z, eval );
   collocation_$(name)_angular_impl<T, std::integral_constant<int, L>>::
-    deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+    deriv1( npts, bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
 } // collocation_$(name)_angular_deriv1
 
@@ -93,6 +97,7 @@ GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular_deriv1(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular(
+  uint32_t         npts,
   const int32_t    l,
   const T          bf,
   const T          x,
@@ -107,7 +112,7 @@ $for( L in range(L_max + 1) )\
   $else\
     } else if( l == $(L) ) {
   $endif
-        collocation_$(name)_angular<T,$(L)>( bf, x, y, z, eval );
+        collocation_$(name)_angular<T,$(L)>( npts, bf, x, y, z, eval );
 
 $endfor\
     } else {
@@ -119,6 +124,7 @@ $endfor\
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular_deriv1(
+  uint32_t         npts,
   const int32_t    l,
   const T          bf,
   const T          bf_x,
@@ -141,7 +147,7 @@ $for( L in range(L_max + 1) )\
     } else if( l == $(L) ) {
   $endif
 
-        collocation_$(name)_angular_deriv1<T,$(L)>( bf, bf_x, bf_y, bf_z, x, y, z, eval, eval_x, eval_y, eval_z );
+        collocation_$(name)_angular_deriv1<T,$(L)>( npts, bf, bf_x, bf_y, bf_z, x, y, z, eval, eval_x, eval_y, eval_z );
 
 $endfor\
     } else {

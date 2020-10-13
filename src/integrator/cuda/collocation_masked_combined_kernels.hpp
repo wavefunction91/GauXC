@@ -63,13 +63,13 @@ void collocation_device_masked_combined_kernel(
     collocation_device_radial_eval( shell.nprim(), alpha, coeff, xc, yc, zc,
                                     &tmp );
 
-    auto * bf_eval = eval_device + ibf + ipt*nbf;
+    auto * bf_eval = eval_device + ibf*npts + ipt;
 
     const bool do_sph = shell.pure();
     if( do_sph )
-      collocation_spherical_unnorm_angular( shell.l(), tmp, xc, yc, zc, bf_eval );
+      collocation_spherical_unnorm_angular( npts, shell.l(), tmp, xc, yc, zc, bf_eval );
     else
-      collocation_cartesian_angular( shell.l(), tmp, xc, yc, zc, bf_eval );
+      collocation_cartesian_angular( npts, shell.l(), tmp, xc, yc, zc, bf_eval );
 
   } // shell / point idx check
 
@@ -146,10 +146,10 @@ void collocation_device_masked_combined_radial_kernel_deriv1(
                                            &tmp_z );
 
 
-    auto * bf_eval = eval_device    + ibf + ipt*nbf;
-    auto * dx_eval = deval_device_x + ibf + ipt*nbf;
-    auto * dy_eval = deval_device_y + ibf + ipt*nbf;
-    auto * dz_eval = deval_device_z + ibf + ipt*nbf;
+    auto * bf_eval = eval_device    + ibf*npts + ipt;
+    auto * dx_eval = deval_device_x + ibf*npts + ipt;
+    auto * dy_eval = deval_device_y + ibf*npts + ipt;
+    auto * dz_eval = deval_device_z + ibf*npts + ipt;
 
     *bf_eval = tmp;
     *dx_eval = tmp_x;
@@ -213,10 +213,10 @@ void collocation_device_masked_combined_angular_kernel_deriv1(
     const auto yc = pt[1] - O[1];
     const auto zc = pt[2] - O[2];
   
-    auto * bf_eval = eval_device    + ibf + ipt*nbf;
-    auto * dx_eval = deval_device_x + ibf + ipt*nbf;
-    auto * dy_eval = deval_device_y + ibf + ipt*nbf;
-    auto * dz_eval = deval_device_z + ibf + ipt*nbf;
+    auto * bf_eval = eval_device    + ibf*npts + ipt;
+    auto * dx_eval = deval_device_x + ibf*npts + ipt;
+    auto * dy_eval = deval_device_y + ibf*npts + ipt;
+    auto * dz_eval = deval_device_z + ibf*npts + ipt;
 
     const auto tmp   =  *bf_eval;
     const auto tmp_x =  *dx_eval;
@@ -225,11 +225,11 @@ void collocation_device_masked_combined_angular_kernel_deriv1(
 
     if( SPH )
       collocation_spherical_unnorm_angular_deriv1<T,L>( 
-        tmp, tmp_x, tmp_y, tmp_z, xc, yc, zc, bf_eval, dx_eval, dy_eval, dz_eval
+        npts, tmp, tmp_x, tmp_y, tmp_z, xc, yc, zc, bf_eval, dx_eval, dy_eval, dz_eval
       );
     else
       collocation_cartesian_angular_deriv1<T,L>( 
-        tmp, tmp_x, tmp_y, tmp_z, xc, yc, zc, bf_eval, dx_eval, dy_eval, dz_eval
+        npts, tmp, tmp_x, tmp_y, tmp_z, xc, yc, zc, bf_eval, dx_eval, dy_eval, dz_eval
       );
 
 

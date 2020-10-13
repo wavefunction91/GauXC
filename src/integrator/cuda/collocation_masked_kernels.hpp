@@ -15,14 +15,14 @@ namespace cuda       {
 template <typename T>
 __global__
 void collocation_device_masked_kernel(
-  size_t          nshells,
-  size_t          nbf,
-  size_t          npts,
-  const Shell<T>* shells_device,
-  const size_t*   mask_device,
-  const size_t*   offs_device,
-  const T*        pts_device,
-  T*              eval_device
+  size_t                       nshells,
+  size_t                       nbf,
+  size_t                       npts,
+  const Shell<T>* __restrict__ shells_device,
+  const size_t*   __restrict__ mask_device,
+  const size_t*   __restrict__ offs_device,
+  const T*        __restrict__ pts_device,
+  T*              __restrict__ eval_device
 ) {
 
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -39,9 +39,9 @@ void collocation_device_masked_kernel(
     const auto* pt    = pts_device + 3*ipt;
   
 
-    const auto* O     = shell.O_data();
-    const auto* alpha = shell.alpha_data();
-    const auto* coeff = shell.coeff_data();
+    const auto* __restrict__ O     = shell.O_data();
+    const auto* __restrict__ alpha = shell.alpha_data();
+    const auto* __restrict__ coeff = shell.coeff_data();
 
     const auto xc = pt[0] - O[0];
     const auto yc = pt[1] - O[1];
@@ -51,13 +51,13 @@ void collocation_device_masked_kernel(
     collocation_device_radial_eval( shell.nprim(), alpha, coeff, xc, yc, zc,
                                     &tmp );
 
-    auto * bf_eval = eval_device + ibf + ipt*nbf;
+    auto * bf_eval = eval_device + ibf*npts + ipt;
 
     const bool do_sph = shell.pure();
     if( do_sph )
-      collocation_spherical_unnorm_angular( shell.l(), tmp, xc, yc, zc, bf_eval );
+      collocation_spherical_unnorm_angular( npts, shell.l(), tmp, xc, yc, zc, bf_eval );
     else
-      collocation_cartesian_angular( shell.l(), tmp, xc, yc, zc, bf_eval );
+      collocation_cartesian_angular( npts, shell.l(), tmp, xc, yc, zc, bf_eval );
 
   }
 
@@ -73,17 +73,17 @@ void collocation_device_masked_kernel(
 template <typename T>
 __global__
 void collocation_device_masked_kernel_deriv1(
-  size_t          nshells,
-  size_t          nbf,
-  size_t          npts,
-  const Shell<T>* shells_device,
-  const size_t*   mask_device,
-  const size_t*   offs_device,
-  const T*        pts_device,
-  T*              eval_device,
-  T*              deval_device_x,
-  T*              deval_device_y,
-  T*              deval_device_z
+  size_t                       nshells,
+  size_t                       nbf,
+  size_t                       npts,
+  const Shell<T>* __restrict__ shells_device,
+  const size_t*   __restrict__ mask_device,
+  const size_t*   __restrict__ offs_device,
+  const T*        __restrict__ pts_device,
+  T*              __restrict__ eval_device,
+  T*              __restrict__ deval_device_x,
+  T*              __restrict__ deval_device_y,
+  T*              __restrict__ deval_device_z
 ) {
 
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
@@ -100,9 +100,9 @@ void collocation_device_masked_kernel_deriv1(
     const auto* pt    = pts_device + 3*ipt;
   
 
-    const auto* O     = shell.O_data();
-    const auto* alpha = shell.alpha_data();
-    const auto* coeff = shell.coeff_data();
+    const auto* __restrict__ O     = shell.O_data();
+    const auto* __restrict__ alpha = shell.alpha_data();
+    const auto* __restrict__ coeff = shell.coeff_data();
 
     const auto xc = pt[0] - O[0];
     const auto yc = pt[1] - O[1];
@@ -113,18 +113,18 @@ void collocation_device_masked_kernel_deriv1(
                                            xc, yc, zc, &tmp, &tmp_x, &tmp_y,
                                            &tmp_z );
 
-    auto * bf_eval = eval_device    + ibf + ipt*nbf;
-    auto * dx_eval = deval_device_x + ibf + ipt*nbf;
-    auto * dy_eval = deval_device_y + ibf + ipt*nbf;
-    auto * dz_eval = deval_device_z + ibf + ipt*nbf;
+    auto * bf_eval = eval_device    + ibf*npts + ipt;
+    auto * dx_eval = deval_device_x + ibf*npts + ipt;
+    auto * dy_eval = deval_device_y + ibf*npts + ipt;
+    auto * dz_eval = deval_device_z + ibf*npts + ipt;
 
     const bool do_sph = shell.pure();
     if( do_sph ) 
-      collocation_spherical_unnorm_angular_deriv1( shell.l(), tmp, tmp_x, tmp_y, tmp_z, 
+      collocation_spherical_unnorm_angular_deriv1( npts, shell.l(), tmp, tmp_x, tmp_y, tmp_z, 
                                                xc, yc, zc, bf_eval, dx_eval, 
                                                dy_eval, dz_eval );
     else
-      collocation_cartesian_angular_deriv1( shell.l(), tmp, tmp_x, tmp_y, tmp_z, 
+      collocation_cartesian_angular_deriv1( npts, shell.l(), tmp, tmp_x, tmp_y, tmp_z, 
                                         xc, yc, zc, bf_eval, dx_eval, 
                                         dy_eval, dz_eval );
 
