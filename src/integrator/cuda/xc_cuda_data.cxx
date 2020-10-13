@@ -153,7 +153,7 @@ std::tuple< task_iterator, device_task_container<F> >
 
     // Generate map from compressed to non-compressed matrices
     auto submat_cut = integrator::gen_compressed_submat_map( basis, shell_list );
-    size_t ncut     = submat_cut.size();
+    size_t ncut     = submat_cut.size() / 2;
     size_t nshells  = shell_list.size();
     size_t npts     = points.size();
 
@@ -164,7 +164,7 @@ std::tuple< task_iterator, device_task_container<F> >
     size_t mem_shells     = nshells;
     size_t mem_shell_list = nshells;
     size_t mem_shell_offs = nshells;
-    size_t mem_submat_cut = 2 * ncut;
+    size_t mem_submat_cut = 4 * ncut;
 
     size_t mem_nbe_scr    = nbe * nbe;
     size_t mem_zmat       = nbe * npts;
@@ -308,7 +308,7 @@ std::tuple< task_iterator, device_task_container<F> >
   weights_device_buffer    = mem.aligned_alloc<double>( total_npts );
   shell_list_device_buffer = mem.aligned_alloc<size_t>( total_nshells );
   shell_offs_device_buffer = mem.aligned_alloc<size_t>( total_nshells );
-  submat_cut_device_buffer = mem.aligned_alloc<int64_t>( 2 * total_ncut );
+  submat_cut_device_buffer = mem.aligned_alloc<int64_t>( 4 * total_ncut );
 
   dist_scratch_device = mem.aligned_alloc<double>( natoms * total_npts );
   dist_nearest_buffer = mem.aligned_alloc<double>( total_npts );
@@ -394,7 +394,7 @@ std::tuple< task_iterator, device_task_container<F> >
     weights_ptr    += npts;
     shell_list_ptr += nshells;
     shell_offs_ptr += nshells;
-    submat_cut_ptr += 2 * ncut;
+    submat_cut_ptr += 4 * ncut;
     
     shells_ptr += nshells;
     nbe_ptr    += nbe * nbe;
