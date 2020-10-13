@@ -40,6 +40,23 @@ std::vector< std::pair<int32_t, int32_t> >
     submat_map.back().second = 
       basis.shell_to_ao_range(shell_mask[0]).second;
 
+
+  /*
+   * This code block does post-processing for the submatrix optimizations
+   *
+   * It first adds the index within the small matrix as another pair in the vector.
+   * This allows the kernel to process multiple cuts concurrently within the same
+   * task. Additionally, it adds artificial breaks in the cut at the given interval
+   * This is to reduce the amount of bookkeeping that the kernel is required to do.
+   *
+   * While the small matrix start indices are stored in the additional pair, the second 
+   * value is blank as the delta can be reused from the big matrix start and stop points.
+   *
+   * The L2 cache optimization forces breaks this into muliple kernel calls, and I am 
+   * currently using the forth value in a cut to pass information about the block to the kernel.
+   * This is veyr temporary and primarily so I did not have to add an additional input variable.
+   *
+   */
   const int block_size = 512;
   std::vector< std::pair<int32_t, int32_t> > submat_map_expand;
   int small_index = 0;
