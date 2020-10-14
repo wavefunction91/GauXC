@@ -89,7 +89,7 @@ int main(int argc, char** argv) {
 #endif
 
     // Setup XC functional
-    functional_type func( XCFunctional::Functional::PBE0, Spin::Unpolarized );
+    functional_type func( Backend::builtin, XCFunctional::Functional::PBE0, Spin::Unpolarized );
 
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;
