@@ -112,7 +112,7 @@ std::tuple< task_iterator, device_task_container<F> >
   std::vector< double > weights_pack;
   std::vector< size_t > shell_list_pack;
   std::vector< size_t > shell_offs_pack;
-  std::vector< std::pair<int64_t, int64_t> > submat_cut_pack;
+  std::vector< std::pair<int32_t, int32_t> > submat_cut_pack;
   std::vector< int32_t > iparent_pack;
   std::vector< double >  dist_nearest_pack;
 
@@ -200,7 +200,7 @@ std::tuple< task_iterator, device_task_container<F> >
       mem_shells            * sizeof(Shell<F>) +             
       mem_shell_list        * sizeof(size_t) +
       mem_shell_offs        * sizeof(size_t) + 
-      mem_submat_cut        * sizeof(int64_t) +
+      mem_submat_cut        * sizeof(int32_t) +
       mem_nbe_scr           * sizeof(double) +
       mem_zmat              * sizeof(double) +
       mem_bf                * sizeof(double) +
@@ -308,7 +308,7 @@ std::tuple< task_iterator, device_task_container<F> >
   weights_device_buffer    = mem.aligned_alloc<double>( total_npts );
   shell_list_device_buffer = mem.aligned_alloc<size_t>( total_nshells );
   shell_offs_device_buffer = mem.aligned_alloc<size_t>( total_nshells );
-  submat_cut_device_buffer = mem.aligned_alloc<int64_t>( 4 * total_ncut );
+  submat_cut_device_buffer = mem.aligned_alloc<int32_t>( 4 * total_ncut );
 
   dist_scratch_device = mem.aligned_alloc<double>( natoms * total_npts );
   dist_nearest_buffer = mem.aligned_alloc<double>( total_npts );
@@ -335,7 +335,7 @@ std::tuple< task_iterator, device_task_container<F> >
 
   size_t* shell_list_ptr  = shell_list_device_buffer;
   size_t* shell_offs_ptr  = shell_offs_device_buffer;
-  int64_t* submat_cut_ptr = submat_cut_device_buffer;
+  int32_t* submat_cut_ptr = submat_cut_device_buffer;
   Shell<F>   * shells_ptr = important_shells_device;
   double*      nbe_ptr    = nbe_scr_device;
   double*      zmat_ptr   = zmat_device;
