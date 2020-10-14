@@ -79,7 +79,7 @@ struct XCCudaData {
   F*           weights_device_buffer    = nullptr;
   size_t*      shell_list_device_buffer = nullptr;
   size_t*      shell_offs_device_buffer = nullptr;
-  int64_t*     submat_cut_device_buffer = nullptr;
+  int32_t*     submat_cut_device_buffer = nullptr;
   int32_t*     iparent_device_buffer    = nullptr;
   F*           dist_nearest_buffer      = nullptr;
 

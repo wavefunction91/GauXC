@@ -86,7 +86,7 @@ struct XCTaskDevice {
   double* weights;
   size_t* shell_list;
   size_t* shell_offs;
-  int64_t* submat_cut;
+  int32_t* submat_cut;
 
   Shell<T>* shells;
   double*   nbe_scr;

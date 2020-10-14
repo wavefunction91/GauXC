@@ -41,6 +41,9 @@ std::vector< std::pair<int32_t, int32_t> >
       basis.shell_to_ao_range(shell_mask[0]).second;
 
 
+//  for (int i = 0; i < submat_map.size(); i++) {
+//      std::cout << i << "\t" << submat_map[i].first << "\t" << submat_map[i].second << std::endl;
+//  }
   /*
    * This code block does post-processing for the submatrix optimizations
    *
@@ -57,46 +60,95 @@ std::vector< std::pair<int32_t, int32_t> >
    * This is veyr temporary and primarily so I did not have to add an additional input variable.
    *
    */
-  const int block_size = 512;
+  const int block_size = 256;
   std::vector< std::pair<int32_t, int32_t> > submat_map_expand;
+  std::vector< int32_t > submat_block_idx;
+  submat_block_idx.push_back(0);
+  const int end_point = submat_map.back().second;
+
+  int cut_index = 0;
+  int cut_expand_index = 0;
   int small_index = 0;
-  bool passedBlock = false;
   int delta;
-  for (int i = 0; i < submat_map.size(); i++) {
-    int start = submat_map[i].first;
-    int end   = submat_map[i].second;
-    while ((start / block_size) < (end / block_size)) {
-      int next_end = ((start / block_size) + 1) * block_size;
+  for (int block_start = 0; block_start < end_point; block_start += block_size) {
+    const int block_end = block_start + block_size;
+    
+    int cut_start = submat_map[cut_index].first;
+    int cut_end   = submat_map[cut_index].second;
+    while (cut_index < submat_map.size() && cut_start < block_end) {
+      if (cut_start < block_start && cut_end < block_start) {
+	std::cout << "Something is wrong constructing the extended cut map " << cut_index << " " << cut_start << " "  << cut_end << " "  << block_start << std::endl;
+      } else if (cut_start < block_start && cut_end > block_end) {
+	submat_map_expand.emplace_back(block_start, block_end);
 
-      submat_map_expand.emplace_back(start, next_end);
+        delta = submat_map_expand.back().second - submat_map_expand.back().first;
+        submat_map_expand.emplace_back(small_index, small_index + delta);
+        small_index += delta;
 
-      delta = next_end - start;
-      submat_map_expand.emplace_back(small_index, small_index + delta);
-      small_index += delta;
+	cut_expand_index++;
+	break;
+      } else if (cut_start < block_start) {
+	submat_map_expand.emplace_back(block_start, cut_end);
 
-      if (start >= block_size && !passedBlock) {
-        submat_map_expand[1].second = i;
-	passedBlock = true;
+        delta = submat_map_expand.back().second - submat_map_expand.back().first;
+        submat_map_expand.emplace_back(small_index, small_index + delta);
+        small_index += delta;
+
+	cut_index++;
+	cut_expand_index++;
+      } else if (cut_end > block_end) {
+	submat_map_expand.emplace_back(cut_start, block_end);
+
+        delta = submat_map_expand.back().second - submat_map_expand.back().first;
+        submat_map_expand.emplace_back(small_index, small_index + delta);
+        small_index += delta;
+
+	cut_expand_index++;
+	break;
+      } else {
+        submat_map_expand.emplace_back(cut_start, cut_end);
+
+        delta = submat_map_expand.back().second - submat_map_expand.back().first;
+        submat_map_expand.emplace_back(small_index, small_index + delta);
+        small_index += delta;
+
+	cut_index++;
+	cut_expand_index++;
       }
 
-      start = next_end;
+      cut_start = submat_map[cut_index].first;
+      cut_end   = submat_map[cut_index].second;
     }
-
-    if (start != end) {
-       submat_map_expand.emplace_back(start, end);
-
-      delta = end - start;
-      submat_map_expand.emplace_back(small_index, small_index + delta);
-      small_index += delta;
-
-
-      if (start >= block_size && !passedBlock) {
-        submat_map_expand[1].second = i;
-	passedBlock = true;
-      }
-    }
-
+    submat_block_idx.push_back(cut_expand_index);
   }
+
+  submat_map_expand[1].second = submat_block_idx[1];
+
+
+  //for (int i = 0; i < submat_block_idx.size(); i++) {
+  //  std::cout << submat_block_idx[i] << " ";
+ // }
+ // std::cout << std::endl;
+
+
+
+/*
+ // std::cout << "Task lengths: " << submat_map_check.size() << " " << submat_map_expand.size() << std::endl;
+ // std::cout << "BlockIndex  : " << submat_map_check[1].second << " " << submat_map_expand[1].second << std::endl;
+  for (int i = 0; i < submat_map_check.size(); i+=2) {
+    if (submat_map_check[i].first != submat_map_expand[i].first)
+      std::cout << "start:\t " << submat_map_check[i].first << " " << submat_map_expand[i].first << std::endl;
+    if (submat_map_check[i].second != submat_map_expand[i].second)
+      std::cout << "end  :\t " << submat_map_check[i].second << " " << submat_map_expand[i].second << std::endl;
+    if (submat_map_check[i+1].first != submat_map_expand[i+1].first)
+      std::cout << "small:\t " << submat_map_check[i+1].first << " " << submat_map_expand[i+1].first << std::endl;
+  }
+
+ // for (int i = submat_map_check.size(); i < submat_map_expand.size(); i+=2) {
+ //     std::cout << "start:\t " << submat_map_expand[i].first << std::endl;
+ // }
+
+*/
 
 
   return submat_map_expand;
