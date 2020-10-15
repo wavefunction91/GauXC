@@ -187,9 +187,9 @@ void eval_uvars_gga_device( size_t           ntasks,
                             XCTaskDevice<T>* tasks_device,
                             cudaStream_t     stream ) {
 
-  dim3 threads(warp_size, max_warps_per_thread_block, 1);
-  dim3 blocks( util::div_ceil( max_nbf , threads.x ),
-               util::div_ceil( max_npts , threads.y ),
+  dim3 threads( warp_size, max_warps_per_thread_block / 2, 1 );
+  dim3 blocks( std::min(int64_t(4), util::div_ceil( max_nbf, 4 )),
+               std::min(int64_t(16), util::div_ceil( max_nbf, 16 )),
                ntasks );
 
   eval_uvars_gga_kernel<<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
