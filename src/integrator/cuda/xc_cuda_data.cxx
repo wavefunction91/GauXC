@@ -113,13 +113,13 @@ std::tuple< task_iterator, device_task_container<F> >
   std::vector< size_t > shell_list_pack;
   std::vector< size_t > shell_offs_pack;
   std::vector< std::pair<int32_t, int32_t> > submat_cut_pack;
+  std::vector< int32_t > submat_block_pack;
   std::vector< int32_t > iparent_pack;
   std::vector< double >  dist_nearest_pack;
 
   // Host copies for batched GEMM/SYRK arrays
   std::vector< double* > dmat_array, bf_array, zmat_array;
   std::vector< int > m_array, n_array, k_array, lda_array, ldb_array, ldc_array;
-
 
   device_task_container tasks_device;
 
@@ -135,6 +135,7 @@ std::tuple< task_iterator, device_task_container<F> >
   size_t total_nbe_npts = 0;
   size_t total_nshells  = 0;
   size_t total_ncut     = 0;
+  size_t total_nblock   = 0;
   size_t memleft = dynmem_sz;
 
   // Offset memory by the static requirement of an extra pointer element 
@@ -152,8 +153,9 @@ std::tuple< task_iterator, device_task_container<F> >
     auto dist_nearest = task_it->dist_nearest;
 
     // Generate map from compressed to non-compressed matrices
-    auto submat_cut = integrator::gen_compressed_submat_map( basis, shell_list );
+    auto [submat_cut, submat_block] = integrator::gen_compressed_submat_map( basis, shell_list );
     size_t ncut     = submat_cut.size() / 2;
+    size_t nblock   = submat_block.size();
     size_t nshells  = shell_list.size();
     size_t npts     = points.size();
 
@@ -165,6 +167,7 @@ std::tuple< task_iterator, device_task_container<F> >
     size_t mem_shell_list = nshells;
     size_t mem_shell_offs = nshells;
     size_t mem_submat_cut = 4 * ncut;
+    size_t mem_submat_block = nblock;
 
     size_t mem_nbe_scr    = nbe * nbe;
     size_t mem_zmat       = nbe * npts;
@@ -201,6 +204,7 @@ std::tuple< task_iterator, device_task_container<F> >
       mem_shell_list        * sizeof(size_t) +
       mem_shell_offs        * sizeof(size_t) + 
       mem_submat_cut        * sizeof(int32_t) +
+      mem_submat_block      * sizeof(int32_t) +
       mem_nbe_scr           * sizeof(double) +
       mem_zmat              * sizeof(double) +
       mem_bf                * sizeof(double) +
@@ -238,6 +242,7 @@ std::tuple< task_iterator, device_task_container<F> >
     total_nbe_npts += nbe*npts;
     total_nshells  += nshells;
     total_ncut     += ncut;
+    total_nblock   += nblock;
 
     // Compute offsets
     std::vector< size_t > shell_offs( nshells );
@@ -253,6 +258,7 @@ std::tuple< task_iterator, device_task_container<F> >
     concat_iterable( shell_list_pack, shell_list );
     concat_iterable( shell_offs_pack, shell_offs );
     concat_iterable( submat_cut_pack, submat_cut );
+    concat_iterable( submat_block_pack, submat_block );
 
     m_array.emplace_back( npts  );
     n_array.emplace_back( nbe );
@@ -271,6 +277,7 @@ std::tuple< task_iterator, device_task_container<F> >
     tasks_device.back().nbe          = nbe;
     tasks_device.back().npts         = npts;
     tasks_device.back().ncut         = ncut;
+    tasks_device.back().nblock       = nblock;
     tasks_device.back().nshells      = nshells;
     tasks_device.back().iParent      = iAtom;
     tasks_device.back().dist_nearest = dist_nearest;
@@ -309,6 +316,7 @@ std::tuple< task_iterator, device_task_container<F> >
   shell_list_device_buffer = mem.aligned_alloc<size_t>( total_nshells );
   shell_offs_device_buffer = mem.aligned_alloc<size_t>( total_nshells );
   submat_cut_device_buffer = mem.aligned_alloc<int32_t>( 4 * total_ncut );
+  submat_block_device_buffer = mem.aligned_alloc<int32_t>( total_nblock );
 
   dist_scratch_device = mem.aligned_alloc<double>( natoms * total_npts );
   dist_nearest_buffer = mem.aligned_alloc<double>( total_npts );
@@ -336,6 +344,7 @@ std::tuple< task_iterator, device_task_container<F> >
   size_t* shell_list_ptr  = shell_list_device_buffer;
   size_t* shell_offs_ptr  = shell_offs_device_buffer;
   int32_t* submat_cut_ptr = submat_cut_device_buffer;
+  int32_t* submat_block_ptr = submat_block_device_buffer;
   Shell<F>   * shells_ptr = important_shells_device;
   double*      nbe_ptr    = nbe_scr_device;
   double*      zmat_ptr   = zmat_device;
@@ -365,6 +374,7 @@ std::tuple< task_iterator, device_task_container<F> >
     task.shell_list = shell_list_ptr;
     task.shell_offs = shell_offs_ptr;
     task.submat_cut = submat_cut_ptr;
+    task.submat_block = submat_block_ptr;
     
     task.shells  = shells_ptr;
     task.nbe_scr = nbe_ptr;
@@ -389,12 +399,14 @@ std::tuple< task_iterator, device_task_container<F> >
     auto nbe     = task.nbe;
     auto nshells = task.nshells;
     auto ncut    = task.ncut;
+    auto nblock  = task.nblock;
 
     points_ptr     += 3 * npts;
     weights_ptr    += npts;
     shell_list_ptr += nshells;
     shell_offs_ptr += nshells;
     submat_cut_ptr += 4 * ncut;
+    submat_block_ptr += nblock;
     
     shells_ptr += nshells;
     nbe_ptr    += nbe * nbe;
@@ -456,7 +468,10 @@ std::tuple< task_iterator, device_task_container<F> >
   copy_rev( 2*submat_cut_pack.size(), &submat_cut_pack.data()->first, 
                          submat_cut_device_buffer, *master_stream, 
                          "send_submat_cut_buffer"  ); 
-  
+  copy_rev( submat_block_pack.size(), submat_block_pack.data(), 
+                         submat_block_device_buffer, *master_stream, 
+                         "send_submat_block_buffer"  ); 
+
   copy_rev( tasks_device.size(), tasks_device.data(), device_tasks, 
                           *master_stream, "send_tasks_device" );
 

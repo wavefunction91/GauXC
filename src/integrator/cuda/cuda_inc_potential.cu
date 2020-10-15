@@ -1,5 +1,8 @@
 #include "cuda_inc_potential.hpp"
 #include "cuda_device_properties.hpp"
+#include <gauxc/util/div_ceil.hpp>
+
+#include "cuda_device_properties.hpp"
 
 namespace GauXC      {
 namespace integrator {
@@ -28,8 +31,8 @@ void inc_by_submat_combined_kernel( size_t           ntasks,
   const int batch_id = blockIdx.z;
   auto& task = device_tasks[ batch_id ];
 
-  const auto  ncut              = task.ncut;
   const auto* submat_cut_device = task.submat_cut;
+  const auto* submat_block_device = task.submat_block;
   const auto  LDAS              = task.nbe;
         auto* ASmall_device     = task.nbe_scr;
 
@@ -40,11 +43,10 @@ void inc_by_submat_combined_kernel( size_t           ntasks,
   const int tid_yx = threadIdx.y % CUT_X;
   const int tid_yy = threadIdx.y / CUT_X;
 
-  const int ncut_sub = submat_cut_device[ 4*0 + 3 ];
-  const int start_cut_y = block_y ? 0 : ncut_sub;
-  const int end_cut_y   = block_y ? ncut_sub : ncut;
-  const int start_cut_x = block_x ? 0 : ncut_sub;
-  const int end_cut_x   = block_x ? ncut_sub : ncut;
+  const int start_cut_y = submat_block_device[block_y];
+  const int end_cut_y   = submat_block_device[block_y+1];
+  const int start_cut_x = submat_block_device[block_x];
+  const int end_cut_x   = submat_block_device[block_x+1];
 
   for( int i_cut = tid_yy + start_cut_y; i_cut < end_cut_y; i_cut += CUT_Y ) {
     const int i_cut_first  = submat_cut_device[ 4*i_cut ];
@@ -96,25 +98,15 @@ void task_inc_potential( size_t           ntasks,
                          T*               V_device,
                          size_t           LDV,
                          cudaStream_t     stream ) {
+  dim3 threads(warp_size, max_warps_per_thread_block, 1), blocks(1,1,ntasks);
 
-
-  dim3 threads(32,32,1), blocks(1,1,ntasks);
-
-  inc_by_submat_combined_kernel<<< blocks, threads, 0, stream >>>(
-    ntasks, device_tasks, V_device, LDV, 0, 0
-  );
-
-  inc_by_submat_combined_kernel<<< blocks, threads, 0, stream >>>(
-    ntasks, device_tasks, V_device, LDV, 0, 1
-  );
-
-  inc_by_submat_combined_kernel<<< blocks, threads, 0, stream >>>(
-    ntasks, device_tasks, V_device, LDV, 1, 0
-  );
-
-  inc_by_submat_combined_kernel<<< blocks, threads, 0, stream >>>(
-    ntasks, device_tasks, V_device, LDV, 1, 1
-  );
+  for (int i = 0; i < util::div_ceil(LDV, submat_block_size); i++) {
+    for (int j = 0; j < util::div_ceil(LDV, submat_block_size); j++) {
+      inc_by_submat_combined_kernel<<< blocks, threads, 0, stream >>>(
+        ntasks, device_tasks, V_device, LDV, i, j
+      );
+    }
+  }
 }
 
 template 
