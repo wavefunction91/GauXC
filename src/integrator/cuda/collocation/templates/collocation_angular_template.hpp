@@ -3,7 +3,7 @@
 #include <cassert>
 
 #ifndef GPGAUEVAL_INLINE
-#  define GPGAUEVAL_INLINE __inline__
+#  define GPGAUEVAL_INLINE __noinline__
 #endif
 
 namespace GauXC      {
@@ -11,29 +11,33 @@ namespace integrator {
 namespace cuda       {
 
 $for( L in range(L_max + 1) )\
+template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular_$(L)(
-  const double bf,
-  const double x,
-  const double y,
-  const double z,
-  double*      eval
+  int32_t          npts,
+  const T          bf,
+  const T          x,
+  const T          y,
+  const T          z,
+  T* __restrict__  eval
 ) {
 
   $(body[L])
 
 }
 
+template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular_$(L)_deriv1(
-  const double bf,
-  const double bf_x,
-  const double bf_y,
-  const double bf_z,
-  const double x,
-  const double y,
-  const double z,
-  double* eval_x,
-  double* eval_y,
-  double* eval_z
+  const int32_t   npts,
+  const T         bf,
+  const T         bf_x,
+  const T         bf_y,
+  const T         bf_z,
+  const T         x,
+  const T         y,
+  const T         z,
+  T* __restrict__ eval_x,
+  T* __restrict__ eval_y,
+  T* __restrict__ eval_z
 ) {
 
   $(body_d1[L])
@@ -42,13 +46,15 @@ GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular_$(L)_deriv1(
 
 $endfor\
 
+template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular(
-  const int64_t l,
-  const double  bf,
-  const double  x,
-  const double  y,
-  const double  z,
-  double*       eval
+  const int32_t   npts,
+  const int32_t    l,
+  const T          bf,
+  const T          x,
+  const T          y,
+  const T          z,
+  T* __restrict__  eval
 ) {
 
 $for( L in range(L_max + 1) )\
@@ -56,8 +62,8 @@ $for( L in range(L_max + 1) )\
     if( l == $(L) ) {
   $else\
     } else if( l == $(L) ) {
-  $endif\
-      collocation_$(name)_angular_$(L)( bf, x, y, z, eval );
+  $endif
+        collocation_$(name)_angular_$(L)( npts, bf, x, y, z, eval );
 
 $endfor\
     } else {
@@ -67,19 +73,21 @@ $endfor\
 } // collocation_$(name)_angular
 
 
+template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular_deriv1(
-  const int64_t l,
-  const double  bf,
-  const double  bf_x,
-  const double  bf_y,
-  const double  bf_z,
-  const double  x,
-  const double  y,
-  const double  z,
-  double*       eval,
-  double*       eval_x,
-  double*       eval_y,
-  double*       eval_z
+  const int32_t    npts,
+  const int32_t    l,
+  const T          bf,
+  const T          bf_x,
+  const T          bf_y,
+  const T          bf_z,
+  const T          x,
+  const T          y,
+  const T          z,
+  T* __restrict__ eval,
+  T* __restrict__ eval_x,
+  T* __restrict__ eval_y,
+  T* __restrict__ eval_z
 ) {
 
 
@@ -88,9 +96,9 @@ $for( L in range(L_max + 1) )\
     if( l == $(L) ) {
   $else\
     } else if( l == $(L) ) {
-  $endif\
-      collocation_$(name)_angular_$(L)( bf, x, y, z, eval );
-      collocation_$(name)_angular_$(L)_deriv1( bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+  $endif
+        collocation_$(name)_angular_$(L)( npts, bf, x, y, z, eval );
+        collocation_$(name)_angular_$(L)_deriv1( npts, bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
 $endfor\
     } else {
