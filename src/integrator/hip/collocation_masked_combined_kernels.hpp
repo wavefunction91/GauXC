@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #include <iostream>
 #include <cassert>
 
@@ -6,7 +7,6 @@
 
 #include "collocation_angular_cartesian.hpp"
 #include "collocation_angular_spherical_unnorm.hpp"
-#include "hip_alg_variant_control.hpp"
 
 namespace GauXC      {
 namespace integrator {
@@ -18,26 +18,28 @@ template <typename T>
 __global__
 __launch_bounds__(1024,1)
 void collocation_device_masked_combined_kernel(
-  size_t                        ntasks,
-  Shell<T>*        __restrict__ shells_device,
-  XCTaskDevice<T>* __restrict__ device_tasks
+  size_t           ntasks,
+  Shell<T>*        shells_device,
+  XCTaskDevice<T>* device_tasks
 ) {
 
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
-
-  if( blockIdx.z < ntasks ) {
-
-    auto& task = device_tasks[ blockIdx.z ];
   
-    const auto               nshells     = task.nshells;
-    const auto               nbf         = task.nbe;
-    const auto               npts        = task.npts;
-    const auto* __restrict__ pts_device  = task.points;
-    const auto* __restrict__ mask_device = task.shell_list;
-    const auto* __restrict__ offs_device = task.shell_offs;
+  const int batch_id = blockIdx.z;
 
-    auto* __restrict__ eval_device    = task.bf;
+  if( batch_id < ntasks ) {
+
+    auto& task = device_tasks[ batch_id ];
+  
+    const auto nshells         = task.nshells;
+    const auto  nbf           = task.nbe;
+    const auto  npts          = task.npts;
+    const auto* pts_device    = task.points;
+    const auto* mask_device   = task.shell_list;
+    const auto* offs_device   = task.shell_offs;
+
+    auto* eval_device    = task.bf;
 
   if( tid_x < npts and tid_y < nshells ) {
 
@@ -50,9 +52,9 @@ void collocation_device_masked_combined_kernel(
     const auto* pt    = pts_device + 3*ipt;
   
 
-    const auto* __restrict__ O     = shell.O_data();
-    const auto* __restrict__ alpha = shell.alpha_data();
-    const auto* __restrict__ coeff = shell.coeff_data();
+    const auto* O     = shell.O_data();
+    const auto* alpha = shell.alpha_data();
+    const auto* coeff = shell.coeff_data();
 
     const auto xc = pt[0] - O[0];
     const auto yc = pt[1] - O[1];
@@ -97,72 +99,47 @@ template <typename T>
 __global__
 __launch_bounds__(1024,1)
 void collocation_device_masked_combined_kernel_deriv1(
-  size_t                        ntasks,
-  Shell<T>*        __restrict__ shells_device,
-  XCTaskDevice<T>* __restrict__ device_tasks
+  size_t           ntasks,
+  Shell<T>*        shells_device,
+  XCTaskDevice<T>* device_tasks
 ) {
 
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
-#ifdef GAUXC_CUDA_ENABLE_COLLOCATION_SHMEM_COPY
-  using vec_int_type = int4;
-  constexpr int ncpy = sizeof(Shell<T>) / sizeof(vec_int_type);
-  __shared__ vec_int_type shmem[32 * ncpy];
-  Shell<T>* sh_shell = (Shell<T>*)shmem;
-#endif
-  if( blockIdx.z < ntasks ) {
+  const int batch_id = blockIdx.z;
 
-    auto& task = device_tasks[ blockIdx.z ];
+  if( batch_id < ntasks ) {
+
+    auto& task = device_tasks[ batch_id ];
   
-    const auto               nshells     = task.nshells;
-    const auto               nbf         = task.nbe;
-    const auto               npts        = task.npts;
-    const auto* __restrict__ pts_device  = task.points;
-    const auto* __restrict__ mask_device = task.shell_list;
-    const auto* __restrict__ offs_device = task.shell_offs;
+    const auto nshells         = task.nshells;
+    const auto  nbf           = task.nbe;
+    const auto  npts          = task.npts;
+    const auto* pts_device    = task.points;
+    const auto* mask_device   = task.shell_list;
+    const auto* offs_device   = task.shell_offs;
 
-    auto* __restrict__ eval_device    = task.bf;
-    auto* __restrict__ deval_device_x = task.dbfx;
-    auto* __restrict__ deval_device_y = task.dbfy;
-    auto* __restrict__ deval_device_z = task.dbfz;
+    auto* eval_device    = task.bf;
+    auto* deval_device_x = task.dbfx;
+    auto* deval_device_y = task.dbfy;
+    auto* deval_device_z = task.dbfz;
 
 
-  if( tid_y < nshells ) {
-
-    const size_t ish = tid_y;
-    const size_t ibf = offs_device[ish];
-
-#ifdef GAUXC_CUDA_ENABLE_COLLOCATION_SHMEM_COPY
-
-    {
-      const auto* shell = shells_device + mask_device[ish];
-      const vec_int_type* src   = (vec_int_type*)shell;
-            vec_int_type* dst   = shmem + threadIdx.y*ncpy;
-      // Copy shell into shared memory
-      for( int i = threadIdx.x; i < ncpy; i += blockDim.x ) {
-        dst[i] = src[i];
-      }
-      __syncwarp();
-    }
-
-    const auto& shell = sh_shell[threadIdx.y];
-
-#else
-
-    const auto& shell = shells_device[mask_device[ish]];
-
-#endif
-
-  if( tid_x < npts  ) {
+  if( tid_x < npts and tid_y < nshells ) {
 
     const size_t ipt = tid_x;
+    const size_t ish = tid_y;
+
+    const size_t ibf = offs_device[ish];
+
+    const auto& shell = shells_device[mask_device[ish]];
     const auto* pt    = pts_device + 3*ipt;
   
 
-    const auto* __restrict__ O     = shell.O_data();
-    const auto* __restrict__ alpha = shell.alpha_data();
-    const auto* __restrict__ coeff = shell.coeff_data();
+    const auto* O     = shell.O_data();
+    const auto* alpha = shell.alpha_data();
+    const auto* coeff = shell.coeff_data();
 
     const auto xc = pt[0] - O[0];
     const auto yc = pt[1] - O[1];
@@ -203,7 +180,6 @@ void collocation_device_masked_combined_kernel_deriv1(
                                         dy_eval, dz_eval );
 
   } // shell / point idx check
-  }
 
   } // Batch idx check
 
