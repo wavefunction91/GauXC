@@ -55,7 +55,6 @@ __global__ void eval_uvars_lda_kernel( size_t           ntasks,
 
 
 
-#define GGA_KERNEL_SM_BLOCK_X 32
 #define GGA_KERNEL_SM_BLOCK_Y 32
 
 template <typename T>
@@ -82,7 +81,7 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
 
   const auto* den_basis_prod_device = task.zmat;
 
-  __shared__ double den_shared[4][GGA_KERNEL_SM_BLOCK_X][GGA_KERNEL_SM_BLOCK_Y+1];
+  __shared__ double den_shared[4][warp_size][GGA_KERNEL_SM_BLOCK_Y+1];
 
   for ( int bid_x = blockIdx.x * blockDim.x; 
         bid_x < nbf;
