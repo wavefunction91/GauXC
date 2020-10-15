@@ -3,7 +3,7 @@
 #include <cub/cub.cuh>
 #include "cuda_device_properties.hpp"
 
-//#define GAUXC_ENABLE_WARP_REDUCTIONS
+#define GAUXC_ENABLE_WARP_REDUCTIONS
 
 namespace GauXC {
 namespace cuda  {

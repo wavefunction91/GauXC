@@ -1,4 +1,6 @@
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/util/cuda_util.hpp>
+#include <gauxc/exceptions/cuda_exception.hpp>
 #include <gauxc/xc_task.hpp>
 
 #include "collocation_petite_kernels.hpp"
@@ -196,7 +198,11 @@ void eval_collocation_petite_deriv1(
   cudaStream_t    stream
 ) {
 
-  dim3 threads(warp_size, max_warps_per_thread_block, 1);
+  auto nmax_threads = util::cuda_kernel_max_threads_per_block( 
+    collocation_device_petite_kernel_deriv1<T>
+  );
+
+  dim3 threads(warp_size, nmax_threads/warp_size, 1);
   dim3 blocks( util::div_ceil( npts,    threads.x ),
                util::div_ceil( nshells, threads.y ) );
 
@@ -324,9 +330,6 @@ void eval_collocation_petite_combined_deriv1(
 
 
 
-
-
-
 template <typename T>
 void eval_collocation_masked_combined_deriv1(
   size_t           ntasks,
@@ -337,7 +340,11 @@ void eval_collocation_masked_combined_deriv1(
   cudaStream_t     stream
 ) {
 
-  dim3 threads(warp_size, max_warps_per_thread_block, 1);
+  auto nmax_threads = util::cuda_kernel_max_threads_per_block( 
+    collocation_device_masked_combined_kernel_deriv1<T>
+  );
+
+  dim3 threads(warp_size, nmax_threads/warp_size, 1);
   dim3 blocks( util::div_ceil( npts_max,    threads.x ),
                util::div_ceil( nshells_max, threads.y ),
                ntasks );
