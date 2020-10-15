@@ -23,6 +23,8 @@ protected:
 
   std::vector< XCTask >     local_tasks_;
 
+  util::Timer               timer_;
+
   virtual std::vector< XCTask > create_local_tasks_() const = 0;
 
 public:
@@ -51,6 +53,8 @@ public:
 
   const std::vector< XCTask >& get_tasks() const;
         std::vector< XCTask >& get_tasks()      ;
+
+  const util::Timer& get_timings() const;
 
   size_t max_npts()       const;
   size_t max_nbe()        const;
