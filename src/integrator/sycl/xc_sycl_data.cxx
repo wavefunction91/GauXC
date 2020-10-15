@@ -501,6 +501,14 @@ std::tuple< task_iterator, device_task_container<F> >
     throw;
   }
 
+  std::vector< std::pair<int64_t,int64_t> > gemm_dims;
+  for( auto i = 0; i < ntask; ++i )
+    gemm_dims.emplace_back( m_array[i], n_array[i] );
+
+  std::sort( gemm_dims.begin(), gemm_dims.end() );
+  auto it = std::unique( gemm_dims.begin(), gemm_dims.end() );
+  gemm_dims.erase( it, gemm_dims.end() );
+  std::cout << "UNIQUE GEMM DIMS = " << gemm_dims.size() << std::endl;
 
   // To avoid packed vectors going out of scope
   util::sycl_device_sync( *master_queue );
