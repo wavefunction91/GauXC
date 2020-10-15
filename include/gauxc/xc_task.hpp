@@ -80,6 +80,7 @@ struct XCTaskDevice {
   size_t nbe;
   size_t npts;
   size_t ncut;
+  size_t nblock;
   size_t nshells;
 
   double* points;
@@ -87,6 +88,7 @@ struct XCTaskDevice {
   size_t* shell_list;
   size_t* shell_offs;
   int32_t* submat_cut;
+  int32_t* submat_block;
 
   Shell<T>* shells;
   double*   nbe_scr;

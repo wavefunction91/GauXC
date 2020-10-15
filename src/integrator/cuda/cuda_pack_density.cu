@@ -1,5 +1,8 @@
 #include "cuda_pack_density.hpp"
 #include "cuda_device_properties.hpp"
+#include <gauxc/util/div_ceil.hpp>
+
+#include "cuda_device_properties.hpp"
 
 namespace GauXC      {
 namespace integrator {
@@ -27,8 +30,8 @@ void submat_set_combined_kernel( size_t           ntasks,
   const int batch_id = blockIdx.z;
   auto& task = device_tasks[ batch_id ];
 
-  const auto  ncut              = task.ncut;
   const auto* submat_cut_device = task.submat_cut;
+  const auto* submat_block_device = task.submat_block;
   const auto  LDAS              = task.nbe;
         auto* ASmall_device     = task.nbe_scr;
 
@@ -40,11 +43,10 @@ void submat_set_combined_kernel( size_t           ntasks,
   const int tid_yx = threadIdx.y % CUT_X;
   const int tid_yy = threadIdx.y / CUT_X;
 
-  const int ncut_sub = submat_cut_device[ 4*0 + 3 ];
-  const int start_cut_y = block_y ? 0 : ncut_sub;
-  const int end_cut_y   = block_y ? ncut_sub : ncut;
-  const int start_cut_x = block_x ? 0 : ncut_sub;
-  const int end_cut_x   = block_x ? ncut_sub : ncut;
+  const int start_cut_y = submat_block_device[block_y];
+  const int end_cut_y   = submat_block_device[block_y+1];
+  const int start_cut_x = submat_block_device[block_x];
+  const int end_cut_x   = submat_block_device[block_x+1];
 
   for( int i_cut = tid_yy + start_cut_y; i_cut < end_cut_y; i_cut += CUT_Y ) {
     const int i_cut_first  = submat_cut_device[ 4*i_cut ];
@@ -97,22 +99,17 @@ void task_pack_density_matrix( size_t           ntasks,
                                size_t           LDP,
                                cudaStream_t     stream ) {
 
-  dim3 threads(32,32,1), blocks(1,1,ntasks);
-  submat_set_combined_kernel<<< blocks, threads, 0, stream >>>(
-    ntasks, device_tasks, P_device, LDP, 0, 0
-  );
+  dim3 threads(warp_size, max_warps_per_thread_block, 1), blocks(1,1,ntasks);
 
-  submat_set_combined_kernel<<< blocks, threads, 0, stream >>>(
-    ntasks, device_tasks, P_device, LDP, 0, 1
-  );
+  std::cout << LDP << std::endl;
 
-  submat_set_combined_kernel<<< blocks, threads, 0, stream >>>(
-    ntasks, device_tasks, P_device, LDP, 1, 0
-  );
-
-  submat_set_combined_kernel<<< blocks, threads, 0, stream >>>(
-    ntasks, device_tasks, P_device, LDP, 1, 1
-  );
+  for (int i = 0; i < util::div_ceil(LDP, submat_block_size); i++) {
+    for (int j = 0; j < util::div_ceil(LDP, submat_block_size); j++) {
+      submat_set_combined_kernel<<< blocks, threads, 0, stream >>>(
+        ntasks, device_tasks, P_device, LDP, i, j
+      );
+    }
+  }
 }
 
 template 
