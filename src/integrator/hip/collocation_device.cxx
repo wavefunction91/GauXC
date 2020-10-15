@@ -325,7 +325,7 @@ void eval_collocation_masked_combined_deriv1(
   hipStream_t     stream
 ) {
 
-  dim3 threads(32, 32, 1);
+  dim3 threads(warp_size, 4, 1);
   dim3 blocks( util::div_ceil( npts_max,    threads.x ),
                util::div_ceil( nshells_max, threads.y ),
                ntasks );
