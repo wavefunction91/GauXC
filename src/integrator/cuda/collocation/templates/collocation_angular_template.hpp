@@ -27,7 +27,7 @@ GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular_$(L)(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular_$(L)_deriv1(
-  int32_t         npts,
+  const int32_t   npts,
   const T         bf,
   const T         bf_x,
   const T         bf_y,
@@ -48,7 +48,7 @@ $endfor\
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular(
-  int32_t          npts,
+  const int32_t   npts,
   const int32_t    l,
   const T          bf,
   const T          x,
@@ -75,7 +75,7 @@ $endfor\
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_$(name)_angular_deriv1(
-  int32_t          npts,
+  const int32_t    npts,
   const int32_t    l,
   const T          bf,
   const T          bf_x,

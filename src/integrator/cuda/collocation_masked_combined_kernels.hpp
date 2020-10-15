@@ -40,10 +40,9 @@ void collocation_device_masked_combined_kernel(
 
   if( tid_x < npts and tid_y < nshells ) {
 
-    const size_t ipt = tid_x;
-    const size_t ish = tid_y;
-
-    const size_t ibf = offs_device[ish];
+    const uint32_t ipt = tid_x;
+    const uint32_t ish = tid_y;
+    const uint32_t ibf = offs_device[ish];
 
     const auto& shell = shells_device[mask_device[ish]];
     const auto* pt    = pts_device + 3*ipt;
@@ -59,9 +58,9 @@ void collocation_device_masked_combined_kernel(
   
     const auto rsq = xc*xc + yc*yc + zc*zc;
   
-    const size_t nprim = shell.nprim(); 
+    const uint32_t nprim = shell.nprim(); 
     auto tmp = 0.;
-    for( size_t i = 0; i < nprim; ++i )
+    for( uint32_t i = 0; i < nprim; ++i )
       tmp += coeff[i] * std::exp( - alpha[i] * rsq );
 
     auto * bf_eval = eval_device + ibf*npts + ipt;
@@ -100,18 +99,10 @@ void collocation_device_masked_combined_kernel_deriv1(
   XCTaskDevice<T>* __restrict__ device_tasks
 ) {
 
-#ifndef GAUXC_CUDA_ENABLE_COMPACT_COLLOCATION
   // DBWY: These are factored into the loop for this optimization
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
-#endif
 
-#ifdef GAUXC_CUDA_ENABLE_COLLOCATION_SHMEM_COPY
-  using vec_int_type = int4;
-  constexpr int ncpy = sizeof(Shell<T>) / sizeof(vec_int_type);
-  __shared__ vec_int_type shmem[32 * ncpy];
-  Shell<T>* sh_shell = (Shell<T>*)shmem;
-#endif
   if( blockIdx.z < ntasks ) {
 
     auto& task = device_tasks[ blockIdx.z ];
@@ -128,102 +119,14 @@ void collocation_device_masked_combined_kernel_deriv1(
     auto* __restrict__ deval_device_y = task.dbfy;
     auto* __restrict__ deval_device_z = task.dbfz;
 
-#ifdef GAUXC_CUDA_ENABLE_COMPACT_COLLOCATION
-  for ( int tid_x = blockIdx.x * blockDim.x + threadIdx.x; 
-        tid_x < npts;
-        tid_x += blockDim.x * gridDim.x
-  ) {
+  if( tid_y < nshells and tid_x < npts ) {
 
-    for ( int tid_y = blockIdx.y * blockDim.y + threadIdx.y; 
-          tid_y < nshells;
-          tid_y += blockDim.y * gridDim.y ) {
-
-      const size_t ipt = tid_x;
-      const size_t ish = tid_y;
-
-      const size_t ibf = offs_device[ish];
-
-      const auto& shell = shells_device[mask_device[ish]];
-      const auto* pt    = pts_device + 3*ipt;
-
-      const auto* O     = shell.O_data();
-      const auto* alpha = shell.alpha_data();
-      const auto* coeff = shell.coeff_data();
-
-      const auto xc = pt[0] - O[0];
-      const auto yc = pt[1] - O[1];
-      const auto zc = pt[2] - O[2];
-  
-      const double rsq = xc*xc + yc*yc + zc*zc;
-  
-      const size_t nprim = shell.nprim(); 
-      double tmp = 0.;
-      double tmp_x = 0., tmp_y = 0., tmp_z = 0.;
-      for( size_t i = 0; i < nprim; ++i ) {
-
-        const double a = alpha[i];
-        const double e = coeff[i] * std::exp( - a * rsq );
-
-        const double ae = 2. * a * e;
-
-        tmp   += e;
-        tmp_x -= ae * xc;
-        tmp_y -= ae * yc;
-        tmp_z -= ae * zc;
-
-      }
-
-      double * bf_eval = eval_device    + ibf * npts + ipt;
-      double * dx_eval = deval_device_x + ibf * npts + ipt;
-      double * dy_eval = deval_device_y + ibf * npts + ipt;
-      double * dz_eval = deval_device_z + ibf * npts + ipt;
-
-      const bool do_sph = shell.pure();
-      if( do_sph ) 
-        collocation_spherical_unnorm_angular_deriv1( npts, shell.l(), tmp, tmp_x, tmp_y, 
-                                                 tmp_z, xc, yc, zc, bf_eval, dx_eval, 
-                                                 dy_eval, dz_eval );
-      else
-        collocation_cartesian_angular_deriv1( npts, shell.l(), tmp, tmp_x, tmp_y, tmp_z, 
-                                          xc, yc, zc, bf_eval, dx_eval, 
-                                          dy_eval, dz_eval );
-
-
-
-    }
-  }
-
-#else
-
-  if( tid_y < nshells ) {
-
-    const size_t ish = tid_y;
-    const size_t ibf = offs_device[ish];
-
-#ifdef GAUXC_CUDA_ENABLE_COLLOCATION_SHMEM_COPY
-
-    {
-      const auto* shell = shells_device + mask_device[ish];
-      const vec_int_type* src   = (vec_int_type*)shell;
-            vec_int_type* dst   = shmem + threadIdx.y*ncpy;
-      // Copy shell into shared memory
-      for( int i = threadIdx.x; i < ncpy; i += blockDim.x ) {
-        dst[i] = src[i];
-      }
-      __syncwarp();
-    }
-
-    const auto& shell = sh_shell[threadIdx.y];
-
-#else
+    const uint32_t ish = tid_y;
+    const uint32_t ipt = tid_x;
+    const uint32_t ibf = offs_device[ish];
 
     const auto& shell = shells_device[mask_device[ish]];
 
-#endif
-
-  if( tid_x < npts  ) {
-
-    const size_t ipt = tid_x;
     const auto* pt    = pts_device + 3*ipt;
   
 
@@ -237,10 +140,10 @@ void collocation_device_masked_combined_kernel_deriv1(
   
     const auto rsq = xc*xc + yc*yc + zc*zc;
   
-    const size_t nprim = shell.nprim(); 
+    const uint32_t nprim = shell.nprim(); 
     auto tmp = 0.;
     auto tmp_x = 0., tmp_y = 0., tmp_z = 0.;
-    for( size_t i = 0; i < nprim; ++i ) {
+    for( uint32_t i = 0; i < nprim; ++i ) {
 
       const auto a = alpha[i];
       const auto e = coeff[i] * std::exp( - a * rsq );
@@ -270,10 +173,6 @@ void collocation_device_masked_combined_kernel_deriv1(
                                         dy_eval, dz_eval );
 
   } // shell / point idx check
-  }
-
-#endif
-
   } // Batch idx check
 
 
