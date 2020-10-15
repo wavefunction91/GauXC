@@ -134,6 +134,17 @@ inline void cuda_device_sync() {
   GAUXC_CUDA_ERROR( "CUDA Device Sync Failed", stat );
 }
 
+
+
+template <typename T>
+inline int cuda_kernel_max_threads_per_block( T* func ) {
+  cudaFuncAttributes attr;
+  auto stat = cudaFuncGetAttributes(&attr, func);
+
+  GAUXC_CUDA_ERROR( "GetAttr Failed", stat ); 
+  return attr.maxThreadsPerBlock;
+}
+
 }
 }
 
