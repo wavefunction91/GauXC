@@ -77,6 +77,56 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
 
   const auto* den_basis_prod_device = task.zmat;
 
+
+  for( int  ipt = blockIdx.y * blockDim.y + threadIdx.y;
+            ipt < npts;
+	    ipt += blockDim.y * gridDim.y ) {
+
+    double den = 0.;
+    double dx  = 0.;
+    double dy  = 0.;
+    double dz  = 0.;
+    
+    for( int ibf_st = 0; ibf_st < nbf; ibf_st += warp_size ) {
+
+      double den_reg = 0.;
+      double dx_reg  = 0.;
+      double dy_reg  = 0.;
+      double dz_reg  = 0.;
+
+      int ibf = ibf_st + threadIdx.x;
+      if( ibf < nbf ) {
+        const double* bf_col   = basis_eval_device     + ibf*npts;
+        const double* bf_x_col = dbasis_x_eval_device  + ibf*npts;
+        const double* bf_y_col = dbasis_y_eval_device  + ibf*npts;
+        const double* bf_z_col = dbasis_z_eval_device  + ibf*npts;
+        const double* db_col   = den_basis_prod_device + ibf*npts;
+
+        den_reg = bf_col[ ipt ]   * db_col[ ipt ];
+        dx_reg  = bf_x_col[ ipt ] * db_col[ ipt ];
+        dy_reg  = bf_y_col[ ipt ] * db_col[ ipt ];
+        dz_reg  = bf_z_col[ ipt ] * db_col[ ipt ];
+      }
+
+      den += 2 * warpReduceSum( den_reg );
+      dx  += 4 * warpReduceSum( dx_reg );
+      dy  += 4 * warpReduceSum( dy_reg );
+      dz  += 4 * warpReduceSum( dz_reg );
+      
+    }
+
+    if( threadIdx.x == 0 ) {
+      den_eval_device   [ipt] = den;
+      den_x_eval_device [ipt] = dx ;
+      den_y_eval_device [ipt] = dy ;
+      den_z_eval_device [ipt] = dz ;
+    }
+    //__sync_warp();
+
+  }
+
+
+/*
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -113,6 +163,7 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
     atomicAdd( den_y_eval_device + tid_y, dy_reg  );
     atomicAdd( den_z_eval_device + tid_y, dz_reg  );
   }
+*/
   
 
 }
@@ -167,9 +218,7 @@ void eval_uvars_gga_device( size_t           ntasks,
                             hipStream_t     stream ) {
 
   dim3 threads(warp_size, max_warps_per_thread_block, 1);
-  dim3 blocks( util::div_ceil( max_nbf , threads.x ),
-               util::div_ceil( max_npts , threads.y ),
-               ntasks );
+  dim3 blocks( 1, 8, ntasks );
 
   hipLaunchKernelGGL(eval_uvars_gga_kernel, dim3(blocks), dim3(threads), 0, stream ,  ntasks, tasks_device );
 
