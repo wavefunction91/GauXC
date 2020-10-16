@@ -2,8 +2,7 @@
 #include <cuda.h>
 #include <cub/cub.cuh>
 #include "cuda_device_properties.hpp"
-
-#define GAUXC_ENABLE_WARP_REDUCTIONS
+#include "cuda_alg_variant_control.hpp"
 
 namespace GauXC {
 namespace cuda  {
@@ -11,7 +10,7 @@ namespace cuda  {
 __inline__ __device__
 double warpReduceSum(double val) {
  
-#ifdef GAUXC_ENABLE_WARP_REDUCTIONS
+#ifdef GAUXC_HIP_ENABLE_WARP_REDUCTIONS
 
   for(int i=(warp_size/2); i>=1; i/=2)
     val += __shfl_xor_sync(0xffffffff, val, i, warp_size);

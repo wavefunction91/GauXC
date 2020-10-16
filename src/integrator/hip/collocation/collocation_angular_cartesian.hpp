@@ -26,7 +26,7 @@ GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_0(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_0_deriv1(
-  int32_t         npts,
+  const int32_t   npts,
   const T         bf,
   const T         bf_x,
   const T         bf_y,
@@ -65,7 +65,7 @@ GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_1(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_1_deriv1(
-  int32_t         npts,
+  const int32_t   npts,
   const T         bf,
   const T         bf_x,
   const T         bf_y,
@@ -113,7 +113,7 @@ GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_2(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_2_deriv1(
-  int32_t         npts,
+  const int32_t   npts,
   const T         bf,
   const T         bf_x,
   const T         bf_y,
@@ -174,7 +174,7 @@ GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_3(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_3_deriv1(
-  int32_t         npts,
+  const int32_t   npts,
   const T         bf,
   const T         bf_x,
   const T         bf_y,
@@ -225,7 +225,7 @@ GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_3_deriv1(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular(
-  int32_t          npts,
+  const int32_t   npts,
   const int32_t    l,
   const T          bf,
   const T          x,
@@ -259,7 +259,7 @@ GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular(
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_deriv1(
-  int32_t          npts,
+  const int32_t    npts,
   const int32_t    l,
   const T          bf,
   const T          bf_x,

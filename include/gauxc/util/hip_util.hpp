@@ -134,6 +134,17 @@ inline void hip_device_sync() {
   GAUXC_HIP_ERROR( "HIP Device Sync Failed", stat );
 }
 
+
+
+template <typename T>
+inline int hip_kernel_max_threads_per_block( T* func ) {
+  hipFuncAttributes attr;
+  auto stat = hipFuncGetAttributes(&attr, (void*)func);
+
+  GAUXC_HIP_ERROR( "GetAttr Failed", stat ); 
+  return attr.maxThreadsPerBlock;
+}
+
 }
 }
 

@@ -5,11 +5,13 @@
 #include <gauxc/exceptions/hipblas_exception.hpp>
 
 #include "hip_device_properties.hpp"
+
 namespace GauXC {
 namespace hip  {
 namespace blas  {
 
 using namespace GauXC::hip;
+
 template <typename T>
 __global__ void increment_kernel( const T* X, T* Y ) {
   const auto tid = blockIdx.x;
