@@ -4,7 +4,7 @@ hipify-perl ../cuda/collocation/collocation_angular_spherical_unnorm.hpp > collo
 hipify-perl ../cuda/collocation/collocation_device_constants.hpp         > collocation/collocation_device_constants.hpp
 hipify-perl ../cuda/collocation/collocation_radial.hpp                   > collocation/collocation_radial.hpp
 
-hipify-perl ../cuda/collocation_device.cu                    > collocation_device.cxx
+#hipify-perl ../cuda/collocation_device.cu                    > collocation_device.cxx
 hipify-perl ../cuda/collocation_device.hpp                   > collocation_device.hpp
 hipify-perl ../cuda/collocation_masked_combined_kernels.hpp  > collocation_masked_combined_kernels.hpp
 hipify-perl ../cuda/collocation_masked_kernels.hpp           > collocation_masked_kernels.hpp
@@ -12,7 +12,7 @@ hipify-perl ../cuda/collocation_petite_combined_kernels.hpp  > collocation_petit
 hipify-perl ../cuda/collocation_petite_kernels.hpp           > collocation_petite_kernels.hpp
 hipify-perl ../cuda/cublas_extensions.cu                     > hipblas_extensions.cxx
 hipify-perl ../cuda/cublas_extensions.hpp                    > hipblas_extensions.hpp
-hipify-perl ../cuda/cuda_eval_denvars.cu                     > hip_eval_denvars.cxx
+#hipify-perl ../cuda/cuda_eval_denvars.cu                     > hip_eval_denvars.cxx
 hipify-perl ../cuda/cuda_eval_denvars.hpp                    > hip_eval_denvars.hpp
 hipify-perl ../cuda/cuda_extensions.hpp                      > hip_extensions.hpp
 hipify-perl ../cuda/cuda_alg_variant_control.hpp             > hip_alg_variant_control.hpp

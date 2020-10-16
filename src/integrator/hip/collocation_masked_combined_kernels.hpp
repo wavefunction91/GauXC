@@ -99,7 +99,7 @@ void collocation_device_masked_combined_kernel_deriv1(
   size_t                        ntasks,
   Shell<T>*        __restrict__ shells_device,
   XCTaskDevice<T>* __restrict__ device_tasks
-) __attribute__((amdgpu_flat_work_group_size(1,1024))){
+) {
 
   // DBWY: These are factored into the loop for this optimization
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
