@@ -98,9 +98,11 @@ XCHipData<F>::~XCHipData() noexcept {
 
 
 using task_iterator = std::vector< XCTask >::iterator;
+template <typename F>
+using device_task_container = std::vector< hip::XCTaskDevice<F> >;
 
 template <typename F>
-std::tuple< task_iterator, std::vector< hip::XCTaskDevice<F> > >
+std::tuple< task_iterator, device_task_container<F> >
   XCHipData<F>::generate_buffers( const BasisSet<F>& basis,
                                    task_iterator      task_begin,
                                    task_iterator      task_end    ) {

@@ -30,9 +30,9 @@ __inline__ __device__ void collocation_device_radial_eval(
   
   const double rsq = xc*xc + yc*yc + zc*zc;
   
-  const size_t nprim = shell.nprim(); 
+  const uint32_t nprim = shell.nprim(); 
   double tmp = 0.;
-  for( size_t i = 0; i < nprim; ++i )
+  for( uint32_t i = 0; i < nprim; ++i )
     tmp += coeff[i] * std::exp( - alpha[i] * rsq );
 
   *eval_device = tmp;
@@ -66,10 +66,10 @@ __inline__ __device__ void collocation_device_radial_eval_deriv1(
   
   const double rsq = xc*xc + yc*yc + zc*zc;
   
-  const size_t nprim = shell.nprim(); 
+  const uint32_t nprim = shell.nprim(); 
   double tmp = 0.;
   double tmp_x = 0., tmp_y = 0., tmp_z = 0.;
-  for( size_t i = 0; i < nprim; ++i ) {
+  for( uint32_t i = 0; i < nprim; ++i ) {
 
     const double a = alpha[i];
     const double e = coeff[i] * std::exp( - a * rsq );
