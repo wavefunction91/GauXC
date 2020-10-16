@@ -54,8 +54,7 @@ void test_hip_collocation_petite( const BasisSet<double>& basis, std::ifstream& 
 
     util::hip_copy( nbf * npts, eval.data(),    eval_device    );
 
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( eval[i] == Approx( d.eval[i] ) );
+    check_collocation_transpose( npts, nbf, d.eval.data(), eval.data() );
 
   }
   util::hip_device_sync();
@@ -118,8 +117,7 @@ void test_hip_collocation_masked( const BasisSet<double>& basis, std::ifstream& 
 
     util::hip_copy( nbf * npts, eval.data(),    eval_device    );
 
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( eval[i] == Approx( d.eval[i] ) );
+    check_collocation_transpose( npts, nbf, d.eval.data(), eval.data() );
 
   }
   util::hip_device_sync();
@@ -222,8 +220,7 @@ void test_hip_collocation_petite_combined( const BasisSet<double>& basis, std::i
     std::vector<double> eval (tasks[i].nbe * tasks[i].npts);
     util::hip_copy( eval.size(), eval.data(), tasks[i].bf );
 
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( eval[i] == Approx( ref_eval[i] ) );
+    check_collocation_transpose( tasks[i].npts, tasks[i].nbe, ref_eval, eval.data() );
   }
 
 
@@ -318,8 +315,7 @@ void test_hip_collocation_masked_combined( const BasisSet<double>& basis, std::i
     std::vector<double> eval (tasks[i].nbe * tasks[i].npts);
     util::hip_copy( eval.size(), eval.data(), tasks[i].bf );
 
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( eval[i] == Approx( ref_eval[i] ) );
+    check_collocation_transpose( tasks[i].npts, tasks[i].nbe, ref_eval, eval.data() );
   }
 
 
@@ -405,14 +401,10 @@ void test_hip_collocation_deriv1_petite( const BasisSet<double>& basis, std::ifs
     util::hip_copy( nbf * npts, deval_y.data(), deval_device_y );
     util::hip_copy( nbf * npts, deval_z.data(), deval_device_z );
 
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( eval[i] == Approx( d.eval[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_x[i] == Approx( d.deval_x[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_y[i] == Approx( d.deval_y[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
+    check_collocation_transpose( npts, nbf, d.eval.data(), eval.data() );
+    check_collocation_transpose( npts, nbf, d.deval_x.data(), deval_x.data() );
+    check_collocation_transpose( npts, nbf, d.deval_y.data(), deval_y.data() );
+    check_collocation_transpose( npts, nbf, d.deval_z.data(), deval_z.data() );
 
   }
   util::hip_device_sync();
@@ -485,14 +477,10 @@ void test_hip_collocation_deriv1_masked( const BasisSet<double>& basis, std::ifs
     util::hip_copy( nbf * npts, deval_y.data(), deval_device_y );
     util::hip_copy( nbf * npts, deval_z.data(), deval_device_z );
 
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( eval[i] == Approx( d.eval[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_x[i] == Approx( d.deval_x[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_y[i] == Approx( d.deval_y[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
+    check_collocation_transpose( npts, nbf, d.eval.data(), eval.data() );
+    check_collocation_transpose( npts, nbf, d.deval_x.data(), deval_x.data() );
+    check_collocation_transpose( npts, nbf, d.deval_y.data(), deval_y.data() );
+    check_collocation_transpose( npts, nbf, d.deval_z.data(), deval_z.data() );
 
   }
   util::hip_device_sync();
@@ -601,14 +589,12 @@ void test_hip_collocation_petite_combined_deriv1( const BasisSet<double>& basis,
     util::hip_copy( eval.size(), deval_y.data(), tasks[i].dbfy );
     util::hip_copy( eval.size(), deval_z.data(), tasks[i].dbfz );
 
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( eval[i] == Approx( ref_eval[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_x[i] == Approx( ref_deval_x[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_y[i] == Approx( ref_deval_y[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_z[i] == Approx( ref_deval_z[i] ) );
+    auto npts = tasks[i].npts;
+    auto nbe  = tasks[i].nbe;
+    check_collocation_transpose( npts, nbe, ref_eval, eval.data() );
+    check_collocation_transpose( npts, nbe, ref_deval_x, deval_x.data() );
+    check_collocation_transpose( npts, nbe, ref_deval_y, deval_y.data() );
+    check_collocation_transpose( npts, nbe, ref_deval_z, deval_z.data() );
   }
 
 
@@ -719,14 +705,12 @@ void test_hip_collocation_masked_combined_deriv1( const BasisSet<double>& basis,
     util::hip_copy( eval.size(), deval_y.data(), tasks[i].dbfy );
     util::hip_copy( eval.size(), deval_z.data(), tasks[i].dbfz );
 
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( eval[i] == Approx( ref_eval[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_x[i] == Approx( ref_deval_x[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_y[i] == Approx( ref_deval_y[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_z[i] == Approx( ref_deval_z[i] ) );
+    auto npts = tasks[i].npts;
+    auto nbe  = tasks[i].nbe;
+    check_collocation_transpose( npts, nbe, ref_eval, eval.data() );
+    check_collocation_transpose( npts, nbe, ref_deval_x, deval_x.data() );
+    check_collocation_transpose( npts, nbe, ref_deval_y, deval_y.data() );
+    check_collocation_transpose( npts, nbe, ref_deval_z, deval_z.data() );
   }
 
 
