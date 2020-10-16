@@ -1,8 +1,7 @@
 #pragma once
 
 #include <CL/sycl.hpp>
-#include "mkl_blas_sycl.hpp"
-#include "mkl_lapack_sycl.hpp"
+#include <oneapi/mkl.hpp>
 
 namespace GauXC {
 namespace sycl  {
