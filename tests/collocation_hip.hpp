@@ -207,7 +207,7 @@ void test_hip_collocation_petite_combined( const BasisSet<double>& basis, std::i
       return a.npts < b.npts;
     })->npts;
 
-  auto* tasks_device = util::hip_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
+  auto* tasks_device = util::hip_malloc<hip::XCTaskDevice<double>>( tasks.size() );
   util::hip_copy( tasks.size(), tasks_device, tasks.data() );
 
   integrator::hip::eval_collocation_petite_combined( tasks.size(), npts_max,
@@ -303,7 +303,7 @@ void test_hip_collocation_masked_combined( const BasisSet<double>& basis, std::i
       return a.npts < b.npts;
     })->npts;
 
-  auto* tasks_device = util::hip_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
+  auto* tasks_device = util::hip_malloc<hip::XCTaskDevice<double>>( tasks.size() );
   util::hip_copy( tasks.size(), tasks_device, tasks.data() );
 
   integrator::hip::eval_collocation_masked_combined( tasks.size(), npts_max,
@@ -575,7 +575,7 @@ void test_hip_collocation_petite_combined_deriv1( const BasisSet<double>& basis,
       return a.npts < b.npts;
     })->npts;
 
-  auto* tasks_device = util::hip_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
+  auto* tasks_device = util::hip_malloc<hip::XCTaskDevice<double>>( tasks.size() );
   util::hip_copy( tasks.size(), tasks_device, tasks.data() );
 
   integrator::hip::eval_collocation_petite_combined_deriv1( tasks.size(), npts_max,
@@ -693,7 +693,7 @@ void test_hip_collocation_masked_combined_deriv1( const BasisSet<double>& basis,
       return a.npts < b.npts;
     })->npts;
 
-  auto* tasks_device = util::hip_malloc<cuda::XCTaskDevice<double>>( tasks.size() );
+  auto* tasks_device = util::hip_malloc<hip::XCTaskDevice<double>>( tasks.size() );
   util::hip_copy( tasks.size(), tasks_device, tasks.data() );
 
   integrator::hip::eval_collocation_masked_combined_deriv1( tasks.size(), npts_max,

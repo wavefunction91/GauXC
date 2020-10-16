@@ -1,3 +1,4 @@
+#include "collocation_common.hpp"
 #include "collocation_host.hpp"
 #include "collocation_cuda.hpp"
 #include "collocation_hip.hpp"
@@ -99,6 +100,7 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
     test_hip_collocation_masked_combined_deriv1( basis, ref_data );
   }
 #endif // GAUXC_ENABLE_HIP
+
 
 
 #ifdef GAUXC_ENABLE_SYCL

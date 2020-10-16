@@ -48,8 +48,7 @@ void test_sycl_collocation_petite( const BasisSet<double>& basis, std::ifstream&
 
     util::sycl_copy( nbf * npts, eval.data(), eval_device, syclQueue );
 
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( eval[i] == Approx( d.eval[i] ) );
+    check_collocation( npts, nbf, d.eval.data(), eval.data() );
 
   }
   util::sycl_device_sync(syclQueue);
@@ -108,8 +107,7 @@ void test_sycl_collocation_masked( const BasisSet<double>& basis, std::ifstream&
 
     util::sycl_copy( nbf * npts, eval.data(), eval_device, syclQueue );
 
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( eval[i] == Approx( d.eval[i] ) );
+    check_collocation( npts, nbf, d.eval.data(), eval.data() );
   }
 
   util::sycl_device_sync(syclQueue);
@@ -193,8 +191,7 @@ void test_sycl_collocation_petite_combined( const BasisSet<double>& basis, std::
     std::vector<double> eval (tasks[i].nbe * tasks[i].npts);
     util::sycl_copy( eval.size(), eval.data(), tasks[i].bf, syclQueue );
 
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( eval[i] == Approx( ref_eval[i] ) );
+    check_collocation( tasks[i].npts, tasks[i].nbe, ref_eval, eval.data() );
   }
 
 
@@ -283,8 +280,7 @@ void test_sycl_collocation_masked_combined( const BasisSet<double>& basis, std::
     std::vector<double> eval (tasks[i].nbe * tasks[i].npts);
     util::sycl_copy( eval.size(), eval.data(), tasks[i].bf, syclQueue );
 
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( eval[i] == Approx( ref_eval[i] ) );
+    check_collocation( tasks[i].npts, tasks[i].nbe, ref_eval, eval.data() );
   }
 
   for( auto& t : tasks ) {
@@ -351,14 +347,10 @@ void test_sycl_collocation_deriv1_petite( const BasisSet<double>& basis, std::if
     util::sycl_copy( nbf * npts, deval_y.data(), deval_device_y, syclQueue );
     util::sycl_copy( nbf * npts, deval_z.data(), deval_device_z, syclQueue );
 
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( eval[i] == Approx( d.eval[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_x[i] == Approx( d.deval_x[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_y[i] == Approx( d.deval_y[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
+    check_collocation( npts, nbf, d.eval.data(), eval.data() );
+    check_collocation( npts, nbf, d.deval_x.data(), deval_x.data() );
+    check_collocation( npts, nbf, d.deval_y.data(), deval_y.data() );
+    check_collocation( npts, nbf, d.deval_z.data(), deval_z.data() );
   }
 
   util::sycl_device_sync(syclQueue);
@@ -430,14 +422,10 @@ void test_sycl_collocation_deriv1_masked( const BasisSet<double>& basis, std::if
     util::sycl_copy( nbf * npts, deval_y.data(), deval_device_y, syclQueue );
     util::sycl_copy( nbf * npts, deval_z.data(), deval_device_z, syclQueue );
 
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( eval[i] == Approx( d.eval[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_x[i] == Approx( d.deval_x[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_y[i] == Approx( d.deval_y[i] ) );
-    for( auto i = 0; i < npts * nbf; ++i )
-      CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
+    check_collocation( npts, nbf, d.eval.data(), eval.data() );
+    check_collocation( npts, nbf, d.deval_x.data(), deval_x.data() );
+    check_collocation( npts, nbf, d.deval_y.data(), deval_y.data() );
+    check_collocation( npts, nbf, d.deval_z.data(), deval_z.data() );
 
   }
 
@@ -539,14 +527,12 @@ void test_sycl_collocation_petite_combined_deriv1( const BasisSet<double>& basis
     util::sycl_copy( eval.size(), deval_y.data(), tasks[i].dbfy, syclQueue );
     util::sycl_copy( eval.size(), deval_z.data(), tasks[i].dbfz, syclQueue );
 
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( eval[i] == Approx( ref_eval[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_x[i] == Approx( ref_deval_x[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_y[i] == Approx( ref_deval_y[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_z[i] == Approx( ref_deval_z[i] ) );
+    auto npts = tasks[i].npts;
+    auto nbe  = tasks[i].nbe;
+    check_collocation( npts, nbe, ref_eval, eval.data() );
+    check_collocation( npts, nbe, ref_deval_x, deval_x.data() );
+    check_collocation( npts, nbe, ref_deval_y, deval_y.data() );
+    check_collocation( npts, nbe, ref_deval_z, deval_z.data() );
   }
 
   for( auto& t : tasks ) {
@@ -652,14 +638,12 @@ void test_sycl_collocation_masked_combined_deriv1( const BasisSet<double>& basis
     util::sycl_copy( eval.size(), deval_y.data(), tasks[i].dbfy, syclQueue );
     util::sycl_copy( eval.size(), deval_z.data(), tasks[i].dbfz, syclQueue );
 
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( eval[i] == Approx( ref_eval[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_x[i] == Approx( ref_deval_x[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_y[i] == Approx( ref_deval_y[i] ) );
-    for( auto i = 0; i < eval.size(); ++i )
-      CHECK( deval_z[i] == Approx( ref_deval_z[i] ) );
+    auto npts = tasks[i].npts;
+    auto nbe  = tasks[i].nbe;
+    check_collocation( npts, nbe, ref_eval, eval.data() );
+    check_collocation( npts, nbe, ref_deval_x, deval_x.data() );
+    check_collocation( npts, nbe, ref_deval_y, deval_y.data() );
+    check_collocation( npts, nbe, ref_deval_z, deval_z.data() );
   }
 
   for( auto& t : tasks ) {
