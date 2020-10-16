@@ -93,61 +93,73 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
 
   size_t n_deriv = this->func_->is_gga() ? 1 : 0;
 
-  // Allocate Memory
-  cuda_data_ = std::make_shared<XCCudaData<value_type>>( 
-    this->load_balancer_->molecule().size(),
-    n_deriv,
-    nbf,
-    nshells,
-    false,
-    false 
-  );
+  this->timer_.time_op("XCIntegrator.CUDAAlloc", [&](){
 
+    // Allocate Memory
+    cuda_data_ = std::make_shared<XCCudaData<value_type>>( 
+      this->load_balancer_->molecule().size(),
+      n_deriv,
+      nbf,
+      nshells,
+      false,
+      false 
+    );
+
+  });
 
   // Results
   matrix_type VXC( nbf, nbf );
   value_type  EXC, N_EL;
 
-  // Compute Local contributions to EXC / VXC
-  process_batches_cuda_replicated_p< value_type>(
-    n_deriv, XCWeightAlg::SSF, *this->func_, *this->basis_,
-    this->load_balancer_->molecule(), this->load_balancer_->molmeta(),
-    *cuda_data_, tasks, P.data(), VXC.data(), &EXC, &N_EL 
-  );
+  this->timer_.time_op("XCIntegrator.LocalWork", [&](){
 
-  cuda_data_.reset(); // Free up CUDA memory
+    // Compute Local contributions to EXC / VXC
+    process_batches_cuda_replicated_p< value_type>(
+      n_deriv, XCWeightAlg::SSF, *this->func_, *this->basis_,
+      this->load_balancer_->molecule(), this->load_balancer_->molmeta(),
+      *cuda_data_, tasks, P.data(), VXC.data(), &EXC, &N_EL 
+    );
+
+  } );
+
+  this->timer_.time_op("XCIntegrator.CUDAFree", [&](){
+    cuda_data_.reset(); // Free up CUDA memory
+  } );
 
 #ifdef GAUXC_ENABLE_MPI
 
 
   if( world_size > 1 ) {
 
-    // Test of communicator is an inter-communicator
-    // XXX: Can't think of a case when this would be true, but who knows...
-    int inter_flag;
-    MPI_Comm_test_inter( this->comm_, &inter_flag );
+    this->timer_.time_op("XCIntegrator.AllReduce", [&]() {
 
-    // Is Intra-communicator, Allreduce can be done inplace
-    if( not inter_flag ) {
+      // Test of communicator is an inter-communicator
+      // XXX: Can't think of a case when this would be true, but who knows...
+      int inter_flag;
+      MPI_Comm_test_inter( this->comm_, &inter_flag );
 
-      MPI_Allreduce( MPI_IN_PLACE, VXC.data(), nbf*nbf, MPI_DOUBLE,
-                     MPI_SUM, this->comm_ );
-      MPI_Allreduce( MPI_IN_PLACE, &EXC,  1, MPI_DOUBLE, MPI_SUM, this->comm_ );
-      MPI_Allreduce( MPI_IN_PLACE, &N_EL, 1, MPI_DOUBLE, MPI_SUM, this->comm_ );
+      // Is Intra-communicator, Allreduce can be done inplace
+      if( not inter_flag ) {
 
-    // Isn't Intra-communicator (weird), Allreduce can't be done inplace
-    } else {
+        MPI_Allreduce( MPI_IN_PLACE, VXC.data(), nbf*nbf, MPI_DOUBLE,
+                       MPI_SUM, this->comm_ );
+        MPI_Allreduce( MPI_IN_PLACE, &EXC,  1, MPI_DOUBLE, MPI_SUM, this->comm_ );
+        MPI_Allreduce( MPI_IN_PLACE, &N_EL, 1, MPI_DOUBLE, MPI_SUM, this->comm_ );
 
-      matrix_type VXC_cpy = VXC;
-      value_type EXC_cpy = EXC, N_EL_cpy = N_EL;
+      // Isn't Intra-communicator (weird), Allreduce can't be done inplace
+      } else {
 
-      MPI_Allreduce( VXC_cpy.data(), VXC.data(), nbf*nbf, MPI_DOUBLE,
-                     MPI_SUM, this->comm_ );
-      MPI_Allreduce( &EXC_cpy,  &EXC,  1, MPI_DOUBLE, MPI_SUM, this->comm_ );
-      MPI_Allreduce( &N_EL_cpy, &N_EL, 1, MPI_DOUBLE, MPI_SUM, this->comm_ );
-      
+        matrix_type VXC_cpy = VXC;
+        value_type EXC_cpy = EXC, N_EL_cpy = N_EL;
 
-    }
+        MPI_Allreduce( VXC_cpy.data(), VXC.data(), nbf*nbf, MPI_DOUBLE,
+                       MPI_SUM, this->comm_ );
+        MPI_Allreduce( &EXC_cpy,  &EXC,  1, MPI_DOUBLE, MPI_SUM, this->comm_ );
+        MPI_Allreduce( &N_EL_cpy, &N_EL, 1, MPI_DOUBLE, MPI_SUM, this->comm_ );
+
+      }
+
+    } );
 
   }
 

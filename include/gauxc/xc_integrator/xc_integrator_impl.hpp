@@ -27,6 +27,8 @@ protected:
   std::shared_ptr<LoadBalancer>    load_balancer_;
   XCIntegratorState                integrator_state_;
 
+  util::Timer                      timer_;
+
   virtual exc_vxc_type eval_exc_vxc_( const MatrixType& ) = 0;
   
 public:
@@ -80,6 +82,9 @@ public:
     return eval_exc_vxc_(P);
   }
 
+  const util::Timer& get_timings() const {
+    return timer_;
+  }
 };
 
 }

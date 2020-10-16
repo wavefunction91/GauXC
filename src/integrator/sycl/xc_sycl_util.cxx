@@ -162,7 +162,8 @@ void process_batches_sycl_replicated_all_device(
   else {
       for( auto it = task_begin; it != task_end; ++it )
           oneapi::mkl::blas::column_major::gemm( syclQue, oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::nontrans,
-                                                 it->nbe, it->npts, it->nbe, 1., it->nbe_scr, it->nbe, it->bf, it->nbe,                                                 0., it->zmat, it->nbe );
+                                                 it->nbe, it->npts, it->nbe, 1., it->nbe_scr, it->nbe, it->bf, it->nbe, 
+                                                 0., it->zmat, it->nbe );
   }
 
   std::cout << "AFTER GEMM" << std::endl;
