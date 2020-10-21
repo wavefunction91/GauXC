@@ -11,12 +11,12 @@ namespace cuda       {
 using namespace GauXC::cuda;
 
 
-#define WARP_X 32
+#define WARP_X 16
 #define WARP_Y 1
 #define UNROLL_FACTOR 4
 #define EFF_UNROLL 4
 #define CUT_X 8
-#define CUT_Y 4
+#define CUT_Y 8
 
 
 template <typename T>
@@ -50,14 +50,12 @@ void inc_by_submat_combined_kernel( size_t           ntasks,
 
   for( int i_cut = tid_yy + start_cut_y; i_cut < end_cut_y; i_cut += CUT_Y ) {
     const int i_cut_first  = submat_cut_device[ 4*i_cut ];
-    const int i_cut_second = submat_cut_device[ 4*i_cut + 1 ];
-    const int delta_i      = i_cut_second - i_cut_first;
+    const int delta_i      = submat_cut_device[ 4*i_cut + 1 ];
     const int i_cut_small  = submat_cut_device[ 4*i_cut + 2 ];
 
   for( int j_cut = tid_yx + start_cut_x; j_cut < end_cut_x; j_cut += CUT_X ) {
     const int j_cut_first  = submat_cut_device[ 4*j_cut ];
-    const int j_cut_second = submat_cut_device[ 4*j_cut + 1 ];
-    const int delta_j      = j_cut_second - j_cut_first;
+    const int delta_j      = submat_cut_device[ 4*j_cut + 1 ];
     const int j_cut_small  = submat_cut_device[ 4*j_cut + 2 ];
 
     auto* ASmall_begin = ASmall_device + i_cut_small + j_cut_small*LDAS;
@@ -98,7 +96,7 @@ void task_inc_potential( size_t           ntasks,
                          T*               V_device,
                          size_t           LDV,
                          cudaStream_t     stream ) {
-  dim3 threads(warp_size, max_warps_per_thread_block, 1), blocks(1,1,ntasks);
+  dim3 threads(warp_size / 2, max_warps_per_thread_block * 2, 1), blocks(1,1,ntasks);
 
   for (int i = 0; i < util::div_ceil(LDV, submat_block_size); i++) {
     for (int j = 0; j < util::div_ceil(LDV, submat_block_size); j++) {
