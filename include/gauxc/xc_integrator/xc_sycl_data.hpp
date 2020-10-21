@@ -97,7 +97,7 @@ public:
               size_t _nshells,
               bool _denpack_host = false,
               bool _vxcinc_host  = false,
-              bool _batch_l3_blas = true );
+              bool _batch_l3_blas = false );
 
   ~XCSyclData() noexcept;
   XCSyclData( const XCSyclData& )          = delete;

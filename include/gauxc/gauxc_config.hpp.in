@@ -30,8 +30,7 @@
 
 #ifdef GAUXC_ENABLE_SYCL
   #include <CL/sycl.hpp>
-  #include <mkl_blas_sycl.hpp>
-  #include <mkl_lapack_sycl.hpp>
+  #include <oneapi/mkl.hpp>
 #endif
 
 #if defined(__CUDACC__) || defined(__HIPCC__)
