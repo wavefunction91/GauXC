@@ -6,6 +6,7 @@ if( NOT Catch2_FOUND )
   FetchContent_Declare(
     catch2
     GIT_REPOSITORY https://github.com/catchorg/Catch2.git
+    GIT_TAG        v2.13.2
   )
   
   set(CATCH_BUILD_TESTING OFF CACHE BOOL "Build SelfTest project" FORCE)
