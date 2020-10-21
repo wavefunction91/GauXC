@@ -81,36 +81,36 @@ std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > 
       if (cut_start < block_start && cut_end < block_start) {
 	std::cout << "Something is wrong constructing the extended cut map " << cut_index << " " << cut_start << " "  << cut_end << " "  << block_start << std::endl;
       } else if (cut_start < block_start && cut_end > block_end) {
-	submat_map_expand.emplace_back(block_start, block_end);
+	submat_map_expand.emplace_back(block_start, block_end - block_start);
 
-        delta = submat_map_expand.back().second - submat_map_expand.back().first;
+        delta = submat_map_expand.back().second;
         submat_map_expand.emplace_back(small_index, small_index + delta);
         small_index += delta;
 
 	cut_expand_index++;
 	break;
       } else if (cut_start < block_start) {
-	submat_map_expand.emplace_back(block_start, cut_end);
+	submat_map_expand.emplace_back(block_start, cut_end - block_start);
 
-        delta = submat_map_expand.back().second - submat_map_expand.back().first;
+        delta = submat_map_expand.back().second;
         submat_map_expand.emplace_back(small_index, small_index + delta);
         small_index += delta;
 
 	cut_index++;
 	cut_expand_index++;
       } else if (cut_end > block_end) {
-	submat_map_expand.emplace_back(cut_start, block_end);
+	submat_map_expand.emplace_back(cut_start, block_end - cut_start);
 
-        delta = submat_map_expand.back().second - submat_map_expand.back().first;
+        delta = submat_map_expand.back().second;
         submat_map_expand.emplace_back(small_index, small_index + delta);
         small_index += delta;
 
 	cut_expand_index++;
 	break;
       } else {
-        submat_map_expand.emplace_back(cut_start, cut_end);
+        submat_map_expand.emplace_back(cut_start, cut_end - cut_start);
 
-        delta = submat_map_expand.back().second - submat_map_expand.back().first;
+        delta = submat_map_expand.back().second;
         submat_map_expand.emplace_back(small_index, small_index + delta);
         small_index += delta;
 
@@ -123,37 +123,6 @@ std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > 
     }
     submat_block_idx.push_back(cut_expand_index);
   }
-
-  submat_map_expand[1].second = submat_block_idx[1];
-
-//  std::cout << submat_block_idx.size() << std::endl;
-
-
-  //for (int i = 0; i < submat_block_idx.size(); i++) {
-  //  std::cout << submat_block_idx[i] << " ";
- // }
- // std::cout << std::endl;
-
-
-
-/*
- // std::cout << "Task lengths: " << submat_map_check.size() << " " << submat_map_expand.size() << std::endl;
- // std::cout << "BlockIndex  : " << submat_map_check[1].second << " " << submat_map_expand[1].second << std::endl;
-  for (int i = 0; i < submat_map_check.size(); i+=2) {
-    if (submat_map_check[i].first != submat_map_expand[i].first)
-      std::cout << "start:\t " << submat_map_check[i].first << " " << submat_map_expand[i].first << std::endl;
-    if (submat_map_check[i].second != submat_map_expand[i].second)
-      std::cout << "end  :\t " << submat_map_check[i].second << " " << submat_map_expand[i].second << std::endl;
-    if (submat_map_check[i+1].first != submat_map_expand[i+1].first)
-      std::cout << "small:\t " << submat_map_check[i+1].first << " " << submat_map_expand[i+1].first << std::endl;
-  }
-
- // for (int i = submat_map_check.size(); i < submat_map_expand.size(); i+=2) {
- //     std::cout << "start:\t " << submat_map_expand[i].first << std::endl;
- // }
-
-*/
-
 
   return {submat_map_expand, submat_block_idx};
 }
