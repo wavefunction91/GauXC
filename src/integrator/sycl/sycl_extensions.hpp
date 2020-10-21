@@ -35,7 +35,7 @@ double blockReduceSum( double val , cl::sycl::nd_item<3>& item_ct, double *share
 }
 
 template <typename T, int warp_size = 32>
-__inline__ T warp_prod_reduce( cl::sycl::intel::sub_group sub_g, T val ) {
+__inline__ T warp_prod_reduce( cl::sycl::ONEAPI::sub_group sub_g, T val ) {
 
   for( int i = warp_size / 2; i >= 1; i /= 2 )
       val *= sub_g.shuffle_xor( val, i );
@@ -48,7 +48,7 @@ __inline__ T block_prod_reduce( T val , cl::sycl::nd_item<3>& item_ct, T *shared
 
   const int lane = item_ct.get_local_id(2) % 32;
   const int wid = item_ct.get_local_id(2) / 32;
-  cl::sycl::intel::sub_group sub_g = item_ct.get_sub_group();
+  cl::sycl::ONEAPI::sub_group sub_g = item_ct.get_sub_group();
 
   val = warp_prod_reduce( sub_g, val );
 

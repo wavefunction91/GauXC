@@ -9,7 +9,7 @@
 #    The module will define the following variables:
 #
 #      InteloneMKL_FOUND       - Found oneMKL installation
-#      InteloneMKL_INCLUDE_DIR - Location of oneMKL headers (mkl_sycl.hpp)
+#      InteloneMKL_INCLUDE_DIR - Location of oneMKL headers (mkl.hpp)
 #      InteloneMKL_LIBRARIES   - oneMKL libraries
 #
 #    This module will export the following CMake TARGETS if possible
@@ -121,7 +121,7 @@ endif()
 
 # Header
 find_path( InteloneMKL_INCLUDE_DIR
-  NAMES mkl_sycl.hpp
+  NAMES oneapi/mkl.hpp
   HINTS ${intelonemkl_PREFIX}
   PATHS ${InteloneMKL_INCLUDE_DIR}
   PATH_SUFFIXES include

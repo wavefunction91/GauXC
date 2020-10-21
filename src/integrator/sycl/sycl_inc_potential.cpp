@@ -50,8 +50,8 @@ void inc_by_submat_combined_kernel( size_t           ntasks,
                 for( int64_t J = tid_y; J < delta_j; J += item_ct.get_local_range(1) )
                     for( int64_t I = tid_x; I < delta_i; I += item_ct.get_local_range(2) ) {
                         //cl::sycl::atomic_fetch_add( ABig_begin + I + J*LDA, ASmall_begin[I+J*LDAS] );
-                        auto atm = cl::sycl::intel::atomic_ref<T, cl::sycl::intel::memory_order::relaxed,
-                                                               cl::sycl::intel::memory_scope::device, cl::sycl::access::address_space::global_space>( *(ABig_begin + I + J*LDA) );
+                        auto atm = cl::sycl::ONEAPI::atomic_ref<T, cl::sycl::ONEAPI::memory_order::relaxed,
+                                                               cl::sycl::ONEAPI::memory_scope::device, cl::sycl::access::address_space::global_space>( *(ABig_begin + I + J*LDA) );
                         atm.fetch_add( ASmall_begin[I+J*LDAS] );
                     }
                 j += delta_j;

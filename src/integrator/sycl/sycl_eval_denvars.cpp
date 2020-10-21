@@ -7,9 +7,9 @@
 
 template <typename T>
 using relaxed_atomic_ref =
-  cl::sycl::intel::atomic_ref< T, cl::sycl::intel::memory_order::relaxed,
-                                  cl::sycl::intel::memory_scope::device,
-                                  cl::sycl::access::address_space::global_space>;
+  cl::sycl::ONEAPI::atomic_ref< T, cl::sycl::ONEAPI::memory_order::relaxed,
+				cl::sycl::ONEAPI::memory_scope::device,
+				cl::sycl::access::address_space::global_space>;
 
 namespace GauXC      {
 namespace integrator {
