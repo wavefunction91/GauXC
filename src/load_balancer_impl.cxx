@@ -50,8 +50,19 @@ const std::vector<XCTask>& LoadBalancerImpl::get_tasks() const {
 }
 
 std::vector<XCTask>& LoadBalancerImpl::get_tasks() {
+  auto create_tasks_st = std::chrono::high_resolution_clock::now();
+
   if( not local_tasks_.size() ) local_tasks_ = create_local_tasks_();
+
+  auto create_tasks_en = std::chrono::high_resolution_clock::now();
+  std::chrono::duration<double> create_tasks_dr = create_tasks_en - create_tasks_st; 
+  timer_.add_timing("LoadBalancer.CreateTasks", create_tasks_dr);
+
   return local_tasks_;
+}
+
+const util::Timer& LoadBalancerImpl::get_timings() const {
+  return timer_;
 }
 
 

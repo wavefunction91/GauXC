@@ -57,4 +57,11 @@ typename XCIntegrator<MatrixType>::exc_vxc_type
 
   return pimpl_->eval_exc_vxc(P);
 };
+
+template <typename MatrixType>
+const util::Timer& XCIntegrator<MatrixType>::get_timings() const {
+  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+
+  return pimpl_->get_timings();
+}
 }
