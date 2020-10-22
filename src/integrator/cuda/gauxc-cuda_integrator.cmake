@@ -12,6 +12,7 @@ target_sources( gauxc PRIVATE cuda/collocation_device.cu
                               cuda/cublas_extensions.cu
                               cuda/cuda_zmat.cu
                               cuda/cuda_inc_potential.cu
+			      cuda/cuda_device_properties.cxx
 )
 
 target_compile_features( gauxc PRIVATE cuda_std_14 )
@@ -23,7 +24,7 @@ target_include_directories( gauxc
 
 target_compile_options( gauxc
   PRIVATE
-    $<$<COMPILE_LANGUAGE:CUDA>: -Xcudafe --diag_suppress=partial_override -Xptxas -v > 
+    $<$<COMPILE_LANGUAGE:CUDA>: -lineinfo -Xcudafe --diag_suppress=partial_override -Xptxas -v > 
 )
 
 

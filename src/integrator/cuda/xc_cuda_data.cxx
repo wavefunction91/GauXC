@@ -1,6 +1,7 @@
 #include <gauxc/xc_integrator/xc_cuda_data.hpp>
 #include "buffer_adaptor.hpp"
 #include "integrator_common.hpp"
+#include "cuda_device_properties.hpp"
 
 namespace GauXC {
 
@@ -153,7 +154,8 @@ std::tuple< task_iterator, device_task_container<F> >
     auto dist_nearest = task_it->dist_nearest;
 
     // Generate map from compressed to non-compressed matrices
-    auto [submat_cut, submat_block] = integrator::gen_compressed_submat_map( basis, shell_list );
+    uint32_t submat_chunk_size = cuda::get_submat_cut_block(nbf);
+    auto [submat_cut, submat_block] = integrator::gen_compressed_submat_map( basis, shell_list, nbf, submat_chunk_size );
     size_t ncut     = submat_cut.size() / 2;
     size_t nblock   = submat_block.size();
     size_t nshells  = shell_list.size();

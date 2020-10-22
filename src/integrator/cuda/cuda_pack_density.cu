@@ -99,6 +99,7 @@ void task_pack_density_matrix( size_t           ntasks,
 
   dim3 threads(warp_size / 2, max_warps_per_thread_block * 2, 1), blocks(1,1,ntasks);
 
+  const int submat_block_size = get_submat_cut_block(LDP);
   for (int i = 0; i < util::div_ceil(LDP, submat_block_size); i++) {
     for (int j = 0; j < util::div_ceil(LDP, submat_block_size); j++) {
       submat_set_combined_kernel<<< blocks, threads, 0, stream >>>(

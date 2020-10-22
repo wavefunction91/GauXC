@@ -1,14 +1,13 @@
 #include "integrator_common.hpp"
 
 
-#include "cuda_device_properties.hpp"
-
 namespace GauXC      {
 namespace integrator {
 
 std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > >
   gen_compressed_submat_map( const BasisSet<double>&       basis,
-                             const std::vector< int32_t >& shell_mask ) {
+                             const std::vector< int32_t >& shell_mask,
+                             const int32_t LDA, const int32_t block_size ) {
 
 
   std::vector< std::pair<int32_t, int32_t> > submat_map;
@@ -62,11 +61,10 @@ std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > 
    * This is veyr temporary and primarily so I did not have to add an additional input variable.
    *
    */
-  const int block_size = cuda::submat_block_size;
   std::vector< std::pair<int32_t, int32_t> > submat_map_expand;
   std::vector< int32_t > submat_block_idx;
   submat_block_idx.push_back(0);
-  const int end_point = 10292; //submat_map.back().second;
+  const int end_point = LDA; 
 
   int cut_index = 0;
   int cut_expand_index = 0;
