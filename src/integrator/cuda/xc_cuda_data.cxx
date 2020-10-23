@@ -139,6 +139,8 @@ std::tuple< task_iterator, device_task_container<F> >
   size_t total_nblock   = 0;
   size_t memleft = dynmem_sz;
 
+  uint32_t submat_chunk_size = cuda::get_submat_cut_block(nbf);
+
   // Offset memory by the static requirement of an extra pointer element 
   // for each of the size batch arrays in MAGMA
   memleft -= 6 * sizeof(int); //M,N,K,LDA,LDB,LDC
@@ -154,7 +156,6 @@ std::tuple< task_iterator, device_task_container<F> >
     auto dist_nearest = task_it->dist_nearest;
 
     // Generate map from compressed to non-compressed matrices
-    uint32_t submat_chunk_size = cuda::get_submat_cut_block(nbf);
     auto [submat_cut, submat_block] = integrator::gen_compressed_submat_map( basis, shell_list, nbf, submat_chunk_size );
     size_t ncut     = submat_cut.size() / 2;
     size_t nblock   = submat_block.size();
@@ -286,7 +287,8 @@ std::tuple< task_iterator, device_task_container<F> >
   }
 
 
-  std::cout << "XCDeviceData will stack allocate for " << tasks_device.size() << " tasks" << std::endl; 
+  std::cout << "XCDeviceData will stack allocate for " << tasks_device.size() << " tasks"; 
+  std::cout << " Using chunk size of " << submat_chunk_size << std::endl;
 
   // Allocate out of dynamic memory
   buffer_adaptor mem( dynmem_ptr, dynmem_sz );
