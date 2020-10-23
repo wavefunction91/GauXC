@@ -42,9 +42,6 @@ std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > 
       basis.shell_to_ao_range(shell_mask[0]).second;
 
 
-//  for (int i = 0; i < submat_map.size(); i++) {
-//      std::cout << i << "\t" << submat_map[i].first << "\t" << submat_map[i].second << std::endl;
-//  }
   /*
    * This code block does post-processing for the submatrix optimizations
    *
@@ -56,9 +53,9 @@ std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > 
    * While the small matrix start indices are stored in the additional pair, the second 
    * value is blank as the delta can be reused from the big matrix start and stop points.
    *
-   * The L2 cache optimization forces breaks this into muliple kernel calls, and I am 
-   * currently using the forth value in a cut to pass information about the block to the kernel.
-   * This is veyr temporary and primarily so I did not have to add an additional input variable.
+   * It also creates an additional vector which stores the mapping from big matrix block 
+   * to cut index. As a kernel only processes a single block of the big matrix, it can
+   * look up the starting and ending cut indices and ignore all other cuts.
    *
    */
   std::vector< std::pair<int32_t, int32_t> > submat_map_expand;
@@ -77,8 +74,13 @@ std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > 
     int cut_end   = submat_map[cut_index].second;
     while (cut_index < submat_map.size() && cut_start < block_end) {
       if (cut_start < block_start && cut_end < block_start) {
-	std::cout << "Something is wrong constructing the extended cut map " << cut_index << " " << cut_start << " "  << cut_end << " "  << block_start << std::endl;
+        // In this case the cut starts and stops before the block starts.
+	// This should never happen as the cut should already have been processed.
+	// But I included this case as a sanity check.
+	std::cout << "Something is wrong constructing the extended cut map " << std::endl;
       } else if (cut_start < block_start && cut_end > block_end) {
+        // In this case, the cut spans the entire block. The cut index is not
+	// incremented because we need to process the rest of it.
 	submat_map_expand.emplace_back(block_start, block_end - block_start);
 
         delta = submat_map_expand.back().second;
@@ -88,6 +90,8 @@ std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > 
 	cut_expand_index++;
 	break;
       } else if (cut_start < block_start) {
+	// In this case the cut begins before the block, but ends within
+	// this block
 	submat_map_expand.emplace_back(block_start, cut_end - block_start);
 
         delta = submat_map_expand.back().second;
@@ -97,6 +101,8 @@ std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > 
 	cut_index++;
 	cut_expand_index++;
       } else if (cut_end > block_end) {
+	// In this case, the cut starts within the block, but extends
+	// into the next block. Again, the cut index is not incremented
 	submat_map_expand.emplace_back(cut_start, block_end - cut_start);
 
         delta = submat_map_expand.back().second;
@@ -106,6 +112,7 @@ std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > 
 	cut_expand_index++;
 	break;
       } else {
+	// In this case, the cut starts and ends within the block
         submat_map_expand.emplace_back(cut_start, cut_end - cut_start);
 
         delta = submat_map_expand.back().second;
