@@ -62,6 +62,11 @@ std::vector<XCTask>& LoadBalancer::get_tasks() {
   return pimpl_->get_tasks();
 }
 
+const util::Timer& LoadBalancer::get_timings() const {
+  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  return pimpl_->get_timings();
+}
+
 size_t LoadBalancer::max_npts() const {
   if( not pimpl_ ) throw std::runtime_error("Not Initialized");
   return pimpl_->max_npts();
