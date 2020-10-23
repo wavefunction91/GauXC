@@ -24,7 +24,7 @@ target_include_directories( gauxc
 
 target_compile_options( gauxc
   PRIVATE
-    $<$<COMPILE_LANGUAGE:CUDA>: -lineinfo -Xcudafe --diag_suppress=partial_override -Xptxas -v > 
+    $<$<COMPILE_LANGUAGE:CUDA>: -Xcudafe --diag_suppress=partial_override -Xptxas -v > 
 )
 
 
