@@ -14,6 +14,14 @@ namespace cuda       {
 
 using namespace GauXC::cuda;
 
+#define WEIGHT_UNROLL 2
+
+__global__ void reciprocal_kernel(size_t length, double* vec) {
+   for (int i = threadIdx.x + blockIdx.x * blockDim.x; i < length; i += blockDim.x * gridDim.x) {
+     vec[i] = 1 / vec[i];
+   }
+}
+
 
 __global__ void compute_point_center_dist(
         size_t      npts,
@@ -362,6 +370,183 @@ __global__ void modify_weights_ssf_kernel_1d(
 
 
 
+__global__ void modify_weights_ssf_kernel_2d(
+        size_t                            npts,
+        size_t                            natoms,
+  const double*                           RAB,
+  const double*                           coords,
+  const double*                           dist_scratch,
+  const int32_t*                          iparent_device,
+  const double*                           dist_nearest_device,
+        double*                           weights_device
+) {
+
+  // Frisch partition functions
+  auto gFrisch = [](double x) {
+
+    const double s_x  = x / magic_ssf_factor<>;
+    const double s_x2 = s_x  * s_x;
+    const double s_x3 = s_x  * s_x2;
+    const double s_x5 = s_x3 * s_x2;
+    const double s_x7 = s_x5 * s_x2;
+
+    return (35.*(s_x - s_x3) + 21.*s_x5 - 5.*s_x7) / 16.;
+  };
+  
+  auto sFrisch = [&] (double x) {
+    if( fabs(x) < magic_ssf_factor<> ) return 0.5 * (1. - gFrisch(x));
+    else if( x >= magic_ssf_factor<> ) return 0.;
+    else                               return 1.;
+  };
+
+  constexpr double weight_tol = 1e-10;
+  int natom_block = ((natoms + blockDim.x - 1) / blockDim.x) * blockDim.x;
+
+  const int tid_x = threadIdx.y + blockIdx.y * blockDim.y;
+  const int nt_x  = blockDim.y  * gridDim.y;
+
+  __shared__ int jCounter[max_threads_per_thread_block];
+
+  // Each warp will work together on a point
+  for( int ipt = tid_x; ipt < npts; ipt += nt_x ) {
+
+    const auto iParent = iparent_device[ipt];
+
+    double sum = 0.; 
+    double parent_weight = 0.;
+
+    const double* const local_dist_scratch = dist_scratch + ipt * natoms;
+    const double dist_cutoff = 0.5 * (1 - magic_ssf_factor<> ) * 
+      dist_nearest_device[ipt];
+    if( local_dist_scratch[iParent] < dist_cutoff ) continue;
+
+    // Do iParent First
+    {
+
+      const double ri = local_dist_scratch[ iParent ];
+      const double* const local_rab = RAB + iParent * natoms;
+
+      parent_weight = 1.;
+      for( int jCenter = threadIdx.x; jCenter < natom_block; jCenter+=blockDim.x ) {
+	double contribution = 1.0;
+	if (jCenter < natoms && iParent != jCenter) {
+          const double rj = local_dist_scratch[ jCenter ];
+          const double mu = (ri - rj) * local_rab[ jCenter ]; // XXX: RAB is symmetric
+          contribution = sFrisch( mu );
+	}
+        contribution = warpReduceProd(contribution);
+        parent_weight *= contribution;
+
+	if (parent_weight < weight_tol) break;
+      }
+    }
+
+    if( parent_weight < eps_d ) {
+      if (threadIdx.x == 0)
+        weights_device[ipt] = 0.;
+      __syncwarp();
+      continue;
+    }
+
+    // Initialize each counter to 0
+    if (threadIdx.x == 0) {
+      jCounter[threadIdx.y] = 0;
+    }
+    __syncwarp();
+
+    // Each thread will process an iCenter. Atomic operations are used to assign
+    // an iCenter value to each thread.
+    int iCenter = atomicAdd(&jCounter[threadIdx.y], 1);
+    if (iCenter >= iParent) iCenter++; // iCenter == iParent is skipped
+
+    // The entire warp processes the same jCenter value at the same time
+    int jCenter = 0;
+
+    double ri = local_dist_scratch[ iCenter ];
+    const double* local_rab = RAB + iCenter * natoms;
+    double ps = 1.;
+    int iCount = 0; 
+    int cont = 1;
+
+    // To simplify the unrolling logic, the number of atoms is padded.
+    // Because the dist_scratch and rab matrices are not padded, the reads
+    // might be out of bounds. The algorithm is still correct because the 
+    // index is checked before the contribution is included.
+    const int pad = WEIGHT_UNROLL;
+    const int pad_natoms = ((natoms + pad - 1) / pad) * pad;
+
+    // We will continue iterating until all of the threads have cont set to 0
+    while (__any_sync(0xffffffff, cont)) { 
+      if (cont) {
+      if( ps > weight_tol && iCount < pad_natoms ) {
+        // A thread is done with a iCenter based on 2 conditions. Weight tolerance
+        // Or if it has seen all of the jCenters
+	iCount += WEIGHT_UNROLL;
+	double rj[WEIGHT_UNROLL];
+	double rab_val[WEIGHT_UNROLL];
+	double mu[WEIGHT_UNROLL];
+
+        #pragma unroll
+        for (int k = 0; k < WEIGHT_UNROLL; k++) {
+          rj[k]      = local_dist_scratch[ jCenter + k ]; // TODO these are unsafe reads
+          rab_val[k] = local_rab[          jCenter + k ]; // TODO pad to make reads safe
+	}
+        #pragma unroll
+	for (int k = 0; k < WEIGHT_UNROLL; k++) {
+          mu[k] = (ri - rj[k]) * rab_val[k]; // XXX: RAB is symmetric
+	}
+
+        #pragma unroll
+	for (int k = 0; k < WEIGHT_UNROLL; k++) {
+          if((iCenter != jCenter + k) && (jCenter + k < natoms)) {
+            mu[k] = sFrisch( mu[k] );
+	    ps *= mu[k];
+          }
+	}
+      } else {
+        // In the case were the thread is done, it begins processing another iCenter
+        sum += ps;
+        iCenter = atomicAdd(&jCounter[threadIdx.y], 1);
+	if (iCenter >= iParent) iCenter++;
+
+        if (iCenter < natoms ) {
+          ri = local_dist_scratch[ iCenter ];
+          local_rab = RAB + iCenter * natoms;
+          ps = 1.;
+          iCount = 0;
+        } else {
+          // If there are no more iCenters left to process, it signals it is ready to exit
+          cont = 0;
+	}
+      }
+      }
+
+      // Wraps jCenter around. This was faster than modulo
+      jCenter += WEIGHT_UNROLL;
+      jCenter = (jCenter < pad_natoms) ? jCenter : jCenter - pad_natoms;
+    }
+
+    // All of the threads then sum their contributions. Only thread 0 needs to add the parent
+    // contribution.
+    __syncwarp();
+    sum = warpReduceSum(sum);
+    if (threadIdx.x == 0) {
+      sum += parent_weight;
+      weights_device[ipt] *= parent_weight / sum;
+    }
+
+    __syncwarp();
+
+  }
+}
+
+
+void cuda_reciprocal(size_t length, double* vec, cudaStream_t stream) {
+  dim3 threads(max_threads_per_thread_block);
+  dim3 blocks( 80 );
+  reciprocal_kernel<<<threads, blocks, 0, stream>>>(length, vec);
+}
+
 
 template <typename F>
 void partition_weights_cuda_SoA( XCWeightAlg    weight_alg,
@@ -390,14 +575,13 @@ void partition_weights_cuda_SoA( XCWeightAlg    weight_alg,
     );
 
   }
-
   const bool partition_weights_1d_kernel = true;
 
   if( partition_weights_1d_kernel ) {
 
-    dim3 threads(max_threads_per_thread_block);
-    dim3 blocks( util::div_ceil( npts, threads.x ));
-    modify_weights_ssf_kernel_1d<<< blocks, threads, 0, stream >>>(
+    dim3 threads( warp_size, max_warps_per_thread_block );
+    dim3 blocks( 1, 80 ); // TODO Tune to SMs on device (80 for V100, 108 for A100)
+    modify_weights_ssf_kernel_2d<<< blocks, threads, 0, stream >>>(
       npts, natoms, rab_device, atomic_coords_device, dist_scratch_device, 
       iparent_device, dist_nearest_device, weights_device
     );

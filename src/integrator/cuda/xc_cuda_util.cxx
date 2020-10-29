@@ -342,6 +342,8 @@ void process_batches_cuda_replicated_p(
   // RAB
   util::cuda_copy( natoms * natoms, cuda_data.rab_device, meta.rab().data(),
                    "RAB H2D" );
+  // This could probably happen on the host
+  cuda_reciprocal(cuda_data.natoms * cuda_data.natoms, cuda_data.rab_device, 0);
 
   // Atomic coordinates 
   std::vector<double> coords( 3*natoms );
