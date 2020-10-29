@@ -212,10 +212,10 @@ def generate_eval_lines( L, ang ):
     bf_z_eval = sympy.simplify( a_z * bf + a * bf_z )
   
   
-    bf_eval_str = 'eval[{}] = {};'.format(j,bf_eval)
-    bf_x_eval_str = 'eval_x[{}] = {};'.format(j,bf_x_eval)
-    bf_y_eval_str = 'eval_y[{}] = {};'.format(j,bf_y_eval)
-    bf_z_eval_str = 'eval_z[{}] = {};'.format(j,bf_z_eval)
+    bf_eval_str = 'eval[npts * {}] = {};'.format(j,bf_eval)
+    bf_x_eval_str = 'eval_x[npts * {}] = {};'.format(j,bf_x_eval)
+    bf_y_eval_str = 'eval_y[npts * {}] = {};'.format(j,bf_y_eval)
+    bf_z_eval_str = 'eval_z[npts * {}] = {};'.format(j,bf_z_eval)
   
     if L >= 2:
       for k in range(2,L+1):
