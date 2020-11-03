@@ -21,6 +21,7 @@ struct XCCudaData {
   size_t nbf      = 0;
   size_t n_deriv  = 0;
   size_t natoms   = 0;
+  size_t LDatoms  = 0;
 
   bool denpack_host  = false;
   bool vxcinc_host   = false;

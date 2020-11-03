@@ -25,6 +25,7 @@ __global__ void reciprocal_kernel(size_t length, double* vec) {
 
 __global__ void compute_point_center_dist(
         size_t      npts,
+        size_t      LDatoms,
         size_t      natoms,
   const double*     coords,
   const double*     points,
@@ -45,7 +46,7 @@ __global__ void compute_point_center_dist(
     const double ry = points[3*iPt + 1] - coords[3*iAtom + 1];
     const double rz = points[3*iPt + 2] - coords[3*iAtom + 2];
 
-    dist[ iAtom + iPt * natoms ] = std::sqrt( rx*rx + ry*ry + rz*rz );
+    dist[ iAtom + iPt * LDatoms ] = std::sqrt( rx*rx + ry*ry + rz*rz );
 
   }
 
@@ -372,6 +373,7 @@ __global__ void modify_weights_ssf_kernel_1d(
 
 __global__ void modify_weights_ssf_kernel_2d(
         size_t                            npts,
+        size_t                            LDatoms,
         size_t                            natoms,
   const double*                           RAB,
   const double*                           coords,
@@ -415,7 +417,7 @@ __global__ void modify_weights_ssf_kernel_2d(
     double sum = 0.; 
     double parent_weight = 0.;
 
-    const double* const local_dist_scratch = dist_scratch + ipt * natoms;
+    const double* const local_dist_scratch = dist_scratch + ipt * LDatoms;
     const double dist_cutoff = 0.5 * (1 - magic_ssf_factor<> ) * 
       dist_nearest_device[ipt];
     if( local_dist_scratch[iParent] < dist_cutoff ) continue;
@@ -424,7 +426,7 @@ __global__ void modify_weights_ssf_kernel_2d(
     {
 
       const double ri = local_dist_scratch[ iParent ];
-      const double* const local_rab = RAB + iParent * natoms;
+      const double* const local_rab = RAB + iParent * LDatoms;
 
       parent_weight = 1.;
       for( int jCenter = threadIdx.x; jCenter < natom_block; jCenter+=blockDim.x ) {
@@ -463,7 +465,7 @@ __global__ void modify_weights_ssf_kernel_2d(
     int jCenter = 0;
 
     double ri = local_dist_scratch[ iCenter ];
-    const double* local_rab = RAB + iCenter * natoms;
+    const double* local_rab = RAB + iCenter * LDatoms;
     double ps = 1.;
     int iCount = 0; 
     int cont = 1;
@@ -473,7 +475,7 @@ __global__ void modify_weights_ssf_kernel_2d(
     // might be out of bounds. The algorithm is still correct because the 
     // index is checked before the contribution is included.
     const int pad = WEIGHT_UNROLL;
-    const int pad_natoms = ((natoms + pad - 1) / pad) * pad;
+    const int pad_natoms = LDatoms;
 
     // We will continue iterating until all of the threads have cont set to 0
     while (__any_sync(0xffffffff, cont)) { 
@@ -482,18 +484,19 @@ __global__ void modify_weights_ssf_kernel_2d(
         // A thread is done with a iCenter based on 2 conditions. Weight tolerance
         // Or if it has seen all of the jCenters
 	iCount += WEIGHT_UNROLL;
-	double rj[WEIGHT_UNROLL];
-	double rab_val[WEIGHT_UNROLL];
+	double2 rj[WEIGHT_UNROLL/2];
+	double2 rab_val[WEIGHT_UNROLL/2];
 	double mu[WEIGHT_UNROLL];
 
         #pragma unroll
-        for (int k = 0; k < WEIGHT_UNROLL; k++) {
-          rj[k]      = local_dist_scratch[ jCenter + k ]; // TODO these are unsafe reads
-          rab_val[k] = local_rab[          jCenter + k ]; // TODO pad to make reads safe
+        for (int k = 0; k < WEIGHT_UNROLL/2; k++) {
+          rj[k]      = *((double2*)(local_dist_scratch + jCenter + k));
+          rab_val[k] = *((double2*)(local_rab          + jCenter + k)); 
 	}
         #pragma unroll
-	for (int k = 0; k < WEIGHT_UNROLL; k++) {
-          mu[k] = (ri - rj[k]) * rab_val[k]; // XXX: RAB is symmetric
+	for (int k = 0; k < WEIGHT_UNROLL/2; k++) {
+          mu[k+0] = (ri - rj[k].x) * rab_val[k].x; // XXX: RAB is symmetric
+          mu[k+1] = (ri - rj[k].y) * rab_val[k].y; 
 	}
 
         #pragma unroll
@@ -511,7 +514,7 @@ __global__ void modify_weights_ssf_kernel_2d(
 
         if (iCenter < natoms ) {
           ri = local_dist_scratch[ iCenter ];
-          local_rab = RAB + iCenter * natoms;
+          local_rab = RAB + iCenter * LDatoms;
           ps = 1.;
           iCount = 0;
         } else {
@@ -551,6 +554,7 @@ void cuda_reciprocal(size_t length, double* vec, cudaStream_t stream) {
 template <typename F>
 void partition_weights_cuda_SoA( XCWeightAlg    weight_alg,
                                  size_t         npts,
+                                 size_t         LDatoms,
                                  size_t         natoms,
                                  const F*       points_device,
                                  const int32_t* iparent_device,
@@ -571,7 +575,7 @@ void partition_weights_cuda_SoA( XCWeightAlg    weight_alg,
                  util::div_ceil( natoms, threads.y ) );
 
     compute_point_center_dist<<< blocks, threads, 0, stream>>>(
-      npts, natoms, atomic_coords_device, points_device, dist_scratch_device
+      npts, LDatoms, natoms, atomic_coords_device, points_device, dist_scratch_device
     );
 
   }
@@ -582,7 +586,7 @@ void partition_weights_cuda_SoA( XCWeightAlg    weight_alg,
     dim3 threads( warp_size, max_warps_per_thread_block );
     dim3 blocks( 1, 80 ); // TODO Tune to SMs on device (80 for V100, 108 for A100)
     modify_weights_ssf_kernel_2d<<< blocks, threads, 0, stream >>>(
-      npts, natoms, rab_device, atomic_coords_device, dist_scratch_device, 
+      npts, LDatoms, natoms, rab_device, atomic_coords_device, dist_scratch_device, 
       iparent_device, dist_nearest_device, weights_device
     );
 
@@ -612,6 +616,7 @@ void partition_weights_cuda_SoA( XCWeightAlg    weight_alg,
 template
 void partition_weights_cuda_SoA( XCWeightAlg    weight_alg,
                                  size_t         npts,
+                                 size_t         LDatoms,
                                  size_t         natoms,
                                  const double*  points_device,
                                  const int32_t* iparent_device,

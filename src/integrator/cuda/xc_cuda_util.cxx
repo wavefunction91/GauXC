@@ -123,7 +123,7 @@ void process_batches_cuda_replicated_all_device(
 
 
   // Evaluate Partition Weights
-  partition_weights_cuda_SoA( weight_alg, total_npts, cuda_data.natoms, 
+  partition_weights_cuda_SoA( weight_alg, total_npts, cuda_data.LDatoms, cuda_data.natoms, 
                               points_device, iparent_device, dist_nearest_device,
                               rab_device, coords_device, weights_device, 
                               dist_scratch_device, master_stream );
@@ -325,8 +325,9 @@ void process_batches_cuda_replicated_p(
   std::sort( tasks.begin(), tasks.end(), task_comparator );
 
 
-  const auto nbf    = basis.nbf();
-  const auto natoms = meta.natoms();
+  const auto nbf     = basis.nbf();
+  const auto natoms  = meta.natoms();
+  const auto LDatoms = cuda_data.LDatoms;
 
   // Send static data to the device
 
@@ -340,10 +341,11 @@ void process_batches_cuda_replicated_p(
                    "Shells H2D" );
 
   // RAB
-  util::cuda_copy( natoms * natoms, cuda_data.rab_device, meta.rab().data(),
-                   "RAB H2D" );
+  util::cuda_copy_2d( cuda_data.rab_device, LDatoms * sizeof(F),
+                      meta.rab().data(), natoms * sizeof(F),
+                      natoms * sizeof(F), natoms, "RAB H2D");
   // This could probably happen on the host
-  cuda_reciprocal(cuda_data.natoms * cuda_data.natoms, cuda_data.rab_device, 0);
+  cuda_reciprocal(natoms * LDatoms, cuda_data.rab_device, 0);
 
   // Atomic coordinates 
   std::vector<double> coords( 3*natoms );

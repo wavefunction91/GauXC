@@ -1,4 +1,6 @@
 #include <gauxc/xc_integrator/xc_cuda_data.hpp>
+#include <gauxc/util/div_ceil.hpp>
+
 #include "buffer_adaptor.hpp"
 #include "integrator_common.hpp"
 
@@ -48,12 +50,13 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
   // Allocate static memory with proper alignment
   buffer_adaptor mem( device_ptr, fill_sz );
 
+  LDatoms = util::div_ceil( natoms, 2 ) * 2;
 
   shells_device     = mem.aligned_alloc<Shell<F>>( nshells );
   exc_device        = mem.aligned_alloc<F>( 1 );
   nel_device        = mem.aligned_alloc<F>( 1 );
   acc_scr_device    = mem.aligned_alloc<F>( 1 );
-  rab_device        = mem.aligned_alloc<F>( natoms * natoms );
+  rab_device        = mem.aligned_alloc<F>( LDatoms * natoms, 2 * sizeof(F));
   coords_device     = mem.aligned_alloc<F>( 3 * natoms );
 
   if( not vxcinc_host )
@@ -185,7 +188,7 @@ std::tuple< task_iterator, device_task_container<F> >
     size_t mem_vgamma     = npts;
 
     //size_t mem_partition_scr = natoms * npts;
-    size_t mem_dist_scr      = natoms * npts;
+    size_t mem_dist_scr      = LDatoms * npts;
     size_t mem_iparent       = npts;
     size_t mem_dist_nearest  = npts;
 
@@ -310,7 +313,7 @@ std::tuple< task_iterator, device_task_container<F> >
   shell_offs_device_buffer = mem.aligned_alloc<size_t>( total_nshells );
   submat_cut_device_buffer = mem.aligned_alloc<int64_t>( 2 * total_ncut );
 
-  dist_scratch_device = mem.aligned_alloc<double>( natoms * total_npts );
+  dist_scratch_device = mem.aligned_alloc<double>( LDatoms * total_npts, 2 * sizeof(double) );
   dist_nearest_buffer = mem.aligned_alloc<double>( total_npts );
 
   dmat_array_device = mem.aligned_alloc<double*>( ntask );
@@ -415,7 +418,7 @@ std::tuple< task_iterator, device_task_container<F> >
     vrho_ptr   += npts;
     vgamma_ptr += npts;
 
-    dist_scratch_ptr += natoms * npts;
+    dist_scratch_ptr += LDatoms * npts;
 
 
 
