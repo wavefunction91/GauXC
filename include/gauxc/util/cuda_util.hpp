@@ -115,6 +115,22 @@ inline void cuda_copy_async( size_t len, T* dest, const T* src, cudaStream_t s,
 
 
 template <typename T>
+inline void cuda_copy_2d( T* dest, size_t dest_pitch, const T* src, size_t src_pitch,
+                          size_t width, size_t height, std::string m = "" ) {
+  auto stat = cudaMemcpy2D( dest, dest_pitch, src, src_pitch, width, height, cudaMemcpyDefault);
+  GAUXC_CUDA_ERROR( "CUDA 2D Memcpy Failed ["+m+"]", stat );
+}
+
+template <typename T>
+inline void cuda_copy_2d_async( T* dest, size_t dest_pitch, const T* src, size_t src_pitch,
+                                size_t width, size_t height, cudaStream_t s,
+                                std::string m = "" ) {
+  auto stat = cudaMemcpy2DAsync( dest, dest_pitch, src, src_pitch, width, height, cudaMemcpyDefault, s);
+  GAUXC_CUDA_ERROR( "CUDA 2D Memcpy Async Failed ["+m+"]", stat );
+}
+
+
+template <typename T>
 inline void cuda_set_zero( size_t len, T* ptr, std::string m = "" ) {
   auto stat = cudaMemset( ptr, 0, len * sizeof(T) );
   GAUXC_CUDA_ERROR( "CUDA Memset Failed ["+m+"]", stat );
