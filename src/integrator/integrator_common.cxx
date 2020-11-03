@@ -4,7 +4,7 @@
 namespace GauXC      {
 namespace integrator {
 
-std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > >
+std::tuple< std::vector< std::array<int32_t, 3> > , std::vector< int32_t > >
   gen_compressed_submat_map( const BasisSet<double>&       basis,
                              const std::vector< int32_t >& shell_mask,
                              const int32_t LDA, const int32_t block_size ) {
@@ -58,7 +58,7 @@ std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > 
    * look up the starting and ending cut indices and ignore all other cuts.
    *
    */
-  std::vector< std::pair<int32_t, int32_t> > submat_map_expand;
+  std::vector< std::array<int32_t, 3> > submat_map_expand;
   std::vector< int32_t > submat_block_idx;
   submat_block_idx.push_back(0);
   const int end_point = LDA; 
@@ -81,10 +81,8 @@ std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > 
       } else if (cut_start < block_start && cut_end > block_end) {
         // In this case, the cut spans the entire block. The cut index is not
 	// incremented because we need to process the rest of it.
-	submat_map_expand.emplace_back(block_start, block_end - block_start);
-
-        delta = submat_map_expand.back().second;
-        submat_map_expand.emplace_back(small_index, small_index + delta);
+	delta = block_end - block_start;
+	submat_map_expand.push_back({block_start, delta, small_index});
         small_index += delta;
 
 	cut_expand_index++;
@@ -92,10 +90,8 @@ std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > 
       } else if (cut_start < block_start) {
 	// In this case the cut begins before the block, but ends within
 	// this block
-	submat_map_expand.emplace_back(block_start, cut_end - block_start);
-
-        delta = submat_map_expand.back().second;
-        submat_map_expand.emplace_back(small_index, small_index + delta);
+	delta = cut_end - block_start;
+	submat_map_expand.push_back({block_start, delta, small_index});
         small_index += delta;
 
 	cut_index++;
@@ -103,20 +99,16 @@ std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > 
       } else if (cut_end > block_end) {
 	// In this case, the cut starts within the block, but extends
 	// into the next block. Again, the cut index is not incremented
-	submat_map_expand.emplace_back(cut_start, block_end - cut_start);
-
-        delta = submat_map_expand.back().second;
-        submat_map_expand.emplace_back(small_index, small_index + delta);
+	delta = block_end - cut_start;
+	submat_map_expand.push_back({cut_start, delta, small_index});
         small_index += delta;
 
 	cut_expand_index++;
 	break;
       } else {
 	// In this case, the cut starts and ends within the block
-        submat_map_expand.emplace_back(cut_start, cut_end - cut_start);
-
-        delta = submat_map_expand.back().second;
-        submat_map_expand.emplace_back(small_index, small_index + delta);
+	delta = cut_end - cut_start;
+	submat_map_expand.push_back({cut_start, delta, small_index});
         small_index += delta;
 
 	cut_index++;
@@ -128,7 +120,6 @@ std::tuple< std::vector< std::pair<int32_t, int32_t> > , std::vector< int32_t > 
     }
     submat_block_idx.push_back(cut_expand_index);
   }
-
   return {submat_map_expand, submat_block_idx};
 }
 

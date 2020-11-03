@@ -113,7 +113,7 @@ std::tuple< task_iterator, device_task_container<F> >
   std::vector< double > weights_pack;
   std::vector< size_t > shell_list_pack;
   std::vector< size_t > shell_offs_pack;
-  std::vector< std::pair<int32_t, int32_t> > submat_cut_pack;
+  std::vector< std::array<int32_t, 3> > submat_cut_pack;
   std::vector< int32_t > submat_block_pack;
   std::vector< int32_t > iparent_pack;
   std::vector< double >  dist_nearest_pack;
@@ -157,7 +157,7 @@ std::tuple< task_iterator, device_task_container<F> >
 
     // Generate map from compressed to non-compressed matrices
     auto [submat_cut, submat_block] = integrator::gen_compressed_submat_map( basis, shell_list, nbf, submat_chunk_size );
-    size_t ncut     = submat_cut.size() / 2;
+    size_t ncut     = submat_cut.size();
     size_t nblock   = submat_block.size();
     size_t nshells  = shell_list.size();
     size_t npts     = points.size();
@@ -169,7 +169,7 @@ std::tuple< task_iterator, device_task_container<F> >
     size_t mem_shells     = nshells;
     size_t mem_shell_list = nshells;
     size_t mem_shell_offs = nshells;
-    size_t mem_submat_cut = 4 * ncut;
+    size_t mem_submat_cut = 3 * ncut;
     size_t mem_submat_block = nblock;
 
     size_t mem_nbe_scr    = nbe * nbe;
@@ -319,7 +319,7 @@ std::tuple< task_iterator, device_task_container<F> >
   weights_device_buffer    = mem.aligned_alloc<double>( total_npts );
   shell_list_device_buffer = mem.aligned_alloc<size_t>( total_nshells );
   shell_offs_device_buffer = mem.aligned_alloc<size_t>( total_nshells );
-  submat_cut_device_buffer = mem.aligned_alloc<int32_t>( 4 * total_ncut );
+  submat_cut_device_buffer = mem.aligned_alloc<int32_t>( 3 * total_ncut );
   submat_block_device_buffer = mem.aligned_alloc<int32_t>( total_nblock );
 
   dist_scratch_device = mem.aligned_alloc<double>( natoms * total_npts );
@@ -409,7 +409,7 @@ std::tuple< task_iterator, device_task_container<F> >
     weights_ptr    += npts;
     shell_list_ptr += nshells;
     shell_offs_ptr += nshells;
-    submat_cut_ptr += 4 * ncut;
+    submat_cut_ptr += 3 * ncut;
     submat_block_ptr += nblock;
     
     shells_ptr += nshells;
@@ -469,7 +469,8 @@ std::tuple< task_iterator, device_task_container<F> >
   copy_rev( shell_offs_pack.size(), shell_offs_pack.data(), 
                          shell_offs_device_buffer, *master_stream, 
                          "send_shell_offs_buffer" );
-  copy_rev( 2*submat_cut_pack.size(), &submat_cut_pack.data()->first, 
+//  std::cout << "Element size " << sizeof(std::get<0>(submat_cut_pack[0]) << std::endl;
+  copy_rev( 3 * submat_cut_pack.size(), submat_cut_pack.data()->data(), 
                          submat_cut_device_buffer, *master_stream, 
                          "send_submat_cut_buffer"  ); 
   copy_rev( submat_block_pack.size(), submat_block_pack.data(), 
