@@ -49,14 +49,16 @@ void inc_by_submat_combined_kernel( size_t           ntasks,
   const int end_cut_x   = submat_block_device[block_x+1];
 
   for( int i_cut = tid_yy + start_cut_y; i_cut < end_cut_y; i_cut += CUT_Y ) {
-    const int i_cut_first  = submat_cut_device[ 4*i_cut ];
-    const int delta_i      = submat_cut_device[ 4*i_cut + 1 ];
-    const int i_cut_small  = submat_cut_device[ 4*i_cut + 2 ];
+    const int3 i_data = *((int3*)(submat_cut_device + 3*i_cut));
+    const int i_cut_first  = i_data.x;
+    const int delta_i      = i_data.y;
+    const int i_cut_small  = i_data.z;
 
   for( int j_cut = tid_yx + start_cut_x; j_cut < end_cut_x; j_cut += CUT_X ) {
-    const int j_cut_first  = submat_cut_device[ 4*j_cut ];
-    const int delta_j      = submat_cut_device[ 4*j_cut + 1 ];
-    const int j_cut_small  = submat_cut_device[ 4*j_cut + 2 ];
+    const int3 j_data = *((int3*)(submat_cut_device + 3*j_cut));
+    const int j_cut_first  = j_data.x; 
+    const int delta_j      = j_data.y;
+    const int j_cut_small  = j_data.z;
 
     auto* ASmall_begin = ASmall_device + i_cut_small + j_cut_small*LDAS;
     auto* ABig_begin   = A   + i_cut_first + j_cut_first*LDA;
