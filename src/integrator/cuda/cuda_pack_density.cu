@@ -76,9 +76,12 @@ void submat_set_combined_kernel( size_t           ntasks,
         }
 #pragma unroll
         for (int k = 0; k < UNROLL_FACTOR; k++) {
-	  // Suggest that the result be evicted first. CUDA11 provides
-          // a non-PTX way to do this so we can update if we require CUDA11
+	  // Suggest that the result be evicted first.
+#if (CUDART_VERSION >= 11000)
+	  __stcs(address[k], val[k]);
+#else
           asm ("st.global.cs.f64 [%0], %1;" :: "l"(address[k]), "d"(val[k]));
+#endif
         }
       }
     }
