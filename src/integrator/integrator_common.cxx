@@ -4,9 +4,10 @@
 namespace GauXC      {
 namespace integrator {
 
-std::vector< std::pair<int32_t, int32_t> >
+std::tuple< std::vector< std::array<int32_t, 3> > , std::vector< int32_t > >
   gen_compressed_submat_map( const BasisSet<double>&       basis,
-                             const std::vector< int32_t >& shell_mask ) {
+                             const std::vector< int32_t >& shell_mask,
+                             const int32_t LDA, const int32_t block_size ) {
 
 
   std::vector< std::pair<int32_t, int32_t> > submat_map;
@@ -52,54 +53,74 @@ std::vector< std::pair<int32_t, int32_t> >
    * While the small matrix start indices are stored in the additional pair, the second 
    * value is blank as the delta can be reused from the big matrix start and stop points.
    *
-   * The L2 cache optimization forces breaks this into muliple kernel calls, and I am 
-   * currently using the forth value in a cut to pass information about the block to the kernel.
-   * This is veyr temporary and primarily so I did not have to add an additional input variable.
+   * It also creates an additional vector which stores the mapping from big matrix block 
+   * to cut index. As a kernel only processes a single block of the big matrix, it can
+   * look up the starting and ending cut indices and ignore all other cuts.
    *
    */
-  const int block_size = 512;
-  std::vector< std::pair<int32_t, int32_t> > submat_map_expand;
+  std::vector< std::array<int32_t, 3> > submat_map_expand;
+  std::vector< int32_t > submat_block_idx;
+  submat_block_idx.push_back(0);
+  const int end_point = LDA; 
+
+  int cut_index = 0;
+  int cut_expand_index = 0;
   int small_index = 0;
-  bool passedBlock = false;
   int delta;
-  for (int i = 0; i < submat_map.size(); i++) {
-    int start = submat_map[i].first;
-    int end   = submat_map[i].second;
-    while ((start / block_size) < (end / block_size)) {
-      int next_end = ((start / block_size) + 1) * block_size;
+  for (int block_start = 0; block_start < end_point; block_start += block_size) {
+    const int block_end = block_start + block_size;
+    
+    int cut_start = submat_map[cut_index].first;
+    int cut_end   = submat_map[cut_index].second;
+    while (cut_index < submat_map.size() && cut_start < block_end) {
+      if (cut_start < block_start && cut_end < block_start) {
+        // In this case the cut starts and stops before the block starts.
+	// This should never happen as the cut should already have been processed.
+	// But I included this case as a sanity check.
+	std::cout << "Something is wrong constructing the extended cut map " << std::endl;
+      } else if (cut_start < block_start && cut_end > block_end) {
+        // In this case, the cut spans the entire block. The cut index is not
+	// incremented because we need to process the rest of it.
+	delta = block_end - block_start;
+	submat_map_expand.push_back({block_start, delta, small_index});
+        small_index += delta;
 
-      submat_map_expand.emplace_back(start, next_end);
+	cut_expand_index++;
+	break;
+      } else if (cut_start < block_start) {
+	// In this case the cut begins before the block, but ends within
+	// this block
+	delta = cut_end - block_start;
+	submat_map_expand.push_back({block_start, delta, small_index});
+        small_index += delta;
 
-      delta = next_end - start;
-      submat_map_expand.emplace_back(small_index, small_index + delta);
-      small_index += delta;
+	cut_index++;
+	cut_expand_index++;
+      } else if (cut_end > block_end) {
+	// In this case, the cut starts within the block, but extends
+	// into the next block. Again, the cut index is not incremented
+	delta = block_end - cut_start;
+	submat_map_expand.push_back({cut_start, delta, small_index});
+        small_index += delta;
 
-      if (start >= block_size && !passedBlock) {
-        submat_map_expand[1].second = i;
-	passedBlock = true;
+	cut_expand_index++;
+	break;
+      } else {
+	// In this case, the cut starts and ends within the block
+	delta = cut_end - cut_start;
+	submat_map_expand.push_back({cut_start, delta, small_index});
+        small_index += delta;
+
+	cut_index++;
+	cut_expand_index++;
       }
 
-      start = next_end;
+      cut_start = submat_map[cut_index].first;
+      cut_end   = submat_map[cut_index].second;
     }
-
-    if (start != end) {
-       submat_map_expand.emplace_back(start, end);
-
-      delta = end - start;
-      submat_map_expand.emplace_back(small_index, small_index + delta);
-      small_index += delta;
-
-
-      if (start >= block_size && !passedBlock) {
-        submat_map_expand[1].second = i;
-	passedBlock = true;
-      }
-    }
-
+    submat_block_idx.push_back(cut_expand_index);
   }
-
-
-  return submat_map_expand;
+  return {submat_map_expand, submat_block_idx};
 }
 
 
