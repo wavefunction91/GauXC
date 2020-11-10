@@ -86,7 +86,7 @@ void process_batches_host_replicated_p(
 
 
     // Get the submatrix map for batch
-    auto submat_map = gen_compressed_submat_map( basis, task.shell_list );
+    auto [submat_map, foo] = gen_compressed_submat_map( basis, task.shell_list, nbf, nbf);
 
 
     // Evaluate Collocation Matrix 
