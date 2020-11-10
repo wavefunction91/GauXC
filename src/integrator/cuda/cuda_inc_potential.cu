@@ -1,5 +1,8 @@
 #include "cuda_inc_potential.hpp"
 #include "cuda_device_properties.hpp"
+#include <gauxc/util/div_ceil.hpp>
+
+#include "cuda_device_properties.hpp"
 
 namespace GauXC      {
 namespace integrator {
@@ -7,55 +10,85 @@ namespace cuda       {
 
 using namespace GauXC::cuda;
 
+
+#define WARP_X 16
+#define WARP_Y 1
+#define UNROLL_FACTOR 4
+#define EFF_UNROLL 4
+#define CUT_X 8
+#define CUT_Y 8
+
+
 template <typename T>
-__global__ void inc_by_submat_combined_kernel( size_t           ntasks,
-                                               XCTaskDevice<T>* device_tasks,
-                                               T*               A,
-                                               size_t           LDA ) {
+__global__ __launch_bounds__(1024, 1)
+void inc_by_submat_combined_kernel( size_t           ntasks,
+                                    XCTaskDevice<T>* device_tasks,
+                                    T*               A,
+                                    size_t           LDA, 
+				    const int block_y,
+				    const int block_x ) {
 
   const int batch_id = blockIdx.z;
-
-  if( batch_id < ntasks ) {
-
   auto& task = device_tasks[ batch_id ];
 
-  const auto  ncut              = task.ncut;
   const auto* submat_cut_device = task.submat_cut;
+  const auto* submat_block_device = task.submat_block;
   const auto  LDAS              = task.nbe;
         auto* ASmall_device     = task.nbe_scr;
 
   //if( LDAS == LDAB ) return;
+  const int tid_xx = threadIdx.x % WARP_X;
+  const int tid_xy = threadIdx.x / WARP_X;
 
+  const int tid_yx = threadIdx.y % CUT_X;
+  const int tid_yy = threadIdx.y / CUT_X;
 
-  const int tid_x = blockDim.x * blockIdx.x + threadIdx.x;
-  const int tid_y = blockDim.y * blockIdx.y + threadIdx.y;
+  const int start_cut_y = submat_block_device[block_y];
+  const int end_cut_y   = submat_block_device[block_y+1];
+  const int start_cut_x = submat_block_device[block_x];
+  const int end_cut_x   = submat_block_device[block_x+1];
 
-  int64_t i(0);
-  for( size_t i_cut = 0; i_cut < ncut; ++i_cut ) {
-    const int64_t i_cut_first  = submat_cut_device[ 2*i_cut ];
-    const int64_t i_cut_second = submat_cut_device[ 2*i_cut + 1 ];
-    const int64_t delta_i      = i_cut_second - i_cut_first;
+  for( int i_cut = tid_yy + start_cut_y; i_cut < end_cut_y; i_cut += CUT_Y ) {
+    const int3 i_data = *((int3*)(submat_cut_device + 3*i_cut));
+    const int i_cut_first  = i_data.x;
+    const int delta_i      = i_data.y;
+    const int i_cut_small  = i_data.z;
 
-    int64_t j(0);
-  for( size_t j_cut = 0; j_cut < ncut; ++j_cut ) {
-    const int64_t j_cut_first  = submat_cut_device[ 2*j_cut ];
-    const int64_t j_cut_second = submat_cut_device[ 2*j_cut + 1 ];
-    const int64_t delta_j      = j_cut_second - j_cut_first;
+  for( int j_cut = tid_yx + start_cut_x; j_cut < end_cut_x; j_cut += CUT_X ) {
+    const int3 j_data = *((int3*)(submat_cut_device + 3*j_cut));
+    const int j_cut_first  = j_data.x; 
+    const int delta_j      = j_data.y;
+    const int j_cut_small  = j_data.z;
 
-    auto* ASmall_begin = ASmall_device + i           + j          *LDAS;
-    auto* ABig_begin   = A             + i_cut_first + j_cut_first*LDA ;
-    
-    for( size_t J = tid_y; J < delta_j; J += blockDim.y )      
-    for( size_t I = tid_x; I < delta_i; I += blockDim.x )
-      //ABig_begin[I + J*LDA] += ASmall_begin[I + J*LDAS];
-      atomicAdd( ABig_begin + I + J*LDA, ASmall_begin[I+J*LDAS] );
+    auto* ASmall_begin = ASmall_device + i_cut_small + j_cut_small*LDAS;
+    auto* ABig_begin   = A   + i_cut_first + j_cut_first*LDA;
 
-    j += delta_j;
+    int J;
+    for( J = tid_xy; J < (delta_j / EFF_UNROLL) * EFF_UNROLL; J += EFF_UNROLL ) {
+      for( int I = tid_xx; I < delta_i; I += WARP_X ) {
+
+        double val[UNROLL_FACTOR];
+        double* address[UNROLL_FACTOR];
+#pragma unroll
+        for (int k = 0; k < UNROLL_FACTOR; k++) {
+          val[k] = ASmall_begin[I + (J+k*WARP_Y)*LDAS];
+          address[k] = ABig_begin + I + (J+k*WARP_Y)*LDA;
+        }
+#pragma unroll
+        for (int k = 0; k < UNROLL_FACTOR; k++) {
+          atomicAdd(address[k], val[k] );
+        }
+      }
+    }
+
+    for ( ; J < delta_j; J += WARP_Y) {
+      for( int I = tid_xx; I < delta_i; I += WARP_X ) {
+        atomicAdd(ABig_begin + I + J*LDA, ASmall_begin[I + J*LDAS] );
+      }
+    }
+
   }
-    i += delta_i;
   }
-
-  } // batch_id check
 }
 
 
@@ -65,13 +98,16 @@ void task_inc_potential( size_t           ntasks,
                          T*               V_device,
                          size_t           LDV,
                          cudaStream_t     stream ) {
+  dim3 threads(warp_size / 2, max_warps_per_thread_block * 2, 1), blocks(1,1,ntasks);
 
-  dim3 threads(warp_size,max_warps_per_thread_block,1), blocks(1,1,ntasks);
-  inc_by_submat_combined_kernel<<< blocks, threads, 0, stream >>>(
-    ntasks, device_tasks, V_device, LDV
-  );
-
-
+  const int submat_block_size = get_submat_cut_block(LDV);
+  for (int i = 0; i < util::div_ceil(LDV, submat_block_size); i++) {
+    for (int j = 0; j < util::div_ceil(LDV, submat_block_size); j++) {
+      inc_by_submat_combined_kernel<<< blocks, threads, 0, stream >>>(
+        ntasks, device_tasks, V_device, LDV, i, j
+      );
+    }
+  }
 }
 
 template 
