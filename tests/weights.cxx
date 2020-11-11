@@ -2,6 +2,7 @@
 #include <gauxc/molgrid.hpp>
 #include <gauxc/basisset.hpp>
 #include <gauxc/load_balancer.hpp>
+#include <gauxc/util/div_ceil.hpp>
 #include <fstream>
 #include <string>
 
@@ -13,6 +14,7 @@
 #include <gauxc/exceptions/cuda_exception.hpp>
 #include <gauxc/util/cuda_util.hpp>
 #include "cuda/cuda_weights.hpp"
+#include "cuda/cuda_device_properties.hpp"
 #endif
 
 using namespace GauXC;
@@ -153,6 +155,7 @@ void test_cuda_weights( std::ifstream& in_file ) {
 
   size_t npts   = points.size();
   size_t natoms = ref_data.mol.natoms();
+  size_t LDatoms = util::div_ceil( natoms, GauXC::cuda::weight_unroll ) * GauXC::cuda::weight_unroll;
 
   std::vector< double >  coords( 3 * natoms );
   for( auto iat = 0 ; iat < natoms; ++iat ) {
@@ -180,7 +183,7 @@ void test_cuda_weights( std::ifstream& in_file ) {
 
   cudaStream_t stream = 0;
   integrator::cuda::partition_weights_cuda_SoA(
-    XCWeightAlg::SSF, npts, natoms, points_d,
+    XCWeightAlg::SSF, npts, LDatoms, natoms, points_d,
     iparent_d, distnea_d, rab_d, coords_d,
     weights_d, dist_scr_d, stream );
 

@@ -22,5 +22,12 @@ uint32_t get_submat_cut_block(int32_t LDA) {
   return block_size;
 }
 
+uint32_t get_device_sm_count() {
+  int num_sm;
+  cudaDeviceGetAttribute(&num_sm, cudaDevAttrMultiProcessorCount, 0);
+
+  return num_sm;
+}
+
 }
 }

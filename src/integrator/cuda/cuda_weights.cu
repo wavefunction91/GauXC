@@ -14,8 +14,6 @@ namespace cuda       {
 
 using namespace GauXC::cuda;
 
-#define WEIGHT_UNROLL 2
-
 __global__ void reciprocal_kernel(size_t length, double* vec) {
    for (int i = threadIdx.x + blockIdx.x * blockDim.x; i < length; i += blockDim.x * gridDim.x) {
      vec[i] = 1 / vec[i];
@@ -407,7 +405,7 @@ __global__ void modify_weights_ssf_kernel_2d(
   const int tid_x = threadIdx.y + blockIdx.y * blockDim.y;
   const int nt_x  = blockDim.y  * gridDim.y;
 
-  __shared__ int jCounter[max_threads_per_thread_block];
+  __shared__ int jCounter[max_warps_per_thread_block];
 
   // Each warp will work together on a point
   for( int ipt = tid_x; ipt < npts; ipt += nt_x ) {
@@ -470,37 +468,30 @@ __global__ void modify_weights_ssf_kernel_2d(
     int iCount = 0; 
     int cont = 1;
 
-    // To simplify the unrolling logic, the number of atoms is padded.
-    // Because the dist_scratch and rab matrices are not padded, the reads
-    // might be out of bounds. The algorithm is still correct because the 
-    // index is checked before the contribution is included.
-    const int pad = WEIGHT_UNROLL;
-    const int pad_natoms = LDatoms;
-
     // We will continue iterating until all of the threads have cont set to 0
-    while (__any_sync(0xffffffff, cont)) { 
-      if (cont) {
-      if( ps > weight_tol && iCount < pad_natoms ) {
+    while (__any_sync(0xffffffff, cont)) {
+    if (cont) {
+      if( ps > weight_tol && iCount < LDatoms ) {
         // A thread is done with a iCenter based on 2 conditions. Weight tolerance
         // Or if it has seen all of the jCenters
-	iCount += WEIGHT_UNROLL;
-	double2 rj[WEIGHT_UNROLL/2];
-	double2 rab_val[WEIGHT_UNROLL/2];
-	double mu[WEIGHT_UNROLL];
+	iCount += weight_unroll;
+	double2 rj[weight_unroll/2];
+	double2 rab_val[weight_unroll/2];
+	double mu[weight_unroll];
 
         #pragma unroll
-        for (int k = 0; k < WEIGHT_UNROLL/2; k++) {
+        for (int k = 0; k < weight_unroll/2; k++) {
           rj[k]      = *((double2*)(local_dist_scratch + jCenter + k));
-          rab_val[k] = *((double2*)(local_rab          + jCenter + k)); 
+          rab_val[k] = *((double2*)(local_rab + jCenter + k)); 
 	}
         #pragma unroll
-	for (int k = 0; k < WEIGHT_UNROLL/2; k++) {
+	for (int k = 0; k < weight_unroll/2; k++) {
           mu[k+0] = (ri - rj[k].x) * rab_val[k].x; // XXX: RAB is symmetric
           mu[k+1] = (ri - rj[k].y) * rab_val[k].y; 
 	}
 
         #pragma unroll
-	for (int k = 0; k < WEIGHT_UNROLL; k++) {
+	for (int k = 0; k < weight_unroll; k++) {
           if((iCenter != jCenter + k) && (jCenter + k < natoms)) {
             mu[k] = sFrisch( mu[k] );
 	    ps *= mu[k];
@@ -525,8 +516,8 @@ __global__ void modify_weights_ssf_kernel_2d(
       }
 
       // Wraps jCenter around. This was faster than modulo
-      jCenter += WEIGHT_UNROLL;
-      jCenter = (jCenter < pad_natoms) ? jCenter : jCenter - pad_natoms;
+      jCenter += weight_unroll;
+      jCenter = (jCenter < LDatoms) ? jCenter : jCenter - LDatoms;
     }
 
     // All of the threads then sum their contributions. Only thread 0 needs to add the parent
@@ -546,7 +537,7 @@ __global__ void modify_weights_ssf_kernel_2d(
 
 void cuda_reciprocal(size_t length, double* vec, cudaStream_t stream) {
   dim3 threads(max_threads_per_thread_block);
-  dim3 blocks( 80 );
+  dim3 blocks( get_device_sm_count() ); 
   reciprocal_kernel<<<threads, blocks, 0, stream>>>(length, vec);
 }
 
@@ -584,7 +575,7 @@ void partition_weights_cuda_SoA( XCWeightAlg    weight_alg,
   if( partition_weights_1d_kernel ) {
 
     dim3 threads( warp_size, max_warps_per_thread_block );
-    dim3 blocks( 1, 80 ); // TODO Tune to SMs on device (80 for V100, 108 for A100)
+    dim3 blocks( 1, get_device_sm_count() ); 
     modify_weights_ssf_kernel_2d<<< blocks, threads, 0, stream >>>(
       npts, LDatoms, natoms, rab_device, atomic_coords_device, dist_scratch_device, 
       iparent_device, dist_nearest_device, weights_device

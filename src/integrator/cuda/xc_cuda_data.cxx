@@ -51,7 +51,7 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
   // Allocate static memory with proper alignment
   buffer_adaptor mem( device_ptr, fill_sz );
 
-  LDatoms = util::div_ceil( natoms, 2 ) * 2;
+  LDatoms = util::div_ceil( natoms, cuda::weight_unroll ) * cuda::weight_unroll;
 
   shells_device     = mem.aligned_alloc<Shell<F>>( nshells );
   exc_device        = mem.aligned_alloc<F>( 1 );
