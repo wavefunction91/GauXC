@@ -466,7 +466,7 @@ __global__ void modify_weights_ssf_kernel_2d(
     const double* local_rab = RAB + iCenter * LDatoms;
     double ps = 1.;
     int iCount = 0; 
-    int cont = 1;
+    int cont = (iCenter < natoms);
 
     // We will continue iterating until all of the threads have cont set to 0
     while (__any_sync(0xffffffff, cont)) {
