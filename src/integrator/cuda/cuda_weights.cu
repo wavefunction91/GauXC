@@ -471,12 +471,11 @@ __global__ void modify_weights_ssf_kernel_2d(
 
     // We will continue iterating until all of the threads have cont set to 0
     while (__any_sync(0xffffffff, cont)) {
-    if (cont) {
-      if( ps > weight_tol && iCount < LDatoms ) {
-        // A thread is done with a iCenter based on 2 conditions. Weight tolerance
-        // Or if it has seen all of the jCenters
+      if (cont) {
 	double2 rj[weight_unroll/2];
 	double2 rab_val[weight_unroll/2];
+	double mu[weight_unroll];
+	iCount += weight_unroll;
 
         #pragma unroll
         for (int k = 0; k < weight_unroll/2; k++) {
@@ -484,8 +483,6 @@ __global__ void modify_weights_ssf_kernel_2d(
           rab_val[k] = *((double2*)(local_rab          + jCenter + k)); 
 	}
 
-	double mu[weight_unroll];
-	iCount += weight_unroll;
         #pragma unroll
 	for (int k = 0; k < weight_unroll/2; k++) {
           mu[k+0] = (ri - rj[k].x) * rab_val[k].x; // XXX: RAB is symmetric
@@ -499,24 +496,26 @@ __global__ void modify_weights_ssf_kernel_2d(
 	    ps *= mu[k];
           }
 	}
-      } else {
-        // In the case were the thread is done, it begins processing another iCenter
-        sum += ps;
-        iCenter = atomicAdd(jCounter, 1);
-	if (iCenter >= iParent) iCenter++;
 
-        // If there are no more iCenters left to process, it signals it is ready to exit
-        cont = (iCenter < natoms);
-        ri = local_dist_scratch[ iCenter ];
-        local_rab = RAB + iCenter * LDatoms;
-        ps = 1.;
-        iCount = 0;
+        // A thread is done with a iCenter based on 2 conditions. Weight tolerance
+        // Or if it has seen all of the jCenters
+        if( !(ps > weight_tol && iCount < LDatoms )) {
+          // In the case were the thread is done, it begins processing another iCenter
+          sum += ps;
+          iCenter = atomicAdd(jCounter, 1);
+	  if (iCenter >= iParent) iCenter++;
+
+          // If there are no more iCenters left to process, it signals it is ready to exit
+          cont = (iCenter < natoms);
+          ri = local_dist_scratch[ iCenter ];
+          local_rab = RAB + iCenter * LDatoms;
+          ps = 1.;
+          iCount = 0;
+        }
       }
-    }
-
-    // Wraps jCenter around. This was faster than modulo
-    jCenter += weight_unroll;
-    jCenter = (jCenter < LDatoms) ? jCenter : 0;
+      // Wraps jCenter around. This was faster than modulo
+      jCenter += weight_unroll;
+      jCenter = (jCenter < LDatoms) ? jCenter : 0;
     }
 
     // All of the threads then sum their contributions. Only thread 0 needs to add the parent
