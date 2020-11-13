@@ -405,7 +405,8 @@ __global__ void modify_weights_ssf_kernel_2d(
   const int tid_x = threadIdx.y + blockIdx.y * blockDim.y;
   const int nt_x  = blockDim.y  * gridDim.y;
 
-  __shared__ int jCounter[max_warps_per_thread_block];
+  __shared__ int jCounter_sm[max_warps_per_thread_block];
+  int* jCounter = reinterpret_cast<int *>(jCounter_sm) + threadIdx.y;
 
   // Each warp will work together on a point
   for( int ipt = tid_x; ipt < npts; ipt += nt_x ) {
@@ -450,20 +451,20 @@ __global__ void modify_weights_ssf_kernel_2d(
 
     // Initialize each counter to 0
     if (threadIdx.x == 0) {
-      jCounter[threadIdx.y] = 0;
+      jCounter[0] = 0;
     }
     __syncwarp();
 
     // Each thread will process an iCenter. Atomic operations are used to assign
     // an iCenter value to each thread.
-    int iCenter = atomicAdd(&jCounter[threadIdx.y], 1);
+    int iCenter = atomicAdd(jCounter, 1);
     if (iCenter >= iParent) iCenter++; // iCenter == iParent is skipped
 
     // The entire warp processes the same jCenter value at the same time
     int jCenter = 0;
 
-    double ri = local_dist_scratch[ iCenter ];
     const double* local_rab = RAB + iCenter * LDatoms;
+    double ri = local_dist_scratch[ iCenter ];
     double ps = 1.;
     int iCount = 0; 
     int cont = (iCenter < natoms);
@@ -474,16 +475,17 @@ __global__ void modify_weights_ssf_kernel_2d(
       if( ps > weight_tol && iCount < LDatoms ) {
         // A thread is done with a iCenter based on 2 conditions. Weight tolerance
         // Or if it has seen all of the jCenters
-	iCount += weight_unroll;
 	double2 rj[weight_unroll/2];
 	double2 rab_val[weight_unroll/2];
-	double mu[weight_unroll];
 
         #pragma unroll
         for (int k = 0; k < weight_unroll/2; k++) {
           rj[k]      = *((double2*)(local_dist_scratch + jCenter + k));
-          rab_val[k] = *((double2*)(local_rab + jCenter + k)); 
+          rab_val[k] = *((double2*)(local_rab          + jCenter + k)); 
 	}
+
+	double mu[weight_unroll];
+	iCount += weight_unroll;
         #pragma unroll
 	for (int k = 0; k < weight_unroll/2; k++) {
           mu[k+0] = (ri - rj[k].x) * rab_val[k].x; // XXX: RAB is symmetric
@@ -500,24 +502,21 @@ __global__ void modify_weights_ssf_kernel_2d(
       } else {
         // In the case were the thread is done, it begins processing another iCenter
         sum += ps;
-        iCenter = atomicAdd(&jCounter[threadIdx.y], 1);
+        iCenter = atomicAdd(jCounter, 1);
 	if (iCenter >= iParent) iCenter++;
 
-        if (iCenter < natoms ) {
-          ri = local_dist_scratch[ iCenter ];
-          local_rab = RAB + iCenter * LDatoms;
-          ps = 1.;
-          iCount = 0;
-        } else {
-          // If there are no more iCenters left to process, it signals it is ready to exit
-          cont = 0;
-	}
+        // If there are no more iCenters left to process, it signals it is ready to exit
+        cont = (iCenter < natoms);
+        ri = local_dist_scratch[ iCenter ];
+        local_rab = RAB + iCenter * LDatoms;
+        ps = 1.;
+        iCount = 0;
       }
-      }
+    }
 
-      // Wraps jCenter around. This was faster than modulo
-      jCenter += weight_unroll;
-      jCenter = (jCenter < LDatoms) ? jCenter : jCenter - LDatoms;
+    // Wraps jCenter around. This was faster than modulo
+    jCenter += weight_unroll;
+    jCenter = (jCenter < LDatoms) ? jCenter : 0;
     }
 
     // All of the threads then sum their contributions. Only thread 0 needs to add the parent
