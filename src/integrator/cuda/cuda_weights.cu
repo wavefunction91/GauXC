@@ -369,7 +369,8 @@ __global__ void modify_weights_ssf_kernel_1d(
 
 
 
-__global__ void modify_weights_ssf_kernel_2d(
+__global__ __launch_bounds__(weight_thread_block, weight_thread_block_per_sm)
+void modify_weights_ssf_kernel_2d(
         size_t                            npts,
         size_t                            LDatoms,
         size_t                            natoms,
@@ -572,8 +573,8 @@ void partition_weights_cuda_SoA( XCWeightAlg    weight_alg,
 
   if( partition_weights_1d_kernel ) {
 
-    dim3 threads( warp_size, max_warps_per_thread_block );
-    dim3 blocks( 1, get_device_sm_count() ); 
+    dim3 threads( warp_size, weight_thread_block / warp_size );
+    dim3 blocks(  1, get_device_sm_count() * weight_thread_block_per_sm); 
     modify_weights_ssf_kernel_2d<<< blocks, threads, 0, stream >>>(
       npts, LDatoms, natoms, rab_device, atomic_coords_device, dist_scratch_device, 
       iparent_device, dist_nearest_device, weights_device
