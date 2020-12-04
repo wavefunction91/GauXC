@@ -20,7 +20,6 @@ __global__ void reciprocal_kernel(size_t length, double* vec) {
    }
 }
 
-
 __global__ void compute_point_center_dist(
         size_t      npts,
         size_t      LDatoms,
@@ -30,24 +29,44 @@ __global__ void compute_point_center_dist(
         double*     dist
 ) {
 
+  __shared__ double3 point_buffer[32];
+  register double3 coord_reg;
 
-  const int tid_x = threadIdx.x + blockIdx.x * blockDim.x;
-  const int tid_y = threadIdx.y + blockIdx.y * blockDim.y;
+  const int natoms_block = (natoms + 31) / 32;
+  const int coords_block = (npts + 31) / 32;
 
+  const double3* coords_vec = (double3*) coords;
+  const double3* points_vec = (double3*) points;
 
-  if( tid_y < natoms and tid_x < npts ) {
+  for (int j = blockIdx.x; j < natoms_block; j += gridDim.x) {
+    const int iAtom = j * 32 + threadIdx.x;
+    // Load blocks into registers/shared memory
+    if (iAtom < natoms) {
+      coord_reg = coords_vec[iAtom];
+    }
+    for (int i = blockIdx.y; i < coords_block; i += gridDim.y) {
+      const int iPt_load = i * 32 + threadIdx.x;
+      if (iPt_load < npts) {
+        point_buffer[threadIdx.x] = points_vec[iPt_load];
+      }
+      __syncthreads();
 
-    const int iAtom = tid_y;
-    const int iPt   = tid_x;
+      // do the computation
+      #pragma unroll 2
+      for (int k = threadIdx.y; k < 32; k+=16) {
+        const int iPt_sm = k;
+        const int iPt = i * 32 + iPt_sm;
+        const double rx = point_buffer[iPt_sm].x - coord_reg.x;
+        const double ry = point_buffer[iPt_sm].y - coord_reg.y;
+        const double rz = point_buffer[iPt_sm].z - coord_reg.z;
 
-    const double rx = points[3*iPt + 0] - coords[3*iAtom + 0];
-    const double ry = points[3*iPt + 1] - coords[3*iAtom + 1];
-    const double rz = points[3*iPt + 2] - coords[3*iAtom + 2];
-
-    dist[ iAtom + iPt * LDatoms ] = std::sqrt( rx*rx + ry*ry + rz*rz );
-
+        if (iAtom < natoms and iPt < npts) {
+          dist[ iAtom + iPt * LDatoms ] = std::sqrt( rx*rx + ry*ry + rz*rz );
+        }
+      }
+      __syncthreads();
+    }
   }
-
 }
 
 #if 0
@@ -560,9 +579,9 @@ void partition_weights_cuda_SoA( XCWeightAlg    weight_alg,
   // Evaluate point-to-atom collocation
   {
 
-    dim3 threads( warp_size, max_warps_per_thread_block );
-    dim3 blocks( util::div_ceil( npts,   threads.x ), 
-                 util::div_ceil( natoms, threads.y ) );
+    dim3 threads( 32, 16 );
+    dim3 blocks( util::div_ceil( natoms,   threads.x), 
+                 util::div_ceil( npts, threads.y * 16) );
 
     compute_point_center_dist<<< blocks, threads, 0, stream>>>(
       npts, LDatoms, natoms, atomic_coords_device, points_device, dist_scratch_device
