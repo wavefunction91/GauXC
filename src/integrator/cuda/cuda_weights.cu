@@ -386,7 +386,26 @@ __global__ void modify_weights_ssf_kernel_1d(
 
 }
 
+__device__ __inline__ double gFrisch(double x) {
+  // Frisch partition functions
+//  const double s_x  = x / magic_ssf_factor<>;
+  const double s_x  = x * 1.5625;
+  const double s_x2 = s_x  * s_x;
+  const double s_x3 = s_x  * s_x2;
+  const double s_x5 = s_x3 * s_x2;
+  const double s_x7 = s_x5 * s_x2;
 
+  return ((35.) *(s_x - s_x3) + (21.) *s_x5 - (5.) *s_x7);
+}
+
+
+__device__ __inline__ double sFrisch(double x) {
+    //double frisch_val = (0.5 - (0.5/ 16.0) * gFrisch(x));
+
+    if( fabs(x) < magic_ssf_factor<> ) return (0.5 - (0.5/ 16.0) * gFrisch(x));
+    else if( x >= magic_ssf_factor<> ) return 0.;
+    else                               return 1.;
+}
 
 __global__ __launch_bounds__(weight_thread_block, weight_thread_block_per_sm)
 void modify_weights_ssf_kernel_2d(
@@ -400,25 +419,6 @@ void modify_weights_ssf_kernel_2d(
   const double*                           dist_nearest_device,
         double*                           weights_device
 ) {
-
-  // Frisch partition functions
-  auto gFrisch = [](double x) {
-
-    const double s_x  = x / magic_ssf_factor<>;
-    const double s_x2 = s_x  * s_x;
-    const double s_x3 = s_x  * s_x2;
-    const double s_x5 = s_x3 * s_x2;
-    const double s_x7 = s_x5 * s_x2;
-
-    return (35.*(s_x - s_x3) + 21.*s_x5 - 5.*s_x7) / 16.;
-  };
-  
-  auto sFrisch = [&] (double x) {
-    if( fabs(x) < magic_ssf_factor<> ) return 0.5 * (1. - gFrisch(x));
-    else if( x >= magic_ssf_factor<> ) return 0.;
-    else                               return 1.;
-  };
-
   constexpr double weight_tol = 1e-10;
   int natom_block = ((natoms + blockDim.x - 1) / blockDim.x) * blockDim.x;
 
@@ -499,14 +499,14 @@ void modify_weights_ssf_kernel_2d(
 
         #pragma unroll
         for (int k = 0; k < weight_unroll/2; k++) {
-          rj[k]      = *((double2*)(local_dist_scratch + jCenter + k));
-          rab_val[k] = *((double2*)(local_rab          + jCenter + k)); 
+          rj[k]      = *((double2*)(local_dist_scratch + jCenter) + k);
+          rab_val[k] = *((double2*)(local_rab          + jCenter) + k); 
 	}
 
         #pragma unroll
 	for (int k = 0; k < weight_unroll/2; k++) {
-          mu[k+0] = (ri - rj[k].x) * rab_val[k].x; // XXX: RAB is symmetric
-          mu[k+1] = (ri - rj[k].y) * rab_val[k].y; 
+          mu[2*k+0] = (ri - rj[k].x) * rab_val[k].x; // XXX: RAB is symmetric
+          mu[2*k+1] = (ri - rj[k].y) * rab_val[k].y; 
 	}
 
         #pragma unroll
