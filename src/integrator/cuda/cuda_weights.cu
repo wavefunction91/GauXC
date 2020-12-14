@@ -16,7 +16,7 @@ using namespace GauXC::cuda;
 
 __global__ void reciprocal_kernel(size_t length, double* vec) {
    for (int i = threadIdx.x + blockIdx.x * blockDim.x; i < length; i += blockDim.x * gridDim.x) {
-     vec[i] = 1 / vec[i];
+     vec[i] = 1. / vec[i];
    }
 }
 
