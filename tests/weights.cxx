@@ -177,8 +177,11 @@ void test_cuda_weights( std::ifstream& in_file ) {
   util::cuda_copy( npts,   weights_d, weights.data() );
   util::cuda_copy( npts,   iparent_d, iparent.data() );
   util::cuda_copy( npts,   distnea_d, dist_nearest.data() );
-  util::cuda_copy( natoms*natoms, rab_d,
-                   ref_data.meta->rab().data() );
+  util::cuda_copy_2d( rab_d, LDatoms * sizeof(double),
+                      ref_data.meta->rab().data(), natoms * sizeof(double),
+                      natoms * sizeof(double), natoms, "RAB H2D");
+  integrator::cuda::cuda_reciprocal(natoms * LDatoms, rab_d, 0);
+
   util::cuda_copy( 3*natoms, coords_d, coords.data() );
 
   cudaStream_t stream = 0;
