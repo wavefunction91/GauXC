@@ -449,16 +449,16 @@ void modify_weights_ssf_kernel_2d(
 
       parent_weight = 1.;
       for( int jCenter = threadIdx.x; jCenter < natom_block; jCenter+=blockDim.x ) {
-	double contribution = 1.0;
-	if (jCenter < natoms && iParent != jCenter) {
+        double contribution = 1.0;
+        if (jCenter < natoms && iParent != jCenter) {
           const double rj = local_dist_scratch[ jCenter ];
           const double mu = (ri - rj) * local_rab[ jCenter ]; // XXX: RAB is symmetric
           contribution = sFrisch( mu );
-	}
+        }
         contribution = warpReduceProd(contribution);
         parent_weight *= contribution;
 
-	if (parent_weight < weight_tol) break;
+        if (parent_weight < weight_tol) break;
       }
     }
 
@@ -492,30 +492,30 @@ void modify_weights_ssf_kernel_2d(
     // We will continue iterating until all of the threads have cont set to 0
     while (__any_sync(0xffffffff, cont)) {
       if (cont) {
-	double2 rj[weight_unroll/2];
-	double2 rab_val[weight_unroll/2];
-	double mu[weight_unroll];
-	iCount += weight_unroll;
+        double2 rj[weight_unroll/2];
+        double2 rab_val[weight_unroll/2];
+        double mu[weight_unroll];
+        iCount += weight_unroll;
 
         #pragma unroll
         for (int k = 0; k < weight_unroll/2; k++) {
           rj[k]      = *((double2*)(local_dist_scratch + jCenter) + k);
           rab_val[k] = *((double2*)(local_rab          + jCenter) + k); 
-	}
+        }
 
         #pragma unroll
-	for (int k = 0; k < weight_unroll/2; k++) {
+        for (int k = 0; k < weight_unroll/2; k++) {
           mu[2*k+0] = (ri - rj[k].x) * rab_val[k].x; // XXX: RAB is symmetric
           mu[2*k+1] = (ri - rj[k].y) * rab_val[k].y; 
-	}
+        }
 
         #pragma unroll
-	for (int k = 0; k < weight_unroll; k++) {
+        for (int k = 0; k < weight_unroll; k++) {
           if((iCenter != jCenter + k) && (jCenter + k < natoms)) {
             mu[k] = sFrisch( mu[k] );
-	    ps *= mu[k];
+            ps *= mu[k];
           }
-	}
+        }
 
         // A thread is done with a iCenter based on 2 conditions. Weight tolerance
         // Or if it has seen all of the jCenters
@@ -523,7 +523,7 @@ void modify_weights_ssf_kernel_2d(
           // In the case were the thread is done, it begins processing another iCenter
           sum += ps;
           iCenter = atomicAdd(jCounter, 1);
-	  if (iCenter >= iParent) iCenter++;
+          if (iCenter >= iParent) iCenter++;
 
           // If there are no more iCenters left to process, it signals it is ready to exit
           cont = (iCenter < natoms);
