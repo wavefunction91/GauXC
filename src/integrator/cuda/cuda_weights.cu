@@ -578,10 +578,10 @@ void partition_weights_cuda_SoA( XCWeightAlg    weight_alg,
 
   // Evaluate point-to-atom collocation
   {
-
-    dim3 threads( 32, 16 );
+    const int distance_thread_y = max_warps_per_thread_block / 2;
+    dim3 threads(  warp_size, distance_thread_y );
     dim3 blocks( util::div_ceil( natoms,   threads.x), 
-                 util::div_ceil( npts, threads.y * 16) );
+                 util::div_ceil( npts, threads.y * distance_thread_y) );
 
     compute_point_center_dist<<< blocks, threads, 0, stream>>>(
       npts, LDatoms, natoms, atomic_coords_device, points_device, dist_scratch_device
