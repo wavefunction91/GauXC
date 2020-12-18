@@ -57,7 +57,7 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
   exc_device        = mem.aligned_alloc<F>( 1 );
   nel_device        = mem.aligned_alloc<F>( 1 );
   acc_scr_device    = mem.aligned_alloc<F>( 1 );
-  rab_device        = mem.aligned_alloc<F>( LDatoms * natoms, 2 * sizeof(F));
+  rab_device        = mem.aligned_alloc<F>( LDatoms * natoms, sizeof(double2));
   coords_device     = mem.aligned_alloc<F>( 3 * natoms );
 
   if( not vxcinc_host )
