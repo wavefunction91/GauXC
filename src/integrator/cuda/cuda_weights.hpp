@@ -7,9 +7,13 @@ namespace GauXC      {
 namespace integrator {
 namespace cuda       {
 
+
+void cuda_reciprocal(size_t length, double* vec, cudaStream_t stream); 
+
 template <typename F>
 void partition_weights_cuda_SoA( XCWeightAlg    weight_alg,
                                  size_t         npts,
+                                 size_t         LDatoms,
                                  size_t         natoms,
                                  const F*       points_device,
                                  const int32_t* iparent_device,
