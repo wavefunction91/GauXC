@@ -142,7 +142,7 @@ std::tuple< task_iterator, device_task_container<F> >
   size_t total_nblock   = 0;
   size_t memleft = dynmem_sz;
 
-  uint32_t submat_chunk_size = cuda::get_submat_cut_block(nbf);
+  uint32_t submat_chunk_size = cuda::get_submat_cut_block(nbf, 0);
 
   // Offset memory by the static requirement of an extra pointer element 
   // for each of the size batch arrays in MAGMA

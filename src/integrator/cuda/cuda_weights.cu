@@ -29,23 +29,23 @@ __global__ void compute_point_center_dist(
         double*     dist
 ) {
 
-  __shared__ double3 point_buffer[32];
+  __shared__ double3 point_buffer[warp_size];
   register double3 coord_reg;
 
-  const int natoms_block = (natoms + 31) / 32;
-  const int coords_block = (npts + 31) / 32;
+  const int natoms_block = (natoms + warp_size-1) / warp_size;
+  const int coords_block = (npts + warp_size-1) / warp_size;
 
   const double3* coords_vec = (double3*) coords;
   const double3* points_vec = (double3*) points;
 
   for (int j = blockIdx.x; j < natoms_block; j += gridDim.x) {
-    const int iAtom = j * 32 + threadIdx.x;
+    const int iAtom = j * warp_size + threadIdx.x;
     // Load blocks into registers/shared memory
     if (iAtom < natoms) {
       coord_reg = coords_vec[iAtom];
     }
     for (int i = blockIdx.y; i < coords_block; i += gridDim.y) {
-      const int iPt_load = i * 32 + threadIdx.x;
+      const int iPt_load = i * warp_size + threadIdx.x;
       if (iPt_load < npts) {
         point_buffer[threadIdx.x] = points_vec[iPt_load];
       }
@@ -53,9 +53,9 @@ __global__ void compute_point_center_dist(
 
       // do the computation
       #pragma unroll 2
-      for (int k = threadIdx.y; k < 32; k+=16) {
+      for (int k = threadIdx.y; k < warp_size; k+=warp_size/2) {
         const int iPt_sm = k;
-        const int iPt = i * 32 + iPt_sm;
+        const int iPt = i * warp_size + iPt_sm;
         const double rx = point_buffer[iPt_sm].x - coord_reg.x;
         const double ry = point_buffer[iPt_sm].y - coord_reg.y;
         const double rz = point_buffer[iPt_sm].z - coord_reg.z;
@@ -555,7 +555,7 @@ void modify_weights_ssf_kernel_2d(
 
 void cuda_reciprocal(size_t length, double* vec, cudaStream_t stream) {
   dim3 threads(max_threads_per_thread_block);
-  dim3 blocks( get_device_sm_count() ); 
+  dim3 blocks( get_device_sm_count(0) ); 
   reciprocal_kernel<<<threads, blocks, 0, stream>>>(length, vec);
 }
 
@@ -593,7 +593,7 @@ void partition_weights_cuda_SoA( XCWeightAlg    weight_alg,
   if( partition_weights_1d_kernel ) {
 
     dim3 threads( warp_size, weight_thread_block / warp_size );
-    dim3 blocks(  1, get_device_sm_count() * weight_thread_block_per_sm); 
+    dim3 blocks(  1, get_device_sm_count(0) * weight_thread_block_per_sm); 
     modify_weights_ssf_kernel_2d<<< blocks, threads, 0, stream >>>(
       npts, LDatoms, natoms, rab_device, atomic_coords_device, dist_scratch_device, 
       iparent_device, dist_nearest_device, weights_device
