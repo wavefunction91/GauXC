@@ -17,7 +17,7 @@ static_assert(weight_unroll == 4, "Weight unroll is only tested for value of 4")
 static constexpr uint32_t weight_thread_block = 640;
 static constexpr uint32_t weight_thread_block_per_sm = 2;
 
-uint32_t get_submat_cut_block(int32_t LDA);
-uint32_t get_device_sm_count();
+uint32_t get_submat_cut_block(int32_t LDA, int32_t device);
+uint32_t get_device_sm_count(int32_t device);
 }
 }
