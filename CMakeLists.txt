@@ -5,8 +5,13 @@ set( FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE BOOL "Disable FC Updates" )
 
 project( GauXC VERSION 0.0.1 LANGUAGES C CXX )
 
+# Place local modules in the path
 list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
 list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules )
+include( gauxc-linalg-modules )
+
+
+
 
 # GauXC Options
 option( GAUXC_ENABLE_HOST     "Enable Host Integrator"      ON  )
