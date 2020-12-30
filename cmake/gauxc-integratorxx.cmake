@@ -7,7 +7,7 @@ if( NOT ${IntegratorXX_FOUND} )
     GIT_REPOSITORY 
       https://github.com/wavefunction91/IntegratorXX.git
     GIT_TAG 
-      redo
+      cmake-fixup
   )
 
   FetchContent_MakeAvailable( integratorxx )
