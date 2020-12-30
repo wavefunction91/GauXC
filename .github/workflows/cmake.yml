@@ -68,3 +68,9 @@ jobs:
       working-directory: ${{runner.workspace}}/build
       shell: bash
       run: cmake --build . --target install 
+
+    - name: CMake Discovery
+      working-directory:  ${{runner.workspace}}/tests/cmake_discovery
+      shell: bash
+      run: cmake -H. -Bbuild -DCMAKE_PREFIX_PATH=${{runner.workspace}}/install && cmake --build $PWD/build
+
