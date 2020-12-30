@@ -10,6 +10,6 @@ target_sources( gauxc PRIVATE host/xc_host_util.cxx
 target_link_libraries( gauxc PUBLIC LAPACK::LAPACK )
 
 if( GAUXC_ENABLE_GAU2GRID )
-  target_link_libraries( gauxc PUBLIC gauxc_gau2grid )
+  target_link_libraries( gauxc PUBLIC gau2grid::gg )
 endif()
 

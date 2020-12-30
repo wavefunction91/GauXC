@@ -27,6 +27,7 @@ target_include_directories( gauxc
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/include>
     $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/include>
     $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src>
+    $<INSTALL_INTERFACE:include>
 )
 
 target_compile_options( gauxc
@@ -42,8 +43,8 @@ configure_file(
 )
 
 target_link_libraries( gauxc PUBLIC 
-  ExchCXX::exchcxx 
-  IntegratorXX::integratorxx 
+  ExchCXX::ExchCXX 
+  IntegratorXX::IntegratorXX 
   OpenMP::OpenMP_CXX
 )
 
@@ -54,4 +55,66 @@ endif()
 add_subdirectory( integrator )
 
 
+add_library( gauxc::gauxc ALIAS gauxc )
 
+include( GNUInstallDirs )
+
+# TARGETS
+
+install( TARGETS gauxc ${GAUXC_EXPORT_DEPENDENCIES}
+  EXPORT gauxc-targets 
+  LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
+)
+
+set_target_properties( gauxc PROPERTIES EXPORT_NAME gauxc )
+
+# Install staic headers
+install( 
+  DIRECTORY   ${PROJECT_SOURCE_DIR}/include
+  DESTINATION ${CMAKE_INSTALL_PREFIX}
+  FILES_MATCHING PATTERN "*.hpp"
+)
+
+# Install generated headers
+install(
+  FILES       ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
+  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/gauxc
+)
+  
+   
+# Export target to script
+set( INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/gauxc )
+install( EXPORT gauxc-targets
+  FILE         gauxc-targets.cmake
+  NAMESPACE    gauxc::
+  DESTINATION  ${INSTALL_CONFIGDIR}
+)
+
+# Create config-version.cmake file
+include( CMakePackageConfigHelpers )
+write_basic_package_version_file(
+  ${CMAKE_CURRENT_BINARY_DIR}/gauxc-config-version.cmake
+  VERSION ${PROJECT_VERSION}
+  COMPATIBILITY AnyNewerVersion
+)
+
+
+# Setup gauxc-config.cmake
+configure_package_config_file(
+  ${PROJECT_SOURCE_DIR}/cmake/gauxc-config.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/gauxc-config.cmake
+  INSTALL_DESTINATION ${INSTALL_CONFIGDIR}
+)
+
+# Install CMake files
+install( FILES
+  ${PROJECT_SOURCE_DIR}/cmake/modules/FindMAGMA.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/gauxc-config.cmake
+  ${CMAKE_CURRENT_BINARY_DIR}/gauxc-config-version.cmake
+  DESTINATION ${INSTALL_CONFIGDIR}
+)
+
+# Install Custom Find Modules
+include( ${linalg-cmake-modules_SOURCE_DIR}/LinAlgModulesMacros.cmake )
+install_linalg_modules( INSTALL_CONFIGDIR )

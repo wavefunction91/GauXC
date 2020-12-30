@@ -9,7 +9,7 @@ if( NOT ${ExchCXX_FOUND} )
     GIT_REPOSITORY 
       https://github.com/wavefunction91/ExchCXX.git
     GIT_TAG 
-      master
+      cmake-fixup
   )
 
   FetchContent_MakeAvailable( exchcxx )
