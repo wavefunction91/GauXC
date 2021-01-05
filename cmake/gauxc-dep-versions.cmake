@@ -10,8 +10,8 @@ set( GAUXC_CUB_REVISION   1.10.0 )
 set( GAUXC_EXCHCXX_REPOSITORY https://github.com/wavefunction91/ExchCXX.git )
 set( GAUXC_EXCHCXX_REVISION   cmake-fixup )
 
-set( GAUXC_GAU2GRID_REPOSITORY https://github.com/wavefunction91/gau2grid.git )
-set( GAUXC_GAU2GRID_REVISION   cmake-subproject )
+set( GAUXC_GAU2GRID_REPOSITORY https://github.com/dgasmith/gau2grid.git )
+set( GAUXC_GAU2GRID_REVISION   v2.0.6 )
 
 set( GAUXC_INTEGRATORXX_REPOSITORY https://github.com/wavefunction91/IntegratorXX.git )
 set( GAUXC_INTEGRATORXX_REVISION   cmake-fixup )
