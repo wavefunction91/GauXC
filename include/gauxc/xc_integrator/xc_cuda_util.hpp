@@ -9,7 +9,7 @@ namespace cuda {
 
 
 template <typename F, size_t n_deriv>
-void process_batches_cuda_replicated_p(
+void process_batches_cuda_replicated_density_incore_p(
   XCWeightAlg            weight_alg,
   const functional_type& func,
   const BasisSet<F>&     basis,
@@ -25,11 +25,11 @@ void process_batches_cuda_replicated_p(
 
 
 template <typename F, typename... Args>
-inline void process_batches_cuda_replicated_p( size_t n_deriv, Args&&... args ) {
+inline void process_batches_cuda_replicated_density_incore_p( size_t n_deriv, Args&&... args ) {
   if( n_deriv == 0 )
-    process_batches_cuda_replicated_p<F,0>( std::forward<Args>(args)... );
+    process_batches_cuda_replicated_density_incore_p<F,0>( std::forward<Args>(args)... );
   else if( n_deriv == 1 )
-    process_batches_cuda_replicated_p<F,1>( std::forward<Args>(args)... );
+    process_batches_cuda_replicated_density_incore_p<F,1>( std::forward<Args>(args)... );
   else
     throw std::runtime_error("MGGA NYI");
 }

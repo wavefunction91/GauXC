@@ -7,7 +7,7 @@ include( gauxc-cub )
 
 target_sources( gauxc PRIVATE cuda/collocation_device.cu
                               cuda/xc_cuda_data.cxx
-                              cuda/xc_cuda_util.cxx
+                              cuda/cuda_driver_replicated_density_incore.cxx
                               cuda/cuda_weights.cu
                               cuda/cuda_pack_density.cu
                               cuda/cuda_eval_denvars.cu

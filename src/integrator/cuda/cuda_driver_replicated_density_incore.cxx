@@ -1,5 +1,6 @@
 #include <gauxc/xc_integrator/xc_cuda_util.hpp>
 #include <gauxc/util/cuda_util.hpp>
+#include <gauxc/util/unused.hpp>
 
 #include "cuda_weights.hpp"
 #include "collocation_device.hpp"
@@ -11,12 +12,6 @@
   
 #include "cublas_extensions.hpp"
 
-inline static void unused() { }
-template <typename T, typename... Args>
-inline static void unused( const T& t, Args&&... args ) {
-  (void)(t);
-  unused( std::forward<Args>(args)... );
-}
 
 namespace GauXC  {
 namespace integrator::cuda {
@@ -29,7 +24,7 @@ template <typename F>
 using cuda_task_iterator = typename std::vector<XCTaskDevice<F>>::iterator;
 
 template <typename F, size_t n_deriv>
-void process_batches_cuda_replicated_all_device(
+void process_batches_cuda_replicated_density_incore(
   XCWeightAlg            weight_alg,
   const functional_type& func,
   XCCudaData<F>&         cuda_data,
@@ -62,7 +57,7 @@ void process_batches_cuda_replicated_all_device(
   const auto min_nshells = min_nshells_it->nshells;
   const auto max_nshells = max_nshells_it->nshells;
 
-  unused( min_nbe, min_npts, min_nshells );
+  util::unused( min_nbe, min_npts, min_nshells );
 
   const size_t total_npts = 
     std::accumulate( task_begin, task_end, 0ul, 
@@ -303,7 +298,7 @@ void process_batches_cuda_replicated_all_device(
 
 
 template <typename F, size_t n_deriv>
-void process_batches_cuda_replicated_p(
+void process_batches_cuda_replicated_density_incore_p(
   XCWeightAlg            weight_alg,
   const functional_type& func,
   const BasisSet<F>&     basis,
@@ -372,7 +367,7 @@ void process_batches_cuda_replicated_p(
 
 
     // Process the batches
-    process_batches_cuda_replicated_all_device<F,n_deriv>( 
+    process_batches_cuda_replicated_density_incore<F,n_deriv>( 
       weight_alg, func, cuda_data, tasks_device.begin(), tasks_device.end() 
     );
 
@@ -396,7 +391,7 @@ void process_batches_cuda_replicated_p(
 
 #define CUDA_IMPL( F, ND ) \
 template \
-void process_batches_cuda_replicated_p<F, ND>(\
+void process_batches_cuda_replicated_density_incore_p<F, ND>(\
   XCWeightAlg            weight_alg,\
   const functional_type& func,\
   const BasisSet<F>&     basis,\
