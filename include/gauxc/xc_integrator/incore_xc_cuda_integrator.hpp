@@ -12,7 +12,7 @@ using namespace GauXC::integrator::cuda;
 
 
 template <typename MatrixType>
-class DefaultXCCudaIntegrator : public XCIntegratorImpl<MatrixType> {
+class IncoreXCCudaIntegrator : public XCIntegratorImpl<MatrixType> {
 
   using base_type     = XCIntegratorImpl<MatrixType>;
   using matrix_type   = typename base_type::matrix_type;
@@ -27,13 +27,13 @@ class DefaultXCCudaIntegrator : public XCIntegratorImpl<MatrixType> {
 public:
 
   template <typename... Args>
-  DefaultXCCudaIntegrator( Args&&... args ) :
+  IncoreXCCudaIntegrator( Args&&... args ) :
     base_type( std::forward<Args>(args)... ) { }
 
-  DefaultXCCudaIntegrator( const DefaultXCCudaIntegrator& ) = default;
-  DefaultXCCudaIntegrator( DefaultXCCudaIntegrator&& ) noexcept = default;
+  IncoreXCCudaIntegrator( const IncoreXCCudaIntegrator& ) = default;
+  IncoreXCCudaIntegrator( IncoreXCCudaIntegrator&& ) noexcept = default;
 
-  ~DefaultXCCudaIntegrator() noexcept = default;
+  ~IncoreXCCudaIntegrator() noexcept = default;
 
 };
 
@@ -41,8 +41,8 @@ public:
 
 
 template <typename MatrixType>
-typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type 
-  DefaultXCCudaIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P ) {
+typename IncoreXCCudaIntegrator<MatrixType>::exc_vxc_type 
+  IncoreXCCudaIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P ) {
 
 
 #ifdef GAUXC_ENABLE_MAGMA

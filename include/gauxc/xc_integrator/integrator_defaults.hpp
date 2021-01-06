@@ -1,10 +1,17 @@
 #pragma once
 
-#include <gauxc/xc_integrator/default_xc_host_integrator.hpp>
-#include <gauxc/xc_integrator/default_xc_cuda_integrator.hpp>
+#include <gauxc/xc_integrator/reference_xc_host_integrator.hpp>
+#include <gauxc/xc_integrator/incore_xc_cuda_integrator.hpp>
 
 namespace GauXC  {
 namespace detail {
+
+template <typename MatrixType>
+using DefaultXCHostIntegrator = ReferenceXCHostIntegrator<MatrixType>;
+
+template <typename MatrixType>
+using DefaultXCCudaIntegrator = IncoreXCCudaIntegrator<MatrixType>;
+
 
 #ifdef GAUXC_ENABLE_HOST
 template <typename MatrixType, typename... Args>

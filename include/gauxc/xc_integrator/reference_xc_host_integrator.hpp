@@ -12,7 +12,7 @@ using namespace GauXC::integrator::host;
 
 
 template <typename MatrixType>
-class DefaultXCHostIntegrator : public XCIntegratorImpl<MatrixType> {
+class ReferenceXCHostIntegrator : public XCIntegratorImpl<MatrixType> {
 
   using base_type     = XCIntegratorImpl<MatrixType>;
   using matrix_type   = typename base_type::matrix_type;
@@ -27,13 +27,13 @@ class DefaultXCHostIntegrator : public XCIntegratorImpl<MatrixType> {
 public:
 
   template <typename... Args>
-  DefaultXCHostIntegrator( Args&&... args ) :
+  ReferenceXCHostIntegrator( Args&&... args ) :
     base_type( std::forward<Args>(args)... ) { }
 
-  DefaultXCHostIntegrator( const DefaultXCHostIntegrator& ) = default;
-  DefaultXCHostIntegrator( DefaultXCHostIntegrator&& ) noexcept = default;
+  ReferenceXCHostIntegrator( const ReferenceXCHostIntegrator& ) = default;
+  ReferenceXCHostIntegrator( ReferenceXCHostIntegrator&& ) noexcept = default;
 
-  ~DefaultXCHostIntegrator() noexcept = default;
+  ~ReferenceXCHostIntegrator() noexcept = default;
 
 };
 
@@ -41,8 +41,8 @@ public:
 
 
 template <typename MatrixType>
-typename DefaultXCHostIntegrator<MatrixType>::exc_vxc_type 
-  DefaultXCHostIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P ) {
+typename ReferenceXCHostIntegrator<MatrixType>::exc_vxc_type 
+  ReferenceXCHostIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P ) {
 
   size_t nbf = this->basis_->nbf();
 
