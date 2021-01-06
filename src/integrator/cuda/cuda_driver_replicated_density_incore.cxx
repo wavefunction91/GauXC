@@ -18,7 +18,6 @@ namespace integrator::cuda {
 
 using namespace GauXC::cuda::blas;
 
-using host_task_iterator = std::vector<XCTask>::iterator;
 
 template <typename F>
 using cuda_task_iterator = typename std::vector<XCTaskDevice<F>>::iterator;
@@ -305,7 +304,8 @@ void process_batches_cuda_replicated_density_incore_p(
   const Molecule   &     mol,
   const MolMeta    &     meta,
   XCCudaData<F>    &     cuda_data,
-  std::vector< XCTask >& tasks,
+  host_task_iterator     local_work_begin,
+  host_task_iterator     local_work_end,
   const F*               P,
   F*                     VXC,
   F*                     EXC,
@@ -315,7 +315,7 @@ void process_batches_cuda_replicated_density_incore_p(
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
     return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
   };
-  std::sort( tasks.begin(), tasks.end(), task_comparator );
+  std::sort( local_work_begin, local_work_end, task_comparator );
 
 
   const auto nbf     = basis.nbf();
@@ -358,12 +358,12 @@ void process_batches_cuda_replicated_density_incore_p(
 
 
   // Processes batches in groups that saturadate available device memory
-  auto task_it = tasks.begin();
-  while( task_it != tasks.end() ) {
+  auto task_it = local_work_begin;
+  while( task_it != local_work_end ) {
 
     // Determine next task batch, send relevant data to device
     auto [it, tasks_device] = 
-      cuda_data.generate_buffers( basis, task_it, tasks.end() );
+      cuda_data.generate_buffers( basis, task_it, local_work_end );
 
 
     // Process the batches
@@ -398,7 +398,8 @@ void process_batches_cuda_replicated_density_incore_p<F, ND>(\
   const Molecule   &     mol,\
   const MolMeta    &     meta,\
   XCCudaData<F>    &     cuda_data,\
-  std::vector< XCTask >& local_work,\
+  host_task_iterator     local_work_begin,\
+  host_task_iterator     local_work_end,\
   const F*               P,\
   F*                     VXC,\
   F*                     exc,\

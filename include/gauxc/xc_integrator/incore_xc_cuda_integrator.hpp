@@ -115,7 +115,8 @@ typename IncoreXCCudaIntegrator<MatrixType>::exc_vxc_type
     process_batches_cuda_replicated_density_incore_p< value_type>(
       n_deriv, XCWeightAlg::SSF, *this->func_, *this->basis_,
       this->load_balancer_->molecule(), this->load_balancer_->molmeta(),
-      *cuda_data_, tasks, P.data(), VXC.data(), &EXC, &N_EL 
+      *cuda_data_, tasks.begin(), tasks.end(), P.data(), 
+      VXC.data(), &EXC, &N_EL 
     );
 
   } );

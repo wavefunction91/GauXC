@@ -7,6 +7,7 @@ namespace GauXC  {
 namespace integrator {
 namespace cuda {
 
+using host_task_iterator = std::vector<XCTask>::iterator;
 
 template <typename F, size_t n_deriv>
 void process_batches_cuda_replicated_density_incore_p(
@@ -16,7 +17,8 @@ void process_batches_cuda_replicated_density_incore_p(
   const Molecule   &     mol,
   const MolMeta    &     meta,
   XCCudaData<F>    &     cuda_data,
-  std::vector< XCTask >& local_work,
+  host_task_iterator     local_work_begin,
+  host_task_iterator     local_work_end,
   const F*               P,
   F*                     VXC,
   F*                     exc,
