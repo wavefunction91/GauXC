@@ -96,7 +96,10 @@ typename IncoreXCCudaIntegrator<MatrixType>::exc_vxc_type
   this->timer_.time_op("XCIntegrator.CUDAAlloc", [&](){
 
     // Allocate Memory
-    cuda_data_ = std::make_shared<XCCudaData<value_type>>( 
+    cuda_data_ = std::make_shared<XCCudaData<value_type>>( );
+
+    // Partition out static memory segments for incore algorithm
+    cuda_data_->allocate_static_data( 
       this->load_balancer_->molecule().size(),
       n_deriv,
       nbf,

@@ -97,11 +97,7 @@ struct XCCudaData {
   std::vector<util::cuda_stream>       blas_streams;
   std::vector<util::cublas_handle>     blas_handles;
 
-  XCCudaData( size_t _natoms,
-              size_t _n_deriv, 
-              size_t _nbf,
-              size_t _nshells,
-              bool _batch_l3_blas = true );
+  XCCudaData( bool _batch_l3_blas = true );
 
   ~XCCudaData() noexcept;
   XCCudaData( const XCCudaData& )          = delete;

@@ -8,15 +8,7 @@
 namespace GauXC {
 
 template <typename F>
-XCCudaData<F>::XCCudaData( size_t _natoms,
-                           size_t _n_deriv, 
-                           size_t _nbf,
-                           size_t _nshells,
-                           bool _batch_l3_blas ):
-  //nshells(_nshells), 
-  //nbf(_nbf), 
-  //n_deriv(_n_deriv), 
-  //natoms(_natoms),
+XCCudaData<F>::XCCudaData( bool _batch_l3_blas ):
 #ifdef GAUXC_ENABLE_MAGMA
   batch_l3_blas(_batch_l3_blas)  
 #else
@@ -61,13 +53,6 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
       cublasSetStream( blas_handles[i], blas_streams[i] );
 
   }
-
-
-
-
-
-  // Allocate static memory
-  allocate_static_data( _natoms, _n_deriv, _nbf, _nshells );
 
 }
 
