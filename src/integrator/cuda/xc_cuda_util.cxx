@@ -330,8 +330,7 @@ void process_batches_cuda_replicated_p(
   // Send static data to the device
 
   // Density
-  if( not cuda_data.denpack_host )
-    util::cuda_copy( nbf * nbf, cuda_data.dmat_device, P, "P H2D" );
+  util::cuda_copy( nbf * nbf, cuda_data.dmat_device, P, "P H2D" );
 
   // Shells: TODO avoid host copy?
   std::vector<Shell<F>> shells( basis );
@@ -382,8 +381,7 @@ void process_batches_cuda_replicated_p(
   }
 
   // Receive XC terms from host
-  if( not cuda_data.vxcinc_host )
-    util::cuda_copy( nbf * nbf, VXC, cuda_data.vxc_device, "VXC D2H" );
+  util::cuda_copy( nbf * nbf, VXC, cuda_data.vxc_device, "VXC D2H" );
 
   util::cuda_copy( 1, EXC, cuda_data.exc_device, "EXC D2H" );
   util::cuda_copy( 1, NEL, cuda_data.nel_device, "NEL D2H" );

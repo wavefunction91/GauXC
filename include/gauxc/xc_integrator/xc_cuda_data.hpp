@@ -23,8 +23,6 @@ struct XCCudaData {
   size_t natoms   = 0;
   size_t LDatoms  = 0;
 
-  bool denpack_host  = false;
-  bool vxcinc_host   = false;
   bool batch_l3_blas = true;
   
   void* device_ptr = nullptr;
@@ -102,8 +100,6 @@ struct XCCudaData {
               size_t _n_deriv, 
               size_t _nbf,
               size_t _nshells,
-              bool _denpack_host = false,
-              bool _vxcinc_host  = false,
               bool _batch_l3_blas = true );
 
   ~XCCudaData() noexcept;

@@ -12,15 +12,11 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
                            size_t _n_deriv, 
                            size_t _nbf,
                            size_t _nshells,
-                           bool _denpack_host,
-                           bool _vxcinc_host,
                            bool _batch_l3_blas ):
   nshells(_nshells), 
   nbf(_nbf), 
   n_deriv(_n_deriv), 
   natoms(_natoms),
-  denpack_host(_denpack_host), 
-  vxcinc_host(_vxcinc_host),
 #ifdef GAUXC_ENABLE_MAGMA
   batch_l3_blas(_batch_l3_blas)  
 #else
@@ -60,10 +56,8 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
   rab_device        = mem.aligned_alloc<F>( LDatoms * natoms, sizeof(double2));
   coords_device     = mem.aligned_alloc<F>( 3 * natoms );
 
-  if( not vxcinc_host )
-    vxc_device = mem.aligned_alloc<F>( nbf * nbf );
-  if( not denpack_host )
-    dmat_device = mem.aligned_alloc<F>( nbf * nbf );
+  vxc_device  = mem.aligned_alloc<F>( nbf * nbf );
+  dmat_device = mem.aligned_alloc<F>( nbf * nbf );
 
   // Get current stack location
   dynmem_ptr = mem.stack();

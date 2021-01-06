@@ -100,9 +100,7 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
       this->load_balancer_->molecule().size(),
       n_deriv,
       nbf,
-      nshells,
-      false,
-      false 
+      nshells
     );
 
   });
