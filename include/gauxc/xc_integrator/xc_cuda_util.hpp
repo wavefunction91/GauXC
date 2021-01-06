@@ -2,6 +2,8 @@
 #include <gauxc/xc_integrator/xc_cuda_data.hpp>
 #include <gauxc/xc_integrator.hpp>
 
+#include <gauxc/util/timer.hpp>
+
 #ifdef GAUXC_ENABLE_CUDA
 namespace GauXC  {
 namespace integrator {
@@ -40,6 +42,7 @@ inline void process_batches_cuda_replicated_density_incore_p( size_t n_deriv, Ar
 
 template <typename F, size_t n_deriv>
 void process_batches_cuda_replicated_density_shellbatched_p(
+  util::Timer&           timer,
   XCWeightAlg            weight_alg,
   const functional_type& func,
   const BasisSet<F>&     basis,

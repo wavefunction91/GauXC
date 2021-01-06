@@ -5,6 +5,7 @@
 #include <cassert>
 
 namespace GauXC  {
+namespace util  {
 
 namespace detail {
 
@@ -45,9 +46,6 @@ template <typename... Args>
 using largest_t = typename largest<Args...>::type;
 
 }
-
-
-namespace util  {
 
 template <typename Integral1, typename Integral2>
 intmax_t div_ceil( Integral1 i, Integral2 j ) {

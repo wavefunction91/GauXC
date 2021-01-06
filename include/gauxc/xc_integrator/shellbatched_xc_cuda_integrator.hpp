@@ -108,7 +108,7 @@ typename ShellBatchedXCCudaIntegrator<MatrixType>::exc_vxc_type
 
     // Compute Local contributions to EXC / VXC
     process_batches_cuda_replicated_density_shellbatched_p< value_type>(
-      n_deriv, XCWeightAlg::SSF, *this->func_, *this->basis_,
+      n_deriv, this->timer_, XCWeightAlg::SSF, *this->func_, *this->basis_,
       this->load_balancer_->molecule(), this->load_balancer_->molmeta(),
       *cuda_data_, tasks.begin(), tasks.end(), P.data(), 
       VXC.data(), &EXC, &N_EL 

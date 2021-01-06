@@ -22,6 +22,7 @@ using namespace GauXC::cuda::blas;
 
 template <typename F, size_t n_deriv>
 void process_batches_cuda_replicated_density_shellbatched_p(
+  util::Timer&           timer,
   XCWeightAlg            weight_alg,
   const functional_type& func,
   const BasisSet<F>&     basis,
@@ -37,13 +38,15 @@ void process_batches_cuda_replicated_density_shellbatched_p(
 ) {
 
   std::cout << "IN SHELL BATCHED\n" << std::flush;
+  std::cout << "TOTAL NTASKS = " << std::distance( local_work_begin, local_work_end ) << std:: endl;
 
 
   // Zero out final results
-  *EXC = 0.;
-  *NEL = 0.;
-  for( auto i = 0; i < basis.nbf() * basis.nbf(); ++i )
-    VXC[i] = 0.;
+  timer.time_op( "XCIntegrator.ZeroHost", [&]() {
+    *EXC = 0.;
+    *NEL = 0.;
+    std::memset( VXC, 0, basis.nbf()*basis.nbf()*sizeof(F) );
+  });
 
 #if 0
   size_t nbf     = basis.nbf();
@@ -63,15 +66,42 @@ void process_batches_cuda_replicated_density_shellbatched_p(
     return task_a.nbe < task_b.nbe;
   };
 
+
+#if 0
+  // TODO:: Preallocate temporaries
+  auto max_nbe = std::max_element( local_work_begin, local_work_end,
+                                   nbe_comparator )->nbe;
+
+
+  timer.time_op_accumulate( "XCIntegrator.TaskSort", [&]() {
+    std::sort( local_work_begin, local_work_end, [](const auto& a, const auto& b) {
+      return a.shell_list < b.shell_list;
+    });
+  });
+#endif
+
+
+
+  size_t batch_iter = 0;
   auto task_begin = local_work_begin;
+
   while( task_begin != local_work_end ) {
 
+    std::string batch_iter_str = std::to_string(batch_iter);
+
     // Find task with largest NBE
-    auto max_task = std::max_element( task_begin, local_work_end, nbe_comparator );
+    auto max_task = timer.time_op_accumulate("XCIntegrator.MaxTask", [&]() {
+      return std::max_element( task_begin, local_work_end, nbe_comparator );
+    } );
+
     const auto   max_shell_list = max_task->shell_list; // copy for reset
     const size_t nbe     = max_task->nbe;
     const size_t nshells = max_shell_list.size();
     const size_t natoms  = mol.size();
+
+    std::cout << "MAX TASK HAS:"   << std::endl
+              << "  NSHELLS    = " << nshells << std::endl
+              << "  NBE        = " << nbe     << std::endl;
 
     // Partition tasks into those which are subsets of max_task and those 
     // that aren't
@@ -82,52 +112,35 @@ void process_batches_cuda_replicated_density_shellbatched_p(
                             t.shell_list.end() );
     };
 
-    auto task_end = std::partition( task_begin, local_work_end, subset_of_max );
+    auto task_end = timer.time_op_accumulate("XCIntegrator.TaskPartition", [&]() {
+      return std::partition( task_begin, local_work_end, subset_of_max );
+    } );
 
-
-    // Create subobjects for batch processing
-
-    std::cout << "MAX TASK HAS:"   << std::endl
-              << "  NSHELLS    = " << nshells << std::endl
-              << "  NBE        = " << nbe     << std::endl;
     std::cout << "FOUND " << std::distance( task_begin, task_end ) << " SUBTASKS " << std::endl;
-              
+
 
     // Extract subbasis
     BasisSet<F> basis_subset; basis_subset.reserve(nshells);
-    for( auto i : max_shell_list ) {
-      basis_subset.emplace_back( basis.at(i) );
-    }
-    basis_subset.generate_shell_to_ao();
-
-    // XXX: DEBUG
-    //std::cout << "SHELL LISTS BEFORE RECALC" << std::endl;
-    //for( auto _it = task_begin; _it != task_end; ++_it ) {
-    //  std::cout << "TASK " << std::distance( task_begin, _it ) << ": ";
-    //  for( auto j : _it->shell_list ) std::cout << j << ", ";
-    //  std::cout << std::endl;
-    //}
+    timer.time_op_accumulate("XCIntegrator.CopySubBasis",[&]() {
+      for( auto i : max_shell_list ) {
+        basis_subset.emplace_back( basis.at(i) );
+      }
+      basis_subset.generate_shell_to_ao();
+    });
 
 
     // Recalculate shell_list based on subbasis
-    for( auto i = 0ul; i < nshells; ++i ) {
-      const auto shell_idx = max_shell_list[i];
-      for( auto _it = task_begin; _it != task_end; ++_it )
-      for( auto j = 0ul; j < _it->shell_list.size(); ++j ) 
-      if( _it->shell_list[j] == shell_idx ) {
-        _it->shell_list[j] = i;
+    timer.time_op_accumulate("XCIntegrator.RecalcShellList",[&]() {
+      for( auto i = 0ul; i < nshells; ++i ) {
+        const auto shell_idx = max_shell_list[i];
+        for( auto _it = task_begin; _it != task_end; ++_it )
+        for( auto j = 0ul; j < _it->shell_list.size(); ++j ) 
+        if( _it->shell_list[j] == shell_idx ) {
+          _it->shell_list[j] = i;
+        }
       }
-    }
+    } );
     
-    // XXX: DEBUG
-    //std::cout << "SHELL LISTS AFTER RECALC" << std::endl;
-    //for( auto _it = task_begin; _it != task_end; ++_it ) {
-    //  std::cout << "TASK " << std::distance( task_begin, _it ) << ": ";
-    //  for( auto j : _it->shell_list ) std::cout << j << ", ";
-    //  std::cout << std::endl;
-    //}
-
-#if 1
 
     // Allocate temporary submatrices
     std::vector<F> P_submat_host(nbe*nbe), VXC_submat_host(nbe*nbe);
@@ -140,8 +153,10 @@ void process_batches_cuda_replicated_density_shellbatched_p(
       integrator::gen_compressed_submat_map( basis, max_shell_list, 
         basis.nbf(), basis.nbf() );
 
-    detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, P, basis.nbf(), 
-                        P_submat, nbe, max_submat_cut );
+    timer.time_op_accumulate("XCIntegrator.ExtractSubDensity",[&]() {
+      detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, P, basis.nbf(), 
+                          P_submat, nbe, max_submat_cut );
+    } );
    
 
     // Allocate static quantities on device stack
@@ -156,32 +171,29 @@ void process_batches_cuda_replicated_density_shellbatched_p(
     // Update full quantities
     *EXC += EXC_tmp;
     *NEL += NEL_tmp;
-    detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXC, basis.nbf(), 
-                           VXC_submat, nbe, max_submat_cut );
+    timer.time_op_accumulate("XCIntegrator.IncrementSubPotential",[&]() {
+      detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXC, basis.nbf(), 
+                             VXC_submat, nbe, max_submat_cut );
+    });
 
-#endif
 
     // Reset shell_list to be wrt full basis
-    for( auto i = 0ul; i < nshells; ++i ) {
-      const auto shell_idx = max_shell_list[i];
-      for( auto _it = task_begin; _it != task_end; ++_it )
-      for( auto j = 0ul; j < _it->shell_list.size(); ++j ) 
-      if( _it->shell_list[j] == i ) {
-        _it->shell_list[j] = shell_idx;
+    timer.time_op_accumulate("XCIntegrator.ResetShellList",[&]() {
+      for( auto i = 0ul; i < nshells; ++i ) {
+        const auto shell_idx = max_shell_list[i];
+        for( auto _it = task_begin; _it != task_end; ++_it )
+        for( auto j = 0ul; j < _it->shell_list.size(); ++j ) 
+        if( _it->shell_list[j] == i ) {
+          _it->shell_list[j] = shell_idx;
+        }
       }
-    }
+    });
 
-    // XXX: DEBUG
-    //std::cout << "SHELL LISTS AFTER RESET" << std::endl;
-    //for( auto _it = task_begin; _it != task_end; ++_it ) {
-    //  std::cout << "TASK " << std::distance( task_begin, _it ) << ": ";
-    //  for( auto j : _it->shell_list ) std::cout << j << ", ";
-    //  std::cout << std::endl;
-    //}
 
     // Update task iterator for next set of batches
     task_begin = task_end;
 
+    batch_iter++;
   }
 
 
@@ -193,6 +205,7 @@ void process_batches_cuda_replicated_density_shellbatched_p(
 #define CUDA_IMPL( F, ND ) \
 template \
 void process_batches_cuda_replicated_density_shellbatched_p<F, ND>(\
+  util::Timer&           timer,\
   XCWeightAlg            weight_alg,\
   const functional_type& func,\
   const BasisSet<F>&     basis,\
