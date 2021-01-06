@@ -27,6 +27,7 @@ struct XCCudaData {
   
   void* device_ptr = nullptr;
   void* dynmem_ptr = nullptr;
+  size_t devmem_sz = 0;
   size_t dynmem_sz = 0;
    
   Shell<F>* shells_device             = nullptr;
@@ -109,6 +110,13 @@ struct XCCudaData {
 
   using task_iterator = std::vector< XCTask >::iterator;
   using device_task_container = std::vector< cuda::XCTaskDevice<F> >;
+
+
+  void allocate_static_data( size_t _natoms,
+                             size_t _n_deriv, 
+                             size_t _nbf,
+                             size_t _nshells );
+
 
   std::tuple< task_iterator, device_task_container >
     generate_buffers( const BasisSet<F>& basis,

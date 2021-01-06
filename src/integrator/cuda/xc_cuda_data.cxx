@@ -13,10 +13,10 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
                            size_t _nbf,
                            size_t _nshells,
                            bool _batch_l3_blas ):
-  nshells(_nshells), 
-  nbf(_nbf), 
-  n_deriv(_n_deriv), 
-  natoms(_natoms),
+  //nshells(_nshells), 
+  //nbf(_nbf), 
+  //n_deriv(_n_deriv), 
+  //natoms(_natoms),
 #ifdef GAUXC_ENABLE_MAGMA
   batch_l3_blas(_batch_l3_blas)  
 #else
@@ -36,32 +36,9 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
   GAUXC_CUDA_ERROR( "MemInfo Failed", stat );
 
   // Allocate up to fill_fraction
-  size_t fill_sz = fill_fraction * cuda_avail;
-  stat = cudaMalloc( &device_ptr, fill_sz );
+  devmem_sz = fill_fraction * cuda_avail;
+  stat = cudaMalloc( &device_ptr, devmem_sz );
   GAUXC_CUDA_ERROR( "CUDA Malloc Failed", stat );
-
-  //std::cout << "NS = " << nshells << ", NA = " << natoms << ", NBF = " << nbf << std::endl;
-
-  //std::cout << "XCDeviceData has allocated " << fill_sz << " bytes of data"
-  //          << std::endl;
-  // Allocate static memory with proper alignment
-  buffer_adaptor mem( device_ptr, fill_sz );
-
-  LDatoms = util::div_ceil( natoms, cuda::weight_unroll ) * cuda::weight_unroll;
-
-  shells_device     = mem.aligned_alloc<Shell<F>>( nshells );
-  exc_device        = mem.aligned_alloc<F>( 1 );
-  nel_device        = mem.aligned_alloc<F>( 1 );
-  acc_scr_device    = mem.aligned_alloc<F>( 1 );
-  rab_device        = mem.aligned_alloc<F>( LDatoms * natoms, sizeof(double2));
-  coords_device     = mem.aligned_alloc<F>( 3 * natoms );
-
-  vxc_device  = mem.aligned_alloc<F>( nbf * nbf );
-  dmat_device = mem.aligned_alloc<F>( nbf * nbf );
-
-  // Get current stack location
-  dynmem_ptr = mem.stack();
-  dynmem_sz  = mem.nleft(); 
 
   // Create CUDA Stream and CUBLAS Handles and make them talk to eachother
   master_stream = std::make_unique< util::cuda_stream >();
@@ -85,6 +62,13 @@ XCCudaData<F>::XCCudaData( size_t _natoms,
 
   }
 
+
+
+
+
+  // Allocate static memory
+  allocate_static_data( _natoms, _n_deriv, _nbf, _nshells );
+
 }
 
 
@@ -93,6 +77,48 @@ template <typename F>
 XCCudaData<F>::~XCCudaData() noexcept {
   if( device_ptr ) util::cuda_free( device_ptr );
 } 
+
+
+
+
+
+
+
+template <typename F>
+void XCCudaData<F>::allocate_static_data( size_t _natoms,
+                                          size_t _n_deriv, 
+                                          size_t _nbf,
+                                          size_t _nshells ) {
+
+
+  // Save state
+  nshells = _nshells;
+  nbf     = _nbf; 
+  n_deriv = _n_deriv; 
+  natoms  = _natoms;
+
+  LDatoms = util::div_ceil( natoms, cuda::weight_unroll ) * cuda::weight_unroll;
+
+  // Allocate static memory with proper alignment
+  buffer_adaptor mem( device_ptr, devmem_sz );
+
+  shells_device     = mem.aligned_alloc<Shell<F>>( nshells );
+  exc_device        = mem.aligned_alloc<F>( 1 );
+  nel_device        = mem.aligned_alloc<F>( 1 );
+  acc_scr_device    = mem.aligned_alloc<F>( 1 );
+  rab_device        = mem.aligned_alloc<F>( LDatoms * natoms, sizeof(double2));
+  coords_device     = mem.aligned_alloc<F>( 3 * natoms );
+
+  vxc_device  = mem.aligned_alloc<F>( nbf * nbf );
+  dmat_device = mem.aligned_alloc<F>( nbf * nbf );
+
+  // Get current stack location
+  dynmem_ptr = mem.stack();
+  dynmem_sz  = mem.nleft(); 
+
+}
+
+
 
 
 using task_iterator = std::vector< XCTask >::iterator;
