@@ -2,15 +2,16 @@
 #include <gauxc/util/cuda_util.hpp>
 #include <gauxc/util/unused.hpp>
 
-#include "cuda_weights.hpp"
-#include "collocation_device.hpp"
-#include "cuda_pack_density.hpp"
-#include "cuda_inc_potential.hpp"
-#include "cuda_eval_denvars.hpp"
-#include "cuda_zmat.hpp"
+#include "cuda/cuda_weights.hpp"
+#include "cuda/collocation_device.hpp"
+#include "cuda/cuda_pack_density.hpp"
+#include "cuda/cuda_inc_potential.hpp"
+#include "cuda/cuda_eval_denvars.hpp"
+#include "cuda/cuda_zmat.hpp"
 #include "integrator_common.hpp"
   
-#include "cublas_extensions.hpp"
+#include "cuda/cublas_extensions.hpp"
+
 
 
 namespace GauXC  {

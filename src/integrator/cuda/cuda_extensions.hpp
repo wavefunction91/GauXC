@@ -1,7 +1,7 @@
 #pragma once
 #include <cuda.h>
 #include <cub/cub.cuh>
-#include "cuda_device_properties.hpp"
+#include "cuda/cuda_device_properties.hpp"
 
 #define GAUXC_ENABLE_WARP_REDUCTIONS
 

@@ -1,6 +1,6 @@
-#include "cuda_zmat.hpp"
+#include "cuda/cuda_zmat.hpp"
 #include <gauxc/util/div_ceil.hpp>
-#include "cuda_device_properties.hpp"
+#include "cuda/cuda_device_properties.hpp"
 
 namespace GauXC      {
 namespace integrator {

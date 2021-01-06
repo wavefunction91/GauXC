@@ -1,9 +1,9 @@
 #include <gauxc/util/div_ceil.hpp>
 
-#include "cuda_weights.hpp"
+#include "cuda/cuda_weights.hpp"
 #include "integrator_constants.hpp"
-#include "cuda_extensions.hpp"
-#include "cuda_device_properties.hpp"
+#include "cuda/cuda_extensions.hpp"
+#include "cuda/cuda_device_properties.hpp"
 
 constexpr double eps_d = std::numeric_limits<double>::epsilon();
 

@@ -1,8 +1,8 @@
-#include "cuda_eval_denvars.hpp"
-#include "cuda_extensions.hpp"
+#include "cuda/cuda_eval_denvars.hpp"
+#include "cuda/cuda_extensions.hpp"
 #include <gauxc/util/div_ceil.hpp>
 
-#include "cuda_device_properties.hpp"
+#include "cuda/cuda_device_properties.hpp"
 
 namespace GauXC      {
 namespace integrator {

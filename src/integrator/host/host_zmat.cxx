@@ -1,5 +1,5 @@
-#include "host_zmat.hpp"
-#include "blas.hpp"
+#include "host/host_zmat.hpp"
+#include "host/blas.hpp"
 
 namespace GauXC  {
 namespace integrator::host {

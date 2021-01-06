@@ -3,8 +3,8 @@
 
 #include <gauxc/shell.hpp>
 
-#include "collocation_angular_cartesian.hpp"
-#include "collocation_angular_spherical_unnorm.hpp"
+#include "cuda/collocation/collocation_angular_cartesian.hpp"
+#include "cuda/collocation/collocation_angular_spherical_unnorm.hpp"
 
 namespace GauXC      {
 namespace integrator {

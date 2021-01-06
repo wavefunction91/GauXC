@@ -1,8 +1,8 @@
-#include "cuda_pack_density.hpp"
-#include "cuda_device_properties.hpp"
+#include "cuda/cuda_pack_density.hpp"
+#include "cuda/cuda_device_properties.hpp"
 #include <gauxc/util/div_ceil.hpp>
 
-#include "cuda_device_properties.hpp"
+#include "cuda/cuda_device_properties.hpp"
 
 namespace GauXC      {
 namespace integrator {

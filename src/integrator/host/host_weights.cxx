@@ -1,4 +1,4 @@
-#include "host_weights.hpp"
+#include "host/host_weights.hpp"
 #include <integrator_constants.hpp>
 
 namespace GauXC::integrator::host {

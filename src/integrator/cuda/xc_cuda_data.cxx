@@ -1,9 +1,9 @@
 #include <gauxc/xc_integrator/xc_cuda_data.hpp>
 #include <gauxc/util/div_ceil.hpp>
 
-#include "buffer_adaptor.hpp"
+#include "cuda/buffer_adaptor.hpp"
 #include "integrator_common.hpp"
-#include "cuda_device_properties.hpp"
+#include "cuda/cuda_device_properties.hpp"
 
 namespace GauXC {
 

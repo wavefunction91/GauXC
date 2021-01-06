@@ -3,12 +3,12 @@
 #include <gauxc/exceptions/cuda_exception.hpp>
 #include <gauxc/xc_task.hpp>
 
-#include "collocation_petite_kernels.hpp"
-#include "collocation_masked_kernels.hpp"
-#include "collocation_petite_combined_kernels.hpp"
-#include "collocation_masked_combined_kernels.hpp"
+#include "cuda/collocation_petite_kernels.hpp"
+#include "cuda/collocation_masked_kernels.hpp"
+#include "cuda/collocation_petite_combined_kernels.hpp"
+#include "cuda/collocation_masked_combined_kernels.hpp"
 
-#include "cuda_device_properties.hpp"
+#include "cuda/cuda_device_properties.hpp"
 
 namespace GauXC      {
 namespace integrator {

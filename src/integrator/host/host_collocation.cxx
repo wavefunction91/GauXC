@@ -1,4 +1,4 @@
-#include "host_collocation.hpp"
+#include "host/host_collocation.hpp"
 
 
 #ifdef GAUXC_ENABLE_GAU2GRID

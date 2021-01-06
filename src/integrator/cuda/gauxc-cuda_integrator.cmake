@@ -8,6 +8,7 @@ include( gauxc-cub )
 target_sources( gauxc PRIVATE cuda/collocation_device.cu
                               cuda/xc_cuda_data.cxx
                               cuda/cuda_driver_replicated_density_incore.cxx
+                              cuda/cuda_driver_replicated_density_shellbatched.cxx
                               cuda/cuda_weights.cu
                               cuda/cuda_pack_density.cu
                               cuda/cuda_eval_denvars.cu
@@ -18,11 +19,11 @@ target_sources( gauxc PRIVATE cuda/collocation_device.cu
 )
 
 target_compile_features( gauxc PRIVATE cuda_std_14 )
-target_include_directories( gauxc
-  PRIVATE
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/integrator/cuda>
-    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/integrator/cuda/collocation>
-)
+#target_include_directories( gauxc
+#  PRIVATE
+#    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/integrator/cuda>
+#    $<BUILD_INTERFACE:${PROJECT_SOURCE_DIR}/src/integrator/cuda/collocation>
+#)
 
 target_compile_options( gauxc
   PRIVATE

@@ -1,5 +1,5 @@
 #pragma once
-#include "blas.hpp"
+#include "host/blas.hpp"
 #include <vector>
 #include <tuple>
 #include <cstdint>

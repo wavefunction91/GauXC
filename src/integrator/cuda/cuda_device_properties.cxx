@@ -3,7 +3,7 @@
 
 #include "cuda_runtime.h"
 
-#include "cuda_device_properties.hpp"
+#include "cuda/cuda_device_properties.hpp"
 
 namespace GauXC {
 namespace cuda  {

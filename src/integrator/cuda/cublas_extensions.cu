@@ -1,9 +1,9 @@
-#include "cublas_extensions.hpp"
+#include "cuda/cublas_extensions.hpp"
 #include <gauxc/util/cublas_util.hpp>
 #include <gauxc/util/div_ceil.hpp>
 #include <gauxc/exceptions/cublas_exception.hpp>
 
-#include "cuda_device_properties.hpp"
+#include "cuda/cuda_device_properties.hpp"
 
 namespace GauXC {
 namespace cuda  {

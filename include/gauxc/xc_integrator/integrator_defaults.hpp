@@ -2,6 +2,7 @@
 
 #include <gauxc/xc_integrator/reference_xc_host_integrator.hpp>
 #include <gauxc/xc_integrator/incore_xc_cuda_integrator.hpp>
+#include <gauxc/xc_integrator/shellbatched_xc_cuda_integrator.hpp>
 
 namespace GauXC  {
 namespace detail {
@@ -10,7 +11,8 @@ template <typename MatrixType>
 using DefaultXCHostIntegrator = ReferenceXCHostIntegrator<MatrixType>;
 
 template <typename MatrixType>
-using DefaultXCCudaIntegrator = IncoreXCCudaIntegrator<MatrixType>;
+//using DefaultXCCudaIntegrator = IncoreXCCudaIntegrator<MatrixType>;
+using DefaultXCCudaIntegrator = ShellBatchedXCCudaIntegrator<MatrixType>;
 
 
 #ifdef GAUXC_ENABLE_HOST

@@ -1,11 +1,11 @@
 #include <gauxc/xc_integrator/xc_host_util.hpp>
 
-#include "host_weights.hpp"
-#include "host_collocation.hpp"
-#include "host_zmat.hpp"
+#include "host/host_weights.hpp"
+#include "host/host_collocation.hpp"
+#include "host/host_zmat.hpp"
 #include "integrator_common.hpp"
-#include "blas.hpp"
-#include "util.hpp"
+#include "host/blas.hpp"
+#include "host/util.hpp"
 
 namespace GauXC  {
 namespace integrator::host {
