@@ -67,12 +67,17 @@ void process_batches_cuda_replicated_density_shellbatched_p(
   };
 
 
-#if 0
-  // TODO:: Preallocate temporaries
+  // TODO:: Preallocate host temporaries
   auto max_nbe = std::max_element( local_work_begin, local_work_end,
                                    nbe_comparator )->nbe;
 
 
+  std::vector<F> P_submat_host(max_nbe*max_nbe), VXC_submat_host(max_nbe*max_nbe);
+  F EXC_tmp, NEL_tmp;
+  F* P_submat   = P_submat_host.data();
+  F* VXC_submat = VXC_submat_host.data();
+
+#if 0
   timer.time_op_accumulate( "XCIntegrator.TaskSort", [&]() {
     std::sort( local_work_begin, local_work_end, [](const auto& a, const auto& b) {
       return a.shell_list < b.shell_list;
@@ -131,6 +136,7 @@ void process_batches_cuda_replicated_density_shellbatched_p(
 
     // Recalculate shell_list based on subbasis
     timer.time_op_accumulate("XCIntegrator.RecalcShellList",[&]() {
+#if 0
       for( auto i = 0ul; i < nshells; ++i ) {
         const auto shell_idx = max_shell_list[i];
         for( auto _it = task_begin; _it != task_end; ++_it )
@@ -139,14 +145,20 @@ void process_batches_cuda_replicated_density_shellbatched_p(
           _it->shell_list[j] = i;
         }
       }
+#else
+      // Loop over batches U shell lists
+      for( auto _it = task_begin; _it != task_end; ++_it ) {
+        auto max_list_idx = 0;
+        auto& cur_shell_list = _it->shell_list;
+        for( auto j = 0; j < cur_shell_list.size(); ++j ) {
+          while( max_shell_list[max_list_idx] != cur_shell_list[j] )
+            max_list_idx++;
+          cur_shell_list[j] = max_list_idx;
+        }
+      }
+#endif
     } );
     
-
-    // Allocate temporary submatrices
-    std::vector<F> P_submat_host(nbe*nbe), VXC_submat_host(nbe*nbe);
-    F EXC_tmp, NEL_tmp;
-    F* P_submat   = P_submat_host.data();
-    F* VXC_submat = VXC_submat_host.data();
 
     // Extract subdensity
     auto [max_submat_cut, foo] = 
@@ -179,6 +191,7 @@ void process_batches_cuda_replicated_density_shellbatched_p(
 
     // Reset shell_list to be wrt full basis
     timer.time_op_accumulate("XCIntegrator.ResetShellList",[&]() {
+#if 0
       for( auto i = 0ul; i < nshells; ++i ) {
         const auto shell_idx = max_shell_list[i];
         for( auto _it = task_begin; _it != task_end; ++_it )
@@ -187,6 +200,12 @@ void process_batches_cuda_replicated_density_shellbatched_p(
           _it->shell_list[j] = shell_idx;
         }
       }
+#else
+      for( auto _it = task_begin; _it != task_end; ++_it ) 
+      for( auto j = 0; j < _it->shell_list.size();  ++j  ) {
+        _it->shell_list[j] = max_shell_list[_it->shell_list[j]];
+      }
+#endif
     });
 
 
