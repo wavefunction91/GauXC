@@ -72,7 +72,7 @@ jobs:
     - name: CMake Subproject Configure
       working-directory: ${{runner.workspace}}
       shell: bash
-      run: cmake -H$GITHUB_WORKSPACE/tests/cmake/subproject -B${{runner.workspace}}/cmake_subproject_build 
+      run: cmake -H$GITHUB_WORKSPACE/tests/cmake/subproject -B${{runner.workspace}}/cmake_subproject_build -DGIT_REVISION=$GITHUB_HEAD_REF 
 
     - name: CMake Subproject Build
       working-directory: ${{runner.workspace}}
