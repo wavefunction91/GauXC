@@ -59,3 +59,4 @@ if( GAUXC_ENABLE_CEREAL )
 endif()
 
 add_subdirectory( integrator )
+add_subdirectory( load_balancer )
