@@ -1,4 +1,5 @@
 #include <set>
+#include <queue>
 
 #include <gauxc/xc_integrator/xc_cuda_util.hpp>
 #include <gauxc/util/cuda_util.hpp>
@@ -488,101 +489,48 @@ void process_batches_cuda_replicated_density_shellbatched_p(
 
   //std::future<void> device_ex;
 
+#if 0
   while( task_begin != local_work_end ) {
 
     auto ex_task_obj = generate_dev_batch( nbf_threshold, task_begin, 
                                            local_work_end, basis, timer );
     auto task_end    = ex_task_obj.task_end;
-    auto& union_shell_list = ex_task_obj.shell_list;
 
-#if 0
-    // Extract subbasis
-    BasisSet<F> basis_subset; basis_subset.reserve(union_shell_list.size());
-    timer.time_op_accumulate("XCIntegrator.CopySubBasis",[&]() {
-      for( auto i : union_shell_list ) {
-        basis_subset.emplace_back( basis.at(i) );
-      }
-      basis_subset.generate_shell_to_ao();
-    });
-
-    const size_t nshells = basis_subset.size();
-    const size_t nbe     = basis_subset.nbf();
-    std::cout << "TASK_UNION HAS:"   << std::endl
-              << "  NSHELLS    = " <<  nshells << std::endl
-              << "  NBE        = " <<  nbe     << std::endl;
-
-    // Recalculate shell_list based on subbasis
-    timer.time_op_accumulate("XCIntegrator.RecalcShellList",[&]() {
-      for( auto _it = task_begin; _it != task_end; ++_it ) {
-        auto union_list_idx = 0;
-        auto& cur_shell_list = _it->shell_list;
-        for( auto j = 0; j < cur_shell_list.size(); ++j ) {
-          while( union_shell_list[union_list_idx] != cur_shell_list[j] )
-            union_list_idx++;
-          cur_shell_list[j] = union_list_idx;
-        }
-      }
-    } );
-    
-
-
-    // Allocate host temporaries
-    std::vector<F> P_submat_host(nbe*nbe), VXC_submat_host(nbe*nbe);
-    F EXC_tmp, NEL_tmp;
-    F* P_submat   = P_submat_host.data();
-    F* VXC_submat = VXC_submat_host.data();
-
-    // Extract subdensity
-    auto [union_submat_cut, foo] = 
-      integrator::gen_compressed_submat_map( basis, union_shell_list, 
-        basis.nbf(), basis.nbf() );
-
-    timer.time_op_accumulate("XCIntegrator.ExtractSubDensity",[&]() {
-      detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, P, basis.nbf(), 
-                          P_submat, nbe, union_submat_cut );
-    } );
-   
-
-    // Allocate static quantities on device stack
-    cuda_data.allocate_static_data( natoms, n_deriv, nbe, nshells );
-
-
-    // Process batches on device with subobjects
-    process_batches_cuda_replicated_density_incore_p<F,n_deriv>(
-      weight_alg, func, basis_subset, mol, meta, cuda_data, 
-      task_begin, task_end, P_submat, VXC_submat, &EXC_tmp, &NEL_tmp
-    );
-
-    // Update full quantities
-    *EXC += EXC_tmp;
-    *NEL += NEL_tmp;
-    timer.time_op_accumulate("XCIntegrator.IncrementSubPotential",[&]() {
-      detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXC, basis.nbf(), 
-                             VXC_submat, nbe, union_submat_cut );
-    });
-
-
-    // Reset shell_list to be wrt full basis
-    timer.time_op_accumulate("XCIntegrator.ResetShellList",[&]() {
-      for( auto _it = task_begin; _it != task_end; ++_it ) 
-      for( auto j = 0; j < _it->shell_list.size();  ++j  ) {
-        _it->shell_list[j] = union_shell_list[_it->shell_list[j]];
-      }
-    });
-#else
 
     device_execute_shellbatched<F,n_deriv>( timer, weight_alg, func, basis, mol,
                                             meta, cuda_data, P, VXC, EXC, NEL,
                                             ex_task_obj );
-
-#endif
-
 
     // Update task iterator for next set of batches
     task_begin = task_end;
 
     batch_iter++;
   }
+#else
+
+  std::queue< dev_ex_task > dev_tasks;
+  while( task_begin != local_work_end ) {
+
+    // Generate task
+    dev_tasks.emplace( generate_dev_batch( nbf_threshold, task_begin, 
+                                           local_work_end, basis, timer ) );
+
+    // Update task iterator for next set of batches
+    task_begin = dev_tasks.back().task_end;
+
+  }
+
+  while( not dev_tasks.empty() ) {
+    // Execute task batch
+    device_execute_shellbatched<F,n_deriv>( timer, weight_alg, func, basis, mol,
+                                            meta, cuda_data, P, VXC, EXC, NEL,
+                                            dev_tasks.front() );
+
+    // Remove from queue
+    dev_tasks.pop();
+  }
+
+#endif
 
 
 #endif
