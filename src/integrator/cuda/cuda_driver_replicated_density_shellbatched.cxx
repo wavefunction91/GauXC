@@ -175,6 +175,163 @@ inline auto integral_list_intersect( const std::vector<Integral>& A,
 }
 
 
+
+struct dev_ex_task {
+  host_task_iterator   task_begin;
+  host_task_iterator   task_end;
+  std::vector<int32_t> shell_list;
+};
+
+
+
+
+dev_ex_task generate_dev_batch( const uint32_t nbf_threshold,
+                                host_task_iterator task_begin,
+                                host_task_iterator local_work_end,
+                                const BasisSet<double>& basis,
+                                util::Timer&            timer ) {
+
+
+  auto nbe_comparator = []( const auto& task_a, const auto& task_b ) {
+    return task_a.nbe < task_b.nbe;
+  };
+
+  // Find task with largest NBE
+  auto max_task = timer.time_op_accumulate("XCIntegrator.MaxTask", [&]() {
+    return std::max_element( task_begin, local_work_end, nbe_comparator );
+  } );
+
+  const auto max_shell_list = max_task->shell_list; // copy for reset
+
+  // Init uniion shell list to max shell list outside of loop
+  std::set<int32_t> union_shell_set(max_shell_list.begin(), 
+                                    max_shell_list.end());
+
+
+
+  size_t n_overlap_pthresh     = 20;
+  double overlap_pthresh_delta = 1. / n_overlap_pthresh;
+  std::vector<double> overlap_pthresh;
+  for( int i = 1; i < n_overlap_pthresh; ++i )
+    overlap_pthresh.emplace_back( i*overlap_pthresh_delta );
+
+  std::vector<int> overlap_pthresh_idx( overlap_pthresh.size() );
+  std::iota( overlap_pthresh_idx.begin(), overlap_pthresh_idx.end(), 0 );
+
+  std::map<int, std::pair<host_task_iterator, decltype(union_shell_set)>> 
+    cached_task_ends;
+
+  int cur_partition_pthresh_idx = -1;
+
+  auto _it = std::partition_point( overlap_pthresh_idx.rbegin(), 
+                                   overlap_pthresh_idx.rend(), 
+  [&](int idx) {
+
+    uint32_t overlap_threshold = 
+      std::max(1., max_shell_list.size() * overlap_pthresh[idx] );
+
+
+    host_task_iterator search_st = task_begin;
+    host_task_iterator search_en = local_work_end;
+
+    // Make a local copy of union list
+    std::set<int32_t> local_union_shell_set;
+
+    // Attempt to limit task search based on current partition
+    if( cur_partition_pthresh_idx >= 0 ) {
+
+      const auto& last_pthresh = 
+        cached_task_ends.at(cur_partition_pthresh_idx);
+
+      if( cur_partition_pthresh_idx > idx ) {
+        search_st = last_pthresh.first;    
+        local_union_shell_set = last_pthresh.second;
+      } else {
+        search_en = last_pthresh.first;    
+        local_union_shell_set = union_shell_set;
+      }
+
+    } else {
+      local_union_shell_set = union_shell_set;
+    }
+
+
+    // Partition tasks into those which overlap max_task up to
+    // specified threshold
+    auto task_end = 
+    timer.time_op_accumulate("XCIntegrator.TaskIntersection", [&]() {
+      return std::partition( search_st, search_en, [&](const auto& t) {
+        return integral_list_intersect( max_shell_list, t.shell_list,
+                                        overlap_threshold );
+      } );
+    } );
+
+
+
+    // Take union of shell list for all overlapping tasks
+    timer.time_op_accumulate("XCIntegrator.ShellListUnion",[&]() {
+      for( auto task_it = search_st; task_it != task_end; ++task_it ) {
+        local_union_shell_set.insert( task_it->shell_list.begin(), 
+                                      task_it->shell_list.end() );
+      }
+    } );
+
+    auto cur_nbe = basis.nbf_subset( local_union_shell_set.begin(), 
+                                     local_union_shell_set.end() );
+
+    std::cout << "  Threshold %       = " << std::setw(5)  << overlap_pthresh[idx] << ", ";
+    std::cout << "  Overlap Threshold = " << std::setw(8)  << overlap_threshold    << ", ";
+    std::cout << "  Current NBE       = " << std::setw(8)  << cur_nbe              << std::endl;
+
+    // Cache the data
+    cached_task_ends[idx] = std::make_pair( task_end, local_union_shell_set );
+
+    // Update partitioned threshold
+    cur_partition_pthresh_idx = idx;
+
+    return cur_nbe < nbf_threshold;
+
+  } );
+
+  host_task_iterator task_end;
+  auto _idx_partition = (_it == overlap_pthresh_idx.rend()) ? 0 : *_it;
+  std::tie( task_end, union_shell_set ) = cached_task_ends.at(_idx_partition);
+
+
+
+
+
+  std::cout << "FOUND " << std::distance( task_begin, task_end ) 
+                        << " OVERLAPPING TASKS" << std::endl;
+
+
+  std::vector<int32_t> union_shell_list( union_shell_set.begin(),
+                                         union_shell_set.end() );
+
+  // Try to add additional tasks given current union list
+  task_end = timer.time_op_accumulate("XCIntegrator.SubtaskGeneration", [&]() {
+    return std::partition( task_end, local_work_end, [&]( const auto& t ) {
+      return list_subset( union_shell_list, t.shell_list );
+    } );
+  } );
+
+  std::cout << "FOUND " << std::distance( task_begin, task_end ) 
+                        << " SUBTASKS" << std::endl;
+
+
+  dev_ex_task ex_task;
+  ex_task.task_begin = task_begin;
+  ex_task.task_end   = task_end;
+  ex_task.shell_list = std::move( union_shell_list );
+
+  return ex_task;
+
+}
+
+
+
+
+
 template <typename F, size_t n_deriv>
 void process_batches_cuda_replicated_density_shellbatched_p(
   util::Timer&           timer,
@@ -230,8 +387,11 @@ void process_batches_cuda_replicated_density_shellbatched_p(
 
   const size_t natoms  = mol.size();
 
+  //std::future<void> device_ex;
+
   while( task_begin != local_work_end ) {
 
+#if 0
     // Find task with largest NBE
     auto max_task = timer.time_op_accumulate("XCIntegrator.MaxTask", [&]() {
       return std::max_element( task_begin, local_work_end, nbe_comparator );
@@ -244,56 +404,6 @@ void process_batches_cuda_replicated_density_shellbatched_p(
                                       max_shell_list.end());
 
 
-#if 0
-    const double   threshold_percentage_start = 0.9;
-    const uint32_t n_threshold_increment      = 18;
-    const double   threshold_percentage_delta = 
-                     threshold_percentage_start/n_threshold_increment;
-
-    host_task_iterator task_end = task_begin;
-
-    for( uint32_t i = 0; i < n_threshold_increment; ++i ) {
-
-      const double threshold_percentage = 
-        threshold_percentage_start - i*threshold_percentage_delta;
-      uint32_t overlap_threshold = 
-        std::max(0.,max_shell_list.size() * threshold_percentage);
-
-      if( overlap_threshold == 0 ) break;
-
-
-      auto search_st = task_end; // save a copy of search starting point
-
-      // Partition tasks into those which overlap max_task up to
-      // specified threshold
-      task_end = timer.time_op_accumulate("XCIntegrator.TaskIntersection", [&]() {
-        return std::partition( task_end, local_work_end, [&](const auto& t) {
-          return integral_list_intersect( max_shell_list, t.shell_list,
-                                          overlap_threshold );
-        } );
-      } );
-
-
-      // Take union of shell list for all overlapping tasks
-      timer.time_op_accumulate("XCIntegrator.ShellListUnion",[&]() {
-        for( auto task_it = search_st; task_it != task_end; ++task_it ) {
-          std::set<int32_t> task_shell_set( task_it->shell_list.begin(), 
-                                            task_it->shell_list.end() );
-          union_shell_set.merge( task_shell_set );
-        }
-      } );
-
-      auto cur_nbe = basis.nbf_subset( union_shell_set.begin(), union_shell_set.end() );
-
-      std::cout << "  Search Length     = " << std::setw(10) << std::distance(search_st,local_work_end) << ", ";
-      std::cout << "  Threshold %       = " << std::setw(5)  << threshold_percentage << ", ";
-      std::cout << "  Overlap Threshold = " << std::setw(8)  << overlap_threshold    << ", ";
-      std::cout << "  Current NBE       = " << std::setw(8)  << cur_nbe              << std::endl;
-
-      if( cur_nbe > nbf_threshold or task_end == local_work_end ) break;
-
-    }
-#else
 
     size_t n_overlap_pthresh     = 20;
     double overlap_pthresh_delta = 1. / n_overlap_pthresh;
@@ -354,14 +464,8 @@ void process_batches_cuda_replicated_density_shellbatched_p(
       // Take union of shell list for all overlapping tasks
       timer.time_op_accumulate("XCIntegrator.ShellListUnion",[&]() {
         for( auto task_it = search_st; task_it != task_end; ++task_it ) {
-#if 0
-          std::set<int32_t> task_shell_set( task_it->shell_list.begin(), 
-                                            task_it->shell_list.end() );
-          local_union_shell_set.merge( task_shell_set );
-#else
           local_union_shell_set.insert( task_it->shell_list.begin(), 
                                         task_it->shell_list.end() );
-#endif
         }
       } );
 
@@ -384,7 +488,6 @@ void process_batches_cuda_replicated_density_shellbatched_p(
     host_task_iterator task_end;
     auto _idx_partition = (_it == overlap_pthresh_idx.rend()) ? 0 : *_it;
     std::tie( task_end, union_shell_set ) = cached_task_ends.at(_idx_partition);
-#endif
 
 
 
@@ -407,6 +510,12 @@ void process_batches_cuda_replicated_density_shellbatched_p(
     std::cout << "FOUND " << std::distance( task_begin, task_end ) 
                           << " SUBTASKS" << std::endl;
 
+#else
+    auto ex_task_obj = generate_dev_batch( nbf_threshold, task_begin, 
+                                           local_work_end, basis, timer );
+    auto task_end    = ex_task_obj.task_end;
+    auto& union_shell_list = ex_task_obj.shell_list;
+#endif
 
     // Extract subbasis
     BasisSet<F> basis_subset; basis_subset.reserve(union_shell_list.size());
@@ -436,6 +545,8 @@ void process_batches_cuda_replicated_density_shellbatched_p(
       }
     } );
     
+
+
     // Allocate host temporaries
     std::vector<F> P_submat_host(nbe*nbe), VXC_submat_host(nbe*nbe);
     F EXC_tmp, NEL_tmp;
