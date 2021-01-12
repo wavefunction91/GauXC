@@ -36,6 +36,14 @@ public:
       } );
   };
 
+  template <typename Integral>
+  inline int32_t nbf_subset( const std::vector<Integral>& shell_list ) const {
+    int32_t _nbf = 0;
+    for( const auto idx : shell_list ) 
+      _nbf += std::vector<Shell<F>>::at(idx).size();
+    return _nbf;
+  }
+
   void generate_shell_to_ao() {
 
     size_t st_idx = 0;

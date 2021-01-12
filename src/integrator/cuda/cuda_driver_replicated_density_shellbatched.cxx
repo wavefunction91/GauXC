@@ -109,8 +109,11 @@ inline auto integral_list_intersect( const std::vector<Integral>& A,
 template <typename Integral>
 inline auto integral_list_intersect( const std::vector<Integral>& A,
                                      const std::vector<Integral>& B,
-                                     const uint32_t overlap_threshold ) {
+                                     const uint32_t overlap_threshold_spec ) {
 
+  const uint32_t max_intersect_sz  = std::min(A.size(), B.size());
+  const uint32_t overlap_threshold = std::min( max_intersect_sz, 
+                                               overlap_threshold_spec );
 
   constexpr size_t sz_ratio = 100;
   const size_t A_sz = A.size();
@@ -227,51 +230,48 @@ void process_batches_cuda_replicated_density_shellbatched_p(
 
   while( task_begin != local_work_end ) {
 
-    std::string batch_iter_str = std::to_string(batch_iter);
-
     // Find task with largest NBE
     auto max_task = timer.time_op_accumulate("XCIntegrator.MaxTask", [&]() {
       return std::max_element( task_begin, local_work_end, nbe_comparator );
     } );
 
-    const auto   max_shell_list = max_task->shell_list; // copy for reset
+    const auto max_shell_list = max_task->shell_list; // copy for reset
 
-
-
-    auto subset_of_max = [&]( const auto& t ) {
-      return subset_of_shell_list( max_shell_list, t.shell_list );
-    };
-
-    auto intersects_max = [&]( const auto& t ) {
-
-      uint32_t _mx_intersect_sz = 
-        std::min( max_shell_list.size(), t.shell_list.size() );
-      uint32_t _intersect_thresh = std::min( _mx_intersect_sz, 400u );
-
-      return integral_list_intersect( max_shell_list, t.shell_list, 
-                                      _intersect_thresh );
-    };
-
-
-    // Partition tasks into those which overlap max_task and those 
-    // that don't
-    auto task_end = timer.time_op_accumulate("XCIntegrator.TaskPartition", [&]() {
-      return std::partition( task_begin, local_work_end, intersects_max );
-    } );
-
-    std::cout << "FOUND " << std::distance( task_begin, task_end ) 
-                          << " OVERLAPPING TASKS" << std::endl;
-
-
-
-    // Take union of all overlapping tasks
+    // Init uniion shell list to max shell list outside of loop
     std::set<int32_t> union_shell_set(max_shell_list.begin(), 
                                       max_shell_list.end());
+
+
+    const uint32_t nbf_threshold = 5000;
+
+    uint32_t overlap_threshold = 400;
+    // Partition tasks into those which overlap max_task up to
+    // specified threshold
+    auto task_end = timer.time_op_accumulate("XCIntegrator.TaskPartition", [&]() {
+      return std::partition( task_begin, local_work_end, [&](const auto& t) {
+        return integral_list_intersect( max_shell_list, t.shell_list,
+                                        overlap_threshold );
+      } );
+    } );
+
+
+    // Take union of shell list for all overlapping tasks
     for( auto task_it = task_begin; task_it != task_end; ++task_it ) {
       std::set<int32_t> task_shell_set( task_it->shell_list.begin(), 
                                         task_it->shell_list.end() );
       union_shell_set.merge( task_shell_set );
     }
+
+
+
+
+
+
+
+
+    std::cout << "FOUND " << std::distance( task_begin, task_end ) 
+                          << " OVERLAPPING TASKS" << std::endl;
+
 
     std::vector<int32_t> union_shell_list( union_shell_set.begin(),
                                            union_shell_set.end() );
