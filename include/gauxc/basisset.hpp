@@ -36,11 +36,12 @@ public:
       } );
   };
 
-  template <typename Integral>
-  inline int32_t nbf_subset( const std::vector<Integral>& shell_list ) const {
+  template <typename IntegralIterator>
+  inline int32_t nbf_subset( IntegralIterator shell_list_begin,
+                             IntegralIterator shell_list_end ) const {
     int32_t _nbf = 0;
-    for( const auto idx : shell_list ) 
-      _nbf += std::vector<Shell<F>>::at(idx).size();
+    for( auto it = shell_list_begin; it != shell_list_end; ++it )
+      _nbf += std::vector<Shell<F>>::at(*it).size();
     return _nbf;
   }
 

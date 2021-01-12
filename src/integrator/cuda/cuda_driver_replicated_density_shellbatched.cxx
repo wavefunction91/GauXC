@@ -243,27 +243,51 @@ void process_batches_cuda_replicated_density_shellbatched_p(
 
 
     const uint32_t nbf_threshold = 5000;
+    const double   threshold_percentage_start = 0.9;
+    const uint32_t n_threshold_increment      = 18;
+    const double   threshold_percentage_delta = 
+                     threshold_percentage_start/n_threshold_increment;
 
-    uint32_t overlap_threshold = 400;
-    // Partition tasks into those which overlap max_task up to
-    // specified threshold
-    auto task_end = timer.time_op_accumulate("XCIntegrator.TaskPartition", [&]() {
-      return std::partition( task_begin, local_work_end, [&](const auto& t) {
-        return integral_list_intersect( max_shell_list, t.shell_list,
-                                        overlap_threshold );
+    host_task_iterator task_end = task_begin;
+
+    for( uint32_t i = 0; i < n_threshold_increment; ++i ) {
+
+      const double threshold_percentage = 
+        threshold_percentage_start - i*threshold_percentage_delta;
+      uint32_t overlap_threshold = 
+        std::max(0.,max_shell_list.size() * threshold_percentage);
+
+      if( overlap_threshold == 0 ) break;
+
+
+      auto search_st = task_end; // save a copy of search starting point
+
+      // Partition tasks into those which overlap max_task up to
+      // specified threshold
+      task_end = timer.time_op_accumulate("XCIntegrator.TaskIntersection", [&]() {
+        return std::partition( task_end, local_work_end, [&](const auto& t) {
+          return integral_list_intersect( max_shell_list, t.shell_list,
+                                          overlap_threshold );
+        } );
       } );
-    } );
 
 
-    // Take union of shell list for all overlapping tasks
-    for( auto task_it = task_begin; task_it != task_end; ++task_it ) {
-      std::set<int32_t> task_shell_set( task_it->shell_list.begin(), 
-                                        task_it->shell_list.end() );
-      union_shell_set.merge( task_shell_set );
+      // Take union of shell list for all overlapping tasks
+      for( auto task_it = search_st; task_it != task_end; ++task_it ) {
+        std::set<int32_t> task_shell_set( task_it->shell_list.begin(), 
+                                          task_it->shell_list.end() );
+        union_shell_set.merge( task_shell_set );
+      }
+
+      auto cur_nbe = basis.nbf_subset( union_shell_set.begin(), union_shell_set.end() );
+
+      std::cout << "  Threshold %       = " << std::setw(5) << threshold_percentage << ", ";
+      std::cout << "  Overlap Threshold = " << std::setw(8) << overlap_threshold    << ", ";
+      std::cout << "  Current NBE       = " << std::setw(8) << cur_nbe              << std::endl;
+
+      if( cur_nbe > nbf_threshold or task_end == local_work_end ) break;
+
     }
-
-
-
 
 
 
@@ -277,7 +301,7 @@ void process_batches_cuda_replicated_density_shellbatched_p(
                                            union_shell_set.end() );
 
     // Try to add additional tasks given current union list
-    task_end = timer.time_op_accumulate("XCIntegrator.TaskPartition", [&]() {
+    task_end = timer.time_op_accumulate("XCIntegrator.SubtaskGeneration", [&]() {
       return std::partition( task_end, local_work_end, [&]( const auto& t ) {
         return list_subset( union_shell_list, t.shell_list );
       } );
