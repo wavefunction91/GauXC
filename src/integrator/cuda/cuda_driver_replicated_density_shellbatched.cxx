@@ -1,3 +1,5 @@
+#include <set>
+
 #include <gauxc/xc_integrator/xc_cuda_util.hpp>
 #include <gauxc/util/cuda_util.hpp>
 #include <gauxc/util/unused.hpp>
@@ -19,6 +21,156 @@ namespace integrator::cuda {
 
 using namespace GauXC::cuda::blas;
 
+auto ranges_from_list( const std::vector<int32_t>& shell_list ) {
+
+  std::vector< std::pair<int32_t,int32_t> > ranges;
+  ranges.emplace_back( shell_list.front(), shell_list.back() );
+
+  for( auto it = shell_list.begin(); it != shell_list.end()-1; ++it ) {
+    if( *(it+1) - *it != 1 ) {
+      ranges.back().second = *it;
+      ranges.emplace_back( *(it+1), shell_list.back() );
+    }
+  }
+
+  return ranges;
+
+}
+
+
+// Checks if B is a subset of A
+template <typename C1, typename C2>
+inline auto list_subset( const C1& A, const C2& B ) {
+  return std::includes( A.begin(), A.end(), B.begin(), B.end() );
+}
+
+template <typename Integral>
+inline auto integral_list_intersect( const std::vector<Integral>& A,
+                                     const std::vector<Integral>& B ) {
+
+
+  constexpr size_t sz_ratio = 100;
+  const size_t A_sz = A.size();
+  const size_t B_sz = B.size();
+
+  const auto A_begin = A.begin();
+  const auto A_end   = A.end();
+  const auto B_begin = B.begin();
+  const auto B_end   = B.end();
+
+  // Fall through if query list is much larger than max list
+  if( A_sz * sz_ratio < B_sz ) {
+    for( const auto& val : A ) {
+      if( std::binary_search( B_begin, B_end, val ) ) 
+        return true;
+    }
+    return false;
+  }
+
+  // Fall through if max list is much larger than query list
+  if( B_sz * sz_ratio < A_sz ) {
+    for( const auto& val : B ) {
+      if( std::binary_search( A_begin, A_end, val ) )
+        return true;
+    }
+    return false;
+  }
+
+  // Default if lists are about the same size
+  auto B_it = B_begin;
+  auto A_it = A_begin;
+
+  while( B_it != B_end and A_it != A_end ) {
+
+    if( *B_it < *A_it ) {
+      B_it = std::lower_bound( B_it, B_end, *A_it );
+      continue;
+    }
+
+    if( *A_it < *B_it ) {
+      A_it = std::lower_bound( A_it, A_end, *B_it );
+      continue;
+    }
+
+    return true;
+
+  }
+
+  return false;
+
+
+}
+
+
+
+
+
+
+template <typename Integral>
+inline auto integral_list_intersect( const std::vector<Integral>& A,
+                                     const std::vector<Integral>& B,
+                                     const uint32_t overlap_threshold ) {
+
+
+  constexpr size_t sz_ratio = 100;
+  const size_t A_sz = A.size();
+  const size_t B_sz = B.size();
+
+  const auto A_begin = A.begin();
+  const auto A_end   = A.end();
+  const auto B_begin = B.begin();
+  const auto B_end   = B.end();
+
+  uint32_t overlap_count = 0;
+
+  // Fall through if query list is much larger than max list
+  if( A_sz * sz_ratio < B_sz ) {
+
+    for( const auto& val : A ) {
+      overlap_count += !!std::binary_search( B_begin, B_end, val );
+      if( overlap_count == overlap_threshold ) return true;
+    }
+    return false;
+
+  }
+
+  // Fall through if max list is much larger than query list
+  if( B_sz * sz_ratio < A_sz ) {
+    for( const auto& val : B ) {
+      overlap_count += !!std::binary_search( A_begin, A_end, val );
+      if( overlap_count == overlap_threshold ) return true;
+    }
+    return false;
+  }
+
+  // Default if lists are about the same size
+  auto B_it = B_begin;
+  auto A_it = A_begin;
+
+  while( B_it != B_end and A_it != A_end ) {
+
+    if( *B_it < *A_it ) {
+      B_it = std::lower_bound( B_it, B_end, *A_it );
+      continue;
+    }
+
+    if( *A_it < *B_it ) {
+      A_it = std::lower_bound( A_it, A_end, *B_it );
+      continue;
+    }
+
+    // *A_it == *B_it if code reaches here
+    overlap_count++;
+    A_it++; B_it++; // Increment iterators
+    if( overlap_count == overlap_threshold) return true;
+
+  }
+
+  return false;
+
+
+}
+
 
 template <typename F, size_t n_deriv>
 void process_batches_cuda_replicated_density_shellbatched_p(
@@ -39,6 +191,7 @@ void process_batches_cuda_replicated_density_shellbatched_p(
 
   std::cout << "IN SHELL BATCHED\n" << std::flush;
   std::cout << "TOTAL NTASKS = " << std::distance( local_work_begin, local_work_end ) << std:: endl;
+  std::cout << "TOTAL NBF    = " << basis.nbf() << std::endl;
 
 
   // Zero out final results
@@ -67,28 +220,10 @@ void process_batches_cuda_replicated_density_shellbatched_p(
   };
 
 
-  // TODO:: Preallocate host temporaries
-  auto max_nbe = std::max_element( local_work_begin, local_work_end,
-                                   nbe_comparator )->nbe;
-
-
-  std::vector<F> P_submat_host(max_nbe*max_nbe), VXC_submat_host(max_nbe*max_nbe);
-  F EXC_tmp, NEL_tmp;
-  F* P_submat   = P_submat_host.data();
-  F* VXC_submat = VXC_submat_host.data();
-
-#if 0
-  timer.time_op_accumulate( "XCIntegrator.TaskSort", [&]() {
-    std::sort( local_work_begin, local_work_end, [](const auto& a, const auto& b) {
-      return a.shell_list < b.shell_list;
-    });
-  });
-#endif
-
-
-
   size_t batch_iter = 0;
   auto task_begin = local_work_begin;
+
+  const size_t natoms  = mol.size();
 
   while( task_begin != local_work_end ) {
 
@@ -100,79 +235,106 @@ void process_batches_cuda_replicated_density_shellbatched_p(
     } );
 
     const auto   max_shell_list = max_task->shell_list; // copy for reset
-    const size_t nbe     = max_task->nbe;
-    const size_t nshells = max_shell_list.size();
-    const size_t natoms  = mol.size();
 
-    std::cout << "MAX TASK HAS:"   << std::endl
-              << "  NSHELLS    = " << nshells << std::endl
-              << "  NBE        = " << nbe     << std::endl;
 
-    // Partition tasks into those which are subsets of max_task and those 
-    // that aren't
+
     auto subset_of_max = [&]( const auto& t ) {
-      return std::includes( max_shell_list.begin(),
-                            max_shell_list.end(),
-                            t.shell_list.begin(),
-                            t.shell_list.end() );
+      return subset_of_shell_list( max_shell_list, t.shell_list );
     };
 
+    auto intersects_max = [&]( const auto& t ) {
+
+      uint32_t _mx_intersect_sz = 
+        std::min( max_shell_list.size(), t.shell_list.size() );
+      uint32_t _intersect_thresh = std::min( _mx_intersect_sz, 400u );
+
+      return integral_list_intersect( max_shell_list, t.shell_list, 
+                                      _intersect_thresh );
+    };
+
+
+    // Partition tasks into those which overlap max_task and those 
+    // that don't
     auto task_end = timer.time_op_accumulate("XCIntegrator.TaskPartition", [&]() {
-      return std::partition( task_begin, local_work_end, subset_of_max );
+      return std::partition( task_begin, local_work_end, intersects_max );
     } );
 
-    std::cout << "FOUND " << std::distance( task_begin, task_end ) << " SUBTASKS " << std::endl;
+    std::cout << "FOUND " << std::distance( task_begin, task_end ) 
+                          << " OVERLAPPING TASKS" << std::endl;
+
+
+
+    // Take union of all overlapping tasks
+    std::set<int32_t> union_shell_set(max_shell_list.begin(), 
+                                      max_shell_list.end());
+    for( auto task_it = task_begin; task_it != task_end; ++task_it ) {
+      std::set<int32_t> task_shell_set( task_it->shell_list.begin(), 
+                                        task_it->shell_list.end() );
+      union_shell_set.merge( task_shell_set );
+    }
+
+    std::vector<int32_t> union_shell_list( union_shell_set.begin(),
+                                           union_shell_set.end() );
+
+    // Try to add additional tasks given current union list
+    task_end = timer.time_op_accumulate("XCIntegrator.TaskPartition", [&]() {
+      return std::partition( task_end, local_work_end, [&]( const auto& t ) {
+        return list_subset( union_shell_list, t.shell_list );
+      } );
+    } );
+
+    std::cout << "FOUND " << std::distance( task_begin, task_end ) 
+                          << " SUBTASKS" << std::endl;
 
 
     // Extract subbasis
-    BasisSet<F> basis_subset; basis_subset.reserve(nshells);
+    BasisSet<F> basis_subset; basis_subset.reserve(union_shell_list.size());
     timer.time_op_accumulate("XCIntegrator.CopySubBasis",[&]() {
-      for( auto i : max_shell_list ) {
+      for( auto i : union_shell_list ) {
         basis_subset.emplace_back( basis.at(i) );
       }
       basis_subset.generate_shell_to_ao();
     });
 
+    const size_t nshells = basis_subset.size();
+    const size_t nbe     = basis_subset.nbf();
+    std::cout << "TASK_UNION HAS:"   << std::endl
+              << "  NSHELLS    = " <<  nshells << std::endl
+              << "  NBE        = " <<  nbe     << std::endl;
 
     // Recalculate shell_list based on subbasis
     timer.time_op_accumulate("XCIntegrator.RecalcShellList",[&]() {
-#if 0
-      for( auto i = 0ul; i < nshells; ++i ) {
-        const auto shell_idx = max_shell_list[i];
-        for( auto _it = task_begin; _it != task_end; ++_it )
-        for( auto j = 0ul; j < _it->shell_list.size(); ++j ) 
-        if( _it->shell_list[j] == shell_idx ) {
-          _it->shell_list[j] = i;
-        }
-      }
-#else
-      // Loop over batches U shell lists
       for( auto _it = task_begin; _it != task_end; ++_it ) {
-        auto max_list_idx = 0;
+        auto union_list_idx = 0;
         auto& cur_shell_list = _it->shell_list;
         for( auto j = 0; j < cur_shell_list.size(); ++j ) {
-          while( max_shell_list[max_list_idx] != cur_shell_list[j] )
-            max_list_idx++;
-          cur_shell_list[j] = max_list_idx;
+          while( union_shell_list[union_list_idx] != cur_shell_list[j] )
+            union_list_idx++;
+          cur_shell_list[j] = union_list_idx;
         }
       }
-#endif
     } );
     
+    // Allocate host temporaries
+    std::vector<F> P_submat_host(nbe*nbe), VXC_submat_host(nbe*nbe);
+    F EXC_tmp, NEL_tmp;
+    F* P_submat   = P_submat_host.data();
+    F* VXC_submat = VXC_submat_host.data();
 
     // Extract subdensity
-    auto [max_submat_cut, foo] = 
-      integrator::gen_compressed_submat_map( basis, max_shell_list, 
+    auto [union_submat_cut, foo] = 
+      integrator::gen_compressed_submat_map( basis, union_shell_list, 
         basis.nbf(), basis.nbf() );
 
     timer.time_op_accumulate("XCIntegrator.ExtractSubDensity",[&]() {
       detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, P, basis.nbf(), 
-                          P_submat, nbe, max_submat_cut );
+                          P_submat, nbe, union_submat_cut );
     } );
    
 
     // Allocate static quantities on device stack
     cuda_data.allocate_static_data( natoms, n_deriv, nbe, nshells );
+
 
     // Process batches on device with subobjects
     process_batches_cuda_replicated_density_incore_p<F,n_deriv>(
@@ -185,27 +347,16 @@ void process_batches_cuda_replicated_density_shellbatched_p(
     *NEL += NEL_tmp;
     timer.time_op_accumulate("XCIntegrator.IncrementSubPotential",[&]() {
       detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXC, basis.nbf(), 
-                             VXC_submat, nbe, max_submat_cut );
+                             VXC_submat, nbe, union_submat_cut );
     });
 
 
     // Reset shell_list to be wrt full basis
     timer.time_op_accumulate("XCIntegrator.ResetShellList",[&]() {
-#if 0
-      for( auto i = 0ul; i < nshells; ++i ) {
-        const auto shell_idx = max_shell_list[i];
-        for( auto _it = task_begin; _it != task_end; ++_it )
-        for( auto j = 0ul; j < _it->shell_list.size(); ++j ) 
-        if( _it->shell_list[j] == i ) {
-          _it->shell_list[j] = shell_idx;
-        }
-      }
-#else
       for( auto _it = task_begin; _it != task_end; ++_it ) 
       for( auto j = 0; j < _it->shell_list.size();  ++j  ) {
-        _it->shell_list[j] = max_shell_list[_it->shell_list[j]];
+        _it->shell_list[j] = union_shell_list[_it->shell_list[j]];
       }
-#endif
     });
 
 
