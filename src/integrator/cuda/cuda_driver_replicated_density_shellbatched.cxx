@@ -307,7 +307,7 @@ void process_batches_cuda_replicated_density_shellbatched_p(
     std::map<int, std::pair<host_task_iterator, decltype(union_shell_set)>> 
       cached_task_ends;
 
-    double cur_partition_pthresh = -1.;
+    int cur_partition_pthresh_idx = -1;
 
     auto _it = std::partition_point( overlap_pthresh_idx.rbegin(), overlap_pthresh_idx.rend(), [&](int idx) {
 
@@ -318,11 +318,25 @@ void process_batches_cuda_replicated_density_shellbatched_p(
       host_task_iterator search_st = task_begin;
       host_task_iterator search_en = local_work_end;
 
+      // Make a local copy of union list
+      std::set<int32_t> local_union_shell_set;
+
       // Attempt to limit task search based on current partition
-      if( cur_partition_pthresh > 0. ) {
-        if( cur_partition_pthresh > overlap_pthresh[idx] ) {
+      if( cur_partition_pthresh_idx >= 0 ) {
+
+        const auto& last_pthresh = 
+          cached_task_ends.at(cur_partition_pthresh_idx);
+
+        if( cur_partition_pthresh_idx > idx ) {
+          search_st = last_pthresh.first;    
+          local_union_shell_set = last_pthresh.second;
         } else {
+          search_en = last_pthresh.first;    
+          local_union_shell_set = union_shell_set;
         }
+
+      } else {
+        local_union_shell_set = union_shell_set;
       }
 
 
@@ -336,15 +350,18 @@ void process_batches_cuda_replicated_density_shellbatched_p(
       } );
 
 
-      // Make a local copy of union list
-      auto local_union_shell_set = union_shell_set;
 
       // Take union of shell list for all overlapping tasks
       timer.time_op_accumulate("XCIntegrator.ShellListUnion",[&]() {
         for( auto task_it = search_st; task_it != task_end; ++task_it ) {
+#if 0
           std::set<int32_t> task_shell_set( task_it->shell_list.begin(), 
                                             task_it->shell_list.end() );
           local_union_shell_set.merge( task_shell_set );
+#else
+          local_union_shell_set.insert( task_it->shell_list.begin(), 
+                                        task_it->shell_list.end() );
+#endif
         }
       } );
 
@@ -356,6 +373,9 @@ void process_batches_cuda_replicated_density_shellbatched_p(
 
       // Cache the data
       cached_task_ends[idx] = std::make_pair( task_end, local_union_shell_set );
+
+      // Update partitioned threshold
+      cur_partition_pthresh_idx = idx;
 
       return cur_nbe < nbf_threshold;
 
