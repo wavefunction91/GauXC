@@ -84,7 +84,7 @@ Please cite the following publications if GauXC was used in your publication:
           Chao Yang},
   title={On the Efficient Evaluation of the Exchange Correlation Potential on 
          Graphics Processing Unit Clusters},
-  jorunal={Frontiers in Chemistry},
+  journal={Frontiers in Chemistry},
   pages={Accepted},
   year={2020},
   doi={10.3389/fchem.2020.581058},
@@ -103,30 +103,42 @@ cmake -H/path/to/gauxc -B/path/to/build [GauXC configure options]
 cmake --build /path/to/build
 ```
 
-Currently, GauXC is not installable as a separate library (Coming Soon). GauXC may be integrated 
-into existing CMake projects via `FetchContent` with the following
+
+GauXC is linkable both as an installed library as well as a CMake subproject via `FetchContent`
 ```
+# GauXC Discovery
+find_package( gauxc REQUIRED )
+target_link_libraries( my_target PUBLIC gauxc::gauxc )
+```
+
+```
+# GauXC as CMake Subproject
 include(FetchContent)
 
-set( GAUXC_ENABLE_TESTS OFF CACHE BOOL "Disable GauXC Tests" )
-# Other GauXC Options (see below)
+# Set GauXC CMake options (see below)
 
-FetchContent_Declare( gauxc GIT_REPOSITORY https://github/com/wavefunction91/GauXC.git GIT_TAG master )
+# Pull master branch of GauXC
+FetchContent_Declare( gauxc 
+  GIT_REPOSITORY https://github/com/wavefunction91/GauXC.git 
+  GIT_TAG master 
+)
 FetchContent_MakeAvailable( gauxc )
 
-
-# Create my_target
-target_link_libraries( my_target PUBLIC gauxc )
+# Link to target
+target_link_libraries( my_target PUBLIC gauxc::gauxc )
 ```
+
 
 ## Influential CMake Variables
 
 | Variable Name         | Description                                                    | Default  |
 |-----------------------|----------------------------------------------------------------|----------|
 | `GAUXC_ENABLE_TESTS`  | Enable Testing Framework (Catch2)                              | `ON`     |
+| `GAUXC_ENABLE_HOST`   | Enable HOST XC integrator                                      | `ON`     |
 | `GAUXC_ENABLE_CUDA`   | Enable CUDA XC integrator                                      | `OFF`    |
 | `GAUXC_ENABLE_MAGMA`  | Enable MAGMA for batched BLAS (No effect if CUDA disabled)     | `ON`     | 
-| `lapack_LIBRARIES`    | Full LAPACK linker. If unspecified, will attempt to deduce.    |  --      |
+| `GAUXC_ENABLE_MPI`    | Enable MPI Bindings                                            | `ON`     | 
+| `LAPACK_LIBRARIES`    | Full LAPACK linker. If unspecified, will attempt to deduce.    |  --      |
 
 
 

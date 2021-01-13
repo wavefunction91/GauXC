@@ -73,7 +73,7 @@ jobs:
       shell: bash
       run: cmake -H$GITHUB_WORKSPACE 
                  -B${{runner.workspace}}/build
-                 -DGAUXC_ENABLE_MPI=$MPI_FLAG
+                 -DGAUXC_ENABLE_MPI=${{matrix.mpi_flag}}
                  -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
                  -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/install 
                  -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
@@ -104,7 +104,7 @@ jobs:
 
     - name: CMake Discovery Configure
       shell: bash
-      run: cmake -H$GITHUB_WORKSPACE/test/cmake/discovery 
+      run: cmake -H$GITHUB_WORKSPACE/tests/cmake/discovery 
                  -B${{runner.workspace}}/cmake_discovery_build 
                  -DCMAKE_PREFIX_PATH=${{runner.workspace}}/install 
                  -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
