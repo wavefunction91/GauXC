@@ -1,5 +1,6 @@
 #include <set>
 #include <queue>
+#include <future>
 
 #include <gauxc/xc_integrator/xc_cuda_util.hpp>
 #include <gauxc/util/cuda_util.hpp>
@@ -489,48 +490,51 @@ void process_batches_cuda_replicated_density_shellbatched_p(
 
   //std::future<void> device_ex;
 
-#if 0
-  while( task_begin != local_work_end ) {
-
-    auto ex_task_obj = generate_dev_batch( nbf_threshold, task_begin, 
-                                           local_work_end, basis, timer );
-    auto task_end    = ex_task_obj.task_end;
-
-
-    device_execute_shellbatched<F,n_deriv>( timer, weight_alg, func, basis, mol,
-                                            meta, cuda_data, P, VXC, EXC, NEL,
-                                            ex_task_obj );
-
-    // Update task iterator for next set of batches
-    task_begin = task_end;
-
-    batch_iter++;
-  }
-#else
 
   std::queue< dev_ex_task > dev_tasks;
-  while( task_begin != local_work_end ) {
 
-    // Generate task
-    dev_tasks.emplace( generate_dev_batch( nbf_threshold, task_begin, 
-                                           local_work_end, basis, timer ) );
+  auto execute_device_task = [&] () {
 
-    // Update task iterator for next set of batches
-    task_begin = dev_tasks.back().task_end;
+    if( dev_tasks.empty() ) return;
 
-  }
-
-  while( not dev_tasks.empty() ) {
-    // Execute task batch
     device_execute_shellbatched<F,n_deriv>( timer, weight_alg, func, basis, mol,
                                             meta, cuda_data, P, VXC, EXC, NEL,
                                             dev_tasks.front() );
 
     // Remove from queue
     dev_tasks.pop();
+
+  };
+
+  std::future<void> dev_future;
+  while( task_begin != local_work_end ) {
+
+    // Generate task
+    dev_tasks.emplace( generate_dev_batch( nbf_threshold, task_begin, 
+                                           local_work_end, basis, timer ) );
+
+    if( not dev_future.valid() ) {
+      dev_future = std::async( std::launch::async, execute_device_task );
+    } else {
+      auto status = dev_future.wait_for( std::chrono::milliseconds(5) );
+      if( status == std::future_status::ready ) {
+        dev_future.get();
+        dev_future = std::async( std::launch::async, execute_device_task );
+      }
+    }
+
+    // Update task iterator for next set of batches
+    task_begin = dev_tasks.back().task_end;
+
   }
 
-#endif
+  if( dev_future.valid() ) dev_future.wait();
+
+  while( not dev_tasks.empty() ) {
+    // Execute remaining tasks
+    execute_device_task();
+  }
+
 
 
 #endif
