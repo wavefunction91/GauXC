@@ -31,7 +31,7 @@ void test_xc_integrator( ExecutionSpace ex, Molecule mol, const bool check_state
   auto lb = std::make_shared<LoadBalancer>(mol, mg, basis, meta);
 #endif
 
-  functional_type func( ExchCXX::Backend::builtin, ExchCXX::XCFunctional::Functional::PBE0, ExchCXX::Spin::Unpolarized );
+  functional_type func( ExchCXX::Backend::builtin, ExchCXX::Functional::PBE0, ExchCXX::Spin::Unpolarized );
 
   using matrix_type = Eigen::MatrixXd;
 #ifdef GAUXC_ENABLE_MPI

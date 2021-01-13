@@ -1,5 +1,9 @@
 #include "integrator_common.hpp"
 
+#include <tuple>
+#include <array>
+#include <vector>
+#include <cstdint>
 
 namespace GauXC      {
 namespace integrator {

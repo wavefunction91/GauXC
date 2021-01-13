@@ -29,6 +29,13 @@ double warpReduceSum(double val) {
   return val;
 }
 
+__inline__ __device__
+double warpReduceProd(double val) {
+  for(int i=(warp_size/2); i>=1; i/=2)
+    val *= __shfl_xor_sync(0xffffffff, val, i, warp_size);
+  return val;
+}
+
 #if 0
 __inline__ __device__
 double blockReduceSum( double val ) {
