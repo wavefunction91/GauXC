@@ -101,12 +101,25 @@ jobs:
       shell: bash
       run: cmake --build ${{runner.workspace}}/cmake_subproject_build -j2
 
-    - name: CMake Discovery Configure
+    - name: CMake Subproject Configure
+      working-directory: ${{runner.workspace}}
       shell: bash
-      run: cmake -H$GITHUB_WORKSPACE/tests/cmake/discovery 
-                 -B${{runner.workspace}}/cmake_discovery_build 
-                 -DCMAKE_PREFIX_PATH=${{runner.workspace}}/install 
-                 -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+      run: cmake -H$GITHUB_WORKSPACE/tests/cmake/subproject -B${{runner.workspace}}/cmake_subproject_build -DGIT_REVISION=$GITHUB_HEAD_REF 
+
+    - name: CMake Subproject Build
+      working-directory: ${{runner.workspace}}
+      shell: bash
+      run: cmake --build ${{runner.workspace}}/cmake_subproject_build
+
+    - name: CMake Discovery Configure
+      working-directory: ${{runner.workspace}}
+      shell: bash
+      run: cmake -H$GITHUB_WORKSPACE/tests/cmake/discovery -B${{runner.workspace}}/cmake_discovery_build -DCMAKE_PREFIX_PATH=${{runner.workspace}}/install 
+
+    - name: CMake Discovery Build
+      working-directory: ${{runner.workspace}}
+      shell: bash
+      run: cmake --build ${{runner.workspace}}/cmake_discovery_build
 
     - name: CMake Discovery Build
       shell: bash

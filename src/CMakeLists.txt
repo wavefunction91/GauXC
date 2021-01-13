@@ -69,6 +69,11 @@ install( TARGETS gauxc ${GAUXC_EXPORT_DEPENDENCIES}
 
 set_target_properties( gauxc PROPERTIES EXPORT_NAME gauxc )
 
+# Export build tree
+export(EXPORT gauxc-targets
+      NAMESPACE gauxc::
+      FILE "${PROJECT_BINARY_DIR}/gauxc-targets.cmake")
+
 # Install staic headers
 install( 
   DIRECTORY   ${PROJECT_SOURCE_DIR}/include
