@@ -1,7 +1,10 @@
 # Parallelism
 find_package( OpenMP  REQUIRED )
 if( GAUXC_ENABLE_MPI )
+  message( STATUS "GauXC Enabling MPI" )
   find_package( MPI REQUIRED )
+else()
+  message( STATUS "GauXC Disabling MPI" )
 endif()
 
 # Required Dependencies
