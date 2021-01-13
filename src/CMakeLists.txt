@@ -1,7 +1,10 @@
 # Parallelism
 find_package( OpenMP  REQUIRED )
 if( GAUXC_ENABLE_MPI )
+  message( STATUS "GauXC Enabling MPI" )
   find_package( MPI REQUIRED )
+else()
+  message( STATUS "GauXC Disabling MPI" )
 endif()
 
 # Required Dependencies
@@ -68,6 +71,11 @@ install( TARGETS gauxc ${GAUXC_EXPORT_DEPENDENCIES}
 )
 
 set_target_properties( gauxc PROPERTIES EXPORT_NAME gauxc )
+
+# Export build tree
+export(EXPORT gauxc-targets
+      NAMESPACE gauxc::
+      FILE "${PROJECT_BINARY_DIR}/gauxc-targets.cmake")
 
 # Install staic headers
 install( 
