@@ -281,9 +281,9 @@ dev_ex_task generate_dev_batch( const uint32_t nbf_threshold,
     auto cur_nbe = basis.nbf_subset( local_union_shell_set.begin(), 
                                      local_union_shell_set.end() );
 
-    std::cout << "  Threshold %       = " << std::setw(5)  << overlap_pthresh[idx] << ", ";
-    std::cout << "  Overlap Threshold = " << std::setw(8)  << overlap_threshold    << ", ";
-    std::cout << "  Current NBE       = " << std::setw(8)  << cur_nbe              << std::endl;
+    //std::cout << "  Threshold %       = " << std::setw(5)  << overlap_pthresh[idx] << ", ";
+    //std::cout << "  Overlap Threshold = " << std::setw(8)  << overlap_threshold    << ", ";
+    //std::cout << "  Current NBE       = " << std::setw(8)  << cur_nbe              << std::endl;
 
     // Cache the data
     cached_task_ends[idx] = std::make_pair( task_end, local_union_shell_set );
@@ -303,8 +303,8 @@ dev_ex_task generate_dev_batch( const uint32_t nbf_threshold,
 
 
 
-  std::cout << "FOUND " << std::distance( task_begin, task_end ) 
-                        << " OVERLAPPING TASKS" << std::endl;
+  //std::cout << "FOUND " << std::distance( task_begin, task_end ) 
+  //                      << " OVERLAPPING TASKS" << std::endl;
 
 
   std::vector<int32_t> union_shell_list( union_shell_set.begin(),
@@ -317,8 +317,8 @@ dev_ex_task generate_dev_batch( const uint32_t nbf_threshold,
     } );
   } );
 
-  std::cout << "FOUND " << std::distance( task_begin, task_end ) 
-                        << " SUBTASKS" << std::endl;
+  //std::cout << "FOUND " << std::distance( task_begin, task_end ) 
+  //                      << " SUBTASKS" << std::endl;
 
 
   dev_ex_task ex_task;
@@ -490,19 +490,25 @@ void process_batches_cuda_replicated_density_shellbatched_p(
 
   //std::future<void> device_ex;
 
-
+  std::cout << "MASTER THREAD ID = " << std::this_thread::get_id() << std::endl;
   std::queue< dev_ex_task > dev_tasks;
 
   auto execute_device_task = [&] () {
 
     if( dev_tasks.empty() ) return;
 
-    device_execute_shellbatched<F,n_deriv>( timer, weight_alg, func, basis, mol,
-                                            meta, cuda_data, P, VXC, EXC, NEL,
-                                            dev_tasks.front() );
+    std::cout << "Executing device tasks on thread " << std::this_thread::get_id() << std::endl;
 
-    // Remove from queue
-    dev_tasks.pop();
+    dev_ex_task batch_task = std::move( dev_tasks.front() ); // Move task to local scope
+    dev_tasks.pop(); // Remove from queue
+    
+    // Execute task
+    timer.time_op_accumulate( "XCIntegrator.DeviceWork", [&]() {
+      device_execute_shellbatched<F,n_deriv>( timer, weight_alg, func, basis, mol,
+                                              meta, cuda_data, P, VXC, EXC, NEL,
+                                              batch_task );
+    });
+
 
   };
 

@@ -112,7 +112,7 @@ private:
   }
 public:
 
-  Shell() = delete;
+  Shell() : nprim_(0), l_(0), pure_(false) { };
 
   Shell( PrimSize nprim, AngularMomentum l, SphericalType pure,
     prim_array alpha, prim_array coeff, cart_array O, bool _normalize = true ) :
@@ -179,6 +179,11 @@ public:
   inline       prim_array& coeff()        { return coeff_; }
   inline       cart_array& O()            { return O_;     }
 
+
+  template <typename Archive>
+  void serialize( Archive& ar ) {
+    ar( nprim_, l_, pure_, alpha_, coeff_, O_, cutoff_radius_, shell_tolerance_ );
+  }
 };
 
 }
