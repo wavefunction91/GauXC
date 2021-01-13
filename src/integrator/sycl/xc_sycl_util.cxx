@@ -116,6 +116,7 @@ void process_batches_sycl_replicated_all_device(
   const auto* iparent_device      = sycl_data.iparent_device_buffer;
   const auto* dist_nearest_device = sycl_data.dist_nearest_buffer;
 
+#if 1
 
   // Evaluate Partition Weights
   partition_weights_sycl_SoA( weight_alg, total_npts, sycl_data.natoms,
@@ -134,6 +135,9 @@ void process_batches_sycl_replicated_all_device(
     eval_collocation_masked_combined( ntasks, max_npts, max_nshells, shells_device,
                                       tasks_device, &syclQue );
 
+#endif
+
+#if 1
   std::cout << "AFTER COLLOCATION" << std::endl;
   // Pack Density Submatrices
   task_pack_density_matrix( ntasks, tasks_device, dmat_device, nbf, &syclQue );
@@ -179,7 +183,9 @@ void process_batches_sycl_replicated_all_device(
     util::sycl_set_zero_async( total_npts, dden_z_eval_device, syclQue,
                                "DenZZero" );
   }
+#endif
 
+#if 1
   // Evaluate UVars
   if( func.is_gga() ) {
     eval_uvars_gga_device( ntasks, max_nbe, max_npts, tasks_device, &syclQue );
@@ -288,6 +294,7 @@ void process_batches_sycl_replicated_all_device(
   // Increment global VXC
   task_inc_potential( ntasks, tasks_device, vxc_device, nbf, &syclQue );
 
+#endif
 
   // Synchronize on master queue
   // XXX: There's no lifetime issues in this driver, should look into
