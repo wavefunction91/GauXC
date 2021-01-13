@@ -1,3 +1,4 @@
+message( STATUS "Building GauXC Tests" )
 add_library( gauxc_catch2 INTERFACE )
 
 find_package( Catch2 CONFIG QUIET )
@@ -60,3 +61,11 @@ add_executable( standalone_driver standalone_driver.cxx standards.cxx basis/pars
 target_link_libraries( standalone_driver PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
 target_include_directories( standalone_driver PRIVATE ${PROJECT_BINARY_DIR}/tests )
 target_include_directories( standalone_driver PRIVATE ${PROJECT_SOURCE_DIR}/tests )
+
+
+add_test( NAME GAUXC_SERIAL_TEST COMMAND $<TARGET_FILE:gauxc_test> )
+if( GAUXC_ENABLE_MPI )
+  add_test( NAME GAUXC_MPI_TEST
+            COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} $<TARGET_FILE:gauxc_test> ${MPIEXEC_POSTFLAGS}
+  )
+endif()

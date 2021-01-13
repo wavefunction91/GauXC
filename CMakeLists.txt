@@ -10,6 +10,10 @@ list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
 list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules )
 include( gauxc-linalg-modules )
 
+# Populate BUILD_TESTING prior to dependencies to avoid clash
+if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+  include(CTest)
+endif()
 
 
 
@@ -45,7 +49,6 @@ endif()
 
 add_subdirectory( src )
 
-if( GAUXC_ENABLE_TESTS )
-  enable_testing()
+if( CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND GAUXC_ENABLE_TESTS AND BUILD_TESTING )
   add_subdirectory( tests )
 endif()
