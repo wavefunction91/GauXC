@@ -534,7 +534,20 @@ void process_batches_cuda_replicated_density_shellbatched_p(
 
   }
 
+
   if( dev_future.valid() ) dev_future.wait();
+
+  // TODO: Try to merge tasks if possible
+  //for( auto _task_it = dev_tasks.begin(); _task_it != dev_tasks.end()-1; ++_task_it ) {
+  //  const auto& shell_list = _task_it->union_shell_list;
+  //  auto task_nbe = basis.nbf_subset( shell_list.begin(), shell_list.end() );
+  //  auto _merge_it = _task_it + 1;
+  //  while( task_nbe <= nbf_threshold and _merge_it != dev_tasks.end() ) {
+  //    _merge_it = std::find_if( _merge_it, dev_tasks.end(), [&]( const auto& t ) {
+  //      const auto& local_shell_list
+  //    } );
+  //  }
+  //}
 
   while( not dev_tasks.empty() ) {
     // Execute remaining tasks
