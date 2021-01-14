@@ -79,6 +79,7 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
   cl::sycl::queue syclQueue = cl::sycl::queue(device_selector,
                                               cl::sycl::property_list{cl::sycl::property::queue::in_order{}});
 
+  std::cout << "IN SYCL COLLOCATION TEST" << std::endl;
   SECTION( "SYCL Eval: Petite Shell List" ) {
     test_sycl_collocation_petite( basis, ref_data, syclQueue );
   }

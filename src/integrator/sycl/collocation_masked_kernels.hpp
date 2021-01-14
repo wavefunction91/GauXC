@@ -53,13 +53,13 @@ namespace sycl       {
             for( size_t i = 0; i < nprim; ++i )
                 tmp += coeff[i] * cl::sycl::exp(-alpha[i] * rsq);
 
-            auto * bf_eval = eval_device + ibf + ipt*nbf;
+            auto * bf_eval = eval_device + ibf*npts + ipt;
 
             const bool do_sph = shell.pure();
             if( do_sph )
-                collocation_spherical_unnorm_angular( shell.l(), tmp, xc, yc, zc, bf_eval );
+                collocation_spherical_unnorm_angular( npts, shell.l(), tmp, xc, yc, zc, bf_eval );
             else
-                collocation_cartesian_angular( shell.l(), tmp, xc, yc, zc, bf_eval );
+                collocation_cartesian_angular( npts, shell.l(), tmp, xc, yc, zc, bf_eval );
         }
     }
 
@@ -125,18 +125,18 @@ namespace sycl       {
 
     }
 
-    auto * bf_eval = eval_device    + ibf + ipt*nbf;
-    auto * dx_eval = deval_device_x + ibf + ipt*nbf;
-    auto * dy_eval = deval_device_y + ibf + ipt*nbf;
-    auto * dz_eval = deval_device_z + ibf + ipt*nbf;
+    auto * bf_eval = eval_device    + ibf*npts + ipt;
+    auto * dx_eval = deval_device_x + ibf*npts + ipt;
+    auto * dy_eval = deval_device_y + ibf*npts + ipt;
+    auto * dz_eval = deval_device_z + ibf*npts + ipt;
 
     const bool do_sph = shell.pure();
     if( do_sph )
-      collocation_spherical_unnorm_angular_deriv1( shell.l(), tmp, tmp_x, tmp_y, tmp_z,
+      collocation_spherical_unnorm_angular_deriv1( npts, shell.l(), tmp, tmp_x, tmp_y, tmp_z,
                                                xc, yc, zc, bf_eval, dx_eval,
                                                dy_eval, dz_eval );
     else
-      collocation_cartesian_angular_deriv1( shell.l(), tmp, tmp_x, tmp_y, tmp_z,
+      collocation_cartesian_angular_deriv1( npts, shell.l(), tmp, tmp_x, tmp_y, tmp_z,
                                         xc, yc, zc, bf_eval, dx_eval,
                                         dy_eval, dz_eval );
 

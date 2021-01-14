@@ -67,7 +67,8 @@ public:
   int64_t*        m_array_device  = nullptr;
   int64_t*        n_array_device  = nullptr;
   int64_t*        k_array_device  = nullptr;
-  int64_t*        ld_array_device = nullptr;
+  int64_t*        lda_array_device = nullptr;
+  int64_t*        ldb_array_device = nullptr;
 
   F*     dist_scratch_device = nullptr;
 
