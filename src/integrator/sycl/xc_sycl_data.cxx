@@ -40,7 +40,6 @@ XCSyclData<F>::XCSyclData( size_t _natoms,
   // Allocate up to fill_fraction
   size_t fill_sz = (*master_queue).get_device().get_info<cl::sycl::info::device::max_mem_alloc_size>();
   device_ptr = (void *)cl::sycl::malloc_device(fill_sz, *master_queue);
-  std::cout << fill_sz << std::endl;
 
   //std::cout << "NS = " << nshells << ", NA = " << natoms << ", NBF = " << nbf << std::endl;
 
@@ -96,7 +95,7 @@ std::tuple< task_iterator, device_task_container<F> >
 
   // Host copies for batched GEMM/SYRK arrays
   std::vector< F* > dmat_array, bf_array, zmat_array;
-  std::vector< int64_t > m_array, n_array, k_array, lda_array, ldb_array;
+  std::vector< int64_t > m_array, n_array, k_array, ld_array;
 
   // abb: can get rid of these variables
   std::vector< F > alpha_array;
@@ -121,7 +120,7 @@ std::tuple< task_iterator, device_task_container<F> >
 
   // Offset memory by the static requirement of an extra pointer element
   // for each of the size batch arrays in MAGMA
-  memleft -= 5 * sizeof(int64_t); //M,N,K,LDA,LDB
+  memleft -= 4 * sizeof(int64_t); //M,N,K,LDA[LDB,LDC]
 
   auto task_it = task_begin;
   while( task_it != task_end ) {
@@ -178,7 +177,7 @@ std::tuple< task_iterator, device_task_container<F> >
     size_t mem_dist_nearest  = npts;
 
     size_t mem_batch_mat_arr = 3; // dmat/zmat/bf
-    size_t mem_batch_sz_arr  = 5; // M/N/K/LDA/LDB
+    size_t mem_batch_sz_arr  = 4; // M/N/K/LDA/[LDB/LDC]
     size_t mem_task      = 1;
 
 
@@ -246,8 +245,7 @@ std::tuple< task_iterator, device_task_container<F> >
     n_array.emplace_back( npts );
     k_array.emplace_back( nbe  );
 
-    lda_array.emplace_back( nbe   );
-    ldb_array.emplace_back( npts  );
+    ld_array.emplace_back( nbe  );
 
     alpha_array.emplace_back( 1. );
     nontrans_array.emplace_back( oneapi::mkl::transpose::nontrans );
@@ -312,15 +310,14 @@ std::tuple< task_iterator, device_task_container<F> >
   m_array_device   = mem.aligned_alloc<int64_t>( ntask );
   n_array_device   = mem.aligned_alloc<int64_t>( ntask );
   k_array_device   = mem.aligned_alloc<int64_t>( ntask );
-  lda_array_device = mem.aligned_alloc<int64_t>( ntask );
-  ldb_array_device = mem.aligned_alloc<int64_t>( ntask );
+  ld_array_device = mem.aligned_alloc<int64_t>( ntask );
 
   // following 3 arrays are required for batched oneMKL gemm
-  //alpha_array_device     = mem.aligned_alloc<F>( ntask );
-  //beta_array_device      = mem.aligned_alloc<F>( ntask );
-  //trans_array_device     = mem.aligned_alloc<oneapi::mkl::transpose>( ntask );
-  //nontrans_array_device  = mem.aligned_alloc<oneapi::mkl::transpose>( ntask );
-  //groupsize_array_device = mem.aligned_alloc<int64_t>( ntask );
+  alpha_array_device     = mem.aligned_alloc<F>( ntask );
+  beta_array_device      = mem.aligned_alloc<F>( ntask );
+  trans_array_device     = mem.aligned_alloc<oneapi::mkl::transpose>( ntask );
+  nontrans_array_device  = mem.aligned_alloc<oneapi::mkl::transpose>( ntask );
+  groupsize_array_device = mem.aligned_alloc<int64_t>( ntask );
 
   iparent_device_buffer = mem.aligned_alloc<int32_t>( total_npts );
 
@@ -471,12 +468,10 @@ std::tuple< task_iterator, device_task_container<F> >
   copy_rev( k_array.size(), k_array.data(), k_array_device,
                          *master_queue, "send k_array" );
 
-  copy_rev( lda_array.size(), lda_array.data(), lda_array_device,
-                         *master_queue, "send lda_array" );
-  copy_rev( ldb_array.size(), ldb_array.data(), ldb_array_device,
-                         *master_queue, "send ldb_array" );
+  copy_rev( ld_array.size(), ld_array.data(), ld_array_device,
+                         *master_queue, "send ld_array" );
 
-  //util::sycl_set_zero_async( ntask, beta_array_device, *master_queue, "betaZero" );
+  util::sycl_set_zero_async( ntask, beta_array_device, *master_queue, "betaZero" );
 
   // abb: uncomment this when `-sycl-std=2020` is supported
   // constexpr F alpha_pattern = 1.0;
@@ -489,14 +484,14 @@ std::tuple< task_iterator, device_task_container<F> >
   // master_queue->fill(groupsize_array_device, gs_pattern, ntask);
 
   // abb: remove the next 4 copy statements when `-sycl-std=2020` is supported
-  //copy_rev( alpha_array.size(), alpha_array.data(), alpha_array_device,
-  //          *master_queue, "send alpha_array" );
-  //copy_rev( trans_array.size(), trans_array.data(), trans_array_device,
-  //          *master_queue, "send trans_array" );
-  //copy_rev( nontrans_array.size(), nontrans_array.data(), nontrans_array_device,
-  //          *master_queue, "send nontrans_array" );
-  //copy_rev( groupsize_array.size(), groupsize_array.data(), groupsize_array_device,
-  //          *master_queue, "send groupsize_array" );
+  copy_rev( alpha_array.size(), alpha_array.data(), alpha_array_device,
+            *master_queue, "send alpha_array" );
+  copy_rev( trans_array.size(), trans_array.data(), trans_array_device,
+            *master_queue, "send trans_array" );
+  copy_rev( nontrans_array.size(), nontrans_array.data(), nontrans_array_device,
+            *master_queue, "send nontrans_array" );
+  copy_rev( groupsize_array.size(), groupsize_array.data(), groupsize_array_device,
+            *master_queue, "send groupsize_array" );
 
   copy_rev( iparent_pack.size(), iparent_pack.data(),
                          iparent_device_buffer, *master_queue, "send iparent"  );
@@ -508,16 +503,6 @@ std::tuple< task_iterator, device_task_container<F> >
     throw;
   }
 
-/*
-  std::vector< std::pair<int64_t,int64_t> > gemm_dims;
-  for( auto i = 0; i < ntask; ++i )
-    gemm_dims.emplace_back( m_array[i], n_array[i] );
-
-  std::sort( gemm_dims.begin(), gemm_dims.end() );
-  auto it = std::unique( gemm_dims.begin(), gemm_dims.end() );
-  gemm_dims.erase( it, gemm_dims.end() );
-  std::cout << "UNIQUE GEMM DIMS = " << gemm_dims.size() << std::endl;
-*/
 
   // To avoid packed vectors going out of scope
   util::sycl_device_sync( *master_queue );
