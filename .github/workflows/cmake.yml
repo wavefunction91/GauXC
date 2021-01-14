@@ -52,6 +52,7 @@ jobs:
       env:
         CC:  gcc-${{matrix.compiler_version}}
         CXX: g++-${{matrix.compiler_version}}
+        FC:  gfortran-${{matrix.compiler_version}}
       shell: bash
       run: ${GITHUB_WORKSPACE}/.github/workflows/scripts/compiler_setup.sh ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
 
@@ -60,6 +61,7 @@ jobs:
       env:
         CC:  clang-${{matrix.compiler_version}}
         CXX: clang++-${{matrix.compiler_version}}
+        FC:  gfortran-${{matrix.compiler_version}}
       shell: bash
       run: ${GITHUB_WORKSPACE}/.github/workflows/scripts/compiler_setup.sh ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
            
