@@ -12,6 +12,7 @@ target_sources( gauxc PRIVATE cuda/collocation_device.cu
                               cuda/cublas_extensions.cu
                               cuda/cuda_zmat.cu
                               cuda/cuda_inc_potential.cu
+			      cuda/cuda_device_properties.cxx
 )
 
 target_compile_features( gauxc PRIVATE cuda_std_14 )
