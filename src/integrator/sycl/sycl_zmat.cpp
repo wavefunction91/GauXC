@@ -110,19 +110,39 @@ template <typename T>
 void zmat_gga_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
                    XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
-  cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
-  cl::sycl::range<3> blocks(ntasks,
-                            util::div_ceil(max_npts, threads[1]),
-                            util::div_ceil(max_nbf,  threads[2]) );
+        cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
 
-  GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-          auto global_range = blocks * threads;
+        size_t y_dim = util::div_ceil(max_npts, threads[1]);
+        size_t z_dim = util::div_ceil(max_nbf,  threads[2]);
 
-          cgh.parallel_for(cl::sycl::nd_range<3>(global_range, threads),
-                           [=](cl::sycl::nd_item<3> item_ct) {
-                               zmat_gga_kernel(ntasks, tasks_device, item_ct);
-                           });
+        size_t ntasks_left = ntasks;
+        size_t task_offset = 0;
+
+        size_t ntask_batch = 
+          ( (size_t)std::numeric_limits<int32_t>::max() ) / 
+            (y_dim*z_dim*threads[2]*threads[1]*threads[0]);
+        
+        while( ntasks_left ) {
+
+          auto ntask_do = std::min( ntasks_left, ntask_batch );
+          cl::sycl::range<3> blocks(ntask_do, y_dim, z_dim );
+
+          GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
+            auto global_range = blocks * threads;
+
+            cgh.parallel_for(cl::sycl::nd_range<3>(global_range, threads),
+              [=](cl::sycl::nd_item<3> item_ct) {
+                zmat_gga_kernel(ntask_do, 
+                                tasks_device + task_offset, 
+                                item_ct);
+            });
+
           }) );
+
+          ntasks_left -= ntask_do;
+          task_offset += ntask_do;
+
+        }
 }
 template
 void zmat_gga_sycl( size_t                ntasks,

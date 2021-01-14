@@ -234,7 +234,7 @@ void process_batches_sycl_replicated_all_device(
   std::cout << "AFTER SCALAR" << std::endl;
 #endif
 
-#if 0
+#if 1
   // Evaluate Z Matrix
   if( func.is_gga() )
     zmat_gga_sycl( ntasks, max_nbe, max_npts, tasks_device, &syclQue );
