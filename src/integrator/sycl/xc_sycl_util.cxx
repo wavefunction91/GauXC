@@ -116,6 +116,7 @@ void process_batches_sycl_replicated_all_device(
   const auto* dist_nearest_device = sycl_data.dist_nearest_buffer;
 
 
+#if 1
   // Evaluate Partition Weights
   partition_weights_sycl_SoA( weight_alg, total_npts, sycl_data.natoms,
                               points_device, iparent_device, dist_nearest_device,
@@ -123,7 +124,9 @@ void process_batches_sycl_replicated_all_device(
                               dist_scratch_device, &syclQue );
 
   std::cout << "AFTER WEIGHTS" << std::endl;
+#endif
 
+#if 1
   // Evaluate Collocation
   if constexpr ( n_deriv == 1 )
     eval_collocation_masked_combined_deriv1( ntasks, max_npts, max_nshells,
@@ -134,11 +137,16 @@ void process_batches_sycl_replicated_all_device(
                                       tasks_device, &syclQue );
 
   std::cout << "AFTER COLLOCATION" << std::endl;
+#endif
+
+#if 1
   // Pack Density Submatrices
   task_pack_density_matrix( ntasks, tasks_device, dmat_device, nbf, &syclQue );
 
   std::cout << "AFTER PACK" << std::endl;
+#endif
 
+#if 1
   // Form Z = P * X
   if( sycl_data.batch_l3_blas ) {
       cl::sycl::vector_class<cl::sycl::event> eve;
@@ -167,7 +175,9 @@ void process_batches_sycl_replicated_all_device(
   }
 
   std::cout << "AFTER GEMM" << std::endl;
+#endif
 
+#if 1
   // Zero UVars
   util::sycl_set_zero_async( total_npts, den_eval_device, syclQue, "DenZero" );
   if( func.is_gga() ) {
@@ -178,7 +188,9 @@ void process_batches_sycl_replicated_all_device(
     util::sycl_set_zero_async( total_npts, dden_z_eval_device, syclQue,
                                "DenZZero" );
   }
+#endif
 
+#if 1
   // Evaluate UVars
   if( func.is_gga() ) {
     eval_uvars_gga_device( ntasks, max_nbe, max_npts, tasks_device, &syclQue );
@@ -189,6 +201,9 @@ void process_batches_sycl_replicated_all_device(
   }
 
   std::cout << "AFTER UVARS" << std::endl;
+#endif
+
+#if 1
   // Evaluate XC Functional
   if( func.is_gga() )
     func.eval_exc_vxc_device( total_npts, den_eval_device, gamma_eval_device,
@@ -199,6 +214,10 @@ void process_batches_sycl_replicated_all_device(
                               vrho_eval_device, &syclQue );
 
   std::cout << "AFTER XC" << std::endl;
+
+#endif
+
+#if 1
   // Factor weights into XC output
   hadamard_product( &syclQue, total_npts, 1, weights_device, 1,
                     eps_eval_device, 1 );
@@ -215,6 +234,9 @@ void process_batches_sycl_replicated_all_device(
         den_eval_device, 1, acc_scr_device, exc_device );
 
   std::cout << "AFTER SCALAR" << std::endl;
+#endif
+
+#if 0
   // Evaluate Z Matrix
   if( func.is_gga() )
     zmat_gga_sycl( ntasks, max_nbe, max_npts, tasks_device, &syclQue );
@@ -222,10 +244,12 @@ void process_batches_sycl_replicated_all_device(
     zmat_lda_sycl( ntasks, max_nbe, max_npts, tasks_device, &syclQue );
 
   std::cout << "AFTER ZMAT" << std::endl;
+#endif
 
   // // Accumulate packed VXC = X * Z**T + Z * X**T
   // // XXX: Only updates LT with SYR2K
 
+#if 1
   if( sycl_data.batch_l3_blas ) {
       cl::sycl::vector_class<cl::sycl::event> eve;
 
@@ -283,9 +307,12 @@ void process_batches_sycl_replicated_all_device(
   }
 
   std::cout << "AFTER \"SYR2K\"" << std::endl;
+#endif
 
+#if 1
   // Increment global VXC
   task_inc_potential( ntasks, tasks_device, vxc_device, nbf, &syclQue );
+#endif
 
 
   // Synchronize on master queue

@@ -34,15 +34,13 @@ void inc_by_submat_combined_kernel( size_t           ntasks,
 
         int64_t i(0);
         for( size_t i_cut = 0; i_cut < ncut; ++i_cut ) {
-            const int64_t i_cut_first  = submat_cut_device[ 2*i_cut ];
-            const int64_t i_cut_second = submat_cut_device[ 2*i_cut + 1 ];
-            const int64_t delta_i      = i_cut_second - i_cut_first;
+            const int64_t i_cut_first  = submat_cut_device[ 3*i_cut     ];
+            const int64_t delta_i      = submat_cut_device[ 3*i_cut + 1 ];;
 
             int64_t j(0);
             for( size_t j_cut = 0; j_cut < ncut; ++j_cut ) {
-                const int64_t j_cut_first  = submat_cut_device[ 2*j_cut ];
-                const int64_t j_cut_second = submat_cut_device[ 2*j_cut + 1 ];
-                const int64_t delta_j      = j_cut_second - j_cut_first;
+                const int64_t j_cut_first  = submat_cut_device[ 3*j_cut ];
+                const int64_t delta_j      = submat_cut_device[ 3*j_cut + 1 ];
 
                 auto* ASmall_begin = ASmall_device + i           + j          *LDAS;
                 auto* ABig_begin   = A             + i_cut_first + j_cut_first*LDA ;

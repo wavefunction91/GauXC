@@ -23,7 +23,9 @@ else()
 
 endif()
 
-include( gauxc-eigen3 )
+if( NOT TARGET Eigen3::Eigen )
+  include( gauxc-eigen3 )
+endif() 
 include( gauxc-cereal )
 
 #add_library( catch2_main STATIC ut_main.cxx)
