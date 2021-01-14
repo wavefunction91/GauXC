@@ -1,6 +1,12 @@
 find_package( ExchCXX QUIET )
 if( NOT ${ExchCXX_FOUND} )
 
+  include( gauxc-dep-versions )
+
+  message( STATUS "Could not find ExchCXX... Building" )
+  message( STATUS "EXCHCXX REPO = ${GAUXC_EXCHCXX_REPOSITORY}" )
+  message( STATUS "EXCHCXX REV  = ${GAUXC_EXCHCXX_REVISION}"   )
+
   set( EXCHCXX_ENABLE_CUDA  ${GAUXC_ENABLE_CUDA} CACHE BOOL "" )
   set( EXCHCXX_ENABLE_SYCL  ${GAUXC_ENABLE_SYCL} CACHE BOOL "" )
   set( EXCHCXX_ENABLE_HIP   ${GAUXC_ENABLE_HIP}  CACHE BOOL "" )
@@ -8,10 +14,8 @@ if( NOT ${ExchCXX_FOUND} )
 
   FetchContent_Declare(
     exchcxx
-    GIT_REPOSITORY 
-      https://github.com/wavefunction91/ExchCXX.git
-    GIT_TAG 
-      perf_port
+    GIT_REPOSITORY ${GAUXC_EXCHCXX_REPOSITORY} 
+    GIT_TAG        ${GAUXC_EXCHCXX_REVISION} 
   )
 
   FetchContent_MakeAvailable( exchcxx )

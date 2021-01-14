@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include <fstream>
+#include <gauxc/external/cereal.hpp>
 #include <cereal/archives/binary.hpp>
 #include "eigen3_matrix_serialization.hpp"
 

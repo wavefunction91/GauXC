@@ -89,13 +89,13 @@ std::tuple< task_iterator, device_task_container<F> >
   std::vector< F > weights_pack;
   std::vector< size_t > shell_list_pack;
   std::vector< size_t > shell_offs_pack;
-  std::vector< std::pair<int64_t, int64_t> > submat_cut_pack;
+  std::vector< std::array<int64_t, 3> > submat_cut_pack;
   std::vector< int32_t > iparent_pack;
   std::vector< F >  dist_nearest_pack;
 
   // Host copies for batched GEMM/SYRK arrays
   std::vector< F* > dmat_array, bf_array, zmat_array;
-  std::vector< int64_t > m_array, n_array, k_array, ld_array;
+  std::vector< int64_t > m_array, n_array, k_array, lda_array, ldb_array;
 
   // abb: can get rid of these variables
   std::vector< F > alpha_array;
@@ -120,7 +120,7 @@ std::tuple< task_iterator, device_task_container<F> >
 
   // Offset memory by the static requirement of an extra pointer element
   // for each of the size batch arrays in MAGMA
-  memleft -= 4 * sizeof(int64_t); //M,N,K,LDA[LDB,LDC]
+  memleft -= 5 * sizeof(int64_t); //M,N,K,LDA,LDB
 
   auto task_it = task_begin;
   while( task_it != task_end ) {
@@ -133,7 +133,13 @@ std::tuple< task_iterator, device_task_container<F> >
     auto dist_nearest = task_it->dist_nearest;
 
     // Generate map from compressed to non-compressed matrices
-    auto submat_cut = integrator::gen_compressed_submat_map( basis, shell_list );
+    auto [submat_cut_32bit, foo] = 
+      integrator::gen_compressed_submat_map( basis, shell_list, basis.nbf(), basis.nbf() );
+    std::vector< std::array<int64_t,3> > submat_cut;
+    submat_cut.reserve( submat_cut_32bit.size() );
+    for( const auto& x : submat_cut_32bit ) 
+      submat_cut.push_back( {(int64_t)x[0], (int64_t)x[1], (int64_t)x[2]} );
+
     size_t ncut     = submat_cut.size();
     size_t nshells  = shell_list.size();
     size_t npts     = points.size();
@@ -145,7 +151,7 @@ std::tuple< task_iterator, device_task_container<F> >
     size_t mem_shells     = nshells;
     size_t mem_shell_list = nshells;
     size_t mem_shell_offs = nshells;
-    size_t mem_submat_cut = 2 * ncut;
+    size_t mem_submat_cut = 3 * ncut;
 
     size_t mem_nbe_scr    = nbe * nbe;
     size_t mem_zmat       = nbe * npts;
@@ -171,7 +177,7 @@ std::tuple< task_iterator, device_task_container<F> >
     size_t mem_dist_nearest  = npts;
 
     size_t mem_batch_mat_arr = 3; // dmat/zmat/bf
-    size_t mem_batch_sz_arr  = 4; // M/N/K/LDA/[LDB/LDC]
+    size_t mem_batch_sz_arr  = 5; // M/N/K/LDA/[LDB/LDC]
     size_t mem_task      = 1;
 
 
@@ -239,7 +245,8 @@ std::tuple< task_iterator, device_task_container<F> >
     n_array.emplace_back( npts );
     k_array.emplace_back( nbe  );
 
-    ld_array.emplace_back( nbe  );
+    lda_array.emplace_back( nbe   );
+    ldb_array.emplace_back( npts  );
 
     alpha_array.emplace_back( 1. );
     nontrans_array.emplace_back( oneapi::mkl::transpose::nontrans );
@@ -292,7 +299,7 @@ std::tuple< task_iterator, device_task_container<F> >
   weights_device_buffer    = mem.aligned_alloc<F>( total_npts );
   shell_list_device_buffer = mem.aligned_alloc<size_t>( total_nshells );
   shell_offs_device_buffer = mem.aligned_alloc<size_t>( total_nshells );
-  submat_cut_device_buffer = mem.aligned_alloc<int64_t>( 2 * total_ncut );
+  submat_cut_device_buffer = mem.aligned_alloc<int64_t>( 3 * total_ncut );
 
   dist_scratch_device = mem.aligned_alloc<F>( natoms * total_npts );
   dist_nearest_buffer = mem.aligned_alloc<F>( total_npts );
@@ -304,7 +311,8 @@ std::tuple< task_iterator, device_task_container<F> >
   m_array_device   = mem.aligned_alloc<int64_t>( ntask );
   n_array_device   = mem.aligned_alloc<int64_t>( ntask );
   k_array_device   = mem.aligned_alloc<int64_t>( ntask );
-  ld_array_device = mem.aligned_alloc<int64_t>( ntask );
+  lda_array_device = mem.aligned_alloc<int64_t>( ntask );
+  ldb_array_device = mem.aligned_alloc<int64_t>( ntask );
 
   // following 3 arrays are required for batched oneMKL gemm
   alpha_array_device     = mem.aligned_alloc<F>( ntask );
@@ -381,7 +389,7 @@ std::tuple< task_iterator, device_task_container<F> >
     weights_ptr    += npts;
     shell_list_ptr += nshells;
     shell_offs_ptr += nshells;
-    submat_cut_ptr += 2 * ncut;
+    submat_cut_ptr += 3 * ncut;
 
     shells_ptr += nshells;
     nbe_ptr    += nbe * nbe;
@@ -440,7 +448,7 @@ std::tuple< task_iterator, device_task_container<F> >
   copy_rev( shell_offs_pack.size(), shell_offs_pack.data(),
                          shell_offs_device_buffer, *master_queue,
                          "send_shell_offs_buffer" );
-  copy_rev( 2*submat_cut_pack.size(), &submat_cut_pack.data()->first,
+  copy_rev( 3*submat_cut_pack.size(), submat_cut_pack.data()->data(),
                          submat_cut_device_buffer, *master_queue,
                          "send_submat_cut_buffer"  );
 
@@ -462,8 +470,10 @@ std::tuple< task_iterator, device_task_container<F> >
   copy_rev( k_array.size(), k_array.data(), k_array_device,
                          *master_queue, "send k_array" );
 
-  copy_rev( ld_array.size(), ld_array.data(), ld_array_device,
-                         *master_queue, "send ld_array" );
+  copy_rev( lda_array.size(), lda_array.data(), lda_array_device,
+                         *master_queue, "send lda_array" );
+  copy_rev( ldb_array.size(), ldb_array.data(), ldb_array_device,
+                         *master_queue, "send ldb_array" );
 
   util::sycl_set_zero_async( ntask, beta_array_device, *master_queue, "betaZero" );
 

@@ -42,10 +42,10 @@ namespace sycl       {
         T den_reg = 0.;
 
         if( tid_x < nbf && tid_y < npts ) {
-            const T* bf_col = basis_eval_device     + tid_y*nbf;
-            const T* db_col = den_basis_prod_device + tid_y*nbf;
+            const T* bf_col = basis_eval_device     + tid_x*npts;
+            const T* db_col = den_basis_prod_device + tid_x*npts;
 
-            den_reg = bf_col[ tid_x ]   * db_col[ tid_x ];
+            den_reg = bf_col[ tid_y ]   * db_col[ tid_y ];
         }
 
         // Warp blocks are stored col major
@@ -91,16 +91,16 @@ namespace sycl       {
 
         if( tid_x < nbf && tid_y < npts ) {
 
-            const T* bf_col   = basis_eval_device     + tid_y*nbf;
-            const T* bf_x_col = dbasis_x_eval_device  + tid_y*nbf;
-            const T* bf_y_col = dbasis_y_eval_device  + tid_y*nbf;
-            const T* bf_z_col = dbasis_z_eval_device  + tid_y*nbf;
-            const T* db_col   = den_basis_prod_device + tid_y*nbf;
+            const T* bf_col   = basis_eval_device     + tid_x*npts;
+            const T* bf_x_col = dbasis_x_eval_device  + tid_x*npts;
+            const T* bf_y_col = dbasis_y_eval_device  + tid_x*npts;
+            const T* bf_z_col = dbasis_z_eval_device  + tid_x*npts;
+            const T* db_col   = den_basis_prod_device + tid_x*npts;
 
-            den_reg = bf_col[ tid_x ]   * db_col[ tid_x ];
-            dx_reg  = bf_x_col[ tid_x ] * db_col[ tid_x ];
-            dy_reg  = bf_y_col[ tid_x ] * db_col[ tid_x ];
-            dz_reg  = bf_z_col[ tid_x ] * db_col[ tid_x ];
+            den_reg = bf_col[ tid_y ]   * db_col[ tid_y ];
+            dx_reg  = bf_x_col[ tid_y ] * db_col[ tid_y ];
+            dy_reg  = bf_y_col[ tid_y ] * db_col[ tid_y ];
+            dz_reg  = bf_z_col[ tid_y ] * db_col[ tid_y ];
 
         }
 
@@ -160,19 +160,39 @@ namespace sycl       {
                                XCTaskDevice<T> *tasks_device, cl::sycl::queue *queue) {
 
         cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size);
-        cl::sycl::range<3> blocks(ntasks,
-                                  util::div_ceil(max_npts, threads[1]),
-                                  util::div_ceil(max_nbf,  threads[2]) );
 
+        size_t y_dim = util::div_ceil(max_npts, threads[1]);
+        size_t z_dim = util::div_ceil(max_nbf,  threads[2]);
 
-        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-                auto global_range = blocks * threads;
+        size_t ntasks_left = ntasks;
+        size_t task_offset = 0;
 
-                cgh.parallel_for(cl::sycl::nd_range<3>(global_range, threads),
-                    [=](cl::sycl::nd_item<3> item_ct) {
-                        eval_uvars_gga_kernel(ntasks, tasks_device, item_ct);
-                    });
-                }) );
+        size_t ntask_batch = 
+          ( (size_t)std::numeric_limits<int32_t>::max() ) / 
+            (y_dim*z_dim*threads[2]*threads[1]*threads[0]);
+        
+        while( ntasks_left ) {
+
+          auto ntask_do = std::min( ntasks_left, ntask_batch );
+          cl::sycl::range<3> blocks(ntask_do, y_dim, z_dim );
+
+          GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
+            auto global_range = blocks * threads;
+
+            cgh.parallel_for(cl::sycl::nd_range<3>(global_range, threads),
+              [=](cl::sycl::nd_item<3> item_ct) {
+                eval_uvars_gga_kernel(ntask_do, 
+                                      tasks_device + task_offset, 
+                                      item_ct);
+            });
+
+          }) );
+
+          ntasks_left -= ntask_do;
+          task_offset += ntask_do;
+
+        }
+
     }
 
     template <typename T>

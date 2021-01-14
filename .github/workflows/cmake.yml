@@ -2,6 +2,9 @@ name: CMake
 
 on: [pull_request]
 
+env:
+  GH_ACTIONS_TOOLCHAIN: .github/workflows/toolchains/gh-actions.cmake
+
 jobs:
   build:
     # The CMake configure and build commands are platform agnostic and should work equally
@@ -13,6 +16,13 @@ jobs:
       matrix:
         build_type: [Release, Debug]
         mpi_flag: [ON, OFF]
+        compiler_suite: [gnu,llvm]
+        compiler_version: [7,8,9,10]
+        exclude:
+          - compiler_suite: llvm
+            compiler_version: 7
+          - compiler_suite: llvm
+            compiler_version: 8
 
     steps:
     - uses: actions/checkout@v2
@@ -31,6 +41,29 @@ jobs:
 #           sudo sh -c 'echo deb https://apt.repos.intel.com/mkl all main > /etc/apt/sources.list.d/intel-mkl.list' &&
 #           sudo apt-get update &&  sudo apt-get install intel-mkl-64bit-2020.3-111 && ls /opt/intel/mkl &&
 #           export MKLROOT=/opt/intel/mkl
+ 
+    - name: Ubuntu Apt Setup
+      shell: bash
+      run: sudo apt install software-properties-common &&
+           sudo add-apt-repository ppa:ubuntu-toolchain-r/test 
+
+    - name: Install GNU Compiler Version
+      if: ${{ matrix.compiler_suite == 'gnu' }}
+      env:
+        CC:  gcc-${{matrix.compiler_version}}
+        CXX: g++-${{matrix.compiler_version}}
+        FC:  gfortran-${{matrix.compiler_version}}
+      shell: bash
+      run: ${GITHUB_WORKSPACE}/.github/workflows/scripts/compiler_setup.sh ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+
+    - name: Install LLVM Compiler Version
+      if: ${{ matrix.compiler_suite == 'llvm' }}
+      env:
+        CC:  clang-${{matrix.compiler_version}}
+        CXX: clang++-${{matrix.compiler_version}}
+        FC:  gfortran-${{matrix.compiler_version}}
+      shell: bash
+      run: ${GITHUB_WORKSPACE}/.github/workflows/scripts/compiler_setup.sh ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
            
     - name: Install MPICH
       run: sudo apt-get install mpich
@@ -38,28 +71,49 @@ jobs:
     - name: Install NumPy
       run: sudo pip3 install numpy
 
-    - name: Create Build Environment
-      # Some projects don't allow in-source building, so create a separate build directory
-      # We'll use this as our working directory for all subsequent commands
-      run: cmake -E make_directory ${{runner.workspace}}/build
-
     - name: Configure CMake
-      env:
-        BUILD_TYPE: ${{matrix.build_type}}
-        MPI_FLAG: ${{matrix.mpi_flag}}
       shell: bash
-      working-directory: ${{runner.workspace}}/build
-      run: cmake $GITHUB_WORKSPACE -DCMAKE_BUILD_TYPE=$BUILD_TYPE -DGAUXC_ENABLE_MPI=$MPI_FLAG -DGAUXC_ENABLE_SYCL=OFF
+      run: cmake -H$GITHUB_WORKSPACE 
+                 -B${{runner.workspace}}/build
+                 -DGAUXC_ENABLE_MPI=${{matrix.mpi_flag}}
+                 -DGAUXC_ENABLE_SYCL=OFF
+                 -DCMAKE_BUILD_TYPE=${{matrix.build_type}}
+                 -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/install 
+                 -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
 
     - name: Build
-      working-directory: ${{runner.workspace}}/build
       shell: bash
-      # Execute the build.  You can specify a specific target with "--target <NAME>"
-      run: cmake --build . --config $BUILD_TYPE -j2 
+      run: cmake --build ${{runner.workspace}}/build -j2 
 
     - name: Test
-      working-directory: ${{runner.workspace}}/build
       shell: bash
-      # Execute tests defined by the CMake configuration.  
-      # See https://cmake.org/cmake/help/latest/manual/ctest.1.html for more detail
-      run: ./tests/gauxc_test
+      run: cmake --build ${{runner.workspace}}/build --target test
+
+    - name: Install
+      shell: bash
+      run: cmake --build ${{runner.workspace}}/build --target install
+
+    - name: CMake Subproject Configure
+      shell: bash
+      run: cmake -H$GITHUB_WORKSPACE/tests/cmake/subproject 
+                 -B${{runner.workspace}}/cmake_subproject_build 
+                 -DGAUXC_ENABLE_MPI=${{matrix.mpi_flag}}
+                 -DGAUXC_ENABLE_SYCL=OFF
+                 -DGIT_REVISION=$GITHUB_HEAD_REF 
+                 -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+
+    - name: CMake Subproject Build
+      shell: bash
+      run: cmake --build ${{runner.workspace}}/cmake_subproject_build -j2
+
+
+    - name: CMake Discovery Configure
+      shell: bash
+      run: cmake -H$GITHUB_WORKSPACE/tests/cmake/discovery 
+                 -B${{runner.workspace}}/cmake_discovery_build 
+                 -DCMAKE_PREFIX_PATH=${{runner.workspace}}/install 
+                 -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+
+    - name: CMake Discovery Build
+      shell: bash
+      run: cmake --build ${{runner.workspace}}/cmake_discovery_build -j2
