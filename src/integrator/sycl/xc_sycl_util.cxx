@@ -102,7 +102,8 @@ void process_batches_sycl_replicated_all_device(
   auto* m_array_device         = sycl_data.m_array_device;
   auto* n_array_device         = sycl_data.n_array_device;
   auto* k_array_device         = sycl_data.k_array_device;
-  auto* ld_array_device        = sycl_data.ld_array_device;
+  auto* lda_array_device        = sycl_data.lda_array_device;
+  auto* ldb_array_device        = sycl_data.ldb_array_device;
   auto* trans_array_device     = sycl_data.trans_array_device;
   auto* nontrans_array_device  = sycl_data.nontrans_array_device;
   auto* alpha_array_device     = sycl_data.alpha_array_device;
@@ -115,6 +116,7 @@ void process_batches_sycl_replicated_all_device(
   const auto* iparent_device      = sycl_data.iparent_device_buffer;
   const auto* dist_nearest_device = sycl_data.dist_nearest_buffer;
 
+#if 1
 
 #if 1
   // Evaluate Partition Weights
@@ -136,6 +138,9 @@ void process_batches_sycl_replicated_all_device(
     eval_collocation_masked_combined( ntasks, max_npts, max_nshells, shells_device,
                                       tasks_device, &syclQue );
 
+#endif
+
+#if 1
   std::cout << "AFTER COLLOCATION" << std::endl;
 #endif
 
@@ -150,7 +155,7 @@ void process_batches_sycl_replicated_all_device(
   // Form Z = P * X
   if( sycl_data.batch_l3_blas ) {
       cl::sycl::vector_class<cl::sycl::event> eve;
-      oneapi::mkl::blas::column_major::gemm_batch(syclQue,
+      oneapi::mkl::blas::row_major::gemm_batch(syclQue,
                                                   nontrans_array_device,
                                                   nontrans_array_device,
                                                   m_array_device,
@@ -158,20 +163,20 @@ void process_batches_sycl_replicated_all_device(
                                                   k_array_device,
                                                   alpha_array_device,
                                                   const_cast<const double**>(dmat_array_device),
-                                                  ld_array_device,
+                                                  lda_array_device,
                                                   const_cast<const double**>(bf_array_device),
-                                                  ld_array_device,
+                                                  ldb_array_device,
                                                   beta_array_device,
                                                   zmat_array_device,
-                                                  ld_array_device,
+                                                  ldb_array_device,
                                                   ntasks,
                                                   groupsize_array_device, eve);
   }
   else {
       for( auto it = task_begin; it != task_end; ++it )
-          oneapi::mkl::blas::column_major::gemm( syclQue, oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::nontrans,
-                                                 it->nbe, it->npts, it->nbe, 1., it->nbe_scr, it->nbe, it->bf, it->nbe, 
-                                                 0., it->zmat, it->nbe );
+          oneapi::mkl::blas::row_major::gemm( syclQue, oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::nontrans,
+                                                 it->nbe, it->npts, it->nbe, 1., it->nbe_scr, it->nbe, it->bf, it->npts,
+                                                 0., it->zmat, it->npts );
   }
 
   std::cout << "AFTER GEMM" << std::endl;
@@ -253,7 +258,7 @@ void process_batches_sycl_replicated_all_device(
   if( sycl_data.batch_l3_blas ) {
       cl::sycl::vector_class<cl::sycl::event> eve;
 
-      oneapi::mkl::blas::column_major::gemm_batch(syclQue,
+      oneapi::mkl::blas::row_major::gemm_batch(syclQue,
                                                   nontrans_array_device,
                                                   trans_array_device,
                                                   m_array_device,
@@ -261,15 +266,15 @@ void process_batches_sycl_replicated_all_device(
                                                   n_array_device,
                                                   alpha_array_device,
                                                   const_cast<const double**>(bf_array_device),
-                                                  ld_array_device,
+                                                  ldb_array_device,
                                                   const_cast<const double**>(zmat_array_device),
-                                                  ld_array_device,
+                                                  ldb_array_device,
                                                   beta_array_device,
                                                   dmat_array_device,
-                                                  ld_array_device,
+                                                  lda_array_device,
                                                   ntasks,
                                                   groupsize_array_device, eve);
-      oneapi::mkl::blas::column_major::gemm_batch(syclQue,
+      oneapi::mkl::blas::row_major::gemm_batch(syclQue,
                                                   nontrans_array_device,
                                                   trans_array_device,
                                                   m_array_device,
@@ -277,30 +282,30 @@ void process_batches_sycl_replicated_all_device(
                                                   n_array_device,
                                                   alpha_array_device,
                                                   const_cast<const double**>(zmat_array_device),
-                                                  ld_array_device,
+                                                  ldb_array_device,
                                                   const_cast<const double**>(bf_array_device),
-                                                  ld_array_device,
+                                                  ldb_array_device,
                                                   alpha_array_device,
                                                   dmat_array_device,
-                                                  ld_array_device,
+                                                  lda_array_device,
                                                   ntasks,
                                                   groupsize_array_device, eve);
   }
   else {
       for( auto it = task_begin; it != task_end; ++it ) {
 #if 0
-          oneapi::mkl::blas::column_major::syr2k( syclQue,
-                                                  oneapi::mkl::uplo::lower, oneapi::mkl::transpose::nontrans,
-                                                  it->nbe, it->npts,
-                                                  1., it->bf, it->nbe,
-                                                  it->zmat, it->nbe,
-                                                  0., it->nbe_scr, it->nbe );
+          oneapi::mkl::blas::row_major::syr2k( syclQue,
+                                            oneapi::mkl::uplo::lower, oneapi::mkl::transpose::nontrans,
+                                            it->nbe, it->npts,
+                                            1., it->bf, it->npts,
+                                            it->zmat, it->npts,
+                                            0., it->nbe_scr, it->nbe );
 #else
-          oneapi::mkl::blas::column_major::gemm( syclQue, oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::trans,
-                                                 it->nbe, it->nbe, it->npts, 1., it->bf, it->nbe, it->zmat, it->nbe,
-                                                 0., it->nbe_scr, it->nbe );
-          oneapi::mkl::blas::column_major::gemm( syclQue, oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::trans,
-                                                 it->nbe, it->nbe, it->npts, 1., it->zmat, it->nbe, it->bf, it->nbe,
+          oneapi::mkl::blas::row_major::gemm( syclQue, oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::trans,
+                                           it->nbe, it->nbe, it->npts, 1., it->bf, it->npts, it->zmat, it->npts,
+                                           0., it->nbe_scr, it->nbe );
+          oneapi::mkl::blas::row_major::gemm( syclQue, oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::trans,
+                                                 it->nbe, it->nbe, it->npts, 1., it->zmat, it->npts, it->bf, it->npts,
                                                  1., it->nbe_scr, it->nbe );
 #endif
       }
@@ -314,6 +319,7 @@ void process_batches_sycl_replicated_all_device(
   task_inc_potential( ntasks, tasks_device, vxc_device, nbf, &syclQue );
 #endif
 
+#endif
 
   // Synchronize on master queue
   // XXX: There's no lifetime issues in this driver, should look into

@@ -3,7 +3,7 @@ cmake_minimum_required( VERSION 3.17 FATAL_ERROR )
 include(FetchContent)
 set( FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE BOOL "Disable FC Updates" )
 
-project( GauXC VERSION 0.0.1 LANGUAGES C CXX )
+project( GauXC VERSION 0.0.1 LANGUAGES C CXX Fortran )
 
 # Place local modules in the path
 list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )

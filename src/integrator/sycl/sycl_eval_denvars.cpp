@@ -42,10 +42,10 @@ namespace sycl       {
         T den_reg = 0.;
 
         if( tid_x < nbf && tid_y < npts ) {
-            const T* bf_col = basis_eval_device     + tid_y*nbf;
-            const T* db_col = den_basis_prod_device + tid_y*nbf;
+            const T* bf_col = basis_eval_device     + tid_x*npts;
+            const T* db_col = den_basis_prod_device + tid_x*npts;
 
-            den_reg = bf_col[ tid_x ]   * db_col[ tid_x ];
+            den_reg = bf_col[ tid_y ]   * db_col[ tid_y ];
         }
 
         // Warp blocks are stored col major
@@ -91,16 +91,16 @@ namespace sycl       {
 
         if( tid_x < nbf && tid_y < npts ) {
 
-            const T* bf_col   = basis_eval_device     + tid_y*nbf;
-            const T* bf_x_col = dbasis_x_eval_device  + tid_y*nbf;
-            const T* bf_y_col = dbasis_y_eval_device  + tid_y*nbf;
-            const T* bf_z_col = dbasis_z_eval_device  + tid_y*nbf;
-            const T* db_col   = den_basis_prod_device + tid_y*nbf;
+            const T* bf_col   = basis_eval_device     + tid_x*npts;
+            const T* bf_x_col = dbasis_x_eval_device  + tid_x*npts;
+            const T* bf_y_col = dbasis_y_eval_device  + tid_x*npts;
+            const T* bf_z_col = dbasis_z_eval_device  + tid_x*npts;
+            const T* db_col   = den_basis_prod_device + tid_x*npts;
 
-            den_reg = bf_col[ tid_x ]   * db_col[ tid_x ];
-            dx_reg  = bf_x_col[ tid_x ] * db_col[ tid_x ];
-            dy_reg  = bf_y_col[ tid_x ] * db_col[ tid_x ];
-            dz_reg  = bf_z_col[ tid_x ] * db_col[ tid_x ];
+            den_reg = bf_col[ tid_y ]   * db_col[ tid_y ];
+            dx_reg  = bf_x_col[ tid_y ] * db_col[ tid_y ];
+            dy_reg  = bf_y_col[ tid_y ] * db_col[ tid_y ];
+            dz_reg  = bf_z_col[ tid_y ] * db_col[ tid_y ];
 
         }
 
