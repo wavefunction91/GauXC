@@ -1,0 +1,3 @@
+set( CMAKE_C_COMPILER       CI_C   )
+set( CMAKE_CXX_COMPILER     CI_CXX )
+set( CMAKE_Fortran_COMPILER CI_FC  )

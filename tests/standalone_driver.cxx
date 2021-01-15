@@ -5,6 +5,7 @@
 #include <algorithm>
 
 #include <fstream>
+#include <gauxc/external/cereal.hpp>
 #include <cereal/archives/binary.hpp>
 #include "eigen3_matrix_serialization.hpp"
 
@@ -89,7 +90,7 @@ int main(int argc, char** argv) {
 #endif
 
     // Setup XC functional
-    functional_type func( Backend::builtin, XCFunctional::Functional::PBE0, Spin::Unpolarized );
+    functional_type func( Backend::builtin, Functional::PBE0, Spin::Unpolarized );
 
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;

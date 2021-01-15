@@ -1,10 +1,18 @@
 find_package( cereal QUIET )
 if( NOT cereal_FOUND )
 
+  include( gauxc-dep-versions )
+
+  message( STATUS "Could not find Cereal... Building" )
+  message( STATUS "CEREAL REPO = ${GAUXC_CEREAL_REPOSITORY}" )
+  message( STATUS "CEREAL REV  = ${GAUXC_CEREAL_REVISION}"   )
+
   FetchContent_Declare(
     cereal
-    GIT_REPOSITORY https://github.com/USCiLab/cereal.git
+    GIT_REPOSITORY ${GAUXC_CEREAL_REPOSITORY} 
+    GIT_TAG        ${GAUXC_CEREAL_REVISION} 
   )
+
   FetchContent_GetProperties(cereal)
   if(NOT cereal_POPULATED)
     FetchContent_Populate( cereal )

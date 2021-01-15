@@ -30,12 +30,10 @@ public:
   constexpr T& get() { return value_; }
   constexpr T const& get() const {return value_; }
 
-#ifdef GAUXC_ENABLE_CEREAL
   template <typename Archive>
   void serialize( Archive& ar ) {
     ar( value_ );
   }
-#endif
 
 private:
 
