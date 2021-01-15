@@ -41,8 +41,8 @@ auto raw_accumulate_tuple(
 
 std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
 
-  std::chrono::high_resolution_clock::time_point screen_start;
-  std::chrono::high_resolution_clock::time_point screen_stop;
+  std::chrono::high_resolution_clock::time_point clock_start;
+  std::chrono::high_resolution_clock::time_point clock_stop;
   double duration;
 
   const int32_t n_deriv = 1;
@@ -85,7 +85,7 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
   std::vector<std::array<double,3>> centers; centers.reserve((*this->basis_).size());
   std::vector<double> radii; radii.reserve((*this->basis_).size());
 
-  screen_start = std::chrono::high_resolution_clock::now();
+  clock_start = std::chrono::high_resolution_clock::now();
   for(auto& shell : (*this->basis_)) {
     centers.push_back(std::move(shell.O()));
     radii.push_back(shell.cutoff_radius());
@@ -106,6 +106,9 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
     }
   }
 
+  clock_stop = std::chrono::high_resolution_clock::now();
+  duration = (double) std::chrono::duration_cast<std::chrono::milliseconds>( clock_stop - clock_start ).count();
+  std::cout << "Collision detection prep: " << duration / 1000 << " seconds" << std::endl;
 
   size_t LD_bit = util::div_ceil(centers.size(), 32);
 
@@ -113,10 +116,10 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
   int32_t* raw_position_list;
   std::vector<int32_t> pos_list_idx(low_points.size());
 
-  screen_start = std::chrono::high_resolution_clock::now();
+  clock_start = std::chrono::high_resolution_clock::now();
   integrator::cuda::collision_detection(low_points.size(), centers.size(), LD_bit, low_points[0].data(), high_points[0].data(), centers[0].data(), radii.data(), pos_list_idx.data(), &raw_position_list);
-  screen_stop = std::chrono::high_resolution_clock::now();
-  duration = (double) std::chrono::duration_cast<std::chrono::milliseconds>( screen_stop - screen_start ).count();
+  clock_stop = std::chrono::high_resolution_clock::now();
+  duration = (double) std::chrono::duration_cast<std::chrono::milliseconds>( clock_stop - clock_start ).count();
   std::cout << "Generating cuda bitvector took: " << duration / 1000 << " seconds" << std::endl;
 #endif
 
@@ -125,7 +128,7 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
   size_t batch_idx_offset = 0;
   int idx = 0;
 
-  screen_start = std::chrono::high_resolution_clock::now();
+  clock_start = std::chrono::high_resolution_clock::now();
   for( const auto& atom : *this->mol_ ) {
     const std::array<double,3> center = { atom.x, atom.y, atom.z };
 
@@ -208,11 +211,11 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
 
   free(raw_position_list);
 
-  screen_stop = std::chrono::high_resolution_clock::now();
-  duration = (double) std::chrono::duration_cast<std::chrono::milliseconds>( screen_stop - screen_start ).count();
+  clock_stop = std::chrono::high_resolution_clock::now();
+  duration = (double) std::chrono::duration_cast<std::chrono::milliseconds>( clock_stop - clock_start ).count();
   std::cout << "Total loop: " << duration / 1000 << " seconds" << std::endl;
 
-  screen_start = std::chrono::high_resolution_clock::now();
+  clock_start = std::chrono::high_resolution_clock::now();
   // Lexicographic ordering of tasks
   auto task_order = []( const auto& a, const auto& b ) {
 
@@ -272,8 +275,8 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
 
   local_work = std::move(local_work_unique);
   
-  screen_stop = std::chrono::high_resolution_clock::now();
-  duration = (double) std::chrono::duration_cast<std::chrono::milliseconds>( screen_stop - screen_start ).count();
+  clock_stop = std::chrono::high_resolution_clock::now();
+  duration = (double) std::chrono::duration_cast<std::chrono::milliseconds>( clock_stop - clock_start ).count();
   std::cout << "Clean up: " << duration / 1000 << " seconds" << std::endl;
   return local_work;
 }
