@@ -2,7 +2,7 @@
 
 
 #ifdef GAUXC_ENABLE_GAU2GRID
-  #include "gau2grid.h"
+  #include "gau2grid/gau2grid.h"
 #else
   #include "collocation/collocation_angular_cartesian.hpp"
   #include "collocation/collocation_angular_spherical_unnorm.hpp"

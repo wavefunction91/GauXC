@@ -1,4 +1,6 @@
-find_package( CUDAToolkit REQUIRED )
+if( NOT TARGET CUDA::cublas )
+  find_package( CUDAToolkit REQUIRED )
+endif()
 include( gauxc-cub )
 
 
@@ -41,4 +43,4 @@ else()
 endif()
 
 target_link_libraries( gauxc PUBLIC CUDA::cublas )
-target_link_libraries( gauxc PRIVATE gauxc_cub )
+target_link_libraries( gauxc PRIVATE $<BUILD_INTERFACE:gauxc_cub> )

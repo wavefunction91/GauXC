@@ -1,3 +1,4 @@
+message( STATUS "Building GauXC Tests" )
 add_library( gauxc_catch2 INTERFACE )
 
 find_package( Catch2 CONFIG QUIET )
@@ -22,6 +23,9 @@ else()
 
 endif()
 
+include( gauxc-eigen3 )
+include( gauxc-cereal )
+
 #add_library( catch2_main STATIC ut_main.cxx)
 #target_link_libraries( catch2_main PUBLIC gauxc_catch2 )
 #
@@ -44,7 +48,7 @@ add_executable( gauxc_test
   standards.cxx 
   basis/parse_basis.cxx
 )
-target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 )
+target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
 
 
 set( GAUXC_REF_DATA_PATH "${PROJECT_SOURCE_DIR}/tests/ref_data" )
@@ -54,6 +58,14 @@ target_include_directories( gauxc_test PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
 
 add_executable( standalone_driver standalone_driver.cxx standards.cxx basis/parse_basis.cxx )
-target_link_libraries( standalone_driver PUBLIC gauxc gauxc_catch2 )
+target_link_libraries( standalone_driver PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
 target_include_directories( standalone_driver PRIVATE ${PROJECT_BINARY_DIR}/tests )
 target_include_directories( standalone_driver PRIVATE ${PROJECT_SOURCE_DIR}/tests )
+
+
+add_test( NAME GAUXC_SERIAL_TEST COMMAND $<TARGET_FILE:gauxc_test> )
+if( GAUXC_ENABLE_MPI )
+  add_test( NAME GAUXC_MPI_TEST
+            COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} $<TARGET_FILE:gauxc_test> ${MPIEXEC_POSTFLAGS}
+  )
+endif()

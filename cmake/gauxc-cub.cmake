@@ -1,9 +1,15 @@
 if( GAUXC_ENABLE_CUDA )
 
+  include( gauxc-dep-versions )
+
+  message( STATUS "Building Local CUB Installation" )
+  message( STATUS "CUB REPO = ${GAUXC_CUB_REPOSITORY}" )
+  message( STATUS "CUB REV  = ${GAUXC_CUB_REVISION}"   )
+
   FetchContent_Declare(
     cub
-    GIT_REPOSITORY https://github.com/NVIDIA/cub.git
-    GIT_TAG        1.10.0
+    GIT_REPOSITORY ${GAUXC_CUB_REPOSITORY} 
+    GIT_TAG        ${GAUXC_CUB_REVISION} 
   )
 
   FetchContent_GetProperties( cub )

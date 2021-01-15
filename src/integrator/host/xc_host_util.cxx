@@ -7,8 +7,6 @@
 #include "blas.hpp"
 #include "util.hpp"
 
-#include <Eigen/Core>
-
 namespace GauXC  {
 namespace integrator::host {
 
