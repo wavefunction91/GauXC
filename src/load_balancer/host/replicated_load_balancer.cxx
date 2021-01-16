@@ -1,49 +1,109 @@
 #include "replicated_load_balancer.hpp"
-#include <chrono>
-#include <gauxc/util/div_ceil.hpp>
-
-#ifdef GAUXC_ENABLE_CUDA
-#include "load_balancer/cuda/cuda_collision_detection.hpp"
-#endif
 
 namespace GauXC {
 namespace detail {
 
-ReplicatedLoadBalancer::ReplicatedLoadBalancer( const ReplicatedLoadBalancer& ) = default;
-ReplicatedLoadBalancer::ReplicatedLoadBalancer( ReplicatedLoadBalancer&& ) noexcept = default;
+HostReplicatedLoadBalancer::HostReplicatedLoadBalancer( const HostReplicatedLoadBalancer& ) = default;
+HostReplicatedLoadBalancer::HostReplicatedLoadBalancer( HostReplicatedLoadBalancer&& ) noexcept = default;
 
-ReplicatedLoadBalancer::~ReplicatedLoadBalancer() noexcept = default;
+HostReplicatedLoadBalancer::~HostReplicatedLoadBalancer() noexcept = default;
 
-std::unique_ptr<LoadBalancerImpl> ReplicatedLoadBalancer::clone() const {
-  return std::make_unique<ReplicatedLoadBalancer>(*this);
+std::unique_ptr<LoadBalancerImpl> HostReplicatedLoadBalancer::clone() const {
+  return std::make_unique<HostReplicatedLoadBalancer>(*this);
+}
+
+bool cube_sphere_intersect( 
+  const std::array<double,3>& lo, 
+  const std::array<double,3>& up,
+  const std::array<double,3>& center,
+  const double                rad
+) {
+
+  double dist = rad * rad;
+
+  if( center[0] < lo[0] ) {
+    const double r_lo = center[0] - lo[0];
+    const double dist_lo = r_lo * r_lo;
+    dist -= dist_lo;
+  } else if( center[0] > up[0] ) {
+    const double r_up = center[0] - up[0];
+    const double dist_up = r_up * r_up;
+    dist -= dist_up;
+  }
+
+  if( dist < 0. ) return false;
+
+  if( center[1] < lo[1] ) {
+    const double r_lo = center[1] - lo[1];
+    const double dist_lo = r_lo * r_lo;
+    dist -= dist_lo;
+  } else if( center[1] > up[1] ) {
+    const double r_up = center[1] - up[1];
+    const double dist_up = r_up * r_up;
+    dist -= dist_up;
+  }
+
+  if( dist < 0. ) return false;
+
+
+  if( center[2] < lo[2] ) {
+    const double r_lo = center[2] - lo[2];
+    const double dist_lo = r_lo * r_lo;
+    dist -= dist_lo;
+  } else if( center[2] > up[2] ) {
+    const double r_up = center[2] - up[2];
+    const double dist_up = r_up * r_up;
+    dist -= dist_up;
+  }
+
+  return dist > 0.;
+
 }
 
 
-auto raw_accumulate_tuple(
+auto micro_batch_screen(
   const BasisSet<double>&      bs,
-  size_t idx,
-  const std::vector<int32_t>& counts,
-  int32_t* raw_position_list
+  const std::array<double,3>&  box_lo,
+  const std::array<double,3>&  box_up
 ) {
-  int32_t start = 0;
-  if (idx != 0) start += counts[idx-1];
-  int32_t end = counts[idx];
 
-  std::vector<int32_t> shell_list(end - start);
-  std::copy(raw_position_list + start, raw_position_list + end, shell_list.begin());
+
+  std::vector<int32_t> shell_list; shell_list.reserve(bs.nshells());
+  for(auto iSh = 0ul; iSh < bs.size(); ++iSh) {
+
+    const auto& center = bs[iSh].O();
+    const auto  crad   = bs[iSh].cutoff_radius();
+    const bool intersect = 
+      cube_sphere_intersect( box_lo, box_up, center, crad );
+    
+
+    //std::cout << "  MBS: " << iSh << ", " << 
+    //          center[0] << ", " << center[1] << ", " << center[2] << ", " <<
+    //          box_up[0] << ", " << box_up[1] << ", " << box_up[2] << ", " <<
+    //          box_lo[0] << ", " << box_lo[1] << ", " << box_lo[2] << ", " <<
+    //          crad << std::boolalpha << ", " << intersect << std::endl;
+              
+
+    // Add shell to list if need be
+    if( intersect )
+      shell_list.emplace_back( iSh );
+
+  }
 
   size_t nbe = std::accumulate( shell_list.begin(), shell_list.end(), 0ul,
     [&](const auto& a, const auto& b) { return a + bs[b].size(); } );
 
   return std::tuple( std::move( shell_list ), nbe );
+
 }
+  
 
 
-std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
 
-  std::chrono::high_resolution_clock::time_point clock_start;
-  std::chrono::high_resolution_clock::time_point clock_stop;
-  double duration;
+
+
+
+std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
 
   const int32_t n_deriv = 1;
 
@@ -78,64 +138,23 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
  //   batch_box_up.resize(atBatchSz * max_nbatches);
  // }
 
-
-  // Set up the collision problem
-  std::vector<std::array<double,3>> low_points; 
-  std::vector<std::array<double,3>> high_points;
-  std::vector<std::array<double,3>> centers; centers.reserve((*this->basis_).size());
-  std::vector<double> radii; radii.reserve((*this->basis_).size());
-
-  clock_start = std::chrono::high_resolution_clock::now();
-  for(auto& shell : (*this->basis_)) {
-    centers.push_back(std::move(shell.O()));
-    radii.push_back(shell.cutoff_radius());
-  }
-  for( const auto& atom : *this->mol_ ) {
-    const std::array<double,3> center = { atom.x, atom.y, atom.z };
-
-    auto& batcher = mg_->get_grid(atom.Z).batcher();
-    batcher.quadrature().recenter( center );
-    const size_t nbatches = batcher.nbatches();
-
-    for( size_t ibatch = 0; ibatch < nbatches; ++ibatch ) {
-      // Generate the batch (non-negligible cost)
-      auto [lo, up, points, weights] = batcher.at(ibatch);
-
-      low_points.push_back(std::move(lo));
-      high_points.push_back(std::move(up));
-    }
-  }
-
-  clock_stop = std::chrono::high_resolution_clock::now();
-  duration = (double) std::chrono::duration_cast<std::chrono::milliseconds>( clock_stop - clock_start ).count();
-  std::cout << "Collision detection prep: " << duration / 1000 << " seconds" << std::endl;
-
-  size_t LD_bit = util::div_ceil(centers.size(), 32);
-
-#ifdef GAUXC_ENABLE_CUDA
-  int32_t* raw_position_list;
-  std::vector<int32_t> pos_list_idx(low_points.size());
-
-  clock_start = std::chrono::high_resolution_clock::now();
-  integrator::cuda::collision_detection(low_points.size(), centers.size(), LD_bit, low_points[0].data(), high_points[0].data(), centers[0].data(), radii.data(), pos_list_idx.data(), &raw_position_list);
-  clock_stop = std::chrono::high_resolution_clock::now();
-  duration = (double) std::chrono::duration_cast<std::chrono::milliseconds>( clock_stop - clock_start ).count();
-  std::cout << "Generating cuda bitvector took: " << duration / 1000 << " seconds" << std::endl;
-#endif
-
-
   // For batching of multiple atom screening
   size_t batch_idx_offset = 0;
-  int idx = 0;
 
-  clock_start = std::chrono::high_resolution_clock::now();
   for( const auto& atom : *this->mol_ ) {
+
+
     const std::array<double,3> center = { atom.x, atom.y, atom.z };
 
     auto& batcher = mg_->get_grid(atom.Z).batcher();
     batcher.quadrature().recenter( center );
+
+
+
+
     const size_t nbatches = batcher.nbatches();
 
+    #pragma omp parallel for
     for( size_t ibatch = 0; ibatch < nbatches; ++ibatch ) {
     
       size_t batch_idx = ibatch + batch_idx_offset;
@@ -145,8 +164,8 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
 
       if( points.size() == 0 ) continue;
 
-      auto [shell_list, nbe] = raw_accumulate_tuple( (*this->basis_), idx, pos_list_idx, raw_position_list);
-      idx++;
+      // Microbatch Screening
+      auto [shell_list, nbe] = micro_batch_screen( (*this->basis_), lo, up );
 
       // Course grain screening
       if( not shell_list.size() ) continue; 
@@ -159,7 +178,8 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
       task.shell_list = std::move(shell_list);
       task.nbe        = nbe;
       task.dist_nearest = molmeta_->dist_nearest()[iCurrent];
-      
+
+      #pragma omp critical
       temp_tasks.push_back( 
         std::pair(batch_idx,std::move( task )) 
       );
@@ -209,13 +229,7 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
 
   } // Loop over Atoms
 
-  free(raw_position_list);
 
-  clock_stop = std::chrono::high_resolution_clock::now();
-  duration = (double) std::chrono::duration_cast<std::chrono::milliseconds>( clock_stop - clock_start ).count();
-  std::cout << "Total loop: " << duration / 1000 << " seconds" << std::endl;
-
-  clock_start = std::chrono::high_resolution_clock::now();
   // Lexicographic ordering of tasks
   auto task_order = []( const auto& a, const auto& b ) {
 
@@ -274,10 +288,7 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
   
 
   local_work = std::move(local_work_unique);
-  
-  clock_stop = std::chrono::high_resolution_clock::now();
-  duration = (double) std::chrono::duration_cast<std::chrono::milliseconds>( clock_stop - clock_start ).count();
-  std::cout << "Clean up: " << duration / 1000 << " seconds" << std::endl;
+
   return local_work;
 }
 
