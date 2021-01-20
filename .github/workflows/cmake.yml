@@ -94,7 +94,7 @@ jobs:
       shell: bash
       run: cmake -H$GITHUB_WORKSPACE/tests/cmake/subproject 
                  -B${{runner.workspace}}/cmake_subproject_build 
-                 -DGITHUB_REPOSITORY=$GITHUB_REPOSITORY
+                 -DGITHUB_REPOSITORY=$GITHUB_ACTOR/GauXC
                  -DGIT_REVISION=$GITHUB_HEAD_REF 
                  -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
 
