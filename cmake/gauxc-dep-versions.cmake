@@ -1,5 +1,5 @@
 set( GAUXC_LINALG_MODULES_REPOSITORY https://github.com/ajaypanyala/linalg-cmake-modules )
-set( GAUXC_LINALG_MODULES_REVISION  master ) 
+set( GAUXC_LINALG_MODULES_REVISION  main ) 
 
 set( GAUXC_CEREAL_REPOSITORY https://github.com/USCiLab/cereal.git )
 set( GAUXC_CEREAL_REVISION   v1.3.0 )
