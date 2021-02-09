@@ -12,7 +12,12 @@
   
 #include "cuda/cublas_extensions.hpp"
 
-
+inline static void unused() { }
+template <typename T, typename... Args>
+inline static void unused( const T& t, Args&&... args ) {
+  (void)(t);
+  unused( std::forward<Args>(args)... );
+}
 
 namespace GauXC  {
 namespace integrator::cuda {
