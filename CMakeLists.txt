@@ -6,8 +6,8 @@ set( FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE BOOL "Disable FC Updates" )
 project( GauXC VERSION 0.0.1 LANGUAGES C CXX )
 
 # Place local modules in the path
-list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
-list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules )
+list(INSERT CMAKE_MODULE_PATH 0 ${PROJECT_SOURCE_DIR}/cmake )
+list(INSERT CMAKE_MODULE_PATH 0 ${PROJECT_SOURCE_DIR}/cmake/modules )
 include( gauxc-linalg-modules )
 
 # Populate BUILD_TESTING prior to dependencies to avoid clash
@@ -51,4 +51,11 @@ add_subdirectory( src )
 
 if( CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME AND GAUXC_ENABLE_TESTS AND BUILD_TESTING )
   add_subdirectory( tests )
+endif()
+
+list(REMOVE_AT CMAKE_MODULE_PATH 0)
+list(REMOVE_AT CMAKE_MODULE_PATH 0)
+
+if( linalg-cmake-modules_POPULATED )
+  list(REMOVE_AT CMAKE_MODULE_PATH 0)
 endif()
