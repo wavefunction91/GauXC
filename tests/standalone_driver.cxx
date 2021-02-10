@@ -95,10 +95,10 @@ int main(int argc, char** argv) {
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;
 #ifdef GAUXC_ENABLE_MPI
-    XCIntegrator<matrix_type> integrator( ExecutionSpace::Device, MPI_COMM_WORLD, func, 
-                                          basis, lb );
+    auto integrator = make_default_integrator<matrix_type>( ExecutionSpace::Device, MPI_COMM_WORLD, func, 
+                                                            basis, lb );
 #else
-    XCIntegrator<matrix_type> integrator( ExecutionSpace::Device, func, basis, lb );
+    auto integrator = make_default_integrator<matrix_type>( ExecutionSpace::Device, func, basis, lb );
 #endif
 
     matrix_type P,VXC_ref;
