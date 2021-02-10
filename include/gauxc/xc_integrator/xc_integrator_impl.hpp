@@ -41,31 +41,12 @@ public:
                     std::shared_ptr<LoadBalancer>    lb 
   ) : comm_(comm), func_(func), basis_(basis), load_balancer_(lb) { };
 
-  template <typename... Args>
-  XCIntegratorImpl( MPI_Comm                         comm, 
-                    std::shared_ptr<functional_type> func, 
-                    std::shared_ptr<basisset_type>   basis,
-                    Args&&...                        args
-  ) : comm_(comm), func_(func), basis_(basis), 
-      load_balancer_(
-        factory::make_default_load_balancer(std::forward<Args>(args)...)
-      ) { };
-
 #else
 
   XCIntegratorImpl( std::shared_ptr<functional_type> func, 
                     std::shared_ptr<basisset_type>   basis,
                     std::shared_ptr<LoadBalancer>    lb 
   ) : func_(func), basis_(basis), load_balancer_(lb) { };
-
-  template <typename... Args>
-  XCIntegratorImpl( std::shared_ptr<functional_type> func, 
-                    std::shared_ptr<basisset_type>   basis,
-                    Args&&...                        args
-  ) : func_(func), basis_(basis), 
-      load_balancer_(
-        factory::make_default_load_balancer(std::forward<Args>(args)...)
-      ) { };
 
 #endif
   
