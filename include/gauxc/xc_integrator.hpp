@@ -33,46 +33,11 @@ private:
 public:
 
   XCIntegrator() = default;
-  XCIntegrator( std::unique_ptr<pimpl_type>&& pimpl );
-
-#if 0
-#ifdef GAUXC_ENABLE_MPI
-
-  XCIntegrator( ExecutionSpace, MPI_Comm, const functional_type&, 
-                const basisset_type&, std::shared_ptr<LoadBalancer> );
-  XCIntegrator( MPI_Comm, const functional_type&, const basisset_type&, 
-                std::shared_ptr<LoadBalancer> );
-  //XCIntegrator( MPI_Comm, const functional_type&, const basisset_type&,
-  //  LoadBalancer&& );
-
-  //XCIntegrator( MPI_Comm, const functional_type&, const basisset_type&, 
-  //  const Molecule&, const MolGrid& );
-  //XCIntegrator( MPI_Comm, const functional_type&, const basisset_type&, 
-  //  const Molecule&, const MolGrid&, const MolMeta );
-  //XCIntegrator( MPI_Comm, const functional_type&, const basisset_type&, 
-  //  const Molecule&, const MolGrid&, const std::shared_ptr<MolMeta> );
-
-#else
-
-  XCIntegrator( ExecutionSpace, const functional_type&, 
-                const basisset_type&, std::shared_ptr<LoadBalancer> );
-  XCIntegrator( const functional_type&, const basisset_type&, 
-                std::shared_ptr<LoadBalancer> );
-  //XCIntegrator( const functional_type&, const basisset_type&,
-  //  LoadBalancer&& );
-
-  //XCIntegrator( const functional_type&, const basisset_type&, 
-  //  const Molecule&, const MolGrid& );
-  //XCIntegrator( const functional_type&, const basisset_type&, 
-  //  const Molecule&, const MolGrid&, const MolMeta );
-  //XCIntegrator( const functional_type&, const basisset_type&, 
-  //  const Molecule&, const MolGrid&, const std::shared_ptr<MolMeta> );
-
-#endif
-#endif
   ~XCIntegrator() noexcept;
 
-  XCIntegrator( const XCIntegrator& );
+  XCIntegrator( std::unique_ptr<pimpl_type>&& pimpl );
+
+  XCIntegrator( const XCIntegrator& ) = delete;
   XCIntegrator( XCIntegrator&& ) noexcept;
 
   exc_vxc_type eval_exc_vxc( const MatrixType& );

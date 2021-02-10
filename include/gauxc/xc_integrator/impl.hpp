@@ -9,44 +9,6 @@ XCIntegrator<MatrixType>::XCIntegrator( std::unique_ptr<pimpl_type>&& pimpl ) :
   pimpl_( std::move( pimpl ) ) { }
 
 
-#if 0
-#ifdef GAUXC_ENABLE_MPI
-
-template <typename MatrixType>
-XCIntegrator<MatrixType>::XCIntegrator( ExecutionSpace ex, MPI_Comm comm, 
-                                        const functional_type& func, 
-                                        const basisset_type& basis, 
-                                        std::shared_ptr<LoadBalancer> lb) :
-  XCIntegrator( detail::default_integrator_factory<MatrixType>(
-    ex, comm, func, basis, lb
-  )) { }
-
-template <typename MatrixType>
-XCIntegrator<MatrixType>::XCIntegrator( MPI_Comm comm, const functional_type& func, 
-                                        const basisset_type& basis, 
-                                        std::shared_ptr<LoadBalancer> lb) :
-  XCIntegrator( ExecutionSpace::Host, comm, func, basis, lb ) { };
-
-#else
-
-template <typename MatrixType>
-XCIntegrator<MatrixType>::XCIntegrator( ExecutionSpace ex, 
-                                        const functional_type& func, 
-                                        const basisset_type& basis, 
-                                        std::shared_ptr<LoadBalancer> lb) :
-  XCIntegrator( detail::default_integrator_factory<MatrixType>(
-    ex, func, basis, lb
-  )) { }
-
-template <typename MatrixType>
-XCIntegrator<MatrixType>::XCIntegrator( const functional_type& func, 
-                                        const basisset_type& basis, 
-                                        std::shared_ptr<LoadBalancer> lb) :
-  XCIntegrator( ExecutionSpace::Host, func, basis, lb ) { };
-
-#endif
-#endif
-
 template <typename MatrixType>
 XCIntegrator<MatrixType>::~XCIntegrator() noexcept = default;
 
