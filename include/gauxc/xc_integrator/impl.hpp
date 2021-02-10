@@ -16,7 +16,7 @@ XCIntegrator<MatrixType>::XCIntegrator( ExecutionSpace ex, MPI_Comm comm,
                                         const functional_type& func, 
                                         const basisset_type& basis, 
                                         std::shared_ptr<LoadBalancer> lb) :
-  XCIntegrator( detail::integrator_factory<MatrixType>(
+  XCIntegrator( detail::default_integrator_factory<MatrixType>(
     ex, comm, func, basis, lb
   )) { }
 
@@ -33,7 +33,7 @@ XCIntegrator<MatrixType>::XCIntegrator( ExecutionSpace ex,
                                         const functional_type& func, 
                                         const basisset_type& basis, 
                                         std::shared_ptr<LoadBalancer> lb) :
-  XCIntegrator( detail::integrator_factory<MatrixType>(
+  XCIntegrator( detail::default_integrator_factory<MatrixType>(
     ex, func, basis, lb
   )) { }
 
