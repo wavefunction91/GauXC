@@ -35,6 +35,7 @@ public:
   XCIntegrator() = default;
   XCIntegrator( std::unique_ptr<pimpl_type>&& pimpl );
 
+#if 0
 #ifdef GAUXC_ENABLE_MPI
 
   XCIntegrator( ExecutionSpace, MPI_Comm, const functional_type&, 
@@ -68,8 +69,11 @@ public:
   //  const Molecule&, const MolGrid&, const std::shared_ptr<MolMeta> );
 
 #endif
+#endif
   ~XCIntegrator() noexcept;
 
+  XCIntegrator( const XCIntegrator& );
+  XCIntegrator( XCIntegrator&& ) noexcept;
 
   exc_vxc_type eval_exc_vxc( const MatrixType& );
 

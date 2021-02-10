@@ -9,6 +9,7 @@ XCIntegrator<MatrixType>::XCIntegrator( std::unique_ptr<pimpl_type>&& pimpl ) :
   pimpl_( std::move( pimpl ) ) { }
 
 
+#if 0
 #ifdef GAUXC_ENABLE_MPI
 
 template <typename MatrixType>
@@ -44,10 +45,13 @@ XCIntegrator<MatrixType>::XCIntegrator( const functional_type& func,
   XCIntegrator( ExecutionSpace::Host, func, basis, lb ) { };
 
 #endif
+#endif
 
 template <typename MatrixType>
 XCIntegrator<MatrixType>::~XCIntegrator() noexcept = default;
 
+template <typename MatrixType>
+XCIntegrator<MatrixType>::XCIntegrator(XCIntegrator&&) noexcept = default;
 
 
 template <typename MatrixType>

@@ -38,7 +38,8 @@ void test_xc_integrator( ExecutionSpace ex, Molecule mol, const bool check_state
   //XCIntegrator<matrix_type> integrator( ex, comm, func, basis, lb );
   auto integrator = make_default_integrator<matrix_type>( ex, comm, func, basis, lb );
 #else
-  XCIntegrator<matrix_type> integrator( ex, func, basis, lb );
+  //XCIntegrator<matrix_type> integrator( ex, func, basis, lb );
+  auto integrator = make_default_integartor<matrix_type>( ex, func, basis, lb );
 #endif
 
 
