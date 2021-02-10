@@ -48,15 +48,14 @@ configure_file(
   ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
 )
 
-if(GAUXC_ENABLE_OPENMP)
-  set(gauxc_omp_target OpenMP::OpenMP_CXX)
-endif()
-
 target_link_libraries( gauxc PUBLIC 
   ExchCXX::ExchCXX 
   IntegratorXX::IntegratorXX 
-  ${gauxc_omp_target}
 )
+
+if(GAUXC_ENABLE_OPENMP)
+  target_link_libraries( gauxc PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 if( GAUXC_ENABLE_MPI )
   target_link_libraries( gauxc PUBLIC MPI::MPI_C )
