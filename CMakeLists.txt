@@ -19,6 +19,7 @@ endif()
 
 # GauXC Options
 option( GAUXC_ENABLE_HOST     "Enable Host Integrator"      ON  )
+option( GAUXC_ENABLE_OPENMP   "Enable OpenMP"               ON  )
 option( GAUXC_ENABLE_CUDA     "Enable CUDA Bindings"        OFF )
 option( GAUXC_ENABLE_MAGMA    "Enable MAGMA Linear Algebra" ON  )
 option( GAUXC_ENABLE_MPI      "Enable MPI Bindings"         ON  )

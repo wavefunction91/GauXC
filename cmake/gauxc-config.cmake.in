@@ -9,15 +9,17 @@ include(CMakeFindDependencyMacro)
 # Always Required Dependencies
 find_dependency( IntegratorXX )
 find_dependency( ExchCXX      )
-find_dependency( OpenMP       )
-
 
 set( GAUXC_ENABLE_HOST       @GAUXC_ENABLE_HOST@      )
+set( GAUXC_ENABLE_OPENMP     @GAUXC_ENABLE_OPENMP@    )
 set( GAUXC_ENABLE_CUDA       @GAUXC_ENABLE_CUDA@      )
 set( GAUXC_ENABLE_MAGMA      @GAUXC_ENABLE_MAGMA@     )
 set( GAUXC_ENABLE_MPI        @GAUXC_ENABLE_MPI@       )
 set( GAUXC_ENABLE_GAU2GRID   @GAUXC_ENABLE_GAU2GRID@  )
 
+if(GAUXC_ENABLE_OPENMP)
+  find_dependency( OpenMP )
+endif()
 
 if( GAUXC_ENABLE_HOST )
   find_dependency( LAPACK )
