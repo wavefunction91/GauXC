@@ -55,7 +55,8 @@ if( GAUXC_ENABLE_MPI )
   target_link_libraries( gauxc PUBLIC MPI::MPI_C )
 endif()
 
-add_subdirectory( integrator )
+#add_subdirectory( integrator )
+add_subdirectory( new_integrator )
 
 
 add_library( gauxc::gauxc ALIAS gauxc )

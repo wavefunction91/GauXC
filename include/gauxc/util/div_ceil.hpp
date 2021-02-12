@@ -60,7 +60,7 @@ intmax_t div_ceil( Integral1 i, Integral2 j ) {
   auto d = std::div(i_us,j_us);
   return d.quot + !!d.rem;
 
-};
+}
 
 
 }

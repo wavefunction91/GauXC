@@ -1,6 +1,7 @@
 #include "ut_common.hpp"
 #include <gauxc/xc_integrator.hpp>
-#include <gauxc/xc_integrator/impl.hpp>
+#include <gauxc/new_xc_integrator/impl.hpp>
+#include <gauxc/new_xc_integrator/integrator_factory.hpp>
 
 #include <Eigen/Core>
 

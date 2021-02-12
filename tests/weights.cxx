@@ -13,8 +13,8 @@
 #ifdef GAUXC_ENABLE_CUDA
 #include <gauxc/exceptions/cuda_exception.hpp>
 #include <gauxc/util/cuda_util.hpp>
-#include "cuda/cuda_weights.hpp"
-#include "cuda/cuda_device_properties.hpp"
+#include "device/cuda/cuda_weights.hpp"
+#include "device/cuda/cuda_device_properties.hpp"
 #endif
 
 using namespace GauXC;

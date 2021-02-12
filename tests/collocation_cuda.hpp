@@ -2,7 +2,7 @@
 #include "collocation_common.hpp"
 #include <gauxc/exceptions/cuda_exception.hpp>
 #include <gauxc/util/cuda_util.hpp>
-#include "cuda/collocation_device.hpp"
+#include "device/cuda/collocation_device.hpp"
 
 
 

@@ -3,7 +3,7 @@
 #include <gauxc/xc_integrator.hpp>
 #include "xc_integrator_state.hpp"
 
-namespace GauXC {
+namespace GauXC  {
 namespace detail {
 
 template <typename MatrixType>

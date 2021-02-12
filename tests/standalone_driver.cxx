@@ -10,7 +10,8 @@
 #include "eigen3_matrix_serialization.hpp"
 
 #include <gauxc/xc_integrator.hpp>
-#include <gauxc/xc_integrator/impl.hpp>
+#include <gauxc/new_xc_integrator/impl.hpp>
+#include <gauxc/new_xc_integrator/integrator_factory.hpp>
 
 #include <Eigen/Core>
 
