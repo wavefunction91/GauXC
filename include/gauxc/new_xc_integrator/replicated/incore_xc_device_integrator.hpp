@@ -32,6 +32,8 @@ public:
   ~IncoreXCDeviceIntegrator() noexcept;
 
 };
+
+extern template class IncoreXCDeviceIntegrator<double>;
 #endif
 
 
@@ -39,13 +41,19 @@ template <typename ValueType, typename... Args>
 std::unique_ptr< ReplicatedXCIntegratorImpl<ValueType> >
   make_incore_device_integrator_impl( Args&&... args ) {
 
+#ifdef GAUXC_ENABLE_DEVICE
   return std::make_unique<IncoreXCDeviceIntegrator<ValueType>>(
     std::forward<Args>(args)...
   );
+#else
+  std::string msg = std::string(__PRETTY_FUNCTION__)  + 
+	            ": GAUXC_ENABLE_DEVICE = FALSE";
+  throw std::runtime_error(msg.c_str());
+  return nullptr;
+#endif
 
 }
 
 
-extern template class IncoreXCDeviceIntegrator<double>;
 }
 }

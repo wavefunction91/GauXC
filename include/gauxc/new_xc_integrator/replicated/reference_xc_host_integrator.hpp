@@ -32,6 +32,8 @@ public:
   ~ReferenceXCHostIntegrator() noexcept;
 
 };
+
+extern template class ReferenceXCHostIntegrator<double>;
 #endif
 
 
@@ -39,13 +41,17 @@ template <typename ValueType, typename... Args>
 std::unique_ptr< ReplicatedXCIntegratorImpl<ValueType> >
   make_reference_host_integrator_impl( Args&&... args ) {
 
+#ifdef GAUXC_ENABLE_HOST
   return std::make_unique<ReferenceXCHostIntegrator<ValueType>>(
     std::forward<Args>(args)...
   );
+#else
+  throw std::runtime_error(__PRETTY_FUNCTION__ ": GAUXC_ENABLE_HOST = FALSE");
+  return nullptr;
+#endif
 
 }
 
 
-extern template class ReferenceXCHostIntegrator<double>;
 }
 }

@@ -32,6 +32,8 @@ public:
   ~ShellBatchedXCDeviceIntegrator() noexcept;
 
 };
+
+extern template class ShellBatchedXCDeviceIntegrator<double>;
 #endif
 
 
@@ -39,13 +41,19 @@ template <typename ValueType, typename... Args>
 std::unique_ptr< ReplicatedXCIntegratorImpl<ValueType> >
   make_shellbatched_device_integrator_impl( Args&&... args ) {
 
+#ifdef GAUXC_ENABLE_DEVICE
   return std::make_unique<ShellBatchedXCDeviceIntegrator<ValueType>>(
     std::forward<Args>(args)...
   );
+#else
+  std::string msg = std::string(__PRETTY_FUNCTION__)  + 
+	            ": GAUXC_ENABLE_DEVICE = FALSE";
+  throw std::runtime_error(msg.c_str());
+  return nullptr;
+#endif
 
 }
 
 
-extern template class ShellBatchedXCDeviceIntegrator<double>;
 }
 }
