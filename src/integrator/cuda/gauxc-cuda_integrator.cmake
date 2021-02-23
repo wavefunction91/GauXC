@@ -29,6 +29,13 @@ target_compile_options( gauxc
     $<$<COMPILE_LANGUAGE:CUDA>: -Xcudafe --diag_suppress=partial_override -Xptxas -v > 
 )
 
+if( GAUXC_ENABLE_NCCL )
+
+  message( STATUS "NCCL Has Been Enabled" )
+  find_package( NCCL REQUIRED )
+  target_link_libraries( gauxc PUBLIC NCCL::nccl )
+
+endif()
 
 if( GAUXC_ENABLE_MAGMA )
 

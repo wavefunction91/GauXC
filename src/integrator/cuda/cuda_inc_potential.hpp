@@ -13,7 +13,13 @@ void task_inc_potential( size_t           ntasks,
                          T*               V_device,
                          size_t           LDV,
                          cudaStream_t     stream );
-                               
+
+template <typename T>
+void symmetrize_matrix( size_t       nbf,
+                        size_t       LDV,
+                        T*           V_device,
+                        cudaStream_t stream);
+
 }
 }
 }

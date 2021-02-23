@@ -4,6 +4,7 @@
 #include <gauxc/xc_integrator/xc_cuda_data.hpp>
 #include <gauxc/xc_integrator/xc_cuda_util.hpp>
 
+
 #ifdef GAUXC_ENABLE_CUDA
 namespace GauXC  {
 namespace detail {
@@ -61,6 +62,16 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
   int32_t world_rank, world_size;
   MPI_Comm_rank( this->comm_, &world_rank );
   MPI_Comm_size( this->comm_, &world_size );
+
+#ifdef GAUXC_ENABLE_NCCL
+  ncclUniqueId id;
+  if (world_rank == 0) ncclGetUniqueId(&id);
+  MPI_Bcast(&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD);
+
+  ncclComm_t nccl_comm;
+  ncclCommInitRank(&nccl_comm, world_size, id, world_rank);
+#endif
+
 
 /* XXX: Does not work on Summit
   MPI_Comm node_comm;
@@ -122,17 +133,22 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
 
   } );
 
-  this->timer_.time_op("XCIntegrator.CUDAFree", [&](){
-    cuda_data_.reset(); // Free up CUDA memory
+  // If we are not using NCCL then data transfer happens before reduction
+#ifndef GAUXC_ENABLE_NCCL
+  this->timer_.time_op("XCIntegrator.CUDADtoHTransfer", [&](){
+    device_transfer(*cuda_data_, VXC.data(), &EXC, &N_EL);
   } );
+#endif
 
 #ifdef GAUXC_ENABLE_MPI
-
 
   if( world_size > 1 ) {
 
     this->timer_.time_op("XCIntegrator.AllReduce", [&]() {
 
+#ifdef GAUXC_ENABLE_NCCL
+      device_allreduce< value_type>(nccl_comm, *cuda_data_);
+#else
       // Test of communicator is an inter-communicator
       // XXX: Can't think of a case when this would be true, but who knows...
       int inter_flag;
@@ -158,11 +174,27 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
         MPI_Allreduce( &N_EL_cpy, &N_EL, 1, MPI_DOUBLE, MPI_SUM, this->comm_ );
 
       }
-
+#endif
     } );
 
   }
 
+#endif
+
+  // If we are using NCCL then data transfer happens after reduction
+#ifdef GAUXC_ENABLE_NCCL
+  this->timer_.time_op("XCIntegrator.CUDADtoHTransfer", [&](){
+    device_transfer(*cuda_data_, VXC.data(), &EXC, &N_EL);
+  } );
+#endif
+
+
+  this->timer_.time_op("XCIntegrator.CUDAFree", [&](){
+    cuda_data_.reset(); // Free up CUDA memory
+  } );
+
+#ifdef GAUXC_ENABLE_NCCL
+  ncclCommDestroy(nccl_comm);
 #endif
 
 #ifdef GAUXC_ENABLE_MAGMA
