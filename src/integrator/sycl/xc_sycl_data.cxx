@@ -76,7 +76,7 @@ XCSyclData<F>::~XCSyclData() noexcept {
 
 using task_iterator = std::vector< XCTask >::iterator;
 template <typename F>
-using device_task_container = std::vector< sycl::XCTaskDevice<F> >;
+using device_task_container = std::vector< cl::sycl::XCTaskDevice<F> >;
 
 template <typename F>
 std::tuple< task_iterator, device_task_container<F> >
@@ -96,11 +96,6 @@ std::tuple< task_iterator, device_task_container<F> >
   // Host copies for batched GEMM/SYRK arrays
   std::vector< F* > dmat_array, bf_array, zmat_array;
   std::vector< int64_t > m_array, n_array, k_array, lda_array, ldb_array;
-
-  // abb: can get rid of these variables
-  std::vector< F > alpha_array;
-  std::vector< oneapi::mkl::transpose > trans_array, nontrans_array;
-  std::vector< int64_t > groupsize_array;
 
   device_task_container tasks_device;
 
@@ -208,7 +203,7 @@ std::tuple< task_iterator, device_task_container<F> >
       mem_dist_nearest      * sizeof(F) +
       mem_batch_mat_arr     * sizeof(F*) +
       mem_batch_sz_arr      * sizeof(int64_t) +
-      mem_task              * sizeof(sycl::XCTaskDevice<F>);
+      mem_task              * sizeof(cl::sycl::XCTaskDevice<F>);
 
     //std::cout << "Memory requirement for task " << ntask+1 << " " << mem_req_batch << " memleft " << memleft << std::endl;
 
@@ -248,11 +243,6 @@ std::tuple< task_iterator, device_task_container<F> >
     lda_array.emplace_back( nbe   );
     ldb_array.emplace_back( npts  );
 
-    alpha_array.emplace_back( 1. );
-    nontrans_array.emplace_back( oneapi::mkl::transpose::nontrans );
-    trans_array.emplace_back( oneapi::mkl::transpose::trans );
-    groupsize_array.emplace_back( 1. );
-
     iparent_pack.insert( iparent_pack.end(), npts, iAtom );
     dist_nearest_pack.insert( dist_nearest_pack.end(), npts, dist_nearest );
 
@@ -275,7 +265,7 @@ std::tuple< task_iterator, device_task_container<F> >
 
   // (possibly) Large types
   important_shells_device = mem.aligned_alloc<Shell<F>>( total_nshells );
-  device_tasks            = mem.aligned_alloc<sycl::XCTaskDevice<F>>( ntask );
+  device_tasks            = mem.aligned_alloc<cl::sycl::XCTaskDevice<F>>( ntask );
 
   // 64-bit types
   nbe_scr_device     = mem.aligned_alloc<F>( total_nbe_nbe  );
@@ -477,25 +467,14 @@ std::tuple< task_iterator, device_task_container<F> >
 
   util::sycl_set_zero_async( ntask, beta_array_device, *master_queue, "betaZero" );
 
-  // abb: uncomment this when `-sycl-std=2020` is supported
-  // constexpr F alpha_pattern = 1.0;
-  // constexpr oneapi::mkl::transpose nontrans_pattern = oneapi::mkl::transpose::nontrans;
-  // constexpr oneapi::mkl::transpose trans_pattern    = oneapi::mkl::transpose::trans;
-  // constexpr int64_t gs_pattern = 1.0;
-  // master_queue->fill(alpha_array_device, alpha_pattern, ntask);
-  // master_queue->fill(trans_array_device, trans_pattern, ntask);
-  // master_queue->fill(nontrans_array_device, nontrans_pattern, ntask);
-  // master_queue->fill(groupsize_array_device, gs_pattern, ntask);
-
-  // abb: remove the next 4 copy statements when `-sycl-std=2020` is supported
-  copy_rev( alpha_array.size(), alpha_array.data(), alpha_array_device,
-            *master_queue, "send alpha_array" );
-  copy_rev( trans_array.size(), trans_array.data(), trans_array_device,
-            *master_queue, "send trans_array" );
-  copy_rev( nontrans_array.size(), nontrans_array.data(), nontrans_array_device,
-            *master_queue, "send nontrans_array" );
-  copy_rev( groupsize_array.size(), groupsize_array.data(), groupsize_array_device,
-            *master_queue, "send groupsize_array" );
+  constexpr F alpha_pattern = 1.0;
+  constexpr oneapi::mkl::transpose nontrans_pattern = oneapi::mkl::transpose::nontrans;
+  constexpr oneapi::mkl::transpose trans_pattern    = oneapi::mkl::transpose::trans;
+  constexpr int64_t gs_pattern = 1.0;
+  master_queue->fill<F>(alpha_array_device, alpha_pattern, ntask);
+  master_queue->fill<oneapi::mkl::transpose>(trans_array_device, trans_pattern, ntask);
+  master_queue->fill<oneapi::mkl::transpose>(nontrans_array_device, nontrans_pattern, ntask);
+  master_queue->fill<int64_t>(groupsize_array_device, gs_pattern, ntask);
 
   copy_rev( iparent_pack.size(), iparent_pack.data(),
                          iparent_device_buffer, *master_queue, "send iparent"  );
