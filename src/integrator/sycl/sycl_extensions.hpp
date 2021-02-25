@@ -22,8 +22,7 @@ double blockReduceSum( double val , cl::sycl::nd_item<3>& item_ct, double *share
 
   if( lane == 0 ) shared[wid] = val;
 
-  item_ct.barrier();
-  //group_barrier(item_ct.get_group()); // for SYCL 2020 onwards
+  item_ct.barrier(cl::sycl::access::fence_space::local_space);
 
   val = (item_ct.get_local_id(2) < item_ct.get_local_range(2) / 32)
             ? shared[lane]
@@ -53,8 +52,7 @@ __inline__ T block_prod_reduce( T val , cl::sycl::nd_item<3>& item_ct, T *shared
   val = warp_prod_reduce( sub_g, val );
 
   if( lane == 0 ) shared[ wid ] = val;
-  item_ct.barrier();
-  // group_barrier(item_ct.get_group()); // valid only with SYCL 2020
+  item_ct.barrier(cl::sycl::access::fence_space::local_space);
 
   val = (item_ct.get_local_id(2) < item_ct.get_local_range(2) / 32)
             ? shared[lane]

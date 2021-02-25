@@ -151,7 +151,6 @@ void process_batches_sycl_replicated_all_device(
   // Form Z = P * X
   if( sycl_data.batch_l3_blas ) {
       std::cout << "IN BATCHING" << std::endl;
-      cl::sycl::vector_class<cl::sycl::event> eve;
       oneapi::mkl::blas::row_major::gemm_batch(syclQue,
                                                nontrans_array_device,
                                                nontrans_array_device,
@@ -167,13 +166,13 @@ void process_batches_sycl_replicated_all_device(
                                                zmat_array_device,
                                                ldb_array_device,
                                                ntasks,
-                                               groupsize_array_device, eve);
+                                               groupsize_array_device);
   }
   else {
       std::cout << "IN NONBATCHING" << std::endl;
       for( auto it = task_begin; it != task_end; ++it )
           oneapi::mkl::blas::row_major::gemm( syclQue, oneapi::mkl::transpose::nontrans, oneapi::mkl::transpose::nontrans,
-                                              it->nbe, it->npts, it->nbe, 1., it->nbe_scr, it->nbe, it->bf, it->npts, 
+                                              it->nbe, it->npts, it->nbe, 1., it->nbe_scr, it->nbe, it->bf, it->npts,
                                               0., it->zmat, it->npts );
   }
 
@@ -252,40 +251,22 @@ void process_batches_sycl_replicated_all_device(
 
 #if 1
   if( sycl_data.batch_l3_blas ) {
-      cl::sycl::vector_class<cl::sycl::event> eve;
-
       oneapi::mkl::blas::row_major::gemm_batch(syclQue,
-                                                  nontrans_array_device,
-                                                  trans_array_device,
-                                                  m_array_device,
-                                                  k_array_device,
-                                                  n_array_device,
-                                                  alpha_array_device,
-                                                  const_cast<const double**>(bf_array_device),
-                                                  ldb_array_device,
-                                                  const_cast<const double**>(zmat_array_device),
-                                                  ldb_array_device,
-                                                  beta_array_device,
-                                                  dmat_array_device,
-                                                  lda_array_device,
-                                                  ntasks,
-                                                  groupsize_array_device, eve);
-      oneapi::mkl::blas::row_major::gemm_batch(syclQue,
-                                                  nontrans_array_device,
-                                                  trans_array_device,
-                                                  m_array_device,
-                                                  k_array_device,
-                                                  n_array_device,
-                                                  alpha_array_device,
-                                                  const_cast<const double**>(zmat_array_device),
-                                                  ldb_array_device,
-                                                  const_cast<const double**>(bf_array_device),
-                                                  ldb_array_device,
-                                                  alpha_array_device,
-                                                  dmat_array_device,
-                                                  lda_array_device,
-                                                  ntasks,
-                                                  groupsize_array_device, eve);
+                                               nontrans_array_device,
+                                               trans_array_device,
+                                               m_array_device,
+                                               k_array_device,
+                                               n_array_device,
+                                               alpha_array_device,
+                                               const_cast<const double**>(bf_array_device),
+                                               ldb_array_device,
+                                               const_cast<const double**>(zmat_array_device),
+                                               ldb_array_device,
+                                               beta_array_device,
+                                               dmat_array_device,
+                                               lda_array_device,
+                                               ntasks,
+                                               groupsize_array_device);
   }
   else {
       for( auto it = task_begin; it != task_end; ++it ) {

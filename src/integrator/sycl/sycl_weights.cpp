@@ -63,7 +63,7 @@ namespace GauXC {
 
                     const double* const local_dist_scratch = dist_scratch + ipt * natoms;
                     for (int iCenter = threadIdx_y; iCenter < natoms;
-                         iCenter += item_ct.get_local_range().get(1)) {
+                         iCenter += item_ct.get_local_range(1)) {
 
                         const double ri = local_dist_scratch[ iCenter ];
 
@@ -94,13 +94,11 @@ namespace GauXC {
                         shared[threadIdx_y + 1024] = parent_weight;
                     }
 
-                    item_ct.barrier();
-                    //group_barrier(item_ct.get_group()); // valid SYCL
-                    //2020 only
+                    item_ct.barrier(cl::sycl::access::fence_space::local_space);
                     sum = shared[threadIdx_x];
                     sum = warpReduceSum(sum, item_ct);
 
-                    item_ct.barrier();
+                    item_ct.barrier(cl::sycl::access::fence_space::local_space);
                     parent_weight = shared[threadIdx_x + 1024];
                     parent_weight = item_ct.get_sub_group().shuffle(parent_weight, iParent % 32);
 
@@ -187,11 +185,11 @@ namespace GauXC {
                         shared[threadIdx_y + 1024] = parent_weight;
                     }
 
-                    item_ct.barrier();
+                    item_ct.barrier(cl::sycl::access::fence_space::local_space);
                     sum = shared[threadIdx_x];
                     sum = warpReduceSum(sum, item_ct);
 
-                    item_ct.barrier();
+                    item_ct.barrier(cl::sycl::access::fence_space::local_space);
                     parent_weight = shared[threadIdx_x + 1024];
                     parent_weight = item_ct.get_sub_group().shuffle(parent_weight, iParent % 32);
 
