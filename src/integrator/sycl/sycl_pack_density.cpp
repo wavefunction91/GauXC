@@ -62,15 +62,12 @@ namespace sycl       {
                                   T *P_device, size_t LDP, cl::sycl::queue *queue) {
 
         cl::sycl::range<3> threads(1, max_warps_per_thread_block, warp_size), blocks(ntasks, 1, 1);
+	auto global_range = blocks * threads;
 
-        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-                auto global_range = blocks * threads;
-
-                cgh.parallel_for(cl::sycl::nd_range<3>(global_range, threads),
-                                 [=](cl::sycl::nd_item<3> item_ct) {
-                                     submat_set_combined_kernel(ntasks, device_tasks, P_device, LDP, item_ct);
-                                 });
-                }) );
+        GAUXC_SYCL_ERROR( queue->parallel_for(cl::sycl::nd_range<3>(global_range, threads),
+					      [=](cl::sycl::nd_item<3> item_ct) {
+						submat_set_combined_kernel(ntasks, device_tasks, P_device, LDP, item_ct);
+					      }) );
     }
 
     template

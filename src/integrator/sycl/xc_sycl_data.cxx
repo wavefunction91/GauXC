@@ -76,7 +76,7 @@ XCSyclData<F>::~XCSyclData() noexcept {
 
 using task_iterator = std::vector< XCTask >::iterator;
 template <typename F>
-using device_task_container = std::vector< cl::sycl::XCTaskDevice<F> >;
+using device_task_container = std::vector< sycl::XCTaskDevice<F> >;
 
 template <typename F>
 std::tuple< task_iterator, device_task_container<F> >
@@ -203,7 +203,7 @@ std::tuple< task_iterator, device_task_container<F> >
       mem_dist_nearest      * sizeof(F) +
       mem_batch_mat_arr     * sizeof(F*) +
       mem_batch_sz_arr      * sizeof(int64_t) +
-      mem_task              * sizeof(cl::sycl::XCTaskDevice<F>);
+      mem_task              * sizeof(sycl::XCTaskDevice<F>);
 
     //std::cout << "Memory requirement for task " << ntask+1 << " " << mem_req_batch << " memleft " << memleft << std::endl;
 
@@ -265,7 +265,7 @@ std::tuple< task_iterator, device_task_container<F> >
 
   // (possibly) Large types
   important_shells_device = mem.aligned_alloc<Shell<F>>( total_nshells );
-  device_tasks            = mem.aligned_alloc<cl::sycl::XCTaskDevice<F>>( ntask );
+  device_tasks            = mem.aligned_alloc<sycl::XCTaskDevice<F>>( ntask );
 
   // 64-bit types
   nbe_scr_device     = mem.aligned_alloc<F>( total_nbe_nbe  );
