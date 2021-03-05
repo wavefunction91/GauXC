@@ -1,21 +1,21 @@
-#include <iostream>
-
-#include <thrust/device_vector.h>
+#include <gauxc/util/div_ceil.hpp>
+#include <cub/device/device_scan.cuh>
 
 #include "cuda_collision_detection.hpp"
+#include "cuda_device_properties.hpp"
 
+namespace GauXC         {
+namespace load_balancer {
+namespace cuda          {
 
-namespace GauXC      {
-namespace integrator {
-namespace cuda       {
-
+using namespace GauXC::cuda;
 
 __device__ __inline__ 
 int cube_sphere_intersect( 
   const double3 lo, 
   const double3 up,
   const double3 center,
-  const double                rad
+  const double  rad
 ) {
 
   double dist = rad * rad;
@@ -60,17 +60,20 @@ int cube_sphere_intersect(
 }
 
 
-__global__ void collision_detection_gpu( size_t ncubes,
-                          size_t nspheres,
-                          size_t LD_bit,
-                          const double* low_points,
-                          const double* high_points,
-                          const double* centers,
-                          const double* radii,
-                               int32_t* collisions,
-                               int32_t* counts) {
+__global__ void collision_detection_gpu(
+          size_t ncubes,
+          size_t nspheres,
+          size_t LD_bit,
+    const double* low_points,
+    const double* high_points,
+    const double* centers,
+    const double* radii,
+         int32_t* collisions,
+         int32_t* counts
+) {
   const size_t nspheres_block = (nspheres + 31) / 32;
   for (int i = threadIdx.x + blockIdx.x * blockDim.x; i < ncubes; i += blockDim.x * gridDim.x) {
+    counts[i] = 0;
     double3 low_point;
     double3 high_point;
     low_point.x = low_points[3*i+0];
@@ -103,80 +106,123 @@ __global__ void collision_detection_gpu( size_t ncubes,
   }
 }
 
-__global__ void bitvector_to_position_list( size_t ncubes, size_t nspheres, size_t LD_bit, const int32_t* collisions, const int32_t* counts, int32_t* position_list) {
+#define BUFFER_SIZE 8
+#define ELEMENT_SIZE 32
+#define BUFFER_SIZE_BITS ELEMENT_SIZE * BUFFER_SIZE
 
-  for (int i = threadIdx.x + blockIdx.x * blockDim.x; i < ncubes; i += blockDim.x * gridDim.x) {
+__global__ void bitvector_to_position_list( 
+           size_t  ncubes, 
+           size_t  nspheres, 
+           size_t  LD_bit,
+    const int32_t* collisions, 
+    const int32_t* counts, 
+    const  size_t*  shell_size,
+          int32_t* position_list, 
+           size_t* nbe_list
+) {
+  __shared__ int32_t collisions_buffer[warp_size][warp_size][BUFFER_SIZE];
+
+  // We are converting a large number of small bitvectors into position lists. For this reason, I am assigning a single thread to each bitvector
+  // This avoids having to do popcounts and warp wide reductions, but hurts the memory access pattern
+
+  // All threads in a warp must be active to do shared memory loads, so we seperate out the threadId.x
+  for (int i_base = threadIdx.y * blockDim.x + blockIdx.x * blockDim.x * blockDim.y; i_base < ncubes; i_base += blockDim.x * blockDim.y * gridDim.x) {
+    const int i = i_base + threadIdx.x;
     int32_t* out = position_list;
-    if (i != 0) {
+    if (i != 0 && i < ncubes) {
       out += counts[i-1];
     } 
 
     int current = 0;
-    for (int j = 0; j < nspheres; j++) {
-      if( collisions[i * LD_bit + j/32] & (1 << (j%32)) ) {
-        out[current++] = j;
+    size_t nbe = 0;
+    size_t nsphere_blocks = (nspheres + BUFFER_SIZE_BITS - 1) / BUFFER_SIZE_BITS;
+    for (int j_block = 0; j_block < nsphere_blocks; j_block++) {
+      // Each thread has a buffer of length BUFFER_SIZE. All the threads in the warp work to 
+      // load this data in a coalesced way (at least as much as possible)
+      for (int buffer_loop = 0; buffer_loop < warp_size; buffer_loop += warp_size/BUFFER_SIZE) {
+        const int t_id_x        = threadIdx.x % BUFFER_SIZE;
+        const int buffer_thread = threadIdx.x / BUFFER_SIZE;
+        const int buffer_idx    = buffer_thread + buffer_loop;
+        if (j_block * BUFFER_SIZE_BITS + t_id_x * ELEMENT_SIZE < nspheres && i_base + buffer_idx < ncubes) {
+          collisions_buffer[threadIdx.y][buffer_idx][t_id_x] = collisions[(i_base + buffer_idx) * LD_bit + j_block * BUFFER_SIZE + t_id_x];
+        }
       }
+
+      __syncwarp();
+      if (i < ncubes) {  // Once the data has been loaded, we exclude the threads not corresponding to a bitvector
+        // We have loaded in BUFFER_SIZE_BITS elements to be processed by each warp
+        for (int j_inner = 0; j_inner < BUFFER_SIZE_BITS && j_block * BUFFER_SIZE_BITS + j_inner < nspheres; j_inner++) {
+          const int j = BUFFER_SIZE_BITS * j_block + j_inner;
+          const int j_int = j_inner / ELEMENT_SIZE;
+          const int j_bit = j_inner % ELEMENT_SIZE;
+          if( collisions_buffer[threadIdx.y][threadIdx.x][j_int] & (1 << (j_bit)) ) {
+            out[current++] = j;
+            nbe += shell_size[j];
+          }
+        }
+      }
+      __syncwarp();
+    }
+    if (i < ncubes) {
+      nbe_list[i] = nbe;
     }
   }
+}
+
+size_t compute_scratch( size_t ncubes, int32_t* counts_device ) {
+    // Compute scan of count vector and allocate memory
+    void     *d_temp_storage = NULL;
+    size_t   temp_storage_bytes = 0;
+    cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, counts_device, counts_device, ncubes);
+
+    return temp_storage_bytes;
+}
+
+void collision_detection( size_t        ncubes,
+                          size_t        nspheres,
+                          size_t        LD_bit,
+                          const double* low_points_device,
+                          const double* high_points_device,
+                          const double* centers_device,
+                          const double* radii_device,
+                                size_t  temp_storage_bytes,
+                                 void * temp_storage_device,
+                               int32_t* collisions_device, 
+                               int32_t* counts_device,
+                          cudaStream_t  stream) {
+
+    dim3 threads( max_threads_per_thread_block );
+    dim3 blocks( util::div_ceil( ncubes, threads.x ) );
+
+    collision_detection_gpu<<<blocks, threads, 0, stream>>>(
+        ncubes, nspheres, LD_bit, 
+        low_points_device, high_points_device, centers_device, radii_device, 
+        collisions_device, counts_device
+    );
+
+    // Run inclusive prefix sum
+    cub::DeviceScan::InclusiveSum(temp_storage_device, temp_storage_bytes, counts_device, counts_device, ncubes, stream);
 
 }
 
-
-void collision_detection( size_t ncubes,
-                          size_t nspheres,
-                          size_t LD_bit,
-                          const double* low_points,
-                          const double* high_points,
-                          const double* centers,
-                          const double* radii,
-                               int32_t* counts,
-                               int32_t** position_list) {
-
-    double *low_points_device, *high_points_device, *centers_device, *radii_device;
-    int32_t *collisions_device, *counts_device, *position_list_device;
-
-    // Allocate
-    cudaMalloc(&low_points_device, sizeof(double) * 3 * ncubes);
-    cudaMalloc(&high_points_device, sizeof(double) * 3 * ncubes);
-    cudaMalloc(&centers_device, sizeof(double) * 3 * nspheres);
-    cudaMalloc(&radii_device, sizeof(double) * nspheres);
-    cudaMalloc(&collisions_device, sizeof(int32_t) * LD_bit * ncubes);
-
-    thrust::device_vector<int32_t> counts_device_vec(ncubes);
-    counts_device = thrust::raw_pointer_cast(counts_device_vec.data());
-
-    // Transfer
-    cudaMemcpy(low_points_device, low_points, sizeof(double) * 3 * ncubes, cudaMemcpyHostToDevice);
-    cudaMemcpy(high_points_device, high_points, sizeof(double) * 3 * ncubes, cudaMemcpyHostToDevice);
-    cudaMemcpy(centers_device, centers, sizeof(double) * 3 * nspheres, cudaMemcpyHostToDevice);
-    cudaMemcpy(radii_device, radii, sizeof(double) * nspheres, cudaMemcpyHostToDevice);
-
-    // Compute bitvector
-    collision_detection_gpu<<<(ncubes + 1023) / 1024, 1024>>>(ncubes, nspheres, LD_bit, low_points_device, high_points_device, centers_device, radii_device, collisions_device, counts_device);
-    cudaDeviceSynchronize();
-
-    // Compute scan of count vector and allocate memory
-    thrust::inclusive_scan(counts_device_vec.begin(), counts_device_vec.end(), counts_device_vec.begin());
-    int32_t total;
-    cudaMemcpy(&total, counts_device + ncubes - 1, sizeof(int32_t), cudaMemcpyDeviceToHost);
-    cudaMalloc(&position_list_device, sizeof(int32_t) * total);
-    (*position_list) = (int32_t*) malloc(sizeof(int32_t) * total);
+void compute_position_list(size_t         ncubes,
+                           size_t         nspheres,
+                           size_t         LD_bit,
+                           const size_t*  shell_sizes_device,
+                           const int32_t* collisions_device,
+                           const int32_t* counts_device,
+                                 int32_t* position_list_device,
+                                  size_t* nbe_list_device,
+                            cudaStream_t  stream) {
+    dim3 threads( warp_size, warp_size );
+    dim3 blocks( util::div_ceil( ncubes, threads.x * threads.y ) );
 
     // convert from bitvector to position list
-    bitvector_to_position_list<<<(ncubes + 1023) / 1024, 1024>>>(ncubes, nspheres, LD_bit, collisions_device, counts_device, position_list_device);
-    cudaDeviceSynchronize();
-
-    // Transfer
-    cudaMemcpy(*position_list, position_list_device, sizeof(int32_t) * total, cudaMemcpyDeviceToHost);
-    cudaMemcpy(counts, counts_device, sizeof(int32_t) * ncubes, cudaMemcpyDeviceToHost);
-
-    // Free
-    cudaFree(low_points_device);
-    cudaFree(high_points_device);
-    cudaFree(centers_device);
-    cudaFree(radii_device);
-    cudaFree(collisions_device);
-    cudaFree(position_list_device);
+    bitvector_to_position_list<<<blocks, threads, 0, stream>>>(
+        ncubes, nspheres, LD_bit, 
+        collisions_device, counts_device, shell_sizes_device, 
+        position_list_device, nbe_list_device
+    );
 }
 
 }

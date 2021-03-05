@@ -173,6 +173,7 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
       // Copy task data
       XCTask task;
       task.iParent    = iCurrent;
+      task.npts = points.size();  // This enables lazy assignment of points vector (see CUDA impl)
       task.points     = std::move( points );
       task.weights    = std::move( weights );
       task.shell_list = std::move(shell_list);
