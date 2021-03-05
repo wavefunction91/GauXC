@@ -1,10 +1,15 @@
 #include "replicated_load_balancer.hpp"
 #include <chrono>
+#include <future>
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/util/cuda_util.hpp>
 
-#ifdef GAUXC_ENABLE_CUDA
+#include <thrust/host_vector.h>
+#include <thrust/system/cuda/experimental/pinned_allocator.h>
+
 #include "load_balancer/cuda/cuda_collision_detection.hpp"
-#endif
+
+using namespace GauXC::load_balancer::cuda;
 
 namespace GauXC {
 namespace detail {
@@ -19,33 +24,26 @@ std::unique_ptr<LoadBalancerImpl> DeviceReplicatedLoadBalancer::clone() const {
 }
 
 
-auto raw_accumulate_tuple(
-  const BasisSet<double>&      bs,
-  size_t idx,
+std::vector<int32_t> inline copy_shell_list(
+  const size_t idx,
   const std::vector<int32_t>& counts,
-  int32_t* raw_position_list
+  const thrust::host_vector<int32_t, thrust::cuda::experimental::pinned_allocator<int32_t>> &position_list
 ) {
   int32_t start = 0;
-  if (idx != 0) start += counts[idx-1];
+  if ( idx != 0 ) start += counts[idx-1];
   int32_t end = counts[idx];
 
   std::vector<int32_t> shell_list(end - start);
-  std::copy(raw_position_list + start, raw_position_list + end, shell_list.begin());
+  std::copy(position_list.begin() + start, position_list.begin() + end, shell_list.begin());
 
-  size_t nbe = std::accumulate( shell_list.begin(), shell_list.end(), 0ul,
-    [&](const auto& a, const auto& b) { return a + bs[b].size(); } );
-
-  return std::tuple( std::move( shell_list ), nbe );
+  return std::move( shell_list );
 }
 
 
 std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const  {
 
-  std::chrono::high_resolution_clock::time_point clock_start;
-  std::chrono::high_resolution_clock::time_point clock_stop;
-  double duration;
-
   const int32_t n_deriv = 1;
+  const size_t atBatchSz = 256;
 
   int32_t world_rank;
   int32_t world_size;
@@ -61,130 +59,145 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   std::vector< XCTask > local_work;
   std::vector<size_t> global_workload( world_size, 0 );   
 
-  // Loop over Atoms
-  const auto natoms = this->mol_->natoms();
-  int32_t iCurrent  = 0;
-  int32_t atBatchSz = 1;
+  const auto natoms           = this->mol_->natoms();
+  const size_t nspheres       = (*this->basis_).size();
+  const size_t num_atom_batch = util::div_ceil(natoms, atBatchSz);
+  const size_t max_nbatches   = mg_->max_nbatches() * atBatchSz;
+  const size_t LD_bit         = util::div_ceil(nspheres, 32);
 
-  const size_t max_nbatches = mg_->max_nbatches();
-  std::vector< std::pair<size_t, XCTask> > temp_tasks;
-  temp_tasks.reserve( max_nbatches );
+  CollisionDetectionCudaData data;
+  cudaStream_t master_stream = 0;
 
- // // Preallocate
- // std::vector<std::array<double,3>> batch_box_lo, batch_box_up;
- // if( screen_on_device ) {
- //   temp_tasks.resize(atBatchSz   * max_nbatches);
- //   batch_box_lo.resize(atBatchSz * max_nbatches);
- //   batch_box_up.resize(atBatchSz * max_nbatches);
- // }
+  std::vector< XCTask > temp_tasks;              temp_tasks.reserve( max_nbatches );
+  std::vector<std::array<double,3>> low_points;  low_points.reserve( max_nbatches );
+  std::vector<std::array<double,3>> high_points; high_points.reserve( max_nbatches );
+  std::vector<std::array<double,3>> centers;     centers.reserve(nspheres);
+  std::vector<double> radii;                     radii.reserve(nspheres);
+  std::vector<size_t> shell_sizes;               shell_sizes.reserve(nspheres);
+  // These two vectors are populated by cuda memcopies on their data pointer
+  // So maybe we should be resizing them instead of just adding capacity?
+  std::vector<int32_t> pos_list_idx;             pos_list_idx.reserve(max_nbatches);
+  std::vector<size_t> nbe_vec;                   nbe_vec.reserve(max_nbatches);
 
+  // The postion list is the largest struction, so I am using pinned memory for it
+  thrust::host_vector<int32_t, thrust::cuda::experimental::pinned_allocator<int32_t>> position_list;
+  
+  data.temp_storage_bytes = compute_scratch(max_nbatches, data.counts_device);
+  data.temp_storage_device = util::cuda_malloc<char>(data.temp_storage_bytes); // char is 1 byte
 
-  // Set up the collision problem
-  std::vector<std::array<double,3>> low_points; 
-  std::vector<std::array<double,3>> high_points;
-  std::vector<std::array<double,3>> centers; centers.reserve((*this->basis_).size());
-  std::vector<double> radii; radii.reserve((*this->basis_).size());
+  data.low_points_device   = util::cuda_malloc<double>(max_nbatches * 3);
+  data.high_points_device  = util::cuda_malloc<double>(max_nbatches * 3);
+  data.collisions_device   = util::cuda_malloc<int32_t>(LD_bit * max_nbatches);
+  data.nbe_list_device     = util::cuda_malloc<size_t>(max_nbatches);
+  data.counts_device       = util::cuda_malloc<int32_t>(max_nbatches);
 
-  clock_start = std::chrono::high_resolution_clock::now();
+  data.centers_device      = util::cuda_malloc<double>(nspheres * 3);
+  data.radii_device        = util::cuda_malloc<double>(nspheres);
+  data.shell_sizes_device  = util::cuda_malloc<size_t>(nspheres);
+
   for(auto& shell : (*this->basis_)) {
     centers.push_back(std::move(shell.O()));
     radii.push_back(shell.cutoff_radius());
-  }
-  for( const auto& atom : *this->mol_ ) {
-    const std::array<double,3> center = { atom.x, atom.y, atom.z };
-
-    auto& batcher = mg_->get_grid(atom.Z).batcher();
-    batcher.quadrature().recenter( center );
-    const size_t nbatches = batcher.nbatches();
-
-    for( size_t ibatch = 0; ibatch < nbatches; ++ibatch ) {
-      // Generate the batch (non-negligible cost)
-      auto [lo, up, points, weights] = batcher.at(ibatch);
-
-      low_points.push_back(std::move(lo));
-      high_points.push_back(std::move(up));
-    }
+    shell_sizes.push_back(shell.size());
   }
 
-  clock_stop = std::chrono::high_resolution_clock::now();
-  duration = (double) std::chrono::duration_cast<std::chrono::milliseconds>( clock_stop - clock_start ).count();
-  std::cout << "Collision detection prep: " << duration / 1000 << " seconds" << std::endl;
-
-  size_t LD_bit = util::div_ceil(centers.size(), 32);
-
-#ifdef GAUXC_ENABLE_CUDA
-  int32_t* raw_position_list;
-  std::vector<int32_t> pos_list_idx(low_points.size());
-
-  clock_start = std::chrono::high_resolution_clock::now();
-  integrator::cuda::collision_detection(low_points.size(), centers.size(), LD_bit, low_points[0].data(), high_points[0].data(), centers[0].data(), radii.data(), pos_list_idx.data(), &raw_position_list);
-  clock_stop = std::chrono::high_resolution_clock::now();
-  duration = (double) std::chrono::duration_cast<std::chrono::milliseconds>( clock_stop - clock_start ).count();
-  std::cout << "Generating cuda bitvector took: " << duration / 1000 << " seconds" << std::endl;
-#endif
-
+  util::cuda_copy(nspheres * 3, data.centers_device, centers[0].data(), "Centers HtoD");
+  util::cuda_copy(nspheres, data.radii_device, radii.data(), "Radii HtoD");
+  util::cuda_copy(nspheres, data.shell_sizes_device, shell_sizes.data(), "ShellSize HtoD");
 
   // For batching of multiple atom screening
-  size_t batch_idx_offset = 0;
-  int idx = 0;
+  for (int atom_batch = 0; atom_batch < num_atom_batch; ++atom_batch) {
 
-  clock_start = std::chrono::high_resolution_clock::now();
-  for( const auto& atom : *this->mol_ ) {
-    const std::array<double,3> center = { atom.x, atom.y, atom.z };
+    //---------------------------------------------------------------------
+    // production step 
+    int32_t iCurrent  = atom_batch * atBatchSz;
+    for ( int atom_idx = 0; atom_idx < atBatchSz && atom_batch * atBatchSz + atom_idx < natoms; ++atom_idx ) {
 
-    auto& batcher = mg_->get_grid(atom.Z).batcher();
-    batcher.quadrature().recenter( center );
-    const size_t nbatches = batcher.nbatches();
+      const auto atom = (*this->mol_)[atom_batch * atBatchSz + atom_idx];
+      const std::array<double,3> center = { atom.x, atom.y, atom.z };
 
-    for( size_t ibatch = 0; ibatch < nbatches; ++ibatch ) {
-    
-      size_t batch_idx = ibatch + batch_idx_offset;
+      auto& batcher = this->mg_->get_grid(atom.Z).batcher();
+      batcher.quadrature().recenter( center );
+      const size_t nbatches = batcher.nbatches();
 
-      // Generate the batch (non-negligible cost)
-      auto [lo, up, points, weights] = batcher.at(ibatch);
+      for( size_t ibatch = 0; ibatch < nbatches; ++ibatch ) {
 
-      if( points.size() == 0 ) continue;
+        // Generate the batch (non-negligible cost)
+        auto [ npts, pts_b, pts_en, w_b, w_en ] = (batcher.begin() + ibatch).range();
+        auto [lo, up] = IntegratorXX::detail::get_box_bounds_points(pts_b, pts_en);
 
-      auto [shell_list, nbe] = raw_accumulate_tuple( (*this->basis_), idx, pos_list_idx, raw_position_list);
-      idx++;
+        if( npts == 0 ) continue;
 
-      // Course grain screening
-      if( not shell_list.size() ) continue; 
+        // Copy task data
+        XCTask task;
+        task.iParent      = iCurrent;
+        task.npts         = npts;
+        task.dist_nearest = this->molmeta_->dist_nearest()[iCurrent];
+        temp_tasks.push_back( std::move( task ) );
+        low_points.push_back( std::move( lo ) );
+        high_points.push_back( std::move( up ) );
+      }
+      iCurrent++;
+    }
 
-      // Copy task data
-      XCTask task;
-      task.iParent    = iCurrent;
-      task.points     = std::move( points );
-      task.weights    = std::move( weights );
-      task.shell_list = std::move(shell_list);
-      task.nbe        = nbe;
-      task.dist_nearest = molmeta_->dist_nearest()[iCurrent];
-      
-      temp_tasks.push_back( 
-        std::pair(batch_idx,std::move( task )) 
-      );
+    //---------------------------------------------------------------------
+    // Device collision detection step  
+    const size_t ncubes = low_points.size();
+    util::cuda_copy(ncubes * 3, data.low_points_device, low_points[0].data(), "Low points HtoD");
+    util::cuda_copy(ncubes * 3, data.high_points_device, high_points[0].data(), "High points HtoD");
 
-    } // omp parallel for over batches
+    collision_detection(
+      ncubes, nspheres, LD_bit,
+      data.low_points_device, data.high_points_device,
+      data.centers_device, data.radii_device, 
+      data.temp_storage_bytes, data.temp_storage_device,
+      data.collisions_device, data.counts_device,
+      master_stream
+    );
 
+    // Copy total number of collisions back to host to allocate result array
+    int32_t total_collisions;
+    util::cuda_copy(1, &total_collisions, data.counts_device + ncubes - 1, "Total collisions DtoH");
+    data.position_list_device = util::cuda_malloc<int32_t>(total_collisions);
 
+    compute_position_list(
+      ncubes, nspheres, LD_bit,
+      data.shell_sizes_device,
+      data.collisions_device,
+      data.counts_device,
+      data.position_list_device,
+      data.nbe_list_device,
+      master_stream
+    );
 
+    position_list.reserve(total_collisions);
 
+    util::cuda_device_sync();
+    // Copy results back to host
+    util::cuda_copy(total_collisions, thrust::raw_pointer_cast(position_list.data()), data.position_list_device, "Position List DtoH");
+    util::cuda_copy(ncubes, pos_list_idx.data(), data.counts_device, "Position List Idx DtoH");
+    util::cuda_copy(ncubes, nbe_vec.data(), data.nbe_list_device, "NBE counts DtoH");
+    util::cuda_free(data.position_list_device);
 
-    // Assign Tasks to MPI ranks
-    if( (iCurrent+1) % atBatchSz == 0 or iCurrent == ((int32_t)natoms-1) ) {
+    low_points.clear();
+    high_points.clear();
 
-      // Sort based on task index for deterministic assignment
-      std::sort( temp_tasks.begin(), temp_tasks.end(), 
-        []( const auto& a, const auto& b ) {
-          return a.first < b.first;
-        } );
+    //---------------------------------------------------------------------
+    // Assign batches to MPI ranks
+    size_t idx = 0;
+    for ( int atom_idx = 0; atom_idx < atBatchSz && atom_batch * atBatchSz + atom_idx < natoms; ++atom_idx ) {
 
-      // Assign batches to MPI ranks
-      for( size_t ibatch = 0; ibatch < temp_tasks.size(); ++ibatch ) {
+      const auto atom = (*this->mol_)[atom_batch * atBatchSz + atom_idx];
+      const std::array<double,3> center = { atom.x, atom.y, atom.z };
 
-        XCTask task = std::move(temp_tasks.at(ibatch).second);
-        //auto& points = task.points;
-        //auto  nbe    = task.nbe;
+      auto& batcher = this->mg_->get_grid(atom.Z).batcher();
+      batcher.quadrature().recenter( center );
+      const size_t nbatches = batcher.nbatches();
+
+      for( size_t ibatch = 0; ibatch < nbatches; ++ibatch ) {
+        auto [ npts, pts_b, pts_en, w_b, w_en ] = (batcher.begin() + ibatch).range();
+        XCTask task = std::move( temp_tasks.at( idx ) );
+        task.nbe = nbe_vec[idx];
 
         // Get rank with minimum work
         auto min_rank_it = 
@@ -193,29 +206,23 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
 
         global_workload[ min_rank ] += task.cost( n_deriv, natoms );
 
-        if( world_rank == min_rank ) 
-          local_work.push_back( std::move(task) );
-
+        if( world_rank == min_rank ) {
+          auto shell_list = std::move( copy_shell_list(idx, pos_list_idx, position_list) );
+          // Course grain screening
+          if( shell_list.size() ) {
+            task.shell_list = shell_list;
+            task.points = std::vector<std::array<double,3>>( pts_b, pts_en );
+            task.weights = std::vector<double>( w_b, w_en );
+            local_work.push_back( std::move(task) );
+          }
+        }
+        idx++;
       }
-
-      temp_tasks.clear();
-
     }
+    temp_tasks.clear();
 
-
-    // Update counters and offsets
-    iCurrent++;
-    batch_idx_offset += nbatches;
-
-  } // Loop over Atoms
-
-  free(raw_position_list);
-
-  clock_stop = std::chrono::high_resolution_clock::now();
-  duration = (double) std::chrono::duration_cast<std::chrono::milliseconds>( clock_stop - clock_start ).count();
-  std::cout << "Total loop: " << duration / 1000 << " seconds" << std::endl;
-
-  clock_start = std::chrono::high_resolution_clock::now();
+  }
+  
   // Lexicographic ordering of tasks
   auto task_order = []( const auto& a, const auto& b ) {
 
@@ -275,9 +282,17 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
 
   local_work = std::move(local_work_unique);
   
-  clock_stop = std::chrono::high_resolution_clock::now();
-  duration = (double) std::chrono::duration_cast<std::chrono::milliseconds>( clock_stop - clock_start ).count();
-  std::cout << "Clean up: " << duration / 1000 << " seconds" << std::endl;
+  // Free all device memory
+  util::cuda_free(data.low_points_device);
+  util::cuda_free(data.high_points_device);
+  util::cuda_free(data.centers_device);
+  util::cuda_free(data.radii_device);
+  util::cuda_free(data.shell_sizes_device);
+  util::cuda_free(data.collisions_device);
+  util::cuda_free(data.nbe_list_device);
+  util::cuda_free(data.counts_device);
+  util::cuda_free(data.temp_storage_device);
+
   return local_work;
 }
 
