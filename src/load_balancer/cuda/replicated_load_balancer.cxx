@@ -1,6 +1,4 @@
 #include "replicated_load_balancer.hpp"
-#include <chrono>
-#include <future>
 #include <gauxc/util/div_ceil.hpp>
 #include <gauxc/util/cuda_util.hpp>
 
@@ -79,7 +77,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   std::vector<int32_t> pos_list_idx;             pos_list_idx.reserve(max_nbatches);
   std::vector<size_t> nbe_vec;                   nbe_vec.reserve(max_nbatches);
 
-  // The postion list is the largest struction, so I am using pinned memory for it
+  // The postion list is the largest struction so I am using pinned memory for the improved bandwidth
   thrust::host_vector<int32_t, thrust::cuda::experimental::pinned_allocator<int32_t>> position_list;
   
   data.temp_storage_bytes = compute_scratch(max_nbatches, data.counts_device);
@@ -107,7 +105,6 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
 
   // For batching of multiple atom screening
   for (int atom_batch = 0; atom_batch < num_atom_batch; ++atom_batch) {
-
     //---------------------------------------------------------------------
     // production step 
     int32_t iCurrent  = atom_batch * atBatchSz;
@@ -121,14 +118,13 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
       const size_t nbatches = batcher.nbatches();
 
       for( size_t ibatch = 0; ibatch < nbatches; ++ibatch ) {
-
         // Generate the batch (non-negligible cost)
         auto [ npts, pts_b, pts_en, w_b, w_en ] = (batcher.begin() + ibatch).range();
         auto [lo, up] = IntegratorXX::detail::get_box_bounds_points(pts_b, pts_en);
 
         if( npts == 0 ) continue;
 
-        // Copy task data
+        // Partially copy task data
         XCTask task;
         task.iParent      = iCurrent;
         task.npts         = npts;
