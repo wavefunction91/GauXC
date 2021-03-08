@@ -1,5 +1,5 @@
 # Parallelism
-find_package( OpenMP  REQUIRED )
+#find_package( OpenMP  REQUIRED )
 if( GAUXC_ENABLE_MPI )
   message( STATUS "GauXC Enabling MPI" )
   find_package( MPI REQUIRED )
@@ -12,7 +12,7 @@ include( gauxc-integratorxx )
 include( gauxc-exchcxx      )
 
 
-add_library( gauxc STATIC 
+add_library( gauxc 
   grid.cxx 
   grid_impl.cxx 
   molmeta.cxx 
@@ -38,6 +38,10 @@ target_compile_options( gauxc
     $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wpedantic -Wnon-virtual-dtor>
 )
 
+# TODO: MAKE MORE GENERAL
+if( GAUXC_ENABLE_SYCL )
+  set( GAUXC_BLAS_ILP64 ON )
+endif()
 
 
 configure_file( 
@@ -48,7 +52,7 @@ configure_file(
 target_link_libraries( gauxc PUBLIC 
   ExchCXX::ExchCXX 
   IntegratorXX::IntegratorXX 
-  OpenMP::OpenMP_CXX
+  #OpenMP::OpenMP_CXX
 )
 
 if( GAUXC_ENABLE_MPI )

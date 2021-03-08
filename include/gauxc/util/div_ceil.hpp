@@ -2,7 +2,6 @@
 #include <type_traits>
 #include <cstdlib>
 #include <cstdint>
-#include <cassert>
 
 namespace GauXC  {
 
@@ -53,8 +52,8 @@ template <typename Integral1, typename Integral2>
 intmax_t div_ceil( Integral1 i, Integral2 j ) {
 
   static_assert( detail::are_integral<Integral1, Integral2>::value );
-  assert( i >= 0 );
-  assert( j >  0 );
+  //assert( i >= 0 );
+  //assert( j >  0 );
 
   intmax_t i_us = i;
   intmax_t j_us = j;

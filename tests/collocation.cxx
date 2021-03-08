@@ -1,6 +1,7 @@
 #include "collocation_common.hpp"
 #include "collocation_host.hpp"
 #include "collocation_cuda.hpp"
+#include "collocation_sycl.hpp"
 
 //#define GENERATE_TESTS
 
@@ -73,6 +74,46 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
 
 
 
+#ifdef GAUXC_ENABLE_SYCL
+  cl::sycl::gpu_selector device_selector;
+  cl::sycl::queue syclQueue = cl::sycl::queue(device_selector,
+                                              cl::sycl::property_list{cl::sycl::property::queue::in_order{}});
+
+  std::cout << "IN SYCL COLLOCATION TEST" << std::endl;
+  SECTION( "SYCL Eval: Petite Shell List" ) {
+    test_sycl_collocation_petite( basis, ref_data, syclQueue );
+  }
+  syclQueue.wait_and_throw();
+  SECTION( "SYCL Eval: Masked" ) {
+    test_sycl_collocation_masked( basis, ref_data, syclQueue );
+  }
+  syclQueue.wait_and_throw();
+  SECTION( "SYCL Eval: Petite Combined" ) {
+    test_sycl_collocation_petite_combined( basis, ref_data, syclQueue );
+  }
+  syclQueue.wait_and_throw();
+  SECTION( "SYCL Eval: Masked Combined" ) {
+    test_sycl_collocation_masked_combined( basis, ref_data, syclQueue );
+  }
+  syclQueue.wait_and_throw();
+
+  SECTION( "SYCL Eval Grad: Petite Shell List" ) {
+    test_sycl_collocation_deriv1_petite( basis, ref_data, syclQueue );
+  }
+  syclQueue.wait_and_throw();
+  SECTION( "SYCL Eval Grad: Masked" ) {
+    test_sycl_collocation_deriv1_masked( basis, ref_data, syclQueue );
+  }
+  syclQueue.wait_and_throw();
+  SECTION( "SYCL Eval Grad: Petite Combined" ) {
+    test_sycl_collocation_petite_combined_deriv1( basis, ref_data, syclQueue );
+  }
+  syclQueue.wait_and_throw();
+  SECTION( "SYCL Eval: Masked Combined" ) {
+    test_sycl_collocation_masked_combined_deriv1( basis, ref_data, syclQueue );
+  }
+  syclQueue.wait_and_throw();
+#endif // GAUXC_ENABLE_SYCL
 
 #endif
 

@@ -13,3 +13,7 @@ endif()
 if( GAUXC_ENABLE_CUDA )
   include( cuda/gauxc-cuda_integrator.cmake )
 endif()
+
+if( GAUXC_ENABLE_SYCL )
+  include( sycl/gauxc-sycl_integrator.cmake )
+endif()
