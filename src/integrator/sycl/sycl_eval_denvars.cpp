@@ -144,15 +144,13 @@ namespace sycl       {
         cl::sycl::range<3> blocks(ntasks,
                                   util::div_ceil(max_npts, threads[1]),
                                   util::div_ceil(max_nbf,  threads[2]) );
+	auto global_range = blocks * threads;
 
-        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-                auto global_range = blocks * threads;
-
-                cgh.parallel_for(cl::sycl::nd_range<3>(global_range, threads),
+        GAUXC_SYCL_ERROR( queue->parallel_for(cl::sycl::nd_range<3>(global_range, threads),
                     [=](cl::sycl::nd_item<3> item_ct) {
+
                         eval_uvars_lda_kernel(ntasks, tasks_device, item_ct);
-                    });
-                }) );
+					      }) );
     }
 
     template <typename T>
@@ -167,26 +165,22 @@ namespace sycl       {
         size_t ntasks_left = ntasks;
         size_t task_offset = 0;
 
-        size_t ntask_batch = 
-          ( (size_t)std::numeric_limits<int32_t>::max() ) / 
+        size_t ntask_batch =
+          ( (size_t)std::numeric_limits<int32_t>::max() ) /
             (y_dim*z_dim*threads[2]*threads[1]*threads[0]);
-        
+
         while( ntasks_left ) {
 
           auto ntask_do = std::min( ntasks_left, ntask_batch );
           cl::sycl::range<3> blocks(ntask_do, y_dim, z_dim );
+	  auto global_range = blocks * threads;
 
-          GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-            auto global_range = blocks * threads;
-
-            cgh.parallel_for(cl::sycl::nd_range<3>(global_range, threads),
+          GAUXC_SYCL_ERROR( queue->parallel_for(cl::sycl::nd_range<3>(global_range, threads),
               [=](cl::sycl::nd_item<3> item_ct) {
-                eval_uvars_gga_kernel(ntask_do, 
-                                      tasks_device + task_offset, 
+                eval_uvars_gga_kernel(ntask_do,
+                                      tasks_device + task_offset,
                                       item_ct);
-            });
-
-          }) );
+			     }) );
 
           ntasks_left -= ntask_do;
           task_offset += ntask_do;
@@ -203,13 +197,10 @@ namespace sycl       {
                                T *gamma_device,
                                cl::sycl::queue *queue) {
 
-        GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-
-                cgh.parallel_for(cl::sycl::range<1>(npts), [=](cl::sycl::id<1> item_ct) {
+        GAUXC_SYCL_ERROR( queue->parallel_for(cl::sycl::range<1>(npts), [=](cl::sycl::id<1> item_ct) {
 
                         eval_vvars_gga_kernel(npts, den_x_device, den_y_device, den_z_device,
                                               gamma_device, item_ct);
-                    });
                 }) );
     }
 

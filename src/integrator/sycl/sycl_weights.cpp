@@ -63,7 +63,7 @@ namespace GauXC {
 
                     const double* const local_dist_scratch = dist_scratch + ipt * natoms;
                     for (int iCenter = threadIdx_y; iCenter < natoms;
-                         iCenter += item_ct.get_local_range().get(1)) {
+                         iCenter += item_ct.get_local_range(1)) {
 
                         const double ri = local_dist_scratch[ iCenter ];
 
@@ -71,7 +71,7 @@ namespace GauXC {
 
                         double ps = 1.;
                         for (int jCenter = threadIdx_x; jCenter < natoms;
-                             jCenter += item_ct.get_local_range().get(2)) {
+                             jCenter += item_ct.get_local_range(2)) {
 
                             const double rj = local_dist_scratch[ jCenter ];
 
@@ -94,13 +94,11 @@ namespace GauXC {
                         shared[threadIdx_y + 1024] = parent_weight;
                     }
 
-                    item_ct.barrier();
-                    //group_barrier(item_ct.get_group()); // valid SYCL
-                    //2020 only
+                    item_ct.barrier(cl::sycl::access::fence_space::local_space);
                     sum = shared[threadIdx_x];
                     sum = warpReduceSum(sum, item_ct);
 
-                    item_ct.barrier();
+                    item_ct.barrier(cl::sycl::access::fence_space::local_space);
                     parent_weight = shared[threadIdx_x + 1024];
                     parent_weight = item_ct.get_sub_group().shuffle(parent_weight, iParent % 32);
 
@@ -187,11 +185,11 @@ namespace GauXC {
                         shared[threadIdx_y + 1024] = parent_weight;
                     }
 
-                    item_ct.barrier();
+                    item_ct.barrier(cl::sycl::access::fence_space::local_space);
                     sum = shared[threadIdx_x];
                     sum = warpReduceSum(sum, item_ct);
 
-                    item_ct.barrier();
+                    item_ct.barrier(cl::sycl::access::fence_space::local_space);
                     parent_weight = shared[threadIdx_x + 1024];
                     parent_weight = item_ct.get_sub_group().shuffle(parent_weight, iParent % 32);
 
@@ -344,27 +342,22 @@ namespace GauXC {
 
                 // Evaluate point-to-atom collocation
                 {
-                    GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-                            cgh.parallel_for(cl::sycl::range<2> {npts, natoms}, [=](cl::sycl::id<2> item_ct) {
+                    GAUXC_SYCL_ERROR( queue->parallel_for(cl::sycl::range<2> {npts, natoms}, [=](cl::sycl::id<2> item_ct) {
                                     compute_point_center_dist(npts, natoms, atomic_coords_device,
                                                               points_device, dist_scratch_device,
                                                               item_ct);
-                                });
-                            }) );
+			      }) );
                 }
 
                 const bool partition_weights_1d_kernel = true;
 
                 if( partition_weights_1d_kernel ) {
 
-                    GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-
-                            cgh.parallel_for(cl::sycl::range<1>(npts), [=](cl::sycl::item<1> item_ct) {
+                    GAUXC_SYCL_ERROR( queue->parallel_for(cl::sycl::range<1>(npts), [=](cl::sycl::item<1> item_ct) {
                                     modify_weights_ssf_kernel_1d(npts, natoms, rab_device,
                                                                  dist_scratch_device, iparent_device, dist_nearest_device,
                                                                  weights_device, item_ct);
-                                });
-                            }) );
+			}) );
                 }
                 else {
                     throw std::runtime_error("Untested codepath");

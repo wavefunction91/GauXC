@@ -50,25 +50,21 @@ void zmat_lda_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
   size_t ntasks_left = ntasks;
   size_t task_offset = 0;
 
-  size_t ntask_batch = 
-    ( (size_t)std::numeric_limits<int32_t>::max() ) / 
+  size_t ntask_batch =
+    ( (size_t)std::numeric_limits<int32_t>::max() ) /
       (y_dim*z_dim*threads[2]*threads[1]*threads[0]);
-  
+
   while( ntasks_left ) {
 
     auto ntask_do = std::min( ntasks_left, ntask_batch );
     cl::sycl::range<3> blocks(ntask_do, y_dim, z_dim );
+    auto global_range = blocks * threads;
 
-    GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-      auto global_range = blocks * threads;
-
-      cgh.parallel_for(cl::sycl::nd_range<3>(global_range, threads),
+    GAUXC_SYCL_ERROR( queue->parallel_for(cl::sycl::nd_range<3>(global_range, threads),
         [=](cl::sycl::nd_item<3> item_ct) {
-          zmat_lda_kernel(ntask_do, 
-                          tasks_device + task_offset, 
+          zmat_lda_kernel(ntask_do,
+                          tasks_device + task_offset,
                           item_ct);
-      });
-
     }) );
 
     ntasks_left -= ntask_do;
@@ -138,25 +134,21 @@ void zmat_gga_sycl(size_t ntasks, int32_t max_nbf, int32_t max_npts,
   size_t ntasks_left = ntasks;
   size_t task_offset = 0;
 
-  size_t ntask_batch = 
-    ( (size_t)std::numeric_limits<int32_t>::max() ) / 
+  size_t ntask_batch =
+    ( (size_t)std::numeric_limits<int32_t>::max() ) /
       (y_dim*z_dim*threads[2]*threads[1]*threads[0]);
-  
+
   while( ntasks_left ) {
 
     auto ntask_do = std::min( ntasks_left, ntask_batch );
     cl::sycl::range<3> blocks(ntask_do, y_dim, z_dim );
+    auto global_range = blocks * threads;
 
-    GAUXC_SYCL_ERROR( queue->submit([&](cl::sycl::handler &cgh) {
-      auto global_range = blocks * threads;
-
-      cgh.parallel_for(cl::sycl::nd_range<3>(global_range, threads),
+    GAUXC_SYCL_ERROR( queue->parallel_for(cl::sycl::nd_range<3>(global_range, threads),
         [=](cl::sycl::nd_item<3> item_ct) {
-          zmat_gga_kernel(ntask_do, 
-                          tasks_device + task_offset, 
+          zmat_gga_kernel(ntask_do,
+                          tasks_device + task_offset,
                           item_ct);
-      });
-
     }) );
 
     ntasks_left -= ntask_do;
