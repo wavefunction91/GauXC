@@ -12,6 +12,29 @@ using namespace GauXC::load_balancer::cuda;
 namespace GauXC {
 namespace detail {
 
+template <typename T>
+using pinned_vector = thrust::host_vector<T, thrust::cuda::experimental::pinned_allocator<T>>;
+
+// Helper data struction to keep inputs to collision detection kernels organized
+struct CollisionDetectionCudaData {
+    // Inputs
+    double* low_points_device;
+    double* high_points_device;
+    double* centers_device;
+    double* radii_device;
+    size_t* shell_sizes_device;
+    // Outputs
+    int32_t position_list_length;
+    int32_t* position_list_device;
+    int32_t* counts_device;
+    size_t*  nbe_list_device;
+    // Intermediates
+    int32_t* collisions_device;
+    size_t temp_storage_bytes;
+    void * temp_storage_device;
+};
+
+
 DeviceReplicatedLoadBalancer::DeviceReplicatedLoadBalancer( const DeviceReplicatedLoadBalancer& ) = default;
 DeviceReplicatedLoadBalancer::DeviceReplicatedLoadBalancer( DeviceReplicatedLoadBalancer&& ) noexcept = default;
 
@@ -21,11 +44,10 @@ std::unique_ptr<LoadBalancerImpl> DeviceReplicatedLoadBalancer::clone() const {
   return std::make_unique<DeviceReplicatedLoadBalancer>(*this);
 }
 
-
 std::vector<int32_t> inline copy_shell_list(
   const size_t idx,
   const std::vector<int32_t>& counts,
-  const thrust::host_vector<int32_t, thrust::cuda::experimental::pinned_allocator<int32_t>> &position_list
+  const pinned_vector<int32_t> &position_list
 ) {
   int32_t start = 0;
   if ( idx != 0 ) start += counts[idx-1];
@@ -78,7 +100,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   std::vector<size_t> nbe_vec;                   nbe_vec.reserve(max_nbatches);
 
   // The postion list is the largest struction so I am using pinned memory for the improved bandwidth
-  thrust::host_vector<int32_t, thrust::cuda::experimental::pinned_allocator<int32_t>> position_list;
+  pinned_vector<int32_t> position_list;
   
   data.temp_storage_bytes = compute_scratch(max_nbatches, data.counts_device);
   data.temp_storage_device = util::cuda_malloc<char>(data.temp_storage_bytes); // char is 1 byte
@@ -94,7 +116,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   data.shell_sizes_device  = util::cuda_malloc<size_t>(nspheres);
 
   for(auto& shell : (*this->basis_)) {
-    centers.push_back(std::move(shell.O()));
+    centers.push_back(shell.O());
     radii.push_back(shell.cutoff_radius());
     shell_sizes.push_back(shell.size());
   }

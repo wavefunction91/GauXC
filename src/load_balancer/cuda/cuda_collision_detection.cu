@@ -106,21 +106,27 @@ __global__ void collision_detection_gpu(
   }
 }
 
-#define BUFFER_SIZE 8
-#define ELEMENT_SIZE 32
-#define BUFFER_SIZE_BITS ELEMENT_SIZE * BUFFER_SIZE
 
+static constexpr int32_t buffer_size = 8;
+static constexpr int32_t element_size = 32;
+static constexpr int32_t buffer_size_bits = buffer_size * element_size;
+
+// This kernel converts the bitvector produced by the collision detection kernel above into a position list.
+// For simplicity, the collision detection kernel stores its output as a bitvector. However, the `shell_list`
+// of the task is a list of the qualifying indexes, so we must convert the bitvector to a position list. 
+//
+// We take this chance to compute the nbe value from the shell sizes since the data is already being read in
 __global__ void bitvector_to_position_list( 
            size_t  ncubes, 
            size_t  nspheres, 
            size_t  LD_bit,
     const int32_t* collisions, 
     const int32_t* counts, 
-    const  size_t*  shell_size,
+    const  size_t* shell_size,
           int32_t* position_list, 
            size_t* nbe_list
 ) {
-  __shared__ int32_t collisions_buffer[warp_size][warp_size][BUFFER_SIZE];
+  __shared__ int32_t collisions_buffer[warp_size][warp_size][buffer_size];
 
   // We are converting a large number of small bitvectors into position lists. For this reason, I am assigning a single thread to each bitvector
   // This avoids having to do popcounts and warp wide reductions, but hurts the memory access pattern
@@ -135,26 +141,26 @@ __global__ void bitvector_to_position_list(
 
     int current = 0;
     size_t nbe = 0;
-    size_t nsphere_blocks = (nspheres + BUFFER_SIZE_BITS - 1) / BUFFER_SIZE_BITS;
+    size_t nsphere_blocks = (nspheres + buffer_size_bits - 1) / buffer_size_bits;
     for (int j_block = 0; j_block < nsphere_blocks; j_block++) {
       // Each thread has a buffer of length BUFFER_SIZE. All the threads in the warp work to 
       // load this data in a coalesced way (at least as much as possible)
-      for (int buffer_loop = 0; buffer_loop < warp_size; buffer_loop += warp_size/BUFFER_SIZE) {
-        const int t_id_x        = threadIdx.x % BUFFER_SIZE;
-        const int buffer_thread = threadIdx.x / BUFFER_SIZE;
+      for (int buffer_loop = 0; buffer_loop < warp_size; buffer_loop += warp_size/buffer_size) {
+        const int t_id_x        = threadIdx.x % buffer_size;
+        const int buffer_thread = threadIdx.x / buffer_size;
         const int buffer_idx    = buffer_thread + buffer_loop;
-        if (j_block * BUFFER_SIZE_BITS + t_id_x * ELEMENT_SIZE < nspheres && i_base + buffer_idx < ncubes) {
-          collisions_buffer[threadIdx.y][buffer_idx][t_id_x] = collisions[(i_base + buffer_idx) * LD_bit + j_block * BUFFER_SIZE + t_id_x];
+        if (j_block * buffer_size_bits + t_id_x * element_size < nspheres && i_base + buffer_idx < ncubes) {
+          collisions_buffer[threadIdx.y][buffer_idx][t_id_x] = collisions[(i_base + buffer_idx) * LD_bit + j_block * buffer_size + t_id_x];
         }
       }
 
       __syncwarp();
       if (i < ncubes) {  // Once the data has been loaded, we exclude the threads not corresponding to a bitvector
         // We have loaded in BUFFER_SIZE_BITS elements to be processed by each warp
-        for (int j_inner = 0; j_inner < BUFFER_SIZE_BITS && j_block * BUFFER_SIZE_BITS + j_inner < nspheres; j_inner++) {
-          const int j = BUFFER_SIZE_BITS * j_block + j_inner;
-          const int j_int = j_inner / ELEMENT_SIZE;
-          const int j_bit = j_inner % ELEMENT_SIZE;
+        for (int j_inner = 0; j_inner < buffer_size_bits && j_block * buffer_size_bits + j_inner < nspheres; j_inner++) {
+          const int j = buffer_size_bits * j_block + j_inner;
+          const int j_int = j_inner / element_size;
+          const int j_bit = j_inner % element_size;
           if( collisions_buffer[threadIdx.y][threadIdx.x][j_int] & (1 << (j_bit)) ) {
             out[current++] = j;
             nbe += shell_size[j];
@@ -170,7 +176,7 @@ __global__ void bitvector_to_position_list(
 }
 
 size_t compute_scratch( size_t ncubes, int32_t* counts_device ) {
-    // Compute scan of count vector and allocate memory
+    // Computes amount of memory that will be required to do the inclusive sum
     void     *d_temp_storage = NULL;
     size_t   temp_storage_bytes = 0;
     cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, counts_device, counts_device, ncubes);
