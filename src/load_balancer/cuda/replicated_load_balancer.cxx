@@ -56,7 +56,7 @@ std::vector<int32_t> inline copy_shell_list(
   std::vector<int32_t> shell_list(end - start);
   std::copy(position_list.begin() + start, position_list.begin() + end, shell_list.begin());
 
-  return std::move( shell_list );
+  return shell_list;
 }
 
 
