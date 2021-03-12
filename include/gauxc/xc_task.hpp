@@ -17,6 +17,7 @@ struct XCTask {
   std::vector< double  >              weights;
   std::vector< int32_t >              shell_list;
   int32_t                             nbe;
+  int32_t                             npts;
 
   double                              dist_nearest;
 
@@ -64,7 +65,7 @@ struct XCTask {
 
 
   inline size_t cost(size_t n_deriv, size_t natoms) const {
-    return (nbe * ( 1 + nbe + n_deriv ) + natoms * natoms) * points.size();
+    return (nbe * ( 1 + nbe + n_deriv ) + natoms * natoms) * npts;
   }
 };
 

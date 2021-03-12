@@ -3,13 +3,13 @@
 namespace GauXC {
 namespace detail {
 
-ReplicatedLoadBalancer::ReplicatedLoadBalancer( const ReplicatedLoadBalancer& ) = default;
-ReplicatedLoadBalancer::ReplicatedLoadBalancer( ReplicatedLoadBalancer&& ) noexcept = default;
+HostReplicatedLoadBalancer::HostReplicatedLoadBalancer( const HostReplicatedLoadBalancer& ) = default;
+HostReplicatedLoadBalancer::HostReplicatedLoadBalancer( HostReplicatedLoadBalancer&& ) noexcept = default;
 
-ReplicatedLoadBalancer::~ReplicatedLoadBalancer() noexcept = default;
+HostReplicatedLoadBalancer::~HostReplicatedLoadBalancer() noexcept = default;
 
-std::unique_ptr<LoadBalancerImpl> ReplicatedLoadBalancer::clone() const {
-  return std::make_unique<ReplicatedLoadBalancer>(*this);
+std::unique_ptr<LoadBalancerImpl> HostReplicatedLoadBalancer::clone() const {
+  return std::make_unique<HostReplicatedLoadBalancer>(*this);
 }
 
 bool cube_sphere_intersect( 
@@ -103,7 +103,7 @@ auto micro_batch_screen(
 
 
 
-std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
+std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
 
   const int32_t n_deriv = 1;
 
@@ -173,6 +173,8 @@ std::vector< XCTask > ReplicatedLoadBalancer::create_local_tasks_() const  {
       // Copy task data
       XCTask task;
       task.iParent    = iCurrent;
+      // This enables lazy assignment of points vector (see CUDA impl)
+      task.npts       = points.size(); 
       task.points     = std::move( points );
       task.weights    = std::move( weights );
       task.shell_list = std::move(shell_list);
