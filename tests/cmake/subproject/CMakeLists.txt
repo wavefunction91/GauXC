@@ -13,11 +13,24 @@ if( NOT GIT_REVISION )
   string( STRIP "${GIT_REVISION}" GIT_REVISION )
 endif()
 
-message( STATUS "Pulling GIT_REVISION = ${GIT_REVISION}" )
+
+if( NOT GITHUB_URL )
+  set( GITHUB_URL "https://github.com" )
+endif()
+
+if( NOT GITHUB_REPOSITORY )
+  set( GITHUB_REPOSITORY "wavefunction91/gauxc.git" )
+endif()
+
+message( STATUS "Pulling GIT_URL        = ${GITHUB_URL}" )
+message( STATUS "Pulling GIT_REPOSITORY = ${GITHUB_REPOSITORY}" )
+message( STATUS "Pulling GIT_REVISION   = ${GIT_REVISION}" )
+
+
 
 include( FetchContent )
 FetchContent_Declare( gauxc
-  GIT_REPOSITORY https://github.com/wavefunction91/gauxc.git
+  GIT_REPOSITORY "${GITHUB_URL}/${GITHUB_REPOSITORY}"
   GIT_TAG        ${GIT_REVISION}
 )
 FetchContent_MakeAvailable( gauxc )
