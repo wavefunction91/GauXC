@@ -15,7 +15,6 @@ struct nccl_comm {
   ncclComm_t comm;
   
   inline nccl_comm( MPI_Comm mpi_comm ) { 
-    int32_t device_count, cur_device;
     int32_t world_rank, world_size;
     MPI_Comm_rank( mpi_comm, &world_rank );
     MPI_Comm_size( mpi_comm, &world_size );
