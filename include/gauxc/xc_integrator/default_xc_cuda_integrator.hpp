@@ -3,7 +3,7 @@
 #include <gauxc/xc_integrator/xc_integrator_impl.hpp>
 #include <gauxc/xc_integrator/xc_cuda_data.hpp>
 #include <gauxc/xc_integrator/xc_cuda_util.hpp>
-
+#include <gauxc/util/nccl_util.hpp>
 
 #ifdef GAUXC_ENABLE_CUDA
 namespace GauXC  {
@@ -22,6 +22,9 @@ class DefaultXCCudaIntegrator : public XCIntegratorImpl<MatrixType> {
   using exc_vxc_type  = typename base_type::exc_vxc_type;
     
   std::shared_ptr< XCCudaData< value_type > > cuda_data_;
+#ifdef GAUXC_ENABLE_NCCL
+  std::unique_ptr<util::nccl_comm>            nccl_comm_;
+#endif
 
   exc_vxc_type eval_exc_vxc_( const MatrixType& ) override; 
 
@@ -29,7 +32,11 @@ public:
 
   template <typename... Args>
   DefaultXCCudaIntegrator( Args&&... args ) :
-    base_type( std::forward<Args>(args)... ) { }
+    base_type( std::forward<Args>(args)... ) { 
+#ifdef GAUXC_ENABLE_NCCL
+    nccl_comm_ = std::make_unique< util::nccl_comm >( this->comm_ );
+#endif
+    }
 
   DefaultXCCudaIntegrator( const DefaultXCCudaIntegrator& ) = default;
   DefaultXCCudaIntegrator( DefaultXCCudaIntegrator&& ) noexcept = default;
@@ -62,15 +69,6 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
   int32_t world_rank, world_size;
   MPI_Comm_rank( this->comm_, &world_rank );
   MPI_Comm_size( this->comm_, &world_size );
-
-#ifdef GAUXC_ENABLE_NCCL
-  ncclUniqueId id;
-  if (world_rank == 0) ncclGetUniqueId(&id);
-  MPI_Bcast(&id, sizeof(id), MPI_BYTE, 0, MPI_COMM_WORLD);
-
-  ncclComm_t nccl_comm;
-  ncclCommInitRank(&nccl_comm, world_size, id, world_rank);
-#endif
 
 
 /* XXX: Does not work on Summit
@@ -147,7 +145,7 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
     this->timer_.time_op("XCIntegrator.AllReduce", [&]() {
 
 #ifdef GAUXC_ENABLE_NCCL
-      device_allreduce< value_type>(nccl_comm, *cuda_data_);
+      device_allreduce< value_type>(*nccl_comm_, *cuda_data_);
 #else
       // Test of communicator is an inter-communicator
       // XXX: Can't think of a case when this would be true, but who knows...
@@ -192,10 +190,6 @@ typename DefaultXCCudaIntegrator<MatrixType>::exc_vxc_type
   this->timer_.time_op("XCIntegrator.CUDAFree", [&](){
     cuda_data_.reset(); // Free up CUDA memory
   } );
-
-#ifdef GAUXC_ENABLE_NCCL
-  ncclCommDestroy(nccl_comm);
-#endif
 
 #ifdef GAUXC_ENABLE_MAGMA
   // Finalize MAGMA
