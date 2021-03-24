@@ -5,10 +5,7 @@
 
 namespace GauXC {
 
-/**
- *  @brief A named type pertaining to the atomic number (number of protons) 
- *  of an Atom
- */
+/// A named type pertaining to the atomic number (number of protons) of an Atom
 using AtomicNumber = detail::NamedType< int64_t, struct AtomicNumberType >;
 
 /**
