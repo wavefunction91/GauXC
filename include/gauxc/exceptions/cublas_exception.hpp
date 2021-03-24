@@ -11,6 +11,12 @@ namespace GauXC {
 
 namespace detail {
 
+/**
+ *  @brief Return a descriptive error string pertaining to a cuBLAS error code
+ *
+ *  @param[in] error cuBLAS error code
+ *  @returns   String pertaining to "error"
+ */
 static std::string cublasGetErrorString(cublasStatus_t error) {
     switch (error)
     {
@@ -50,13 +56,22 @@ static std::string cublasGetErrorString(cublasStatus_t error) {
 
 }
 
+/**
+ *  @brief A class to handle excecptions arising from cuBLAS operations
+ */
 class cublas_exception : public std::exception {
 
-  std::string file_;
-  int         line_;
-  std::string msg_prefix_;
-  cublasStatus_t err_code_;
+  std::string file_;         ///< File which contains the code that threw the exception
+  int         line_;         ///< Line number of file_ that threw exception
+  std::string msg_prefix_;   ///< General descriptor of task which threw exception
+  cublasStatus_t err_code_;  ///< cuBLAS error code pertaining to the thrown exception
 
+  /**
+   *  @brief Get a descriptive message pertaining to the thrown cuBLAS error
+   *
+   *  @returns a descritive message pertaining to the cuBLAS error represented by
+   *  the internal state of the exception object.
+   */
   const char* what() const noexcept override {
      std::stringstream ss;
      ss << "CUBLAS Exception (" << msg_prefix_ << ")" << std::endl
@@ -73,15 +88,24 @@ class cublas_exception : public std::exception {
 
 public:
 
+  /**
+   *  @brief Construct a cublas_exception object
+   *
+   *  @param[in] file File which contains the code that threw the exception
+   *  @param[in] line Line number of file that threw exception
+   *  @param[in] msg  General descriptor of task which threw exception
+   *  @param[in] err  cuBLAS error code pertaining to the thrown exception
+   */
   cublas_exception( std::string file, int line, std::string msg, 
                     cublasStatus_t err ) :
     file_(file), line_(line), msg_prefix_(msg), err_code_(err) { }
 
-};
+}; // class cublas_exception
 
 }
 
 
+// Macro to wrap cuBLAS error handling
 #define GAUXC_CUBLAS_ERROR( MSG, ERR ) \
   if( ERR != CUBLAS_STATUS_SUCCESS ) \
     throw cublas_exception( __FILE__, __LINE__, MSG, ERR );

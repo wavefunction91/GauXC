@@ -9,13 +9,22 @@
 
 namespace GauXC {
 
+/**
+ *  @brief A class to handle excecptions arising from CUDA operations
+ */
 class cuda_exception : public std::exception {
 
-  std::string file_;
-  int         line_;
-  std::string msg_prefix_;
-  cudaError_t err_code_;
+  std::string file_;       ///< File which contains the code that threw the exception
+  int         line_;       ///< Line number of file_ that threw exception
+  std::string msg_prefix_; ///< General descriptor of task which threw exception
+  cudaError_t err_code_;   ///< CUDA error code pertaining to the thrown exception
 
+  /**
+   *  @brief Get a descriptive message pertaining to the thrown CUDA error
+   *
+   *  @returns a descritive message pertaining to the CUDA error represented by
+   *  the internal state of the exception object.
+   */
   const char* what() const noexcept override {
      std::stringstream ss;
      ss << "CUDA Exception (" << msg_prefix_ << ")" << std::endl
@@ -31,13 +40,22 @@ class cuda_exception : public std::exception {
 
 public:
 
+  /**
+   *  @brief Construct a cuda_exception object
+   *
+   *  @param[in] file File which contains the code that threw the exception
+   *  @param[in] line Line number of file that threw exception
+   *  @param[in] msg  General descriptor of task which threw exception
+   *  @param[in] err  CUDA error code pertaining to the thrown exception
+   */
   cuda_exception( std::string file, int line, std::string msg, cudaError_t err ) :
     file_(file), line_(line), msg_prefix_(msg), err_code_(err) { }
 
-};
+}; // class cuda_exception
 
-}
+} // namespace GauXC
 
+// Macro to wrap CUDA error handling
 #define GAUXC_CUDA_ERROR( MSG, ERR ) \
   if( ERR != cudaSuccess ) \
     throw cuda_exception( __FILE__, __LINE__, MSG, ERR );
