@@ -25,6 +25,12 @@ struct Atom {
     ar(  Z, x, y, z );
   }
 
+#ifdef GAUXC_ENABLE_BPHASH
+  void hash( bphash::Hasher& h ) {
+    h( Z.get(), x, y, z );
+  }
+#endif
+
 };
 
 inline bool operator==( const Atom& a1, const Atom& a2 ) {
