@@ -4,6 +4,7 @@
 #include <numeric>
 
 #include <gauxc/shell.hpp>
+#include <gauxc/type_traits.hpp>
 
 namespace GauXC {
 
@@ -18,7 +19,9 @@ class BasisSet : public std::vector<Shell<F>> {
 
 public:
 
-  template <typename... Args>
+  template <typename... Args,
+    typename = detail::enable_if_all_are_not_t<BasisSet<F>, std::decay_t<Args>...>
+  >
   BasisSet( Args&&... args ) :
     std::vector<Shell<F>>( std::forward<Args>(args)... )  { }
 
@@ -55,6 +58,21 @@ public:
 
   auto shell_to_first_ao(int32_t i) const { return shell_to_first_ao_.at(i); }
   auto shell_to_ao_range(int32_t i) const { return shell_to_ao_range_.at(i); }
+
+  template <typename Archive>
+  void serialize( Archive& ar )  {
+    ar( dynamic_cast<std::vector<Shell<F>>&>(*this), 
+       shell_to_first_ao_, shell_to_ao_range_ );
+  }
+
+
+#ifdef GAUXC_ENABLE_BPHASH
+  BPHASH_DECLARE_HASHING_FRIENDS
+  void hash( bphash::Hasher& h ) const {
+    h( dynamic_cast<const std::vector<Shell<F>>&>(*this), 
+       shell_to_first_ao_, shell_to_ao_range_ );
+  }
+#endif
 
 };
 

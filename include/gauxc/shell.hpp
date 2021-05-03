@@ -112,8 +112,6 @@ private:
   }
 public:
 
-  Shell() = delete;
-
   Shell( PrimSize nprim, AngularMomentum l, SphericalType pure,
     prim_array alpha, prim_array coeff, cart_array O, bool _normalize = true ) :
     nprim_( nprim.get() ), l_( l.get() ), pure_( pure.get() ),
@@ -123,6 +121,9 @@ public:
     compute_shell_cutoff();
 
   }
+
+  Shell() : Shell(PrimSize(0), AngularMomentum(0), SphericalType(0),{},{},{}) { };
+
   
   void set_shell_tolerance( double tol ) {
     if( tol != shell_tolerance_ ) {
@@ -179,6 +180,29 @@ public:
   inline       prim_array& coeff()        { return coeff_; }
   inline       cart_array& O()            { return O_;     }
 
+  template <typename Archive>
+  void serialize( Archive& ar ) {
+     ar( nprim_, l_, pure_, alpha_, coeff_, O_, cutoff_radius_, shell_tolerance_ );
+  }
+
+#ifdef GAUXC_ENABLE_BPHASH
+  BPHASH_DECLARE_HASHING_FRIENDS
+  void hash( bphash::Hasher& h ) const {
+     h( nprim_, l_, pure_, alpha_, coeff_, O_, cutoff_radius_, shell_tolerance_ );
+  }  
+#endif
+
 };
+
+template <typename F>
+inline bool operator==( const Shell<F>& s1, const Shell<F>& s2 ) {
+  return s1.nprim() == s2.nprim() and 
+         s1.l() == s2.l() and 
+         s1.pure() == s2.pure() and
+         s1.alpha() == s2.alpha() and
+         s1.coeff() == s2.coeff() and
+         s2.O() == s2.O() and
+         s1.cutoff_radius() == s2.cutoff_radius();
+}
 
 }

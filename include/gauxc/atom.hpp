@@ -26,7 +26,8 @@ struct Atom {
   }
 
 #ifdef GAUXC_ENABLE_BPHASH
-  void hash( bphash::Hasher& h ) {
+  BPHASH_DECLARE_HASHING_FRIENDS
+  void hash( bphash::Hasher& h ) const {
     h( Z.get(), x, y, z );
   }
 #endif
