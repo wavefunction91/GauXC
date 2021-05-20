@@ -1,4 +1,4 @@
-cmake_minimum_required( VERSION 3.17 FATAL_ERROR )
+cmake_minimum_required( VERSION 3.18 FATAL_ERROR )
 project( gauxc_cmake_discovery LANGUAGES C CXX )
 
 find_package( gauxc REQUIRED )
