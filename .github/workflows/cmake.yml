@@ -11,7 +11,7 @@ jobs:
     # well on Windows or Mac.  You can convert this to a matrix build if you need
     # cross-platform coverage.
     # See: https://docs.github.com/en/actions/configuring-and-managing-workflows/configuring-a-workflow#configuring-a-build-matrix
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-18.04
     strategy:
       matrix:
         build_type: [Release, Debug]
@@ -29,7 +29,7 @@ jobs:
 
     - name: Install Newer CMake
       env:
-        CMAKE_URL: "https://cmake.org/files/v3.17/cmake-3.17.0-Linux-x86_64.tar.gz"
+        CMAKE_URL: "https://cmake.org/files/v3.18/cmake-3.18.0-Linux-x86_64.tar.gz"
         CMAKE_PREFIX: ${{runner.workspace}}/install/cmake
       run: mkdir -p ${{runner.workspace}}/install/cmake &&
            wget --no-check-certificate -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C ${CMAKE_PREFIX} &&
