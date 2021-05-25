@@ -25,6 +25,13 @@ struct Atom {
     ar(  Z, x, y, z );
   }
 
+#ifdef GAUXC_ENABLE_BPHASH
+  BPHASH_DECLARE_HASHING_FRIENDS
+  void hash( bphash::Hasher& h ) const {
+    h( Z.get(), x, y, z );
+  }
+#endif
+
 };
 
 inline bool operator==( const Atom& a1, const Atom& a2 ) {

@@ -23,6 +23,10 @@
   #include <mpi.h>
 #endif
 
+#ifdef GAUXC_ENABLE_BPHASH
+  #include <bphash/Hasher.hpp>
+#endif
+
 
 #ifdef __CUDACC__
   #define HOST_DEVICE_ACCESSIBLE __host__ __device__
