@@ -2,8 +2,6 @@
 #include <gauxc/xc_integrator.hpp>
 #include <gauxc/xc_integrator/impl.hpp>
 
-#include <Eigen/Core>
-
 using namespace GauXC;
 
 
