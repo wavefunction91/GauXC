@@ -1,6 +1,7 @@
 #pragma once
 #include <vector>
 #include <cstdint>
+#include <stddef.h>
 
 #include <gauxc/gauxc_config.hpp>
 
