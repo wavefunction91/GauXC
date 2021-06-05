@@ -1,5 +1,8 @@
 # Parallelism
-find_package( OpenMP  REQUIRED )
+if( GAUXC_ENABLE_OPENMP )
+  find_package( OpenMP  REQUIRED )
+endif()
+
 if( GAUXC_ENABLE_MPI )
   message( STATUS "GauXC Enabling MPI" )
   find_package( MPI REQUIRED )
@@ -47,8 +50,11 @@ configure_file(
 target_link_libraries( gauxc PUBLIC 
   ExchCXX::ExchCXX 
   IntegratorXX::IntegratorXX 
-  OpenMP::OpenMP_CXX
 )
+
+if(GAUXC_ENABLE_OPENMP)
+  target_link_libraries( gauxc PUBLIC OpenMP::OpenMP_CXX)
+endif()
 
 if( GAUXC_ENABLE_MPI )
   target_link_libraries( gauxc PUBLIC MPI::MPI_C )
