@@ -1,6 +1,7 @@
 #include "collocation_common.hpp"
 #include "collocation_host.hpp"
 #include "collocation_cuda.hpp"
+#include "collocation_hip.hpp"
 #include "collocation_sycl.hpp"
 
 //#define GENERATE_TESTS
@@ -71,6 +72,34 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
     test_cuda_collocation_masked_combined_deriv1( basis, ref_data );
   }
 #endif // GAUXC_ENABLE_CUDA
+
+#ifdef GAUXC_ENABLE_HIP
+//SECTION( "HIP Eval: Petite Shell List" ) {
+//  test_hip_collocation_petite( basis, ref_data );
+//}
+//SECTION( "HIP Eval: Masked" ) {
+//  test_hip_collocation_masked( basis, ref_data );
+//}
+//SECTION( "HIP Eval: Petite Combined" ) {
+//  test_hip_collocation_petite_combined( basis, ref_data );
+//}
+//SECTION( "HIP Eval: Masked Combined" ) {
+//  test_hip_collocation_masked_combined( basis, ref_data );
+//}
+
+//SECTION( "HIP Eval Grad: Petite Shell List" ) {
+//  test_hip_collocation_deriv1_petite( basis, ref_data );
+//}
+//SECTION( "HIP Eval Grad: Masked" ) {
+//  test_hip_collocation_deriv1_masked( basis, ref_data );
+//}
+//SECTION( "HIP Eval Grad: Petite Combined" ) {
+//  test_hip_collocation_petite_combined_deriv1( basis, ref_data );
+//}
+//SECTION( "HIP Eval: Masked Combined" ) {
+//  test_hip_collocation_masked_combined_deriv1( basis, ref_data );
+//}
+#endif // GAUXC_ENABLE_HIP
 
 
 

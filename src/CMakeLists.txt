@@ -12,7 +12,7 @@ include( gauxc-integratorxx )
 include( gauxc-exchcxx      )
 
 
-add_library( gauxc 
+add_library( gauxc  
   grid.cxx 
   grid_impl.cxx 
   molmeta.cxx 
@@ -33,10 +33,10 @@ target_include_directories( gauxc
     $<INSTALL_INTERFACE:include>
 )
 
-target_compile_options( gauxc
-  PRIVATE
-    $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wpedantic -Wnon-virtual-dtor>
-)
+#target_compile_options( gauxc
+#  PRIVATE
+#    $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wpedantic -Wnon-virtual-dtor>
+#)
 
 # TODO: MAKE MORE GENERAL
 if( GAUXC_ENABLE_SYCL )

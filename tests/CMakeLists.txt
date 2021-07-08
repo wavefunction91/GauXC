@@ -48,9 +48,13 @@ add_executable( gauxc_test
   weights.cxx
   xc_integrator.cxx 
   standards.cxx 
+  xc_integrator.cxx 
   basis/parse_basis.cxx
 )
 target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
+#if( GAUXC_ENABLE_HIP )
+#  target_compile_options( gauxc_test PUBLIC -x c++ )
+#endif()
 
 
 set( GAUXC_REF_DATA_PATH "${PROJECT_SOURCE_DIR}/tests/ref_data" )

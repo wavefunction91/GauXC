@@ -105,6 +105,40 @@ struct XCTaskDevice {
 }
 #endif // GAUXC_ENABLE_CUDA
 
+#ifdef GAUXC_ENABLE_HIP
+namespace hip {
+
+template <typename T>
+struct XCTaskDevice {
+
+  size_t nbe;
+  size_t npts;
+  size_t ncut;
+  size_t nshells;
+
+  double* points;
+  double* weights;
+  size_t* shell_list;
+  size_t* shell_offs;
+  int64_t* submat_cut;
+
+  Shell<T>* shells;
+  double*   nbe_scr;
+  double*   zmat;
+  double*   bf, *dbfx, *dbfy, *dbfz;
+  double*   den, *ddenx, *ddeny, *ddenz;
+  double*   eps, *gamma;
+  double*   vrho, *vgamma;
+
+  size_t iParent;
+  double dist_nearest;
+  double * dist_scratch;
+
+};
+
+}
+#endif // GAUXC_ENABLE_HIP
+
 #ifdef GAUXC_ENABLE_SYCL
 namespace sycl {
 
