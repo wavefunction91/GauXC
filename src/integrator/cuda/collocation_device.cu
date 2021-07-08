@@ -341,7 +341,7 @@ void eval_collocation_masked_combined_deriv1(
 ) {
 
   auto nmax_threads = util::cuda_kernel_max_threads_per_block( 
-    collocation_device_masked_combined_kernel_deriv1<T>
+    collocation_device_masked_combined_radial_kernel_deriv1<T>
   );
 
   dim3 threads(warp_size, nmax_threads/warp_size, 1);
@@ -349,7 +349,28 @@ void eval_collocation_masked_combined_deriv1(
                util::div_ceil( nshells_max, threads.y ),
                ntasks );
 
-  collocation_device_masked_combined_kernel_deriv1<T>
+  collocation_device_masked_combined_radial_kernel_deriv1<T>
+    <<<blocks, threads, 0, stream>>>
+    ( ntasks, shells_device, device_tasks );
+
+  collocation_device_masked_combined_angular_kernel_deriv1<T,0,false>
+    <<<blocks, threads, 0, stream>>>
+    ( ntasks, shells_device, device_tasks );
+  collocation_device_masked_combined_angular_kernel_deriv1<T,1,false>
+    <<<blocks, threads, 0, stream>>>
+    ( ntasks, shells_device, device_tasks );
+
+  collocation_device_masked_combined_angular_kernel_deriv1<T,2,false>
+    <<<blocks, threads, 0, stream>>>
+    ( ntasks, shells_device, device_tasks );
+  collocation_device_masked_combined_angular_kernel_deriv1<T,3,false>
+    <<<blocks, threads, 0, stream>>>
+    ( ntasks, shells_device, device_tasks );
+
+  collocation_device_masked_combined_angular_kernel_deriv1<T,2,true>
+    <<<blocks, threads, 0, stream>>>
+    ( ntasks, shells_device, device_tasks );
+  collocation_device_masked_combined_angular_kernel_deriv1<T,3,true>
     <<<blocks, threads, 0, stream>>>
     ( ntasks, shells_device, device_tasks );
      
