@@ -64,4 +64,6 @@ else()
 endif()
 
 target_link_libraries( gauxc PUBLIC CUDA::cublas )
-target_link_libraries( gauxc PRIVATE $<BUILD_INTERFACE:gauxc_cub> )
+if( TARGET gauxc_cub ) # Handle the case when CUB is implicit
+  target_link_libraries( gauxc PRIVATE $<BUILD_INTERFACE:gauxc_cub> )
+endif()
