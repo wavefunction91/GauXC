@@ -3,6 +3,7 @@
 #include <gauxc/xc_integrator/xc_integrator_impl.hpp>
 #include <gauxc/xc_integrator/xc_cuda_data.hpp>
 #include <gauxc/xc_integrator/xc_cuda_util.hpp>
+#include <gauxc/util/nccl_util.hpp>
 
 #ifdef GAUXC_ENABLE_CUDA
 namespace GauXC  {
@@ -21,6 +22,9 @@ class IncoreXCCudaIntegrator : public XCIntegratorImpl<MatrixType> {
   using exc_vxc_type  = typename base_type::exc_vxc_type;
     
   std::shared_ptr< XCCudaData< value_type > > cuda_data_;
+#ifdef GAUXC_ENABLE_NCCL
+  std::unique_ptr<util::nccl_comm>            nccl_comm_;
+#endif
 
   exc_vxc_type eval_exc_vxc_( const MatrixType& ) override; 
 
@@ -28,7 +32,11 @@ public:
 
   template <typename... Args>
   IncoreXCCudaIntegrator( Args&&... args ) :
-    base_type( std::forward<Args>(args)... ) { }
+    base_type( std::forward<Args>(args)... ) { 
+#ifdef GAUXC_ENABLE_NCCL
+    nccl_comm_ = std::make_unique< util::nccl_comm >( this->comm_ );
+#endif
+    }
 
   IncoreXCCudaIntegrator( const IncoreXCCudaIntegrator& ) = default;
   IncoreXCCudaIntegrator( IncoreXCCudaIntegrator&& ) noexcept = default;
@@ -61,6 +69,7 @@ typename IncoreXCCudaIntegrator<MatrixType>::exc_vxc_type
   int32_t world_rank, world_size;
   MPI_Comm_rank( this->comm_, &world_rank );
   MPI_Comm_size( this->comm_, &world_size );
+
 
 /* XXX: Does not work on Summit
   MPI_Comm node_comm;
@@ -124,17 +133,22 @@ typename IncoreXCCudaIntegrator<MatrixType>::exc_vxc_type
 
   } );
 
-  this->timer_.time_op("XCIntegrator.CUDAFree", [&](){
-    cuda_data_.reset(); // Free up CUDA memory
+  // If we are not using NCCL then data transfer happens before reduction
+#ifndef GAUXC_ENABLE_NCCL
+  this->timer_.time_op("XCIntegrator.CUDADtoHTransfer", [&](){
+    device_transfer(*cuda_data_, VXC.data(), &EXC, &N_EL);
   } );
+#endif
 
 #ifdef GAUXC_ENABLE_MPI
-
 
   if( world_size > 1 ) {
 
     this->timer_.time_op("XCIntegrator.AllReduce", [&]() {
 
+#ifdef GAUXC_ENABLE_NCCL
+      device_allreduce< value_type>(*nccl_comm_, *cuda_data_);
+#else
       // Test of communicator is an inter-communicator
       // XXX: Can't think of a case when this would be true, but who knows...
       int inter_flag;
@@ -160,12 +174,24 @@ typename IncoreXCCudaIntegrator<MatrixType>::exc_vxc_type
         MPI_Allreduce( &N_EL_cpy, &N_EL, 1, MPI_DOUBLE, MPI_SUM, this->comm_ );
 
       }
-
+#endif
     } );
 
   }
 
 #endif
+
+  // If we are using NCCL then data transfer happens after reduction
+#ifdef GAUXC_ENABLE_NCCL
+  this->timer_.time_op("XCIntegrator.CUDADtoHTransfer", [&](){
+    device_transfer(*cuda_data_, VXC.data(), &EXC, &N_EL);
+  } );
+#endif
+
+
+  this->timer_.time_op("XCIntegrator.CUDAFree", [&](){
+    cuda_data_.reset(); // Free up CUDA memory
+  } );
 
 #ifdef GAUXC_ENABLE_MAGMA
   // Finalize MAGMA

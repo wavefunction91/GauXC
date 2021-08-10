@@ -111,7 +111,8 @@ template <typename F>
 using device_task_container = std::vector< cuda::XCTaskDevice<F> >;
 
 template <typename F>
-std::tuple< task_iterator, device_task_container<F> >
+std::tuple< typename XCCudaData<F>::task_iterator, 
+	    typename XCCudaData<F>::device_task_container >
   XCCudaData<F>::generate_buffers( const BasisSet<F>& basis,
                                    task_iterator      task_begin,
                                    task_iterator      task_end    ) {

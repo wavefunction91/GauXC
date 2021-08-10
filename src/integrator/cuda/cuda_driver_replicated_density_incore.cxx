@@ -374,16 +374,49 @@ void process_batches_cuda_replicated_density_incore_p(
 
   }
 
-  // Receive XC terms from host
-  util::cuda_copy( nbf * nbf, VXC, cuda_data.vxc_device, "VXC D2H" );
+  symmetrize_matrix<double>(nbf, nbf, cuda_data.vxc_device, *cuda_data.master_stream);
+  cudaStreamSynchronize( *cuda_data.master_stream );
+}
 
+#ifdef GAUXC_ENABLE_NCCL
+template <typename F>
+void device_allreduce(
+  ncclComm_t             nccl_comm,
+  XCCudaData<F>    &     cuda_data
+) {
+  cudaStream_t   master_stream = *cuda_data.master_stream;
+  const auto nbf = cuda_data.nbf;
+
+  ncclAllReduce((const void*)cuda_data.vxc_device,
+                (void*)      cuda_data.vxc_device,
+                nbf * nbf, ncclDouble, ncclSum, nccl_comm, master_stream);
+
+  ncclAllReduce((const void*)cuda_data.exc_device,
+                (void*)      cuda_data.exc_device,
+                1, ncclDouble, ncclSum, nccl_comm, master_stream);
+
+  ncclAllReduce((const void*)cuda_data.nel_device,
+                (void*)      cuda_data.nel_device,
+                1, ncclDouble, ncclSum, nccl_comm, master_stream);
+
+  cudaStreamSynchronize(master_stream);
+}
+#endif
+
+template <typename F>
+void device_transfer(
+  XCCudaData<F>    &     cuda_data,
+  F*                     VXC,
+  F*                     EXC,
+  F*                     NEL
+) {
+  const auto nbf = cuda_data.nbf;
+
+  // Receive XC terms from host
+  if( not cuda_data.vxcinc_host ) 
+    util::cuda_copy( nbf * nbf, VXC, cuda_data.vxc_device, "VXC D2H" );
   util::cuda_copy( 1, EXC, cuda_data.exc_device, "EXC D2H" );
   util::cuda_copy( 1, NEL, cuda_data.nel_device, "NEL D2H" );
-
-  // Symmetrize VXC
-  for( int32_t j = 0;   j < nbf; ++j )
-  for( int32_t i = j+1; i < nbf; ++i )
-    VXC[ j + i*nbf ] = VXC[ i + j*nbf ];
 
 }
 
@@ -407,6 +440,20 @@ void process_batches_cuda_replicated_density_incore_p<F, ND>(\
 
 CUDA_IMPL( double, 0 );
 CUDA_IMPL( double, 1 );
+
+#ifdef GAUXC_ENABLE_NCCL
+template void device_allreduce<double>(
+  ncclComm_t             nccl_comm,
+  XCCudaData<double>&    cuda_data
+);
+#endif
+
+template void device_transfer(
+  XCCudaData<double>&    cuda_data,
+  double*                VXC,
+  double*                EXC,
+  double*                NEL
+);
 
 }
 }

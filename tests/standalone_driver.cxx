@@ -13,8 +13,6 @@
 #include <gauxc/new_xc_integrator/impl.hpp>
 #include <gauxc/new_xc_integrator/integrator_factory.hpp>
 
-#include <Eigen/Core>
-
 using namespace GauXC;
 using namespace ExchCXX;
 

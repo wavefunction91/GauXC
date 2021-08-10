@@ -4,6 +4,7 @@
 #cmakedefine GAUXC_ENABLE_CUDA
 #cmakedefine GAUXC_ENABLE_MPI
 #cmakedefine GAUXC_ENABLE_MAGMA
+#cmakedefine GAUXC_ENABLE_NCCL
 #cmakedefine GAUXC_ENABLE_GAU2GRID
 
 #cmakedefine GAUXC_ENABLE_DEVICE
@@ -14,6 +15,9 @@
   #include <cublas_v2.h>
 #ifdef GAUXC_ENABLE_MAGMA
   #include <magma_v2.h>
+#endif
+#ifdef GAUXC_ENABLE_NCCL
+  #include <nccl.h>
 #endif
 #endif
 

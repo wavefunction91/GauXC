@@ -22,7 +22,6 @@ add_library( gauxc STATIC
   atomic_radii.cxx 
   load_balancer_impl.cxx 
   load_balancer.cxx 
-  replicated_load_balancer.cxx 
 )
 
 target_include_directories( gauxc
@@ -57,6 +56,7 @@ endif()
 
 #add_subdirectory( integrator )
 add_subdirectory( new_integrator )
+add_subdirectory( load_balancer )
 
 
 add_library( gauxc::gauxc ALIAS gauxc )
