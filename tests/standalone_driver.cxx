@@ -46,6 +46,8 @@ int main(int argc, char** argv) {
     Molecule mol;
     if( test_case.find("benzene") != std::string::npos )
       mol = make_benzene();
+    else if( test_case.find("water") != std::string::npos )
+      mol = make_water();
     else if( test_case.find("taxol") != std::string::npos )
       mol = make_taxol();
     else if( test_case.find("ubiquitin") != std::string::npos )
@@ -65,9 +67,14 @@ int main(int argc, char** argv) {
     else
       throw std::runtime_error("Unknown Basis Set");
 
-    for( auto& sh : basis ) 
-      sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
-    basis.generate_shell_to_ao();
+    for( auto& sh : basis ){ 
+      //sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
+      sh.set_shell_tolerance( 1e-10 );
+      sh.set_pure(true);
+    }
+
+    //std::cout << "Basis" << std::endl;
+    //for( auto& sh : basis ) std::cout << sh << std::endl;
 
     //std::cout << "Basis" << std::endl;
     //for( auto i = 0; i < basis.size(); ++i ) {

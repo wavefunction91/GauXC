@@ -9,7 +9,7 @@ namespace GauXC      {
 namespace integrator {
 
 std::tuple< std::vector< std::array<int32_t, 3> > , std::vector< int32_t > >
-  gen_compressed_submat_map( const BasisSet<double>&       basis,
+  gen_compressed_submat_map( const BasisSetMap&       basis_map,
                              const std::vector< int32_t >& shell_mask,
                              const int32_t LDA, const int32_t block_size ) {
 
@@ -18,8 +18,8 @@ std::tuple< std::vector< std::array<int32_t, 3> > , std::vector< int32_t > >
 
   // Init as if there is no screening
   submat_map.emplace_back(
-    basis.shell_to_ao_range( shell_mask.front() ).first,
-    basis.shell_to_ao_range( shell_mask.back()  ).second
+    basis_map.shell_to_ao_range( shell_mask.front() ).first,
+    basis_map.shell_to_ao_range( shell_mask.back()  ).second
   );
 
 
@@ -27,11 +27,11 @@ std::tuple< std::vector< std::array<int32_t, 3> > , std::vector< int32_t > >
 
     if( *(sh_it+1) - *(sh_it) != 1 ) {
 
-      submat_map.back().second = basis.shell_to_ao_range(*sh_it).second;
+      submat_map.back().second = basis_map.shell_to_ao_range(*sh_it).second;
         
       submat_map.emplace_back(
-        basis.shell_to_ao_range( *(sh_it+1) ).first,
-        basis.shell_to_ao_range( shell_mask.back()  ).second
+        basis_map.shell_to_ao_range( *(sh_it+1) ).first,
+        basis_map.shell_to_ao_range( shell_mask.back()  ).second
       );
 
     }
@@ -43,7 +43,7 @@ std::tuple< std::vector< std::array<int32_t, 3> > , std::vector< int32_t > >
 
   if( shell_mask.size() == 1 )
     submat_map.back().second = 
-      basis.shell_to_ao_range(shell_mask[0]).second;
+      basis_map.shell_to_ao_range(shell_mask[0]).second;
 
 
   /*

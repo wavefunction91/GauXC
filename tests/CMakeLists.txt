@@ -42,9 +42,9 @@ add_executable( gauxc_test
   molgrid_test.cxx 
   basisset_test.cxx 
   load_balancer_test.cxx 
-  xc_integrator.cxx 
-  collocation.cxx
-  weights.cxx
+  #  xc_integrator.cxx 
+  #  collocation.cxx
+  #  weights.cxx
   standards.cxx 
   basis/parse_basis.cxx
 )

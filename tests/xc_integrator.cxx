@@ -18,7 +18,6 @@ void test_xc_integrator( ExecutionSpace ex, Molecule mol, const bool check_state
 
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
-  basis.generate_shell_to_ao();
 
   MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
 

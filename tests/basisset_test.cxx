@@ -1,5 +1,6 @@
 #include "catch2/catch.hpp"
 #include <gauxc/basisset.hpp>
+#include <gauxc/basisset_map.hpp>
 #include <gauxc/molecule.hpp>
 
 #include "standards.hpp"
@@ -181,7 +182,7 @@ TEST_CASE("BasisSet", "[basisset]") {
 
   CHECK( basis.nshells() == 10 );
   CHECK( basis.nbf()     == (test_spherical ? 18 : 19) );
-  basis.generate_shell_to_ao();
+  BasisSetMap basis_map( basis );
 
 
   std::vector<int32_t> ref_shell_to_ao = {
@@ -190,10 +191,10 @@ TEST_CASE("BasisSet", "[basisset]") {
   (test_spherical ? 16 : 17), (test_spherical ? 17 : 18)  // H2
   };
 
-  CHECK( basis.shell_to_first_ao() == ref_shell_to_ao );
+  CHECK( basis_map.shell_to_first_ao() == ref_shell_to_ao );
 
   for(auto i = 0; i < basis.nshells(); ++i) {
-    auto [sh_st,sh_en] = basis.shell_to_ao_range(i);
+    auto [sh_st,sh_en] = basis_map.shell_to_ao_range(i);
     CHECK(sh_st == ref_shell_to_ao[i]);
     CHECK(sh_en == ref_shell_to_ao[i] + basis[i].size());
   }

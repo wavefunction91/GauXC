@@ -5,6 +5,7 @@
 #include <iostream>
 #include <cassert>
 #include <algorithm>
+#include <tuple>
 
 #include <gauxc/named_type.hpp>
 #include <gauxc/gauxc_config.hpp>
@@ -53,7 +54,8 @@ private:
   double cutoff_radius_;
   double shell_tolerance_{detail::default_shell_tolerance}; 
 
-  double _pad_; // Pad to be a multiple of 16
+  //double _pad_; // Pad to be a multiple of 16
+    
   // Shamelessly adapted from Libint...
   void normalize() {
 
@@ -179,11 +181,34 @@ public:
   inline       prim_array& coeff()        { return coeff_; }
   inline       cart_array& O()            { return O_;     }
 
+  inline void set_pure(bool p) { pure_ = p; }
 
   template <typename Archive>
   void serialize( Archive& ar ) {
     ar( nprim_, l_, pure_, alpha_, coeff_, O_, cutoff_radius_, shell_tolerance_ );
   }
 };
+
+
+template <typename T>
+inline std::ostream& operator<<( std::ostream& os, const Shell<T>& sh ) {
+    os << "GauXC::Shell:( O={" 
+	<< sh.O()[0] << "," << sh.O()[1] << "," << sh.O()[2] 
+	<< "}" << std::endl;
+    os << "  ";
+    os << " {l=" << sh.l() << ",sph=" << sh.pure() << "}";
+    os << std::endl;
+    os << " {cr=" << sh.cutoff_radius() << ",cv=" << sh.cutoff_val() 
+	    <<",mr=" << sh.max_radius() << ",mv=" << sh.max_val() << "}";
+    os << std::endl;
+
+    for(auto i=0ul; i<sh.nprim(); ++i) {
+      os << "  " << sh.alpha()[i];
+      os << " "  << sh.coeff().at(i);
+      os << std::endl;
+    }
+
+    return os;
+}
 
 }

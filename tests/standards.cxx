@@ -11,6 +11,10 @@ Molecule make_water() {
   mol.emplace_back(AtomicNumber(8), 0., 0.000000000000000,  0.000000000000000);
   mol.emplace_back(AtomicNumber(1), 0., 1.579252144093028, -2.174611055780858);
 
+//mol.emplace_back(AtomicNumber(8), 0.000000000000000, -0.143222342980786, 0.000000000000000);
+//mol.emplace_back(AtomicNumber(1), 1.638033502034240,  1.136556880358410, 0.000000000000000);
+//mol.emplace_back(AtomicNumber(1),-1.638033502034240,  1.136556880358410, 0.000000000000000);
+
   return mol;
 
 }
@@ -1404,7 +1408,7 @@ BasisSet<double> make_631Gd( const Molecule& mol, SphericalType sph ) {
 
 BasisSet<double> make_ccpvdz( const Molecule& mol, SphericalType sph ) {
 
-  std::string basis_path = GAUXC_REF_DATA_PATH  "/../basis/old/cc-pvdz.g94";
+  std::string basis_path = GAUXC_REF_DATA_PATH  "/../basis/new/cc-pvdz.g94";
   return parse_basis( mol, basis_path, sph );
 
 }

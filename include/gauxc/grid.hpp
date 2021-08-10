@@ -85,7 +85,7 @@ public:
    *  @param[in] as   Number of angular quadrature points
    *  @param[in] scal Radial scaling factor ( r -> scal*r )
    */
-  Grid( RadialSize rs, AngularSize rs, RadialScale scal ); 
+  Grid( RadialSize rs, AngularSize as, RadialScale scal ); 
 
 
 
