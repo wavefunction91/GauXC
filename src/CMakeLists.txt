@@ -51,7 +51,7 @@ target_link_libraries( gauxc PUBLIC
 )
 
 if( GAUXC_ENABLE_MPI )
-  target_link_libraries( gauxc PUBLIC MPI::MPI_C )
+  target_link_libraries( gauxc PUBLIC MPI::MPI_C MPI::MPI_CXX )
 endif()
 
 #add_subdirectory( integrator )

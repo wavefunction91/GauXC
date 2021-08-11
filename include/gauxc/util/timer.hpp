@@ -17,7 +17,7 @@ namespace detail {
 
     // TODO: Write C++20 friendly version with removal of std::result_of
     static constexpr bool value = 
-      std::is_same< std::result_of_t<F,Args...>, void >::value;
+      std::is_same< std::invoke_result_t<F,Args...>, void >::value;
 
   };
   
@@ -58,7 +58,7 @@ public:
 
   template <typename Op>
   inline 
-  std::enable_if_t< detail::has_void_return_type<Op()>::value > 
+  std::enable_if_t< detail::has_void_return_type<Op>::value > 
     time_op( std::string name, const Op& op ) {
 
 #ifndef GAUXC_DISABLE_TIMINGS
@@ -76,8 +76,8 @@ public:
 
   template <typename Op>
   inline 
-  std::enable_if_t< not detail::has_void_return_type<Op()>::value, 
-                    std::result_of_t<Op()>
+  std::enable_if_t< not detail::has_void_return_type<Op>::value, 
+                    std::invoke_result_t<Op>
                   > time_op( std::string name, const Op& op ) {
 #ifndef GAUXC_DISABLE_TIMINGS
     auto st = std::chrono::high_resolution_clock::now();
@@ -100,7 +100,7 @@ public:
 
   template <typename Op>
   inline 
-  std::enable_if_t< detail::has_void_return_type<Op()>::value > 
+  std::enable_if_t< detail::has_void_return_type<Op>::value > 
     time_op_accumulate( std::string name, const Op& op ) {
 
 #ifndef GAUXC_DISABLE_TIMINGS
@@ -118,8 +118,8 @@ public:
 
   template <typename Op>
   inline 
-  std::enable_if_t< not detail::has_void_return_type<Op()>::value, 
-                    std::result_of_t<Op()>
+  std::enable_if_t< not detail::has_void_return_type<Op>::value, 
+                    std::invoke_result_t<Op>
                   > time_op_accumulate( std::string name, const Op& op ) {
 
 #ifndef GAUXC_DISABLE_TIMINGS

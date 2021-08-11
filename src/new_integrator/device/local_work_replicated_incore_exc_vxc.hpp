@@ -14,6 +14,10 @@
 #include "device/cuda/local_work_replicated_incore_exc_vxc.hpp"
 #endif
 
+#ifdef GAUXC_ENABLE_HIP
+#include "device/hip/local_work_replicated_incore_exc_vxc.hpp"
+#endif
+
 namespace GauXC::integrator::device {
 
 using host_task_iterator = std::vector<XCTask>::iterator;
@@ -38,6 +42,13 @@ void local_work_replicated_incore_exc_vxc_impl(
   
 #ifdef GAUXC_ENABLE_CUDA
   GauXC::integrator::cuda::local_work_replicated_incore_exc_vxc_impl<F,n_deriv>(
+    weight_alg, state, func, basis, mol, meta, device_data, local_work_begin, 
+    local_work_end, P, VXC, exc, n_el 
+  );
+#endif
+
+#ifdef GAUXC_ENABLE_HIP
+  GauXC::integrator::hip::local_work_replicated_incore_exc_vxc_impl<F,n_deriv>(
     weight_alg, state, func, basis, mol, meta, device_data, local_work_begin, 
     local_work_end, P, VXC, exc, n_el 
   );

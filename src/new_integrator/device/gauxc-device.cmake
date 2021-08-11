@@ -10,3 +10,8 @@ target_sources( gauxc PRIVATE
 if( GAUXC_ENABLE_CUDA )
   include( device/cuda/gauxc-cuda.cmake )
 endif()
+
+
+if( GAUXC_ENABLE_HIP )
+  include( device/hip/gauxc-hip.cmake )
+endif()

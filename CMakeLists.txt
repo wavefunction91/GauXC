@@ -1,4 +1,4 @@
-cmake_minimum_required( VERSION 3.17 FATAL_ERROR )
+cmake_minimum_required( VERSION 3.21 FATAL_ERROR )
 
 include(FetchContent)
 set( FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE BOOL "Disable FC Updates" )
@@ -20,11 +20,16 @@ endif()
 # GauXC Options
 option( GAUXC_ENABLE_HOST     "Enable Host Integrator"      ON  )
 option( GAUXC_ENABLE_CUDA     "Enable CUDA Bindings"        OFF )
-option( GAUXC_ENABLE_MAGMA    "Enable MAGMA Linear Algebra" ON  )
-option( GAUXC_ENABLE_NCCL     "Enable NCCL Collectives    " OFF  )
+option( GAUXC_ENABLE_HIP      "Enable HIP Bindings"         OFF )
 option( GAUXC_ENABLE_MPI      "Enable MPI Bindings"         ON  )
 option( GAUXC_ENABLE_TESTS    "Enable Unit Tests"           ON  )
 option( GAUXC_ENABLE_GAU2GRID "Enable Gau2Grid Collocation" ON  )
+
+include(CMakeDependentOption)
+cmake_dependent_option( GAUXC_ENABLE_MAGMA    "Enable MAGMA Linear Algebra" ON
+  "GAUXC_ENABLE_CUDA OR GAUXC_ENABLE_HIP" OFF  )
+cmake_dependent_option( GAUXC_ENABLE_NCCL     "Enable NCCL Collectives    " OFF  
+  "GAUXC_ENABLE_CUDA" OFF )
 
 if( NOT GAUXC_ENABLE_GAU2GRID )
   message( FATAL_ERROR "Gau2Grid is currently a required dependency which 
@@ -32,7 +37,7 @@ if( NOT GAUXC_ENABLE_GAU2GRID )
 endif()
 
 # Decided if we're compiling device bindings
-if( GAUXC_ENABLE_CUDA )
+if( GAUXC_ENABLE_CUDA OR GAUXC_ENABLE_HIP )
   set( GAUXC_ENABLE_DEVICE TRUE CACHE BOOL "Enable Device Code" )
 else()
   set( GAUXC_ENABLE_DEVICE FALSE CACHE BOOL "Enable Device Code" )
@@ -46,6 +51,10 @@ endif()
 
 if( GAUXC_ENABLE_CUDA )
   enable_language( CUDA )
+endif()
+
+if( GAUXC_ENABLE_HIP )
+  enable_language( HIP )
 endif()
 
 add_subdirectory( src )

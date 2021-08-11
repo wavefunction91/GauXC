@@ -1,6 +1,7 @@
 #include <set>
 #include <queue>
 #include <future>
+#include <cstring>
 
 #include <gauxc/util/unused.hpp>
 #include <gauxc/util/misc.hpp>
@@ -229,7 +230,10 @@ void device_execute_shellbatched(
   F* VXC_submat = VXC_submat_host.data();
 
   // Extract subdensity
-  auto [union_submat_cut, foo] = 
+  std::vector<std::array<int32_t,3>> union_submat_cut;
+  std::vector<int32_t> foo;
+  //auto [union_submat_cut, foo] = 
+  std::tie(union_submat_cut,foo) = 
     integrator::gen_compressed_submat_map( basis_map, union_shell_list, 
       basis.nbf(), basis.nbf() );
 
