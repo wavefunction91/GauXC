@@ -2,7 +2,7 @@
 #include <cub/device/device_scan.cuh>
 
 #include "cuda_collision_detection.hpp"
-#include "cuda_device_properties.hpp"
+#include "device/cuda/cuda_device_properties.hpp"
 
 namespace GauXC         {
 namespace load_balancer {

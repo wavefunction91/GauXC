@@ -195,8 +195,11 @@ void device_execute_shellbatched(
     for( auto i : union_shell_list ) {
       basis_subset.emplace_back( basis.at(i) );
     }
-    basis_subset.generate_shell_to_ao();
+    //basis_subset.generate_shell_to_ao();
   });
+
+  // Setup basis maps
+  BasisSetMap basis_map( basis );
 
   const size_t nshells = basis_subset.size();
   const size_t nbe     = basis_subset.nbf();
@@ -227,7 +230,7 @@ void device_execute_shellbatched(
 
   // Extract subdensity
   auto [union_submat_cut, foo] = 
-    integrator::gen_compressed_submat_map( basis, union_shell_list, 
+    integrator::gen_compressed_submat_map( basis_map, union_shell_list, 
       basis.nbf(), basis.nbf() );
 
   timer.time_op_accumulate("XCIntegrator.ExtractSubDensity",[&]() {
