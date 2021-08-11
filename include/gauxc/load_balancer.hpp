@@ -6,6 +6,10 @@
 #include <gauxc/xc_task.hpp>
 #include <gauxc/util/timer.hpp>
 
+#ifdef GAUXC_ENABLE_MPI
+#include <mpi.h>
+#endif
+
 namespace GauXC {
 
 namespace detail {

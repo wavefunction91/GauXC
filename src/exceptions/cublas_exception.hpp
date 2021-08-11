@@ -1,11 +1,13 @@
 #pragma once
 
-#include <gauxc/gauxc_config.hpp>
+#include <gauxc/exceptions.hpp>
 #include <stdexcept>
 #include <string>
 #include <sstream>
 
 #ifdef GAUXC_ENABLE_CUDA
+#include <cublas_v2.h>
+#include <cuda_runtime.h>
 
 namespace GauXC {
 

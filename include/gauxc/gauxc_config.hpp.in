@@ -11,6 +11,7 @@
 #cmakedefine GAUXC_ENABLE_DEVICE
 
 
+#if 0
 #ifdef GAUXC_ENABLE_CUDA
   #include <cuda_runtime.h>
   #include <cublas_v2.h>
@@ -31,6 +32,7 @@
 
 #ifdef GAUXC_ENABLE_MPI
   #include <mpi.h>
+#endif
 #endif
 
 

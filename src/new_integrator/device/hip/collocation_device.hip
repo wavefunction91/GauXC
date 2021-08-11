@@ -1,7 +1,7 @@
 #include "hip/hip_runtime.h"
 #include <gauxc/util/div_ceil.hpp>
 #include <gauxc/util/hip_util.hpp>
-#include <gauxc/exceptions/hip_exception.hpp>
+#include "exceptions/hip_exception.hpp"
 #include <gauxc/xc_task.hpp>
 
 #include "collocation_petite_kernels.hpp"

@@ -4,7 +4,7 @@
 #include "device/local_work_replicated_incore_exc_vxc.hpp"
 #include <gauxc/util/unused.hpp>
 #include <gauxc/gauxc_config.hpp>
-#include <gauxc/exceptions/magma_exception.hpp>
+#include "exceptions/magma_exception.hpp"
 
 namespace GauXC  {
 namespace detail {

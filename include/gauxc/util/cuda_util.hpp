@@ -1,6 +1,6 @@
 #pragma once
 #include <gauxc/gauxc_config.hpp>
-#include <gauxc/exceptions/cuda_exception.hpp>
+#include "exceptions/cuda_exception.hpp"
 
 #ifdef GAUXC_ENABLE_CUDA
 

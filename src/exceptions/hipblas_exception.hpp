@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gauxc/gauxc_config.hpp>
+#include <gauxc/exceptions.hpp>
 #include <stdexcept>
 #include <string>
 #include <sstream>

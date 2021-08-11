@@ -2,7 +2,7 @@
 #include "device/hip/hipblas_extensions.hpp"
 #include <gauxc/util/hipblas_util.hpp>
 #include <gauxc/util/div_ceil.hpp>
-#include <gauxc/exceptions/hipblas_exception.hpp>
+#include "exceptions/hipblas_exception.hpp"
 
 #include "device/hip/hip_device_properties.hpp"
 

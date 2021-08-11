@@ -1,6 +1,6 @@
 #include <gauxc/util/div_ceil.hpp>
 #include <gauxc/util/cuda_util.hpp>
-#include <gauxc/exceptions/cuda_exception.hpp>
+#include "exceptions/cuda_exception.hpp"
 #include <gauxc/xc_task.hpp>
 
 #include "device/cuda/collocation_petite_kernels.hpp"

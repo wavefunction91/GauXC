@@ -1,35 +1,37 @@
 #pragma once
 
-#include <gauxc/gauxc_config.hpp>
+#include <gauxc/exceptions.hpp>
 #include <stdexcept>
 #include <string>
 #include <sstream>
 
-#ifdef GAUXC_ENABLE_HIP
+#ifdef GAUXC_ENABLE_CUDA
+#include <cuda_runtime.h>
+#include <string.h>
 
 namespace GauXC {
 
 /**
- *  @brief A class to handle excecptions arising from HIP operations
+ *  @brief A class to handle excecptions arising from CUDA operations
  */
-class hip_exception : public std::exception {
+class cuda_exception : public std::exception {
 
   std::string file_;       ///< File which contains the code that threw the exception
   int         line_;       ///< Line number of file_ that threw exception
   std::string msg_prefix_; ///< General descriptor of task which threw exception
-  hipError_t err_code_;   ///< HIP error code pertaining to the thrown exception
+  cudaError_t err_code_;   ///< CUDA error code pertaining to the thrown exception
 
   /**
-   *  @brief Get a descriptive message pertaining to the thrown HIP error
+   *  @brief Get a descriptive message pertaining to the thrown CUDA error
    *
-   *  @returns a descritive message pertaining to the HIP error represented by
+   *  @returns a descritive message pertaining to the CUDA error represented by
    *  the internal state of the exception object.
    */
   const char* what() const noexcept override {
      std::stringstream ss;
-     ss << "HIP Exception (" << msg_prefix_ << ")" << std::endl
+     ss << "CUDA Exception (" << msg_prefix_ << ")" << std::endl
         << "  Error Code " << int(err_code_) << ": \"" 
-                           << hipGetErrorString( err_code_ ) << "\"" << std::endl
+                           << cudaGetErrorString( err_code_ ) << "\"" << std::endl
         << "  File       " << file_ << std::endl
         << "  Line       " << line_ << std::endl;
 
@@ -41,23 +43,23 @@ class hip_exception : public std::exception {
 public:
 
   /**
-   *  @brief Construct a hip_exception object
+   *  @brief Construct a cuda_exception object
    *
    *  @param[in] file File which contains the code that threw the exception
    *  @param[in] line Line number of file that threw exception
    *  @param[in] msg  General descriptor of task which threw exception
-   *  @param[in] err  HIP error code pertaining to the thrown exception
+   *  @param[in] err  CUDA error code pertaining to the thrown exception
    */
-  hip_exception( std::string file, int line, std::string msg, hipError_t err ) :
+  cuda_exception( std::string file, int line, std::string msg, cudaError_t err ) :
     file_(file), line_(line), msg_prefix_(msg), err_code_(err) { }
 
-}; // class hip_exception
+}; // class cuda_exception
 
 } // namespace GauXC
 
-// Macro to wrap HIP error handling
-#define GAUXC_HIP_ERROR( MSG, ERR ) \
-  if( ERR != hipSuccess ) \
-    throw hip_exception( __FILE__, __LINE__, MSG, ERR );
+// Macro to wrap CUDA error handling
+#define GAUXC_CUDA_ERROR( MSG, ERR ) \
+  if( ERR != cudaSuccess ) \
+    throw cuda_exception( __FILE__, __LINE__, MSG, ERR );
 
 #endif
