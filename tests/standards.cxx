@@ -1408,7 +1408,7 @@ BasisSet<double> make_631Gd( const Molecule& mol, SphericalType sph ) {
 
 BasisSet<double> make_ccpvdz( const Molecule& mol, SphericalType sph ) {
 
-  std::string basis_path = GAUXC_REF_DATA_PATH  "/../basis/new/cc-pvdz.g94";
+  std::string basis_path = GAUXC_REF_DATA_PATH  "/../basis/old/cc-pvdz.g94";
   return parse_basis( mol, basis_path, sph );
 
 }
