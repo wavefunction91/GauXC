@@ -1,7 +1,6 @@
 #pragma once
 #include <gauxc/oop_xc_integrator/replicated/replicated_xc_host_integrator.hpp>
 #include "xc_host_data.hpp"
-#include "integrator_util/xc_integrator_state.hpp"
 
 namespace GauXC {
 namespace detail {
@@ -18,8 +17,6 @@ public:
   using basis_type = typename base_type::basis_type;
 
 protected:
-
-  XCIntegratorState state_;
 
   void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp, value_type* VXC, int64_t ldvxc,

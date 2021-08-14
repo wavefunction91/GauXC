@@ -23,6 +23,8 @@ protected:
 
   std::vector< XCTask >     local_tasks_;
 
+  LoadBalancerState         state_;
+
   util::Timer               timer_;
 
   virtual std::vector< XCTask > create_local_tasks_() const = 0;
@@ -63,6 +65,8 @@ public:
   const Molecule& molecule() const;
   const MolMeta&  molmeta()  const;
   const basis_type& basis()  const;
+
+  LoadBalancerState& state();
 
 #ifdef GAUXC_ENABLE_MPI
   MPI_Comm comm() const;

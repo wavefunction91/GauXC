@@ -113,6 +113,10 @@ const LoadBalancerImpl::basis_type& LoadBalancerImpl::basis() const {
   return *basis_;
 }
 
+LoadBalancerState& LoadBalancerImpl::state() {
+  return state_;
+}
+
 MPI_Comm LoadBalancerImpl::comm() const {
   return comm_;
 }

@@ -96,6 +96,11 @@ const LoadBalancer::basis_type& LoadBalancer::basis() const {
   return pimpl_->basis();
 }
 
+LoadBalancerState& LoadBalancer::state() {
+  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  return pimpl_->state();
+}
+
 MPI_Comm LoadBalancer::comm() const {
   if( not pimpl_ ) throw std::runtime_error("Not Initialized");
   return pimpl_->comm();

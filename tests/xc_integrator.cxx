@@ -50,8 +50,6 @@ void test_xc_integrator( ExecutionSpace ex, Molecule mol, const bool check_state
   auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
   CHECK( EXC == Approx( EXC_ref ) );
 
-  std::cout << EXC << ", " << EXC_ref << std::endl;
-
   //std::cout << "VXC" << std::endl;
   //std::cout << VXC << std::endl;
   //std::cout << "VXC_ref" << std::endl;

@@ -16,6 +16,9 @@ namespace detail {
   class LoadBalancerImpl;
 }
 
+struct LoadBalancerState {
+  bool modified_weights_are_stored = false;
+};
 
 class LoadBalancer {
 
@@ -65,6 +68,8 @@ public:
   const Molecule& molecule() const;
   const MolMeta&  molmeta()  const;
   const basis_type& basis()  const;
+  
+  LoadBalancerState& state();
 
 #ifdef GAUXC_ENABLE_MPI
   MPI_Comm comm() const;

@@ -32,7 +32,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Get Tasks
   this->load_balancer_->get_tasks();
-  state_.load_balancer_populated = true; // Update external state
 
   // TODO: This is a bad name for this
   size_t n_deriv = this->func_->is_gga() ? 1 : 0;
@@ -130,10 +129,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
   // Compute Partition Weights
-  if( not state_.modified_weights_are_stored ) {
+  auto& lb_state = this->load_balancer_->state();
+  if( not lb_state.modified_weights_are_stored ) {
     lwd->partition_weights( XCWeightAlg::SSF, mol, meta, 
       tasks.begin(), tasks.end() );
-    state_.modified_weights_are_stored = true;
+    lb_state.modified_weights_are_stored = true;
   }
 
   // TODO: Get max weight / task
