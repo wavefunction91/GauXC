@@ -7,7 +7,7 @@
 #include <string>
 
 #ifdef GAUXC_ENABLE_HOST
-#include "host/host_weights.hpp"
+#include "host/reference/weights.hpp"
 #endif
 
 #ifdef GAUXC_ENABLE_CUDA
@@ -73,8 +73,8 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
 
   ref_data.tasks_unm = tasks; // Make a copy of un modified tasks
 
-  integrator::host::partition_weights_host( XCWeightAlg::SSF,
-    mol, lb.molmeta(), tasks );
+  reference_ssf_weights_host( 
+    mol, lb.molmeta(), tasks.begin(), tasks.end() );
 
   // Clear out unneeded data
   for( auto& task : tasks ) {
@@ -99,8 +99,9 @@ void test_host_weights( std::ifstream& in_file ) {
     ar( ref_data );
   }
 
-  integrator::host::partition_weights_host( XCWeightAlg::SSF,
-    ref_data.mol, *ref_data.meta, ref_data.tasks_unm );
+  reference_ssf_weights_host( 
+    ref_data.mol, *ref_data.meta, ref_data.tasks_unm.begin(), 
+    ref_data.tasks_unm.end() );
 
 
   size_t ntasks = ref_data.tasks_unm.size();

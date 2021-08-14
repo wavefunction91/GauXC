@@ -1,6 +1,6 @@
 #ifdef GAUXC_ENABLE_HOST
 #include "collocation_common.hpp"
-#include "host/host_collocation.hpp"
+#include "host/reference/collocation.hpp"
 
 void generate_collocation_data( const Molecule& mol, const BasisSet<double>& basis,
                                 std::ofstream& out_file, size_t ntask_save = 10 ) {
@@ -35,11 +35,11 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
                         deval_y( nbf * npts ),
                         deval_z( nbf * npts );
 
-    integrator::host::eval_collocation_deriv1( npts, mask.size(), nbf,
-                                               pts.data()->data(), basis,
-                                               mask.data(),
-                                               eval.data(), deval_x.data(),
-                                               deval_y.data(), deval_z.data() );
+    gau2grid_collocation_gradient( npts, mask.size(), nbf,
+                                   pts.data()->data(), basis,
+                                   mask.data(),
+                                   eval.data(), deval_x.data(),
+                                   deval_y.data(), deval_z.data() );
 
     auto max_abs = *std::max_element( eval.begin(), eval.end(),
                    [](auto a, auto b){ return std::abs(a) < std::abs(b); } );
@@ -83,10 +83,10 @@ void test_host_collocation( const BasisSet<double>& basis, std::ifstream& in_fil
     std::vector<double> eval( nbf * npts );
 
 
-    integrator::host::eval_collocation( npts, mask.size(), nbf,
-                                        pts.data()->data(), basis,
-                                        mask.data(),
-                                        eval.data() );
+    gau2grid_collocation( npts, mask.size(), nbf,
+                          pts.data()->data(), basis,
+                          mask.data(),
+                          eval.data() );
 
     for( auto i = 0; i < npts * nbf; ++i )
       CHECK( eval[i] == Approx( d.eval[i] ) );
@@ -120,11 +120,11 @@ void test_host_collocation_deriv1( const BasisSet<double>& basis, std::ifstream&
                         deval_z( nbf * npts );
 
 
-    integrator::host::eval_collocation_deriv1( npts, mask.size(), nbf,
-                                               pts.data()->data(), basis,
-                                               mask.data(),
-                                               eval.data(), deval_x.data(),
-                                               deval_y.data(), deval_z.data() );
+    gau2grid_collocation_gradient( npts, mask.size(), nbf,
+                                   pts.data()->data(), basis,
+                                   mask.data(),
+                                   eval.data(), deval_x.data(),
+                                   deval_y.data(), deval_z.data() );
 
     for( auto i = 0; i < npts * nbf; ++i )
       CHECK( eval[i] == Approx( d.eval[i] ) );

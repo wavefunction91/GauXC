@@ -64,6 +64,11 @@ public:
 
   const Molecule& molecule() const;
   const MolMeta&  molmeta()  const;
+  const basis_type& basis()  const;
+
+#ifdef GAUXC_ENABLE_MPI
+  MPI_Comm comm() const;
+#endif
 
 };
 

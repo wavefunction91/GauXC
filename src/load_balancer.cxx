@@ -91,6 +91,16 @@ const MolMeta& LoadBalancer::molmeta() const {
   return pimpl_->molmeta();
 }
 
+const LoadBalancer::basis_type& LoadBalancer::basis() const {
+  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  return pimpl_->basis();
+}
+
+MPI_Comm LoadBalancer::comm() const {
+  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  return pimpl_->comm();
+}
+
 
 
 namespace factory {

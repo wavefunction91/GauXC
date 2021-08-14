@@ -1,7 +1,7 @@
 #include "ut_common.hpp"
 #include <gauxc/xc_integrator.hpp>
-#include <gauxc/new_xc_integrator/impl.hpp>
-#include <gauxc/new_xc_integrator/integrator_factory.hpp>
+#include <gauxc/oop_xc_integrator/impl.hpp>
+#include <gauxc/oop_xc_integrator/integrator_factory.hpp>
 
 using namespace GauXC;
 
@@ -32,11 +32,9 @@ void test_xc_integrator( ExecutionSpace ex, Molecule mol, const bool check_state
   functional_type func( ExchCXX::Backend::builtin, ExchCXX::Functional::PBE0, ExchCXX::Spin::Unpolarized );
 
   using matrix_type = Eigen::MatrixXd;
-#ifdef GAUXC_ENABLE_MPI
-  auto integrator = make_default_integrator<matrix_type>( ex, comm, func, basis, lb );
-#else
-  auto integrator = make_default_integartor<matrix_type>( ex, func, basis, lb );
-#endif
+  //auto integrator = make_default_integrator<matrix_type>( ex, comm, func, basis, lb );
+  XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", "Default", "Default" );
+  auto integrator = integrator_factory.get_instance( func, lb );
 
 
   matrix_type P,VXC_ref;

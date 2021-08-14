@@ -55,7 +55,8 @@ if( GAUXC_ENABLE_MPI )
 endif()
 
 #add_subdirectory( integrator )
-add_subdirectory( new_integrator )
+#add_subdirectory( new_integrator )
+add_subdirectory( oop_integrator )
 add_subdirectory( load_balancer )
 
 

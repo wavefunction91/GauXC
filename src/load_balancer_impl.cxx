@@ -109,4 +109,12 @@ const MolMeta& LoadBalancerImpl::molmeta() const {
   return *molmeta_;
 }
 
+const LoadBalancerImpl::basis_type& LoadBalancerImpl::basis() const {
+  return *basis_;
+}
+
+MPI_Comm LoadBalancerImpl::comm() const {
+  return comm_;
+}
+
 }
