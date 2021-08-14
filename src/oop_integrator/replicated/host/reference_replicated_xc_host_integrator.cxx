@@ -1,5 +1,6 @@
 #include "reference_replicated_xc_host_integrator.hpp"
 #include "integrator_util/integrator_common.hpp"
+#include "host/local_host_work_driver.hpp"
 #include <stdexcept>
 
 namespace GauXC  {

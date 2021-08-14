@@ -70,6 +70,7 @@ struct XCTask {
 };
 
 
+#if 0
 #ifdef GAUXC_ENABLE_CUDA
 namespace cuda {
 
@@ -104,6 +105,18 @@ struct XCTaskDevice {
 };
 
 }
+#endif
+#else
+
+#ifdef GAUXC_ENABLE_DEVICE
+
+// FWD declare XC Task Device
+namespace device {
+template <typename T> struct XCTaskDevice;
+}
+
+#endif
+
 #endif
 
 }

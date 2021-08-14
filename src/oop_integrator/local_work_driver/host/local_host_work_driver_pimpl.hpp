@@ -1,5 +1,5 @@
 #pragma once
-#include <gauxc/oop_xc_integrator/local_work_driver.hpp>
+#include "local_host_work_driver.hpp"
 
 namespace GauXC  {
 namespace detail {

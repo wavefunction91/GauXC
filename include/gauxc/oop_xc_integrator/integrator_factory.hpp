@@ -2,7 +2,7 @@
 #include <gauxc/oop_xc_integrator/impl.hpp>
 #include <stdexcept>
 
-#include <gauxc/oop_xc_integrator/local_work_driver/factory.hpp>
+#include <gauxc/oop_xc_integrator/local_work_driver.hpp>
 #include <gauxc/oop_xc_integrator/replicated/replicated_xc_integrator_factory.hpp>
 
 namespace GauXC {

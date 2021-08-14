@@ -1,5 +1,6 @@
 #include <gauxc/oop_xc_integrator/replicated/replicated_xc_host_integrator.hpp>
 #include "reference_replicated_xc_host_integrator.hpp"
+#include "host/local_host_work_driver.hpp"
 
 namespace GauXC  {
 namespace detail {

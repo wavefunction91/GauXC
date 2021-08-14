@@ -1,4 +1,4 @@
-#include <gauxc/oop_xc_integrator/local_work_driver/factory.hpp>
+#include <gauxc/oop_xc_integrator/local_work_driver.hpp>
 #include "host/reference_local_host_work_driver.hpp"
 
 namespace GauXC {
