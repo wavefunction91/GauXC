@@ -10,8 +10,8 @@
 #include "eigen3_matrix_serialization.hpp"
 
 #include <gauxc/xc_integrator.hpp>
-#include <gauxc/new_xc_integrator/impl.hpp>
-#include <gauxc/new_xc_integrator/integrator_factory.hpp>
+#include <gauxc/oop_xc_integrator/impl.hpp>
+#include <gauxc/oop_xc_integrator/integrator_factory.hpp>
 
 using namespace GauXC;
 using namespace ExchCXX;
@@ -100,12 +100,8 @@ int main(int argc, char** argv) {
 
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;
-#ifdef GAUXC_ENABLE_MPI
-    auto integrator = make_default_integrator<matrix_type>( ExecutionSpace::Device, MPI_COMM_WORLD, func, 
-                                                            basis, lb );
-#else
-    auto integrator = make_default_integrator<matrix_type>( ExecutionSpace::Device, func, basis, lb );
-#endif
+    XCIntegratorFactory<matrix_type> integrator_factory( ExecutionSpace::Host, "Replicated", "Default", "Default" );
+    auto integrator = integrator_factory.get_instance( func, lb );
 
     matrix_type P,VXC_ref;
     double EXC_ref;
