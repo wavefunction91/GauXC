@@ -70,7 +70,6 @@ int main(int argc, char** argv) {
     for( auto& sh : basis ){ 
       //sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
       sh.set_shell_tolerance( 1e-10 );
-      sh.set_pure(true);
     }
 
     //std::cout << "Basis" << std::endl;
