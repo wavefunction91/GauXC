@@ -88,7 +88,7 @@ public:
    *  @param[in] i Shell index
    *  @returns   Size of shell "i"
    */
-  auto shell_size(int32_t i) const { return shell_sizes_[i]; }
+  auto shell_size(int32_t i) const { return shell_sizes_.at(i); }
 
 }; // class BasisSetMap
 

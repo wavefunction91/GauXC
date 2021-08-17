@@ -3,3 +3,12 @@ target_sources( gauxc PRIVATE
 )
 
 add_subdirectory(host)
+
+if(GAUXC_ENABLE_DEVICE)
+  add_subdirectory(device)
+endif()
+
+target_include_directories( gauxc
+  PUBLIC
+    $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
+)

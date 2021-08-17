@@ -106,17 +106,6 @@ struct XCTaskDevice {
 
 }
 #endif
-#else
-
-#ifdef GAUXC_ENABLE_DEVICE
-
-// FWD declare XC Task Device
-namespace device {
-template <typename T> struct XCTaskDevice;
-}
-
-#endif
-
 #endif
 
 }
