@@ -59,6 +59,12 @@ struct XCDeviceStackData : public XCDeviceData {
   host_task_iterator generate_buffers( const BasisSetMap&,
     host_task_iterator, host_task_iterator) override final;
   void allocate_static_data( int32_t, int32_t, int32_t ) override final;
+  void send_static_data( const double* P, int32_t ldp,
+    const BasisSet<double>& basis, const Molecule& mol,
+    const MolMeta& meta ) override final;
+  void zero_integrands() override final;
+  void retrieve_xc_integrands( double* EXC, double* N_EL,
+    double* VXC, int32_t ldvxc ) override final;
 
 
   // New overridable APIs
@@ -70,13 +76,27 @@ struct XCDeviceStackData : public XCDeviceData {
 
 
   // Device specific APIs
-  virtual device_buffer_t allocate_device_buffer(int64_t sz = -1) = 0;
+  virtual void allocate_device_buffer(int64_t sz = -1) = 0;
   virtual void master_queue_synchronize() = 0;
-  virtual void copy_to_device_async( size_t, const void*, void*, std::string ) = 0;
+  virtual void copy_async_( size_t, const void*, void*, std::string ) = 0;
+  virtual void set_zero_( size_t, void*, std::string );
+
+  // Implementation specific APIs
   virtual void allocate_rab() = 0;
+  virtual void send_rab(const MolMeta&) = 0;
   virtual size_t get_submat_chunk_size(int32_t,int32_t) = 0;
   virtual size_t get_static_mem_requirement() = 0;
 
+
+  template <typename T>
+  void copy_async( size_t sz, const T* src, T* dest, std::string msg ) {
+    copy_async_( sz * sizeof(T), src, dest, msg );
+  }
+
+  template <typename T>
+  void set_zero(size_t sz, T* data, std::string msg) {
+    set_zero_(sz*sizeof(T), data, msg);
+  }
 };
 
 }

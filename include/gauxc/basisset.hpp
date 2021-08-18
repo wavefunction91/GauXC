@@ -15,9 +15,7 @@ namespace GauXC {
  *  @tparam F Datatype representing the internal basis set storage
  */
 template <typename F>
-class BasisSet : public std::vector<Shell<F>> {
-
-public:
+struct BasisSet : public std::vector<Shell<F>> {
 
   /**
    *  @brief Construct a BasisSet object

@@ -30,8 +30,6 @@ protected:
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data );
 
- virtual std::unique_ptr<XCDeviceData> create_device_data() = 0;
-
 public:
 
   template <typename... Args>

@@ -4,29 +4,37 @@ namespace GauXC {
 
 struct XCDeviceTask {
 
-  size_t nbe;
-  size_t npts;
-  size_t ncut;
-  size_t nblock;
-  size_t nshells;
+  size_t nbe     = 0;
+  size_t npts    = 0;
+  size_t ncut    = 0;
+  size_t nblock  = 0;
+  size_t nshells = 0;
 
-  double* points;
-  double* weights;
-  size_t* shell_list;
-  size_t* shell_offs;
-  int32_t* submat_cut;
-  int32_t* submat_block;
+  double* points         = nullptr;
+  double* weights        = nullptr;
+  size_t* shell_list     = nullptr;
+  size_t* shell_offs     = nullptr;
+  int32_t* submat_cut    = nullptr;
+  int32_t* submat_block  = nullptr;
 
-  double*   nbe_scr;
-  double*   zmat;
-  double*   bf, *dbfx, *dbfy, *dbfz;
-  double*   den, *ddenx, *ddeny, *ddenz;
-  double*   eps, *gamma;
-  double*   vrho, *vgamma;
+  double*   nbe_scr = nullptr;
+  double*   zmat    = nullptr;
+  double*   bf      = nullptr;
+  double*   dbfx    = nullptr;
+  double*   dbfy    = nullptr;
+  double*   dbfz    = nullptr;
+  double*   den     = nullptr;
+  double*   ddenx   = nullptr;
+  double*   ddeny   = nullptr;
+  double*   ddenz   = nullptr;
+  double*   eps     = nullptr;
+  double*   gamma   = nullptr;
+  double*   vrho    = nullptr;
+  double*   vgamma  = nullptr;
 
-  size_t iParent;
-  double dist_nearest;
-  double * dist_scratch;
+  int32_t iParent       = -1;
+  double dist_nearest   = 0.;
+  double * dist_scratch = nullptr;
 
 };
 

@@ -1,4 +1,4 @@
-#include "local_host_work_driver_pimpl.hpp"
+#include "local_device_work_driver_pimpl.hpp"
 #include <stdexcept>
 
 namespace GauXC {
@@ -18,87 +18,32 @@ LocalDeviceWorkDriver::LocalDeviceWorkDriver( LocalDeviceWorkDriver&& other ) no
 
 
 
-
-
-// Partition weights
-void LocalDeviceWorkDriver::partition_weights( task_t* tasks, XCDeviceData* device_data ) {
-  
-
-  throw_if_invalid_pimpl(pimpl_);
-  pimpl_->partition_weights(tasks,device_data);
-
+#define FWD_TO_PIMPL(NAME) \
+void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data ) { \
+  throw_if_invalid_pimpl(pimpl_);                               \
+  pimpl_->NAME(device_data);                                    \
 }
 
 
-// Collocation
-void LocalDeviceWorkDriver::eval_collocation( task_t* tasks, XCDeviceData* device_data ) {
+FWD_TO_PIMPL(partition_weights)         // Partition weights
 
+FWD_TO_PIMPL(eval_collocation)          // Collocation
+FWD_TO_PIMPL(eval_collocation_gradient) // Collocation Gradient
+
+FWD_TO_PIMPL(eval_xmat)                 // X matrix (P * B)
+
+FWD_TO_PIMPL(eval_uvvar_lda)            // U/VVar LDA (density)
+FWD_TO_PIMPL(eval_uvvar_gga)            // U/VVar GGA (density + grad, gamma)
+
+FWD_TO_PIMPL(eval_zmat_lda_vxc)         // Eval Z Matrix LDA VXC
+FWD_TO_PIMPL(eval_zmat_gga_vxc)         // Eval Z Matrix GGA VXC
+
+FWD_TO_PIMPL(inc_vxc)                   // Increment VXC by Z 
+
+
+std::unique_ptr<XCDeviceData> LocalDeviceWorkDriver::create_device_data() {
   throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_collocation(tasks,device_data);
-
+  return pimpl_->create_device_data();
 }
-
-
-// Collocation Gradient
-void LocalDeviceWorkDriver::eval_collocation_gradient( task_t* tasks, XCDeviceData* device_data ) {
-
-  throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_collocation_gradient(tasks,device_data);
-
-}
-
-
-// X matrix (P * B)
-void LocalDeviceWorkDriver::eval_xmat(task_t* tasks, XCDeviceData* device_data ) {
-
-  throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_xmat(tasks,device_data);
-
-}
-
-
-// U/VVar LDA (density)
-void LocalDeviceWorkDriver::eval_uvvar_lda(task_t* tasks, XCDeviceData* device_data ) {
-
-  throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_uvvar_lda(tasks,device_data);
-
-}
-
-
-// U/VVar GGA (density + grad, gamma)
-void LocalDeviceWorkDriver::eval_uvvar_gga(task_t* tasks, XCDeviceData* device_data ) {
-
-  throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_uvvar_gga(tasks,device_data);
-
-}
-
-// Eval Z Matrix LDA VXC
-void LocalDeviceWorkDriver::eval_zmat_lda_vxc(task_t* tasks, XCDeviceData* device_data ) {
-
-  throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_zmat_lda_vxc(tasks,device_data);
-
-}
-
-// Eval Z Matrix GGA VXC
-void LocalDeviceWorkDriver::eval_zmat_gga_vxc(task_t* tasks, XCDeviceData* device_data ) { 
-
-  throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_zmat_gga_vxc(tasks,device_data);
-
-}
-
-
-// Increment VXC by Z
-void LocalDeviceWorkDriver::inc_vxc(task_t* tasks, XCDeviceData* device_data ) { 
-
-  throw_if_invalid_pimpl(pimpl_);
-  pimpl_->inc_vxc(tasks,device_data);
-
-}
-
-
 
 }

@@ -150,13 +150,13 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
   submat_block_device = mem.aligned_alloc<int32_t>( total_nblock_task_batch );
 
   // Send AoS information early to overlap with indirection construction
-  copy_to_device_async( shell_list_pack.size(), shell_list_pack.data(), 
+  copy_async( shell_list_pack.size(), shell_list_pack.data(), 
     shell_list_device, "send_shell_list" );
-  copy_to_device_async( shell_offs_pack.size(), shell_offs_pack.data(), 
+  copy_async( shell_offs_pack.size(), shell_offs_pack.data(), 
     shell_offs_device, "send_shell_offs" );
-  copy_to_device_async( 3 * submat_cut_pack.size(), submat_cut_pack.data()->data(), 
+  copy_async( 3 * submat_cut_pack.size(), submat_cut_pack.data()->data(), 
     submat_cut_device, "send_submat_cut"  ); 
-  copy_to_device_async( submat_block_pack.size(), submat_block_pack.data(), 
+  copy_async( submat_block_pack.size(), submat_block_pack.data(), 
     submat_block_device, "send_submat_block"  ); 
 
   // Construct full indirection
@@ -250,10 +250,13 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
 
   } // End task setup
 
+  // Setup extra pieces to indirection which are algorithm specific
+  device_buffer_t buf_left{ mem.stack(), mem.nleft() };
+  buf_left = add_extra_to_indirection(host_device_tasks, buf_left);
 
 
   // Send indirection
-  copy_to_device_async( host_device_tasks.size(), host_device_tasks.data(), 
+  copy_async( host_device_tasks.size(), host_device_tasks.data(), 
     device_tasks, "send_tasks_device" );
 
 
@@ -261,7 +264,7 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
   master_queue_synchronize(); 
 
   // Update dynmem data for derived impls
-  return device_buffer_t{ mem.stack(), mem.nleft() };
+  return buf_left;
 }
 
 }

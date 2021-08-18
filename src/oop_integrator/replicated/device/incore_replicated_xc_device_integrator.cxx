@@ -34,13 +34,11 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Get Tasks
   auto& tasks = this->load_balancer_->get_tasks();
 
-  // TODO: This is a bad name for this
-  size_t n_deriv = this->func_->is_gga() ? 1 : 0;
-
   // Allocate Device memory
+  auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
   auto device_data_ptr = 
     this->timer_.time_op("XCIntegrator.DeviceAlloc",
-      [=](){ return this->create_device_data(); });
+      [=](){ return lwd->create_device_data(); });
 
 
   // Temporary electron count to judge integrator accuracy
@@ -120,17 +118,18 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   };
   std::sort( task_begin, task_end, task_comparator );
 
-  // TODO: This is a bad name for this
-  const size_t n_deriv = this->func_->is_gga() ? 1 : 0;
 
   // Allocate static data on the stack
   const auto natoms  = mol.natoms();
   const auto nbf     = basis.nbf();
   const auto nshells = basis.size();
-  device_data.allocate_static_data( natoms, n_deriv, nbf, nshells );
+  device_data.allocate_static_data( natoms, nbf, nshells );
 
-  // TODO: Copy static data to device
+  // Copy static data to device
+  device_data.send_static_data( P, ldp, basis, mol, meta );
 
+  // Zero integrands
+  device_data.zero_integrands();
 
   // Processes batches in groups that saturadate available device memory
   auto task_it = task_begin;
@@ -145,8 +144,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->partition_weights( &device_data );
 
     // Evaluate collocation
-    if( n_deriv == 1 ) lwd->eval_collocation_gradient( &device_data );
-    else               lwd->eval_collocation( &device_data );
+    if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
+    else                lwd->eval_collocation( &device_data );
 
     // Evaluate X matrix
     lwd->eval_xmat( &device_data );
@@ -171,10 +170,17 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   } // Loop over batches of batches 
 
 
-  // TODO: Receive XC terms from host
-  // TODO: Symmetrize VXC
+  // Receive XC terms from host
+  device_data.retrieve_xc_integrands( EXC, N_EL, VXC, ldvxc );
+
+
+  // Symmetrize VXC
+  for( int32_t j = 0;   j < nbf; ++j )
+  for( int32_t i = j+1; i < nbf; ++i )
+    VXC[ j + i*ldvxc ] = VXC[ i + j*ldvxc ];
 }
 
 
+template class IncoreReplicatedXCDeviceIntegrator<double>;
 }
 }

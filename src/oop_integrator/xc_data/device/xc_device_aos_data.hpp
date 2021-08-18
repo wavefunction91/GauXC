@@ -38,10 +38,17 @@ struct XCDeviceAoSData : public XCDeviceStackData {
   // Make it polymorphic
   virtual ~XCDeviceAoSData() noexcept = default;
 
-  // API overrides
+  // Overridable API overrides
   virtual size_t get_mem_req( const host_task_type&, const BasisSetMap&) override;
-  virtual device_buffer_t alloc_pack_and_send( host_task_iterator begin, 
-    host_task_iterator end, device_buffer_t buf, const BasisSetMap&) override;
+
+  inline virtual device_buffer_t 
+    add_extra_to_indirection(std::vector<XCDeviceTask>&, device_buffer_t buf) { 
+      return buf;
+    };
+
+  // Final API overrides
+  device_buffer_t alloc_pack_and_send( host_task_iterator begin, 
+    host_task_iterator end, device_buffer_t buf, const BasisSetMap&) final;
 
 };
 

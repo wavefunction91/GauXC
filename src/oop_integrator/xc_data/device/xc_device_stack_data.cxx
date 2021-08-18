@@ -9,7 +9,6 @@ void XCDeviceStackData::allocate_static_data( int32_t _natoms, int32_t _nbf,
   // Save state
   nshells = _nshells;
   nbf     = _nbf; 
-  //n_deriv = _n_deriv; 
   natoms  = _natoms;
 
   // Allocate static memory with proper alignment
@@ -31,7 +30,60 @@ void XCDeviceStackData::allocate_static_data( int32_t _natoms, int32_t _nbf,
   // XXX: RAB Device Storage can be strided for performance, must be handled
   // in derived implementation
   allocate_rab();
+
 }
+
+void XCDeviceStackData::send_static_data( const double* P, int32_t ldp,
+  const BasisSet<double>& basis, const Molecule& mol,
+  const MolMeta& meta ) {
+
+  if( ldp != nbf ) throw std::runtime_error("LDP must bf NBF");
+
+  // Copy Density
+  copy_async( nbf*nbf, P, dmat_device, "P H2D" );
+
+  // Copy Basis Set
+  copy_async( basis.nshells(), basis.data(), shells_device,
+    "Shells H2D" );
+
+  // Copy Atomic Coordinates
+  std::vector<double> coords( 3*natoms );
+  for( auto i = 0ul; i < natoms; ++i ) {
+    coords[ 3*i + 0 ] = mol[i].x;
+    coords[ 3*i + 1 ] = mol[i].y;
+    coords[ 3*i + 2 ] = mol[i].z;
+  }
+  copy_async( 3*natoms, coords.data(), coords_device, "Coords H2D" );
+
+  // Implementation dependent send of RAB
+  send_rab(meta);
+
+  master_queue_synchronize(); 
+}
+
+
+void XCDeviceStackData::zero_integrands() {
+
+  set_zero( nbf*nbf, vxc_device, "VXC Zero" );
+  set_zero( 1,       nel_device, "NEL Zero" );
+  set_zero( 1,       exc_device, "EXC Zero" );
+
+}
+
+void XCDeviceStackData::retrieve_xc_integrands( double* EXC, double* N_EL,
+  double* VXC, int32_t ldvxc ) {
+
+  if( ldvxc != nbf ) throw std::runtime_error("LDVXC must bf NBF");
+  
+  copy_async( nbf*nbf, vxc_device, VXC,  "VXC D2H" );
+  copy_async( 1,       nel_device, N_EL, "NEL D2H" );
+  copy_async( 1,       exc_device, EXC,  "EXC D2H" );
+
+}
+
+
+
+
 
 XCDeviceStackData::host_task_iterator XCDeviceStackData::generate_buffers(
   const BasisSetMap& basis_map,
@@ -151,10 +203,10 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::alloc_pack_and_send(
   vgamma_eval_device = mem.aligned_alloc<double>( total_npts_task_batch );
 
   // Send grid data
-  copy_to_device_async( 3*points_pack.size(), points_pack.data()->data(),
-                        points_device, "send points buffer" );
-  copy_to_device_async( weights_pack.size(), weights_pack.data(),
-                        weights_device, "send weights buffer" );
+  copy_async( 3*points_pack.size(), points_pack.data()->data(),
+              points_device, "send points buffer" );
+  copy_async( weights_pack.size(), weights_pack.data(),
+              weights_device, "send weights buffer" );
 
   // Synchronize on the copy stream to keep host vecs in scope
   master_queue_synchronize(); 

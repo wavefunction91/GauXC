@@ -62,6 +62,8 @@ public:
 
   void inc_vxc( XCDeviceData* );
 
+  std::unique_ptr<XCDeviceData> create_device_data();
+
 private: 
 
   pimpl_type pimpl_; ///< Implementation
