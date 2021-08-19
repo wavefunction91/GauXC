@@ -12,8 +12,8 @@
 
 #ifdef GAUXC_ENABLE_CUDA
 #include <gauxc/util/cuda_util.hpp>
-#include "device/cuda/cuda_weights.hpp"
-#include "device/cuda/cuda_device_properties.hpp"
+#include "device/cuda/cuda_aos_scheme1.hpp"
+#include "device/cuda/cuda_aos_scheme1_weights.hpp"
 #endif
 
 using namespace GauXC;
@@ -155,7 +155,10 @@ void test_cuda_weights( std::ifstream& in_file ) {
 
   size_t npts   = points.size();
   size_t natoms = ref_data.mol.natoms();
-  size_t LDatoms = util::div_ceil( natoms, GauXC::cuda::weight_unroll ) * GauXC::cuda::weight_unroll;
+
+  constexpr auto weight_unroll = detail::CudaAoSScheme1::weight_unroll;
+
+  size_t LDatoms = util::div_ceil( natoms, weight_unroll ) * weight_unroll;
 
   std::vector< double >  coords( 3 * natoms );
   for( auto iat = 0 ; iat < natoms; ++iat ) {
@@ -169,26 +172,36 @@ void test_cuda_weights( std::ifstream& in_file ) {
   auto* weights_d = util::cuda_malloc<double>( npts   );
   auto* iparent_d = util::cuda_malloc<int32_t>( npts  );
   auto* distnea_d = util::cuda_malloc<double>( npts   );
-  auto* rab_d     = util::cuda_malloc<double>( natoms*natoms );
+  auto* rab_d     = util::cuda_malloc<double>( natoms*LDatoms );
   auto* coords_d  = util::cuda_malloc<double>( 3*natoms );
-  auto* dist_scr_d= util::cuda_malloc<double>( npts*natoms );
+  auto* dist_scr_d= util::cuda_malloc<double>( npts*LDatoms );
 
   util::cuda_copy( 3*npts, points_d,  points.data()->data() );
   util::cuda_copy( npts,   weights_d, weights.data() );
   util::cuda_copy( npts,   iparent_d, iparent.data() );
   util::cuda_copy( npts,   distnea_d, dist_nearest.data() );
+
+  std::vector<double> rab_inv(natoms*natoms);
+  for( auto i = 0; i < natoms*natoms; ++i )
+    rab_inv[i] = 1./ref_data.meta->rab().data()[i];
+
   util::cuda_copy_2d( rab_d, LDatoms * sizeof(double),
-                      ref_data.meta->rab().data(), natoms * sizeof(double),
+                      rab_inv.data(), natoms * sizeof(double),
                       natoms * sizeof(double), natoms, "RAB H2D");
-  integrator::cuda::cuda_reciprocal(natoms * LDatoms, rab_d, 0);
 
   util::cuda_copy( 3*natoms, coords_d, coords.data() );
 
   cudaStream_t stream = 0;
+#if 0
   integrator::cuda::partition_weights_cuda_SoA(
     XCWeightAlg::SSF, npts, LDatoms, natoms, points_d,
     iparent_d, distnea_d, rab_d, coords_d,
     weights_d, dist_scr_d, stream );
+#else
+  cuda_aos_scheme1_weights_wrapper( npts, natoms, points_d, rab_d,
+    LDatoms, coords_d, dist_scr_d, LDatoms, iparent_d, distnea_d,
+    weights_d, stream );
+#endif
 
   util::cuda_device_sync();
   util::cuda_copy( npts, weights.data(), weights_d );

@@ -6,6 +6,8 @@
 #include "device/cuda/kernels/collocation_masked_kernels.hpp"
 #include "device/cuda/kernels/collocation_masked_combined_kernels.hpp"
 
+#include "device_specific/cuda_device_constants.hpp"
+
 namespace GauXC {
 
  
@@ -25,9 +27,9 @@ void eval_collocation_masked(
   auto nmax_threads = util::cuda_kernel_max_threads_per_block( 
     collocation_device_masked_kernel<T>
   );
-  auto max_warps_per_thread_block = nmax_threads / warpSize;
+  auto max_warps_per_thread_block = nmax_threads / cuda::warp_size;
 
-  dim3 threads(warpSize, max_warps_per_thread_block, 1);
+  dim3 threads(cuda::warp_size, max_warps_per_thread_block, 1);
   dim3 blocks( util::div_ceil( npts,    threads.x ),
                util::div_ceil( nshells, threads.y ) );
 
@@ -68,8 +70,8 @@ void eval_collocation_masked_combined(
     collocation_device_masked_combined_kernel<T>
   );
 
-  auto max_warps_per_thread_block = nmax_threads / warpSize;
-  dim3 threads(warpSize, max_warps_per_thread_block, 1);
+  auto max_warps_per_thread_block = nmax_threads / cuda::warp_size;
+  dim3 threads(cuda::warp_size, max_warps_per_thread_block, 1);
   dim3 blocks( util::div_ceil( npts_max,    threads.x ),
                util::div_ceil( nshells_max, threads.y ),
                ntasks );
@@ -120,8 +122,8 @@ void eval_collocation_masked_deriv1(
     collocation_device_masked_combined_kernel<T>
   );
 
-  auto max_warps_per_thread_block = nmax_threads / warpSize;
-  dim3 threads(warpSize, max_warps_per_thread_block, 1);
+  auto max_warps_per_thread_block = nmax_threads / cuda::warp_size;
+  dim3 threads(cuda::warp_size, max_warps_per_thread_block, 1);
   dim3 blocks( util::div_ceil( npts,    threads.x ),
                util::div_ceil( nshells, threads.y ) );
 
@@ -178,7 +180,7 @@ void eval_collocation_masked_combined_deriv1(
     collocation_device_masked_combined_kernel_deriv1<T>
   );
 
-  dim3 threads(warpSize, nmax_threads/warpSize, 1);
+  dim3 threads(cuda::warp_size, nmax_threads/cuda::warp_size, 1);
   dim3 blocks( util::div_ceil( npts_max,    threads.x ),
                util::div_ceil( nshells_max, threads.y ),
                ntasks );

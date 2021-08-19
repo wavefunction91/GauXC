@@ -1,6 +1,7 @@
 #pragma once
 
 #include "xc_device_data.hpp"
+#include "device_backend.hpp"
 
 namespace GauXC {
 
@@ -53,7 +54,12 @@ struct XCDeviceStackData : public XCDeviceData {
   double* vgamma_eval_device = nullptr; ///< Gamma XC derivative for task batch
 
 
-  virtual ~XCDeviceStackData() noexcept = default;
+  std::unique_ptr<DeviceBackend> device_backend_ = nullptr;
+
+  XCDeviceStackData() = delete; // No default ctor, must have device backend
+  XCDeviceStackData( std::unique_ptr<DeviceBackend>&& ptr );
+
+  virtual ~XCDeviceStackData() noexcept;
 
   // Final overrides
   host_task_iterator generate_buffers( const BasisSetMap&,
@@ -75,28 +81,11 @@ struct XCDeviceStackData : public XCDeviceData {
   virtual size_t get_mem_req( const host_task_type&, const BasisSetMap& );
 
 
-  // Device specific APIs
-  virtual void allocate_device_buffer(int64_t sz = -1) = 0;
-  virtual void master_queue_synchronize() = 0;
-  virtual void copy_async_( size_t, const void*, void*, std::string ) = 0;
-  virtual void set_zero_( size_t, void*, std::string );
-
   // Implementation specific APIs
-  virtual void allocate_rab() = 0;
-  virtual void send_rab(const MolMeta&) = 0;
-  virtual size_t get_submat_chunk_size(int32_t,int32_t) = 0;
+  virtual size_t get_ldatoms()   = 0;
+  virtual size_t get_rab_align() = 0;
   virtual size_t get_static_mem_requirement() = 0;
 
-
-  template <typename T>
-  void copy_async( size_t sz, const T* src, T* dest, std::string msg ) {
-    copy_async_( sz * sizeof(T), src, dest, msg );
-  }
-
-  template <typename T>
-  void set_zero(size_t sz, T* data, std::string msg) {
-    set_zero_(sz*sizeof(T), data, msg);
-  }
 };
 
 }

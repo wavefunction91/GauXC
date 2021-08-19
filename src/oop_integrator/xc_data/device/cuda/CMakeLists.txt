@@ -3,5 +3,5 @@ if( NOT TARGET CUDA::cublas )
 endif()
 
 target_compile_features( gauxc PRIVATE cuda_std_14 )
-target_sources( gauxc PRIVATE xc_cuda_aos_data_base.cxx )
+target_sources( gauxc PRIVATE cuda_backend.cxx )
 target_link_libraries( gauxc PUBLIC CUDA::cudart CUDA::cublas )

@@ -52,6 +52,8 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
   host_task_iterator task_begin, host_task_iterator task_end, device_buffer_t buf,
   const BasisSetMap& basis_map ) {
 
+  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+
   // Allocate base info in the stack
   buf = XCDeviceStackData::alloc_pack_and_send( task_begin, task_end, buf, 
     basis_map );
@@ -150,13 +152,13 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
   submat_block_device = mem.aligned_alloc<int32_t>( total_nblock_task_batch );
 
   // Send AoS information early to overlap with indirection construction
-  copy_async( shell_list_pack.size(), shell_list_pack.data(), 
+  device_backend_->copy_async( shell_list_pack.size(), shell_list_pack.data(), 
     shell_list_device, "send_shell_list" );
-  copy_async( shell_offs_pack.size(), shell_offs_pack.data(), 
+  device_backend_->copy_async( shell_offs_pack.size(), shell_offs_pack.data(), 
     shell_offs_device, "send_shell_offs" );
-  copy_async( 3 * submat_cut_pack.size(), submat_cut_pack.data()->data(), 
-    submat_cut_device, "send_submat_cut"  ); 
-  copy_async( submat_block_pack.size(), submat_block_pack.data(), 
+  device_backend_->copy_async( 3 * submat_cut_pack.size(), 
+    submat_cut_pack.data()->data(), submat_cut_device, "send_submat_cut"  ); 
+  device_backend_->copy_async( submat_block_pack.size(), submat_block_pack.data(), 
     submat_block_device, "send_submat_block"  ); 
 
   // Construct full indirection
@@ -256,12 +258,12 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
 
 
   // Send indirection
-  copy_async( host_device_tasks.size(), host_device_tasks.data(), 
+  device_backend_->copy_async( host_device_tasks.size(), host_device_tasks.data(), 
     device_tasks, "send_tasks_device" );
 
 
   // Synchronize on the copy stream to keep host vecs in scope
-  master_queue_synchronize(); 
+  device_backend_->master_queue_synchronize(); 
 
   // Update dynmem data for derived impls
   return buf_left;

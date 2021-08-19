@@ -3,6 +3,22 @@
 
 namespace GauXC {
 
+XCDeviceStackData::XCDeviceStackData( std::unique_ptr<DeviceBackend>&& ptr ) :
+  device_backend_(std::move(ptr)) { 
+
+  // Allocate Device memory
+  if( device_backend_ )
+    std::tie( device_ptr, devmem_sz ) = device_backend_->allocate_device_buffer();
+
+}
+
+XCDeviceStackData::~XCDeviceStackData() noexcept {
+  // Free memory if allocated
+  if( device_backend_ and devmem_sz and device_ptr )
+    device_backend_->free_device_buffer(device_ptr);
+}
+
+
 void XCDeviceStackData::allocate_static_data( int32_t _natoms, int32_t _nbf,
   int32_t _nshells ) {
 
@@ -23,13 +39,15 @@ void XCDeviceStackData::allocate_static_data( int32_t _natoms, int32_t _nbf,
   vxc_device  = mem.aligned_alloc<double>( nbf * nbf );
   dmat_device = mem.aligned_alloc<double>( nbf * nbf );
 
+  // Allow for RAB to be strided and properly aligned
+  const auto ldatoms   = get_ldatoms();
+  const auto rab_align = get_rab_align();
+  rab_device = mem.aligned_alloc<double>( natoms * ldatoms, rab_align );
+
+
   // Get current stack location
   dynmem_ptr = mem.stack();
   dynmem_sz  = mem.nleft(); 
-
-  // XXX: RAB Device Storage can be strided for performance, must be handled
-  // in derived implementation
-  allocate_rab();
 
 }
 
@@ -37,13 +55,14 @@ void XCDeviceStackData::send_static_data( const double* P, int32_t ldp,
   const BasisSet<double>& basis, const Molecule& mol,
   const MolMeta& meta ) {
 
-  if( ldp != nbf ) throw std::runtime_error("LDP must bf NBF");
+  if( ldp != (int)nbf ) throw std::runtime_error("LDP must bf NBF");
+  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
 
   // Copy Density
-  copy_async( nbf*nbf, P, dmat_device, "P H2D" );
+  device_backend_->copy_async( nbf*nbf, P, dmat_device, "P H2D" );
 
   // Copy Basis Set
-  copy_async( basis.nshells(), basis.data(), shells_device,
+  device_backend_->copy_async( basis.nshells(), basis.data(), shells_device,
     "Shells H2D" );
 
   // Copy Atomic Coordinates
@@ -53,31 +72,36 @@ void XCDeviceStackData::send_static_data( const double* P, int32_t ldp,
     coords[ 3*i + 1 ] = mol[i].y;
     coords[ 3*i + 2 ] = mol[i].z;
   }
-  copy_async( 3*natoms, coords.data(), coords_device, "Coords H2D" );
+  device_backend_->copy_async( 3*natoms, coords.data(), coords_device, 
+    "Coords H2D" );
 
-  // Implementation dependent send of RAB
-  send_rab(meta);
+  const auto ldatoms = get_ldatoms();
+  device_backend_->copy_async_2d( natoms, natoms, meta.rab().data(), natoms,
+    rab_device, ldatoms, "RAB H2D" );
 
-  master_queue_synchronize(); 
+  device_backend_->master_queue_synchronize(); 
 }
 
 
 void XCDeviceStackData::zero_integrands() {
 
-  set_zero( nbf*nbf, vxc_device, "VXC Zero" );
-  set_zero( 1,       nel_device, "NEL Zero" );
-  set_zero( 1,       exc_device, "EXC Zero" );
+  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+
+  device_backend_->set_zero( nbf*nbf, vxc_device, "VXC Zero" );
+  device_backend_->set_zero( 1,       nel_device, "NEL Zero" );
+  device_backend_->set_zero( 1,       exc_device, "EXC Zero" );
 
 }
 
 void XCDeviceStackData::retrieve_xc_integrands( double* EXC, double* N_EL,
   double* VXC, int32_t ldvxc ) {
 
-  if( ldvxc != nbf ) throw std::runtime_error("LDVXC must bf NBF");
+  if( ldvxc != (int)nbf ) throw std::runtime_error("LDVXC must bf NBF");
+  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
   
-  copy_async( nbf*nbf, vxc_device, VXC,  "VXC D2H" );
-  copy_async( 1,       nel_device, N_EL, "NEL D2H" );
-  copy_async( 1,       exc_device, EXC,  "EXC D2H" );
+  device_backend_->copy_async( nbf*nbf, vxc_device, VXC,  "VXC D2H" );
+  device_backend_->copy_async( 1,       nel_device, N_EL, "NEL D2H" );
+  device_backend_->copy_async( 1,       exc_device, EXC,  "EXC D2H" );
 
 }
 
@@ -90,6 +114,9 @@ XCDeviceStackData::host_task_iterator XCDeviceStackData::generate_buffers(
   host_task_iterator task_begin,
   host_task_iterator task_end
 ) {
+
+  if( get_static_mem_requirement() > dynmem_sz )
+    throw std::runtime_error("Insufficient memory to even start!");
 
   size_t mem_left = dynmem_sz - get_static_mem_requirement();
 
@@ -158,6 +185,8 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::alloc_pack_and_send(
   host_task_iterator task_begin, host_task_iterator task_end, device_buffer_t buf,
   const BasisSetMap& ) {
 
+  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+
   // Host data packing arrays
   std::vector< std::array<double,3> > points_pack;
   std::vector< double > weights_pack;
@@ -203,13 +232,13 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::alloc_pack_and_send(
   vgamma_eval_device = mem.aligned_alloc<double>( total_npts_task_batch );
 
   // Send grid data
-  copy_async( 3*points_pack.size(), points_pack.data()->data(),
+  device_backend_->copy_async( 3*points_pack.size(), points_pack.data()->data(),
               points_device, "send points buffer" );
-  copy_async( weights_pack.size(), weights_pack.data(),
+  device_backend_->copy_async( weights_pack.size(), weights_pack.data(),
               weights_device, "send weights buffer" );
 
   // Synchronize on the copy stream to keep host vecs in scope
-  master_queue_synchronize(); 
+  device_backend_->master_queue_synchronize(); 
 
   // Update dynmem data for derived impls
   return device_buffer_t{ mem.stack(), mem.nleft() };

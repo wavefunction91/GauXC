@@ -44,30 +44,12 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
 #endif
 
 #ifdef GAUXC_ENABLE_CUDA
-  SECTION( "CUDA Eval: Petite Shell List" ) {
-    test_cuda_collocation_petite( basis, ref_data );
-  }
-  SECTION( "CUDA Eval: Masked" ) {
-    test_cuda_collocation_masked( basis, ref_data );
-  }
-  SECTION( "CUDA Eval: Petite Combined" ) {
-    test_cuda_collocation_petite_combined( basis, ref_data );
-  }
-  SECTION( "CUDA Eval: Masked Combined" ) {
-    test_cuda_collocation_masked_combined( basis, ref_data );
+  SECTION( "CUDA Eval" ) {
+    test_cuda_collocation( basis, ref_data );
   }
 
-  SECTION( "CUDA Eval Grad: Petite Shell List" ) {
-    test_cuda_collocation_deriv1_petite( basis, ref_data );
-  }
-  SECTION( "CUDA Eval Grad: Masked" ) {
-    test_cuda_collocation_deriv1_masked( basis, ref_data );
-  }
-  SECTION( "CUDA Eval Grad: Petite Combined" ) {
-    test_cuda_collocation_petite_combined_deriv1( basis, ref_data );
-  }
-  SECTION( "CUDA Eval: Masked Combined" ) {
-    test_cuda_collocation_masked_combined_deriv1( basis, ref_data );
+  SECTION( "CUDA Eval Grad" ) {
+    test_cuda_collocation_deriv1( basis, ref_data );
   }
 #endif // GAUXC_ENABLE_CUDA
 

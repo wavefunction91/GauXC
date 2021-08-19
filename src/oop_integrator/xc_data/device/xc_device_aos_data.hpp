@@ -35,8 +35,15 @@ struct XCDeviceAoSData : public XCDeviceStackData {
   XCDeviceTask* device_tasks = nullptr;
   std::vector<XCDeviceTask> host_device_tasks;
 
+  XCDeviceAoSData() = delete;
+  inline XCDeviceAoSData( std::unique_ptr<DeviceBackend>&& ptr ) :
+    XCDeviceStackData( std::move(ptr) ) { }
+
   // Make it polymorphic
   virtual ~XCDeviceAoSData() noexcept = default;
+
+  // AoS Specific API
+  virtual size_t get_submat_chunk_size( int32_t LDA, int32_t dev_id ) = 0;
 
   // Overridable API overrides
   virtual size_t get_mem_req( const host_task_type&, const BasisSetMap&) override;
