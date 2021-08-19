@@ -41,7 +41,7 @@ void CUDABackend::create_blas_queue_pool(int32_t ns) {
   blas_handles.resize(ns);
   for( auto i = 0; i < ns; ++i )
     cublasSetStream( blas_handles[i], blas_streams[i] );
-};
+}
 
 void CUDABackend::copy_async_( size_t sz, const void* src, void* dest,
   std::string msg ) {
@@ -59,6 +59,6 @@ void CUDABackend::copy_async_2d_( size_t M, size_t N, const void* A, size_t LDA,
   auto stat = cudaMemcpy2DAsync( B, LDB, A, LDA, M, N, cudaMemcpyDefault,
     *master_stream );
   GAUXC_CUDA_ERROR( "CUDA 2D Memcpy Async Failed ["+msg+"]", stat );
-};
+}
 
 }

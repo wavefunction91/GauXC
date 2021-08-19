@@ -36,26 +36,4 @@ void cuda_aos_scheme1_weights_wrapper( int32_t npts, int32_t natoms,
 
 }
 
-namespace detail {
-
- 
-void CudaAoSScheme1::partition_weights( XCDeviceData* _data ) {
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
-
-  auto device_backend = dynamic_cast<CUDABackend*>(data->device_backend_.get());
-  if( !device_backend ) throw std::runtime_error("BAD BACKEND CAST");
-
-
-  // Compute distances from grid to atomic centers
-  const auto ldatoms = data->get_ldatoms();
-  cuda_aos_scheme1_weights_wrapper( data->total_npts_task_batch, data->natoms,
-    data->points_device, data->rab_device, ldatoms, data->coords_device, 
-    data->dist_scratch_device, ldatoms, data->iparent_device, 
-    data->dist_nearest_device, data->weights_device,
-    *device_backend->master_stream );
-}
-
-}
-
 }
