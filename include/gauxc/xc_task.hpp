@@ -26,6 +26,7 @@ struct XCTask {
       throw std::runtime_error("Cannot merge");
     points.insert( points.end(), other.points.begin(), other.points.end() );
     weights.insert( weights.end(), other.weights.begin(), other.weights.end() );
+    npts = points.size();
   }
 
   template <typename TaskIt>
@@ -50,6 +51,7 @@ struct XCTask {
       weights_it = std::copy( it->weights.begin(), it->weights.end(), weights_it );
     }
 
+    npts = points.size();
   }
 
 

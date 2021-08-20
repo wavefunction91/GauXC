@@ -265,6 +265,7 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
   for( auto&& t : local_work_unique ) {
     t.points.clear();
     t.weights.clear();
+    t.npts = 0;
   }
 
   auto cur_lw_begin = local_work.begin();

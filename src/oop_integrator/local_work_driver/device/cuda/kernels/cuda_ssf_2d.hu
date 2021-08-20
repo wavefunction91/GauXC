@@ -79,9 +79,7 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
           const double mu = (ri - rj) * local_rab[ jCenter ]; // XXX: RAB is symmetric
           contribution = sFrisch( mu );
         }
-        contribution = 
-          cuda::warp_reduce_prod<cuda::warp_size, warps_per_thread_block>(
-            contribution);
+        contribution = cuda::warp_reduce_prod<cuda::warp_size>(contribution);
 
         parent_weight *= contribution;
 
@@ -168,7 +166,7 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
     // All of the threads then sum their contributions. Only thread 0 needs to add the parent
     // contribution.
     __syncwarp();
-    sum = cuda::warp_reduce_sum<cuda::warp_size, warps_per_thread_block>(sum);
+    sum = cuda::warp_reduce_sum<cuda::warp_size>(sum);
     if (threadIdx.x == 0) {
       sum += parent_weight;
       weights[ipt] *= parent_weight / sum;

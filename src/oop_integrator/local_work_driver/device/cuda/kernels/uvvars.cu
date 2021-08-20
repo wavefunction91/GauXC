@@ -39,8 +39,7 @@ __global__ void eval_uvars_lda_kernel( size_t        ntasks,
   // Warp blocks are stored col major
   constexpr auto warp_size = cuda::warp_size;
   constexpr auto max_warps_per_thread_block = cuda::max_warps_per_thread_block;
-  den_reg = 2 * 
-    cuda::warp_reduce_sum<warp_size,max_warps_per_thread_block>( den_reg );
+  den_reg = 2 * cuda::warp_reduce_sum<warp_size>( den_reg );
 
 
   if( threadIdx.x == 0 and tid_y < npts ) {
@@ -120,14 +119,10 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
         register double dz_reg  = den_shared[3][sm_y][threadIdx.x];
 
         // Warp blocks are stored col major
-        den_reg = 2 * 
-          cuda::warp_reduce_sum<warp_size,max_warps_per_thread_block>( den_reg );
-        dx_reg  = 4 * 
-          cuda::warp_reduce_sum<warp_size,max_warps_per_thread_block>( dx_reg );
-        dy_reg  = 4 * 
-          cuda::warp_reduce_sum<warp_size,max_warps_per_thread_block>( dy_reg );
-        dz_reg  = 4 * 
-          cuda::warp_reduce_sum<warp_size,max_warps_per_thread_block>( dz_reg );
+        den_reg = 2 * cuda::warp_reduce_sum<warp_size>( den_reg );
+        dx_reg  = 4 * cuda::warp_reduce_sum<warp_size>( dx_reg );
+        dy_reg  = 4 * cuda::warp_reduce_sum<warp_size>( dy_reg );
+        dz_reg  = 4 * cuda::warp_reduce_sum<warp_size>( dz_reg );
 
 
         if( threadIdx.x == 0 and tid_y < npts ) {

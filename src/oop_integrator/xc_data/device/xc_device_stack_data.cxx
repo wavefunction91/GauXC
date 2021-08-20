@@ -81,7 +81,9 @@ void XCDeviceStackData::send_static_data( const double* P, int32_t ldp,
     "Coords H2D" );
 
   const auto ldatoms = get_ldatoms();
-  device_backend_->copy_async_2d( natoms, natoms, meta.rab().data(), natoms,
+  std::vector<double> rab_inv(natoms*natoms);
+  for( auto i = 0; i < (natoms*natoms); ++i) rab_inv[i] = 1./meta.rab().data()[i];
+  device_backend_->copy_async_2d( natoms, natoms, rab_inv.data(), natoms,
     rab_device, ldatoms, "RAB H2D" );
 
   device_backend_->master_queue_synchronize(); 

@@ -1,6 +1,8 @@
 #include "incore_replicated_xc_device_integrator.hpp"
 #include "device/local_device_work_driver.hpp"
 #include <stdexcept>
+#include "device/xc_device_aos_data.hpp"
+#include <fstream>
 
 namespace GauXC  {
 namespace detail {
@@ -171,6 +173,22 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   } // Loop over batches of batches 
 
+  {
+  const int32_t npts_ = 
+    std::accumulate( task_begin, task_end, 0, 
+                     []( const auto& a, const auto& b ) { return a + b.npts; } );
+    auto& stack_work = dynamic_cast<XCDeviceAoSData&>(device_data);
+    int32_t npts = stack_work.total_npts_task_batch;
+    //for( auto& task : stack_work.host_device_tasks ) std::cout << task.npts << std::endl;
+    std::cout << "NPTS = " << npts << ", " << npts_ << std::endl;
+    std::vector<double> weights(npts), den(npts);
+    cudaMemcpy( weights.data(), stack_work.weights_device, npts*sizeof(double), cudaMemcpyDefault );
+    cudaMemcpy( den.data(), stack_work.den_eval_device, npts*sizeof(double), cudaMemcpyDefault );
+    std::ofstream file( "oop_data.bin", std::ios::binary );
+    file.write( (const char*)&npts, sizeof(int32_t) );
+    file.write( (const char*)weights.data(), npts * sizeof(double) );
+    file.write( (const char*)den.data(), npts * sizeof(double) );
+  }
 
   // Receive XC terms from host
   device_data.retrieve_xc_integrands( EXC, N_EL, VXC, ldvxc );
