@@ -60,6 +60,8 @@ public:
   void eval_zmat_lda_vxc( XCDeviceData* );
   void eval_zmat_gga_vxc( XCDeviceData* );
 
+  void inc_exc( XCDeviceData* );
+  void inc_nel( XCDeviceData* );
   void inc_vxc( XCDeviceData* );
 
   std::unique_ptr<XCDeviceData> create_device_data();

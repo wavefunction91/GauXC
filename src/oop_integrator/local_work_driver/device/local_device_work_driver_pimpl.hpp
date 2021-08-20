@@ -26,8 +26,12 @@ struct LocalDeviceWorkDriverPIMPL {
   virtual void eval_xmat( XCDeviceData* ) = 0;
   virtual void eval_uvvar_lda( XCDeviceData* ) = 0;
   virtual void eval_uvvar_gga( XCDeviceData* ) = 0;
+  virtual void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* ) = 0;
+  virtual void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* ) = 0;
   virtual void eval_zmat_lda_vxc( XCDeviceData* ) = 0;
   virtual void eval_zmat_gga_vxc( XCDeviceData* ) = 0;
+  virtual void inc_exc( XCDeviceData* ) = 0;
+  virtual void inc_nel( XCDeviceData* ) = 0;
   virtual void inc_vxc( XCDeviceData* ) = 0;
 
   virtual std::unique_ptr<XCDeviceData> create_device_data() = 0;

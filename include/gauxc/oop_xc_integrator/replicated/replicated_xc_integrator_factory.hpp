@@ -1,5 +1,6 @@
 #pragma once
 #include <gauxc/oop_xc_integrator/replicated/replicated_xc_host_integrator.hpp>
+#include <gauxc/oop_xc_integrator/replicated/replicated_xc_device_integrator.hpp>
 #include <gauxc/oop_xc_integrator/replicated/impl.hpp>
 
 namespace GauXC {
@@ -31,11 +32,21 @@ struct ReplicatedXCIntegratorFactory {
     using host_factory = 
       detail::ReplicatedXCHostIntegratorFactory<value_type>;
 
+    using device_factory = 
+      detail::ReplicatedXCDeviceIntegratorFactory<value_type>;
+
     switch(ex) {
 
       case ExecutionSpace::Host:
         return std::make_unique<integrator_type>( 
           host_factory::make_integrator_impl(
+            integrator_kernel, func, lb, std::move(lwd) 
+          )
+        );
+
+      case ExecutionSpace::Device:
+        return std::make_unique<integrator_type>( 
+          device_factory::make_integrator_impl(
             integrator_kernel, func, lb, std::move(lwd) 
           )
         );

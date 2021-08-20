@@ -10,7 +10,7 @@ public:
 
   using device_buffer_t = std::tuple<void*, size_t>;
 
-  virtual device_buffer_t allocate_device_buffer(int64_t sz = -1) = 0;
+  virtual device_buffer_t allocate_device_buffer(int64_t sz) = 0;
   virtual size_t          get_available_mem() = 0;
   virtual void            free_device_buffer( void* ptr ) = 0;
   virtual void            master_queue_synchronize() = 0;

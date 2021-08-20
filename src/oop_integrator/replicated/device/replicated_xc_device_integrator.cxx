@@ -24,20 +24,18 @@ typename ReplicatedXCDeviceIntegratorFactory<ValueType>::ptr_return_t
     throw std::runtime_error("Passed LWD Not valid for Device ExSpace");
   }
 
-#if 0
   std::transform(integrator_kernel.begin(), integrator_kernel.end(), 
     integrator_kernel.begin(), ::toupper );
 
-  if( integrator_kernel == "DEFAULT" ) integrator_kernel = "REFERENCE";
+  if( integrator_kernel == "DEFAULT" ) integrator_kernel = "INCORE";
 
-  if( integrator_kernel == "REFERENCE" )
-    return std::make_unique<ReferenceReplicatedXCDeviceIntegrator<ValueType>>(
+  if( integrator_kernel == "INCORE" )
+    return std::make_unique<IncoreReplicatedXCDeviceIntegrator<ValueType>>(
       func, lb, std::move(lwd)
     );
 
   else
     throw std::runtime_error("INTEGRATOR KERNEL NOT RECOGNIZED");
-#endif
 
   return nullptr;
 

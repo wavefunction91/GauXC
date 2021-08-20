@@ -37,14 +37,14 @@ include( gauxc-cereal )
 
 add_executable( gauxc_test 
   ut_main.cxx 
-  moltypes_test.cxx 
-  grid_test.cxx 
-  molgrid_test.cxx 
-  basisset_test.cxx 
-  load_balancer_test.cxx 
-  #xc_integrator.cxx 
-  collocation.cxx
-  weights.cxx
+  #moltypes_test.cxx 
+  #grid_test.cxx 
+  #molgrid_test.cxx 
+  #basisset_test.cxx 
+  #load_balancer_test.cxx 
+  xc_integrator.cxx 
+  #collocation.cxx
+  #weights.cxx
   standards.cxx 
   basis/parse_basis.cxx
 )

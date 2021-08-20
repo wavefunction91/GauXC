@@ -158,7 +158,9 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );
     else                lwd->eval_kern_exc_vxc_lda( func, &device_data );
 
-    // TODO: Scalar integrations
+    // Do scalar EXC/N_EL integrations
+    lwd->inc_exc( &device_data );
+    lwd->inc_nel( &device_data );
 
     // Evaluate Z matrix
     if( func.is_gga() ) lwd->eval_zmat_gga_vxc( &device_data );
@@ -172,6 +174,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Receive XC terms from host
   device_data.retrieve_xc_integrands( EXC, N_EL, VXC, ldvxc );
+  std::cout << "NEL = " << *N_EL << std::endl;
 
 
   // Symmetrize VXC

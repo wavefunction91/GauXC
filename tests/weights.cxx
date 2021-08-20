@@ -156,7 +156,7 @@ void test_cuda_weights( std::ifstream& in_file ) {
   size_t npts   = points.size();
   size_t natoms = ref_data.mol.natoms();
 
-  constexpr auto weight_unroll = detail::CudaAoSScheme1::weight_unroll;
+  constexpr auto weight_unroll = CudaAoSScheme1::weight_unroll;
 
   size_t LDatoms = util::div_ceil( natoms, weight_unroll ) * weight_unroll;
 

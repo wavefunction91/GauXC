@@ -3,9 +3,8 @@
 #include "device/scheme1_data_base.hpp"
 
 namespace GauXC {
-namespace detail {
 
-struct CudaAoSScheme1 : public LocalDeviceWorkDriverPIMPL {
+struct CudaAoSScheme1 : public detail::LocalDeviceWorkDriverPIMPL {
 
   // Algorithmic constants
   static constexpr uint32_t weight_unroll = 4;
@@ -20,8 +19,12 @@ struct CudaAoSScheme1 : public LocalDeviceWorkDriverPIMPL {
   void eval_xmat( XCDeviceData* ) override final;
   void eval_uvvar_lda( XCDeviceData* ) override final;
   void eval_uvvar_gga( XCDeviceData* ) override final;
+  void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* ) override final;
+  void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* ) override final;
   void eval_zmat_lda_vxc( XCDeviceData* ) override final;
   void eval_zmat_gga_vxc( XCDeviceData* ) override final;
+  void inc_exc( XCDeviceData* ) override final;
+  void inc_nel( XCDeviceData* ) override final;
   void inc_vxc( XCDeviceData* ) override final;
 
   std::unique_ptr<XCDeviceData> create_device_data() override final;
@@ -44,5 +47,4 @@ struct CudaAoSScheme1::Data : public Scheme1DataBase {
 };
 
 
-}
 }

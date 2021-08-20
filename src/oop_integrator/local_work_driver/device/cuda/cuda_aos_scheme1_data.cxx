@@ -4,7 +4,6 @@
 #include "device/cuda/cuda_backend.hpp"
 
 namespace GauXC {
-namespace detail {
 
 CudaAoSScheme1::Data::~Data() noexcept = default;
 
@@ -13,7 +12,7 @@ CudaAoSScheme1::Data::Data(bool batch_l3_blas) :
 
 size_t CudaAoSScheme1::Data::get_ldatoms() {
   constexpr auto weight_unroll = CudaAoSScheme1::weight_unroll;
-  return util::div_ceil( natoms, weight_unroll ) * weight_unroll;
+  return util::div_ceil( global_dims.natoms, weight_unroll ) * weight_unroll;
 }
 
 size_t CudaAoSScheme1::Data::get_rab_align() {
@@ -39,5 +38,4 @@ size_t CudaAoSScheme1::Data::get_submat_chunk_size(int32_t LDA, int32_t dev_id) 
 }
 
 
-}
 }

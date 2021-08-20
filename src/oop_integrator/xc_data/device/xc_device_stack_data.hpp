@@ -5,15 +5,19 @@
 
 namespace GauXC {
 
+struct allocated_dims {
+  size_t nshells = 0; ///< Number of shells allocated for static data
+  size_t nbf     = 0; ///< Number of bfns allocated for static data
+  size_t natoms  = 0; ///< Number of atoms allocated for static data
+};
+
 struct XCDeviceStackData : public XCDeviceData {
 
   using XCDeviceData::host_task_type;
   using XCDeviceData::host_task_container;
   using XCDeviceData::host_task_iterator;
 
-  size_t nshells = 0; ///< Number of shells allocated for static data
-  size_t nbf     = 0; ///< Number of bfns allocated for static data
-  size_t natoms  = 0; ///< Number of atoms allocated for static data
+  allocated_dims global_dims;
   
   void* device_ptr = nullptr; ///< Device buffer for all device allocations
   void* dynmem_ptr = nullptr; ///< Device buffer for dynamic allocations (mod static)

@@ -34,7 +34,7 @@ target_include_directories( gauxc
 
 target_compile_options( gauxc
   PRIVATE
-    $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wpedantic -Wnon-virtual-dtor>
+    $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wpedantic -Wnon-virtual-dtor -Wshadow -Wabi -Werror=shadow -Werror=non-virtual-dtor>
 )
 
 

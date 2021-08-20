@@ -10,11 +10,11 @@ size_t XCDeviceAoSData::get_mem_req( const host_task_type& task,
   const auto& points     = task.points;
   const auto& shell_list = task.shell_list;
 
-  const size_t submat_chunk_size = this->get_submat_chunk_size(nbf,0);
+  const size_t submat_chunk_size = this->get_submat_chunk_size(global_dims.nbf,0);
 
   // Generate basis map
   auto [submat_cut, submat_block] = 
-    gen_compressed_submat_map( basis_map, shell_list, nbf, submat_chunk_size );
+    gen_compressed_submat_map( basis_map, shell_list, global_dims.nbf, submat_chunk_size );
 
   const size_t npts     = points.size();
   const size_t nbe      = task.nbe;
@@ -69,11 +69,14 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
     a.insert( a.end(), b.begin(), b.end() );
   };
 
-  const size_t submat_chunk_size = this->get_submat_chunk_size(nbf,0);
+  const size_t submat_chunk_size = this->get_submat_chunk_size(global_dims.nbf,0);
 
   // Pack AoS data and construct indirections
   total_nbe_sq_task_batch   = 0;
-  total_nbe_npts_task_batch = 0;
+  total_nbe_npts_task_batch = 0; 
+  total_nshells_task_batch  = 0; 
+  total_ncut_task_batch     = 0; 
+  total_nblock_task_batch   = 0; 
   host_device_tasks.clear();
 
   for( auto it = task_begin; it != task_end; ++it ) {
@@ -85,7 +88,7 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
 
     // Generate basis map
     auto [submat_cut, submat_block] = 
-      gen_compressed_submat_map( basis_map, shell_list, nbf, submat_chunk_size );
+      gen_compressed_submat_map( basis_map, shell_list, global_dims.nbf, submat_chunk_size );
 
     const size_t ncut     = submat_cut.size();
     const size_t nblock   = submat_block.size();
@@ -127,6 +130,7 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
   // Allocate device memory
   auto [ ptr, sz ] = buf;
   buffer_adaptor mem( ptr, sz );
+  std::cout << "XCDeviceAoSData buf = " << ptr << ", " << sz << std::endl;
 
 
   // Device task indirection
@@ -220,6 +224,7 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
     auto nbe     = task.nbe;
     auto ncut    = task.ncut;
     auto nblock  = task.nblock;
+    auto nshells = task.nshells;
 
     points_ptr     += 3 * npts;
     weights_ptr    += npts;
@@ -245,7 +250,6 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
     gamma_ptr  += npts;
     vrho_ptr   += npts;
     vgamma_ptr += npts;
-
     //dist_scratch_ptr += LDatoms * npts;
 
   } // Loop over device tasks

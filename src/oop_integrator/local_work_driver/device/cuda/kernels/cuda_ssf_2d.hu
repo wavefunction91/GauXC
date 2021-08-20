@@ -53,6 +53,7 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
 
   // Each warp will work together on a point
   for( int ipt = tid_x; ipt < npts; ipt += nt_x ) {
+  #if 1
 
     const auto iParent = iparent[ipt];
 
@@ -174,7 +175,7 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
     }
 
     __syncwarp();
-
+#endif
   }
 
 }

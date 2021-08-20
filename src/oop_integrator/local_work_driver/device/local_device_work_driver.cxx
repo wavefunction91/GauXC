@@ -38,7 +38,21 @@ FWD_TO_PIMPL(eval_uvvar_gga)            // U/VVar GGA (density + grad, gamma)
 FWD_TO_PIMPL(eval_zmat_lda_vxc)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc)         // Eval Z Matrix GGA VXC
 
+FWD_TO_PIMPL(inc_exc)
+FWD_TO_PIMPL(inc_nel)
 FWD_TO_PIMPL(inc_vxc)                   // Increment VXC by Z 
+
+void LocalDeviceWorkDriver::eval_kern_exc_vxc_lda( const functional_type& func,
+  XCDeviceData* data) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_kern_exc_vxc_lda(func,data);
+}
+
+void LocalDeviceWorkDriver::eval_kern_exc_vxc_gga( const functional_type& func,
+  XCDeviceData* data) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_kern_exc_vxc_gga(func,data);
+}
 
 
 std::unique_ptr<XCDeviceData> LocalDeviceWorkDriver::create_device_data() {

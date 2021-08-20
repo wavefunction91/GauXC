@@ -7,8 +7,11 @@ XCDeviceStackData::XCDeviceStackData( std::unique_ptr<DeviceBackend>&& ptr ) :
   device_backend_(std::move(ptr)) { 
 
   // Allocate Device memory
-  if( device_backend_ )
-    std::tie( device_ptr, devmem_sz ) = device_backend_->allocate_device_buffer();
+  if( device_backend_ ) {
+    auto avail = device_backend_->get_available_mem();
+    std::tie( device_ptr, devmem_sz ) = 
+      device_backend_->allocate_device_buffer(0.9 * avail);
+  }
 
 }
 
@@ -19,13 +22,13 @@ XCDeviceStackData::~XCDeviceStackData() noexcept {
 }
 
 
-void XCDeviceStackData::allocate_static_data( int32_t _natoms, int32_t _nbf,
-  int32_t _nshells ) {
+void XCDeviceStackData::allocate_static_data( int32_t natoms, int32_t nbf,
+  int32_t nshells ) {
 
   // Save state
-  nshells = _nshells;
-  nbf     = _nbf; 
-  natoms  = _natoms;
+  global_dims.nshells = nshells;
+  global_dims.nbf     = nbf; 
+  global_dims.natoms  = natoms;
 
   // Allocate static memory with proper alignment
   buffer_adaptor mem( device_ptr, devmem_sz );
@@ -55,6 +58,8 @@ void XCDeviceStackData::send_static_data( const double* P, int32_t ldp,
   const BasisSet<double>& basis, const Molecule& mol,
   const MolMeta& meta ) {
 
+  const auto nbf    = global_dims.nbf;
+  const auto natoms = global_dims.natoms;
   if( ldp != (int)nbf ) throw std::runtime_error("LDP must bf NBF");
   if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
 
@@ -87,6 +92,7 @@ void XCDeviceStackData::zero_integrands() {
 
   if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
 
+  const auto nbf = global_dims.nbf;
   device_backend_->set_zero( nbf*nbf, vxc_device, "VXC Zero" );
   device_backend_->set_zero( 1,       nel_device, "NEL Zero" );
   device_backend_->set_zero( 1,       exc_device, "EXC Zero" );
@@ -96,6 +102,7 @@ void XCDeviceStackData::zero_integrands() {
 void XCDeviceStackData::retrieve_xc_integrands( double* EXC, double* N_EL,
   double* VXC, int32_t ldvxc ) {
 
+  const auto nbf = global_dims.nbf;
   if( ldvxc != (int)nbf ) throw std::runtime_error("LDVXC must bf NBF");
   if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
   
@@ -136,6 +143,7 @@ XCDeviceStackData::host_task_iterator XCDeviceStackData::generate_buffers(
 
   }
 
+  std::cout << "XCDeviceStackData will allocate for " << std::distance(task_begin, task_end) << " Tasks" << std::endl;
 
   // Pack host data and send to device
   alloc_pack_and_send( task_begin, task_it, 
@@ -212,6 +220,7 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::alloc_pack_and_send(
   // Allocate device memory
   auto [ ptr, sz ] = buf;
   buffer_adaptor mem( ptr, sz );
+  std::cout << "XCDeviceStackData buf = " << ptr << ", " << sz << std::endl;
 
   // Grid
   points_device  = mem.aligned_alloc<double>( 3 * total_npts_task_batch );
