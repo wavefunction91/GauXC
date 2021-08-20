@@ -173,10 +173,11 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   } // Loop over batches of batches 
 
+#if 0
   {
-  const int32_t npts_ = 
-    std::accumulate( task_begin, task_end, 0, 
-                     []( const auto& a, const auto& b ) { return a + b.npts; } );
+    const int32_t npts_ = 
+      std::accumulate( task_begin, task_end, 0, 
+                       []( const auto& a, const auto& b ) { return a + b.npts; } );
     auto& stack_work = dynamic_cast<XCDeviceAoSData&>(device_data);
     int32_t npts = stack_work.total_npts_task_batch;
     //for( auto& task : stack_work.host_device_tasks ) std::cout << task.npts << std::endl;
@@ -189,10 +190,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     file.write( (const char*)weights.data(), npts * sizeof(double) );
     file.write( (const char*)den.data(), npts * sizeof(double) );
   }
+#endif
 
   // Receive XC terms from host
   device_data.retrieve_xc_integrands( EXC, N_EL, VXC, ldvxc );
-  std::cout << "NEL = " << *N_EL << std::endl;
 
 
   // Symmetrize VXC
