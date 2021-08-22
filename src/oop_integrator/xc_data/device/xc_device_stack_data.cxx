@@ -15,11 +15,18 @@ XCDeviceStackData::XCDeviceStackData( std::unique_ptr<DeviceBackend>&& ptr ) :
 
 }
 
+
+
+
+
 XCDeviceStackData::~XCDeviceStackData() noexcept {
   // Free memory if allocated
   if( device_backend_ and devmem_sz and device_ptr )
     device_backend_->free_device_buffer(device_ptr);
 }
+
+
+
 
 
 void XCDeviceStackData::allocate_static_data( int32_t natoms, int32_t nbf,
@@ -54,6 +61,10 @@ void XCDeviceStackData::allocate_static_data( int32_t natoms, int32_t nbf,
 
 }
 
+
+
+
+
 void XCDeviceStackData::send_static_data( const double* P, int32_t ldp,
   const BasisSet<double>& basis, const Molecule& mol,
   const MolMeta& meta ) {
@@ -80,14 +91,18 @@ void XCDeviceStackData::send_static_data( const double* P, int32_t ldp,
   device_backend_->copy_async( 3*natoms, coords.data(), coords_device, 
     "Coords H2D" );
 
+  // Invert and send RAB
   const auto ldatoms = get_ldatoms();
   std::vector<double> rab_inv(natoms*natoms);
-  for( auto i = 0; i < (natoms*natoms); ++i) rab_inv[i] = 1./meta.rab().data()[i];
+  for( auto i = 0ul; i < (natoms*natoms); ++i) rab_inv[i] = 1./meta.rab().data()[i];
   device_backend_->copy_async_2d( natoms, natoms, rab_inv.data(), natoms,
     rab_device, ldatoms, "RAB H2D" );
 
   device_backend_->master_queue_synchronize(); 
 }
+
+
+
 
 
 void XCDeviceStackData::zero_integrands() {
@@ -100,6 +115,10 @@ void XCDeviceStackData::zero_integrands() {
   device_backend_->set_zero( 1,       exc_device, "EXC Zero" );
 
 }
+
+
+
+
 
 void XCDeviceStackData::retrieve_xc_integrands( double* EXC, double* N_EL,
   double* VXC, int32_t ldvxc ) {
@@ -145,15 +164,16 @@ XCDeviceStackData::host_task_iterator XCDeviceStackData::generate_buffers(
 
   }
 
-  std::cout << "XCDeviceStackData will allocate for " << std::distance(task_begin, task_end) << " Tasks" << std::endl;
+  // TODO: print this if verbose
+  //std::cout << "XCDeviceStackData will allocate for " << std::distance(task_begin, task_end) << " Tasks" << std::endl;
 
   // Pack host data and send to device
   alloc_pack_and_send( task_begin, task_it, 
     device_buffer_t{dynmem_ptr, dynmem_sz}, basis_map );
 
-
   return task_it;
 }
+
 
 
 
@@ -191,6 +211,8 @@ size_t XCDeviceStackData::get_mem_req( const host_task_type& task,
 
 
 
+
+
 XCDeviceStackData::device_buffer_t XCDeviceStackData::alloc_pack_and_send( 
   host_task_iterator task_begin, host_task_iterator task_end, device_buffer_t buf,
   const BasisSetMap& ) {
@@ -222,7 +244,9 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::alloc_pack_and_send(
   // Allocate device memory
   auto [ ptr, sz ] = buf;
   buffer_adaptor mem( ptr, sz );
-  std::cout << "XCDeviceStackData buf = " << ptr << ", " << sz << std::endl;
+
+  // TODO: Print this if verbose
+  //std::cout << "XCDeviceStackData buf = " << ptr << ", " << sz << std::endl;
 
   // Grid
   points_device  = mem.aligned_alloc<double>( 3 * total_npts_task_batch );

@@ -5,19 +5,21 @@
 
 namespace GauXC {
 
+// Collection of dimensions used in the XC integration
 struct allocated_dims {
   size_t nshells = 0; ///< Number of shells allocated for static data
   size_t nbf     = 0; ///< Number of bfns allocated for static data
   size_t natoms  = 0; ///< Number of atoms allocated for static data
 };
 
+/// Base type for XCDeviceData instances that use stack data allocation.
 struct XCDeviceStackData : public XCDeviceData {
 
   using XCDeviceData::host_task_type;
   using XCDeviceData::host_task_container;
   using XCDeviceData::host_task_iterator;
 
-  allocated_dims global_dims;
+  allocated_dims global_dims; ///< Global dimensions for allocated data structures
   
   void* device_ptr = nullptr; ///< Device buffer for all device allocations
   void* dynmem_ptr = nullptr; ///< Device buffer for dynamic allocations (mod static)
@@ -58,6 +60,7 @@ struct XCDeviceStackData : public XCDeviceData {
   double* vgamma_eval_device = nullptr; ///< Gamma XC derivative for task batch
 
 
+  /// Device backend instance to handle device specific execution
   std::unique_ptr<DeviceBackend> device_backend_ = nullptr;
 
   XCDeviceStackData() = delete; // No default ctor, must have device backend
@@ -79,16 +82,46 @@ struct XCDeviceStackData : public XCDeviceData {
 
   // New overridable APIs
   using device_buffer_t = std::tuple<void*, size_t>;
-  virtual device_buffer_t alloc_pack_and_send( host_task_iterator begin, 
-    host_task_iterator end, device_buffer_t buf, const BasisSetMap& );
 
-  virtual size_t get_mem_req( const host_task_type&, const BasisSetMap& );
+  /** Allocate and populate device memory for a given task batch
+   *
+   *  Overridable in devrived classes - derived classes should call
+   *  this function explicitly to ensure that the correct information
+   *  is allocated on the stack
+   *
+   *  @param[in] begin      Start iterator for task batch
+   *  @param[in] end        End iterator for task batch
+   *  @param[in] buf        Current state of dynamic memory stack
+   *  @param[in] basis_map  Basis map instance for pass basis set 
+   *                        (TODO: should persist internally)
+   *
+   *  @returns The state of the dynamic memory stack after allocating
+   *           base information.
+   */
+  virtual device_buffer_t alloc_pack_and_send( host_task_iterator begin, 
+    host_task_iterator end, device_buffer_t buf, const BasisSetMap& basis_map);
+
+  /** Obtain the memory requirement for an XC task
+   *
+   *  Overridable in devrived classes - derived classes should call
+   *  this function explicitly to ensure that the correct information
+   *  is allocated on the stack
+   *
+   *  @param[in] task       Task to obtain the memory requirement
+   *  @param[in] basis_map  Basis map instance for pass basis set 
+   *                        (TODO: should persist internally)
+   *
+   *  @returns Memory requirement (bytes) for `task` in device memory
+   */
+  virtual size_t get_mem_req( const host_task_type& task, 
+    const BasisSetMap& basis_map );
 
 
   // Implementation specific APIs
-  virtual size_t get_ldatoms()   = 0;
-  virtual size_t get_rab_align() = 0;
+  virtual size_t get_ldatoms()   = 0; ///< Stride of RAB in device memory
+  virtual size_t get_rab_align() = 0; ///< Alignment of RAB in device memory
   virtual size_t get_static_mem_requirement() = 0;
+    ///< Static memory requirment for task batch which is independent of batch size
 
 };
 

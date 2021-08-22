@@ -10,32 +10,42 @@ size_t XCDeviceAoSData::get_mem_req( const host_task_type& task,
   const auto& points     = task.points;
   const auto& shell_list = task.shell_list;
 
+  // Get packing size 
   const size_t submat_chunk_size = this->get_submat_chunk_size(global_dims.nbf,0);
 
   // Generate basis map
+  // TODO: This should happen once and get stored
   auto [submat_cut, submat_block] = 
     gen_compressed_submat_map( basis_map, shell_list, global_dims.nbf, submat_chunk_size );
 
+  // Dimensions
   const size_t npts     = points.size();
   const size_t nbe      = task.nbe;
   const size_t ncut     = submat_cut.size();
   const size_t nblock   = submat_block.size();
   const size_t nshells  = shell_list.size();
 
+  // Collocation + derivatives
+  // TODO: this is dependent on integrand
   const size_t mem_bf   = nbe * npts;
   const size_t mem_dbfx = mem_bf;
   const size_t mem_dbfy = mem_bf;
   const size_t mem_dbfz = mem_bf;
 
+  // LDA/GGA Z Matrix 
+  // TODO: this is dependent on integrand
   const size_t mem_zmat_lda_gga = nbe * npts;
 
+  // nbe * nbe scratch
   const size_t mem_nbe_scr = nbe * nbe;
 
+  // Shell index packing 
   const size_t mem_shell_list = nshells;
   const size_t mem_shell_offs = nshells;
   const size_t mem_submat_cut = 3 * ncut;
   const size_t mem_submat_block = nblock;
 
+  // Memroty associated with added a task to the indirection
   const size_t mem_task = 1;
 
 
@@ -47,6 +57,8 @@ size_t XCDeviceAoSData::get_mem_req( const host_task_type& task,
     ( mem_submat_cut + mem_submat_block )                     * sizeof(int32_t) +
     ( mem_task ) * sizeof(XCDeviceTask);
 }
+
+
 
 XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send( 
   host_task_iterator task_begin, host_task_iterator task_end, device_buffer_t buf,
@@ -87,9 +99,11 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
     const auto dist_nearest = it->dist_nearest;
 
     // Generate basis map
+    // TODO: This should happen once and get stored
     auto [submat_cut, submat_block] = 
       gen_compressed_submat_map( basis_map, shell_list, global_dims.nbf, submat_chunk_size );
 
+    // Dimensions
     const size_t ncut     = submat_cut.size();
     const size_t nblock   = submat_block.size();
     const size_t nshells  = shell_list.size();
@@ -97,17 +111,20 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
     const auto nbe        = it->nbe;
 
     // Compute offsets
+    // TODO: this should happen once and get stored
     std::vector< size_t > shell_offs( nshells );
     shell_offs.at(0) = 0;
     for( auto i = 1ul; i < nshells; ++i )
       shell_offs.at(i) = shell_offs.at(i-1) + 
                            basis_map.shell_size( shell_list.at(i-1) );
 
+    // Pack Shell indexing
     concat_iterable( shell_list_pack, shell_list );
     concat_iterable( shell_offs_pack, shell_offs );
     concat_iterable( submat_cut_pack, submat_cut );
     concat_iterable( submat_block_pack, submat_block );
 
+    // Increment running counters
     total_nbe_sq_task_batch   += nbe * nbe;
     total_nbe_npts_task_batch += nbe * npts;
     total_nshells_task_batch  += nshells;
@@ -117,6 +134,7 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
     // Add task to device indirection
     host_device_tasks.emplace_back();
 
+    // Populate indirection with dimensions
     host_device_tasks.back().nbe          = nbe;
     host_device_tasks.back().npts         = npts;
     host_device_tasks.back().ncut         = ncut;
@@ -130,7 +148,9 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
   // Allocate device memory
   auto [ ptr, sz ] = buf;
   buffer_adaptor mem( ptr, sz );
-  std::cout << "XCDeviceAoSData buf = " << ptr << ", " << sz << std::endl;
+
+  // TODO: Print this if verbose
+  //std::cout << "XCDeviceAoSData buf = " << ptr << ", " << sz << std::endl;
 
 
   // Device task indirection
