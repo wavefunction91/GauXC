@@ -6,213 +6,10 @@
 #include <fstream>
 #include <string>
 
-#ifdef GAUXC_ENABLE_HOST
-#include "host/reference/weights.hpp"
-#endif
-
-#ifdef GAUXC_ENABLE_CUDA
-#include <gauxc/util/cuda_util.hpp>
-#include "device/cuda/cuda_aos_scheme1.hpp"
-#include "device/cuda/cuda_aos_scheme1_weights.hpp"
-#endif
-
-using namespace GauXC;
-
-struct ref_weights_data {
-  Molecule                  mol;
-  std::shared_ptr<MolMeta>  meta;
-  std::vector< XCTask > tasks_unm;
-  std::vector< XCTask > tasks_mod; // This is only the weights
-
-  template <typename Archive>
-  void load( Archive& ar ) {
-    ar( mol, tasks_unm, tasks_mod );
-    meta = std::make_shared<MolMeta>(mol);
-  }
-  template <typename Archive>
-  void save( Archive& ar ) const {
-    ar( mol, tasks_unm, tasks_mod );
-  }
-};
-
-
-#ifdef GAUXC_ENABLE_HOST
-void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
-                                std::ofstream& out_file, size_t ntask_save = 15 ) {
-
-
-  MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
-#ifdef GAUXC_ENABLE_MPI
-  LoadBalancer lb(MPI_COMM_WORLD, mol, mg, basis);
-#else
-  LoadBalancer lb(mol, mg, basis);
-#endif
-  auto& tasks = lb.get_tasks();
-
-  ref_weights_data   ref_data;
-  ref_data.mol       = mol;
-
-  auto abs_comparator = []( const auto& a, const auto& b ) {
-    return std::abs(a) < std::abs(b);
-  };
-
-  std::sort( tasks.begin(), tasks.end(),
-    [&]( const auto& a, const auto& b ) {
-      auto a_max =
-        *std::max_element( a.weights.begin(), a.weights.end(),
-                           abs_comparator );
-      auto b_max =
-        *std::max_element( b.weights.begin(), b.weights.end(),
-                           abs_comparator );
-
-      return a_max < b_max;
-    });
-
-  if( tasks.size() > ntask_save )
-    tasks.erase( tasks.begin() + ntask_save, tasks.end() );
-
-  ref_data.tasks_unm = tasks; // Make a copy of un modified tasks
-
-  reference_ssf_weights_host( 
-    mol, lb.molmeta(), tasks.begin(), tasks.end() );
-
-  // Clear out unneeded data
-  for( auto& task : tasks ) {
-    task.points.clear();
-    task.shell_list.clear();
-  }
-  ref_data.tasks_mod = tasks;
-
-  {
-    cereal::BinaryOutputArchive ar( out_file );
-    ar( ref_data );
-  }
-
-}
-
-
-void test_host_weights( std::ifstream& in_file ) {
-
-  ref_weights_data ref_data;
-  {
-    cereal::BinaryInputArchive ar( in_file );
-    ar( ref_data );
-  }
-
-  reference_ssf_weights_host( 
-    ref_data.mol, *ref_data.meta, ref_data.tasks_unm.begin(), 
-    ref_data.tasks_unm.end() );
-
-
-  size_t ntasks = ref_data.tasks_unm.size();
-  for( size_t itask = 0; itask < ntasks; ++itask ) {
-    auto& task     = ref_data.tasks_unm.at(itask);
-    auto& ref_task = ref_data.tasks_mod.at(itask);
-
-    size_t npts = task.weights.size();
-    for( size_t i = 0; i < npts; ++i ) {
-      CHECK( task.weights.at(i) ==
-             Approx(ref_task.weights.at(i)) );
-    }
-  }
-
-}
-#endif
-
-#ifdef GAUXC_ENABLE_CUDA
-void test_cuda_weights( std::ifstream& in_file ) {
-
-  ref_weights_data ref_data;
-  {
-    cereal::BinaryInputArchive ar( in_file );
-    ar( ref_data );
-  }
-
-  std::vector< std::array<double,3> > points;
-  std::vector< double >               weights, weights_ref;
-  std::vector< double >               dist_nearest;
-  std::vector< int32_t >              iparent;
-
-  for( auto& task : ref_data.tasks_unm ) {
-    points.insert( points.end(),
-                   task.points.begin(),
-                   task.points.end() );
-    weights.insert( weights.end(),
-                    task.weights.begin(),
-                    task.weights.end() );
-
-    size_t npts = task.points.size();
-    dist_nearest.insert( dist_nearest.end(), npts,
-                         task.dist_nearest );
-    iparent.insert( iparent.end(), npts, task.iParent );
-  }
-
-  for( auto& task : ref_data.tasks_mod ) {
-    weights_ref.insert( weights_ref.end(),
-                        task.weights.begin(),
-                        task.weights.end() );
-  }
-
-  size_t npts   = points.size();
-  size_t natoms = ref_data.mol.natoms();
-
-  constexpr auto weight_unroll = CudaAoSScheme1::weight_unroll;
-
-  size_t LDatoms = util::div_ceil( natoms, weight_unroll ) * weight_unroll;
-
-  std::vector< double >  coords( 3 * natoms );
-  for( auto iat = 0 ; iat < natoms; ++iat ) {
-    coords[ 3*iat + 0 ] = ref_data.mol.at(iat).x;
-    coords[ 3*iat + 1 ] = ref_data.mol.at(iat).y;
-    coords[ 3*iat + 2 ] = ref_data.mol.at(iat).z;
-  }
-
-
-  auto* points_d  = util::cuda_malloc<double>( 3*npts );
-  auto* weights_d = util::cuda_malloc<double>( npts   );
-  auto* iparent_d = util::cuda_malloc<int32_t>( npts  );
-  auto* distnea_d = util::cuda_malloc<double>( npts   );
-  auto* rab_d     = util::cuda_malloc<double>( natoms*LDatoms );
-  auto* coords_d  = util::cuda_malloc<double>( 3*natoms );
-  auto* dist_scr_d= util::cuda_malloc<double>( npts*LDatoms );
-
-  util::cuda_copy( 3*npts, points_d,  points.data()->data() );
-  util::cuda_copy( npts,   weights_d, weights.data() );
-  util::cuda_copy( npts,   iparent_d, iparent.data() );
-  util::cuda_copy( npts,   distnea_d, dist_nearest.data() );
-
-  std::vector<double> rab_inv(natoms*natoms);
-  for( auto i = 0; i < natoms*natoms; ++i )
-    rab_inv[i] = 1./ref_data.meta->rab().data()[i];
-
-  util::cuda_copy_2d( rab_d, LDatoms * sizeof(double),
-                      rab_inv.data(), natoms * sizeof(double),
-                      natoms * sizeof(double), natoms, "RAB H2D");
-
-  util::cuda_copy( 3*natoms, coords_d, coords.data() );
-
-  cudaStream_t stream = 0;
-#if 0
-  integrator::cuda::partition_weights_cuda_SoA(
-    XCWeightAlg::SSF, npts, LDatoms, natoms, points_d,
-    iparent_d, distnea_d, rab_d, coords_d,
-    weights_d, dist_scr_d, stream );
-#else
-  cuda_aos_scheme1_weights_wrapper( npts, natoms, points_d, rab_d,
-    LDatoms, coords_d, dist_scr_d, LDatoms, iparent_d, distnea_d,
-    weights_d, stream );
-#endif
-
-  util::cuda_device_sync();
-  util::cuda_copy( npts, weights.data(), weights_d );
-  util::cuda_free( points_d, weights_d, iparent_d, distnea_d,
-                   rab_d, coords_d, dist_scr_d );
-
-  for( auto i = 0ul; i < npts; ++i )
-    CHECK( weights.at(i) == Approx( weights_ref.at(i) ) );
-
-}
-#endif
+#include "weights_generate.hpp"
+#include "weights_host.hpp"
+#include "weights_cuda.hpp"
+#include "weights_hip.hpp"
 
 //#define GENERATE_TESTS
 TEST_CASE( "Benzene", "[weights]" ) {
@@ -244,9 +41,13 @@ TEST_CASE( "Benzene", "[weights]" ) {
   }
 #endif
 
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_ENABLE_DEVICE
   SECTION( "Device Weights" ) {
+#ifdef GAUXC_ENABLE_CUDA
     test_cuda_weights( ref_data );
+#elif defined(GAUXC_ENABLE_HIP)
+    test_hip_weights( ref_data );
+#endif
   }
 #endif
 

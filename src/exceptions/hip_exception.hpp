@@ -6,6 +6,8 @@
 #include <sstream>
 
 #ifdef GAUXC_ENABLE_HIP
+#include "hip/hip_runtime.h"
+
 
 namespace GauXC {
 

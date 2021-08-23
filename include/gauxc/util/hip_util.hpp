@@ -1,6 +1,6 @@
 #pragma once
 #include <gauxc/gauxc_config.hpp>
-#include <gauxc/exceptions/hip_exception.hpp>
+#include "exceptions/hip_exception.hpp"
 
 #ifdef GAUXC_ENABLE_HIP
 

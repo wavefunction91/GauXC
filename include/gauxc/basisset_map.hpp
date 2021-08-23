@@ -8,7 +8,7 @@ class BasisSetMap {
 
   using ao_range = std::pair<int32_t,int32_t>;
 
-  int32_t nbf_;     ///< Number of basis functions
+  //int32_t nbf_;     ///< Number of basis functions
   int32_t nshells_; ///< Number of basis shells
 
   std::vector<int32_t>  shell_sizes_;       ///< Shell sizes
@@ -24,7 +24,7 @@ public:
    */
   template <typename F>
   BasisSetMap( const BasisSet<F>& basis ) :
-    nbf_    ( basis.nbf() ),
+    //nbf_    ( basis.nbf() ),
     nshells_( basis.nshells() )	{
 
     shell_sizes_.resize( nshells_ );

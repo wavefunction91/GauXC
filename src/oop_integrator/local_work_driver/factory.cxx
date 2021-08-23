@@ -26,11 +26,13 @@ LocalWorkDriverFactory::ptr_return_t
   case ExecutionSpace::Device:
     if( name == "DEFAULT" ) name = "SCHEME1";
 
+#ifdef GAUXC_ENABLE_CUDA
     if( name == "SCHEME1" )
       return std::make_unique<LocalDeviceWorkDriver>(
         std::make_unique<CudaAoSScheme1>()
       );
     else
+#endif
       throw std::runtime_error("LWD Not Recognized");
 
 

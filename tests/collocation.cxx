@@ -1,6 +1,7 @@
 #include "collocation_common.hpp"
 #include "collocation_host.hpp"
 #include "collocation_cuda.hpp"
+#include "collocation_hip.hpp"
 
 //#define GENERATE_TESTS
 
@@ -52,6 +53,16 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
     test_cuda_collocation_deriv1( basis, ref_data );
   }
 #endif // GAUXC_ENABLE_CUDA
+
+#ifdef GAUXC_ENABLE_HIP
+  SECTION( "HIP Eval" ) {
+    test_hip_collocation( basis, ref_data );
+  }
+
+  SECTION( "HIP Eval Grad" ) {
+    test_hip_collocation_deriv1( basis, ref_data );
+  }
+#endif // GAUXC_ENABLE_HIP
 
 
 
