@@ -2,6 +2,7 @@
 #include "device/cuda/cuda_backend.hpp"
 #include "kernels/grid_to_center.hpp"
 #include "kernels/cuda_ssf_2d.hu"
+#include "kernels/cuda_ssf_1d.hpp"
 #include "cuda_aos_scheme1_weights.hpp"
  
 namespace GauXC {
@@ -20,6 +21,7 @@ void cuda_aos_scheme1_weights_wrapper( int32_t npts, int32_t natoms,
   // Compute distances from grid to atomic centers
   compute_grid_to_center_dist( npts, natoms, coords, points, dist, lddist, stream );
 
+#if 1
   // Get the number of SM's on the device
   int num_sm;
   int dev_id = 0;
@@ -34,6 +36,10 @@ void cuda_aos_scheme1_weights_wrapper( int32_t npts, int32_t natoms,
       npts, natoms, RAB, ldRAB, coords, dist, lddist, iparent, dist_nearest,
       weights
     );
+#else
+  partition_weights_ssf_1d( npts, natoms, RAB, natoms, coords, dist, lddist,
+    iparent, dist_nearest, weights, stream );
+#endif
 
 }
 

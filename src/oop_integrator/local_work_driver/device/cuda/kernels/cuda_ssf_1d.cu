@@ -72,7 +72,7 @@ __global__ void modify_weights_ssf_kernel_1d(
       
         const double rj = local_dist_scratch[ jCenter ];
 
-        const double mu = (ri - rj) / local_rab[ jCenter ]; // XXX: RAB is symmetric
+        const double mu = (ri - rj) * local_rab[ jCenter ]; // XXX: RAB is symmetric
         parent_weight *= sFrisch( mu );
 
       }
@@ -102,7 +102,7 @@ __global__ void modify_weights_ssf_kernel_1d(
       
         const double rj = local_dist_scratch[ jCenter ];
 
-        const double mu = (ri - rj) / local_rab[ jCenter ]; // XXX: RAB is symmetric
+        const double mu = (ri - rj) * local_rab[ jCenter ]; // XXX: RAB is symmetric
         ps *= sFrisch( mu );
 
       }
