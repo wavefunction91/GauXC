@@ -1,3 +1,17 @@
+# Check if CMAKE_CUDA_ARCHITECTURES is set
+if( NOT DEFINED CMAKE_CUDA_ARCHITECTURES )
+  message( FATAL_ERROR "CMAKE_CUDA_ARCHITECTURES Must Be Set" )
+endif()
+
+# Check that only CUDA CC 6.0+ is enabled
+foreach( cuda_arch ${CMAKE_CUDA_ARCHITECTURES} )
+  if( cuda_arch LESS 60 )
+    message(FATAL_ERROR "GauXC Requires CUDA CC 6.0+ For FP64 Atomics")
+  endif()
+endforeach()
+
+
+
 if( NOT TARGET CUDA::cublas )
   find_package( CUDAToolkit REQUIRED )
 endif()
@@ -51,4 +65,6 @@ else()
 endif()
 
 target_link_libraries( gauxc PUBLIC CUDA::cublas )
-target_link_libraries( gauxc PRIVATE $<BUILD_INTERFACE:gauxc_cub> )
+if( TARGET gauxc_cub ) # Handle the case when CUB is implicit
+  target_link_libraries( gauxc PRIVATE $<BUILD_INTERFACE:gauxc_cub> )
+endif()
