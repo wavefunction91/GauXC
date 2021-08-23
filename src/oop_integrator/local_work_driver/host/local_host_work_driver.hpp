@@ -10,7 +10,7 @@
 namespace GauXC {
 namespace detail {
 
-class LocalHostWorkDriverPIMPL;
+struct LocalHostWorkDriverPIMPL;
 
 }
 

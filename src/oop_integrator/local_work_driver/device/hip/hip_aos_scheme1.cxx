@@ -4,7 +4,7 @@
 #include "kernels/grid_to_center.hpp"
 #include "kernels/hip_ssf_1d.hpp"
 //#include "hip_aos_scheme1_weights.hpp"
-//#include "kernels/cublas_extensions.hpp"
+#include "kernels/hipblas_extensions.hpp"
 //#include "kernels/uvvars.hpp"
 //#include "kernels/zmat_vxc.hpp"
 //#include "kernels/pack_submat.hpp"
@@ -195,6 +195,7 @@ void HipAoSScheme1::eval_uvvar_gga( XCDeviceData* _data ){
     *device_backend->master_stream );
 
 }
+#endif
 
 void HipAoSScheme1::eval_kern_exc_vxc_lda( const functional_type& func, 
   XCDeviceData* _data ) {
@@ -243,8 +244,7 @@ void HipAoSScheme1::eval_kern_exc_vxc_gga( const functional_type& func,
 }
 
 
-
-
+#if 0
 void HipAoSScheme1::eval_zmat_lda_vxc( XCDeviceData* _data){
 
   auto* data = dynamic_cast<Data*>(_data);
@@ -286,6 +286,8 @@ void HipAoSScheme1::eval_zmat_gga_vxc( XCDeviceData* _data){
     *device_backend->master_stream );
 
 }
+#endif
+
 void HipAoSScheme1::inc_exc( XCDeviceData* _data){
 
   auto* data = dynamic_cast<Data*>(_data);
@@ -299,6 +301,7 @@ void HipAoSScheme1::inc_exc( XCDeviceData* _data){
     data->exc_device );
 
 }
+
 void HipAoSScheme1::inc_nel( XCDeviceData* _data){
 
   auto* data = dynamic_cast<Data*>(_data);
@@ -313,8 +316,7 @@ void HipAoSScheme1::inc_nel( XCDeviceData* _data){
 
 }
 
-
-
+#if 0
 void HipAoSScheme1::inc_vxc( XCDeviceData* _data){
 
   auto* data = dynamic_cast<Data*>(_data);

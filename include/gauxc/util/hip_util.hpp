@@ -19,7 +19,10 @@ struct hip_stream {
   }
 
   inline ~hip_stream() noexcept {
-    if( stream != 0 ) hipStreamDestroy( stream );
+    if( stream != 0 ) {
+      auto stat = hipStreamDestroy( stream );
+      (void)(stat);
+    }
   }
 
   hip_stream( const hip_stream& ) = delete;
@@ -46,7 +49,10 @@ struct hip_event {
   }
 
   inline ~hip_event() noexcept {
-    if( event != 0 ) hipEventDestroy( event );
+    if( event != 0 ) {
+      auto stat = hipEventDestroy( event );
+      (void)(stat);
+    }
   }
 
   hip_event( const hip_event& ) = delete;

@@ -5,7 +5,7 @@
 namespace GauXC {
 namespace detail {
 
-class LocalDeviceWorkDriverPIMPL;
+struct LocalDeviceWorkDriverPIMPL;
 
 
 /// Base class for local work drivers in Device execution spaces 

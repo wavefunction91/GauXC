@@ -7,7 +7,7 @@ target_sources(gauxc PRIVATE
   kernels/hip_ssf_1d.hip
   #cuda_aos_scheme1_weights.cu # cuda_ssf_2d w/ CudaAoSScheme1 constants
   #kernels/pack_submat.cu
-  #kernels/cublas_extensions.cu
+  kernels/hipblas_extensions.hip
   #kernels/uvvars.cu
   #kernels/zmat_vxc.cu
   #kernels/cuda_inc_potential.cu

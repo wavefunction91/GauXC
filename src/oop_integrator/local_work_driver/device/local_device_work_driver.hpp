@@ -11,7 +11,7 @@
 namespace GauXC {
 namespace detail {
 
-class LocalDeviceWorkDriverPIMPL;
+struct LocalDeviceWorkDriverPIMPL;
 
 }
 

@@ -31,10 +31,15 @@ hipify-perl $CUDA_PREFIX/collocation_device.cu > \
 
 
 # Generate Weights Kernels
-hipify-perl $CUDA_PREFIX/grid_to_center.hpp > $HIP_PREFIX/grid_to_center.hpp
-hipify-perl $CUDA_PREFIX/grid_to_center.cu  > $HIP_PREFIX/grid_to_center.hip
-hipify-perl $CUDA_PREFIX/cuda_ssf_1d.hpp > $HIP_PREFIX/hip_ssf_1d.hpp
+#hipify-perl $CUDA_PREFIX/grid_to_center.hpp > $HIP_PREFIX/grid_to_center.hpp
+#hipify-perl $CUDA_PREFIX/grid_to_center.cu  > $HIP_PREFIX/grid_to_center.hip
+#hipify-perl $CUDA_PREFIX/cuda_ssf_1d.hpp > $HIP_PREFIX/hip_ssf_1d.hpp
 hipify-perl $CUDA_PREFIX/cuda_ssf_1d.cu  > $HIP_PREFIX/hip_ssf_1d.hip
+
+
+# cuBLAS -> hipBLAS
+hipify-perl $CUDA_PREFIX/cublas_extensions.hpp > $HIP_PREFIX/hipblas_extensions.hpp
+hipify-perl $CUDA_PREFIX/cublas_extensions.cu > $HIP_PREFIX/hipblas_extensions.hip
 
 
 
@@ -43,6 +48,9 @@ hipify-perl $CUDA_PREFIX/cuda_ssf_1d.cu  > $HIP_PREFIX/hip_ssf_1d.hip
 
 sed -i -e "s/cuda/hip/g" kernels/{,*/}*.hpp *.{cxx,hpp}
 sed -i -e "s/cuda/hip/g" kernels/*.hip
+sed -i -e "s/CUDA/HIP/g" kernels/*.hip
+sed -i -e "s/cublas/hipblas/g" kernels/*.hip
+sed -i -e "s/CUBLAS/HIPBLAS/g" kernels/*.hip
 sed -i -e "s/register //g" kernels/*.hip
 
 #sed -i -e "s/Cuda/Hip/g" *.{cxx,hpp}

@@ -47,7 +47,12 @@ static std::string hipblasGetErrorString(hipblasStatus_t error) {
             return "HIPBLAS_STATUS_INTERNAL_ERROR";
 
         case HIPBLAS_STATUS_NOT_SUPPORTED:
-            return "HIPBLAS_STATUS_NOT_SUPPORTED";}
+            return "HIPBLAS_STATUS_NOT_SUPPORTED";
+
+        case HIPBLAS_STATUS_HANDLE_IS_NULLPTR:
+            return "HIPBLAS_STATUS_HANDLE_IS_NULLPTR";
+    }
+  
 
     return "<unknown>";
 }

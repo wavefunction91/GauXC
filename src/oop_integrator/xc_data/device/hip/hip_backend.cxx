@@ -29,11 +29,13 @@ size_t HIPBackend::get_available_mem() {
 }
 
 void HIPBackend::free_device_buffer( void* ptr ) {
-  hipFree(ptr);
+  auto stat = hipFree(ptr);
+  GAUXC_HIP_ERROR( "Free Failed", stat );
 }
 
 void HIPBackend::master_queue_synchronize() {
-  hipStreamSynchronize( *master_stream );
+  auto stat = hipStreamSynchronize( *master_stream );
+  GAUXC_HIP_ERROR( "StreamSynchronized Failed", stat );
 }
 
 void HIPBackend::create_blas_queue_pool(int32_t ns) {
