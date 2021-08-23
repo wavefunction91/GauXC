@@ -9,7 +9,7 @@ target_sources(gauxc PRIVATE
   #kernels/pack_submat.cu
   kernels/hipblas_extensions.hip
   #kernels/uvvars.cu
-  #kernels/zmat_vxc.cu
+  kernels/zmat_vxc.hip
   #kernels/cuda_inc_potential.cu
 
 )

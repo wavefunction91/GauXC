@@ -6,7 +6,7 @@
 //#include "hip_aos_scheme1_weights.hpp"
 #include "kernels/hipblas_extensions.hpp"
 //#include "kernels/uvvars.hpp"
-//#include "kernels/zmat_vxc.hpp"
+#include "kernels/zmat_vxc.hpp"
 //#include "kernels/pack_submat.hpp"
 //#include "kernels/hip_inc_potential.hpp"
 
@@ -244,7 +244,6 @@ void HipAoSScheme1::eval_kern_exc_vxc_gga( const functional_type& func,
 }
 
 
-#if 0
 void HipAoSScheme1::eval_zmat_lda_vxc( XCDeviceData* _data){
 
   auto* data = dynamic_cast<Data*>(_data);
@@ -286,7 +285,6 @@ void HipAoSScheme1::eval_zmat_gga_vxc( XCDeviceData* _data){
     *device_backend->master_stream );
 
 }
-#endif
 
 void HipAoSScheme1::inc_exc( XCDeviceData* _data){
 

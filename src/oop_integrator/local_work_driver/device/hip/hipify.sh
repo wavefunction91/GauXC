@@ -34,14 +34,16 @@ hipify-perl $CUDA_PREFIX/collocation_device.cu > \
 #hipify-perl $CUDA_PREFIX/grid_to_center.hpp > $HIP_PREFIX/grid_to_center.hpp
 #hipify-perl $CUDA_PREFIX/grid_to_center.cu  > $HIP_PREFIX/grid_to_center.hip
 #hipify-perl $CUDA_PREFIX/cuda_ssf_1d.hpp > $HIP_PREFIX/hip_ssf_1d.hpp
-hipify-perl $CUDA_PREFIX/cuda_ssf_1d.cu  > $HIP_PREFIX/hip_ssf_1d.hip
+#hipify-perl $CUDA_PREFIX/cuda_ssf_1d.cu  > $HIP_PREFIX/hip_ssf_1d.hip
 
 
 # cuBLAS -> hipBLAS
 hipify-perl $CUDA_PREFIX/cublas_extensions.hpp > $HIP_PREFIX/hipblas_extensions.hpp
 hipify-perl $CUDA_PREFIX/cublas_extensions.cu > $HIP_PREFIX/hipblas_extensions.hip
 
-
+# Z Matrix
+hipify-perl $CUDA_PREFIX/zmat_vxc.hpp > $HIP_PREFIX/zmat_vxc.hpp
+hipify-perl $CUDA_PREFIX/zmat_vxc.cu > $HIP_PREFIX/zmat_vxc.hip
 
 
 #hipify-perl $CUDA_PREFIX/../cuda_aos_scheme1.cxx > $HIP_PREFIX/../hip_aos_scheme1.cxx
