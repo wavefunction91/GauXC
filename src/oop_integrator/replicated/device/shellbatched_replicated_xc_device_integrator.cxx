@@ -120,32 +120,6 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
 
 
-using host_task_container = std::vector<XCTask>;
-using host_task_iterator  = typename host_task_container::iterator;
-
-// Struct to manage data associated with task subset to execute on the device
-struct incore_device_task {
-
-  host_task_iterator   task_begin;
-  host_task_iterator   task_end;
-  std::vector<int32_t> shell_list;
-};
-
-// Function to generate an appropriate incore device task
-incore_device_task generate_incore_device_task( const uint32_t          nbf_threshold,
-                                                host_task_iterator      task_begin,
-                                                host_task_iterator      task_end,
-                                                const BasisSet<double>& basis,
-                                                util::Timer&            timer );
-
-// Pack host data -> execute task batch -> unpack + increment results
-void execute_task_batch( incore_device_task task,
-                         const BasisSet<double>& basis, const double* P, int64_t ldp, 
-                         double* VXC, int64_t ldvxc, double* EXC, double *N_EL,
-                         IncoreReplicatedXCDeviceIntegrator<double>& incore_integrator, 
-                         XCDeviceData& device_data, util::Timer& timer );
-
-
 
 
 template <typename ValueType>
@@ -196,7 +170,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
     // Execute task
     execute_task_batch( next_task, basis, P, ldp, VXC, ldvxc, EXC, N_EL,
-      incore_integrator, device_data, this->timer_ );
+      incore_integrator, device_data );
   };
 
 
@@ -209,7 +183,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
     // Generate and enqueue task
     incore_device_task_queue.emplace(
-      generate_incore_device_task( nbf_threshold, task_it, task_end, basis, this->timer_ )
+      generate_incore_device_task( nbf_threshold, basis, task_it, task_end )
     );
 
     // Update iterator for next task generation
@@ -242,17 +216,17 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 }
 
 
-template class ShellBatchedReplicatedXCDeviceIntegrator<double>;
 
 
 
 
-
-incore_device_task generate_incore_device_task( const uint32_t          nbf_threshold,
-                                                host_task_iterator      task_begin,
-                                                host_task_iterator      task_end,
-                                                const BasisSet<double>& basis,
-                                                util::Timer&            timer ) {
+template <typename ValueType>
+typename ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::incore_device_task 
+  ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
+    generate_incore_device_task( const uint32_t     nbf_threshold,
+                                 const basis_type&  basis,
+                                 host_task_iterator task_begin,
+                                 host_task_iterator task_end ) {
 
 
   auto nbe_comparator = []( const auto& task_a, const auto& task_b ) {
@@ -260,7 +234,7 @@ incore_device_task generate_incore_device_task( const uint32_t          nbf_thre
   };
 
   // Find task with largest NBE
-  auto max_task = timer.time_op_accumulate("XCIntegrator.MaxTask", [&]() {
+  auto max_task = this->timer_.time_op_accumulate("XCIntegrator.MaxTask", [&]() {
     return std::max_element( task_begin, task_end, nbe_comparator );
   } );
 
@@ -323,7 +297,7 @@ incore_device_task generate_incore_device_task( const uint32_t          nbf_thre
     // Partition tasks into those which overlap max_task up to
     // specified threshold
     auto local_task_end = 
-    timer.time_op_accumulate("XCIntegrator.TaskIntersection", [&]() {
+    this->timer_.time_op_accumulate("XCIntegrator.TaskIntersection", [&]() {
       return std::partition( search_st, search_en, [&](const auto& t) {
         return util::integral_list_intersect( max_shell_list, t.shell_list,
                                         overlap_threshold );
@@ -333,7 +307,7 @@ incore_device_task generate_incore_device_task( const uint32_t          nbf_thre
 
 
     // Take union of shell list for all overlapping tasks
-    timer.time_op_accumulate("XCIntegrator.ShellListUnion",[&]() {
+    this->timer_.time_op_accumulate("XCIntegrator.ShellListUnion",[&]() {
       for( auto task_it = search_st; task_it != local_task_end; ++task_it ) {
         local_union_shell_set.insert( task_it->shell_list.begin(), 
                                       task_it->shell_list.end() );
@@ -373,7 +347,7 @@ incore_device_task generate_incore_device_task( const uint32_t          nbf_thre
                                          union_shell_set.end() );
 
   // Try to add additional tasks given current union list
-  local_task_end = timer.time_op_accumulate("XCIntegrator.SubtaskGeneration", [&]() {
+  local_task_end = this->timer_.time_op_accumulate("XCIntegrator.SubtaskGeneration", [&]() {
     return std::partition( local_task_end, task_end, [&]( const auto& t ) {
       return util::list_subset( union_shell_list, t.shell_list );
     } );
@@ -403,11 +377,12 @@ incore_device_task generate_incore_device_task( const uint32_t          nbf_thre
 
 
 
-void execute_task_batch( incore_device_task task,
-                         const BasisSet<double>& basis, const double* P, int64_t ldp, 
-                         double* VXC, int64_t ldvxc, double* EXC, double *N_EL,
-                         IncoreReplicatedXCDeviceIntegrator<double>& incore_integrator, 
-                         XCDeviceData& device_data, util::Timer& timer ) {
+template <typename ValueType>
+void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
+  execute_task_batch( incore_device_task& task, const basis_type& basis, 
+                      const value_type* P, int64_t ldp, value_type* VXC, int64_t ldvxc, 
+                      value_type* EXC, value_type *N_EL, incore_integrator_type& incore_integrator, 
+                      XCDeviceData& device_data ) {
 
   // Alias information
   auto task_begin  = task.task_begin;
@@ -417,7 +392,7 @@ void execute_task_batch( incore_device_task task,
 
   // Extract subbasis
   BasisSet<double> basis_subset; basis_subset.reserve(union_shell_list.size());
-  timer.time_op_accumulate("XCIntegrator.CopySubBasis",[&]() {
+  this->timer_.time_op_accumulate("XCIntegrator.CopySubBasis",[&]() {
     for( auto i : union_shell_list ) {
       basis_subset.emplace_back( basis.at(i) );
     }
@@ -433,7 +408,7 @@ void execute_task_batch( incore_device_task task,
   //          << "  NBE        = " <<  nbe     << std::endl;
 
   // Recalculate shell_list based on subbasis
-  timer.time_op_accumulate("XCIntegrator.RecalcShellList",[&]() {
+  this->timer_.time_op_accumulate("XCIntegrator.RecalcShellList",[&]() {
     for( auto _it = task_begin; _it != task_end; ++_it ) {
       auto union_list_idx = 0;
       auto& cur_shell_list = _it->shell_list;
@@ -461,7 +436,7 @@ void execute_task_batch( incore_device_task task,
     gen_compressed_submat_map( basis_map, union_shell_list, 
       basis.nbf(), basis.nbf() );
 
-  timer.time_op_accumulate("XCIntegrator.ExtractSubDensity",[&]() {
+  this->timer_.time_op_accumulate("XCIntegrator.ExtractSubDensity",[&]() {
     detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, P, ldp, 
                         P_submat, nbe, union_submat_cut );
   } );
@@ -475,14 +450,14 @@ void execute_task_batch( incore_device_task task,
   // Update full quantities
   *EXC += EXC_tmp;
   *N_EL += NEL_tmp;
-  timer.time_op_accumulate("XCIntegrator.IncrementSubPotential",[&]() {
+  this->timer_.time_op_accumulate("XCIntegrator.IncrementSubPotential",[&]() {
     detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXC, ldvxc, 
                            VXC_submat, nbe, union_submat_cut );
   });
 
 
   // Reset shell_list to be wrt full basis
-  timer.time_op_accumulate("XCIntegrator.ResetShellList",[&]() {
+  this->timer_.time_op_accumulate("XCIntegrator.ResetShellList",[&]() {
     for( auto _it = task_begin; _it != task_end; ++_it ) 
     for( auto j = 0ul; j < _it->shell_list.size();  ++j  ) {
       _it->shell_list[j] = union_shell_list[_it->shell_list[j]];
@@ -490,6 +465,14 @@ void execute_task_batch( incore_device_task task,
   });
 
 }
+
+
+
+
+
+
+
+template class ShellBatchedReplicatedXCDeviceIntegrator<double>;
 
 }
 }

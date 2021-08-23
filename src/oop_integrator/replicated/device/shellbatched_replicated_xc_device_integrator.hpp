@@ -25,6 +25,13 @@ protected:
   using incore_integrator_type =
     IncoreReplicatedXCDeviceIntegrator<ValueType>;
 
+  // Struct to manage data associated with task subset to execute on the device
+  struct incore_device_task {
+    host_task_iterator   task_begin;
+    host_task_iterator   task_end;
+    std::vector<int32_t> shell_list;
+  };
+
   void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp, value_type* VXC, int64_t ldvxc,
                       value_type* EXC ) override;
@@ -35,6 +42,16 @@ protected:
                             incore_integrator_type& incore_integrator,
                             XCDeviceData& device_data );
 
+  
+  incore_device_task generate_incore_device_task( const uint32_t     nbf_threshold,
+                                                  const basis_type&  basis,
+                                                  host_task_iterator task_begin,
+                                                  host_task_iterator task_end );
+
+  void execute_task_batch( incore_device_task& task, const basis_type& basis, const value_type* P,
+                           int64_t ldp, value_type* VXC, int64_t ldvxc, value_type* EXC,
+                           value_type* N_EL, incore_integrator_type& incore_integrator,
+                           XCDeviceData& device_data );
 public:
 
   template <typename... Args>
