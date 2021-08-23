@@ -14,3 +14,15 @@ target_sources(gauxc PRIVATE
   kernels/cuda_inc_potential.cu
 
 )
+
+# Check if CMAKE_CUDA_ARCHITECTURES is set
+if( NOT DEFINED CMAKE_CUDA_ARCHITECTURES )
+  message( FATAL_ERROR "CMAKE_CUDA_ARCHITECTURES Must Be Set" )
+endif()
+
+# Check that only CUDA CC 6.0+ is enabled
+foreach( cuda_arch ${CMAKE_CUDA_ARCHITECTURES} )
+  if( cuda_arch LESS 60 )
+    message(FATAL_ERROR "GauXC Requires CUDA CC 6.0+ For FP64 Atomics")
+  endif()
+endforeach()
