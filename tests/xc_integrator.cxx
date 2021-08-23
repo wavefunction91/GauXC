@@ -8,9 +8,9 @@ using namespace GauXC;
 
 
 #ifdef GAUXC_ENABLE_MPI
-void test_xc_integrator( ExecutionSpace ex, MPI_Comm comm, Molecule mol, const bool check_state_propagation = true ) 
+void test_xc_integrator( ExecutionSpace ex, MPI_Comm comm, Molecule mol, std::string integrator_kernel = "Default",  const bool check_state_propagation = true ) 
 #else
-void test_xc_integrator( ExecutionSpace ex, Molecule mol, const bool check_state_propagation = true ) 
+void test_xc_integrator( ExecutionSpace ex, Molecule mol, std::string integrator_kernel = "Default", const bool check_state_propagation = true ) 
 #endif
 {
 
@@ -33,7 +33,7 @@ void test_xc_integrator( ExecutionSpace ex, Molecule mol, const bool check_state
 
   using matrix_type = Eigen::MatrixXd;
   //auto integrator = make_default_integrator<matrix_type>( ex, comm, func, basis, lb );
-  XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", "Default", "Default" );
+  XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", integrator_kernel, "Default" );
   auto integrator = integrator_factory.get_instance( func, lb );
 
 
@@ -90,9 +90,19 @@ TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
 #ifdef GAUXC_ENABLE_CUDA
   SECTION( "Device" ) {
 #ifdef GAUXC_ENABLE_MPI
-    test_xc_integrator( ExecutionSpace::Device, comm, mol );
+    SECTION( "Default" ) {
+      test_xc_integrator( ExecutionSpace::Device, comm, mol, "Default" );
+    }
+    SECTION( "ShellBatched" ) {
+      test_xc_integrator( ExecutionSpace::Device, comm, mol, "ShellBatched" );
+    }
 #else
-    test_xc_integrator( ExecutionSpace::Device, mol );
+    SECTION( "Default" ) {
+      test_xc_integrator( ExecutionSpace::Device, mol, "Default" );
+    }
+    SECTION( "ShellBatched" ) {
+      test_xc_integrator( ExecutionSpace::Device, mol, "ShellBatched" );
+    }
 #endif
   }
 #endif

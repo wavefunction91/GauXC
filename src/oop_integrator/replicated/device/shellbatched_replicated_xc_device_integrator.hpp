@@ -1,12 +1,13 @@
 #pragma once
 #include <gauxc/oop_xc_integrator/replicated/replicated_xc_device_integrator.hpp>
 #include "device/xc_device_data.hpp"
+#include "incore_replicated_xc_device_integrator.hpp"
 
 namespace GauXC {
 namespace detail {
 
 template <typename ValueType>
-class IncoreReplicatedXCDeviceIntegrator : 
+class ShellBatchedReplicatedXCDeviceIntegrator : 
   public ReplicatedXCDeviceIntegrator<ValueType> {
 
   using base_type  = ReplicatedXCDeviceIntegrator<ValueType>;
@@ -21,6 +22,9 @@ public:
 
 protected:
 
+  using incore_integrator_type =
+    IncoreReplicatedXCDeviceIntegrator<ValueType>;
+
   void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp, value_type* VXC, int64_t ldvxc,
                       value_type* EXC ) override;
@@ -28,24 +32,20 @@ protected:
   void exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                             value_type* VXC, int64_t ldvxc, value_type* EXC, value_type *N_EL,
                             host_task_iterator task_begin, host_task_iterator task_end,
+                            incore_integrator_type& incore_integrator,
                             XCDeviceData& device_data );
 
 public:
 
   template <typename... Args>
-  IncoreReplicatedXCDeviceIntegrator( Args&&... args ) :
+  ShellBatchedReplicatedXCDeviceIntegrator( Args&&... args ) :
     base_type( std::forward<Args>(args)... ) { }
 
-  virtual ~IncoreReplicatedXCDeviceIntegrator() noexcept;
+  virtual ~ShellBatchedReplicatedXCDeviceIntegrator() noexcept;
 
-
-  template <typename... Args>
-  void exc_vxc_local_work(Args&&... args) {
-    exc_vxc_local_work_( std::forward<Args>(args)... );
-  }
 };
 
-extern template class IncoreReplicatedXCDeviceIntegrator<double>;
+extern template class ShellBatchedReplicatedXCDeviceIntegrator<double>;
 
 }
 }

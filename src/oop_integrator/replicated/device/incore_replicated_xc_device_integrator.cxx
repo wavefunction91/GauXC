@@ -124,7 +124,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Allocate static data on the stack
   const auto natoms  = mol.natoms();
   const auto nbf     = basis.nbf();
-  const auto nshells = basis.size();
+  const auto nshells = basis.nshells();
   device_data.allocate_static_data( natoms, nbf, nshells );
 
   // Copy static data to device

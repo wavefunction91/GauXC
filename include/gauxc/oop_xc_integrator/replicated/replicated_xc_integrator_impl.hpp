@@ -44,6 +44,10 @@ public:
 
   inline const util::Timer& get_timings() const { return timer_; }
 
+  std::unique_ptr< LocalWorkDriver > release_local_work_driver() {
+    return std::move( local_work_driver_ );
+  }
+
 };
 
 

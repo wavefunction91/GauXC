@@ -1,5 +1,6 @@
 #include <gauxc/oop_xc_integrator/replicated/replicated_xc_device_integrator.hpp>
 #include "incore_replicated_xc_device_integrator.hpp"
+#include "shellbatched_replicated_xc_device_integrator.hpp"
 #include "device/local_device_work_driver.hpp"
 
 namespace GauXC  {
@@ -31,6 +32,10 @@ typename ReplicatedXCDeviceIntegratorFactory<ValueType>::ptr_return_t
 
   if( integrator_kernel == "INCORE" )
     return std::make_unique<IncoreReplicatedXCDeviceIntegrator<ValueType>>(
+      func, lb, std::move(lwd)
+    );
+  else if( integrator_kernel == "SHELLBATCHED" )
+    return std::make_unique<ShellBatchedReplicatedXCDeviceIntegrator<ValueType>>(
       func, lb, std::move(lwd)
     );
 
