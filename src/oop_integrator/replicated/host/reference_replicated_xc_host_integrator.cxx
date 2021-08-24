@@ -33,26 +33,25 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Get Tasks
   this->load_balancer_->get_tasks();
 
-  // TODO: This is a bad name for this
-  size_t n_deriv = this->func_->is_gga() ? 1 : 0;
-
+#if 0
   // Setup Memory
   auto host_data_ptr = this->timer_.time_op("XCIntegrator.HostAlloc",
     [=](){
-      size_t max_npts       = this->load_balancer_->max_npts();
-      //size_t max_nbe        = this->load_balancer_->max_nbe();
-      size_t max_npts_x_nbe = this->load_balancer_->max_npts_x_nbe();
+      //size_t max_npts       = this->load_balancer_->max_npts();
+      ////size_t max_nbe        = this->load_balancer_->max_nbe();
+      //size_t max_npts_x_nbe = this->load_balancer_->max_npts_x_nbe();
       return std::make_unique<XCHostData<value_type>>(
-        n_deriv, nbf, max_npts, max_npts_x_nbe
+        //n_deriv, nbf, max_npts, max_npts_x_nbe
       );
     });
+#endif
 
   // Temporary electron count to judge integrator accuracy
   value_type N_EL;
 
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    exc_vxc_local_work_( P, ldp, VXC, ldvxc, EXC, &N_EL, *host_data_ptr );
+    exc_vxc_local_work_( P, ldp, VXC, ldvxc, EXC, &N_EL );
   });
 
 #ifdef GAUXC_ENABLE_MPI
@@ -102,7 +101,7 @@ template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
   exc_vxc_local_work_( const value_type* P, int64_t ldp, 
     value_type* VXC, int64_t ldvxc, value_type* EXC, 
-    value_type* N_EL, XCHostData<value_type>& host_data ) {
+    value_type* N_EL ) {
 
   // Cast LWD to LocalHostWorkDriver
   auto* lwd = dynamic_cast<LocalHostWorkDriver*>(this->local_work_driver_.get());
@@ -117,7 +116,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   BasisSetMap basis_map(basis);
 
   const int32_t nbf = basis.nbf();
-  const size_t n_deriv = func.is_gga() ? 1 : 0;
 
   // Sort tasks on size (XXX: maybe doesnt matter?)
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
@@ -136,7 +134,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     lb_state.modified_weights_are_stored = true;
   }
 
-  // TODO: Get max weight / task
+  // TODO: Get max weight / task + screen
 
   // Zero out integrands
   for( auto j = 0; j < nbf; ++j )
@@ -147,6 +145,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Loop over tasks
   const size_t ntasks = tasks.size();
+
+  #pragma omp parallel
+  {
+
+  XCHostData<value_type> host_data; // Thread local host data
+
+  #pragma omp for schedule(dynamic)
   for( size_t iT = 0; iT < ntasks; ++iT ) {
 
     // Alias current task
@@ -160,6 +165,28 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const auto* points      = task.points.data()->data();
     const auto* weights     = task.weights.data();
     const int32_t* shell_list = task.shell_list.data();
+
+    // Allocate enough memory for batch
+
+    // Things that every calc needs
+    host_data.nbe_scr .resize( nbe * nbe  );
+    host_data.zmat    .resize( npts * nbe );
+    host_data.eps     .resize( npts );
+    host_data.vrho    .resize( npts );
+
+    // LDA data requirements
+    if( func.is_lda() ){
+      host_data.basis_eval .resize( npts * nbe );
+      host_data.den_scr    .resize( npts );
+    }
+
+    // GGA data requirements
+    if( func.is_gga() ){
+      host_data.basis_eval .resize( 4 * npts * nbe );
+      host_data.den_scr    .resize( 4 * npts );
+      host_data.gamma      .resize( npts );
+      host_data.vgamma     .resize( npts );
+    }
 
     // Alias/Partition out scratch memory
     auto* basis_eval = host_data.basis_eval.data();
@@ -179,7 +206,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     value_type* dden_y_eval = nullptr;
     value_type* dden_z_eval = nullptr;
 
-    if( n_deriv > 0 ) {
+    if( func.is_gga() ) {
       dbasis_x_eval = basis_eval    + npts * nbe;
       dbasis_y_eval = dbasis_x_eval + npts * nbe;
       dbasis_z_eval = dbasis_y_eval + npts * nbe;
@@ -194,7 +221,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       gen_compressed_submat_map( basis_map, task.shell_list, nbf, nbf );
 
     // Evaluate Collocation (+ Grad)
-    if( n_deriv == 1 )
+    if( func.is_gga() )
       lwd->eval_collocation_gradient( npts, nshells, nbe, points, basis, shell_list, 
         basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval );
     else
@@ -230,11 +257,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     if( func.is_gga() )
       for( int32_t i = 0; i < npts; ++i ) vgamma[i] *= weights[i];
 
-    // Scalar integrations
-    for( int32_t i = 0; i < npts; ++i ) {
-      *N_EL += weights[i] * den_eval[i];
-      *EXC  += eps[i]     * den_eval[i];
-    }
 
 
 
@@ -248,12 +270,22 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
     // Incremeta LT of VXC
-    lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, VXC, ldvxc,
-      nbe_scr );
+    #pragma omp critical
+    {
+      // Scalar integrations
+      for( int32_t i = 0; i < npts; ++i ) {
+        *N_EL += weights[i] * den_eval[i];
+        *EXC  += eps[i]     * den_eval[i];
+      }
 
-
+      // Increment VXC
+      lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, VXC, ldvxc,
+        nbe_scr );
+    }
 
   } // Loop over tasks 
+
+  } // End OpenMP region
 
   // Symmetrize VXC
   for( int32_t j = 0;   j < nbf; ++j )

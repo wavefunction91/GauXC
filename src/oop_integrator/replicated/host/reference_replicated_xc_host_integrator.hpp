@@ -23,8 +23,7 @@ protected:
                       value_type* EXC ) override;
 
   void exc_vxc_local_work_( const value_type* P, int64_t ldp, value_type* VXC,
-                            int64_t ldvxc, value_type* EXC, value_type *N_EL,
-                            XCHostData<value_type>& host_data );
+                            int64_t ldvxc, value_type* EXC, value_type *N_EL );
 public:
 
   template <typename... Args>
