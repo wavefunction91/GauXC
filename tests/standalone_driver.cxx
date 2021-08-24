@@ -88,18 +88,19 @@ int main(int argc, char** argv) {
     //}
 
     // Setup load balancer
-#ifdef GAUXC_ENABLE_MPI
-    auto lb = std::make_shared<LoadBalancer>(MPI_COMM_WORLD, mol, mg, basis, meta);
-#else
-    auto lb = std::make_shared<LoadBalancer>(mol, mg, basis, meta);
-#endif
+    LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
+  #ifdef GAUXC_ENABLE_MPI
+    auto lb = lb_factory.get_shared_instance(MPI_COMM_WORLD, mol, mg, basis);
+  #else
+    auto lb = lb_factory.get_shared_instance(mol, mg, basis);
+  #endif
 
     // Setup XC functional
     functional_type func( Backend::builtin, Functional::PBE0, Spin::Unpolarized );
 
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;
-    XCIntegratorFactory<matrix_type> integrator_factory( ExecutionSpace::Host, "Replicated", "Default", "Default" );
+    XCIntegratorFactory<matrix_type> integrator_factory( ExecutionSpace::Device, "Replicated", "ShellBatched", "Default" );
     auto integrator = integrator_factory.get_instance( func, lb );
 
     matrix_type P,VXC_ref;

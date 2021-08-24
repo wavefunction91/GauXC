@@ -5,13 +5,16 @@
 
 using namespace GauXC;
 
-
-
 #ifdef GAUXC_ENABLE_MPI
-void test_xc_integrator( ExecutionSpace ex, MPI_Comm comm, Molecule mol, std::string integrator_kernel = "Default",  const bool check_state_propagation = true ) 
+  #define GAUXC_MPI_ARG   MPI_Comm comm,
+  #define GAUXC_MPI_PARAM comm,
 #else
-void test_xc_integrator( ExecutionSpace ex, Molecule mol, std::string integrator_kernel = "Default", const bool check_state_propagation = true ) 
+  #define GAUXC_MPI_ARG                 
+  #define GAUXC_MPI_PARAM      
 #endif
+
+
+void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_ARG Molecule mol, std::string integrator_kernel = "Default",  const bool check_state_propagation = true ) 
 {
 
   BasisSet<double> basis = make_ccpvdz( mol, SphericalType(true) );
@@ -21,13 +24,8 @@ void test_xc_integrator( ExecutionSpace ex, Molecule mol, std::string integrator
 
   MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
 
-  auto meta = std::make_shared<MolMeta>( mol );
-
-#ifdef GAUXC_ENABLE_MPI
-  auto lb = std::make_shared<LoadBalancer>(comm, mol, mg, basis, meta);
-#else
-  auto lb = std::make_shared<LoadBalancer>(mol, mg, basis, meta);
-#endif
+  LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
+  auto lb = lb_factory.get_instance(GAUXC_MPI_PARAM mol, mg, basis);
 
   functional_type func( ExchCXX::Backend::builtin, ExchCXX::Functional::PBE0, ExchCXX::Spin::Unpolarized );
 
@@ -86,31 +84,18 @@ TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
 
 #ifdef GAUXC_ENABLE_HOST
   SECTION( "Host" ) {
-#ifdef GAUXC_ENABLE_MPI
-    test_xc_integrator( ExecutionSpace::Host, comm, mol );
-#else
-    test_xc_integrator( ExecutionSpace::Host, mol );
-#endif
+    test_xc_integrator( ExecutionSpace::Host, GAUXC_MPI_PARAM mol );
   }
 #endif
 
 #ifdef GAUXC_ENABLE_CUDA
   SECTION( "Device" ) {
-#ifdef GAUXC_ENABLE_MPI
     SECTION( "Default" ) {
-      test_xc_integrator( ExecutionSpace::Device, comm, mol, "Default" );
+      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_PARAM mol, "Default" );
     }
     SECTION( "ShellBatched" ) {
-      test_xc_integrator( ExecutionSpace::Device, comm, mol, "ShellBatched" );
+      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_PARAM mol, "ShellBatched" );
     }
-#else
-    SECTION( "Default" ) {
-      test_xc_integrator( ExecutionSpace::Device, mol, "Default" );
-    }
-    SECTION( "ShellBatched" ) {
-      test_xc_integrator( ExecutionSpace::Device, mol, "ShellBatched" );
-    }
-#endif
   }
 #endif
 

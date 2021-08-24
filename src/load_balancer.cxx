@@ -1,5 +1,7 @@
 #include "load_balancer_impl.hpp"
-#include "load_balancer_defaults.hpp"
+//#include "load_balancer_defaults.hpp"
+#include "load_balancer/host/replicated_load_balancer.hpp"
+#include "load_balancer/cuda/replicated_load_balancer.hpp"
 
 namespace GauXC {
 
@@ -7,43 +9,6 @@ LoadBalancer::LoadBalancer( std::unique_ptr<pimpl_type>&& pimpl ):
   pimpl_( std::move(pimpl) ) { }
 
 LoadBalancer::LoadBalancer() : LoadBalancer( nullptr ) { }
-
-#ifdef GAUXC_ENABLE_MPI
-
-LoadBalancer::LoadBalancer( MPI_Comm comm, const Molecule& mol, const MolGrid& mg, 
-  const basis_type& basis, std::shared_ptr<MolMeta> meta ) : 
-  LoadBalancer( detail::make_default_load_balancer( comm, mol, mg, basis, meta ) ) 
-  { }
-
-LoadBalancer::LoadBalancer( MPI_Comm comm, const Molecule& mol, const MolGrid& mg, 
-  const basis_type& basis, const MolMeta& meta ) : 
-  LoadBalancer( detail::make_default_load_balancer( comm, mol, mg, basis, meta ) ) 
-  { }
-
-LoadBalancer::LoadBalancer( MPI_Comm comm, const Molecule& mol, const MolGrid& mg, 
-  const basis_type& basis ) : 
-  LoadBalancer( detail::make_default_load_balancer( comm, mol, mg, basis ) ) 
-  { }
-
-#else
-
-LoadBalancer::LoadBalancer( const Molecule& mol, const MolGrid& mg, 
-  const basis_type& basis, std::shared_ptr<MolMeta> meta ) : 
-  LoadBalancer( detail::make_default_load_balancer( mol, mg, basis, meta ) ) 
-  { }
-
-LoadBalancer::LoadBalancer( const Molecule& mol, const MolGrid& mg, 
-  const basis_type& basis, const MolMeta& meta ) : 
-  LoadBalancer( detail::make_default_load_balancer( mol, mg, basis, meta ) ) 
-  { }
-
-LoadBalancer::LoadBalancer( const Molecule& mol, const MolGrid& mg, 
-  const basis_type& basis ) : 
-  LoadBalancer( detail::make_default_load_balancer( mol, mg, basis ) ) 
-  { }
-
-#endif
-
 
 LoadBalancer::LoadBalancer( const LoadBalancer& other ) :
   LoadBalancer(other.pimpl_->clone()){ }
@@ -108,67 +73,54 @@ MPI_Comm LoadBalancer::comm() const {
 
 
 
-namespace factory {
 
-template <typename... Args>
-std::shared_ptr<LoadBalancer> fwd_to_default( Args&&... args ) {
-  return std::make_shared<LoadBalancer>( 
-    detail::make_default_load_balancer( std::forward<Args>(args)... )
-  );
-}
 
-#ifdef GAUXC_ENABLE_MPI
 
-std::shared_ptr<LoadBalancer> make_default_load_balancer(
-  MPI_Comm comm, const Molecule& mol, const MolGrid& mg, 
-  const BasisSet<double> &basis
+
+
+
+
+
+
+
+
+LoadBalancerFactory::LoadBalancerFactory( ExecutionSpace ex, std::string kernel_name ) :
+  ex_(ex), kernel_name_(kernel_name) { }
+
+std::shared_ptr<LoadBalancer> LoadBalancerFactory::get_shared_instance(
+  #ifdef GAUXC_ENABLE_MPI
+  MPI_Comm comm,
+  #endif
+  const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis
 ) {
-  return fwd_to_default( comm, mol, mg, basis );
+
+  std::unique_ptr<detail::LoadBalancerImpl> ptr;
+  switch(ex_) {
+
+    case ExecutionSpace::Host:
+      ptr = std::make_unique<detail::HostReplicatedLoadBalancer>(
+        comm, mol, mg, basis
+      );
+      break;
+
+    default:
+      throw std::runtime_error("Unrecognized LB space");
+
+  }
+
+  return std::make_shared<LoadBalancer>(std::move(ptr));
+
 }
 
-
-std::shared_ptr<LoadBalancer> make_default_load_balancer(
-  MPI_Comm comm, const Molecule& mol, const MolGrid& mg, 
-  const BasisSet<double> &basis, const MolMeta& meta
+LoadBalancer LoadBalancerFactory::get_instance(
+  #ifdef GAUXC_ENABLE_MPI
+  MPI_Comm comm,
+  #endif
+  const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis
 ) {
-  return fwd_to_default( comm, mol, mg, basis, meta );
-}
 
-
-std::shared_ptr<LoadBalancer> make_default_load_balancer(
-  MPI_Comm comm, const Molecule& mol, const MolGrid& mg, 
-  const BasisSet<double> &basis, std::shared_ptr<MolMeta> meta
-) {
-  return fwd_to_default( comm, mol, mg, basis, meta );
-}
-
-#else
-
-std::shared_ptr<LoadBalancer> make_default_load_balancer(
-  const Molecule& mol, const MolGrid& mg, 
-  const BasisSet<double> &basis
-) {
-  return fwd_to_default( mol, mg, basis );
-}
-
-
-std::shared_ptr<LoadBalancer> make_default_load_balancer(
-  const Molecule& mol, const MolGrid& mg, 
-  const BasisSet<double> &basis, const MolMeta& meta
-) {
-  return fwd_to_default( mol, mg, basis, meta );
-}
-
-
-std::shared_ptr<LoadBalancer> make_default_load_balancer(
-  const Molecule& mol, const MolGrid& mg, 
-  const BasisSet<double> &basis, std::shared_ptr<MolMeta> meta
-) {
-  return fwd_to_default( mol, mg, basis, meta );
-}
-
-#endif
-
+  auto ptr = get_shared_instance(comm,mol,mg,basis);
+  return LoadBalancer(std::move(*ptr));
 
 }
 

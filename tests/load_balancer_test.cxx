@@ -80,11 +80,16 @@ void check_lb_data( const std::vector<XCTask>& tasks ) {
 }
 
 
+//#define GAUXC_GEN_TESTS
 TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
 
 #ifdef GAUXC_ENABLE_MPI
   MPI_Comm comm          = MPI_COMM_WORLD;
+  #define GAUXC_MPI_ARG comm,
+#else
+  #define GAUXC_MPI_ARG 
 #endif
+
   Molecule mol           = make_benzene();
   BasisSet<double> basis = make_ccpvdz( mol, SphericalType(true) );
 
@@ -95,87 +100,20 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
 
   auto meta = std::make_shared<MolMeta>( mol );
 
-//#define GAUXC_GEN_TESTS
 #ifdef GAUXC_GEN_TESTS
 
-#ifdef GAUXC_ENABLE_MPI
-  LoadBalancer lb(comm, mol, mg, basis);
-#else
-  LoadBalancer lb(mol, mg, basis);
-#endif
+  LoadBalancerFactory lb_factory( ExecutionSpace::Host, "Default" );
+  auto lb = lb_factory.get_instance( GAUXC_MPI_ARG mol, mg, basis);
   auto& tasks = lb.get_tasks();
   gen_ref_lb_data(tasks);
 
 #else
 
-  SECTION("Implicit MolMeta Constructor") {
+  SECTION("Default") {
 
-#ifdef GAUXC_ENABLE_MPI
-  LoadBalancer lb(comm, mol, mg, basis);
-#else
-  LoadBalancer lb(mol, mg, basis);
-#endif
+    LoadBalancerFactory lb_factory( ExecutionSpace::Host, "Default" );
+    auto lb = lb_factory.get_instance( GAUXC_MPI_ARG mol, mg, basis);
     auto& tasks = lb.get_tasks();
-    check_lb_data( tasks );
-
-  }
-
-  SECTION("Explicit MolMeta Constructor") {
-
-#ifdef GAUXC_ENABLE_MPI
-    LoadBalancer lb(comm, mol, mg, basis, *meta);
-#else
-    LoadBalancer lb(mol, mg, basis, *meta);
-#endif
-    auto& tasks = lb.get_tasks();
-    check_lb_data( tasks );
-
-  }
-
-  SECTION("MolMeta PTR Constructor") {
-
-#ifdef GAUXC_ENABLE_MPI
-    LoadBalancer lb(comm, mol, mg, basis, meta);
-#else
-    LoadBalancer lb(mol, mg, basis, meta);
-#endif
-    auto& tasks = lb.get_tasks();
-    check_lb_data( tasks );
-
-  }
-
-  SECTION("Implicit MolMeta Factory") {
-
-#ifdef GAUXC_ENABLE_MPI
-    auto lb_ptr = factory::make_default_load_balancer( comm, mol, mg, basis );
-#else
-    auto lb_ptr = factory::make_default_load_balancer( mol, mg, basis );
-#endif
-    auto& tasks = lb_ptr->get_tasks();
-    check_lb_data( tasks );
-
-  }
-
-  SECTION("Explicit MolMeta Factory") {
-
-#ifdef GAUXC_ENABLE_MPI
-    auto lb_ptr = factory::make_default_load_balancer( comm, mol, mg, basis, *meta );
-#else
-    auto lb_ptr = factory::make_default_load_balancer( mol, mg, basis, *meta );
-#endif
-    auto& tasks = lb_ptr->get_tasks();
-    check_lb_data( tasks );
-
-  }
-
-  SECTION("MolMeta PTR Factory") {
-
-#ifdef GAUXC_ENABLE_MPI
-    auto lb_ptr = factory::make_default_load_balancer( comm, mol, mg, basis, meta );
-#else
-    auto lb_ptr = factory::make_default_load_balancer( mol, mg, basis, meta );
-#endif
-    auto& tasks = lb_ptr->get_tasks();
     check_lb_data( tasks );
 
   }
