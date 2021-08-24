@@ -22,8 +22,15 @@ protected:
                       int64_t ldp, value_type* VXC, int64_t ldvxc,
                       value_type* EXC ) override;
 
+  void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
+                       int64_t ldp, value_type* EXC_GRAD ) override;
+
   void exc_vxc_local_work_( const value_type* P, int64_t ldp, value_type* VXC,
                             int64_t ldvxc, value_type* EXC, value_type *N_EL );
+
+  void exc_grad_local_work_( const value_type* P, int64_t ldp, 
+    value_type* EXC_GRAD );
+
 public:
 
   template <typename... Args>

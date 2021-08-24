@@ -22,7 +22,8 @@ public:
   using value_type    = typename matrix_type::value_type;  
   using basisset_type = BasisSet< value_type >;
 
-  using exc_vxc_type = std::tuple< value_type, matrix_type >;
+  using exc_vxc_type  = std::tuple< value_type, matrix_type >;
+  using exc_grad_type = std::vector< value_type >;
 
 private:
 
@@ -40,7 +41,8 @@ public:
   XCIntegrator( const XCIntegrator& ) = delete;
   XCIntegrator( XCIntegrator&& ) noexcept;
 
-  exc_vxc_type eval_exc_vxc( const MatrixType& );
+  exc_vxc_type  eval_exc_vxc ( const MatrixType& );
+  exc_grad_type eval_exc_grad( const MatrixType& );
 
 
   const util::Timer& get_timings() const;

@@ -102,6 +102,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
       MPI_Allreduce( &EXC_cpy,  EXC,  1, MPI_DOUBLE, MPI_SUM, comm );
       MPI_Allreduce( &N_EL_cpy, &N_EL, 1, MPI_DOUBLE, MPI_SUM, comm );
       
+      alloc.deallocate(VXC_cpy,nbf*nbf);
 
     }
   });
@@ -136,6 +137,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
   const auto nbf = basis.nbf();
   const uint32_t nbf_threshold = 8000;
+  const auto& mol = this->load_balancer_->molecule();
   // Zero out integrands on host
   this->timer_.time_op("XCIntegrator.ZeroHost", [&](){
     *EXC  = 0.;
@@ -169,7 +171,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
     }
 
     // Execute task
-    execute_task_batch( next_task, basis, P, ldp, VXC, ldvxc, EXC, N_EL,
+    execute_task_batch( next_task, basis, mol, P, ldp, VXC, ldvxc, EXC, N_EL,
       incore_integrator, device_data );
   };
 
@@ -379,7 +381,7 @@ typename ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::incore_device_task
 
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
-  execute_task_batch( incore_device_task& task, const basis_type& basis, 
+  execute_task_batch( incore_device_task& task, const basis_type& basis, const Molecule& mol, 
                       const value_type* P, int64_t ldp, value_type* VXC, int64_t ldvxc, 
                       value_type* EXC, value_type *N_EL, incore_integrator_type& incore_integrator, 
                       XCDeviceData& device_data ) {
@@ -399,7 +401,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   });
 
   // Setup basis maps
-  BasisSetMap basis_map( basis );
+  BasisSetMap basis_map( basis, mol );
 
   //const size_t nshells = basis_subset.nshells();
   const size_t nbe     = basis_subset.nbf();
@@ -468,6 +470,10 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
 
 
+template <typename ValueType>
+void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
+  eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
+                 int64_t ldp, value_type* EXC_GRAD ) { }
 
 
 

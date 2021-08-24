@@ -11,13 +11,15 @@ class XCIntegratorImpl {
 
 public:
 
-  using matrix_type   = MatrixType;
-  using value_type    = typename matrix_type::value_type;
-  using exc_vxc_type  = typename XCIntegrator<MatrixType>::exc_vxc_type;
+  using matrix_type    = MatrixType;
+  using value_type     = typename matrix_type::value_type;
+  using exc_vxc_type   = typename XCIntegrator<MatrixType>::exc_vxc_type;
+  using exc_grad_type  = typename XCIntegrator<MatrixType>::exc_grad_type;
 
 protected:
 
-  virtual exc_vxc_type eval_exc_vxc_( const MatrixType& P ) = 0;
+  virtual exc_vxc_type  eval_exc_vxc_ ( const MatrixType& P ) = 0;
+  virtual exc_grad_type eval_exc_grad_( const MatrixType& P ) = 0;
   virtual const util::Timer& get_timings_() const = 0;
   
 public:
@@ -39,6 +41,17 @@ public:
    */
   exc_vxc_type eval_exc_vxc( const MatrixType& P ) {
     return eval_exc_vxc_(P);
+  }
+
+  /** Integrate EXC gradient for RKS
+   * 
+   *   TODO: add API for UKS/GKS
+   *
+   *  @param[in] P The alpha density matrix
+   *  @returns EXC gradient
+   */
+  exc_grad_type eval_exc_grad( const MatrixType& P ) {
+    return eval_exc_grad_(P);
   }
 
   /** Get internal timers

@@ -134,4 +134,66 @@ void gau2grid_collocation_gradient( size_t                  npts,
 }
 
 
+
+void gau2grid_collocation_hessian( size_t                  npts, 
+                                   size_t                  nshells,
+                                   size_t                  nbe,
+                                   const double*           points, 
+                                   const BasisSet<double>& basis,
+                                   const int32_t*          shell_mask,
+                                   double*                 basis_eval, 
+                                   double*                 dbasis_x_eval, 
+                                   double*                 dbasis_y_eval,
+                                   double*                 dbasis_z_eval, 
+                                   double*                 d2basis_xx_eval, 
+                                   double*                 d2basis_xy_eval,
+                                   double*                 d2basis_xz_eval,
+                                   double*                 d2basis_yy_eval,
+                                   double*                 d2basis_yz_eval,
+                                   double*                 d2basis_zz_eval) {
+
+  std::allocator<double> a;
+  auto* rv = a.allocate( 10 * npts * nbe );
+  auto* rv_x = rv   + npts * nbe;
+  auto* rv_y = rv_x + npts * nbe;
+  auto* rv_z = rv_y + npts * nbe;
+  auto* rv_xx = rv_z  + npts * nbe;
+  auto* rv_xy = rv_xx + npts * nbe;
+  auto* rv_xz = rv_xy + npts * nbe;
+  auto* rv_yy = rv_xz + npts * nbe;
+  auto* rv_yz = rv_yy + npts * nbe;
+  auto* rv_zz = rv_yz + npts * nbe;
+
+  size_t ncomp = 0;
+  for( size_t i = 0; i < nshells; ++i ) {
+
+    const auto& sh = basis.at(shell_mask[i]);
+    int order = sh.pure() ? GG_SPHERICAL_CCA : GG_CARTESIAN_CCA; 
+
+    const auto ioff = ncomp*npts;
+    gg_collocation_deriv2( sh.l(), npts, points, 3, sh.nprim(), sh.coeff_data(),
+      sh.alpha_data(), sh.O_data(), order, rv + ioff, rv_x + ioff, rv_y + ioff, 
+      rv_z + ioff, rv_xx + ioff, rv_xy + ioff, rv_xz + ioff, rv_yy + ioff,
+      rv_yz + ioff, rv_zz + ioff);
+
+    ncomp += sh.size();
+
+  }
+
+  gg_fast_transpose( ncomp, npts, rv,    basis_eval );
+  gg_fast_transpose( ncomp, npts, rv_x,  dbasis_x_eval );
+  gg_fast_transpose( ncomp, npts, rv_y,  dbasis_y_eval );
+  gg_fast_transpose( ncomp, npts, rv_z,  dbasis_z_eval );
+  gg_fast_transpose( ncomp, npts, rv_xx, d2basis_xx_eval );
+  gg_fast_transpose( ncomp, npts, rv_xy, d2basis_xy_eval );
+  gg_fast_transpose( ncomp, npts, rv_xz, d2basis_xz_eval );
+  gg_fast_transpose( ncomp, npts, rv_yy, d2basis_yy_eval );
+  gg_fast_transpose( ncomp, npts, rv_yz, d2basis_yz_eval );
+  gg_fast_transpose( ncomp, npts, rv_zz, d2basis_zz_eval );
+
+  a.deallocate( rv, 4*npts*nbe );
+
+}
+
+
 }

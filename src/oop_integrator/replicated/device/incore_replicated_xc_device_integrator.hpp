@@ -25,10 +25,18 @@ protected:
                       int64_t ldp, value_type* VXC, int64_t ldvxc,
                       value_type* EXC ) override;
 
+  void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
+                       int64_t ldp, value_type* EXC_GRAD ) override;
+
   void exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                             value_type* VXC, int64_t ldvxc, value_type* EXC, value_type *N_EL,
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data );
+
+  void eval_exc_grad_local_work_( int64_t m, int64_t n, const value_type* P,
+                                  int64_t ldp, value_type* EXC_GRAD, 
+                                  host_task_iterator task_begin, host_task_iterator task_end,
+                                  XCDeviceData& device_data );
 
 public:
 

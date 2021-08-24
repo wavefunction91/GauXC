@@ -86,6 +86,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       MPI_Allreduce( &EXC_cpy,  EXC,  1, MPI_DOUBLE, MPI_SUM, comm );
       MPI_Allreduce( &N_EL_cpy, &N_EL, 1, MPI_DOUBLE, MPI_SUM, comm );
       
+      alloc.deallocate(VXC_cpy,nbf*nbf);
 
     }
   });
@@ -112,7 +113,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   const auto& meta  = this->load_balancer_->molmeta();
 
   // Get basis map
-  BasisSetMap basis_map(basis);
+  BasisSetMap basis_map(basis,mol);
 
   // Sort tasks 
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
@@ -201,6 +202,11 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   for( int32_t i = j+1; i < nbf; ++i )
     VXC[ j + i*ldvxc ] = VXC[ i + j*ldvxc ];
 }
+
+template <typename ValueType>
+void IncoreReplicatedXCDeviceIntegrator<ValueType>::
+  eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
+                 int64_t ldp, value_type* EXC_GRAD ) { }
 
 
 template class IncoreReplicatedXCDeviceIntegrator<double>;

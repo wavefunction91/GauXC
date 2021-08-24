@@ -25,6 +25,15 @@ void ReplicatedXCIntegratorImpl<ValueType>::
 
 }
 
+template <typename ValueType>
+void ReplicatedXCIntegratorImpl<ValueType>::
+  eval_exc_grad( int64_t m, int64_t n, const value_type* P,
+                int64_t ldp, value_type* EXC_GRAD ) {
+
+    eval_exc_grad_(m,n,P,ldp,EXC_GRAD);
+
+}
+
 template class ReplicatedXCIntegratorImpl<double>;
 
 }

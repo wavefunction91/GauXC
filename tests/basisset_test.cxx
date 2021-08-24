@@ -182,7 +182,7 @@ TEST_CASE("BasisSet", "[basisset]") {
 
   CHECK( basis.nshells() == 10 );
   CHECK( basis.nbf()     == (test_spherical ? 18 : 19) );
-  BasisSetMap basis_map( basis );
+  BasisSetMap basis_map( basis, mol );
 
 
   std::vector<int32_t> ref_shell_to_ao = {
@@ -192,6 +192,7 @@ TEST_CASE("BasisSet", "[basisset]") {
   };
 
   CHECK( basis_map.shell_to_first_ao() == ref_shell_to_ao );
+  CHECK( std::none_of( basis_map.shell_to_center().begin(), basis_map.shell_to_center().end(), [](auto i){ return i == -1;} ) );
 
   for(auto i = 0; i < basis.nshells(); ++i) {
     auto [sh_st,sh_en] = basis_map.shell_to_ao_range(i);

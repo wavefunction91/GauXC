@@ -67,6 +67,13 @@ void test_xc_integrator( ExecutionSpace ex, Molecule mol, std::string integrator
     auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
     CHECK( VXC1_diff_nrm / basis.nbf() < 1e-10 ); 
   }
+
+
+  if( ex == ExecutionSpace::Host ) {
+    std::cout << "EXC = " << EXC << std::endl;
+    auto EXC_GRAD = integrator.eval_exc_grad( P );
+    for( auto x : EXC_GRAD ) std::cout << x << std::endl;
+  }
 }
 
 

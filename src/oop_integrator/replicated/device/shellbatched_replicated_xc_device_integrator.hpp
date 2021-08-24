@@ -36,11 +36,20 @@ protected:
                       int64_t ldp, value_type* VXC, int64_t ldvxc,
                       value_type* EXC ) override;
 
+  void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
+                       int64_t ldp, value_type* EXC_GRAD ) override;
+
   void exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                             value_type* VXC, int64_t ldvxc, value_type* EXC, value_type *N_EL,
                             host_task_iterator task_begin, host_task_iterator task_end,
                             incore_integrator_type& incore_integrator,
                             XCDeviceData& device_data );
+
+  void eval_exc_grad_local_work_( int64_t m, int64_t n, const value_type* P,
+                                  int64_t ldp, value_type* EXC_GRAD, 
+                                  host_task_iterator task_begin, host_task_iterator task_end,
+                                  incore_integrator_type& incore_integrator,
+                                  XCDeviceData& device_data );
 
   
   incore_device_task generate_incore_device_task( const uint32_t     nbf_threshold,
@@ -48,7 +57,7 @@ protected:
                                                   host_task_iterator task_begin,
                                                   host_task_iterator task_end );
 
-  void execute_task_batch( incore_device_task& task, const basis_type& basis, const value_type* P,
+  void execute_task_batch( incore_device_task& task, const basis_type& basis, const Molecule& mol, const value_type* P,
                            int64_t ldp, value_type* VXC, int64_t ldvxc, value_type* EXC,
                            value_type* N_EL, incore_integrator_type& incore_integrator,
                            XCDeviceData& device_data );

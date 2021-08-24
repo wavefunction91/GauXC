@@ -97,6 +97,33 @@ public:
     double* basis_eval, double* dbasis_x_eval, double* dbasis_y_eval, 
     double* dbasis_z_eval);
 
+
+  /** Evaluation the collocation matrix + gradient + hessian
+   *
+   *  @param[in] npts     Same as `eval_collocation`
+   *  @param[in] nshells  Same as `eval_collocation`
+   *  @param[in] nbe      Same as `eval_collocation`
+   *  @param[in] basis    Same as `eval_collocation`
+   *  @param[in] shell_list Same as `eval_collocation`
+   *
+   *  @param[out] basis_eval    Same as `eval_collocation`
+   *  @param[out] dbasis_x_eval Same as `eval_collocation_gradient`
+   *  @param[out] dbasis_y_eval Same as `eval_collocation_gradient`
+   *  @param[out] dbasis_z_eval Same as `eval_collocation_gradient`
+   *  @param[out] d2basis_xx_eval Derivative of `basis_eval` wrt x+x (same dimensions)
+   *  @param[out] d2basis_xy_eval Derivative of `basis_eval` wrt x+y (same dimensions)
+   *  @param[out] d2basis_xz_eval Derivative of `basis_eval` wrt x+z (same dimensions)
+   *  @param[out] d2basis_yy_eval Derivative of `basis_eval` wrt y+y (same dimensions)
+   *  @param[out] d2basis_yz_eval Derivative of `basis_eval` wrt y+z (same dimensions)
+   *  @param[out] d2basis_zz_eval Derivative of `basis_eval` wrt z+z (same dimensions)
+   */
+  void eval_collocation_hessian( size_t npts, size_t nshells, size_t nbe, 
+    const double* pts, const BasisSet<double>& basis, const int32_t* shell_list, 
+    double* basis_eval, double* dbasis_x_eval, double* dbasis_y_eval, 
+    double* dbasis_z_eval, double* d2basis_xx_eval, double* d2basis_xy_eval,
+    double* d2basis_xz_eval, double* d2basis_yy_eval, double* d2basis_yz_eval,
+    double* d2basis_zz_eval );
+
   /** Evaluate the compressed "X" matrix = P * B
    *
    *  Includes a factor of 2 for total density in Libxc unpolarized input

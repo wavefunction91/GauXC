@@ -53,6 +53,20 @@ void ReferenceLocalHostWorkDriver::eval_collocation_gradient( size_t npts,
 
 }
 
+void ReferenceLocalHostWorkDriver::eval_collocation_hessian( size_t npts, 
+  size_t nshells, size_t nbe, const double* pts, const BasisSet<double>& basis, 
+  const int32_t* shell_list, double* basis_eval, double* dbasis_x_eval, 
+  double* dbasis_y_eval, double* dbasis_z_eval, double* d2basis_xx_eval, 
+  double* d2basis_xy_eval, double* d2basis_xz_eval, double* d2basis_yy_eval, 
+  double* d2basis_yz_eval, double* d2basis_zz_eval ) {
+
+  gau2grid_collocation_hessian(npts, nshells, nbe, pts, basis, shell_list,
+    basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval, d2basis_xx_eval,
+    d2basis_xy_eval, d2basis_xz_eval, d2basis_yy_eval, d2basis_yz_eval,
+    d2basis_zz_eval);
+
+}
+
 
 
 

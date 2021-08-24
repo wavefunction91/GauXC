@@ -53,7 +53,7 @@ __global__ void compute_point_center_dist(
 
       // do the computation
       #pragma unroll 2
-      for (int k = threadIdx.y; k < warp_size; k+=warp_size/2) {
+      for (int k = threadIdx.y; k < warp_size; k += blockDim.y) {
         const int iPt_sm = k;
         const int iPt = i * warp_size + iPt_sm;
         const double rx = point_buffer[iPt_sm].x - coord_reg.x;
@@ -581,7 +581,7 @@ void partition_weights_cuda_SoA( XCWeightAlg    weight_alg,
     const int distance_thread_y = max_warps_per_thread_block / 2;
     dim3 threads(  warp_size, distance_thread_y );
     dim3 blocks( util::div_ceil( natoms,   threads.x), 
-                 util::div_ceil( npts, threads.y * distance_thread_y) );
+                 util::div_ceil( npts,     4) );
 
     compute_point_center_dist<<< blocks, threads, 0, stream>>>(
       npts, LDatoms, natoms, atomic_coords_device, points_device, dist_scratch_device

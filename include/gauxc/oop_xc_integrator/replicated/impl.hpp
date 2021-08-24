@@ -45,5 +45,19 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type
 
 }
 
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type 
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_grad_( const MatrixType& P ) {
+
+  if( not pimpl_ ) throw std::runtime_error( "Not Initialized" );
+
+  std::vector<value_type> EXC_GRAD( 3*pimpl_->load_balancer().molecule().natoms() );
+  pimpl_->eval_exc_grad( P.rows(), P.cols(), P.data(), P.rows(),
+                         EXC_GRAD.data() );
+
+  return EXC_GRAD;
+
+}
+
 }
 }

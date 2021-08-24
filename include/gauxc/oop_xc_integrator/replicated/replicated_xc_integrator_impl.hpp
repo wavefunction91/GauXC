@@ -30,6 +30,9 @@ protected:
   virtual void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                               int64_t ldp, value_type* VXC, int64_t ldvxc,
                               value_type* EXC ) = 0;
+  virtual void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
+                               int64_t ldp, value_type* EXC_GRAD ) = 0;
+
 public:
 
   ReplicatedXCIntegratorImpl( std::shared_ptr< functional_type > func,
@@ -42,12 +45,16 @@ public:
                      int64_t ldp, value_type* VXC, int64_t ldvxc,
                      value_type* EXC ); 
 
+  void eval_exc_grad( int64_t m, int64_t n, const value_type* P,
+                      int64_t ldp, value_type* EXC_GRAD );
+
   inline const util::Timer& get_timings() const { return timer_; }
 
-  std::unique_ptr< LocalWorkDriver > release_local_work_driver() {
+  inline std::unique_ptr< LocalWorkDriver > release_local_work_driver() {
     return std::move( local_work_driver_ );
   }
 
+  inline const auto& load_balancer() const { return *load_balancer_; }
 };
 
 

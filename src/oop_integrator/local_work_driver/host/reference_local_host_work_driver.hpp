@@ -27,6 +27,12 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
     const double* pts, const BasisSet<double>& basis, const int32_t* shell_list, 
     double* basis_eval, double* dbasis_x_eval, double* dbasis_y_eval, 
     double* dbasis_z_eval) override;
+  void eval_collocation_hessian( size_t npts, size_t nshells, size_t nbe, 
+    const double* pts, const BasisSet<double>& basis, const int32_t* shell_list, 
+    double* basis_eval, double* dbasis_x_eval, double* dbasis_y_eval, 
+    double* dbasis_z_eval, double* d2basis_xx_eval, double* d2basis_xy_eval,
+    double* d2basis_xz_eval, double* d2basis_yy_eval, double* d2basis_yz_eval,
+    double* d2basis_zz_eval );
 
   void eval_xmat( size_t npts, size_t nbf, size_t nbe, 
     const submat_map_t& submat_map, const double* P, size_t ldp, 
