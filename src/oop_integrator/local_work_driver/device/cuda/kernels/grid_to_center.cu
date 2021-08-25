@@ -5,12 +5,12 @@
 namespace GauXC {
 
 __global__ void compute_grid_to_center_dist(
-        int32_t npts,
-        int32_t natoms,
+        size_t npts,
+        size_t natoms,
   const double* coords,
   const double* points,
         double* dist,
-        int32_t lddist
+        size_t lddist
 ) {
 
   __shared__ double3 point_buffer[cuda::warp_size];
