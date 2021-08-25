@@ -67,11 +67,13 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_ARG Molecule mol, std::str
   }
 
 
+/*
   if( ex == ExecutionSpace::Host ) {
     std::cout << "EXC = " << EXC << std::endl;
     auto EXC_GRAD = integrator.eval_exc_grad( P );
     for( auto x : EXC_GRAD ) std::cout << x << std::endl;
   }
+*/
 }
 
 

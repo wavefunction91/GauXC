@@ -100,7 +100,7 @@ int main(int argc, char** argv) {
 
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;
-    XCIntegratorFactory<matrix_type> integrator_factory( ExecutionSpace::Device, "Replicated", "ShellBatched", "Default" );
+    XCIntegratorFactory<matrix_type> integrator_factory( ExecutionSpace::Device, "Replicated", "Default", "Default" );
     auto integrator = integrator_factory.get_instance( func, lb );
 
     matrix_type P,VXC_ref;
