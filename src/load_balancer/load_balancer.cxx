@@ -1,7 +1,4 @@
 #include "load_balancer_impl.hpp"
-//#include "load_balancer_defaults.hpp"
-#include "load_balancer/host/replicated_load_balancer.hpp"
-#include "load_balancer/cuda/replicated_load_balancer.hpp"
 
 namespace GauXC {
 
@@ -66,62 +63,11 @@ LoadBalancerState& LoadBalancer::state() {
   return pimpl_->state();
 }
 
+#ifdef GAUXC_ENABLE_MPI
 MPI_Comm LoadBalancer::comm() const {
   if( not pimpl_ ) throw std::runtime_error("Not Initialized");
   return pimpl_->comm();
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-LoadBalancerFactory::LoadBalancerFactory( ExecutionSpace ex, std::string kernel_name ) :
-  ex_(ex), kernel_name_(kernel_name) { }
-
-std::shared_ptr<LoadBalancer> LoadBalancerFactory::get_shared_instance(
-  #ifdef GAUXC_ENABLE_MPI
-  MPI_Comm comm,
-  #endif
-  const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis
-) {
-
-  std::unique_ptr<detail::LoadBalancerImpl> ptr;
-  switch(ex_) {
-
-    case ExecutionSpace::Host:
-      ptr = std::make_unique<detail::HostReplicatedLoadBalancer>(
-        comm, mol, mg, basis
-      );
-      break;
-
-    default:
-      throw std::runtime_error("Unrecognized LB space");
-
-  }
-
-  return std::make_shared<LoadBalancer>(std::move(ptr));
-
-}
-
-LoadBalancer LoadBalancerFactory::get_instance(
-  #ifdef GAUXC_ENABLE_MPI
-  MPI_Comm comm,
-  #endif
-  const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis
-) {
-
-  auto ptr = get_shared_instance(comm,mol,mg,basis);
-  return LoadBalancer(std::move(*ptr));
-
-}
+#endif
 
 }

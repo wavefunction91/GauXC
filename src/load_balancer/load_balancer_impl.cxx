@@ -117,8 +117,10 @@ LoadBalancerState& LoadBalancerImpl::state() {
   return state_;
 }
 
+#ifdef GAUXC_ENABLE_MPI
 MPI_Comm LoadBalancerImpl::comm() const {
   return comm_;
 }
+#endif
 
 }

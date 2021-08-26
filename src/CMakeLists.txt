@@ -20,8 +20,6 @@ add_library( gauxc STATIC
   molgrid_impl.cxx 
   molgrid_defaults.cxx 
   atomic_radii.cxx 
-  load_balancer_impl.cxx 
-  load_balancer.cxx 
 )
 
 target_include_directories( gauxc
