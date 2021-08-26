@@ -4,6 +4,7 @@
 
 #include <gauxc/oop_xc_integrator/local_work_driver.hpp>
 #include <gauxc/oop_xc_integrator/replicated/replicated_xc_integrator_factory.hpp>
+#include <gauxc/reduction_driver.hpp>
 
 namespace GauXC {
 
@@ -29,10 +30,13 @@ public:
                        std::string integrator_input_type,
                        std::string integrator_kernel_name,
                        std::string local_work_kernel_name,
+                       std::string reduction_kernel_name,
                        LocalWorkSettings settings = LocalWorkSettings() ) :
     ex_(ex), input_type_(integrator_input_type), 
     integrator_kernel_(integrator_kernel_name),
-    lwd_kernel_(local_work_kernel_name), local_work_settings_(settings) {}
+    lwd_kernel_(local_work_kernel_name), 
+    rd_kernel_(reduction_kernel_name),
+    local_work_settings_(settings) {}
 
  
   /** Generate XCIntegrator instance
@@ -47,6 +51,10 @@ public:
     auto lwd = LocalWorkDriverFactory::make_local_work_driver( ex_, 
       lwd_kernel_, local_work_settings_ );
 
+    // Create Reduction Driver
+    auto rd = ReductionDriverFactory::get_shared_instance( 
+      GAUXC_MPI_CODE(lb->comm()), rd_kernel_ );
+
     // Create Integrator instance
     std::transform( input_type_.begin(), input_type_.end(), input_type_.begin(), 
       ::toupper );
@@ -54,7 +62,7 @@ public:
     if( input_type_ == "REPLICATED" )
       return integrator_type( 
         ReplicatedXCIntegratorFactory<MatrixType>::make_integrator_impl(
-          ex_, integrator_kernel_, func, lb, std::move(lwd)
+          ex_, integrator_kernel_, func, lb, std::move(lwd), rd
         )
       );
     else
@@ -78,7 +86,7 @@ public:
 private:
 
   ExecutionSpace ex_;
-  std::string input_type_, integrator_kernel_, lwd_kernel_;
+  std::string input_type_, integrator_kernel_, lwd_kernel_, rd_kernel_;
   LocalWorkSettings local_work_settings_;
 
 };

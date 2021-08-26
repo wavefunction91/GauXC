@@ -69,7 +69,7 @@ int main(int argc, char** argv) {
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;
     XCIntegratorFactory<matrix_type> integrator_factory( ExecutionSpace::Device, 
-      "Replicated", "Default", "Default" );
+      "Replicated", "Default", "Default", "Default" );
     auto integrator = integrator_factory.get_instance( func, lb );
 
     // Read in reference data

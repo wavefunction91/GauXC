@@ -46,7 +46,9 @@ struct ReplicatedXCDeviceIntegratorFactory {
     std::string integrator_kernel,
     std::shared_ptr<functional_type>   func,
     std::shared_ptr<LoadBalancer>      lb,
-    std::unique_ptr<LocalWorkDriver>&& lwd );
+    std::unique_ptr<LocalWorkDriver>&& lwd, 
+    std::shared_ptr<ReductionDriver>   rd
+    );
 
 };
 

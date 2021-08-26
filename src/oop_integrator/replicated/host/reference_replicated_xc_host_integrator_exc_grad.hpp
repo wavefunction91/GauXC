@@ -35,6 +35,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     exc_grad_local_work_( P, ldp, EXC_GRAD );
   });
 
+#if 0
 #ifdef GAUXC_ENABLE_MPI
 
   int world_size;
@@ -68,6 +69,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   });
 
   }
+
+#endif
+#else
+
+  this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+    const int natoms = this->load_balancer_->molecule().natoms();
+    this->reduction_driver_->allreduce_inplace( EXC_GRAD, 3*natoms, ReductionOp::Sum );
+  });
 
 #endif
 }

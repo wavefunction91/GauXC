@@ -49,7 +49,7 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, ) std
   functional_type func( ExchCXX::Backend::builtin, ExchCXX::Functional::PBE0, ExchCXX::Spin::Unpolarized );
 
   //auto integrator = make_default_integrator<matrix_type>( ex, comm, func, basis, lb );
-  XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", integrator_kernel, "Default" );
+  XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", integrator_kernel, "Default", "Default" );
   auto integrator = integrator_factory.get_instance( func, lb );
 
 

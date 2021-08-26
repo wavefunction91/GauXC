@@ -52,6 +52,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       &N_EL, tasks.begin(), tasks.end(), *device_data_ptr);
   });
 
+#if 0
 #ifdef GAUXC_ENABLE_MPI
 
   int world_size;
@@ -86,12 +87,21 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       MPI_Allreduce( &EXC_cpy,  EXC,  1, MPI_DOUBLE, MPI_SUM, comm );
       MPI_Allreduce( &N_EL_cpy, &N_EL, 1, MPI_DOUBLE, MPI_SUM, comm );
       
-      alloc.deallocate(VXC_cpy,nbf*nbf);
+      alloc.deallocate(VXC_cpy, nbf*nbf);
 
     }
   });
 
   }
+
+#endif
+#else
+
+  this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+    this->reduction_driver_->allreduce_inplace( VXC, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
+  });
 
 #endif
 

@@ -53,7 +53,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
   // Generate incore integrator instance, transfer ownership of LWD
   incore_integrator_type incore_integrator( this->func_, this->load_balancer_,
-    this->release_local_work_driver() );
+    this->release_local_work_driver(), this->reduction_driver_ );
 
   // Temporary electron count to judge integrator accuracy
   value_type N_EL;
@@ -68,6 +68,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   // Release ownership of LWD back to this integrator instance
   this->local_work_driver_ = std::move( incore_integrator.release_local_work_driver() );
 
+#if 0
 #ifdef GAUXC_ENABLE_MPI
 
   int world_size;
@@ -102,12 +103,21 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
       MPI_Allreduce( &EXC_cpy,  EXC,  1, MPI_DOUBLE, MPI_SUM, comm );
       MPI_Allreduce( &N_EL_cpy, &N_EL, 1, MPI_DOUBLE, MPI_SUM, comm );
       
-      alloc.deallocate(VXC_cpy,nbf*nbf);
+      alloc.deallocate(VXC_cpy, nbf*nbf);
 
     }
   });
 
   }
+
+#endif
+#else
+
+  this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+    this->reduction_driver_->allreduce_inplace( VXC, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
+  });
 
 #endif
 

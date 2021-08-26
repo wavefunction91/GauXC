@@ -17,7 +17,9 @@ typename ReplicatedXCHostIntegratorFactory<ValueType>::ptr_return_t
     std::string integrator_kernel,
     std::shared_ptr<functional_type> func,
     std::shared_ptr<LoadBalancer> lb, 
-    std::unique_ptr<LocalWorkDriver>&& lwd) {
+    std::unique_ptr<LocalWorkDriver>&& lwd,
+    std::shared_ptr<ReductionDriver>   rd
+    ) {
 
   // Make sure that the LWD is a valid LocalHostWorkDriver
   if(not dynamic_cast<LocalHostWorkDriver*>(lwd.get())) {
@@ -31,7 +33,7 @@ typename ReplicatedXCHostIntegratorFactory<ValueType>::ptr_return_t
 
   if( integrator_kernel == "REFERENCE" )
     return std::make_unique<ReferenceReplicatedXCHostIntegrator<ValueType>>(
-      func, lb, std::move(lwd)
+      func, lb, std::move(lwd), rd
     );
 
   else

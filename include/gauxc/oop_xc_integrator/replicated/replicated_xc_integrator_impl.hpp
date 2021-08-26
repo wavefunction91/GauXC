@@ -2,6 +2,7 @@
 
 #include <gauxc/oop_xc_integrator/replicated_xc_integrator.hpp>
 #include <gauxc/oop_xc_integrator/local_work_driver.hpp>
+#include <gauxc/reduction_driver.hpp>
 #include <gauxc/types.hpp>
 #include <gauxc/basisset.hpp>
 
@@ -23,6 +24,7 @@ protected:
   std::shared_ptr< functional_type > func_;               ///< XC functional
   std::shared_ptr< LoadBalancer >    load_balancer_;      ///< Load Balancer
   std::unique_ptr< LocalWorkDriver > local_work_driver_;  ///< Local Work Driver
+  std::shared_ptr< ReductionDriver > reduction_driver_;   ///< Reduction Driver
 
   util::Timer timer_;
 
@@ -35,9 +37,11 @@ protected:
 
 public:
 
-  ReplicatedXCIntegratorImpl( std::shared_ptr< functional_type > func,
-                              std::shared_ptr< LoadBalancer >    lb, 
-                              std::unique_ptr< LocalWorkDriver >&& lwd );
+  ReplicatedXCIntegratorImpl( std::shared_ptr< functional_type >   func,
+                              std::shared_ptr< LoadBalancer >      lb, 
+                              std::unique_ptr< LocalWorkDriver >&& lwd,
+                              std::shared_ptr< ReductionDriver>    rd
+                              );
 
   virtual ~ReplicatedXCIntegratorImpl() noexcept;
 

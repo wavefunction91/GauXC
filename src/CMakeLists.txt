@@ -56,6 +56,7 @@ endif()
 #add_subdirectory( new_integrator )
 add_subdirectory( oop_integrator )
 add_subdirectory( load_balancer )
+add_subdirectory( reduction_driver )
 add_subdirectory( external )
 
 

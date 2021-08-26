@@ -27,7 +27,9 @@ struct ReplicatedXCIntegratorFactory {
     std::string integrator_kernel,
     std::shared_ptr<functional_type>   func,
     std::shared_ptr<LoadBalancer>      lb,
-    std::unique_ptr<LocalWorkDriver>&& lwd ) {
+    std::unique_ptr<LocalWorkDriver>&& lwd,
+    std::shared_ptr<ReductionDriver>   rd
+    ) {
 
     using host_factory = 
       detail::ReplicatedXCHostIntegratorFactory<value_type>;
@@ -40,14 +42,14 @@ struct ReplicatedXCIntegratorFactory {
       case ExecutionSpace::Host:
         return std::make_unique<integrator_type>( 
           host_factory::make_integrator_impl(
-            integrator_kernel, func, lb, std::move(lwd) 
+            integrator_kernel, func, lb, std::move(lwd), rd 
           )
         );
 
       case ExecutionSpace::Device:
         return std::make_unique<integrator_type>( 
           device_factory::make_integrator_impl(
-            integrator_kernel, func, lb, std::move(lwd) 
+            integrator_kernel, func, lb, std::move(lwd), rd
           )
         );
 

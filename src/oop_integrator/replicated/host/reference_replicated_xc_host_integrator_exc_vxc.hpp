@@ -53,6 +53,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     exc_vxc_local_work_( P, ldp, VXC, ldvxc, EXC, &N_EL );
   });
 
+#if 0
 #ifdef GAUXC_ENABLE_MPI
 
   int world_size;
@@ -93,6 +94,15 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   });
 
   }
+
+#endif
+#else
+
+  this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+    this->reduction_driver_->allreduce_inplace( VXC, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
+  });
 
 #endif
 }

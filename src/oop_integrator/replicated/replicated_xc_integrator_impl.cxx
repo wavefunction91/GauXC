@@ -5,10 +5,12 @@ namespace detail {
 
 template <typename ValueType>
 ReplicatedXCIntegratorImpl<ValueType>::
-  ReplicatedXCIntegratorImpl( std::shared_ptr< functional_type > func,
-                              std::shared_ptr< LoadBalancer >    lb, 
-                              std::unique_ptr< LocalWorkDriver >&& lwd ) :
-    func_(func), load_balancer_(lb), local_work_driver_(std::move(lwd)) { }
+  ReplicatedXCIntegratorImpl( std::shared_ptr< functional_type >   func,
+                              std::shared_ptr< LoadBalancer >      lb, 
+                              std::unique_ptr< LocalWorkDriver >&& lwd,
+                              std::shared_ptr< ReductionDriver >   rd) :
+    func_(func), load_balancer_(lb), local_work_driver_(std::move(lwd)),
+    reduction_driver_(rd){ }
 
 template <typename ValueType>
 ReplicatedXCIntegratorImpl<ValueType>::
