@@ -68,58 +68,14 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   // Release ownership of LWD back to this integrator instance
   this->local_work_driver_ = std::move( incore_integrator.release_local_work_driver() );
 
-#if 0
-#ifdef GAUXC_ENABLE_MPI
 
-  int world_size;
-  auto comm = this->load_balancer_->comm();
-  MPI_Comm_size( comm, &world_size );
-
-  if( world_size > 1 ) {
-
-  this->timer_.time_op("XCIntegrator.Allreduce", [&](){
-    // Test of communicator is an inter-communicator
-    // XXX: Can't think of a case when this would be true, but who knows...
-    int inter_flag;
-    MPI_Comm_test_inter( comm, &inter_flag );
-
-    // Is Intra-communicator, Allreduce can be done inplace
-    if( not inter_flag ) {
-
-      MPI_Allreduce( MPI_IN_PLACE, VXC, nbf*nbf, MPI_DOUBLE,
-                     MPI_SUM, comm );
-      MPI_Allreduce( MPI_IN_PLACE, EXC,  1, MPI_DOUBLE, MPI_SUM, comm );
-      MPI_Allreduce( MPI_IN_PLACE, &N_EL, 1, MPI_DOUBLE, MPI_SUM, comm );
-
-    // Isn't Intra-communicator (weird), Allreduce can't be done inplace
-    } else {
-
-      std::allocator<value_type> alloc;
-      auto VXC_cpy = alloc.allocate( nbf*nbf );
-      value_type EXC_cpy = *EXC, N_EL_cpy = N_EL;
-
-      MPI_Allreduce( VXC_cpy, VXC, nbf*nbf, MPI_DOUBLE,
-                     MPI_SUM, comm );
-      MPI_Allreduce( &EXC_cpy,  EXC,  1, MPI_DOUBLE, MPI_SUM, comm );
-      MPI_Allreduce( &N_EL_cpy, &N_EL, 1, MPI_DOUBLE, MPI_SUM, comm );
-      
-      alloc.deallocate(VXC_cpy, nbf*nbf);
-
-    }
-  });
-
-  }
-
-#endif
-#else
-
+  // Reduce Results
   this->timer_.time_op("XCIntegrator.Allreduce", [&](){
     this->reduction_driver_->allreduce_inplace( VXC, nbf*nbf, ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
   });
 
-#endif
 
 }
 

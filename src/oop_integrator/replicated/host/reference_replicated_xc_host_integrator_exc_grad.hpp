@@ -35,50 +35,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     exc_grad_local_work_( P, ldp, EXC_GRAD );
   });
 
-#if 0
-#ifdef GAUXC_ENABLE_MPI
 
-  int world_size;
-  auto comm = this->load_balancer_->comm();
-  MPI_Comm_size( comm, &world_size );
-
-  const int natoms = this->load_balancer_->molecule().natoms();
-
-  if( world_size > 1 ) {
-
-  this->timer_.time_op("XCIntegrator.Allreduce", [&](){
-    // Test of communicator is an inter-communicator
-    // XXX: Can't think of a case when this would be true, but who knows...
-    int inter_flag;
-    MPI_Comm_test_inter( comm, &inter_flag );
-
-    // Is Intra-communicator, Allreduce can be done inplace
-    if( not inter_flag ) {
-
-      MPI_Allreduce( MPI_IN_PLACE, EXC_GRAD, 3*natoms, MPI_DOUBLE, MPI_SUM, comm );
-
-    // Isn't Intra-communicator (weird), Allreduce can't be done inplace
-    } else {
-
-      std::vector<value_type> EXC_GRAD_COPY( EXC_GRAD, EXC_GRAD + 3*natoms );
-
-      MPI_Allreduce( EXC_GRAD_COPY.data(), EXC_GRAD, 3*natoms, MPI_DOUBLE, 
-        MPI_SUM, comm );
-
-    }
-  });
-
-  }
-
-#endif
-#else
-
+  // Reduce Results
   this->timer_.time_op("XCIntegrator.Allreduce", [&](){
     const int natoms = this->load_balancer_->molecule().natoms();
     this->reduction_driver_->allreduce_inplace( EXC_GRAD, 3*natoms, ReductionOp::Sum );
   });
 
-#endif
 }
 
 template <typename ValueType>
