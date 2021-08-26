@@ -1,4 +1,4 @@
-cmake_minimum_required( VERSION 3.21 FATAL_ERROR )
+cmake_minimum_required( VERSION 3.20 FATAL_ERROR )
 
 include(FetchContent)
 set( FETCHCONTENT_UPDATES_DISCONNECTED ON CACHE BOOL "Disable FC Updates" )

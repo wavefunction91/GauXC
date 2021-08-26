@@ -53,7 +53,10 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::add_extra_to_indirection(
   dist_nearest_device = mem.aligned_alloc<double>( total_npts_task_batch );
   iparent_device = mem.aligned_alloc<int32_t>( total_npts_task_batch );
 
-  double* dist_scratch_ptr = dist_scratch_device;
+
+  buffer_adaptor dist_scratch_mem( dist_scratch_device, 
+    ldatoms * total_npts_task_batch * sizeof(double) );
+
   // Pack additional host data and send
   for( auto& task : tasks ) {
     iparent_pack.insert( iparent_pack.end(), task.npts, task.iParent );
@@ -61,8 +64,8 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::add_extra_to_indirection(
       task.dist_nearest );
 
     // Extra indirection for dist scratch
-    task.dist_scratch  = dist_scratch_ptr;
-    dist_scratch_ptr   += ldatoms * task.npts;
+    task.dist_scratch  = dist_scratch_mem.aligned_alloc<double>( 
+      ldatoms * task.npts, sizeof(double2) );
   }
 
   device_backend_->copy_async( iparent_pack.size(), iparent_pack.data(), 

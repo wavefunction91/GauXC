@@ -18,6 +18,7 @@ void cuda_aos_scheme1_weights_wrapper( int32_t npts, int32_t natoms,
     CudaAoSScheme1::weight_thread_block_per_sm;
 
 
+
   // Compute distances from grid to atomic centers
   compute_grid_to_center_dist( npts, natoms, coords, points, dist, lddist, stream );
 
@@ -40,6 +41,7 @@ void cuda_aos_scheme1_weights_wrapper( int32_t npts, int32_t natoms,
   partition_weights_ssf_1d( npts, natoms, RAB, natoms, coords, dist, lddist,
     iparent, dist_nearest, weights, stream );
 #endif
+
 
 }
 
