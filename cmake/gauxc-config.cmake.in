@@ -15,9 +15,10 @@ find_dependency( OpenMP       )
 set( GAUXC_ENABLE_HOST       @GAUXC_ENABLE_HOST@      )
 set( GAUXC_ENABLE_CUDA       @GAUXC_ENABLE_CUDA@      )
 set( GAUXC_ENABLE_MAGMA      @GAUXC_ENABLE_MAGMA@     )
-set( GAUXC_ENABLE_NCCL       @GAUXC_ENABLE_NCCL@     )
+set( GAUXC_ENABLE_NCCL       @GAUXC_ENABLE_NCCL@      )
 set( GAUXC_ENABLE_MPI        @GAUXC_ENABLE_MPI@       )
 set( GAUXC_ENABLE_GAU2GRID   @GAUXC_ENABLE_GAU2GRID@  )
+set( GAUXC_ENABLE_HDF5       @GAUXC_ENABLE_HDF5@      )
 
 
 if( GAUXC_ENABLE_HOST )
@@ -40,6 +41,10 @@ endif()
 
 if( GAUXC_ENABLE_MPI )
   find_dependency( MPI )
+endif()
+
+if( GAUXC_ENABLE_HDF5 )
+  find_dependency( HighFive )
 endif()
 
 list(REMOVE_AT CMAKE_MODULE_PATH -1)

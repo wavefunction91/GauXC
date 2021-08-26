@@ -1,12 +1,19 @@
+#include "ut_common.hpp"
 #include "catch2/catch.hpp"
 #include <gauxc/basisset.hpp>
 #include <gauxc/basisset_map.hpp>
 #include <gauxc/molecule.hpp>
+#include <gauxc/external/hdf5.hpp>
 
 #include "standards.hpp"
 
 #include <random>
 #include <algorithm>
+
+#include <gauxc/gauxc_config.hpp>
+#ifdef GAUXC_ENABLE_MPI
+#include <mpi.h>
+#endif
 
 using namespace GauXC;
 
@@ -199,5 +206,34 @@ TEST_CASE("BasisSet", "[basisset]") {
     CHECK(sh_st == ref_shell_to_ao[i]);
     CHECK(sh_en == ref_shell_to_ao[i] + basis[i].size());
   }
+
+}
+
+
+
+TEST_CASE("HDF5-BASISSET", "[basisset]") {
+
+#ifdef GAUXC_ENABLE_MPI
+  int world_rank;
+  MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
+  if( world_rank ) return; // Only run on root rank
+#endif
+
+
+  Molecule mol = make_water();
+  BasisSet<double> basis = make_631Gd(mol, SphericalType(false));
+  
+  // Write file
+  const std::string fname = GAUXC_REF_DATA_PATH "/test_basis.hdf5";
+  write_hdf5_record( basis, fname , "/BASIS" );
+
+  // Read File
+  BasisSet<double> basis_read;
+  read_hdf5_record( basis_read, fname, "/BASIS" );
+
+  // Check that IO was correct
+  CHECK( basis == basis_read );
+
+  std::remove( fname.c_str() ); // Delete the test file
 
 }

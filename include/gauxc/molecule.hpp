@@ -30,6 +30,12 @@ public:
       })->Z;
   }
 
+  bool operator==(const Molecule& other) {
+    if(other.size() != this->size()) return false;
+    for( auto i = 0ul; i < this->size(); ++i )
+      if( other[i] != operator[](i) ) return false;
+    return true;
+  }
 };
 
 }
