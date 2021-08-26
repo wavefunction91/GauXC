@@ -5,6 +5,7 @@
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
+#include <Eigen/Core>
 
 using namespace GauXC;
 
