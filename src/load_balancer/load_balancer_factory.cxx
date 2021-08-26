@@ -1,6 +1,9 @@
 #include "load_balancer_impl.hpp"
-#include "host/replicated_load_balancer.hpp"
-#include "cuda/replicated_load_balancer.hpp"
+#include "host/load_balancer_host_factory.hpp"
+
+#ifdef GAUXC_ENABLE_DEVICE
+#include "device/load_balancer_device_factory.hpp"
+#endif
 
 #ifdef GAUXC_ENABLE_MPI
   #define GAUXC_MPI_ARG    MPI_Comm comm,
@@ -20,21 +23,21 @@ std::shared_ptr<LoadBalancer> LoadBalancerFactory::get_shared_instance(
   const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis
 ) {
 
-  std::unique_ptr<detail::LoadBalancerImpl> ptr;
   switch(ex_) {
-
     case ExecutionSpace::Host:
-      ptr = std::make_unique<detail::HostReplicatedLoadBalancer>(
-        GAUXC_MPI_PARAM mol, mg, basis
-      );
-      break;
-
+      using host_factory = LoadBalancerHostFactory;
+      return host_factory::get_shared_instance(kernel_name_,
+        GAUXC_MPI_PARAM mol, mg, basis );
+    #ifdef GAUXC_ENABLE_DEVICE
+    case ExecutionSpace::Device:
+      using device_factory = LoadBalancerDeviceFactory;
+      return device_factory::get_shared_instance(kernel_name_,
+        GAUXC_MPI_PARAM mol, mg, basis );
+    #endif
     default:
       throw std::runtime_error("Unrecognized LB space");
+   }
 
-  }
-
-  return std::make_shared<LoadBalancer>(std::move(ptr));
 
 }
 

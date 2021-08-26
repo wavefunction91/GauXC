@@ -1,4 +1,4 @@
-#include "replicated_load_balancer.hpp"
+#include "replicated_host_load_balancer.hpp"
 
 namespace GauXC {
 namespace detail {

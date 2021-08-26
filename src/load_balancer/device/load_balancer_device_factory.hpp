@@ -2,7 +2,7 @@
 
 namespace GauXC {
 
-struct LoadBalancerHostFactory {
+struct LoadBalancerDeviceFactory {
 
   static std::shared_ptr<LoadBalancer> get_shared_instance(
     std::string kernel_name, 

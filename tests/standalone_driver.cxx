@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
     //}
 
     // Setup load balancer
-    LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
+    LoadBalancerFactory lb_factory(ExecutionSpace::Device, "Default");
   #ifdef GAUXC_ENABLE_MPI
     auto lb = lb_factory.get_shared_instance(MPI_COMM_WORLD, mol, mg, basis);
   #else

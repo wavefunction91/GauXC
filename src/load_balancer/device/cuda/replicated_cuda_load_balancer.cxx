@@ -1,11 +1,11 @@
-#include "replicated_load_balancer.hpp"
+#include "replicated_cuda_load_balancer.hpp"
 #include <gauxc/util/div_ceil.hpp>
 #include <gauxc/util/cuda_util.hpp>
 
 #include <thrust/host_vector.h>
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
 
-#include "load_balancer/cuda/cuda_collision_detection.hpp"
+#include "cuda_collision_detection.hpp"
 
 using namespace GauXC::load_balancer::cuda;
 

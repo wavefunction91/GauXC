@@ -109,7 +109,7 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
 
 #else
 
-  SECTION("Default") {
+  SECTION("Default Host") {
 
     LoadBalancerFactory lb_factory( ExecutionSpace::Host, "Default" );
     auto lb = lb_factory.get_instance( GAUXC_MPI_ARG mol, mg, basis);
@@ -117,6 +117,17 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
     check_lb_data( tasks );
 
   }
+
+#ifdef GAUXC_ENABLE_DEVICE
+  SECTION("Default Device") {
+
+    LoadBalancerFactory lb_factory( ExecutionSpace::Device, "Default" );
+    auto lb = lb_factory.get_instance( GAUXC_MPI_ARG mol, mg, basis);
+    auto& tasks = lb.get_tasks();
+    check_lb_data( tasks );
+
+  }
+#endif
 
 #endif
 
