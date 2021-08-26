@@ -58,6 +58,7 @@ endif()
 #add_subdirectory( new_integrator )
 add_subdirectory( oop_integrator )
 add_subdirectory( load_balancer )
+add_subdirectory( external )
 
 
 add_library( gauxc::gauxc ALIAS gauxc )

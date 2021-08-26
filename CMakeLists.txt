@@ -24,6 +24,7 @@ option( GAUXC_ENABLE_HIP      "Enable HIP Bindings"         OFF )
 option( GAUXC_ENABLE_MPI      "Enable MPI Bindings"         ON  )
 option( GAUXC_ENABLE_TESTS    "Enable Unit Tests"           ON  )
 option( GAUXC_ENABLE_GAU2GRID "Enable Gau2Grid Collocation" ON  )
+option( GAUXC_ENABLE_HDF5     "Enable HDF5 Bindings"        ON  )
 
 include(CMakeDependentOption)
 cmake_dependent_option( GAUXC_ENABLE_MAGMA    "Enable MAGMA Linear Algebra" ON

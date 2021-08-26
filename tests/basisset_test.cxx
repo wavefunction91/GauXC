@@ -169,6 +169,7 @@ TEST_CASE("Shell", "[basisset]") {
 
 }
 
+
 TEST_CASE("BasisSet", "[basisset]") {
 
 
@@ -183,7 +184,6 @@ TEST_CASE("BasisSet", "[basisset]") {
   CHECK( basis.nshells() == 10 );
   CHECK( basis.nbf()     == (test_spherical ? 18 : 19) );
   BasisSetMap basis_map( basis, mol );
-
 
   std::vector<int32_t> ref_shell_to_ao = {
   0, 1, // H1
