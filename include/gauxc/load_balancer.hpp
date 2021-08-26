@@ -68,17 +68,11 @@ public:
 
   LoadBalancerFactory( ExecutionSpace ex, std::string kernel_name );
 
-#ifdef GAUXC_ENABLE_MPI
-  LoadBalancer get_instance( MPI_Comm comm, const Molecule& mol, 
-    const MolGrid& mg, const BasisSet<double>& );
-  std::shared_ptr<LoadBalancer> get_shared_instance( MPI_Comm comm, const Molecule& mol, 
-    const MolGrid& mg, const BasisSet<double>& );
-#else
-  LoadBalancer get_instance( const Molecule& mol, const MolGrid& mg, 
-    const BasisSet<double>& );
-  std::shared_ptr<LoadBalancer> get_shared_instance( const Molecule& mol, const MolGrid& mg, 
-    const BasisSet<double>& );
-#endif
+  LoadBalancer get_instance( GAUXC_MPI_CODE(MPI_Comm comm,) 
+    const Molecule& mol, const MolGrid& mg, const BasisSet<double>& );
+  std::shared_ptr<LoadBalancer> get_shared_instance( 
+    GAUXC_MPI_CODE(MPI_Comm comm,) 
+    const Molecule& mol, const MolGrid& mg, const BasisSet<double>& );
 
 private:
 
@@ -87,45 +81,5 @@ private:
 
 };
 
-
-
-
-#if 0
-// Factories
-
-namespace factory {
-
-#ifdef GAUXC_ENABLE_MPI
-
-std::shared_ptr<LoadBalancer> make_default_load_balancer(
-  MPI_Comm, const Molecule&, const MolGrid&, const BasisSet<double>&
-);
-std::shared_ptr<LoadBalancer> make_default_load_balancer(
-  MPI_Comm, const Molecule&, const MolGrid&, const BasisSet<double>&, 
-  const MolMeta&
-);
-std::shared_ptr<LoadBalancer> make_default_load_balancer(
-  MPI_Comm, const Molecule&, const MolGrid&, const BasisSet<double>&, 
-  std::shared_ptr<MolMeta>
-);
-
-#else
-
-std::shared_ptr<LoadBalancer> make_default_load_balancer(
-  const Molecule&, const MolGrid&, const BasisSet<double>&
-);
-std::shared_ptr<LoadBalancer> make_default_load_balancer(
-  const Molecule&, const MolGrid&, const BasisSet<double>&, 
-  const MolMeta&
-);
-std::shared_ptr<LoadBalancer> make_default_load_balancer(
-  const Molecule&, const MolGrid&, const BasisSet<double>&, 
-  std::shared_ptr<MolMeta>
-);
-
-#endif
-
-}
-#endif
 
 }

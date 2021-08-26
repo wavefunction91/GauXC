@@ -9,6 +9,7 @@
 #include <random>
 
 #include <gauxc/gauxc_config.hpp>
+
 #ifdef GAUXC_ENABLE_MPI
 #include <mpi.h>
 #endif

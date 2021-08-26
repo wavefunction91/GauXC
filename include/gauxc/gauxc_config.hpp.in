@@ -42,3 +42,5 @@
 #else
   #define HOST_DEVICE_ACCESSIBLE
 #endif
+
+#include <gauxc/mpi_util.hpp>

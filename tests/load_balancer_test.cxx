@@ -15,6 +15,7 @@ void gen_ref_lb_data( std::vector<XCTask>& tasks ) {
   world_size = 1;
   world_rank = 0;
 #endif
+
   std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_cc-pvdz_ufg_tasks_" + std::to_string(world_size) + "mpi_rank" + std::to_string(world_rank) + ".bin";
 
   // Points / Weights not stored in reference data to 
@@ -41,6 +42,7 @@ void check_lb_data( const std::vector<XCTask>& tasks ) {
   world_size = 1;
   world_rank = 0;
 #endif
+
   std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_cc-pvdz_ufg_tasks_" + std::to_string(world_size) + "mpi_rank" + std::to_string(world_rank) + ".bin";
 
   std::vector<XCTask> ref_tasks;
@@ -84,10 +86,7 @@ void check_lb_data( const std::vector<XCTask>& tasks ) {
 TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
 
 #ifdef GAUXC_ENABLE_MPI
-  MPI_Comm comm          = MPI_COMM_WORLD;
-  #define GAUXC_MPI_ARG comm,
-#else
-  #define GAUXC_MPI_ARG 
+  MPI_Comm comm = MPI_COMM_WORLD;
 #endif
 
   Molecule mol           = make_benzene();
@@ -103,7 +102,7 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
 #ifdef GAUXC_GEN_TESTS
 
   LoadBalancerFactory lb_factory( ExecutionSpace::Host, "Default" );
-  auto lb = lb_factory.get_instance( GAUXC_MPI_ARG mol, mg, basis);
+  auto lb = lb_factory.get_instance( GAUXC_MPI_CODE(comm,) mol, mg, basis);
   auto& tasks = lb.get_tasks();
   gen_ref_lb_data(tasks);
 
@@ -112,7 +111,7 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
   SECTION("Default Host") {
 
     LoadBalancerFactory lb_factory( ExecutionSpace::Host, "Default" );
-    auto lb = lb_factory.get_instance( GAUXC_MPI_ARG mol, mg, basis);
+    auto lb = lb_factory.get_instance( GAUXC_MPI_CODE(comm,) mol, mg, basis);
     auto& tasks = lb.get_tasks();
     check_lb_data( tasks );
 
@@ -122,7 +121,7 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
   SECTION("Default Device") {
 
     LoadBalancerFactory lb_factory( ExecutionSpace::Device, "Default" );
-    auto lb = lb_factory.get_instance( GAUXC_MPI_ARG mol, mg, basis);
+    auto lb = lb_factory.get_instance( GAUXC_MPI_CODE(comm,) mol, mg, basis);
     auto& tasks = lb.get_tasks();
     check_lb_data( tasks );
 

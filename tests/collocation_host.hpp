@@ -8,11 +8,7 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
 
   MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
-#ifdef GAUXC_ENABLE_MPI
-  auto lb = lb_factory.get_instance(MPI_COMM_WORLD, mol, mg, basis);
-#else
-  auto lb = lb_factory.get_instance(mol, mg, basis);
-#endif
+  auto lb = lb_factory.get_instance(GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, mg, basis);
   auto& tasks = lb.get_tasks();
 
 

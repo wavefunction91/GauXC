@@ -9,16 +9,7 @@
 
 using namespace GauXC;
 
-#ifdef GAUXC_ENABLE_MPI
-  #define GAUXC_MPI_ARG   MPI_Comm comm,
-  #define GAUXC_MPI_PARAM comm,
-#else
-  #define GAUXC_MPI_ARG                 
-  #define GAUXC_MPI_PARAM      
-#endif
-
-
-void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_ARG std::string reference_file, 
+void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, ) std::string reference_file, 
   std::string integrator_kernel = "Default",  const bool check_state_propagation = true ) {
 
   // Read the reference file
@@ -53,7 +44,7 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_ARG std::string reference_
   MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
 
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
-  auto lb = lb_factory.get_instance(GAUXC_MPI_PARAM mol, mg, basis);
+  auto lb = lb_factory.get_instance(GAUXC_MPI_CODE(comm,) mol, mg, basis);
 
   functional_type func( ExchCXX::Backend::builtin, ExchCXX::Functional::PBE0, ExchCXX::Spin::Unpolarized );
 
@@ -105,18 +96,18 @@ TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
 
 #ifdef GAUXC_ENABLE_HOST
   SECTION( "Host" ) {
-    test_xc_integrator( ExecutionSpace::Host, GAUXC_MPI_PARAM reference_file );
+    test_xc_integrator( ExecutionSpace::Host, GAUXC_MPI_CODE(comm,) reference_file );
   }
 #endif
 
 #ifdef GAUXC_ENABLE_CUDA
   SECTION( "Device" ) {
     SECTION( "Default" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_PARAM reference_file, 
+      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) reference_file, 
         "Default" );
     }
     SECTION( "ShellBatched" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_PARAM reference_file, 
+      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) reference_file, 
         "ShellBatched" );
     }
   }

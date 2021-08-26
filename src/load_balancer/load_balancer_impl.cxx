@@ -2,42 +2,22 @@
 
 namespace GauXC::detail {
 
-#ifdef GAUXC_ENABLE_MPI
-
-LoadBalancerImpl::LoadBalancerImpl( MPI_Comm comm, const Molecule& mol, 
+LoadBalancerImpl::LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm comm,) const Molecule& mol, 
   const MolGrid& mg, const basis_type& basis, std::shared_ptr<MolMeta> molmeta ) :
-  comm_(comm), 
+  GAUXC_MPI_CODE(comm_(comm),) 
   mol_( std::make_shared<Molecule>(mol) ),
   mg_( std::make_shared<MolGrid>(mg)  ),
   basis_( std::make_shared<basis_type>(basis) ),
   molmeta_( molmeta ) { }
 
-LoadBalancerImpl::LoadBalancerImpl( MPI_Comm comm, const Molecule& mol, 
+LoadBalancerImpl::LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm comm,) const Molecule& mol, 
   const MolGrid& mg, const basis_type& basis, const MolMeta& molmeta ) :
-  LoadBalancerImpl( comm, mol, mg, basis, std::make_shared<MolMeta>(molmeta) ) { }
+  LoadBalancerImpl( GAUXC_MPI_CODE(comm,) mol, mg, basis, std::make_shared<MolMeta>(molmeta) ) { }
 
-LoadBalancerImpl::LoadBalancerImpl( MPI_Comm comm, const Molecule& mol, 
+LoadBalancerImpl::LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm comm,) const Molecule& mol, 
   const MolGrid& mg, const basis_type& basis ) :
-  LoadBalancerImpl( comm, mol, mg, basis, std::make_shared<MolMeta>(mol) ) { }
+  LoadBalancerImpl( GAUXC_MPI_CODE(comm,) mol, mg, basis, std::make_shared<MolMeta>(mol) ) { }
 
-#else
-
-LoadBalancerImpl::LoadBalancerImpl( const Molecule& mol, 
-  const MolGrid& mg, const basis_type& basis, std::shared_ptr<MolMeta> molmeta ) :
-  mol_( std::make_shared<Molecule>(mol) ),
-  mg_( std::make_shared<MolGrid>(mg)  ),
-  basis_( std::make_shared<basis_type>(basis) ),
-  molmeta_( molmeta ) { }
-
-LoadBalancerImpl::LoadBalancerImpl( const Molecule& mol, 
-  const MolGrid& mg, const basis_type& basis, const MolMeta& molmeta ) :
-  LoadBalancerImpl( mol, mg, basis, std::make_shared<MolMeta>(molmeta) ) { }
-
-LoadBalancerImpl::LoadBalancerImpl( const Molecule& mol, 
-  const MolGrid& mg, const basis_type& basis ) :
-  LoadBalancerImpl( mol, mg, basis, std::make_shared<MolMeta>(mol) ) { }
-
-#endif
 
 LoadBalancerImpl::LoadBalancerImpl( const LoadBalancerImpl& ) = default;
 LoadBalancerImpl::LoadBalancerImpl( LoadBalancerImpl&& ) noexcept = default;

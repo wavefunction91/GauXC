@@ -5,18 +5,10 @@
 #include "cuda/replicated_cuda_load_balancer.hpp"
 #endif
 
-#ifdef GAUXC_ENABLE_MPI
-  #define GAUXC_MPI_ARG    MPI_Comm comm,
-  #define GAUXC_MPI_PARAM  comm,
-#else
-  #define GAUXC_MPI_ARG   
-  #define GAUXC_MPI_PARAM 
-#endif
-
 namespace GauXC {
 
 std::shared_ptr<LoadBalancer> LoadBalancerDeviceFactory::get_shared_instance(
-  std::string kernel_name, GAUXC_MPI_ARG
+  std::string kernel_name, GAUXC_MPI_CODE(MPI_Comm comm,)
   const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis
 ) {
 
@@ -29,7 +21,7 @@ std::shared_ptr<LoadBalancer> LoadBalancerDeviceFactory::get_shared_instance(
   std::unique_ptr<detail::LoadBalancerImpl> ptr = nullptr;
   if( kernel_name == "REPLICATED" ) {
     ptr = std::make_unique<detail::DeviceReplicatedLoadBalancer>(
-      GAUXC_MPI_PARAM mol, mg, basis
+      GAUXC_MPI_CODE(comm,) mol, mg, basis
     );
   }
 

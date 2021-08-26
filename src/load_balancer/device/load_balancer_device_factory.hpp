@@ -5,10 +5,7 @@ namespace GauXC {
 struct LoadBalancerDeviceFactory {
 
   static std::shared_ptr<LoadBalancer> get_shared_instance(
-    std::string kernel_name, 
-    #ifdef GAUXC_ENABLE_MPI
-    MPI_Comm comm,
-    #endif
+    std::string kernel_name, GAUXC_MPI_CODE(MPI_Comm comm,)
     const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis
   );
 

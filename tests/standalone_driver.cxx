@@ -61,11 +61,7 @@ int main(int argc, char** argv) {
 
     // Setup load balancer
     LoadBalancerFactory lb_factory(ExecutionSpace::Device, "Default");
-  #ifdef GAUXC_ENABLE_MPI
-    auto lb = lb_factory.get_shared_instance(MPI_COMM_WORLD, mol, mg, basis);
-  #else
-    auto lb = lb_factory.get_shared_instance(mol, mg, basis);
-  #endif
+    auto lb = lb_factory.get_shared_instance( GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, mg, basis);
 
     // Setup XC functional
     functional_type func( Backend::builtin, Functional::PBE0, Spin::Unpolarized );
@@ -106,6 +102,7 @@ int main(int argc, char** argv) {
 #ifdef GAUXC_ENABLE_MPI
     MPI_Barrier( MPI_COMM_WORLD );
 #endif
+
     auto xc_int_end   = std::chrono::high_resolution_clock::now();
     double xc_int_dur = std::chrono::duration<double>( xc_int_end - xc_int_start ).count();
 

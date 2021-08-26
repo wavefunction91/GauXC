@@ -13,9 +13,8 @@ public:
 
 protected:
 
-#ifdef GAUXC_ENABLE_MPI
-  MPI_Comm comm_;
-#endif
+  GAUXC_MPI_CODE(MPI_Comm comm_;)
+
   std::shared_ptr<Molecule>   mol_;
   std::shared_ptr<MolGrid>    mg_;
   std::shared_ptr<basis_type> basis_;
@@ -32,21 +31,13 @@ protected:
 public:
 
   LoadBalancerImpl() = delete;
-#ifdef GAUXC_ENABLE_MPI
-  LoadBalancerImpl( MPI_Comm, const Molecule&, const MolGrid& mg,  
+
+  LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm,) const Molecule&, const MolGrid& mg,  
     const basis_type& );
-  LoadBalancerImpl( MPI_Comm, const Molecule&, const MolGrid& mg,  
+  LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm,) const Molecule&, const MolGrid& mg,  
     const basis_type&, const MolMeta& );
-  LoadBalancerImpl( MPI_Comm, const Molecule&, const MolGrid& mg,  
+  LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm,) const Molecule&, const MolGrid& mg,  
     const basis_type&, std::shared_ptr<MolMeta> );
-#else
-  LoadBalancerImpl( const Molecule&, const MolGrid& mg,  
-    const basis_type& );
-  LoadBalancerImpl( const Molecule&, const MolGrid& mg,  
-    const basis_type&, const MolMeta& );
-  LoadBalancerImpl( const Molecule&, const MolGrid& mg,  
-    const basis_type&, std::shared_ptr<MolMeta> );
-#endif
 
   LoadBalancerImpl( const LoadBalancerImpl& );
   LoadBalancerImpl( LoadBalancerImpl&& ) noexcept;
