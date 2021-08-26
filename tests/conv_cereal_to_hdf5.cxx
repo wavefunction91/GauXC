@@ -62,7 +62,7 @@ int main( int argc, char** argv ) {
     DataSet den = file.createDataSet<double>( "/DENSITY", space );
     den.write_raw( P.data() );
     DataSet vxc = file.createDataSet<double>( "/VXC", space );
-    den.write_raw( VXC_ref.data() );
+    vxc.write_raw( VXC_ref.data() );
 
     DataSpace singleton(1);
     DataSet exc = file.createDataSet<double>("/EXC", singleton );
