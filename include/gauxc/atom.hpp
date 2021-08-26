@@ -61,4 +61,8 @@ inline bool operator==( const Atom& a1, const Atom& a2 ) {
   return a1.Z == a2.Z and a1.x == a2.x and a1.y == a2.y and a1.z == a2.z; 
 }
 
+inline bool operator!=( const Atom& a1, const Atom& a2 ) {
+  return not (a1 == a2);
+}
+
 } // namespace GauXC

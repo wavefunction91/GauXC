@@ -3,6 +3,10 @@
 #include <gauxc/oop_xc_integrator/impl.hpp>
 #include <gauxc/oop_xc_integrator/integrator_factory.hpp>
 
+#include <gauxc/external/hdf5.hpp>
+#include <highfive/H5File.hpp>
+#include <Eigen/Core>
+
 using namespace GauXC;
 
 #ifdef GAUXC_ENABLE_MPI
@@ -14,10 +18,34 @@ using namespace GauXC;
 #endif
 
 
-void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_ARG Molecule mol, std::string integrator_kernel = "Default",  const bool check_state_propagation = true ) 
-{
+void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_ARG std::string reference_file, 
+  std::string integrator_kernel = "Default",  const bool check_state_propagation = true ) {
 
-  BasisSet<double> basis = make_ccpvdz( mol, SphericalType(true) );
+  // Read the reference file
+  using matrix_type = Eigen::MatrixXd;
+  Molecule mol;
+  BasisSet<double> basis;
+  matrix_type P, VXC_ref;
+  double EXC_ref;
+  {
+    read_hdf5_record( mol,   reference_file, "/MOLECULE" );
+    read_hdf5_record( basis, reference_file, "/BASIS"    );
+
+    HighFive::File file( reference_file, HighFive::File::ReadOnly );
+    auto dset = file.getDataSet("/DENSITY");
+    auto dims = dset.getDimensions();
+    P       = matrix_type( dims[0], dims[1] );
+    VXC_ref = matrix_type( dims[0], dims[1] );
+
+    dset.read( P.data() );
+    dset = file.getDataSet("/VXC");
+    dset.read( VXC_ref.data() );
+
+    dset = file.getDataSet("/EXC");
+    dset.read( &EXC_ref );
+    
+  }
+
 
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
@@ -29,21 +57,10 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_ARG Molecule mol, std::str
 
   functional_type func( ExchCXX::Backend::builtin, ExchCXX::Functional::PBE0, ExchCXX::Spin::Unpolarized );
 
-  using matrix_type = Eigen::MatrixXd;
   //auto integrator = make_default_integrator<matrix_type>( ex, comm, func, basis, lb );
   XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", integrator_kernel, "Default" );
   auto integrator = integrator_factory.get_instance( func, lb );
 
-
-  matrix_type P,VXC_ref;
-  double EXC_ref;
-
-  {
-    std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_pbe0_cc-pvdz_ufg_ssf.bin";
-    std::ifstream infile( ref_file, std::ios::binary );
-    cereal::BinaryInputArchive ar(infile);
-    ar( EXC_ref, P, VXC_ref );
-  }
 
   auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
   CHECK( EXC == Approx( EXC_ref ) );
@@ -67,36 +84,40 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_ARG Molecule mol, std::str
   }
 
 
-/*
+#if 0
   if( ex == ExecutionSpace::Host ) {
     std::cout << "EXC = " << EXC << std::endl;
     auto EXC_GRAD = integrator.eval_exc_grad( P );
     for( auto x : EXC_GRAD ) std::cout << x << std::endl;
   }
-*/
+#endif
 }
 
 
 TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
 
+  const std::string reference_file = 
+    GAUXC_REF_DATA_PATH "/benzene_pbe0_cc-pvdz_ufg_ssf.hdf5";
+
 #ifdef GAUXC_ENABLE_MPI
   MPI_Comm comm = MPI_COMM_WORLD;
 #endif
-  Molecule mol  = make_benzene();
 
 #ifdef GAUXC_ENABLE_HOST
   SECTION( "Host" ) {
-    test_xc_integrator( ExecutionSpace::Host, GAUXC_MPI_PARAM mol );
+    test_xc_integrator( ExecutionSpace::Host, GAUXC_MPI_PARAM reference_file );
   }
 #endif
 
 #ifdef GAUXC_ENABLE_CUDA
   SECTION( "Device" ) {
     SECTION( "Default" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_PARAM mol, "Default" );
+      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_PARAM reference_file, 
+        "Default" );
     }
     SECTION( "ShellBatched" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_PARAM mol, "ShellBatched" );
+      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_PARAM reference_file, 
+        "ShellBatched" );
     }
   }
 #endif

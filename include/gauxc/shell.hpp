@@ -187,9 +187,26 @@ public:
   void serialize( Archive& ar ) {
     ar( nprim_, l_, pure_, alpha_, coeff_, O_, cutoff_radius_, shell_tolerance_ );
   }
+
+
+  bool operator==( const Shell& other ) const {
+    if( other.nprim_ != nprim_ ) return false;
+    if( other.l_ != l_ ) return false;
+    if( other.pure_ != pure_ ) return false;
+    if( other.O_ != O_ ) return false;
+
+    for( auto i = 0; i < nprim_; ++i ) {
+      if( alpha_[i] != other.alpha_[i] ) return false;
+      if( coeff_[i] != other.coeff_[i] ) return false;
+    }
+
+    return true;
+  }
+
 };
 
 
+#if 0
 template <typename T>
 inline std::ostream& operator<<( std::ostream& os, const Shell<T>& sh ) {
     os << "GauXC::Shell:( O={" 
@@ -210,5 +227,6 @@ inline std::ostream& operator<<( std::ostream& os, const Shell<T>& sh ) {
 
     return os;
 }
+#endif
 
 }

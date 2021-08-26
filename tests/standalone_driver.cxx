@@ -1,17 +1,10 @@
-#include "standards.hpp"
-#include "basis/parse_basis.hpp"
-
-#include <random>
-#include <algorithm>
-
-#include <fstream>
-#include <gauxc/external/cereal.hpp>
-#include <cereal/archives/binary.hpp>
-#include "eigen3_matrix_serialization.hpp"
-
 #include <gauxc/xc_integrator.hpp>
 #include <gauxc/oop_xc_integrator/impl.hpp>
 #include <gauxc/oop_xc_integrator/integrator_factory.hpp>
+
+#include <gauxc/external/hdf5.hpp>
+#include <highfive/H5File.hpp>
+#include <Eigen/Core>
 
 using namespace GauXC;
 using namespace ExchCXX;
@@ -32,40 +25,19 @@ int main(int argc, char** argv) {
     std::vector< std::string > opts( argc );
     for( int i = 0; i < argc; ++i ) opts[i] = argv[i];
 
-    std::string test_case = opts.at(1);
-    std::string basis_set = opts.at(2);
-    std::string ref_file  = opts.at(3);
+    std::string ref_file  = opts.at(1);
 
-    std::transform( test_case.begin(), test_case.end(), test_case.begin(),
-                    [](const auto c){ return std::tolower(c); } );
-    std::transform( basis_set.begin(), basis_set.end(), basis_set.begin(),
-                    [](const auto c){ return std::tolower(c); } );
-
-
-    // Construct Molecule
+    // Read Molecule
     Molecule mol;
-    if( test_case.find("benzene") != std::string::npos )
-      mol = make_benzene();
-    else if( test_case.find("water") != std::string::npos )
-      mol = make_water();
-    else if( test_case.find("taxol") != std::string::npos )
-      mol = make_taxol();
-    else if( test_case.find("ubiquitin") != std::string::npos )
-      mol = make_ubiquitin();
-    else
-      throw std::runtime_error("Unknown Test Case");
+    read_hdf5_record( mol, ref_file, "/MOLECULE" );
 
+    // Construct MolGrid / MolMeta
     MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
     auto meta = std::make_shared<MolMeta>( mol );
 
-    // Construct BasisSet
+    // Read BasisSet
     BasisSet<double> basis; 
-    if( basis_set.find("6-31gd") != std::string::npos ) 
-      basis = std::move(make_631Gd( mol, SphericalType(false) ));
-    else if( basis_set.find("cc-pvdz") != std::string::npos ) 
-      basis = std::move(make_ccpvdz( mol, SphericalType(true) ));
-    else
-      throw std::runtime_error("Unknown Basis Set");
+    read_hdf5_record( basis, ref_file, "/BASIS" );
 
     for( auto& sh : basis ){ 
       //sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
@@ -100,17 +72,26 @@ int main(int argc, char** argv) {
 
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;
-    XCIntegratorFactory<matrix_type> integrator_factory( ExecutionSpace::Device, "Replicated", "Default", "Default" );
+    XCIntegratorFactory<matrix_type> integrator_factory( ExecutionSpace::Device, 
+      "Replicated", "Default", "Default" );
     auto integrator = integrator_factory.get_instance( func, lb );
 
+    // Read in reference data
     matrix_type P,VXC_ref;
     double EXC_ref;
     {
-      std::ifstream infile( ref_file, std::ios::binary );
+      HighFive::File file( ref_file, HighFive::File::ReadOnly );
+      auto dset = file.getDataSet("/DENSITY");
+      auto dims = dset.getDimensions();
+      P       = matrix_type( dims[0], dims[1] );
+      VXC_ref = matrix_type( dims[0], dims[1] );
 
-      if( !infile.good() ) throw std::runtime_error(ref_file + " not found");
-      cereal::BinaryInputArchive ar(infile);
-      ar( EXC_ref, P, VXC_ref );
+      dset.read( P.data() );
+      dset = file.getDataSet("/VXC");
+      dset.read( VXC_ref.data() );
+
+      dset = file.getDataSet("/EXC");
+      dset.read( &EXC_ref );
     }
 
     //std::cout << "NBF = " << basis.nbf() << std::endl;
