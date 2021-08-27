@@ -29,6 +29,10 @@ XCDeviceStackData::~XCDeviceStackData() noexcept {
 double* XCDeviceStackData::vxc_device_data() { return vxc_device; }
 double* XCDeviceStackData::exc_device_data() { return exc_device; }
 double* XCDeviceStackData::nel_device_data() { return nel_device; }
+std::any XCDeviceStackData::type_erased_queue() { 
+  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+  return device_backend_->type_erased_queue();
+}
 
 
 

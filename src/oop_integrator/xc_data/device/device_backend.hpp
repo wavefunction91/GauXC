@@ -1,6 +1,7 @@
 #pragma once
 #include <tuple>
 #include <vector>
+#include <any>
 
 namespace GauXC {
 
@@ -15,6 +16,7 @@ public:
   virtual void            free_device_buffer( void* ptr ) = 0;
   virtual void            master_queue_synchronize() = 0;
   virtual void            create_blas_queue_pool(int32_t)   = 0;
+  virtual std::any        type_erased_queue() = 0;
 
   virtual ~DeviceBackend() noexcept = default;
 

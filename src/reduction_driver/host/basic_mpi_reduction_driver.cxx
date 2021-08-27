@@ -7,7 +7,7 @@
 
 namespace GauXC {
 
-inline MPI_Datatype get_datatype( std::type_index idx ) {
+MPI_Datatype get_mpi_datatype( std::type_index idx ) {
 
   static std::map<std::type_index, MPI_Datatype> map {
     {std::type_index(typeid(double)), MPI_DOUBLE},
@@ -18,7 +18,7 @@ inline MPI_Datatype get_datatype( std::type_index idx ) {
 
 }
 
-inline MPI_Op get_op( ReductionOp op ) {
+MPI_Op get_mpi_op( ReductionOp op ) {
 
   static std::map< ReductionOp, MPI_Op > map {
     { ReductionOp::Sum, MPI_SUM }
@@ -54,7 +54,7 @@ void BasicMPIReductionDriver::allreduce_typeerased( const void* src, void* dest,
     std::memcpy( dest, src, size ); 
   } else  {
     #ifdef GAUXC_ENABLE_MPI 
-    MPI_Allreduce( src, dest, size, get_datatype(idx), get_op(op), comm_ );
+    MPI_Allreduce( src, dest, size, get_mpi_datatype(idx), get_mpi_op(op), comm_ );
     #endif
   }
 
@@ -81,7 +81,7 @@ void BasicMPIReductionDriver::allreduce_inplace_typeerased( void* data, size_t s
 
     // Reduce in place
     if( not inter_flag ) {
-      MPI_Allreduce( MPI_IN_PLACE, data, size, get_datatype(idx), get_op(op), comm_ );
+      MPI_Allreduce( MPI_IN_PLACE, data, size, get_mpi_datatype(idx), get_mpi_op(op), comm_ );
 
     // Cannot reduce in place
     } else {

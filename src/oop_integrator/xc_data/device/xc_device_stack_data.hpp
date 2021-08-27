@@ -82,6 +82,7 @@ struct XCDeviceStackData : public XCDeviceData {
   double* vxc_device_data() override;
   double* exc_device_data() override;
   double* nel_device_data() override;
+  std::any type_erased_queue() override;
 
 
   // New overridable APIs

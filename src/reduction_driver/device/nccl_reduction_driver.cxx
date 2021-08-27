@@ -4,6 +4,8 @@
 #include <map>
 #include <iostream>
 
+#include <gauxc/util/cuda_util.hpp>
+
 namespace GauXC {
 
 ncclDataType_t get_nccl_datatype( std::type_index idx ) {
@@ -27,6 +29,19 @@ ncclRedOp_t get_nccl_op( ReductionOp op ) {
 
 }
 
+cudaStream_t get_cuda_stream_from_optional_args( std::any& args ) {
+  cudaStream_t stream = 0;
+
+  if( args.has_value() ) {
+    using stream_type = std::shared_ptr<util::cuda_stream>;
+    if( auto passed_stream = std::any_cast<stream_type>( &args ) ) {
+      stream = *(*passed_stream);
+    }
+  }
+
+  return stream;
+}
+
 
 NCCLReductionDriver::NCCLReductionDriver(GAUXC_MPI_CODE(MPI_Comm comm)) :
   DeviceReductionDriver(GAUXC_MPI_CODE(comm)),
@@ -38,25 +53,40 @@ NCCLReductionDriver::NCCLReductionDriver(const NCCLReductionDriver&) = default;
 
 
 void NCCLReductionDriver::allreduce_typeerased( const void* src, void* dest, 
-  size_t size, ReductionOp op, std::type_index idx, std::any )  {
+  size_t size, ReductionOp op, std::type_index idx, std::any optional_args )  {
 
-  cudaDeviceSynchronize();
+  auto stream = get_cuda_stream_from_optional_args( optional_args );
+
+  auto synchronize = [&]() {
+    if( stream == 0 ) cudaDeviceSynchronize();
+    else              cudaStreamSynchronize(stream);
+  };
+
+  synchronize();
   auto err = ncclAllReduce( src, dest, size, get_nccl_datatype(idx), 
     get_nccl_op(op), *nccl_comm_, 0 );
-  cudaDeviceSynchronize();
 
   if( err != ncclSuccess ) throw std::runtime_error("NCCL FAILED");
+  synchronize();
 
 }
 void NCCLReductionDriver::allreduce_inplace_typeerased( void* data, size_t size,
-  ReductionOp op, std::type_index idx, std::any) {
+  ReductionOp op, std::type_index idx, std::any optional_args) {
 
-  cudaDeviceSynchronize();
-  auto err =ncclAllReduce( data, data, size, get_nccl_datatype(idx),
-    get_nccl_op(op), *nccl_comm_, 0 );
-  cudaDeviceSynchronize();
+  auto stream = get_cuda_stream_from_optional_args( optional_args );
+
+  auto synchronize = [&]() {
+    if( stream == 0 ) cudaDeviceSynchronize();
+    else              cudaStreamSynchronize(stream);
+  };
+
+  synchronize();
+  auto err = ncclAllReduce( data, data, size, get_nccl_datatype(idx),
+    get_nccl_op(op), *nccl_comm_, stream );
 
   if( err != ncclSuccess ) throw std::runtime_error("NCCL FAILED");
+  synchronize();
+
 
 }
 

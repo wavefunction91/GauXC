@@ -5,8 +5,8 @@ namespace GauXC {
 CUDABackend::CUDABackend() {
 
   // Create CUDA Stream and CUBLAS Handles and make them talk to eachother
-  master_stream = std::make_unique< util::cuda_stream >();
-  master_handle = std::make_unique< util::cublas_handle >();
+  master_stream = std::make_shared< util::cuda_stream >();
+  master_handle = std::make_shared< util::cublas_handle >();
 
   cublasSetStream( *master_handle, *master_stream );
 
@@ -34,6 +34,10 @@ void CUDABackend::free_device_buffer( void* ptr ) {
 
 void CUDABackend::master_queue_synchronize() {
   cudaStreamSynchronize( *master_stream );
+}
+
+std::any CUDABackend::type_erased_queue() {
+  return master_stream;
 }
 
 void CUDABackend::create_blas_queue_pool(int32_t ns) {
