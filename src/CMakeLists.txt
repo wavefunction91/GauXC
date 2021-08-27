@@ -30,11 +30,32 @@ target_include_directories( gauxc
     $<INSTALL_INTERFACE:include>
 )
 
-target_compile_options( gauxc
-  PRIVATE
-    $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wpedantic -Wnon-virtual-dtor -Wshadow -Werror=shadow -Werror=non-virtual-dtor>
-)
+include( CheckCXXCompilerFlag )
+check_cxx_compiler_flag( -Wall              GAUXC_CXX_HAS_WALL              )
+check_cxx_compiler_flag( -Wextra            GAUXC_CXX_HAS_WEXTRA            )
+check_cxx_compiler_flag( -Wpedantic         GAUXC_CXX_HAS_WPEDANTIC         )
+check_cxx_compiler_flag( -Wnon-virtual_dtor GAUXC_CXX_HAS_WNON_VIRTUAL_DTOR )
+check_cxx_compiler_flag( -Wshadow           GAUXC_CXX_HAS_WSHADOW           )
 
+if( GAUXC_CXX_HAS_WALL )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wall> )
+endif()
+
+if( GAUXC_CXX_HAS_WEXTRA )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wextra> )
+endif()
+
+if( GAUXC_CXX_HAS_WPEDANTIC )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wpedantic> )
+endif()
+
+if( GAUXC_CXX_HAS_WNON_VIRTUAL_DTOR )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wnon-virtual-dtor -Werror=non-virtual-dtor> )
+endif()
+
+if( GAUXC_CXX_HAS_WSHADOW )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wshadow -Werror=shadow> )
+endif()
 
 
 configure_file( 
