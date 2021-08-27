@@ -38,6 +38,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Reduce Results
   this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+
+    if( not this->reduction_driver_->takes_host_memory() )
+      throw std::runtime_error("This Module Only Works With Host Reductions");
+
     const int natoms = this->load_balancer_->molecule().natoms();
     this->reduction_driver_->allreduce_inplace( EXC_GRAD, 3*natoms, ReductionOp::Sum );
   });

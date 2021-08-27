@@ -26,6 +26,9 @@ XCDeviceStackData::~XCDeviceStackData() noexcept {
 }
 
 
+double* XCDeviceStackData::vxc_device_data() { return vxc_device; }
+double* XCDeviceStackData::exc_device_data() { return exc_device; }
+double* XCDeviceStackData::nel_device_data() { return nel_device; }
 
 
 

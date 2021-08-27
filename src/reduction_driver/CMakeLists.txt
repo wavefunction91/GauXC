@@ -11,3 +11,6 @@ target_include_directories( gauxc
 )
 
 add_subdirectory(host)
+if( GAUXC_ENABLE_DEVICE )
+  add_subdirectory(device)
+endif()

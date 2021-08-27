@@ -10,7 +10,7 @@
 using namespace GauXC;
 
 void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, ) std::string reference_file, 
-  std::string integrator_kernel = "Default",  const bool check_state_propagation = true ) {
+  std::string integrator_kernel = "Default",  std::string reduction_kernel = "Default" ) {
 
   // Read the reference file
   using matrix_type = Eigen::MatrixXd;
@@ -49,7 +49,7 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, ) std
   functional_type func( ExchCXX::Backend::builtin, ExchCXX::Functional::PBE0, ExchCXX::Spin::Unpolarized );
 
   //auto integrator = make_default_integrator<matrix_type>( ex, comm, func, basis, lb );
-  XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", integrator_kernel, "Default", "Default" );
+  XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", integrator_kernel, "Default", reduction_kernel );
   auto integrator = integrator_factory.get_instance( func, lb );
 
 
@@ -67,7 +67,7 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, ) std
   CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 ); 
 
   // Check if the integrator propagates state correctly
-  if( check_state_propagation ) {
+  if( true ) {
     auto [ EXC1, VXC1 ] = integrator.eval_exc_vxc( P );
     CHECK( EXC1 == Approx( EXC_ref ) );
     auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
@@ -102,10 +102,16 @@ TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
 
 #ifdef GAUXC_ENABLE_CUDA
   SECTION( "Device" ) {
-    SECTION( "Default" ) {
+    SECTION( "Incore - MPI Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) reference_file, 
         "Default" );
     }
+    #ifdef GAUXC_ENABLE_NCCL
+    SECTION( "Incore - NCCL Reduction" ) {
+      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) reference_file, 
+        "Default", "NCCL" );
+    }
+    #endif
     SECTION( "ShellBatched" ) {
       test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) reference_file, 
         "ShellBatched" );

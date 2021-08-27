@@ -6,6 +6,7 @@
 //  #define _GAUXC_COMP_IS_PGI
 //  #undef __PGI
 //#endif
+#define EIGEN_DONT_VECTORIZE
 #include <Eigen/Core>
 //#ifdef _GAUXC_COMP_IS_PGI
 //  #define __PGI

@@ -1,5 +1,11 @@
 #include "reduction_driver_impl.hpp"
 #include "host/basic_mpi_reduction_driver.hpp"
+
+#ifdef GAUXC_ENABLE_NCCL
+#include "device/nccl_reduction_driver.hpp"
+#endif
+
+
 #include <algorithm>
 #include <iostream>
 
@@ -17,6 +23,11 @@ std::shared_ptr<ReductionDriver> ReductionDriverFactory::get_shared_instance(
 
   if( kernel_name == "BASICMPI" )
     ptr = std::make_unique<BasicMPIReductionDriver>(GAUXC_MPI_CODE(comm));
+
+  #ifdef GAUXC_ENABLE_NCCL
+    if( kernel_name == "NCCL" )
+      ptr = std::make_unique<NCCLReductionDriver>(GAUXC_MPI_CODE(comm));
+  #endif
 
   if( !ptr ) throw std::runtime_error("Unknown Reduction Driver");
 

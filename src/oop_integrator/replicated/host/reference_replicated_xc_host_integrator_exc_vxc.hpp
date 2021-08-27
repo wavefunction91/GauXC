@@ -43,9 +43,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Reduce Results
   this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+
+    if( not this->reduction_driver_->takes_host_memory() )
+      throw std::runtime_error("This Module Only Works With Host Reductions");
+
     this->reduction_driver_->allreduce_inplace( VXC, nbf*nbf, ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
+
   });
 
 }

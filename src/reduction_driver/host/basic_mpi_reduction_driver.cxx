@@ -2,10 +2,12 @@
 #include <cstring>
 #include <memory>
 #include <map>
+#include <iostream>
+#include <cstddef>
 
 namespace GauXC {
 
-MPI_Datatype get_datatype( std::type_index idx ) {
+inline MPI_Datatype get_datatype( std::type_index idx ) {
 
   static std::map<std::type_index, MPI_Datatype> map {
     {std::type_index(typeid(double)), MPI_DOUBLE},
@@ -16,7 +18,7 @@ MPI_Datatype get_datatype( std::type_index idx ) {
 
 }
 
-MPI_Op get_op( ReductionOp op ) {
+inline MPI_Op get_op( ReductionOp op ) {
 
   static std::map< ReductionOp, MPI_Op > map {
     { ReductionOp::Sum, MPI_SUM }
@@ -36,7 +38,10 @@ BasicMPIReductionDriver::BasicMPIReductionDriver(const BasicMPIReductionDriver&)
 
 
 void BasicMPIReductionDriver::allreduce_typeerased( const void* src, void* dest, 
-  size_t size, ReductionOp op, std::type_index idx )  {
+  size_t size, ReductionOp op, std::type_index idx, std::any optional_args )  {
+
+  if( optional_args.has_value() )
+    std::cout << "** Warning: Optional Args Are Not Used in BasiMPIReductionDriver::allreduce" << std::endl;
 
 #ifdef GAUXC_ENABLE_MPI
   int world_size;
@@ -56,7 +61,10 @@ void BasicMPIReductionDriver::allreduce_typeerased( const void* src, void* dest,
 
 }
 void BasicMPIReductionDriver::allreduce_inplace_typeerased( void* data, size_t size,
-  ReductionOp op, std::type_index idx) {
+  ReductionOp op, std::type_index idx, std::any optional_args ) {
+
+  if( optional_args.has_value() )
+    std::cout << "** Warning: Optional Args Are Not Used in BasiMPIReductionDriver::allreduce" << std::endl;
 
 #ifdef GAUXC_ENABLE_MPI
   int world_size;
@@ -80,7 +88,7 @@ void BasicMPIReductionDriver::allreduce_inplace_typeerased( void* data, size_t s
       std::allocator<std::byte> alloc;
       auto* tmp = alloc.allocate( size );
       std::memcpy(tmp, data, size);
-      allreduce_typeerased( tmp, data, size, op, idx );
+      allreduce_typeerased( tmp, data, size, op, idx, optional_args );
       alloc.deallocate( tmp, size );
     }
     #endif

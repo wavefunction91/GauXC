@@ -3,6 +3,7 @@
 #include <vector>
 #include <gauxc/basisset_map.hpp>
 #include <gauxc/molmeta.hpp>
+#include <gauxc/reduction_driver.hpp>
 
 namespace GauXC {
 
@@ -88,6 +89,11 @@ struct XCDeviceData {
    */
   virtual void retrieve_xc_integrands( double* EXC, double* N_EL,
     double* VXC, int32_t ldvxc ) = 0;
+
+
+  virtual double* vxc_device_data() = 0;
+  virtual double* exc_device_data() = 0;
+  virtual double* nel_device_data() = 0;
 
 };
 

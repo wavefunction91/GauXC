@@ -4,6 +4,7 @@
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
+#define EIGEN_DONT_VECTORIZE
 #include <Eigen/Core>
 
 using namespace GauXC;

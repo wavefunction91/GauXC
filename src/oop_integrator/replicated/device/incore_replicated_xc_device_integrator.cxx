@@ -46,25 +46,56 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Temporary electron count to judge integrator accuracy
   value_type N_EL;
 
-  // Compute local contributions to EXC/VXC
-  this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    exc_vxc_local_work_( basis, P, ldp, VXC, ldvxc, EXC, 
-      &N_EL, tasks.begin(), tasks.end(), *device_data_ptr);
-  });
 
-  // Reduce Results
-  this->timer_.time_op("XCIntegrator.Allreduce", [&](){
-    this->reduction_driver_->allreduce_inplace( VXC, nbf*nbf, ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
-  });
+  if( this->reduction_driver_->takes_device_memory() ) {
 
+    // If we can do reductions on the device (e.g. NCCL)
+    // Don't communicate data back to the hot before reduction
+    this->timer_.time_op("XCIntegrator.LocalWork", [&](){
+      exc_vxc_local_work_( basis, P, ldp, tasks.begin(), tasks.end(), 
+        *device_data_ptr);
+    });
+
+    // Reduce results in device memory
+    auto vxc_device = device_data_ptr->vxc_device_data();
+    auto exc_device = device_data_ptr->exc_device_data();
+    auto nel_device = device_data_ptr->nel_device_data();
+    this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+      this->reduction_driver_->allreduce_inplace( vxc_device, nbf*nbf, ReductionOp::Sum );
+      this->reduction_driver_->allreduce_inplace( exc_device, 1,       ReductionOp::Sum );
+      this->reduction_driver_->allreduce_inplace( nel_device, 1,       ReductionOp::Sum );
+    });
+
+    // Retrieve data to host
+    device_data_ptr->retrieve_xc_integrands( EXC, &N_EL, VXC, ldvxc );
+
+    // Symmetrize VXC
+    for( int32_t j = 0;   j < nbf; ++j )
+    for( int32_t i = j+1; i < nbf; ++i )
+      VXC[ j + i*ldvxc ] = VXC[ i + j*ldvxc ];
+
+  } else {
+
+    // Compute local contributions to EXC/VXC and retrieve
+    // data from device 
+    this->timer_.time_op("XCIntegrator.LocalWork", [&](){
+      exc_vxc_local_work_( basis, P, ldp, VXC, ldvxc, EXC, 
+        &N_EL, tasks.begin(), tasks.end(), *device_data_ptr);
+    });
+
+    // Reduce Results in host mem
+    this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+      this->reduction_driver_->allreduce_inplace( VXC, nbf*nbf, ReductionOp::Sum );
+      this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
+      this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
+    });
+
+  }
 }
 
 template <typename ValueType>
 void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
-                       value_type* VXC, int64_t ldvxc, value_type* EXC, value_type *N_EL,
                        host_task_iterator task_begin, host_task_iterator task_end,
                        XCDeviceData& device_data ) {
 
@@ -138,33 +169,31 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   } // Loop over batches of batches 
 
-#if 0
-  {
-    const int32_t npts_ = 
-      std::accumulate( task_begin, task_end, 0, 
-                       []( const auto& a, const auto& b ) { return a + b.npts; } );
-    auto& stack_work = dynamic_cast<XCDeviceAoSData&>(device_data);
-    int32_t npts = stack_work.total_npts_task_batch;
-    //for( auto& task : stack_work.host_device_tasks ) std::cout << task.npts << std::endl;
-    std::cout << "NPTS = " << npts << ", " << npts_ << std::endl;
-    std::vector<double> weights(npts), den(npts);
-    cudaMemcpy( weights.data(), stack_work.weights_device, npts*sizeof(double), cudaMemcpyDefault );
-    cudaMemcpy( den.data(), stack_work.den_eval_device, npts*sizeof(double), cudaMemcpyDefault );
-    std::ofstream file( "oop_data.bin", std::ios::binary );
-    file.write( (const char*)&npts, sizeof(int32_t) );
-    file.write( (const char*)weights.data(), npts * sizeof(double) );
-    file.write( (const char*)den.data(), npts * sizeof(double) );
-  }
-#endif
+
+}
+
+
+
+template <typename ValueType>
+void IncoreReplicatedXCDeviceIntegrator<ValueType>::
+  exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
+                       value_type* VXC, int64_t ldvxc, value_type* EXC, value_type *N_EL,
+                       host_task_iterator task_begin, host_task_iterator task_end,
+                       XCDeviceData& device_data ) {
+
+
+  // Get integrate and keep data on device
+  exc_vxc_local_work_( basis, P, ldp, task_begin, task_end, device_data );
 
   // Receive XC terms from host
   device_data.retrieve_xc_integrands( EXC, N_EL, VXC, ldvxc );
 
-
   // Symmetrize VXC
+  const auto nbf     = basis.nbf();
   for( int32_t j = 0;   j < nbf; ++j )
   for( int32_t i = j+1; i < nbf; ++i )
     VXC[ j + i*ldvxc ] = VXC[ i + j*ldvxc ];
+
 }
 
 template <typename ValueType>

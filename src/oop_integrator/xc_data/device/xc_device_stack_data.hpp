@@ -79,6 +79,10 @@ struct XCDeviceStackData : public XCDeviceData {
   void retrieve_xc_integrands( double* EXC, double* N_EL,
     double* VXC, int32_t ldvxc ) override final;
 
+  double* vxc_device_data() override;
+  double* exc_device_data() override;
+  double* nel_device_data() override;
+
 
   // New overridable APIs
   using device_buffer_t = std::tuple<void*, size_t>;

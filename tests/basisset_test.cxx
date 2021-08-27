@@ -200,7 +200,8 @@ TEST_CASE("BasisSet", "[basisset]") {
   };
 
   CHECK( basis_map.shell_to_first_ao() == ref_shell_to_ao );
-  CHECK( std::none_of( basis_map.shell_to_center().begin(), basis_map.shell_to_center().end(), [](auto i){ return i == -1;} ) );
+  auto centers_correct = std::none_of( basis_map.shell_to_center().begin(), basis_map.shell_to_center().end(), [](auto i){ return i == -1;} );
+  CHECK( centers_correct );
 
   for(auto i = 0; i < basis.nshells(); ++i) {
     auto [sh_st,sh_en] = basis_map.shell_to_ao_range(i);
