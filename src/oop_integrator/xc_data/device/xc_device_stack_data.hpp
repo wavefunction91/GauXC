@@ -2,6 +2,7 @@
 
 #include "xc_device_data.hpp"
 #include "device_backend.hpp"
+#include <cstring>
 
 namespace GauXC {
 
@@ -20,6 +21,7 @@ struct XCDeviceStackData : public XCDeviceData {
   using XCDeviceData::host_task_iterator;
 
   allocated_dims global_dims; ///< Global dimensions for allocated data structures
+  integrator_term_tracker allocated_terms;
   
   void* device_ptr = nullptr; ///< Device buffer for all device allocations
   void* dynmem_ptr = nullptr; ///< Device buffer for dynamic allocations (mod static)
@@ -28,37 +30,48 @@ struct XCDeviceStackData : public XCDeviceData {
 
   // Stack static data (not dynamically allocated for each task batch)
 
-  Shell<double>* shells_device = nullptr; ///< Array of static basis shells (nshells)
+  struct static_data {
+    Shell<double>* shells_device = nullptr; ///< Array of static basis shells (nshells)
 
-  double* dmat_device   = nullptr; ///< Static density matrix storage (nbf,nbf)
-  double* rab_device    = nullptr; ///< Static RAB matrix storage (*,natoms)
-  double* coords_device = nullptr; ///< Static atomic positions (3 * natoms)
+    double* dmat_device   = nullptr; ///< Static density matrix storage (nbf,nbf)
+    double* rab_device    = nullptr; ///< Static RAB matrix storage (*,natoms)
+    double* coords_device = nullptr; ///< Static atomic positions (3 * natoms)
 
-  double* exc_device     = nullptr; ///< EXC storage (1)
-  double* nel_device     = nullptr; ///< N_EL storage (1)
-  double* vxc_device     = nullptr; ///< VXC storage (nbf,nbf)
-  double* acc_scr_device = nullptr; ///< Accumulaion scratch (1)
+    double* exc_device     = nullptr; ///< EXC storage (1)
+    double* nel_device     = nullptr; ///< N_EL storage (1)
+    double* vxc_device     = nullptr; ///< VXC storage (nbf,nbf)
+    double* acc_scr_device = nullptr; ///< Accumulaion scratch (1)
+
+    inline void reset() { std::memset( this, 0, sizeof(static_data) ); }
+  };
+
+  static_data static_stack;
 
 
   // Stack dynamic data
 
   size_t total_npts_task_batch = 0; ///< Number of grid points in task batch
+  struct base_stack_data {
 
-  double* points_device  = nullptr; ///< Grid points for task batch
-  double* weights_device = nullptr; ///< Grid weights for task batch
+    double* points_device  = nullptr; ///< Grid points for task batch
+    double* weights_device = nullptr; ///< Grid weights for task batch
 
-  // U variables
-  double* den_eval_device   = nullptr; ///< density for task batch
-  double* den_x_eval_device = nullptr; ///< d/dx density for task batch
-  double* den_y_eval_device = nullptr; ///< d/dy density for task batch
-  double* den_z_eval_device = nullptr; ///< d/dz density for task batch
+    // U variables
+    double* den_eval_device   = nullptr; ///< density for task batch
+    double* den_x_eval_device = nullptr; ///< d/dx density for task batch
+    double* den_y_eval_device = nullptr; ///< d/dy density for task batch
+    double* den_z_eval_device = nullptr; ///< d/dz density for task batch
 
-  // V variables / XC output
-  double* gamma_eval_device  = nullptr; ///< gamma for task batch
-  double* eps_eval_device    = nullptr; ///< XC energy density for task batch
-  double* vrho_eval_device   = nullptr; ///< Rho XC derivative for task batch
-  double* vgamma_eval_device = nullptr; ///< Gamma XC derivative for task batch
+    // V variables / XC output
+    double* gamma_eval_device  = nullptr; ///< gamma for task batch
+    double* eps_eval_device    = nullptr; ///< XC energy density for task batch
+    double* vrho_eval_device   = nullptr; ///< Rho XC derivative for task batch
+    double* vgamma_eval_device = nullptr; ///< Gamma XC derivative for task batch
 
+    inline void reset() { std::memset( this, 0, sizeof(base_stack_data) ); }
+  };
+
+  base_stack_data base_stack;
 
   /// Device backend instance to handle device specific execution
   std::unique_ptr<DeviceBackend> device_backend_ = nullptr;
@@ -69,21 +82,29 @@ struct XCDeviceStackData : public XCDeviceData {
   virtual ~XCDeviceStackData() noexcept;
 
   // Final overrides
-  host_task_iterator generate_buffers( const BasisSetMap&,
+  host_task_iterator generate_buffers( integrator_term_tracker, const BasisSetMap&,
     host_task_iterator, host_task_iterator) override final;
-  void allocate_static_data( int32_t, int32_t, int32_t ) override final;
-  void send_static_data( const double* P, int32_t ldp,
-    const BasisSet<double>& basis, const Molecule& mol,
-    const MolMeta& meta ) override final;
+  //void allocate_static_data( int32_t, int32_t, int32_t ) override final;
+  void allocate_static_data_weights( int32_t natoms ) override final;
+  void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) override final;
+  //void send_static_data( const double* P, int32_t ldp,
+  //  const BasisSet<double>& basis, const Molecule& mol,
+  //  const MolMeta& meta ) override final;
+  void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) override final;
+  void send_static_data_exc_vxc( const double* P, int32_t ldp, 
+    const BasisSet<double>& basis ) override final;
   void zero_integrands() override final;
   void retrieve_xc_integrands( double* EXC, double* N_EL,
     double* VXC, int32_t ldvxc ) override final;
+  void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) override final;
 
   double* vxc_device_data() override;
   double* exc_device_data() override;
   double* nel_device_data() override;
   std::any type_erased_queue() override;
 
+
+  virtual void reset_allocations() override;
 
   // New overridable APIs
   using device_buffer_t = std::tuple<void*, size_t>;
@@ -103,8 +124,20 @@ struct XCDeviceStackData : public XCDeviceData {
    *  @returns The state of the dynamic memory stack after allocating
    *           base information.
    */
-  virtual device_buffer_t alloc_pack_and_send( host_task_iterator begin, 
-    host_task_iterator end, device_buffer_t buf, const BasisSetMap& basis_map);
+  //virtual device_buffer_t alloc_pack_and_send( integrator_term_tracker terms,
+  //  host_task_iterator begin, host_task_iterator end, device_buffer_t buf, 
+  //  const BasisSetMap& basis_map);
+
+
+  virtual device_buffer_t allocate_dynamic_stack( integrator_term_tracker terms,
+    host_task_iterator begin, host_task_iterator end, device_buffer_t buf,
+    const BasisSetMap& basis_map );
+
+  virtual void pack_and_send( integrator_term_tracker terms,
+    host_task_iterator begin, host_task_iterator end, 
+    const BasisSetMap& basis_map );
+
+
 
   /** Obtain the memory requirement for an XC task
    *
@@ -118,8 +151,8 @@ struct XCDeviceStackData : public XCDeviceData {
    *
    *  @returns Memory requirement (bytes) for `task` in device memory
    */
-  virtual size_t get_mem_req( const host_task_type& task, 
-    const BasisSetMap& basis_map );
+  virtual size_t get_mem_req( integrator_term_tracker terms,
+    const host_task_type& task, const BasisSetMap& basis_map );
 
 
   // Implementation specific APIs

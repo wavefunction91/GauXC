@@ -4,8 +4,21 @@
 
 namespace GauXC {
 
-size_t XCDeviceAoSData::get_mem_req( const host_task_type& task,
-  const BasisSetMap& basis_map ) {
+void XCDeviceAoSData::reset_allocations() {
+  XCDeviceStackData::reset_allocations(); // Base implementation
+  aos_stack.reset();
+}
+
+size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
+  const host_task_type& task, const BasisSetMap& basis_map ) {
+
+  size_t base_size = XCDeviceStackData::get_mem_req(terms, task, basis_map);
+  
+  // Everything in AoS is not required for current implementations of
+  // the weights kernel
+  if( not terms.exc_vxc ) return base_size;
+
+
 
   const auto& points     = task.points;
   const auto& shell_list = task.shell_list;
@@ -28,48 +41,59 @@ size_t XCDeviceAoSData::get_mem_req( const host_task_type& task,
 
   // Collocation + derivatives
   // TODO: this is dependent on integrand
-  const size_t mem_bf   = nbe * npts;
+  const size_t mem_bf   = nbe * npts * sizeof(double);
   const size_t mem_dbfx = mem_bf;
   const size_t mem_dbfy = mem_bf;
   const size_t mem_dbfz = mem_bf;
 
   // LDA/GGA Z Matrix 
   // TODO: this is dependent on integrand
-  const size_t mem_zmat_lda_gga = nbe * npts;
+  const size_t mem_zmat_lda_gga = nbe * npts * sizeof(double);
 
   // nbe * nbe scratch
-  const size_t mem_nbe_scr = nbe * nbe;
+  const size_t mem_nbe_scr = nbe * nbe * sizeof(double);
 
   // Shell index packing 
-  const size_t mem_shell_list = nshells;
-  const size_t mem_shell_offs = nshells;
-  const size_t mem_submat_cut = 3 * ncut;
-  const size_t mem_submat_block = nblock;
+  const size_t mem_shell_list = nshells * sizeof(size_t);
+  const size_t mem_shell_offs = nshells * sizeof(size_t);
+  const size_t mem_submat_cut = 3 * ncut * sizeof(int32_t);
+  const size_t mem_submat_block = nblock * sizeof(int32_t);
 
   // Memroty associated with added a task to the indirection
-  const size_t mem_task = 1;
+  const size_t mem_task = sizeof(XCDeviceTask);
 
 
-  size_t base_size = XCDeviceStackData::get_mem_req(task, basis_map);
   return base_size + 
-    ( mem_bf + mem_dbfx + mem_dbfy + mem_dbfz + mem_nbe_scr ) * sizeof(double) +
-    ( mem_zmat_lda_gga )                                      * sizeof(double) +
-    ( mem_shell_list + mem_shell_offs )                       * sizeof(size_t) +
-    ( mem_submat_cut + mem_submat_block )                     * sizeof(int32_t) +
-    ( mem_task ) * sizeof(XCDeviceTask);
+    ( mem_bf + mem_dbfx + mem_dbfy + mem_dbfz + mem_nbe_scr ) +
+    ( mem_zmat_lda_gga )                                      +
+    ( mem_shell_list + mem_shell_offs )                       +
+    ( mem_submat_cut + mem_submat_block )                     +
+    ( mem_task );
 }
 
 
 
+#if 0
 XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send( 
+  integrator_term_tracker terms,
   host_task_iterator task_begin, host_task_iterator task_end, device_buffer_t buf,
   const BasisSetMap& basis_map ) {
 
   if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
 
   // Allocate base info in the stack
-  buf = XCDeviceStackData::alloc_pack_and_send( task_begin, task_end, buf, 
+  buf = XCDeviceStackData::alloc_pack_and_send( terms, task_begin, task_end, buf, 
     basis_map );
+
+  // Reset AoS
+  host_device_tasks.clear();
+
+  // Current Stack
+  auto [ ptr, sz ] = buf;
+  buffer_adaptor mem( ptr, sz );
+
+  // We only need AoS for XC integrations 
+  if( terms.exc_vxc ) {
 
   // Host Packing Arrays
   std::vector< size_t > shell_list_pack;
@@ -90,7 +114,6 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
   total_nshells_task_batch  = 0; 
   total_ncut_task_batch     = 0; 
   total_nblock_task_batch   = 0; 
-  host_device_tasks.clear();
 
   for( auto it = task_begin; it != task_end; ++it ) {
 
@@ -146,9 +169,6 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
 
   }
 
-  // Allocate device memory
-  auto [ ptr, sz ] = buf;
-  buffer_adaptor mem( ptr, sz );
 
   // TODO: Print this if verbose
   //std::cout << "XCDeviceAoSData buf = " << ptr << ", " << sz << std::endl;
@@ -156,161 +176,70 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
 
   // Device task indirection
   const size_t ntask = std::distance( task_begin, task_end );
-  device_tasks = mem.aligned_alloc<XCDeviceTask>( ntask );
+  aos_stack.device_tasks = mem.aligned_alloc<XCDeviceTask>( ntask , csl);
 
   // Collocation 
-  bf_eval_device     = mem.aligned_alloc<double>( total_nbe_npts_task_batch );
-  dbf_x_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch );
-  dbf_y_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch );
-  dbf_z_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch );
+  aos_stack.bf_eval_device     = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+  aos_stack.dbf_x_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+  aos_stack.dbf_y_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+  aos_stack.dbf_z_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
 
   // VXC Z Matrix
-  zmat_vxc_lda_gga_device = mem.aligned_alloc<double>( total_nbe_npts_task_batch );
+  aos_stack.zmat_vxc_lda_gga_device = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
 
   // Scratch buffer
-  nbe_scr_device = mem.aligned_alloc<double>( total_nbe_sq_task_batch );
+  aos_stack.nbe_scr_device = mem.aligned_alloc<double>( total_nbe_sq_task_batch , csl);
 
   // AoS buffers
-  shell_list_device   = mem.aligned_alloc<size_t>( total_nshells_task_batch );
-  shell_offs_device   = mem.aligned_alloc<size_t>( total_nshells_task_batch );
-  submat_cut_device   = mem.aligned_alloc<int32_t>( 3 * total_ncut_task_batch );
-  submat_block_device = mem.aligned_alloc<int32_t>( total_nblock_task_batch );
+  aos_stack.shell_list_device   = mem.aligned_alloc<size_t>( total_nshells_task_batch , csl);
+  aos_stack.shell_offs_device   = mem.aligned_alloc<size_t>( total_nshells_task_batch , csl);
+  aos_stack.submat_cut_device   = mem.aligned_alloc<int32_t>( 3 * total_ncut_task_batch , csl);
+  aos_stack.submat_block_device = mem.aligned_alloc<int32_t>( total_nblock_task_batch , csl);
 
   // Send AoS information early to overlap with indirection construction
   device_backend_->copy_async( shell_list_pack.size(), shell_list_pack.data(), 
-    shell_list_device, "send_shell_list" );
+    aos_stack.shell_list_device, "send_shell_list" );
   device_backend_->copy_async( shell_offs_pack.size(), shell_offs_pack.data(), 
-    shell_offs_device, "send_shell_offs" );
+    aos_stack.shell_offs_device, "send_shell_offs" );
   device_backend_->copy_async( 3 * submat_cut_pack.size(), 
-    submat_cut_pack.data()->data(), submat_cut_device, "send_submat_cut"  ); 
+    submat_cut_pack.data()->data(), aos_stack.submat_cut_device, "send_submat_cut"  ); 
   device_backend_->copy_async( submat_block_pack.size(), submat_block_pack.data(), 
-    submat_block_device, "send_submat_block"  ); 
+    aos_stack.submat_block_device, "send_submat_block"  ); 
 
   // Construct full indirection
-#if 0
-  {
-  double* points_ptr  = this->points_device;
-  double* weights_ptr = this->weights_device;
-
-  size_t* shell_list_ptr  = shell_list_device;
-  size_t* shell_offs_ptr  = shell_offs_device;
-  int32_t* submat_cut_ptr = submat_cut_device;
-  int32_t* submat_block_ptr = submat_block_device;
-
-  double*      nbe_ptr    = nbe_scr_device;
-  double*      zmat_ptr   = zmat_vxc_lda_gga_device;
-
-  double*      bf_ptr     = bf_eval_device;
-  double*      dbfx_ptr   = dbf_x_eval_device;
-  double*      dbfy_ptr   = dbf_y_eval_device;
-  double*      dbfz_ptr   = dbf_z_eval_device;
-  
-  double*      den_ptr    = den_eval_device;
-  double*      ddenx_ptr  = den_x_eval_device;
-  double*      ddeny_ptr  = den_y_eval_device;
-  double*      ddenz_ptr  = den_z_eval_device;
-
-  double*      eps_ptr     = eps_eval_device;
-  double*      gamma_ptr   = gamma_eval_device;
-  double*      vrho_ptr    = vrho_eval_device;
-  double*      vgamma_ptr  = vgamma_eval_device;
-
-  for( auto& task : host_device_tasks ) {
-
-    task.points     = points_ptr;
-    task.weights    = weights_ptr;
-    task.shell_list = shell_list_ptr;
-    task.shell_offs = shell_offs_ptr;
-    task.submat_cut = submat_cut_ptr;
-    task.submat_block = submat_block_ptr;
-    
-    task.nbe_scr = nbe_ptr;
-    task.zmat    = zmat_ptr;
-    task.bf      = bf_ptr;
-    task.dbfx    = dbfx_ptr;
-    task.dbfy    = dbfy_ptr;
-    task.dbfz    = dbfz_ptr;
-    task.den     = den_ptr;
-    task.ddenx   = ddenx_ptr;
-    task.ddeny   = ddeny_ptr;
-    task.ddenz   = ddenz_ptr;
-
-    task.eps    = eps_ptr;
-    task.gamma  = gamma_ptr;
-    task.vrho   = vrho_ptr;
-    task.vgamma = vgamma_ptr;
-
-    //task.dist_scratch      = dist_scratch_ptr;
-
-    auto npts    = task.npts;
-    auto nbe     = task.nbe;
-    auto ncut    = task.ncut;
-    auto nblock  = task.nblock;
-    auto nshells = task.nshells;
-
-    points_ptr     += 3 * npts;
-    weights_ptr    += npts;
-    shell_list_ptr += nshells;
-    shell_offs_ptr += nshells;
-    submat_cut_ptr += 3 * ncut;
-    submat_block_ptr += nblock;
-    
-    nbe_ptr    += nbe * nbe;
-    zmat_ptr   += nbe * npts;
-
-    bf_ptr     += nbe * npts;
-    dbfx_ptr   += nbe * npts;
-    dbfy_ptr   += nbe * npts;
-    dbfz_ptr   += nbe * npts;
-
-    den_ptr    += npts;
-    ddenx_ptr  += npts;
-    ddeny_ptr  += npts;
-    ddenz_ptr  += npts;
-
-    eps_ptr    += npts;
-    gamma_ptr  += npts;
-    vrho_ptr   += npts;
-    vgamma_ptr += npts;
-    //dist_scratch_ptr += LDatoms * npts;
-
-  } // Loop over device tasks
-
-  } // End task setup
-#else
   {
 
   const size_t total_npts    = total_npts_task_batch * sizeof(double);
-  buffer_adaptor points_mem ( points_device,  3*total_npts );
-  buffer_adaptor weights_mem( weights_device,   total_npts );
+  buffer_adaptor points_mem ( base_stack.points_device,  3*total_npts );
+  buffer_adaptor weights_mem( base_stack.weights_device,   total_npts );
 
   const size_t total_nshells = total_nshells_task_batch * sizeof(size_t);
   const size_t total_ncut    = total_ncut_task_batch * sizeof(int32_t);
   const size_t total_nblock  = total_nblock_task_batch * sizeof(int32_t);
-  buffer_adaptor shell_list_mem( shell_list_device, total_nshells );
-  buffer_adaptor shell_offs_mem( shell_offs_device, total_nshells );
-  buffer_adaptor submat_cut_mem( submat_cut_device, 3*total_ncut  );
-  buffer_adaptor submat_block_mem( submat_block_device, total_nblock);
+  buffer_adaptor shell_list_mem( aos_stack.shell_list_device, total_nshells );
+  buffer_adaptor shell_offs_mem( aos_stack.shell_offs_device, total_nshells );
+  buffer_adaptor submat_cut_mem( aos_stack.submat_cut_device, 3*total_ncut  );
+  buffer_adaptor submat_block_mem( aos_stack.submat_block_device, total_nblock);
 
   const size_t total_nbe_sq = total_nbe_sq_task_batch * sizeof(double);
   const size_t total_nbe_npts = total_nbe_npts_task_batch * sizeof(double);
-  buffer_adaptor nbe_mem( nbe_scr_device, total_nbe_sq );
-  buffer_adaptor zmat_mem( zmat_vxc_lda_gga_device, total_nbe_npts );
+  buffer_adaptor nbe_mem( aos_stack.nbe_scr_device, total_nbe_sq );
+  buffer_adaptor zmat_mem( aos_stack.zmat_vxc_lda_gga_device, total_nbe_npts );
 
-  buffer_adaptor bf_mem   ( bf_eval_device,    total_nbe_npts );
-  buffer_adaptor dbf_x_mem( dbf_x_eval_device, total_nbe_npts );
-  buffer_adaptor dbf_y_mem( dbf_y_eval_device, total_nbe_npts );
-  buffer_adaptor dbf_z_mem( dbf_z_eval_device, total_nbe_npts );
+  buffer_adaptor bf_mem   ( aos_stack.bf_eval_device,    total_nbe_npts );
+  buffer_adaptor dbf_x_mem( aos_stack.dbf_x_eval_device, total_nbe_npts );
+  buffer_adaptor dbf_y_mem( aos_stack.dbf_y_eval_device, total_nbe_npts );
+  buffer_adaptor dbf_z_mem( aos_stack.dbf_z_eval_device, total_nbe_npts );
 
-  buffer_adaptor den_mem   ( den_eval_device,   total_npts );
-  buffer_adaptor dden_x_mem( den_x_eval_device, total_npts );
-  buffer_adaptor dden_y_mem( den_y_eval_device, total_npts );
-  buffer_adaptor dden_z_mem( den_z_eval_device, total_npts );
+  buffer_adaptor den_mem   ( base_stack.den_eval_device,   total_npts );
+  buffer_adaptor dden_x_mem( base_stack.den_x_eval_device, total_npts );
+  buffer_adaptor dden_y_mem( base_stack.den_y_eval_device, total_npts );
+  buffer_adaptor dden_z_mem( base_stack.den_z_eval_device, total_npts );
 
-  buffer_adaptor eps_mem( eps_eval_device, total_npts );
-  buffer_adaptor gamma_mem( gamma_eval_device, total_npts );
-  buffer_adaptor vrho_mem( vrho_eval_device, total_npts );
-  buffer_adaptor vgamma_mem( vgamma_eval_device, total_npts );
+  buffer_adaptor eps_mem( base_stack.eps_eval_device, total_npts );
+  buffer_adaptor gamma_mem( base_stack.gamma_eval_device, total_npts );
+  buffer_adaptor vrho_mem( base_stack.vrho_eval_device, total_npts );
+  buffer_adaptor vgamma_mem( base_stack.vgamma_eval_device, total_npts );
 
   size_t i = 0;
   for( auto& task : host_device_tasks ) {
@@ -320,47 +249,51 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
     const auto nblock  = task.nblock;
     const auto nshells = task.nshells;
 
-    task.points       = points_mem .aligned_alloc<double>(3*npts);
-    task.weights      = weights_mem.aligned_alloc<double>(npts); 
-    task.shell_list   = shell_list_mem.aligned_alloc<size_t>( nshells ); 
-    task.shell_offs   = shell_offs_mem.aligned_alloc<size_t>( nshells ); 
-    task.submat_cut   = submat_cut_mem.aligned_alloc<int32_t>( 3*ncut );
-    task.submat_block = submat_block_mem.aligned_alloc<int32_t>(nblock);
+    task.points       = points_mem .aligned_alloc<double>(3*npts, csl);
+    task.weights      = weights_mem.aligned_alloc<double>(npts, csl); 
+    task.shell_list   = shell_list_mem.aligned_alloc<size_t>( nshells , csl); 
+    task.shell_offs   = shell_offs_mem.aligned_alloc<size_t>( nshells , csl); 
+    task.submat_cut   = submat_cut_mem.aligned_alloc<int32_t>( 3*ncut , csl);
+    task.submat_block = submat_block_mem.aligned_alloc<int32_t>(nblock, csl);
 
-    task.nbe_scr = nbe_mem .aligned_alloc<double>( nbe * nbe  );
-    task.zmat    = zmat_mem.aligned_alloc<double>( nbe * npts );
+    task.nbe_scr = nbe_mem .aligned_alloc<double>( nbe * nbe  , csl);
+    task.zmat    = zmat_mem.aligned_alloc<double>( nbe * npts , csl);
 
-    task.bf   = bf_mem   .aligned_alloc<double>( nbe * npts );
-    task.dbfx = dbf_x_mem.aligned_alloc<double>( nbe * npts );
-    task.dbfy = dbf_y_mem.aligned_alloc<double>( nbe * npts );
-    task.dbfz = dbf_z_mem.aligned_alloc<double>( nbe * npts );
+    task.bf   = bf_mem   .aligned_alloc<double>( nbe * npts , csl);
+    task.dbfx = dbf_x_mem.aligned_alloc<double>( nbe * npts , csl);
+    task.dbfy = dbf_y_mem.aligned_alloc<double>( nbe * npts , csl);
+    task.dbfz = dbf_z_mem.aligned_alloc<double>( nbe * npts , csl);
 
-    task.den    = den_mem   .aligned_alloc<double>(npts);
-    task.ddenx  = dden_x_mem.aligned_alloc<double>(npts);
-    task.ddeny  = dden_y_mem.aligned_alloc<double>(npts);
-    task.ddenz  = dden_z_mem.aligned_alloc<double>(npts);
+    task.den    = den_mem   .aligned_alloc<double>(npts, csl);
+    task.ddenx  = dden_x_mem.aligned_alloc<double>(npts, csl);
+    task.ddeny  = dden_y_mem.aligned_alloc<double>(npts, csl);
+    task.ddenz  = dden_z_mem.aligned_alloc<double>(npts, csl);
 
-    task.eps    = eps_mem   .aligned_alloc<double>(npts);
-    task.gamma  = gamma_mem .aligned_alloc<double>(npts);
-    task.vrho   = vrho_mem  .aligned_alloc<double>(npts);
-    task.vgamma = vgamma_mem.aligned_alloc<double>(npts);
+    task.eps    = eps_mem   .aligned_alloc<double>(npts, csl);
+    task.gamma  = gamma_mem .aligned_alloc<double>(npts, csl);
+    task.vrho   = vrho_mem  .aligned_alloc<double>(npts, csl);
+    task.vgamma = vgamma_mem.aligned_alloc<double>(npts, csl);
 
     //std::cout << i << ", " << nshells << std::endl;
 
     ++i;
   } // Loop over device tasks
 
-  }
-#endif
+  } // Setup indirection
+
+  } // end AoS setup (XC Integrands only)
 
   // Setup extra pieces to indirection which are algorithm specific
+  // XXX: this also allocates additional memory
   device_buffer_t buf_left{ mem.stack(), mem.nleft() };
-  buf_left = add_extra_to_indirection(host_device_tasks, buf_left);
+  buf_left = add_extra_to_indirection(terms, host_device_tasks, buf_left);
 
 
-  // Send indirection
-  device_backend_->copy_async( host_device_tasks.size(), host_device_tasks.data(), 
-    device_tasks, "send_tasks_device" );
+  // Send indirection (XC only)
+  if( terms.exc_vxc ) {
+    device_backend_->copy_async( host_device_tasks.size(), host_device_tasks.data(), 
+      aos_stack.device_tasks, "send_tasks_device" );
+  }
 
 
   // Synchronize on the copy stream to keep host vecs in scope
@@ -369,5 +302,270 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::alloc_pack_and_send(
   // Update dynmem data for derived impls
   return buf_left;
 }
+#else
+
+
+XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack( 
+  integrator_term_tracker terms,
+  host_task_iterator task_begin, host_task_iterator task_end, device_buffer_t buf,
+  const BasisSetMap& basis_map ) {
+
+  // Allocate base info in the stack
+  buf = XCDeviceStackData::allocate_dynamic_stack( terms, task_begin, task_end, 
+    buf, basis_map );
+
+  // All data that currently resides in AoS is XC related and can be skipped
+  // for weights
+  if( not terms.exc_vxc ) return buf; 
+
+
+  // Current Stack
+  auto [ ptr, sz ] = buf;
+  buffer_adaptor mem( ptr, sz );
+
+  const size_t submat_chunk_size = this->get_submat_chunk_size(global_dims.nbf,0);
+
+
+  // Get dimensions
+  total_nbe_sq_task_batch   = 0;
+  total_nbe_npts_task_batch = 0; 
+  total_nshells_task_batch  = 0; 
+  total_ncut_task_batch     = 0; 
+  total_nblock_task_batch   = 0; 
+  for( auto it = task_begin; it != task_end; ++it ) {
+
+    const auto& points      = it->points;
+    const auto& shell_list  = it->shell_list;
+
+    // Generate basis map
+    // TODO: This should happen once and get stored
+    auto [submat_cut, submat_block] = 
+      gen_compressed_submat_map( basis_map, shell_list, global_dims.nbf, 
+        submat_chunk_size );
+
+    const size_t ncut     = submat_cut.size();
+    const size_t nblock   = submat_block.size();
+    const size_t nshells  = shell_list.size();
+    const size_t npts     = points.size();
+    const auto nbe        = it->nbe;
+
+    total_nbe_sq_task_batch   += nbe * nbe;
+    total_nbe_npts_task_batch += nbe * npts;
+    total_nshells_task_batch  += nshells;
+    total_ncut_task_batch     += ncut;
+    total_nblock_task_batch   += nblock;
+
+  }
+
+  // Device task indirection
+  const size_t ntask = std::distance( task_begin, task_end );
+  aos_stack.device_tasks = mem.aligned_alloc<XCDeviceTask>( ntask , csl);
+
+  // Collocation 
+  aos_stack.bf_eval_device     = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+  aos_stack.dbf_x_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+  aos_stack.dbf_y_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+  aos_stack.dbf_z_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+
+  // VXC Z Matrix
+  aos_stack.zmat_vxc_lda_gga_device = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+
+  // Scratch buffer
+  aos_stack.nbe_scr_device = mem.aligned_alloc<double>( total_nbe_sq_task_batch , csl);
+
+  // AoS buffers
+  aos_stack.shell_list_device   = mem.aligned_alloc<size_t>( total_nshells_task_batch , csl);
+  aos_stack.shell_offs_device   = mem.aligned_alloc<size_t>( total_nshells_task_batch , csl);
+  aos_stack.submat_cut_device   = mem.aligned_alloc<int32_t>( 3 * total_ncut_task_batch , csl);
+  aos_stack.submat_block_device = mem.aligned_alloc<int32_t>( total_nblock_task_batch , csl);
+
+  // Update dynmem data for derived impls
+  return device_buffer_t{ mem.stack(), mem.nleft() };
+}
+
+
+void XCDeviceAoSData::pack_and_send( 
+  integrator_term_tracker terms,
+  host_task_iterator task_begin, host_task_iterator task_end,
+  const BasisSetMap& basis_map ) {
+
+  // Pack and send base data
+  XCDeviceStackData::pack_and_send( terms, task_begin, task_end, basis_map );
+
+  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+
+  // All data that currently resides in AoS is XC related and can be skipped
+  // for weights
+  if( not terms.exc_vxc ) return; 
+
+  // Reset AoS
+  host_device_tasks.clear();
+
+  // Host Packing Arrays
+  std::vector< size_t > shell_list_pack;
+  std::vector< size_t > shell_offs_pack;
+  std::vector< std::array<int32_t, 3> > submat_cut_pack;
+  std::vector< int32_t > submat_block_pack;
+
+  // Contatenation utility
+  auto concat_iterable = []( auto& a, const auto& b ) {
+    a.insert( a.end(), b.begin(), b.end() );
+  };
+
+  const size_t submat_chunk_size = this->get_submat_chunk_size(global_dims.nbf,0);
+
+  // Pack AoS data and construct indirections
+  for( auto it = task_begin; it != task_end; ++it ) {
+
+    const auto  iAtom       = it->iParent;
+    const auto& points      = it->points;
+    const auto& shell_list  = it->shell_list;
+    const auto dist_nearest = it->dist_nearest;
+
+    // Generate basis map
+    // TODO: This should happen once and get stored
+    auto [submat_cut, submat_block] = 
+      gen_compressed_submat_map( basis_map, shell_list, global_dims.nbf, submat_chunk_size );
+
+    // Dimensions
+    const size_t ncut     = submat_cut.size();
+    const size_t nblock   = submat_block.size();
+    const size_t nshells  = shell_list.size();
+    const size_t npts     = points.size();
+    const auto nbe        = it->nbe;
+
+    // Compute offsets
+    // TODO: this should happen once and get stored
+    std::vector< size_t > shell_offs( nshells );
+    shell_offs.at(0) = 0;
+    for( auto i = 1ul; i < nshells; ++i )
+      shell_offs.at(i) = shell_offs.at(i-1) + 
+                           basis_map.shell_size( shell_list.at(i-1) );
+
+    // Pack Shell indexing
+    concat_iterable( shell_list_pack, shell_list );
+    concat_iterable( shell_offs_pack, shell_offs );
+    concat_iterable( submat_cut_pack, submat_cut );
+    concat_iterable( submat_block_pack, submat_block );
+
+    // Add task to device indirection
+    host_device_tasks.emplace_back();
+
+    // Populate indirection with dimensions
+    host_device_tasks.back().nbe          = nbe;
+    host_device_tasks.back().npts         = npts;
+    host_device_tasks.back().ncut         = ncut;
+    host_device_tasks.back().nblock       = nblock;
+    host_device_tasks.back().nshells      = nshells;
+    host_device_tasks.back().iParent      = iAtom;
+    host_device_tasks.back().dist_nearest = dist_nearest;
+
+  }
+
+
+  // TODO: Print this if verbose
+  //std::cout << "XCDeviceAoSData buf = " << ptr << ", " << sz << std::endl;
+
+
+
+  // Send AoS information early to overlap with indirection construction
+  device_backend_->copy_async( shell_list_pack.size(), shell_list_pack.data(), 
+    aos_stack.shell_list_device, "send_shell_list" );
+  device_backend_->copy_async( shell_offs_pack.size(), shell_offs_pack.data(), 
+    aos_stack.shell_offs_device, "send_shell_offs" );
+  device_backend_->copy_async( 3 * submat_cut_pack.size(), 
+    submat_cut_pack.data()->data(), aos_stack.submat_cut_device, "send_submat_cut"  ); 
+  device_backend_->copy_async( submat_block_pack.size(), submat_block_pack.data(), 
+    aos_stack.submat_block_device, "send_submat_block"  ); 
+
+  // Construct full indirection
+  {
+
+  const size_t total_npts    = total_npts_task_batch * sizeof(double);
+  buffer_adaptor points_mem ( base_stack.points_device,  3*total_npts );
+  buffer_adaptor weights_mem( base_stack.weights_device,   total_npts );
+
+  const size_t total_nshells = total_nshells_task_batch * sizeof(size_t);
+  const size_t total_ncut    = total_ncut_task_batch * sizeof(int32_t);
+  const size_t total_nblock  = total_nblock_task_batch * sizeof(int32_t);
+  buffer_adaptor shell_list_mem( aos_stack.shell_list_device, total_nshells );
+  buffer_adaptor shell_offs_mem( aos_stack.shell_offs_device, total_nshells );
+  buffer_adaptor submat_cut_mem( aos_stack.submat_cut_device, 3*total_ncut  );
+  buffer_adaptor submat_block_mem( aos_stack.submat_block_device, total_nblock);
+
+  const size_t total_nbe_sq = total_nbe_sq_task_batch * sizeof(double);
+  const size_t total_nbe_npts = total_nbe_npts_task_batch * sizeof(double);
+  buffer_adaptor nbe_mem( aos_stack.nbe_scr_device, total_nbe_sq );
+  buffer_adaptor zmat_mem( aos_stack.zmat_vxc_lda_gga_device, total_nbe_npts );
+
+  buffer_adaptor bf_mem   ( aos_stack.bf_eval_device,    total_nbe_npts );
+  buffer_adaptor dbf_x_mem( aos_stack.dbf_x_eval_device, total_nbe_npts );
+  buffer_adaptor dbf_y_mem( aos_stack.dbf_y_eval_device, total_nbe_npts );
+  buffer_adaptor dbf_z_mem( aos_stack.dbf_z_eval_device, total_nbe_npts );
+
+  buffer_adaptor den_mem   ( base_stack.den_eval_device,   total_npts );
+  buffer_adaptor dden_x_mem( base_stack.den_x_eval_device, total_npts );
+  buffer_adaptor dden_y_mem( base_stack.den_y_eval_device, total_npts );
+  buffer_adaptor dden_z_mem( base_stack.den_z_eval_device, total_npts );
+
+  buffer_adaptor eps_mem( base_stack.eps_eval_device, total_npts );
+  buffer_adaptor gamma_mem( base_stack.gamma_eval_device, total_npts );
+  buffer_adaptor vrho_mem( base_stack.vrho_eval_device, total_npts );
+  buffer_adaptor vgamma_mem( base_stack.vgamma_eval_device, total_npts );
+
+  size_t i = 0;
+  for( auto& task : host_device_tasks ) {
+    const auto npts    = task.npts;
+    const auto nbe     = task.nbe;
+    const auto ncut    = task.ncut;
+    const auto nblock  = task.nblock;
+    const auto nshells = task.nshells;
+
+    task.points       = points_mem .aligned_alloc<double>(3*npts, csl);
+    task.weights      = weights_mem.aligned_alloc<double>(npts, csl); 
+    task.shell_list   = shell_list_mem.aligned_alloc<size_t>( nshells , csl); 
+    task.shell_offs   = shell_offs_mem.aligned_alloc<size_t>( nshells , csl); 
+    task.submat_cut   = submat_cut_mem.aligned_alloc<int32_t>( 3*ncut , csl);
+    task.submat_block = submat_block_mem.aligned_alloc<int32_t>(nblock, csl);
+
+    task.nbe_scr = nbe_mem .aligned_alloc<double>( nbe * nbe  , csl);
+    task.zmat    = zmat_mem.aligned_alloc<double>( nbe * npts , csl);
+
+    task.bf   = bf_mem   .aligned_alloc<double>( nbe * npts , csl);
+    task.dbfx = dbf_x_mem.aligned_alloc<double>( nbe * npts , csl);
+    task.dbfy = dbf_y_mem.aligned_alloc<double>( nbe * npts , csl);
+    task.dbfz = dbf_z_mem.aligned_alloc<double>( nbe * npts , csl);
+
+    task.den    = den_mem   .aligned_alloc<double>(npts, csl);
+    task.ddenx  = dden_x_mem.aligned_alloc<double>(npts, csl);
+    task.ddeny  = dden_y_mem.aligned_alloc<double>(npts, csl);
+    task.ddenz  = dden_z_mem.aligned_alloc<double>(npts, csl);
+
+    task.eps    = eps_mem   .aligned_alloc<double>(npts, csl);
+    task.gamma  = gamma_mem .aligned_alloc<double>(npts, csl);
+    task.vrho   = vrho_mem  .aligned_alloc<double>(npts, csl);
+    task.vgamma = vgamma_mem.aligned_alloc<double>(npts, csl);
+
+    //std::cout << i << ", " << nshells << std::endl;
+
+    ++i;
+  } // Loop over device tasks
+
+  } // Setup indirection
+
+
+  // Setup extra pieces to indirection which are algorithm specific
+  add_extra_to_indirection(terms, host_device_tasks);
+
+  // Send indirection 
+  device_backend_->copy_async( host_device_tasks.size(), host_device_tasks.data(), 
+    aos_stack.device_tasks, "send_tasks_device" );
+
+  // Synchronize on the copy stream to keep host vecs in scope
+  device_backend_->master_queue_synchronize(); 
+
+
+}
+#endif
 
 }

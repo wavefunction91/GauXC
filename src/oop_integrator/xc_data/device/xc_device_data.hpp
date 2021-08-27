@@ -5,8 +5,17 @@
 #include <gauxc/molmeta.hpp>
 #include <gauxc/reduction_driver.hpp>
 #include <any>
+#include <cstring>
 
 namespace GauXC {
+
+struct integrator_term_tracker {
+  bool weights = false;
+  bool exc_vxc = false;
+  inline void reset() {
+    std::memset( this, 0, sizeof(integrator_term_tracker) );
+  }
+};
 
 /** Base class for all XCDeviceData types
  *
@@ -32,8 +41,12 @@ struct XCDeviceData {
    *  @param[in] nbf     Number of total basis functions to allocate for
    *  @param[in] nshells Number of basis shells to allocate for 
    */
-  virtual void allocate_static_data( int32_t natoms,
-    int32_t nbf, int32_t nshells ) = 0;
+  //virtual void allocate_static_data( int32_t natoms,
+  //  int32_t nbf, int32_t nshells ) = 0;
+
+  virtual void reset_allocations() = 0;
+  virtual void allocate_static_data_weights( int32_t natoms ) = 0;
+  virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) = 0;
 
   /** Send persistent data from host to device
    *
@@ -46,9 +59,12 @@ struct XCDeviceData {
    *  @param[in] mol     Molecule
    *  @param[in] meta    Molecular metadata associated with mol
    */
-  virtual void send_static_data( const double* P, int32_t ldp,
-    const BasisSet<double>& basis, const Molecule& mol,
-    const MolMeta& meta ) = 0;
+  //virtual void send_static_data( const double* P, int32_t ldp,
+  //  const BasisSet<double>& basis, const Molecule& mol,
+  //  const MolMeta& meta ) = 0;
+
+  virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
+  virtual void send_static_data_exc_vxc( const double* P, int32_t ldp, const BasisSet<double>& basis ) = 0;
 
   /** Zero out the integrands in device memory
    *
@@ -73,7 +89,7 @@ struct XCDeviceData {
    *  @returns iterator to last XC task queue which was not kept in the
    *           allocated batch (!= task_end)
    */
-  virtual host_task_iterator generate_buffers( 
+  virtual host_task_iterator generate_buffers( integrator_term_tracker terms,
     const BasisSetMap& basis_map, host_task_iterator task_begin,
     host_task_iterator task_end ) = 0;
 
@@ -92,10 +108,13 @@ struct XCDeviceData {
     double* VXC, int32_t ldvxc ) = 0;
 
 
+  virtual void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) = 0;
+
   virtual double* vxc_device_data() = 0;
   virtual double* exc_device_data() = 0;
   virtual double* nel_device_data() = 0;
   virtual std::any type_erased_queue() = 0;
+
 
 };
 

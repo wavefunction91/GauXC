@@ -11,6 +11,7 @@ XCDeviceStackData::XCDeviceStackData( std::unique_ptr<DeviceBackend>&& ptr ) :
     auto avail = device_backend_->get_available_mem();
     std::tie( device_ptr, devmem_sz ) = 
       device_backend_->allocate_device_buffer(0.9 * avail);
+    reset_allocations();
   }
 
 }
@@ -26,9 +27,9 @@ XCDeviceStackData::~XCDeviceStackData() noexcept {
 }
 
 
-double* XCDeviceStackData::vxc_device_data() { return vxc_device; }
-double* XCDeviceStackData::exc_device_data() { return exc_device; }
-double* XCDeviceStackData::nel_device_data() { return nel_device; }
+double* XCDeviceStackData::vxc_device_data() { return static_stack.vxc_device; }
+double* XCDeviceStackData::exc_device_data() { return static_stack.exc_device; }
+double* XCDeviceStackData::nel_device_data() { return static_stack.nel_device; }
 std::any XCDeviceStackData::type_erased_queue() { 
   if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
   return device_backend_->type_erased_queue();
@@ -36,6 +37,7 @@ std::any XCDeviceStackData::type_erased_queue() {
 
 
 
+#if 0
 void XCDeviceStackData::allocate_static_data( int32_t natoms, int32_t nbf,
   int32_t nshells ) {
 
@@ -47,19 +49,19 @@ void XCDeviceStackData::allocate_static_data( int32_t natoms, int32_t nbf,
   // Allocate static memory with proper alignment
   buffer_adaptor mem( device_ptr, devmem_sz );
 
-  shells_device     = mem.aligned_alloc<Shell<double>>( nshells );
-  exc_device        = mem.aligned_alloc<double>( 1 );
-  nel_device        = mem.aligned_alloc<double>( 1 );
-  acc_scr_device    = mem.aligned_alloc<double>( 1 );
-  coords_device     = mem.aligned_alloc<double>( 3 * natoms );
+  static_stack.shells_device     = mem.aligned_alloc<Shell<double>>( nshells );
+  static_stack.exc_device        = mem.aligned_alloc<double>( 1 );
+  static_stack.nel_device        = mem.aligned_alloc<double>( 1 );
+  static_stack.acc_scr_device    = mem.aligned_alloc<double>( 1 );
+  static_stack.coords_device     = mem.aligned_alloc<double>( 3 * natoms );
 
-  vxc_device  = mem.aligned_alloc<double>( nbf * nbf );
-  dmat_device = mem.aligned_alloc<double>( nbf * nbf );
+  static_stack.vxc_device  = mem.aligned_alloc<double>( nbf * nbf );
+  static_stack.dmat_device = mem.aligned_alloc<double>( nbf * nbf );
 
   // Allow for RAB to be strided and properly aligned
   const auto ldatoms   = get_ldatoms();
   const auto rab_align = get_rab_align();
-  rab_device = mem.aligned_alloc<double>( natoms * ldatoms, rab_align );
+  static_stack.rab_device = mem.aligned_alloc<double>( natoms * ldatoms, rab_align );
 
 
   // Get current stack location
@@ -67,11 +69,75 @@ void XCDeviceStackData::allocate_static_data( int32_t natoms, int32_t nbf,
   dynmem_sz  = mem.nleft(); 
 
 }
+#else
+
+void XCDeviceStackData::reset_allocations() {
+  dynmem_ptr = device_ptr;
+  dynmem_sz  = devmem_sz;
+  allocated_terms.reset();
+  static_stack.reset();
+  base_stack.reset();
+}
+
+void XCDeviceStackData::allocate_static_data_weights( int32_t natoms ) {
+
+  if( allocated_terms.weights ) 
+    throw std::runtime_error("Attempting to reallocate Stack Weights");
+
+  // Save state
+  global_dims.natoms  = natoms;
+
+  // Allocate static memory with proper alignment
+  buffer_adaptor mem( dynmem_ptr, dynmem_sz );
+
+  static_stack.coords_device = mem.aligned_alloc<double>( 3 * natoms, csl );
+
+  // Allow for RAB to be strided and properly aligned
+  const auto ldatoms   = get_ldatoms();
+  const auto rab_align = get_rab_align();
+  static_stack.rab_device = mem.aligned_alloc<double>( natoms * ldatoms, rab_align, csl );
+
+  // Get current stack location
+  dynmem_ptr = mem.stack();
+  dynmem_sz  = mem.nleft(); 
+
+  allocated_terms.weights = true;
+}
+
+void XCDeviceStackData::allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) {
+
+  if( allocated_terms.exc_vxc ) 
+    throw std::runtime_error("Attempting to reallocate Stack EXC VXC");
+
+  // Save state
+  global_dims.nshells = nshells;
+  global_dims.nbf     = nbf; 
+
+  // Allocate static memory with proper alignment
+  buffer_adaptor mem( dynmem_ptr, dynmem_sz );
+
+  static_stack.shells_device     = mem.aligned_alloc<Shell<double>>( nshells , csl);
+  static_stack.exc_device        = mem.aligned_alloc<double>( 1 , csl);
+  static_stack.nel_device        = mem.aligned_alloc<double>( 1 , csl);
+  static_stack.acc_scr_device    = mem.aligned_alloc<double>( 1 , csl);
+
+  static_stack.vxc_device  = mem.aligned_alloc<double>( nbf * nbf , csl);
+  static_stack.dmat_device = mem.aligned_alloc<double>( nbf * nbf , csl);
+
+  // Get current stack location
+  dynmem_ptr = mem.stack();
+  dynmem_sz  = mem.nleft(); 
+
+  allocated_terms.exc_vxc = true;
+}
+
+#endif
 
 
 
 
 
+#if 0
 void XCDeviceStackData::send_static_data( const double* P, int32_t ldp,
   const BasisSet<double>& basis, const Molecule& mol,
   const MolMeta& meta ) {
@@ -82,10 +148,10 @@ void XCDeviceStackData::send_static_data( const double* P, int32_t ldp,
   if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
 
   // Copy Density
-  device_backend_->copy_async( nbf*nbf, P, dmat_device, "P H2D" );
+  device_backend_->copy_async( nbf*nbf, P, static_stack.dmat_device, "P H2D" );
 
   // Copy Basis Set
-  device_backend_->copy_async( basis.nshells(), basis.data(), shells_device,
+  device_backend_->copy_async( basis.nshells(), basis.data(), static_stack.shells_device,
     "Shells H2D" );
 
   // Copy Atomic Coordinates
@@ -95,7 +161,7 @@ void XCDeviceStackData::send_static_data( const double* P, int32_t ldp,
     coords[ 3*i + 1 ] = mol[i].y;
     coords[ 3*i + 2 ] = mol[i].z;
   }
-  device_backend_->copy_async( 3*natoms, coords.data(), coords_device, 
+  device_backend_->copy_async( 3*natoms, coords.data(), static_stack.coords_device, 
     "Coords H2D" );
 
   // Invert and send RAB
@@ -103,10 +169,62 @@ void XCDeviceStackData::send_static_data( const double* P, int32_t ldp,
   std::vector<double> rab_inv(natoms*natoms);
   for( auto i = 0ul; i < (natoms*natoms); ++i) rab_inv[i] = 1./meta.rab().data()[i];
   device_backend_->copy_async_2d( natoms, natoms, rab_inv.data(), natoms,
-    rab_device, ldatoms, "RAB H2D" );
+    static_stack.rab_device, ldatoms, "RAB H2D" );
 
   device_backend_->master_queue_synchronize(); 
 }
+#else
+
+void XCDeviceStackData::send_static_data_weights( const Molecule& mol, const MolMeta& meta ) {
+
+  if( not allocated_terms.weights ) 
+    throw std::runtime_error("Weights Not Stack Allocated");
+
+  const auto natoms = global_dims.natoms;
+  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+
+  // Copy Atomic Coordinates
+  std::vector<double> coords( 3*natoms );
+  for( auto i = 0ul; i < natoms; ++i ) {
+    coords[ 3*i + 0 ] = mol[i].x;
+    coords[ 3*i + 1 ] = mol[i].y;
+    coords[ 3*i + 2 ] = mol[i].z;
+  }
+  device_backend_->copy_async( 3*natoms, coords.data(), static_stack.coords_device, 
+    "Coords H2D" );
+
+  // Invert and send RAB
+  const auto ldatoms = get_ldatoms();
+  std::vector<double> rab_inv(natoms*natoms);
+  for( auto i = 0ul; i < (natoms*natoms); ++i) rab_inv[i] = 1./meta.rab().data()[i];
+  device_backend_->copy_async_2d( natoms, natoms, rab_inv.data(), natoms,
+    static_stack.rab_device, ldatoms, "RAB H2D" );
+
+  device_backend_->master_queue_synchronize(); 
+}
+
+void XCDeviceStackData::send_static_data_exc_vxc( const double* P, int32_t ldp,
+  const BasisSet<double>& basis ) {
+
+  if( not allocated_terms.exc_vxc ) 
+    throw std::runtime_error("EXC_VXC Not Stack Allocated");
+
+  const auto nbf    = global_dims.nbf;
+  if( ldp != (int)nbf ) throw std::runtime_error("LDP must bf NBF");
+  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+
+  // Copy Density
+  device_backend_->copy_async( nbf*nbf, P, static_stack.dmat_device, "P H2D" );
+
+  // Copy Basis Set
+  device_backend_->copy_async( basis.nshells(), basis.data(), static_stack.shells_device,
+    "Shells H2D" );
+
+
+  device_backend_->master_queue_synchronize(); 
+}
+
+#endif
 
 
 
@@ -117,9 +235,9 @@ void XCDeviceStackData::zero_integrands() {
   if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
 
   const auto nbf = global_dims.nbf;
-  device_backend_->set_zero( nbf*nbf, vxc_device, "VXC Zero" );
-  device_backend_->set_zero( 1,       nel_device, "NEL Zero" );
-  device_backend_->set_zero( 1,       exc_device, "EXC Zero" );
+  device_backend_->set_zero( nbf*nbf, static_stack.vxc_device, "VXC Zero" );
+  device_backend_->set_zero( 1,       static_stack.nel_device, "NEL Zero" );
+  device_backend_->set_zero( 1,       static_stack.exc_device, "EXC Zero" );
 
 }
 
@@ -134,9 +252,9 @@ void XCDeviceStackData::retrieve_xc_integrands( double* EXC, double* N_EL,
   if( ldvxc != (int)nbf ) throw std::runtime_error("LDVXC must bf NBF");
   if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
   
-  device_backend_->copy_async( nbf*nbf, vxc_device, VXC,  "VXC D2H" );
-  device_backend_->copy_async( 1,       nel_device, N_EL, "NEL D2H" );
-  device_backend_->copy_async( 1,       exc_device, EXC,  "EXC D2H" );
+  device_backend_->copy_async( nbf*nbf, static_stack.vxc_device, VXC,  "VXC D2H" );
+  device_backend_->copy_async( 1,       static_stack.nel_device, N_EL, "NEL D2H" );
+  device_backend_->copy_async( 1,       static_stack.exc_device, EXC,  "EXC D2H" );
 
 }
 
@@ -145,6 +263,7 @@ void XCDeviceStackData::retrieve_xc_integrands( double* EXC, double* N_EL,
 
 
 XCDeviceStackData::host_task_iterator XCDeviceStackData::generate_buffers(
+  integrator_term_tracker terms,
   const BasisSetMap& basis_map,
   host_task_iterator task_begin,
   host_task_iterator task_end
@@ -160,7 +279,7 @@ XCDeviceStackData::host_task_iterator XCDeviceStackData::generate_buffers(
   while( task_it != task_end ) {
 
     // Get memory requirement for batch
-    size_t mem_req_batch = get_mem_req( *task_it, basis_map );
+    size_t mem_req_batch = get_mem_req( terms, *task_it, basis_map );
 
     // Break out of loop if we can't allocate for this batch
     if( mem_req_batch > mem_left ) break;
@@ -175,8 +294,11 @@ XCDeviceStackData::host_task_iterator XCDeviceStackData::generate_buffers(
   //std::cout << "XCDeviceStackData will allocate for " << std::distance(task_begin, task_it) << " Tasks" << std::endl;
 
   // Pack host data and send to device
-  alloc_pack_and_send( task_begin, task_it, 
+  //alloc_pack_and_send( terms, task_begin, task_it, 
+  //  device_buffer_t{dynmem_ptr, dynmem_sz}, basis_map );
+  allocate_dynamic_stack( terms, task_begin, task_it,
     device_buffer_t{dynmem_ptr, dynmem_sz}, basis_map );
+  pack_and_send( terms, task_begin, task_it, basis_map );
 
   return task_it;
 }
@@ -185,42 +307,53 @@ XCDeviceStackData::host_task_iterator XCDeviceStackData::generate_buffers(
 
 
 
-size_t XCDeviceStackData::get_mem_req( const host_task_type& task,
-  const BasisSetMap& ) {
+size_t XCDeviceStackData::get_mem_req( 
+  integrator_term_tracker terms,
+  const host_task_type& task,
+  const BasisSetMap& 
+) {
 
   const auto& points = task.points;
   const size_t npts  = points.size();
 
   // Grid
-  const auto mem_points = 3 * npts;
-  const auto mem_weights = npts;
+  const auto mem_points = 3 * npts * sizeof(double);
+  const auto mem_weights = npts * sizeof(double);
 
-  // U variables
-  const auto mem_den     = npts;
-  const auto mem_den_x   = npts;
-  const auto mem_den_y   = npts;
-  const auto mem_den_z   = npts;
+  // All terms require grid
+  size_t mem_req = mem_points + mem_weights;
 
-  // V variables
-  const auto mem_gamma = npts;
+  // XC Specific terms
+  if( terms.exc_vxc ) {
+    // U variables
+    const auto mem_den     = npts * sizeof(double);
+    const auto mem_den_x   = npts * sizeof(double);
+    const auto mem_den_y   = npts * sizeof(double);
+    const auto mem_den_z   = npts * sizeof(double);
 
-  // XC output
-  const auto mem_eps    = npts;
-  const auto mem_vrho   = npts;
-  const auto mem_vgamma = npts;
+    // V variables
+    const auto mem_gamma = npts * sizeof(double);
 
-  // Everything is double here
-  return (mem_points + mem_weights + 
-          mem_den + mem_den_x + mem_den_y + mem_den_z +
-          mem_gamma +
-          mem_eps + mem_vrho + mem_vgamma) * sizeof(double);
+    // XC output
+    const auto mem_eps    = npts * sizeof(double);
+    const auto mem_vrho   = npts * sizeof(double);
+    const auto mem_vgamma = npts * sizeof(double);
+
+    mem_req += mem_den + mem_den_x + mem_den_y + mem_den_z +
+               mem_gamma + mem_eps + mem_vrho + mem_vgamma;
+   
+  }
+
+  return mem_req;
 }
 
 
 
 
 
+#if 0
 XCDeviceStackData::device_buffer_t XCDeviceStackData::alloc_pack_and_send( 
+  integrator_term_tracker terms,
   host_task_iterator task_begin, host_task_iterator task_end, device_buffer_t buf,
   const BasisSetMap& ) {
 
@@ -256,28 +389,32 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::alloc_pack_and_send(
   //std::cout << "XCDeviceStackData buf = " << ptr << ", " << sz << std::endl;
 
   // Grid
-  points_device  = mem.aligned_alloc<double>( 3 * total_npts_task_batch );
-  weights_device = mem.aligned_alloc<double>( total_npts_task_batch );
-
-  // U Variables
-  den_eval_device   = mem.aligned_alloc<double>( total_npts_task_batch );
-  den_x_eval_device = mem.aligned_alloc<double>( total_npts_task_batch );
-  den_y_eval_device = mem.aligned_alloc<double>( total_npts_task_batch );
-  den_z_eval_device = mem.aligned_alloc<double>( total_npts_task_batch );
-
-  // V Variables
-  gamma_eval_device = mem.aligned_alloc<double>( total_npts_task_batch );
-
-  // XC output
-  eps_eval_device    = mem.aligned_alloc<double>( total_npts_task_batch );
-  vrho_eval_device   = mem.aligned_alloc<double>( total_npts_task_batch );
-  vgamma_eval_device = mem.aligned_alloc<double>( total_npts_task_batch );
+  base_stack.points_device  = mem.aligned_alloc<double>( 3 * total_npts_task_batch , csl);
+  base_stack.weights_device = mem.aligned_alloc<double>( total_npts_task_batch , csl);
 
   // Send grid data
   device_backend_->copy_async( 3*points_pack.size(), points_pack.data()->data(),
-              points_device, "send points buffer" );
+              base_stack.points_device, "send points buffer" );
   device_backend_->copy_async( weights_pack.size(), weights_pack.data(),
-              weights_device, "send weights buffer" );
+              base_stack.weights_device, "send weights buffer" );
+
+  // XC Specific terms
+  if( terms.exc_vxc ) {
+    // U Variables
+    base_stack.den_eval_device   = mem.aligned_alloc<double>( total_npts_task_batch , csl);
+    base_stack.den_x_eval_device = mem.aligned_alloc<double>( total_npts_task_batch , csl);
+    base_stack.den_y_eval_device = mem.aligned_alloc<double>( total_npts_task_batch , csl);
+    base_stack.den_z_eval_device = mem.aligned_alloc<double>( total_npts_task_batch , csl);
+
+    // V Variables
+    base_stack.gamma_eval_device = mem.aligned_alloc<double>( total_npts_task_batch , csl);
+
+    // XC output
+    base_stack.eps_eval_device    = mem.aligned_alloc<double>( total_npts_task_batch , csl);
+    base_stack.vrho_eval_device   = mem.aligned_alloc<double>( total_npts_task_batch , csl);
+    base_stack.vgamma_eval_device = mem.aligned_alloc<double>( total_npts_task_batch , csl);
+  }
+
 
   // Synchronize on the copy stream to keep host vecs in scope
   device_backend_->master_queue_synchronize(); 
@@ -285,7 +422,126 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::alloc_pack_and_send(
   // Update dynmem data for derived impls
   return device_buffer_t{ mem.stack(), mem.nleft() };
 }
+#else
 
+
+
+
+XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack( 
+  integrator_term_tracker terms,
+  host_task_iterator task_begin, host_task_iterator task_end, device_buffer_t buf,
+  const BasisSetMap& ) {
+
+
+  // Get total npts
+  total_npts_task_batch = std::accumulate( task_begin, task_end, 0ul,
+    [](const auto& a, const auto& b){ return a + b.points.size(); } );
+
+  // Allocate device memory
+  auto [ ptr, sz ] = buf;
+  buffer_adaptor mem( ptr, sz );
+
+  // Grid
+  base_stack.points_device = 
+    mem.aligned_alloc<double>( 3 * total_npts_task_batch , csl);
+  base_stack.weights_device = 
+    mem.aligned_alloc<double>( total_npts_task_batch , csl);
+
+  // XC Specific terms
+  if( terms.exc_vxc ) {
+    // U Variables
+    base_stack.den_eval_device   = 
+      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+    base_stack.den_x_eval_device = 
+      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+    base_stack.den_y_eval_device = 
+      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+    base_stack.den_z_eval_device = 
+      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+
+    // V Variables
+    base_stack.gamma_eval_device = 
+      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+
+    // XC output
+    base_stack.eps_eval_device    = 
+      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+    base_stack.vrho_eval_device   = 
+      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+    base_stack.vgamma_eval_device = 
+      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+  }
+
+  // Update dynmem data for derived impls
+  return device_buffer_t{ mem.stack(), mem.nleft() };
+}
+
+void XCDeviceStackData::pack_and_send( integrator_term_tracker terms,
+  host_task_iterator task_begin, host_task_iterator task_end, const BasisSetMap& ) {
+
+  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+
+  // Host data packing arrays
+  std::vector< std::array<double,3> > points_pack;
+  std::vector< double > weights_pack;
+
+  // Contatenation utility
+  auto concat_iterable = []( auto& a, const auto& b ) {
+    a.insert( a.end(), b.begin(), b.end() );
+  };
+
+  // Pack points / weights
+  for( auto it = task_begin; it != task_end; ++it ) {
+
+    const auto& points  = it->points;
+    const auto& weights = it->weights;
+
+    concat_iterable( points_pack,  points  );
+    concat_iterable( weights_pack, weights );
+    
+  } // Loop over tasks
+
+
+  // Send grid data
+  device_backend_->copy_async( 3*points_pack.size(), points_pack.data()->data(),
+              base_stack.points_device, "send points buffer" );
+  device_backend_->copy_async( weights_pack.size(), weights_pack.data(),
+              base_stack.weights_device, "send weights buffer" );
+
+
+  // Synchronize on the copy stream to keep host vecs in scope
+  device_backend_->master_queue_synchronize(); 
+
+}
+
+#endif
+
+void XCDeviceStackData::copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) {
+
+  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+
+  // Sanity check that npts is consistent
+  size_t local_npts = std::accumulate( task_begin, task_end, 0ul, 
+    []( const auto& a, const auto& b ) { return a + b.points.size(); } );
+
+  if( local_npts != total_npts_task_batch )
+    throw std::runtime_error("NPTS MISMATCH");
+
+  // Copy weights into contiguous host data
+  std::vector<double> weights_host(local_npts);
+  device_backend_->copy_async( local_npts, base_stack.weights_device, weights_host.data(),
+    "Weights D2H" );
+  device_backend_->master_queue_synchronize(); 
+
+  // Place into host memory 
+  auto* weights_ptr = weights_host.data();
+  for( auto it = task_begin; it != task_end; ++it ) {
+    const auto npts = it->points.size();
+    std::copy_n( weights_ptr, npts, it->weights.data() );
+    weights_ptr += npts;
+  }
+
+}
 
 
 }

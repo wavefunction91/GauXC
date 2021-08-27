@@ -1,6 +1,9 @@
 #pragma once
 #include <memory>
 
+//#define csl __PRETTY_FUNCTION__
+#define csl std::string(__FILE__) + ": " + std::to_string(__LINE__)
+
 namespace GauXC {
 
 class buffer_adaptor {
@@ -22,7 +25,8 @@ public:
 
   template <typename T>
   T* aligned_alloc( size_t len, 
-                    size_t align = alignof(T) ) {
+                    size_t align = alignof(T),
+                    std::string msg = "" ) {
 
     char* old_stack = (char*)stack_;
     if( std::align( align, 
@@ -38,9 +42,16 @@ public:
 
     }
 
-    throw std::bad_alloc();
+    //throw std::bad_alloc();
+    throw std::runtime_error("std::bad_alloc " + msg);
 
   }
+
+  template <typename T>
+  T* aligned_alloc( size_t len, std::string msg ) {
+    return aligned_alloc<T>( len, alignof(T), msg );
+  }
+
 
   inline void* stack() const {return stack_;}
   inline size_t nleft() const { return nleft_; }
