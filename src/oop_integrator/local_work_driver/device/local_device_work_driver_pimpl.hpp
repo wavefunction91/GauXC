@@ -33,6 +33,7 @@ struct LocalDeviceWorkDriverPIMPL {
   virtual void inc_exc( XCDeviceData* ) = 0;
   virtual void inc_nel( XCDeviceData* ) = 0;
   virtual void inc_vxc( XCDeviceData* ) = 0;
+  virtual void symmetrize_vxc( XCDeviceData* ) = 0;
 
   virtual std::unique_ptr<XCDeviceData> create_device_data() = 0;
 

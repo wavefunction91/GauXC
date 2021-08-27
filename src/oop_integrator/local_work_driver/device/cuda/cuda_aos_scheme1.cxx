@@ -7,6 +7,7 @@
 #include "kernels/zmat_vxc.hpp"
 #include "kernels/pack_submat.hpp"
 #include "kernels/cuda_inc_potential.hpp"
+#include "kernels/symmetrize_mat.hpp"
 
 namespace GauXC {
 
@@ -346,6 +347,19 @@ void CudaAoSScheme1::inc_vxc( XCDeviceData* _data){
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
   task_inc_potential( ntasks, data->device_tasks, data->vxc_device, nbf,
     submat_block_size, *device_backend->master_stream );
+}
+
+void CudaAoSScheme1::symmetrize_vxc( XCDeviceData* _data) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) throw std::runtime_error("BAD DATA CAST");
+
+  auto device_backend = dynamic_cast<CUDABackend*>(data->device_backend_.get());
+  if( !device_backend ) throw std::runtime_error("BAD BACKEND CAST");
+
+  const auto nbf = data->global_dims.nbf;
+  symmetrize_matrix( nbf, data->vxc_device, nbf, *device_backend->master_stream ); 
+
 }
 
 }

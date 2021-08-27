@@ -28,6 +28,16 @@ MPI_Op get_mpi_op( ReductionOp op ) {
 
 }
 
+size_t get_dtype_size( std::type_index idx ) {
+
+  static std::map<std::type_index, size_t> map {
+    {std::type_index(typeid(double)), sizeof(double)}, 
+    {std::type_index(typeid(float)),  sizeof(float)}
+  };
+
+  return map.at(idx);
+}
+
 
 BasicMPIReductionDriver::BasicMPIReductionDriver(GAUXC_MPI_CODE(MPI_Comm comm)) :
   HostReductionDriver(GAUXC_MPI_CODE(comm)) { }
@@ -51,7 +61,7 @@ void BasicMPIReductionDriver::allreduce_typeerased( const void* src, void* dest,
 #endif
 
   if( world_size == 1 ) {
-    std::memcpy( dest, src, size ); 
+    std::memcpy( dest, src, size * get_dtype_size(idx)); 
   } else  {
     #ifdef GAUXC_ENABLE_MPI 
     MPI_Allreduce( src, dest, size, get_mpi_datatype(idx), get_mpi_op(op), comm_ );

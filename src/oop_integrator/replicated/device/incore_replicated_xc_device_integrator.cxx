@@ -70,10 +70,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // Retrieve data to host
     device_data_ptr->retrieve_xc_integrands( EXC, &N_EL, VXC, ldvxc );
 
-    // Symmetrize VXC
-    for( int32_t j = 0;   j < nbf; ++j )
-    for( int32_t i = j+1; i < nbf; ++i )
-      VXC[ j + i*ldvxc ] = VXC[ i + j*ldvxc ];
 
   } else {
 
@@ -170,6 +166,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   } // Loop over batches of batches 
 
+  // Symmetrize VXC in device memory
+  lwd->symmetrize_vxc( &device_data );
 
 }
 
@@ -182,18 +180,11 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                        host_task_iterator task_begin, host_task_iterator task_end,
                        XCDeviceData& device_data ) {
 
-
   // Get integrate and keep data on device
   exc_vxc_local_work_( basis, P, ldp, task_begin, task_end, device_data );
 
   // Receive XC terms from host
   device_data.retrieve_xc_integrands( EXC, N_EL, VXC, ldvxc );
-
-  // Symmetrize VXC
-  const auto nbf     = basis.nbf();
-  for( int32_t j = 0;   j < nbf; ++j )
-  for( int32_t i = j+1; i < nbf; ++i )
-    VXC[ j + i*ldvxc ] = VXC[ i + j*ldvxc ];
 
 }
 

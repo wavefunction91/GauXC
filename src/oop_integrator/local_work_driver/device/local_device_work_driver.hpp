@@ -64,6 +64,8 @@ public:
   void inc_nel( XCDeviceData* );
   void inc_vxc( XCDeviceData* );
 
+  void symmetrize_vxc( XCDeviceData* );
+
   std::unique_ptr<XCDeviceData> create_device_data();
 
 private: 

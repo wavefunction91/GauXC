@@ -12,6 +12,7 @@ target_sources(gauxc PRIVATE
   kernels/uvvars.cu
   kernels/zmat_vxc.cu
   kernels/cuda_inc_potential.cu
+  kernels/symmetrize_mat.cu
 
 )
 
