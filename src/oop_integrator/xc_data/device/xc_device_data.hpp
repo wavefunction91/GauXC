@@ -3,7 +3,7 @@
 #include <vector>
 #include <gauxc/basisset_map.hpp>
 #include <gauxc/molmeta.hpp>
-#include <gauxc/reduction_driver.hpp>
+//#include <gauxc/reduction_driver.hpp>
 #include <any>
 #include <cstring>
 
