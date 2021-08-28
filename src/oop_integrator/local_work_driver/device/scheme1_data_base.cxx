@@ -22,11 +22,19 @@ size_t Scheme1DataBase::get_static_mem_requirement() {
   return 0;
 }
 
+
+
+
+
+
+
+
+
 size_t Scheme1DataBase::get_mem_req( integrator_term_tracker terms, 
-  const host_task_type& task, const BasisSetMap& basis_map ) {
+  const host_task_type& task ) {
 
   // All local memory is weights related
-  size_t base_size = base_type::get_mem_req(terms, task, basis_map);
+  size_t base_size = base_type::get_mem_req(terms, task);
   if( not terms.weights ) return base_size;
 
   const auto ldatoms = get_ldatoms();
@@ -41,70 +49,21 @@ size_t Scheme1DataBase::get_mem_req( integrator_term_tracker terms,
 
 
 
-#if 0
-Scheme1DataBase::device_buffer_t Scheme1DataBase::add_extra_to_indirection( 
-  integrator_term_tracker terms,
-  host_task_iterator host_task_begin, host_task_iterator host_task_end,
-  std::vector<XCDeviceTask>& tasks, device_buffer_t buf ) {
-
-  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
-
-  // All local memory is weights related
-  if( not terms.weights ) return buf;
-  
-  // Host Packing Arrays
-  std::vector< int32_t > iparent_pack;
-  std::vector< double >  dist_nearest_pack;
-
-  // Allocate additional device memory 
-  auto [ ptr, sz ] = buf;
-  buffer_adaptor mem( ptr, sz );
-
-
-  const auto ldatoms = get_ldatoms();
-  scheme1_stack.dist_scratch_device = 
-    mem.aligned_alloc<double>( ldatoms * total_npts_task_batch, sizeof(double2) );
-  scheme1_stack.dist_nearest_device = mem.aligned_alloc<double>( total_npts_task_batch );
-  scheme1_stack.iparent_device = mem.aligned_alloc<int32_t>( total_npts_task_batch );
-
-
-  buffer_adaptor dist_scratch_mem( scheme1_stack.dist_scratch_device, 
-    ldatoms * total_npts_task_batch * sizeof(double) );
-
-  // Pack additional host data and send
-  for( auto it = host_task_begin; it != host_task_end; ++it ) {
-    iparent_pack.insert( iparent_pack.end(), it->points.size(), it->iParent );
-    dist_nearest_pack.insert( dist_nearest_pack.end(), it->points.size(), 
-      it->dist_nearest );
-  }
-
-  device_backend_->copy_async( iparent_pack.size(), iparent_pack.data(), 
-              scheme1_stack.iparent_device, "send iparent"  );
-  device_backend_->copy_async( dist_nearest_pack.size(), dist_nearest_pack.data(), 
-              scheme1_stack.dist_nearest_device, "send dist_nearest" );
-
-  // Extra indirection for dist scratch
-  for( auto& task : tasks ) {
-    task.dist_scratch  = dist_scratch_mem.aligned_alloc<double>( 
-      ldatoms * task.npts, sizeof(double2) );
-  }
 
 
 
-  device_backend_->master_queue_synchronize(); 
 
-  return device_buffer_t{ mem.stack(), mem.nleft() };
-}
-#else
+
+
 
 Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack( 
   integrator_term_tracker terms,
-  host_task_iterator task_begin, host_task_iterator task_end, device_buffer_t buf,
-  const BasisSetMap& basis_map ) {
+  host_task_iterator task_begin, host_task_iterator task_end, 
+  device_buffer_t buf ){
 
   // Allocate base info on the stack
   buf = XCDeviceAoSData::allocate_dynamic_stack( terms, task_begin, task_end,
-    buf, basis_map );
+    buf );
 
   // All local memory is weights related
   if( not terms.weights ) return buf;
@@ -122,6 +81,14 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
   // Update dynmem data for derived impls
   return device_buffer_t{ mem.stack(), mem.nleft() };
 }
+
+
+
+
+
+
+
+
 
 void Scheme1DataBase::pack_and_send( 
   integrator_term_tracker terms,
@@ -156,6 +123,13 @@ void Scheme1DataBase::pack_and_send(
   device_backend_->master_queue_synchronize(); 
 }
 
+
+
+
+
+
+
+
 void Scheme1DataBase::add_extra_to_indirection( 
   integrator_term_tracker terms, std::vector<XCDeviceTask>& tasks  ) {
 
@@ -173,6 +147,5 @@ void Scheme1DataBase::add_extra_to_indirection(
   }
 
 }
-#endif
 
 }

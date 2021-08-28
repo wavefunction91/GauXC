@@ -30,39 +30,12 @@ struct XCDeviceData {
 
   virtual ~XCDeviceData() noexcept = default;
 
-  /** Allocate device memory for data that will persist on the device.
-   *
-   *  Density, potential, nuclear positions, etc.
-   *
-   *  TODO: this will depend on the integrand, we should refactor this
-   *  to only allocate what is needed
-   *
-   *  @param[in] natoms  Number of atoms to allocate for
-   *  @param[in] nbf     Number of total basis functions to allocate for
-   *  @param[in] nshells Number of basis shells to allocate for 
-   */
-  //virtual void allocate_static_data( int32_t natoms,
-  //  int32_t nbf, int32_t nshells ) = 0;
-
+  /// Allocate device memory for data that will persist on the device.
   virtual void reset_allocations() = 0;
   virtual void allocate_static_data_weights( int32_t natoms ) = 0;
   virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) = 0;
 
-  /** Send persistent data from host to device
-   *
-   *  TODO: this will depend on the integrand, we should refactor this
-   *  to only allocate what is needed
-   *
-   *  @param[in] P       The density matrix (ldp, nbf)
-   *  @param[in] ldp     Leading dimension of P
-   *  @param[in] basis   Basis set
-   *  @param[in] mol     Molecule
-   *  @param[in] meta    Molecular metadata associated with mol
-   */
-  //virtual void send_static_data( const double* P, int32_t ldp,
-  //  const BasisSet<double>& basis, const Molecule& mol,
-  //  const MolMeta& meta ) = 0;
-
+  // Send persistent data from host to device
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
   virtual void send_static_data_exc_vxc( const double* P, int32_t ldp, const BasisSet<double>& basis ) = 0;
 
@@ -109,6 +82,7 @@ struct XCDeviceData {
 
 
   virtual void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) = 0;
+  virtual void populate_submat_maps ( size_t, host_task_iterator begin, host_task_iterator end, const BasisSetMap& ) = 0;
 
   virtual double* vxc_device_data() = 0;
   virtual double* exc_device_data() = 0;

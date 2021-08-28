@@ -12,14 +12,17 @@ namespace GauXC {
 
 struct XCTask {
 
-  int32_t                             iParent;
-  std::vector< std::array<double,3> > points;
-  std::vector< double  >              weights;
-  std::vector< int32_t >              shell_list;
-  int32_t                             nbe;
-  int32_t                             npts;
+  int32_t                              iParent;
+  std::vector< std::array<double,3> >  points;
+  std::vector< double  >               weights;
+  std::vector< int32_t >               shell_list;
+  int32_t                              nbe;
+  int32_t                              npts;
 
-  double                              dist_nearest;
+  double                               dist_nearest;
+
+  std::vector< std::array<int32_t,3> > submat_map;
+  std::vector< int32_t >               submat_block;
 
   void merge_with( const XCTask& other ) {
     if( shell_list != other.shell_list or iParent != other.iParent )

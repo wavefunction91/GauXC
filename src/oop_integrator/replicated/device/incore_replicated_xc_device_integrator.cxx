@@ -107,6 +107,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Get basis map
   BasisSetMap basis_map(basis,mol);
 
+  // Populate submat maps
+  device_data.populate_submat_maps( basis.nbf(), task_begin, task_end, basis_map );
+
+
   // Sort tasks 
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
     return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
@@ -190,6 +194,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Symmetrize VXC in device memory
   lwd->symmetrize_vxc( &device_data );
 #else
+
 
   auto& lb_state = this->load_balancer_->state();
 

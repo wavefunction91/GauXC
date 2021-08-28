@@ -67,22 +67,19 @@ struct XCDeviceAoSData : public XCDeviceStackData {
   virtual size_t get_submat_chunk_size( int32_t LDA, int32_t dev_id ) = 0;
 
   // Overridable API overrides
-  virtual size_t get_mem_req( integrator_term_tracker, const host_task_type&, const BasisSetMap&) override;
-  //virtual device_buffer_t alloc_pack_and_send( integrator_term_tracker, host_task_iterator begin, 
-  //  host_task_iterator end, device_buffer_t buf, const BasisSetMap&) override;
+  virtual size_t get_mem_req( integrator_term_tracker, const host_task_type&) override;
   virtual device_buffer_t allocate_dynamic_stack( integrator_term_tracker terms,
-    host_task_iterator begin, host_task_iterator end, device_buffer_t buf,
-    const BasisSetMap& basis_map ) override;
+    host_task_iterator begin, host_task_iterator end, device_buffer_t buf) override;
   virtual void pack_and_send( integrator_term_tracker terms,
     host_task_iterator begin, host_task_iterator end, 
     const BasisSetMap& basis_map ) override;
 
   inline virtual void 
-    add_extra_to_indirection(integrator_term_tracker, 
-                             std::vector<XCDeviceTask>&) { };
+    add_extra_to_indirection(integrator_term_tracker, std::vector<XCDeviceTask>&) { };
 
   virtual void reset_allocations() override;
 
+  void populate_submat_maps( size_t, host_task_iterator, host_task_iterator, const BasisSetMap& ) override;
 
 };
 
