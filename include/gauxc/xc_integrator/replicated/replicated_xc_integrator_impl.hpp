@@ -1,7 +1,7 @@
 #pragma once
 
-#include <gauxc/oop_xc_integrator/replicated_xc_integrator.hpp>
-#include <gauxc/oop_xc_integrator/local_work_driver.hpp>
+#include <gauxc/xc_integrator/replicated_xc_integrator.hpp>
+#include <gauxc/xc_integrator/local_work_driver.hpp>
 #include <gauxc/reduction_driver.hpp>
 #include <gauxc/types.hpp>
 #include <gauxc/basisset.hpp>

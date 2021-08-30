@@ -1,7 +1,7 @@
 #include "ut_common.hpp"
 #include <gauxc/xc_integrator.hpp>
-#include <gauxc/oop_xc_integrator/impl.hpp>
-#include <gauxc/oop_xc_integrator/integrator_factory.hpp>
+#include <gauxc/xc_integrator/impl.hpp>
+#include <gauxc/xc_integrator/integrator_factory.hpp>
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>

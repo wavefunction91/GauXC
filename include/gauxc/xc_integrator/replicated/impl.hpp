@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gauxc/oop_xc_integrator/replicated/replicated_xc_integrator_impl.hpp>
+#include <gauxc/xc_integrator/replicated/replicated_xc_integrator_impl.hpp>
 
 // Implementations of ReplicatedXCIntegrator public API
 

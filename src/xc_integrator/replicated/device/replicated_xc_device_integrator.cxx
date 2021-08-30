@@ -1,4 +1,4 @@
-#include <gauxc/oop_xc_integrator/replicated/replicated_xc_device_integrator.hpp>
+#include <gauxc/xc_integrator/replicated/replicated_xc_device_integrator.hpp>
 #include "incore_replicated_xc_device_integrator.hpp"
 #include "shellbatched_replicated_xc_device_integrator.hpp"
 #include "device/local_device_work_driver.hpp"

@@ -1,5 +1,5 @@
 #pragma once
-#include <gauxc/oop_xc_integrator/local_work_driver.hpp>
+#include <gauxc/xc_integrator/local_work_driver.hpp>
 
 #include <memory>
 #include <gauxc/molmeta.hpp>

@@ -1,13 +1,13 @@
 #pragma once
 
-#include <gauxc/oop_xc_integrator/replicated/replicated_xc_integrator_impl.hpp>
+#include <gauxc/xc_integrator/replicated/replicated_xc_integrator_impl.hpp>
 
 namespace GauXC {
 namespace detail {
 
-/// Base class for ReplicatedXCIntegrator implentations on Device execution spaces
+/// Base class for ReplicatedXCIntegrator implentations on Host execution spaces
 template <typename ValueType>
-class ReplicatedXCDeviceIntegrator : public ReplicatedXCIntegratorImpl<ValueType> {
+class ReplicatedXCHostIntegrator : public ReplicatedXCIntegratorImpl<ValueType> {
 
   using base_type  = ReplicatedXCIntegratorImpl<ValueType>;
 
@@ -17,25 +17,25 @@ public:
   using basis_type = typename base_type::basis_type;
 
   template <typename... Args>
-  ReplicatedXCDeviceIntegrator( Args&&... args) :
+  ReplicatedXCHostIntegrator( Args&&... args) :
     base_type( std::forward<Args>(args)... ) { }
 
-  virtual ~ReplicatedXCDeviceIntegrator() noexcept;
+  virtual ~ReplicatedXCHostIntegrator() noexcept;
 
 };
 
-extern template class ReplicatedXCDeviceIntegrator<double>;
+extern template class ReplicatedXCHostIntegrator<double>;
 
 
 
-/// Factory to generate ReplicatedXCDeviceIntegrator instances
+/// Factory to generate ReplicatedXCHostIntegrator instances
 template <typename ValueType>
-struct ReplicatedXCDeviceIntegratorFactory {
+struct ReplicatedXCHostIntegratorFactory {
 
   using impl_type = ReplicatedXCIntegratorImpl<ValueType>;
   using ptr_return_t = std::unique_ptr<impl_type>;
 
-  /** Generate a ReplicatedXCDeviceIntegrator instance
+  /** Generate a ReplicatedXCHostIntegrator instance
    *
    *  @param[in]  integration_kernel Name of integration scaffold to load ("Default", "Reference", etc)
    *  @param[in]  func               XC functional to integrate
@@ -46,14 +46,14 @@ struct ReplicatedXCDeviceIntegratorFactory {
     std::string integrator_kernel,
     std::shared_ptr<functional_type>   func,
     std::shared_ptr<LoadBalancer>      lb,
-    std::unique_ptr<LocalWorkDriver>&& lwd, 
+    std::unique_ptr<LocalWorkDriver>&& lwd,
     std::shared_ptr<ReductionDriver>   rd
     );
 
 };
 
 
-extern template class ReplicatedXCDeviceIntegratorFactory<double>;
+extern template class ReplicatedXCHostIntegratorFactory<double>;
 
 
 }

@@ -1,4 +1,4 @@
-#include <gauxc/oop_xc_integrator/replicated/replicated_xc_integrator_impl.hpp>
+#include <gauxc/xc_integrator/replicated/replicated_xc_integrator_impl.hpp>
 
 namespace GauXC  {
 namespace detail {

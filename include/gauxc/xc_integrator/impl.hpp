@@ -1,6 +1,6 @@
 #pragma once
 
-#include <gauxc/oop_xc_integrator/xc_integrator_impl.hpp>
+#include <gauxc/xc_integrator/xc_integrator_impl.hpp>
 
 // Implementations of XCIntegrator public API
 
