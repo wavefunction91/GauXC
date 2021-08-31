@@ -36,6 +36,15 @@ void ReplicatedXCIntegratorImpl<ValueType>::
 
 }
 
+template <typename ValueType>
+void ReplicatedXCIntegratorImpl<ValueType>::
+  eval_exx( int64_t m, int64_t n, const value_type* P,
+                int64_t ldp, value_type* K, int64_t ldk ) {
+
+    eval_exx_(m,n,P,ldp,K,ldk);
+
+}
+
 template class ReplicatedXCIntegratorImpl<double>;
 
 }

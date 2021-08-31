@@ -65,5 +65,20 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type
 
 }
 
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::exx_type 
+  ReplicatedXCIntegrator<MatrixType>::eval_exx_( const MatrixType& P ) {
+
+  if( not pimpl_ ) throw std::runtime_error( "Not Initialized" );
+  
+  matrix_type K( P.rows(), P.cols() );
+
+  pimpl_->eval_exx( P.rows(), P.cols(), P.data(), P.rows(),
+                    K.data(), K.rows() );
+
+  return K;
+
+}
+
 }
 }

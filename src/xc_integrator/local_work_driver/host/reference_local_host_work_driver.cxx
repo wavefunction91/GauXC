@@ -6,6 +6,10 @@
 #include "host/blas.hpp"
 #include <stdexcept>
 
+#include <gauxc/basisset_map.hpp>
+#include "rys_integral.h"
+#include <gauxc/util/real_solid_harmonics.hpp>
+
 namespace GauXC {
 
 ReferenceLocalHostWorkDriver::ReferenceLocalHostWorkDriver() = default; 
@@ -220,5 +224,143 @@ void ReferenceLocalHostWorkDriver::inc_vxc( size_t npts, size_t nbf, size_t nbe,
   }
 
 }
+
+
+
+
+
+
+struct RysBasis {
+  std::vector< shells > _shells;
+  RysBasis( const BasisSet<double>& basis ) {
+    size_t nshells = basis.size();
+    _shells.resize(nshells);
+    for( int i = 0; i < nshells; ++i ) {
+      _shells[i].origin.x = basis[i].O()[0];
+      _shells[i].origin.y = basis[i].O()[1];
+      _shells[i].origin.z = basis[i].O()[2];
+
+      _shells[i].m = basis[i].nprim();
+      _shells[i].L = basis[i].l();
+
+      _shells[i].coeff = new coefficients[_shells[i].m];
+      for( int j = 0; j < _shells[i].m; ++j ) {
+        _shells[i].coeff[j].alpha = basis[i].alpha()[j];
+        _shells[i].coeff[j].coeff = basis[i].coeff()[j];
+      }
+    }
+  }
+
+  shells& operator[](int i){ return _shells.at(i); }
+  const shells& operator[](int i) const { return _shells.at(i); }
+
+  ~RysBasis() noexcept {
+    for( auto& sh : _shells ) delete sh.coeff;
+  }
+};
+
+
+
+
+
+
+void ReferenceLocalHostWorkDriver::
+  eval_exx_gmat( size_t npts, size_t nbe, const double* points, const double* weights, 
+    const BasisSet<double>& basis, const BasisSetMap& basis_map, const double* X, size_t ldx, 
+    double* G, size_t ldg ) {
+
+  // Cast points to Rys format (binary compatable)
+  point* _points = reinterpret_cast<point*>(const_cast<double*>(points));
+
+  const size_t nshells = basis.nshells();
+
+  // Set G to zero
+  for( int j = 0; j < npts; ++j )
+  for( int i = 0; i < nbe;  ++i ) {
+    G[i + j*ldg] = 0.;
+  }
+
+  // Copy the basis set 
+  RysBasis rys_basis(basis);
+
+  // Spherical Harmonic Transformer
+  util::SphericalHarmonicTransform sph_trans(5);
+
+  size_t ioff = 0;
+  for( int i = 0; i < nshells; ++i ) {
+    const auto& bra       = basis.at(i);
+    const int bra_l       = bra.l();
+    const int bra_sz      = bra.size();
+    const int bra_cart_sz = (bra_l+1) * (bra_l+2) / 2;
+    const bool need_transform_bra = bra.pure() and bra_l > 0;
+
+    size_t joff = 0;
+    for( int j = 0; j <= i; ++j ) {
+      const auto& ket       = basis.at(j);
+      const int ket_l       = ket.l();
+      const int ket_sz      = ket.size();
+      const int ket_cart_sz = (ket_l+1) * (ket_l+2) / 2;
+      const bool need_transform_ket = ket.pure() and ket_l > 0;
+
+      //const int shpair_sz      = bra_sz * ket_sz;
+      const int shpair_cart_sz = bra_cart_sz * ket_cart_sz;
+
+      std::vector<double> _tmp( shpair_cart_sz * npts );
+
+      compute_integral_shell_pair( npts, rys_basis[i], rys_basis[j], _points,
+        _tmp.data() );
+
+      const auto need_tform = need_transform_bra or need_transform_ket;
+
+      const auto* Xj = X + joff;
+      const auto* Xi = X + ioff;
+      auto*       Gj = G + joff;
+      auto*       Gi = G + ioff;
+      for( int k = 0; k < npts; ++k ) {
+        auto Xjk = Xj + k*ldx;
+        auto Xik = Xi + k*ldx;
+        auto Gjk = Gj + k*ldg;
+        auto Gik = Gi + k*ldg;
+
+        std::vector<double> _tmp_sph( bra_sz * ket_sz, 0. );
+        auto* ints = _tmp.data() + k * shpair_cart_sz;
+        if( need_transform_bra and need_transform_ket )
+          sph_trans.tform_both( bra_l, ket_l, ints, ket_cart_sz, 
+            _tmp_sph.data(), ket_sz );
+        else if( need_transform_bra )
+          sph_trans.tform_bra( bra_l, ket_sz, ints, ket_cart_sz, 
+            _tmp_sph.data(), ket_sz );
+        else if( need_transform_ket )
+          sph_trans.tform_ket( bra_sz, ket_l, ints, ket_cart_sz, 
+            _tmp_sph.data(), ket_sz );
+
+        if( need_tform ) ints = _tmp_sph.data();
+
+        for( int ii = 0; ii < bra_sz; ++ii )
+        for( int jj = 0; jj < ket_sz; ++jj ) {
+          Gik[ii] += weights[k] * ints[ii*ket_sz + jj] * Xjk[jj];
+	      }
+
+       	if( i != j )
+        for( int ii = 0; ii < bra_sz; ++ii )
+        for( int jj = 0; jj < ket_sz; ++jj ) {
+          Gjk[jj] += weights[k] * ints[ii*ket_sz + jj] * Xik[ii];
+	      }
+      }
+
+      joff += ket_sz;
+    }
+    ioff += bra_sz;
+  }
+
+
+}
+
+
+
+
+
+
+
 
 }

@@ -23,6 +23,7 @@ public:
   using value_type     = typename XCIntegratorImpl<MatrixType>::value_type;
   using exc_vxc_type   = typename XCIntegratorImpl<MatrixType>::exc_vxc_type;
   using exc_grad_type  = typename XCIntegratorImpl<MatrixType>::exc_grad_type;
+  using exx_type       = typename XCIntegratorImpl<MatrixType>::exx_type;
 
 private:
 
@@ -31,6 +32,7 @@ private:
 
   exc_vxc_type  eval_exc_vxc_ ( const MatrixType& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType& ) override;
+  exx_type      eval_exx_     ( const MatrixType& ) override;
   const util::Timer& get_timings_() const override;
   const LoadBalancer& get_load_balancer_() const override;
 

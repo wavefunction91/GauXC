@@ -75,4 +75,19 @@ void read_hdf5_record( std::vector<Atom>& mol, std::string fname, std::string ds
 }
 
 
+void read_hdf5_record( int32_t M, int32_t N, double* A, int32_t LDA, 
+  std::string fname, std::string dset ) {
+
+
+  File file( fname, File::ReadOnly );
+  auto data = file.getDataSet( dset );
+  auto space = data.getSpace();
+  auto dims = space.getDimensions();
+
+  if( dims.size() > 2 ) throw std::runtime_error("Dataset not a matrix");
+
+}
+
+
+
 }

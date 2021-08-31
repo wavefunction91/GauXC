@@ -82,6 +82,19 @@ void LocalHostWorkDriver::eval_xmat( size_t npts, size_t nbf, size_t nbe,
 
 }
 
+// G Matrix G(mu,i) = w(i) * A(mu,nu,i) * X(mu,i)
+void LocalHostWorkDriver::eval_exx_gmat( size_t npts, size_t nbe,
+  const double* points, const double* weights, const BasisSet<double>& basis,
+  const BasisSetMap& basis_map, const double* X, size_t ldx, double* G,
+  size_t ldg ) {
+
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_exx_gmat(npts, nbe, points, weights, basis, basis_map, X, ldx,
+    G, ldg );
+
+}
+
+
 
 // U/VVar LDA (density)
 void LocalHostWorkDriver::eval_uvvar_lda( size_t npts, size_t nbe, 

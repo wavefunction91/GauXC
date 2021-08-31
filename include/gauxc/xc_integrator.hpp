@@ -24,6 +24,7 @@ public:
 
   using exc_vxc_type  = std::tuple< value_type, matrix_type >;
   using exc_grad_type = std::vector< value_type >;
+  using exx_type      = matrix_type;
 
 private:
 
@@ -43,6 +44,7 @@ public:
 
   exc_vxc_type  eval_exc_vxc ( const MatrixType& );
   exc_grad_type eval_exc_grad( const MatrixType& );
+  exx_type      eval_exx     ( const MatrixType& );
 
 
   const util::Timer& get_timings() const;

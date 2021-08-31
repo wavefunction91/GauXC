@@ -18,4 +18,4 @@ if( GAUXC_ENABLE_GAU2GRID )
   target_link_libraries( gauxc PUBLIC gau2grid::gg )
 endif()
 
-
+add_subdirectory(rys)

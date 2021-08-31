@@ -4,6 +4,7 @@
 #include <memory>
 #include <gauxc/molmeta.hpp>
 #include <gauxc/basisset.hpp>
+#include <gauxc/basisset_map.hpp>
 #include <gauxc/xc_task.hpp>
 
 
@@ -146,6 +147,12 @@ public:
     const submat_map_t& submat_map, const double* P, size_t ldp,
     const double* basis_eval, size_t ldb, double* X, size_t ldx, 
     double* scr );
+
+
+  void eval_exx_gmat( size_t npts, size_t nbe, const double* points, 
+    const double* weights, const BasisSet<double>& basis, 
+    const BasisSetMap& basis_map, const double* X, size_t ldx, 
+    double* G, size_t ldg );
     
   /** Evaluate the U and V variavles for RKS LDA
    *

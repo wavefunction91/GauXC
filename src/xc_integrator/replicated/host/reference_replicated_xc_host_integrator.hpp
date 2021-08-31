@@ -25,11 +25,14 @@ protected:
   void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
                        int64_t ldp, value_type* EXC_GRAD ) override;
 
+  void eval_exx_( int64_t m, int64_t n, const value_type* P,
+                  int64_t ldp, value_type* K, int64_t ldk ) override;
+
   void exc_vxc_local_work_( const value_type* P, int64_t ldp, value_type* VXC,
                             int64_t ldvxc, value_type* EXC, value_type *N_EL );
 
-  void exc_grad_local_work_( const value_type* P, int64_t ldp, 
-    value_type* EXC_GRAD );
+  void exc_grad_local_work_( const value_type* P, int64_t ldp, value_type* EXC_GRAD );
+  void exx_local_work_( const value_type* P, int64_t ldp, value_type* K, int64_t ldk );
 
 public:
 

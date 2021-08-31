@@ -44,6 +44,7 @@ int main(int argc, char** argv) {
     // Read BasisSet
     BasisSet<double> basis; 
     read_hdf5_record( basis, ref_file, "/BASIS" );
+    std::cout << basis.nbf() << std::endl;
 
     for( auto& sh : basis ){ 
       sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
@@ -77,12 +78,12 @@ int main(int argc, char** argv) {
 
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;
-    XCIntegratorFactory<matrix_type> integrator_factory( ExecutionSpace::Device, 
+    XCIntegratorFactory<matrix_type> integrator_factory( ExecutionSpace::Host, 
       "Replicated", "Default", "Default", "Default" );
     auto integrator = integrator_factory.get_instance( func, lb );
 
     // Read in reference data
-    matrix_type P,VXC_ref;
+    matrix_type P,VXC_ref,K_ref;
     double EXC_ref;
     {
       HighFive::File file( ref_file, HighFive::File::ReadOnly );
@@ -90,10 +91,14 @@ int main(int argc, char** argv) {
       auto dims = dset.getDimensions();
       P       = matrix_type( dims[0], dims[1] );
       VXC_ref = matrix_type( dims[0], dims[1] );
+      K_ref   = matrix_type( dims[0], dims[1] );
 
       dset.read( P.data() );
       dset = file.getDataSet("/VXC");
       dset.read( VXC_ref.data() );
+
+      dset = file.getDataSet("/K");
+      dset.read( K_ref.data() );
 
       dset = file.getDataSet("/EXC");
       dset.read( &EXC_ref );
@@ -106,7 +111,15 @@ int main(int argc, char** argv) {
 #endif
     auto xc_int_start = std::chrono::high_resolution_clock::now();
 
-    auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
+    //auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
+    auto K = integrator.eval_exx(P);
+    matrix_type Kt = K.transpose();
+    K = 0.5*(K + Kt);
+    std::cout << (K).block(0,0,5,5) << std::endl << std::endl;
+    std::cout << (K_ref).block(0,0,5,5) << std::endl << std::endl;
+    std::cout << (K - K_ref).block(0,0,5,5) << std::endl << std::endl;
+    auto VXC = VXC_ref;
+    auto EXC = EXC_ref;
 
 #ifdef GAUXC_ENABLE_MPI
     MPI_Barrier( MPI_COMM_WORLD );
@@ -141,6 +154,11 @@ int main(int argc, char** argv) {
       std::cout << "| VXC (ref)  |_F = " << VXC_ref.norm() << std::endl;
       std::cout << "| VXC (calc) |_F = " << VXC.norm() << std::endl;
       std::cout << "RMS VXC Diff     = " << (VXC_ref - VXC).norm() / basis.nbf()
+                                         << std::endl;
+
+      std::cout << "| K (ref)  |_F = " << K_ref.norm() << std::endl;
+      std::cout << "| K (calc) |_F = " << K.norm() << std::endl;
+      std::cout << "RMS K Diff     = " << (K_ref - K).norm() / basis.nbf()
                                          << std::endl;
     }
   }

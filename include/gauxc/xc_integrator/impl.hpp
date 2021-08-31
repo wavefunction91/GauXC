@@ -33,6 +33,13 @@ typename XCIntegrator<MatrixType>::exc_grad_type
 };
 
 template <typename MatrixType>
+typename XCIntegrator<MatrixType>::exx_type
+  XCIntegrator<MatrixType>::eval_exx( const MatrixType& P ) {
+  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  return pimpl_->eval_exx(P);
+};
+
+template <typename MatrixType>
 const util::Timer& XCIntegrator<MatrixType>::get_timings() const {
   if( not pimpl_ ) throw std::runtime_error("Not Initialized");
 
