@@ -220,6 +220,8 @@ void XCDeviceAoSData::pack_and_send(
     host_device_tasks.back().iParent      = iAtom;
     host_device_tasks.back().dist_nearest = dist_nearest;
 
+    host_device_tasks.back().ibf_begin = 
+      basis_map.shell_to_first_ao(shell_list[0]);
   }
 
 

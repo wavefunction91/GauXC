@@ -11,7 +11,7 @@ namespace GauXC {
 #define CUT_X 8
 #define CUT_Y 8
 
-template <typename T>
+template <typename T, bool skip_single_cut = true>
 __global__ __launch_bounds__(1024, 1)
 void submat_set_combined_kernel( size_t        ntasks,
                                  XCDeviceTask* device_tasks,
@@ -23,6 +23,10 @@ void submat_set_combined_kernel( size_t        ntasks,
 
   const int batch_id = blockIdx.z;
   auto& task = device_tasks[ batch_id ];
+
+  if constexpr (skip_single_cut ) {
+    if( task.ncut == 1 ) return;
+  }
 
   const auto* submat_cut_device = task.submat_cut;
   const auto* submat_block_device = task.submat_block;

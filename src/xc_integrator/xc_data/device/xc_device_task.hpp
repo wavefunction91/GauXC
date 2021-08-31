@@ -4,11 +4,12 @@ namespace GauXC {
 
 struct XCDeviceTask {
 
-  size_t nbe     = 0;
-  size_t npts    = 0;
-  size_t ncut    = 0;
-  size_t nblock  = 0;
-  size_t nshells = 0;
+  size_t nbe       = 0;
+  size_t npts      = 0;
+  size_t ncut      = 0;
+  size_t nblock    = 0;
+  size_t nshells   = 0;
+  size_t ibf_begin = 0;
 
   double* points         = nullptr;
   double* weights        = nullptr;

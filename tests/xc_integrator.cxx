@@ -43,7 +43,9 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, ) std
 
   MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
 
-  LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
+  std::cout << "HERE" << std::endl;
+  //LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
+  LoadBalancerFactory lb_factory(ExecutionSpace::Host, "REPLICATED-FILLIN");
   auto lb = lb_factory.get_instance(GAUXC_MPI_CODE(comm,) mol, mg, basis);
 
   functional_type func( ExchCXX::Backend::builtin, ExchCXX::Functional::PBE0, ExchCXX::Spin::Unpolarized );

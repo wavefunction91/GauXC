@@ -44,8 +44,9 @@ public:
    *  @param[in] func  XC functional
    *  @param[in] lb    Preconstructed Load Balancer instance
    */
-  integrator_type get_instance( std::shared_ptr<functional_type> func,
-                                std::shared_ptr<LoadBalancer>    lb ) {
+  std::shared_ptr<integrator_type> get_shared_instance( 
+    std::shared_ptr<functional_type> func,
+    std::shared_ptr<LoadBalancer>    lb ) {
 
     // Create Local Work Driver
     auto lwd = LocalWorkDriverFactory::make_local_work_driver( ex_, 
@@ -60,7 +61,7 @@ public:
       ::toupper );
 
     if( input_type_ == "REPLICATED" )
-      return integrator_type( 
+      return std::make_shared<integrator_type>( 
         ReplicatedXCIntegratorFactory<MatrixType>::make_integrator_impl(
           ex_, integrator_kernel_, func, lb, std::move(lwd), rd
         )
@@ -68,19 +69,26 @@ public:
     else
       throw std::runtime_error("INTEGRATOR TYPE NOT RECOGNIZED");
 
-    return integrator_type();
+    return nullptr;
 
   }
 
-  integrator_type get_instance( const functional_type& func,
-                                const LoadBalancer&    lb ) {
-    return get_instance( std::make_shared<functional_type>(func),
+  auto get_shared_instance( const functional_type& func, const LoadBalancer& lb ) {
+    return get_shared_instance( std::make_shared<functional_type>(func),
                          std::make_shared<LoadBalancer>(lb) );
   }
 
-  integrator_type get_instance( const functional_type&        func,
-                                std::shared_ptr<LoadBalancer> lb ) {
-    return get_instance( std::make_shared<functional_type>(func), lb );
+  auto get_shared_instance( const functional_type& func,
+                                       std::shared_ptr<LoadBalancer> lb ) {
+    return get_shared_instance( std::make_shared<functional_type>(func), lb );
+  }
+
+
+  template <typename... Args>
+  integrator_type get_instance( Args&&... args ) {
+
+    return integrator_type( std::move(*get_shared_instance(std::forward<Args>(args)...) ));
+
   }
 
 private:

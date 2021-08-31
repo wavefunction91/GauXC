@@ -20,6 +20,7 @@ struct XCTask {
   int32_t                              npts;
 
   double                               dist_nearest;
+  double                               max_weight;
 
   std::vector< std::array<int32_t,3> > submat_map;
   std::vector< int32_t >               submat_block;

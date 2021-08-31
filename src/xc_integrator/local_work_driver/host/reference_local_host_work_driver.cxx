@@ -78,12 +78,13 @@ void ReferenceLocalHostWorkDriver::eval_xmat( size_t npts, size_t nbf, size_t nb
 
   const auto* P_use = P;
   size_t ldp_use = ldp;
+     
   if( submat_map.size() > 1 ) {
     detail::submat_set( nbf, nbf, nbe, nbe, P, ldp, scr, nbe, submat_map );
     P_use = scr;
     ldp_use = nbe;
   } else if( nbe != nbf ) {
-    P_use = P + submat_map[0][0]*ldp;
+    P_use = P + submat_map[0][0]*(ldp+1);
   }
 
   blas::gemm( 'N', 'N', nbe, npts, nbe, 2., P_use, ldp_use, basis_eval, ldb, 
@@ -210,8 +211,13 @@ void ReferenceLocalHostWorkDriver::inc_vxc( size_t npts, size_t nbf, size_t nbe,
   const double* basis_eval, const submat_map_t& submat_map, const double* Z, 
   size_t ldz, double* VXC, size_t ldvxc, double* scr ) {
 
-  blas::syr2k('L', 'N', nbe, npts, 1., basis_eval, nbe, Z, ldz, 0., scr, nbe );
-  detail::inc_by_submat( nbf, nbf, nbe, nbe, VXC, ldvxc, scr, nbe, submat_map );
+  if( submat_map.size() > 1 ) {
+    blas::syr2k('L', 'N', nbe, npts, 1., basis_eval, nbe, Z, ldz, 0., scr, nbe );
+    detail::inc_by_submat( nbf, nbf, nbe, nbe, VXC, ldvxc, scr, nbe, submat_map );
+  } else {
+    blas::syr2k('L', 'N', nbe, npts, 1., basis_eval, nbe, Z, ldz, 1., 
+      VXC + submat_map[0][0]*(ldvxc+1), ldvxc );
+  }
 
 }
 

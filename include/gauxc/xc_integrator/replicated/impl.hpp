@@ -29,6 +29,12 @@ const util::Timer& ReplicatedXCIntegrator<MatrixType>::get_timings_() const {
   return pimpl_->get_timings();
 }
 
+template <typename MatrixType>
+const LoadBalancer& ReplicatedXCIntegrator<MatrixType>::get_load_balancer_() const {
+  if( not pimpl_ ) throw std::runtime_error( "Not Initialized" );
+  return pimpl_->get_load_balancer();
+}
+
 
 template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type 

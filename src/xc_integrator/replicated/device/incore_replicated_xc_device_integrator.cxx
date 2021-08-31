@@ -88,6 +88,9 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     });
 
   }
+
+  std::cout << std::scientific << std::setprecision(12);
+  std::cout << "NEL = " << N_EL << std::endl;
 }
 
 template <typename ValueType>
@@ -200,6 +203,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Modify weights if need be
   if( not lb_state.modified_weights_are_stored ) {
+  this->timer_.time_op("XCIntegrator.Weights", [&]() { 
     const auto natoms = mol.natoms();
     device_data.reset_allocations();
     device_data.allocate_static_data_weights( natoms );
@@ -228,7 +232,26 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     // Signal that we don't need to do weights again
     lb_state.modified_weights_are_stored = true;
+  });
   }
+
+#if 0
+  this->timer_.time_op("XCIntegrator.ScreenWeights",[&](){
+
+  constexpr double weight_thresh = std::numeric_limits<double>::epsilon();
+  for( auto it = task_begin; it != task_end; ++it ) {
+    it->max_weight = *std::max_element( it->weights.begin(), it->weights.end() );
+  }
+
+  size_t old_ntasks = std::distance( task_begin, task_end );
+  task_end = std::stable_partition(task_begin, task_end,
+    [&](const auto& a){ return a.max_weight > weight_thresh; } );
+
+  size_t new_ntasks = std::distance( task_begin, task_end );
+  std::cout << old_ntasks << ", " << new_ntasks << std::endl;
+
+  });
+#endif
 
   // Do XC integration in task batches
   const auto nbf     = basis.nbf();

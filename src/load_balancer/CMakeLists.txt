@@ -5,6 +5,8 @@ target_sources( gauxc PRIVATE
 
   host/load_balancer_host_factory.cxx
   host/replicated_host_load_balancer.cxx 
+  host/petite_replicated_load_balancer.cxx 
+  host/fillin_replicated_load_balancer.cxx 
 )
 
 target_include_directories( gauxc

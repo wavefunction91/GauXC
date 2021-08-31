@@ -38,4 +38,12 @@ const util::Timer& XCIntegrator<MatrixType>::get_timings() const {
 
   return pimpl_->get_timings();
 }
+
+template <typename MatrixType>
+const LoadBalancer& XCIntegrator<MatrixType>::load_balancer() const {
+  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+
+  return pimpl_->load_balancer();
+}
+ 
 }

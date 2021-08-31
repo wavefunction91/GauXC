@@ -24,7 +24,9 @@ public:
 
   virtual ~HostReplicatedLoadBalancer() noexcept;
 
-  std::unique_ptr<LoadBalancerImpl> clone() const override;
+  virtual std::pair< std::vector<int32_t>, size_t > micro_batch_screen(
+    const BasisSet<double>&, const std::array<double,3>&,
+    const std::array<double,3>& ) const = 0;
 
 };
 

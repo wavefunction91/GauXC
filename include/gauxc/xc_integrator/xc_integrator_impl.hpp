@@ -21,6 +21,7 @@ protected:
   virtual exc_vxc_type  eval_exc_vxc_ ( const MatrixType& P ) = 0;
   virtual exc_grad_type eval_exc_grad_( const MatrixType& P ) = 0;
   virtual const util::Timer& get_timings_() const = 0;
+  virtual const LoadBalancer& get_load_balancer_() const = 0;
   
 public:
 
@@ -62,6 +63,10 @@ public:
     return get_timings_();
   }
 
+
+  const LoadBalancer& load_balancer() const {
+    return get_load_balancer_();
+  }
 };
 
 }

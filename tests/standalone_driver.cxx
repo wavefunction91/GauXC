@@ -31,9 +31,14 @@ int main(int argc, char** argv) {
     // Read Molecule
     Molecule mol;
     read_hdf5_record( mol, ref_file, "/MOLECULE" );
+    //std::cout << "Molecule" << std::endl;
+    //for( auto x : mol ) {
+    //  std::cout << x.Z.get() << ", " << x.x << ", " << x.y << ", " << x.z << std::endl;
+    //}
 
     // Construct MolGrid / MolMeta
     MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
+    //MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
     auto meta = std::make_shared<MolMeta>( mol );
 
     // Read BasisSet
@@ -41,8 +46,8 @@ int main(int argc, char** argv) {
     read_hdf5_record( basis, ref_file, "/BASIS" );
 
     for( auto& sh : basis ){ 
-      //sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
-      sh.set_shell_tolerance( 1e-10 );
+      sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
+      //sh.set_shell_tolerance( 1e-10 );
     }
 
     //std::cout << "Basis" << std::endl;
@@ -61,11 +66,14 @@ int main(int argc, char** argv) {
     //}
 
     // Setup load balancer
-    LoadBalancerFactory lb_factory(ExecutionSpace::Device, "Default");
+    //LoadBalancerFactory lb_factory(ExecutionSpace::Device, "Default");
+    //LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Replicated-FillIn");
+    LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Replicated");
     auto lb = lb_factory.get_shared_instance( GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, mg, basis);
 
     // Setup XC functional
     functional_type func( Backend::builtin, Functional::PBE0, Spin::Unpolarized );
+    //functional_type func( Backend::builtin, Functional::BLYP, Spin::Unpolarized );
 
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;

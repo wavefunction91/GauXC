@@ -114,13 +114,23 @@ void CudaAoSScheme1::eval_xmat( XCDeviceData* _data){
 
   // Launch GEMM in round-robin
   const auto n_blas_streams = device_backend->blas_streams.size();
+  size_t nsingle = 0;
   for( size_t iT = 0; iT < ntasks; ++iT ) {
     auto& task = tasks[iT];
-    gemm( device_backend->blas_handles[iT % n_blas_streams], CUBLAS_OP_N,
-      CUBLAS_OP_N, task.npts, task.nbe, task.nbe, 1., task.bf, task.npts,
-      task.nbe_scr, task.nbe, 0., task.zmat, task.npts );
+    if(task.ncut > 1)
+      gemm( device_backend->blas_handles[iT % n_blas_streams], CUBLAS_OP_N,
+        CUBLAS_OP_N, task.npts, task.nbe, task.nbe, 1., task.bf, task.npts,
+        task.nbe_scr, task.nbe, 0., task.zmat, task.npts );
+    else {
+      gemm( device_backend->blas_handles[iT % n_blas_streams], CUBLAS_OP_N,
+        CUBLAS_OP_N, task.npts, task.nbe, task.nbe, 1., task.bf, task.npts,
+        static_stack.dmat_device + task.ibf_begin*(nbf+1), nbf, 
+        0., task.zmat, task.npts );
+      nsingle++;
+    }
   }
 
+  //std::cout << nsingle << ", " << ntasks << ", " << double(nsingle)/ntasks << std::endl;
   // Record completion of BLAS ops on master stream
   std::vector< util::cuda_event > blas_events( n_blas_streams );
   for( size_t iS = 0; iS < n_blas_streams; ++iS )

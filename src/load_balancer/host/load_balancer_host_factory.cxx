@@ -1,6 +1,7 @@
 #include "load_balancer_impl.hpp"
 #include "load_balancer_host_factory.hpp"
-#include "replicated_host_load_balancer.hpp"
+#include "petite_replicated_load_balancer.hpp"
+#include "fillin_replicated_load_balancer.hpp"
 
 namespace GauXC {
 
@@ -13,11 +14,17 @@ std::shared_ptr<LoadBalancer> LoadBalancerHostFactory::get_shared_instance(
     kernel_name.begin(), ::toupper );
 
 
-  if( kernel_name == "DEFAULT" ) kernel_name = "REPLICATED";
+  if( kernel_name == "DEFAULT" or kernel_name == "REPLICATED" ) 
+    kernel_name = "REPLICATED-PETITE";
 
   std::unique_ptr<detail::LoadBalancerImpl> ptr = nullptr;
-  if( kernel_name == "REPLICATED" )
-    ptr = std::make_unique<detail::HostReplicatedLoadBalancer>(
+  if( kernel_name == "REPLICATED-PETITE" )
+    ptr = std::make_unique<detail::PetiteHostReplicatedLoadBalancer>(
+      GAUXC_MPI_CODE(comm,) mol, mg, basis
+    );
+
+  if( kernel_name == "REPLICATED-FILLIN" )
+    ptr = std::make_unique<detail::FillInHostReplicatedLoadBalancer>(
       GAUXC_MPI_CODE(comm,) mol, mg, basis
     );
 
