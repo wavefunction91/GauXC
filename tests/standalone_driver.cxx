@@ -73,8 +73,8 @@ int main(int argc, char** argv) {
     auto lb = lb_factory.get_shared_instance( GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, mg, basis);
 
     // Setup XC functional
-    functional_type func( Backend::builtin, Functional::PBE0, Spin::Unpolarized );
-    //functional_type func( Backend::builtin, Functional::BLYP, Spin::Unpolarized );
+    //functional_type func( Backend::builtin, Functional::PBE0, Spin::Unpolarized );
+    functional_type func( Backend::builtin, Functional::BLYP, Spin::Unpolarized );
 
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;

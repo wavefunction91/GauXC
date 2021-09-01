@@ -180,129 +180,6 @@ void reference_lko_weights_host(
   task_iterator          task_end
 ) {
 
-#if 0
-  // Sort on atom index
-  std::stable_sort( task_begin, task_end, [](const auto& a, const auto&b ) { return a.iParent < b.iParent; } );
-
-  auto RAB = meta.rab();
-  const auto natoms = mol.size();
-
-  auto it = task_begin;
-  for( auto iAtom = 0; iAtom < natoms; ++iAtom ) {
-
-    auto atom_end = std::find_if( it, task_end, [&](const auto& a){ return a.iParent == (iAtom+1); } );
-    
-    size_t npts_atom = std::accumulate( it, atom_end, 0ul, [&](const auto& a, const auto&b) {
-      return a + b.points.size();
-    });
-
-    std::vector<size_t> atom_idx(natoms);
-    std::iota( atom_idx.begin(), atom_idx.end(), 0 );
-    std::sort( atom_idx.begin(), atom_idx.end(), [&](auto i, auto j) {
-      return RAB[i + iAtom*natoms] < RAB[j + iAtom*natoms];
-    });
-    if( atom_idx[0] != iAtom ) throw std::runtime_error("WTF");
-
-    std::cout << "Parent Atom " << iAtom << std::endl;
-    for( auto i = 0; i < natoms; ++i ) {
-      std::cout << "  " << atom_idx[i] << ", " << RAB[atom_idx[i] + iAtom*natoms] << std::endl;
-    }
-    std::cout << std::endl;
-
-    constexpr double R_cutoff = 5;
-    auto h_func = [](auto x){ return 1.5*x - 0.5 * x*x*x; };
-    auto g_func = [&](auto x){ return h_func(h_func(h_func(x))); };
-
-    // Loop over tasks / weights / points
-    for( auto task_it = it; task_it != atom_end; task_it++ ) {
-      auto& points  = task_it->points;
-      auto& weights = task_it->weights;
-      const auto npts = points.size();
-    for( auto ipt = 0; ipt < npts; ++ipt ) {
-
-      
-
-      // Compute distance from point to parent atom
-      const double r_parent_x = mol[iAtom].x - points[ipt][0];
-      const double r_parent_y = mol[iAtom].y - points[ipt][1];
-      const double r_parent_z = mol[iAtom].z - points[ipt][2];
-
-      const auto r_parent = std::sqrt(
-        r_parent_x*r_parent_x + r_parent_y*r_parent_y + r_parent_z*r_parent_z
-      );
-
-      double r_nearest = r_parent;
-      std::vector<double> r_atoms(natoms, std::numeric_limits<double>::max()); r_atoms[iAtom] = r_parent;
-      size_t natoms_keep = 1;
-      for( auto _idx = 1; _idx < natoms; _idx++ ) {
-        auto idx = atom_idx[_idx];
-        auto Rpi = RAB[ idx + iAtom*natoms ];
-        if( Rpi > r_nearest + r_parent + 2*R_cutoff ) break;
-
-        // Compute distance from point to this atom
-        const double r_atoms_x = mol[idx].x - points[ipt][0];
-        const double r_atoms_y = mol[idx].y - points[ipt][1];
-        const double r_atoms_z = mol[idx].z - points[ipt][2];
-
-        r_atoms[idx] = std::sqrt(
-          r_atoms_x*r_atoms_x + r_atoms_y*r_atoms_y + r_atoms_z*r_atoms_z
-        );
-
-        r_nearest = std::min( r_nearest, r_atoms[idx] );
-        natoms_keep++;
-      }
-
-      std::cout << "  R PARENT  = " << r_parent << std::endl;
-      std::cout << "  R NEAREST = " << r_nearest << std::endl;
-
-      //if( r_nearest > r_parent + R_cutoff ) continue; // XXX This could be wrong, it's f-ed up in the paper...
-      //if( r_parent > r_nearest + R_cutoff ) continue; // XXX This could be wrong, it's f-ed up in the paper...
-      if( r_nearest > r_parent + R_cutoff ) {
-        weights[ipt] = 0.;
-        continue;
-      }
-
-
-      std::vector<size_t> point_idx(natoms);
-      std::iota(point_idx.begin(),point_idx.end(),0);
-      std::sort( point_idx.begin(), point_idx.end(), [&](auto i, auto j) {
-        return r_atoms[i] < r_atoms[j];
-      } );
-
-      std::vector<double> P(natoms,-1.);
-      for( auto i_idx = 0; i_idx < natoms; ++i_idx ) {
-        auto pt_i = point_idx[i_idx];
-        auto at_i = atom_idx[pt_i];
-        if( r_atoms[pt_i] > r_nearest + R_cutoff ) break;
-        for( auto j_idx = i_idx+1; j_idx < natoms; ++j_idx ) {
-          auto pt_j = point_idx[j_idx];
-          auto at_j = atom_idx[pt_j];
-          if( r_atoms[pt_j] > r_atoms[pt_i] + R_cutoff ) break;
-
-          const auto mu = (r_atoms[pt_i] - r_atoms[pt_j]) / RAB[ at_i + at_j*natoms];
-          auto g_mu = g_func(mu);
-          auto s_ij = 0.5 * ( 1. - g_mu );
-          auto s_ji = 1. - s_ij;
-          if(P[pt_i] < 0.) P[pt_i] =  s_ij;
-          else             P[pt_i] *= s_ij;
-          if(P[pt_j] < 0.) P[pt_j] =  s_ji;
-          else             P[pt_j] *= s_ji;
-        }
-      }
-
-      for( auto& p : P ) if( p < 0. ) p = 0.;
-
-      double sum = std::accumulate( P.begin(), P.end(), 0. );
-      weights[ipt] *= P[iAtom] / sum;
-
-
-    }
-    }
-
-    it = atom_end;
-
-  }
-#else
 
   // Sort on atom index
   std::stable_sort( task_begin, task_end, 
@@ -317,7 +194,7 @@ void reference_lko_weights_host(
 
   const auto&  RAB    = meta.rab();
 
-  //#pragma omp parallel 
+  #pragma omp parallel 
   {
 
   std::vector<double> partitionScratch( natoms );
@@ -325,7 +202,7 @@ void reference_lko_weights_host(
   std::vector<size_t> inter_atom_dist_idx( natoms );
   std::vector<size_t> point_dist_idx( natoms );
 
-  //#pragma omp for schedule(dynamic)
+  #pragma omp for schedule(dynamic)
   for( auto iAtom = 0; iAtom < natoms; ++iAtom ) {
 
     auto atom_begin = std::find_if( task_begin, task_end,
@@ -362,6 +239,7 @@ void reference_lko_weights_host(
 
     double r_parent  = atomDist[iAtom];
     double r_nearest = r_parent;
+    size_t natoms_keep = 1;
     // Compute distances of each center to point
     for(size_t iA = 1; iA < natoms; iA++) {
       auto idx = inter_atom_dist_idx[iA];
@@ -371,8 +249,10 @@ void reference_lko_weights_host(
       const double da_y = point[1] - mol[idx].y;
       const double da_z = point[2] - mol[idx].z;
 
-      atomDist[idx] = std::sqrt(da_x*da_x + da_y*da_y + da_z*da_z);
-      r_nearest = std::min( r_nearest, atomDist[idx] );
+      const auto r = std::sqrt(da_x*da_x + da_y*da_y + da_z*da_z);
+      r_nearest = std::min( r_nearest, r );
+      atomDist[idx] = r;
+      ++natoms_keep;
     }
 
      // Partition weight is 0
@@ -381,49 +261,71 @@ void reference_lko_weights_host(
       continue;
     }
 
+    // Partiton atom indices into a petite list of non-negligible centers
     std::iota( point_dist_idx.begin(), point_dist_idx.end(), 0 );
-    std::sort( point_dist_idx.begin(), point_dist_idx.end(),
+    auto atom_keep_end = std::partition( point_dist_idx.begin(), point_dist_idx.end(), 
+      [&](auto i){ return atomDist[i] < std::numeric_limits<double>::infinity(); } );
+
+    // Only sort over non-negligible cetners
+    std::sort( point_dist_idx.begin(), atom_keep_end,
       [&](auto i, auto j){ return atomDist[i] < atomDist[j]; } );
+
+    // Get parent index
+    auto parent_it  = std::find( point_dist_idx.begin(), atom_keep_end, iAtom );
+    auto parent_idx = std::distance( point_dist_idx.begin(), parent_it );
+
+    // Sort atom distances for contiguous reads in weight loop
+    auto atom_dist_end = std::partition( atomDist.begin(), atomDist.end(),
+      [](auto x){ return x < std::numeric_limits<double>::infinity(); } );
+    std::sort( atomDist.begin(), atom_dist_end );
 
 
 
     // Evaluate unnormalized partition functions 
-    std::fill(partitionScratch.begin(),partitionScratch.end(),0.);
-    for( int i = 0; i < natoms; ++i ) {
+    std::fill_n(partitionScratch.begin(),natoms_keep,0.);
+    for( int i = 0; i < natoms_keep; ++i ) {
       auto idx_i = point_dist_idx[i];
-      auto r_i = atomDist[idx_i];
+      auto r_i = atomDist[i];
       if( r_i > (r_nearest + R_cutoff) ) { break; }
-      partitionScratch[idx_i] = 1.;
+      partitionScratch[i] = 1.;
+
+      const auto* RAB_i_idx = RAB.data() + idx_i*natoms;
+
     for( int j = 0; j < i; ++j ) {
       auto idx_j = point_dist_idx[j];
-      auto r_j = atomDist[idx_j];
+      auto r_j = atomDist[j];
       if( r_j > (r_i + R_cutoff) ) { break; }
 
       const double mu = 
-        (r_i - r_j) / std::min(RAB[idx_j + idx_i*natoms], R_cutoff);
+        (r_i - r_j) / std::min(RAB_i_idx[idx_j], R_cutoff);
+
+      // The breaks in the above loops ensure this never gets encountered
+      #if 0
       if( mu <= -1 ) {
-        partitionScratch[idx_j] = 0.;
+        partitionScratch[j] = 0.;
         continue;
       }
 
       if( mu >= 1 ) {
-        partitionScratch[idx_i] = 0.;
+        partitionScratch[i] = 0.;
         continue;
       }
+      #endif
 
       const double g = gBecke(mu);
-      partitionScratch[idx_i] *= 0.5 * (1. - g);
-      partitionScratch[idx_j] *= 0.5 * (1. + g);
+      const auto   s_ij = 0.5 * (1. - g);
+      partitionScratch[i] *= s_ij;
+      partitionScratch[j] *= 1. - s_ij;
       
     }
     }
 
     // Normalization
     double sum = 0.;
-    for( size_t iA = 0; iA < natoms; iA++ )  sum += partitionScratch[iA];
+    for( size_t iA = 0; iA < natoms_keep; iA++ )  sum += partitionScratch[iA];
 
     // Update Weights
-    weight *= partitionScratch[iAtom] / sum;
+    weight *= partitionScratch[parent_idx] / sum;
 
   } // Loop over points 
   } // Loop over tasks
@@ -431,7 +333,6 @@ void reference_lko_weights_host(
 
   } // OMP context
 
-#endif
 }
 
 }
