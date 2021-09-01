@@ -164,6 +164,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   } // End OpenMP region
 
   // Symmetrize VXC
+  for( auto j = 0; j < nbf; ++j ) 
+  for( auto i = 0; i < j;   ++i ) {
+    const auto K_ij = K[i + j*ldk];
+    const auto K_ji = K[j + i*ldk];
+    const auto K_symm = 0.5 * (K_ij + K_ji);
+    K[i + j*ldk] = K_symm;
+    K[j + i*ldk] = K_symm;
+  }
 
 }
 
