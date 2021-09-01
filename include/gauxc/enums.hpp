@@ -29,7 +29,8 @@ enum class AtomicGridSizeDefault {
  */
 enum class XCWeightAlg {
   Becke, ///< The original Becke weighting scheme
-  SSF    ///< The Stratmann-Scuseria-Frisch weighting scheme
+  SSF,   ///< The Stratmann-Scuseria-Frisch weighting scheme
+  LKO
 };
 
 /**

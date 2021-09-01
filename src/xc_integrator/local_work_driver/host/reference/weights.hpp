@@ -18,4 +18,11 @@ void reference_becke_weights_host(
   task_iterator          task_end
 );
 
+void reference_lko_weights_host(
+  const Molecule&        mol,
+  const MolMeta&         meta,
+  task_iterator          task_begin,
+  task_iterator          task_end
+);
+
 }

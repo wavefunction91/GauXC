@@ -37,8 +37,8 @@ int main(int argc, char** argv) {
     //}
 
     // Construct MolGrid / MolMeta
-    MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
-    //MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
+    //MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
+    MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
     auto meta = std::make_shared<MolMeta>( mol );
 
     // Read BasisSet
@@ -97,8 +97,8 @@ int main(int argc, char** argv) {
       dset = file.getDataSet("/VXC");
       dset.read( VXC_ref.data() );
 
-      dset = file.getDataSet("/K");
-      dset.read( K_ref.data() );
+      //dset = file.getDataSet("/K");
+      //dset.read( K_ref.data() );
 
       dset = file.getDataSet("/EXC");
       dset.read( &EXC_ref );
@@ -111,15 +111,14 @@ int main(int argc, char** argv) {
 #endif
     auto xc_int_start = std::chrono::high_resolution_clock::now();
 
-    //auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
-    auto K = integrator.eval_exx(P);
-    matrix_type Kt = K.transpose();
-    K = 0.5*(K + Kt);
-    std::cout << (K).block(0,0,5,5) << std::endl << std::endl;
-    std::cout << (K_ref).block(0,0,5,5) << std::endl << std::endl;
-    std::cout << (K - K_ref).block(0,0,5,5) << std::endl << std::endl;
-    auto VXC = VXC_ref;
-    auto EXC = EXC_ref;
+    auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
+    //auto K = integrator.eval_exx(P);
+    //matrix_type Kt = K.transpose();
+    //K = 0.5*(K + Kt);
+    //std::cout << (K).block(0,0,5,5) << std::endl << std::endl;
+    //std::cout << (K_ref).block(0,0,5,5) << std::endl << std::endl;
+    //std::cout << (K - K_ref).block(0,0,5,5) << std::endl << std::endl;
+    matrix_type K = K_ref;
 
 #ifdef GAUXC_ENABLE_MPI
     MPI_Barrier( MPI_COMM_WORLD );

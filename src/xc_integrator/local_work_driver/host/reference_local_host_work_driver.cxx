@@ -27,9 +27,13 @@ void ReferenceLocalHostWorkDriver::partition_weights( XCWeightAlg weight_alg,
     case XCWeightAlg::SSF:
       reference_ssf_weights_host( mol, meta, task_begin, task_end );
       break;
+    case XCWeightAlg::LKO:
+      reference_lko_weights_host( mol, meta, task_begin, task_end );
+      break;
     default:
       throw std::runtime_error("Weight Alg Not Supported");
   }
+
 
 }
 
