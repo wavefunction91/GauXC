@@ -230,6 +230,26 @@ void ReferenceLocalHostWorkDriver::inc_vxc( size_t npts, size_t nbf, size_t nbe,
 }
 
 
+// Increment K by G
+void ReferenceLocalHostWorkDriver::inc_exx_k( size_t npts, size_t nbf, 
+  size_t nbe_bra, size_t nbe_ket, const double* basis_eval, 
+  const submat_map_t& submat_map_bra, const submat_map_t& submat_map_ket, 
+  const double* G, size_t ldg, double* K, size_t ldk, double* scr ) {
+
+  if( submat_map_bra.size() > 1 or submat_map_ket.size() > 1 ) {
+    blas::gemm( 'N', 'T', nbe_bra, nbe_ket, npts, 1., basis_eval, nbe_bra,
+      G, ldg, 0., scr, nbe_bra );
+
+    detail::inc_by_submat( nbf, nbf, nbe_bra, nbe_ket, K, ldk, scr, nbe_bra, 
+      submat_map_bra, submat_map_ket );
+  } else {
+    blas::gemm( 'N', 'T', nbe_bra, nbe_ket, npts, 1., basis_eval, nbe_bra,
+      G, ldg, 1., K + submat_map_ket[0][0]*ldk + submat_map_bra[0][0], ldk );
+  }
+
+}
+
+
 
 
 
@@ -265,13 +285,35 @@ struct RysBasis {
 
 
 
+void ReferenceLocalHostWorkDriver::eval_exx_fmat( size_t npts, size_t nbf, 
+  size_t nbe_bra, size_t nbe_ket, const submat_map_t& submat_map_bra,
+  const submat_map_t& submat_map_ket, const double* P, size_t ldp,
+  const double* basis_eval, size_t ldb, double* F, size_t ldf,
+  double* scr ) {
+
+  const auto* P_use = P;
+  size_t ldp_use = ldp;
+
+  if( submat_map_bra.size() > 1 or submat_map_ket.size() > 1 ) {
+    detail::submat_set( nbf, nbf, nbe_bra, nbe_ket, P, ldp,
+      scr, nbe_bra, submat_map_bra, submat_map_ket );
+    P_use = scr;
+    ldp_use = nbe_bra;
+  } else {
+     P_use = P + submat_map_ket[0][0]*ldp + submat_map_bra[0][0];
+  }
+
+   blas::gemm( 'N', 'N', nbe_bra, npts, nbe_ket, 1., P_use, ldp_use, basis_eval,
+     ldb, 0., F, ldf );
+
+}
 
 
 
-void ReferenceLocalHostWorkDriver::
-  eval_exx_gmat( size_t npts, size_t nbe, const double* points, const double* weights, 
-    const BasisSet<double>& basis, const BasisSetMap& basis_map, const double* X, size_t ldx, 
-    double* G, size_t ldg ) {
+void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nbe, 
+  const double* points, const double* weights, const BasisSet<double>& basis, 
+  const BasisSetMap& basis_map, const double* X, size_t ldx, 
+  double* G, size_t ldg ) {
 
   // Cast points to Rys format (binary compatable)
   point* _points = reinterpret_cast<point*>(const_cast<double*>(points));

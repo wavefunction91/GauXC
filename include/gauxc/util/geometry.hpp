@@ -1,9 +1,25 @@
 #pragma once
 
 #include <array>
+#include <cmath>
 
 namespace GauXC {
 namespace geometry {
+
+template <size_t N, typename T>
+T euclidean_dist( const T* a, const T* b ) {
+  T dist = 0.;
+  for( size_t i = 0; i < N; ++i ) {
+    auto tmp = a[i] - b[i];
+    dist += tmp*tmp;
+  }
+  return std::sqrt(dist);
+}
+
+template <typename T, size_t N>
+T euclidean_dist( const std::array<T,N>& a, const std::array<T,N>& b ) {
+  return euclidean_dist<N,T>(a.data(), b.data());
+}
 
 template <size_t N, typename T>
 bool cube_sphere_intersect( const T* lo, const T* up, const T* center, T rad ) {
