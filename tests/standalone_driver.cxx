@@ -37,8 +37,8 @@ int main(int argc, char** argv) {
     //}
 
     // Construct MolGrid / MolMeta
-    MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
-    //MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
+    //MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
+    MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
     auto meta = std::make_shared<MolMeta>( mol );
 
     // Read BasisSet

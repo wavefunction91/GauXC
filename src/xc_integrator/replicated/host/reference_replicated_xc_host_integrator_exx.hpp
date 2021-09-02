@@ -2,6 +2,7 @@
 
 #include "reference_replicated_xc_host_integrator.hpp"
 #include "integrator_util/integrator_common.hpp"
+#include "integrator_util/integral_bounds.hpp"
 #include "host/local_host_work_driver.hpp"
 #include "host/blas.hpp"
 #include <stdexcept>
@@ -125,11 +126,26 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     }
   }
 
+   
+  // Compute V upper bounds per shell pair
+  const size_t nshells_bf = basis.size();
+  std::vector<double> V_max( nshells_bf * nshells_bf );
+  for( auto i = 0; i < nshells_bf; ++i )
+  for( auto j = 0; j < nshells_bf; ++j ) {
+    V_max[i + j*nshells_bf] = util::max_coulomb( basis.at(i), basis.at(j) );
+  }
+
+  std::vector<double> P_abs(nbf*nbf);
+  for( auto i = 0; i < nbf*nbf; ++i ) P_abs[i] = std::abs(P[i]);
+
+
   // Loop over tasks
   const size_t ntasks = tasks.size();
+  size_t nskip = 0;
 
-  std::vector<double> bfn_sums(ntasks), fmat_sums(ntasks), gmat_sums(ntasks),
-    kmat_sums(ntasks);
+  // Full shell list
+  std::vector<int32_t> full_shell_list_( basis.nshells() );
+  std::iota( full_shell_list_.begin(), full_shell_list_.end(), 0 ); // Don't screen for now
 
   #pragma omp parallel
   {
@@ -149,26 +165,21 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const auto* points      = task.points.data()->data();
     const auto* weights     = task.weights.data();
 
-    std::vector<int32_t> shell_list_( basis.nshells() );
-    std::iota( shell_list_.begin(), shell_list_.end(), 0 ); // Don't screen for now
-#if 0
-    auto shell_list_bfn_ = shell_list_;
-#else
+    // Basis function shell list
     auto shell_list_bfn_ = task.shell_list;
-#endif
     int32_t* shell_list_bfn = shell_list_bfn_.data();
     size_t nshells_bfn = shell_list_bfn_.size();
     size_t nbe_bfn     = 
       basis.nbf_subset( shell_list_bfn_.begin(), shell_list_bfn_.end() );
+    auto [submat_map_bfn, foo1] = 
+      gen_compressed_submat_map( basis_map, shell_list_bfn_, nbf, nbf );
     
+    // S/P-junction shell lists
     auto shell_list_SJ = shell_list_;
     auto shell_list_PJ = shell_list_;
     size_t nbe_SJ     = nbf;
     size_t nbe_PJ     = nbf;
 
-    // Get the submatrix map for batch
-    auto [submat_map_bfn, foo1] = 
-      gen_compressed_submat_map( basis_map, shell_list_bfn_, nbf, nbf );
     auto [submat_map_SJ, foo2] = 
       gen_compressed_submat_map( basis_map, shell_list_SJ, nbf, nbf );
     auto [submat_map_PJ, foo3] = 
@@ -189,43 +200,130 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     auto* gmat       = host_data.gmat.data();
 
 
-    // Evaluate collocation
+    // Evaluate collocation B(mu,i)
+    // mu ranges over the bfn shell list and i runs over all points
     lwd->eval_collocation( npts, nshells_bfn, nbe_bfn, points, basis, 
       shell_list_bfn, basis_eval );
 
-    //double bfn_sum = 0.;
-    //for( auto i = 0; i < npts*nbe_bfn; ++i ) bfn_sum += basis_eval[i];
-    //bfn_sums[iT] = bfn_sum;
+    // Calculate BF sums
+    std::vector<double> bf_sums( npts );
+    for( auto ipt = 0; ipt < npts; ++ipt ) {
+      double tmp = 0.;
+      for( auto ibf = 0; ibf < nbe_bfn; ++ibf ) 
+        tmp += std::abs(basis_eval[ibf + ipt*nbe_bfn]);
+      bf_sums[ipt] = std::sqrt(weights[ipt]) * tmp;
+    }
+
+    // Get Max BF Sum
+    auto max_bf_sum = *std::max_element( bf_sums.begin(), bf_sums.end() );
+
+    // Get max bf over grid
+    std::vector<double> max_bf_grid( nbe_bfn );
+    for( auto ibf = 0; ibf < nbe_bfn; ++ibf ) {
+      double tmp = 0.;
+      for( auto ipt = 0; ipt < npts; ++ipt )
+        tmp = std::max( tmp, std::abs( std::sqrt(weights[ipt]) * basis_eval[ibf + ipt*nbe_bfn] ) );
+      max_bf_grid[ibf] = tmp;
+    }
+
+    // Get approx F max over bfn
+    std::vector<double> max_F_approx_bfn( nbf );
+    lwd->eval_exx_fmat( 1, nbf, nbf, nbe_bfn, submat_map_PJ /* Assumes this is full basis */,
+      submat_map_bfn, P_abs.data(), nbf, max_bf_grid.data(), nbe_bfn, max_F_approx_bfn.data(), nbf,
+      nbe_scr );
+
+    // Collapse approx F max over shells 
+    std::vector<double> max_F_approx( nshells_bf );
+    for( auto ish = 0; ish < nshells_bf; ++ish ) {
+      const auto sh_st = basis_map.shell_to_first_ao(ish);
+      const auto sh_sz = basis_map.shell_size(ish);
+      double tmp = 0.;
+      for( auto i = sh_st; i < sh_st + sh_sz; ++i )
+        tmp = std::max( tmp, std::abs(max_F_approx_bfn[i]) );
+      max_F_approx[ish] = tmp;
+    }
 
 
     // Evaluate F(mu,i) = P(mu,nu) * B(nu,i)
+    // mu runs over significant P-junctions
+    // nu runs over the bfn shell list
+    // i runs over all points
     lwd->eval_exx_fmat( npts, nbf, nbe_PJ, nbe_bfn, submat_map_PJ,
       submat_map_bfn, P, ldp, basis_eval, nbe_bfn, zmat, nbe_PJ, nbe_scr );
 
-    //double fmat_sum = 0.;
-    //for( auto i = 0; i < npts*nbe_PJ; ++i ) fmat_sum += zmat[i];
-    //fmat_sums[iT] = fmat_sum;
+    // Get Max F for shell pairs
+    std::vector<double> max_F( nshells_bf );
+    for( auto ish = 0; ish < nshells_bf; ++ish ) {
+      const auto sh_st = basis_map.shell_to_first_ao(ish);
+      const auto sh_sz = basis_map.shell_size(ish);
 
-    // Compute G(mu,i) = w(i) * A(mu,nu,i) * X(nu,i)
+      double tmp_max = 0.;
+      for( auto ipt = 0;     ipt < npts;        ++ipt )
+      for( auto i   = sh_st; i < sh_st + sh_sz; ++i   ) {
+        tmp_max = std::max( tmp_max, 
+          std::sqrt(weights[ipt]) * std::abs(zmat[ i + ipt*nbe_PJ ])
+        );
+      }
+      max_F[ish] = tmp_max;
+      if( max_F[ish] > max_F_approx[ish] ) throw std::runtime_error("MAX F FAILURE");
+    }
+
+    //std::cout << "MAX_BF_SUM = " << max_bf_sum << std::endl;
+    //std::cout << "MAX_F = " << *std::max_element( max_F.begin(), max_F.end() )
+    //  << std::endl;
+
+    // Get shell pair screening for integrals
+    std::set<int32_t> eps_E_shells, eps_K_shells;
+    if(*std::max_element( max_F.begin(), max_F.end() ) > 1e-6 )
+    for( auto ish = 0; ish < nshells_bf; ++ish ) 
+    for( auto jsh = 0; jsh <= ish;       ++jsh ) {
+      const auto V_ij = V_max[ish + jsh*nshells_bf];
+      const double eps_E = max_F[ish] * max_F[jsh] * V_ij;
+      const double eps_K = 
+        std::max( max_F[ish], max_F[jsh] ) * max_bf_sum * V_ij;
+
+      //std::cout << ish << ", " << jsh << ", "
+      //  << "  VIJ = " << V_ij << ", "
+      //  << "  FI  = " << max_F[ish] << ", "
+      //  << "  FJ  = " << max_F[jsh] << ", "
+      //  << "  BF  = " << max_bf_sum << std::endl;
+
+      if( eps_E > 1e-6 ) {
+        eps_E_shells.insert( ish );
+        eps_E_shells.insert( jsh );
+      }
+
+      if( eps_K > 1e-6 ) {
+        eps_K_shells.insert( ish );
+        eps_K_shells.insert( jsh );
+      }
+
+    }
+
+    eps_K_shells.insert( eps_E_shells.begin(), eps_E_shells.end() );
+    //std::cout << "SCREEN = " << eps_K_shells.size() << std::endl;
+    if( eps_K_shells.size() == 0 ) {
+      #pragma omp critical
+      {
+        nskip++;
+      }
+      continue;
+    }
+
+    // Compute G(mu,i) = w(i) * A(mu,nu,i) * F(nu,i)
+    // mu runs over significant S-junctions
+    // nu runs over significant P-junctions
+    // i runs over all points
     lwd->eval_exx_gmat( npts, nbf, points, weights, basis, basis_map,
       zmat, nbe_PJ, gmat, nbe_SJ );
 
-    //double gmat_sum = 0.;
-    //for( auto i = 0; i < npts*nbe_SJ; ++i ) gmat_sum += gmat[i];
-    //gmat_sums[iT] = gmat_sum;
-
-    // Increment K
+    // Increment K(mu,nu) += B(mu,i) * G(nu,i)
+    // mu runs over bfn shell list
+    // nu runs over S junctions
+    // i runs over all points
     #pragma omp critical
     lwd->inc_exx_k( npts, nbf, nbe_bfn, nbe_SJ, basis_eval, submat_map_bfn,
       submat_map_SJ, gmat, nbe_SJ, K, ldk, nbe_scr );
-
-    //double kmat_sum = 0.;
-    //for( auto i = 0; i < nbf*nbf; ++i ) kmat_sum += K[i];
-
-
-    //std::cout << std::scientific << std::setprecision(6);
-    //std::cout << iT << ", " << bfn_sum << ", " << fmat_sum << ", " 
-    //  << gmat_sum << ", " << kmat_sum << std::endl;
 
   } // Loop over tasks 
 
@@ -248,6 +346,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     K[j + i*ldk] = K_symm;
   }
 
+  std::cout << "NSKIP = " << nskip << " / " << ntasks << std::endl;
 }
 
 }

@@ -9,6 +9,7 @@
 #include <gauxc/basisset_map.hpp>
 #include "rys_integral.h"
 #include <gauxc/util/real_solid_harmonics.hpp>
+#include "integrator_util/integral_bounds.hpp"
 
 namespace GauXC {
 
@@ -320,6 +321,14 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nbe,
 
   const size_t nshells = basis.nshells();
 
+#if 0
+  std::vector<double> V_max( nshells * nshells );
+  for( auto i = 0; i < nshells; ++i )
+  for( auto j = 0; j < nshells; ++j ) {
+    V_max[i + j*nshells] = util::max_coulomb( basis.at(i), basis.at(j) );
+  }
+#endif
+
   // Set G to zero
   for( int j = 0; j < npts; ++j )
   for( int i = 0; i < nbe;  ++i ) {
@@ -342,6 +351,9 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nbe,
 
     size_t joff = 0;
     for( int j = 0; j <= i; ++j ) {
+    #if 0
+      if( V_max[i + j*nshells] < 1e-8 ) {continue;}
+    #endif
       const auto& ket       = basis.at(j);
       const int ket_l       = ket.l();
       const int ket_sz      = ket.size();
@@ -355,6 +367,13 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nbe,
 
       compute_integral_shell_pair( npts, rys_basis[i], rys_basis[j], _points,
         _tmp.data() );
+
+#if 0
+      double max_int = 0;
+      for( auto x : _tmp ) max_int = std::max( max_int, std::abs(x) );
+      if( max_int > V_max[i + j*nshells] ) 
+        std::cout << "WTF " << max_int << ", " << V_max[i+j*nshells] << ", " << bra_l << ", " << ket_l << std::endl;
+#endif
 
       const auto need_tform = need_transform_bra or need_transform_ket;
 

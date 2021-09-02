@@ -136,6 +136,7 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
 
   } // Loop over Atoms
 
+  return local_work;
 
   // Lexicographic ordering of tasks
   auto task_order = []( const auto& a, const auto& b ) {
