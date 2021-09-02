@@ -54,6 +54,195 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 }
 
+
+
+
+
+
+// MBFS(i) = sqrt(W[i]) * sum_mu B(mu,i)
+// return max_i MBFS(i)
+double compute_max_bf_sum( size_t npts, size_t nbe_bfn, const double* weights,
+  const double* basis_eval, size_t ldb ) {
+
+  std::vector<double> bf_sums( npts );
+  for( auto ipt = 0ul; ipt < npts; ++ipt ) {
+    double tmp = 0.;
+    for( auto ibf = 0ul; ibf < nbe_bfn; ++ibf ) 
+      tmp += std::abs( basis_eval[ibf + ipt * ldb] );
+    bf_sums[ipt] = std::sqrt(weights[ipt]) * tmp;
+  }
+
+  return *std::max_element( bf_sums.begin(), bf_sums.end() );
+
+}
+
+
+auto compute_approx_f_max( size_t npts, size_t nshells_bf, size_t nbf, 
+  size_t nbe_bfn, const BasisSetMap& basis_map, const double* weights, 
+  const std::vector<std::array<int32_t,3>>& submat_bfn, const double* basis_eval,
+  size_t ldb, const double* P_abs, size_t ldp, LocalHostWorkDriver* lwd,
+  double* nbe_scr) {
+
+  // Get max value for each bfn over grid 
+  std::vector<double> max_bf_grid( nbe_bfn );
+  for( auto ibf = 0ul; ibf < nbe_bfn; ++ibf ) {
+    double tmp = 0.;
+    for( auto ipt = 0ul; ipt < npts; ++ipt )
+      tmp = std::max( tmp,
+        std::sqrt(weights[ipt]) *
+        std::abs(basis_eval[ibf + ipt*ldb])
+      );
+    max_bf_grid[ibf] = tmp;
+  }
+
+  // Compute approximate F max over basis functions
+  std::vector<double> max_F_approx_bfn( nbf );
+  std::decay_t<decltype(submat_bfn)> submat_full = {
+    {0, nbf, 0}
+  };
+
+  lwd->eval_exx_fmat( 1, nbf, nbf, nbe_bfn, submat_full, submat_bfn,
+    P_abs, ldp, max_bf_grid.data(), nbe_bfn, max_F_approx_bfn.data(),
+    nbf, nbe_scr );
+
+  // Collapse approx F max over shells 
+  std::vector<double> max_F_approx( nshells_bf );
+  for( auto ish = 0ul; ish < nshells_bf; ++ish ) {
+    const auto sh_st = basis_map.shell_to_first_ao(ish);
+    const auto sh_sz = basis_map.shell_size(ish);
+    double tmp = 0.;
+    for( auto i = sh_st; i < sh_st + sh_sz; ++i )
+      tmp = std::max( tmp, std::abs(max_F_approx_bfn[i]) );
+    max_F_approx[ish] = tmp;
+  }
+
+  return max_F_approx;
+}
+
+
+
+auto compute_true_f_max( size_t npts, size_t nshells_bra, size_t nbe_bra,
+  const BasisSetMap& basis_map, const std::vector<int32_t>& shell_list_bra,
+  const double* weights, const double* F, size_t ldf ) {
+
+  std::vector<double> max_F( nshells_bra );
+  size_t sh_st = 0;
+  for( auto i = 0ul; i < nshells_bra; ++i ) {
+    const auto ish = shell_list_bra[i];
+    const auto sh_sz = basis_map.shell_size(ish);
+
+    double tmp_max = 0.;
+    for( auto ipt = 0ul; ipt < npts; ++ipt ) 
+    for( auto ii = 0ul;   ii < sh_sz;  ++ii  )
+      tmp_max = std::max( tmp_max,
+        std::sqrt(weights[ipt]) *
+        std::abs( F[ sh_st + ii + ipt*ldf] )
+      );
+    max_F[i] = tmp_max;
+
+    sh_st += sh_sz;
+  }
+
+  return max_F;
+
+}
+
+
+
+auto compute_sn_LinK_E_set( size_t nshells, const std::vector<int32_t>& shell_list,
+  const double* V_max, size_t ldv, const double* max_F, double E_tol ) {
+
+  std::set<int32_t> eps_E_shells;
+  for( auto i = 0ul; i < nshells; ++i )
+  for( auto j = 0ul; j <= i;      ++j ) {
+
+    const auto ish = shell_list[i];
+    const auto jsh = shell_list[j];
+
+    const auto V_ij = V_max[ish + jsh*ldv];
+    const auto F_i  = max_F[i];
+    const auto F_j  = max_F[j];
+
+    const double eps_E_compare = F_i * F_j * V_ij;
+    if( eps_E_compare > E_tol )  {
+      eps_E_shells.insert(ish); 
+      eps_E_shells.insert(jsh); 
+    }
+
+  }
+
+  return eps_E_shells;
+
+}
+
+auto compute_sn_LinK_K_set( size_t nshells, const std::vector<int32_t>& shell_list,
+  const double* V_max, size_t ldv, const double* max_F, double max_bf_sum,
+  double K_tol ) {
+
+  std::set<int32_t> eps_K_shells;
+  for( auto i = 0ul; i < nshells; ++i )
+  for( auto j = 0ul; j <= i;      ++j ) {
+
+    const auto ish = shell_list[i];
+    const auto jsh = shell_list[j];
+
+    const auto V_ij = V_max[ish + jsh*ldv];
+    const auto F_i  = max_F[i];
+    const auto F_j  = max_F[j];
+
+    const double eps_K_compare = std::max(F_i, F_j) * V_ij * max_bf_sum;
+    if( eps_K_compare > K_tol )  {
+      eps_K_shells.insert(ish); 
+      eps_K_shells.insert(jsh); 
+    }
+
+  }
+
+  return eps_K_shells;
+
+}
+
+auto compute_sn_LinK_EK_set( size_t nshells, const std::vector<int32_t>& shell_list,
+  const double* V_max, size_t ldv, const double* max_F, double max_bf_sum,
+  double E_tol, double K_tol ) {
+
+  std::set<int32_t> eps_EK_shells;
+  for( auto i = 0ul; i < nshells; ++i )
+  for( auto j = 0ul; j <= i;      ++j ) {
+
+    const auto ish = shell_list[i];
+    const auto jsh = shell_list[j];
+
+    const auto V_ij = V_max[ish + jsh*ldv];
+    const auto F_i  = max_F[i];
+    const auto F_j  = max_F[j];
+
+    const double eps_E_compare = F_i * F_j * V_ij;
+    const double eps_K_compare = std::max(F_i, F_j) * V_ij * max_bf_sum;
+    if( eps_K_compare > K_tol or eps_E_compare > E_tol)  {
+      eps_EK_shells.insert(ish); 
+      eps_EK_shells.insert(jsh); 
+    }
+
+  }
+
+  return eps_EK_shells;
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
   exx_local_work_( const value_type* P, int64_t ldp, 
@@ -175,8 +364,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       gen_compressed_submat_map( basis_map, shell_list_bfn_, nbf, nbf );
     
     // S/P-junction shell lists
-    auto shell_list_SJ = shell_list_;
-    auto shell_list_PJ = shell_list_;
+    auto shell_list_SJ = full_shell_list_;
+    auto shell_list_PJ = full_shell_list_;
     size_t nbe_SJ     = nbf;
     size_t nbe_PJ     = nbf;
 
@@ -205,43 +394,16 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     lwd->eval_collocation( npts, nshells_bfn, nbe_bfn, points, basis, 
       shell_list_bfn, basis_eval );
 
-    // Calculate BF sums
-    std::vector<double> bf_sums( npts );
-    for( auto ipt = 0; ipt < npts; ++ipt ) {
-      double tmp = 0.;
-      for( auto ibf = 0; ibf < nbe_bfn; ++ibf ) 
-        tmp += std::abs(basis_eval[ibf + ipt*nbe_bfn]);
-      bf_sums[ipt] = std::sqrt(weights[ipt]) * tmp;
-    }
 
-    // Get Max BF Sum
-    auto max_bf_sum = *std::max_element( bf_sums.begin(), bf_sums.end() );
+    // Compute Max BF Sum
+    auto max_bf_sum = 
+      compute_max_bf_sum( npts, nbe_bfn, weights, basis_eval, nbe_bfn );
 
-    // Get max bf over grid
-    std::vector<double> max_bf_grid( nbe_bfn );
-    for( auto ibf = 0; ibf < nbe_bfn; ++ibf ) {
-      double tmp = 0.;
-      for( auto ipt = 0; ipt < npts; ++ipt )
-        tmp = std::max( tmp, std::abs( std::sqrt(weights[ipt]) * basis_eval[ibf + ipt*nbe_bfn] ) );
-      max_bf_grid[ibf] = tmp;
-    }
-
-    // Get approx F max over bfn
-    std::vector<double> max_F_approx_bfn( nbf );
-    lwd->eval_exx_fmat( 1, nbf, nbf, nbe_bfn, submat_map_PJ /* Assumes this is full basis */,
-      submat_map_bfn, P_abs.data(), nbf, max_bf_grid.data(), nbe_bfn, max_F_approx_bfn.data(), nbf,
-      nbe_scr );
-
-    // Collapse approx F max over shells 
-    std::vector<double> max_F_approx( nshells_bf );
-    for( auto ish = 0; ish < nshells_bf; ++ish ) {
-      const auto sh_st = basis_map.shell_to_first_ao(ish);
-      const auto sh_sz = basis_map.shell_size(ish);
-      double tmp = 0.;
-      for( auto i = sh_st; i < sh_st + sh_sz; ++i )
-        tmp = std::max( tmp, std::abs(max_F_approx_bfn[i]) );
-      max_F_approx[ish] = tmp;
-    }
+    // Compute Approximate max F
+    auto max_F_approx =
+      compute_approx_f_max( npts, nshells_bf, nbf, nbe_bfn, basis_map,
+        weights, submat_map_bfn, basis_eval, nbe_bfn, P_abs.data(), nbf,
+        lwd, nbe_scr );
 
 
     // Evaluate F(mu,i) = P(mu,nu) * B(nu,i)
@@ -251,62 +413,29 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     lwd->eval_exx_fmat( npts, nbf, nbe_PJ, nbe_bfn, submat_map_PJ,
       submat_map_bfn, P, ldp, basis_eval, nbe_bfn, zmat, nbe_PJ, nbe_scr );
 
+    auto max_F = compute_true_f_max( npts, nshells_bf, nbf, basis_map,
+      full_shell_list_, weights, zmat, nbf );
+
     // Get Max F for shell pairs
-    std::vector<double> max_F( nshells_bf );
+    #if 0
     for( auto ish = 0; ish < nshells_bf; ++ish ) {
-      const auto sh_st = basis_map.shell_to_first_ao(ish);
-      const auto sh_sz = basis_map.shell_size(ish);
-
-      double tmp_max = 0.;
-      for( auto ipt = 0;     ipt < npts;        ++ipt )
-      for( auto i   = sh_st; i < sh_st + sh_sz; ++i   ) {
-        tmp_max = std::max( tmp_max, 
-          std::sqrt(weights[ipt]) * std::abs(zmat[ i + ipt*nbe_PJ ])
-        );
-      }
-      max_F[ish] = tmp_max;
-      if( max_F[ish] > max_F_approx[ish] ) throw std::runtime_error("MAX F FAILURE");
+      if( max_F[ish] > max_F_approx[ish] ) 
+        throw std::runtime_error("MAX F FAILURE");
     }
-
-    //std::cout << "MAX_BF_SUM = " << max_bf_sum << std::endl;
-    //std::cout << "MAX_F = " << *std::max_element( max_F.begin(), max_F.end() )
-    //  << std::endl;
+    #endif
 
     // Get shell pair screening for integrals
-    std::set<int32_t> eps_E_shells, eps_K_shells;
-    if(*std::max_element( max_F.begin(), max_F.end() ) > 1e-6 )
-    for( auto ish = 0; ish < nshells_bf; ++ish ) 
-    for( auto jsh = 0; jsh <= ish;       ++jsh ) {
-      const auto V_ij = V_max[ish + jsh*nshells_bf];
-      const double eps_E = max_F[ish] * max_F[jsh] * V_ij;
-      const double eps_K = 
-        std::max( max_F[ish], max_F[jsh] ) * max_bf_sum * V_ij;
+    auto eps_EK_shell_set = 
+      compute_sn_LinK_EK_set( nshells_bf, full_shell_list_,
+        V_max.data(), nshells_bf, max_F.data(), max_bf_sum,
+        1e-6, 1e-6 );
 
-      //std::cout << ish << ", " << jsh << ", "
-      //  << "  VIJ = " << V_ij << ", "
-      //  << "  FI  = " << max_F[ish] << ", "
-      //  << "  FJ  = " << max_F[jsh] << ", "
-      //  << "  BF  = " << max_bf_sum << std::endl;
 
-      if( eps_E > 1e-6 ) {
-        eps_E_shells.insert( ish );
-        eps_E_shells.insert( jsh );
-      }
-
-      if( eps_K > 1e-6 ) {
-        eps_K_shells.insert( ish );
-        eps_K_shells.insert( jsh );
-      }
-
-    }
-
-    eps_K_shells.insert( eps_E_shells.begin(), eps_E_shells.end() );
     //std::cout << "SCREEN = " << eps_K_shells.size() << std::endl;
-    if( eps_K_shells.size() == 0 ) {
+    if( eps_EK_shell_set.size() == 0 ) {
       #pragma omp critical
-      {
-        nskip++;
-      }
+      nskip++;
+
       continue;
     }
 
