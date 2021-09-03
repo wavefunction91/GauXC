@@ -311,15 +311,13 @@ void ReferenceLocalHostWorkDriver::eval_exx_fmat( size_t npts, size_t nbf,
 
 
 
-void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nbe, 
-  const double* points, const double* weights, const BasisSet<double>& basis, 
-  const BasisSetMap& basis_map, const double* X, size_t ldx, 
-  double* G, size_t ldg ) {
+void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
+  size_t nbe, const double* points, const double* weights, 
+  const BasisSet<double>& basis, const BasisSetMap& basis_map, 
+  const int32_t* shell_list, const double* X, size_t ldx, double* G, size_t ldg ) {
 
   // Cast points to Rys format (binary compatable)
   point* _points = reinterpret_cast<point*>(const_cast<double*>(points));
-
-  const size_t nshells = basis.nshells();
 
 #if 0
   std::vector<double> V_max( nshells * nshells );
@@ -343,7 +341,8 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nbe,
 
   size_t ioff = 0;
   for( int i = 0; i < nshells; ++i ) {
-    const auto& bra       = basis.at(i);
+    const auto ish = shell_list[i];
+    const auto& bra       = basis.at(ish);
     const int bra_l       = bra.l();
     const int bra_sz      = bra.size();
     const int bra_cart_sz = (bra_l+1) * (bra_l+2) / 2;
@@ -351,10 +350,8 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nbe,
 
     size_t joff = 0;
     for( int j = 0; j <= i; ++j ) {
-    #if 0
-      if( V_max[i + j*nshells] < 1e-8 ) {continue;}
-    #endif
-      const auto& ket       = basis.at(j);
+      const auto jsh        = shell_list[j];
+      const auto& ket       = basis.at(jsh);
       const int ket_l       = ket.l();
       const int ket_sz      = ket.size();
       const int ket_cart_sz = (ket_l+1) * (ket_l+2) / 2;
@@ -365,15 +362,8 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nbe,
 
       std::vector<double> _tmp( shpair_cart_sz * npts );
 
-      compute_integral_shell_pair( npts, rys_basis[i], rys_basis[j], _points,
+      compute_integral_shell_pair( npts, rys_basis[ish], rys_basis[jsh], _points,
         _tmp.data() );
-
-#if 0
-      double max_int = 0;
-      for( auto x : _tmp ) max_int = std::max( max_int, std::abs(x) );
-      if( max_int > V_max[i + j*nshells] ) 
-        std::cout << "WTF " << max_int << ", " << V_max[i+j*nshells] << ", " << bra_l << ", " << ket_l << std::endl;
-#endif
 
       const auto need_tform = need_transform_bra or need_transform_ket;
 

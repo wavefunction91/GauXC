@@ -97,14 +97,14 @@ void LocalHostWorkDriver::eval_exx_fmat( size_t npts, size_t nbf, size_t nbe_bra
 
 
 // G Matrix G(mu,i) = w(i) * A(mu,nu,i) * X(mu,i)
-void LocalHostWorkDriver::eval_exx_gmat( size_t npts, size_t nbe,
+void LocalHostWorkDriver::eval_exx_gmat( size_t npts, size_t nshells, size_t nbe,
   const double* points, const double* weights, const BasisSet<double>& basis,
-  const BasisSetMap& basis_map, const double* X, size_t ldx, double* G,
-  size_t ldg ) {
+  const BasisSetMap& basis_map, const int32_t* shell_list, const double* X, 
+  size_t ldx, double* G, size_t ldg ) {
 
   throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_exx_gmat(npts, nbe, points, weights, basis, basis_map, X, ldx,
-    G, ldg );
+  pimpl_->eval_exx_gmat(npts, nshells, nbe, points, weights, basis, basis_map, 
+    shell_list, X, ldx, G, ldg );
 
 }
 
@@ -115,7 +115,7 @@ void LocalHostWorkDriver::inc_exx_k( size_t npts, size_t nbf, size_t nbe_bra,
 
   throw_if_invalid_pimpl(pimpl_);
   pimpl_->inc_exx_k(npts, nbf, nbe_bra, nbe_ket, basis_eval, submat_map_bra,
-    submat_map_ket, G, ldg, K, ldg, scr );
+    submat_map_ket, G, ldg, K, ldk, scr );
 }
 
 

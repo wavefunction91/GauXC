@@ -47,10 +47,10 @@ struct LocalHostWorkDriverPIMPL {
     const double* basis_eval, size_t ldb, double* F, size_t ldf,
     double* scr ) = 0;
 
-  virtual void eval_exx_gmat( size_t npts, size_t nbe, const double* points, 
-    const double* weights, const BasisSet<double>& basis, 
-    const BasisSetMap& basis_map, const double* X, size_t ldx, 
-    double* G, size_t ldg ) = 0;
+  virtual void eval_exx_gmat( size_t npts, size_t nshells, size_t nbe, 
+    const double* points, const double* weights, const BasisSet<double>& basis, 
+    const BasisSetMap& basis_map, const int32_t* shell_list, const double* X, 
+    size_t ldx, double* G, size_t ldg ) = 0;
 
   virtual void inc_exx_k( size_t npts, size_t nbf, size_t nbe_bra, size_t nbe_ket, 
     const double* basis_eval, const submat_map_t& submat_map_bra, 

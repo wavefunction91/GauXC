@@ -202,11 +202,11 @@ auto compute_sn_LinK_K_set( size_t nshells, const std::vector<int32_t>& shell_li
 
 }
 
-auto compute_sn_LinK_EK_set( size_t nshells, const std::vector<int32_t>& shell_list,
+auto compute_sn_LinK_ek_set( size_t nshells, const std::vector<int32_t>& shell_list,
   const double* V_max, size_t ldv, const double* max_F, double max_bf_sum,
   double E_tol, double K_tol ) {
 
-  std::set<int32_t> eps_EK_shells;
+  std::set<int32_t> eps_ek_shells;
   for( auto i = 0ul; i < nshells; ++i )
   for( auto j = 0ul; j <= i;      ++j ) {
 
@@ -220,13 +220,13 @@ auto compute_sn_LinK_EK_set( size_t nshells, const std::vector<int32_t>& shell_l
     const double eps_E_compare = F_i * F_j * V_ij;
     const double eps_K_compare = std::max(F_i, F_j) * V_ij * max_bf_sum;
     if( eps_K_compare > K_tol or eps_E_compare > E_tol)  {
-      eps_EK_shells.insert(ish); 
-      eps_EK_shells.insert(jsh); 
+      eps_ek_shells.insert(ish); 
+      eps_ek_shells.insert(jsh); 
     }
 
   }
 
-  return eps_EK_shells;
+  return eps_ek_shells;
 
 }
 
@@ -335,6 +335,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Full shell list
   std::vector<int32_t> full_shell_list_( basis.nshells() );
   std::iota( full_shell_list_.begin(), full_shell_list_.end(), 0 ); // Don't screen for now
+  std::vector< std::array<int32_t,3> > full_submat_map = { {0, nbf, 0} };
 
   #pragma omp parallel
   {
@@ -363,23 +364,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     auto [submat_map_bfn, foo1] = 
       gen_compressed_submat_map( basis_map, shell_list_bfn_, nbf, nbf );
     
-    // S/P-junction shell lists
-    auto shell_list_SJ = full_shell_list_;
-    auto shell_list_PJ = full_shell_list_;
-    size_t nbe_SJ     = nbf;
-    size_t nbe_PJ     = nbf;
-
-    auto [submat_map_SJ, foo2] = 
-      gen_compressed_submat_map( basis_map, shell_list_SJ, nbf, nbf );
-    auto [submat_map_PJ, foo3] = 
-      gen_compressed_submat_map( basis_map, shell_list_PJ, nbf, nbf );
 
 
     // Allocate data
     host_data.basis_eval.resize( npts * nbe_bfn );
-    host_data.zmat      .resize( npts * nbe_PJ );
-    host_data.gmat      .resize( npts * nbe_SJ );
-    host_data.nbe_scr   .resize( nbe_bfn * std::max(nbe_PJ, nbe_SJ)  );
+    host_data.zmat      .resize( npts * nbf );
+    host_data.gmat      .resize( npts * nbf );
+    host_data.nbe_scr   .resize( nbe_bfn * nbf );
 
 
     // Alias/Partition out scratch memory
@@ -405,54 +396,62 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         weights, submat_map_bfn, basis_eval, nbe_bfn, P_abs.data(), nbf,
         lwd, nbe_scr );
 
-
-    // Evaluate F(mu,i) = P(mu,nu) * B(nu,i)
-    // mu runs over significant P-junctions
-    // nu runs over the bfn shell list
-    // i runs over all points
-    lwd->eval_exx_fmat( npts, nbf, nbe_PJ, nbe_bfn, submat_map_PJ,
-      submat_map_bfn, P, ldp, basis_eval, nbe_bfn, zmat, nbe_PJ, nbe_scr );
-
-    auto max_F = compute_true_f_max( npts, nshells_bf, nbf, basis_map,
-      full_shell_list_, weights, zmat, nbf );
-
-    // Get Max F for shell pairs
-    #if 0
-    for( auto ish = 0; ish < nshells_bf; ++ish ) {
-      if( max_F[ish] > max_F_approx[ish] ) 
-        throw std::runtime_error("MAX F FAILURE");
-    }
-    #endif
-
     // Get shell pair screening for integrals
-    auto eps_EK_shell_set = 
-      compute_sn_LinK_EK_set( nshells_bf, full_shell_list_,
-        V_max.data(), nshells_bf, max_F.data(), max_bf_sum,
+    auto eps_ek_shell_set = 
+      compute_sn_LinK_ek_set( nshells_bf, full_shell_list_,
+        V_max.data(), nshells_bf, max_F_approx.data(), max_bf_sum,
         1e-6, 1e-6 );
 
-
-    //std::cout << "SCREEN = " << eps_K_shells.size() << std::endl;
-    if( eps_EK_shell_set.size() == 0 ) {
-      #pragma omp critical
+    // Bail on task if 
+    if( eps_ek_shell_set.size() == 0 ) {
+      #pragma omp atomic
       nskip++;
 
       continue;
     }
 
-    // Compute G(mu,i) = w(i) * A(mu,nu,i) * F(nu,i)
-    // mu runs over significant S-junctions
-    // nu runs over significant P-junctions
+    const bool screen_ek = true;
+
+    // Convert ek shell set -> vector
+    std::vector<int32_t> ek_shell_list;
+    std::vector< std::array<int32_t,3> > ek_submat_map;
+    if( ek_shell_list.size() == nshells_bf or !screen_ek ) {
+      ek_shell_list = full_shell_list_;
+      ek_submat_map = full_submat_map;
+    } else {
+      ek_shell_list = decltype(ek_shell_list)( eps_ek_shell_set.begin(), eps_ek_shell_set.end() );
+      std::tie( ek_submat_map, std::ignore ) =
+        gen_compressed_submat_map( basis_map, ek_shell_list, nbf, nbf );
+    }
+    const auto nbe_ek = basis.nbf_subset( ek_shell_list.begin(), ek_shell_list.end() );
+    const auto nshells_ek = ek_shell_list.size();
+
+    // Evaluate F(mu,i) = P(mu,nu) * B(nu,i)
+    // mu runs over significant ek shells
+    // nu runs over the bfn shell list
     // i runs over all points
-    lwd->eval_exx_gmat( npts, nbf, points, weights, basis, basis_map,
-      zmat, nbe_PJ, gmat, nbe_SJ );
+    lwd->eval_exx_fmat( npts, nbf, nbe_ek, nbe_bfn, ek_submat_map,
+      submat_map_bfn, P, ldp, basis_eval, nbe_bfn, zmat, nbe_ek, nbe_scr );
+
+    // Get True Max F for shell pairs
+    //auto max_F = compute_true_f_max( npts, nshells_bf, nbf, basis_map,
+    //  full_shell_list_, weights, zmat, nbf );
+
+
+    // Compute G(mu,i) = w(i) * A(mu,nu,i) * F(nu,i)
+    // mu/nu run over significant ek shells
+    // i runs over all points
+    lwd->eval_exx_gmat( npts, nshells_ek, nbe_ek, points, weights, 
+      basis, basis_map, ek_shell_list.data(), zmat, nbe_ek, gmat, nbe_ek );
 
     // Increment K(mu,nu) += B(mu,i) * G(nu,i)
     // mu runs over bfn shell list
-    // nu runs over S junctions
+    // nu runs over ek shells
     // i runs over all points
+    //  nbe_ek << ", " << ldk << std::endl;
     #pragma omp critical
-    lwd->inc_exx_k( npts, nbf, nbe_bfn, nbe_SJ, basis_eval, submat_map_bfn,
-      submat_map_SJ, gmat, nbe_SJ, K, ldk, nbe_scr );
+    lwd->inc_exx_k( npts, nbf, nbe_bfn, nbe_ek, basis_eval, submat_map_bfn,
+      ek_submat_map, gmat, nbe_ek, K, ldk, nbe_scr );
 
   } // Loop over tasks 
 
