@@ -350,8 +350,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Screening settings
     const bool screen_ek = true;
-    const double eps_K   = 1e-8;
-    const double eps_E   = 1e-8;
+    const double eps_K   = 1e-6;
+    const double eps_E   = 1e-6;
 
     // Compute Max BF Sum
     auto max_bf_sum = 

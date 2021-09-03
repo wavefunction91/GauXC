@@ -37,8 +37,8 @@ int main(int argc, char** argv) {
     //}
 
     // Construct MolGrid / MolMeta
-    MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
-    //MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
+    //MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
+    MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
     auto meta = std::make_shared<MolMeta>( mol );
 
     // Read BasisSet
@@ -47,8 +47,8 @@ int main(int argc, char** argv) {
     std::cout << basis.nbf() << std::endl;
 
     for( auto& sh : basis ){ 
-      sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
-      //sh.set_shell_tolerance( 1e-10 );
+      //sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
+      sh.set_shell_tolerance( 1e-8 );
     }
 
     //std::cout << "Basis" << std::endl;

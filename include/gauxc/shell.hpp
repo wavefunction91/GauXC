@@ -10,6 +10,7 @@
 #include <gauxc/named_type.hpp>
 #include <gauxc/gauxc_config.hpp>
 #include <gauxc/util/contiguous_container_data.hpp>
+#include <gauxc/util/gau_rad_eval.hpp>
 
 
 namespace GauXC {
@@ -98,6 +99,7 @@ private:
 
   void compute_shell_cutoff() {
 
+#if 0
     // Cutoff radius according to Eq.20 in J. Chem. Theory Comput. 2011, 7, 3097-3104
     auto cutFunc = [tol=shell_tolerance_] (double alpha) -> double {
       const double log_tol  = -std::log(tol);
@@ -110,6 +112,10 @@ private:
         [&](F x, F y){ return cutFunc(x) < cutFunc(y); }
       )
     );
+#else
+    cutoff_radius_ = util::gau_rad_cutoff( l_, nprim_, alpha_.data(), 
+      coeff_.data(), shell_tolerance_ );
+#endif
 
   }
 public:

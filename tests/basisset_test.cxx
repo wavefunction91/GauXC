@@ -18,6 +18,18 @@
 
 using namespace GauXC;
 
+auto rad_eval( const Shell<double>& sh, double r ) {
+  return util::gau_rad_eval( sh.l(), sh.nprim(), sh.alpha_data(), 
+    sh.coeff_data(), r );
+}
+
+auto check_cutoff_radius( const Shell<double>& sh, double tol ) {
+  double r = sh.cutoff_radius();
+  auto calc_rad = util::gau_rad_cutoff( sh.l(), sh.nprim(), sh.alpha_data(), 
+    sh.coeff_data(), tol );
+  CHECK( r == Approx(calc_rad) );
+  CHECK( std::abs(rad_eval(sh, r)) < tol ); 
+}
 
 
 TEST_CASE("Shell", "[basisset]") {
@@ -26,13 +38,6 @@ TEST_CASE("Shell", "[basisset]") {
   using cart_array = Shell<double>::cart_array;
 
   const cart_array center = {0., 1., 0.};
-
-  auto cutFunc = []( double alpha, double tol ) -> double {
-    const double log_tol  = -std::log(tol);
-    const double log_alph =  std::log(alpha);
-    return std::sqrt( (log_tol + 0.5 * log_alph)/alpha );
-  };
-
 
   const double sqrt_pi = std::sqrt(M_PI);
   auto s_int = [=](double a) { return sqrt_pi / std::sqrt(a); };
@@ -59,8 +64,7 @@ TEST_CASE("Shell", "[basisset]") {
       CHECK( sh.coeff()[0] == Approx(ncoeff) );
       CHECK( sh.size() == 1 );
 
-
-      CHECK( sh.cutoff_radius() == Approx(cutFunc(alpha[0], 1e-10)) );
+      check_cutoff_radius( sh, 1e-10 ); 
 
       double exact_int = 0.;
       for( int32_t i = 0; i < 1; ++i )
@@ -87,7 +91,7 @@ TEST_CASE("Shell", "[basisset]") {
       CHECK( sh.size() == 3 );
 
 
-      CHECK( sh.cutoff_radius() == Approx(cutFunc(alpha[0], 1e-10)) );
+      check_cutoff_radius( sh, 1e-10 ); 
 
     }
 
@@ -107,7 +111,7 @@ TEST_CASE("Shell", "[basisset]") {
       CHECK( sh.size() == 6 );
 
 
-      CHECK( sh.cutoff_radius() == Approx(cutFunc(alpha[0], 1e-10)) );
+      check_cutoff_radius( sh, 1e-10 ); 
 
     }
 
@@ -132,13 +136,7 @@ TEST_CASE("Shell", "[basisset]") {
     CHECK( exact_int == Approx(1.) );
 
 
-    std::vector<double> indiv_cutoffs( 3 );
-    std::transform( sh.alpha().begin(), sh.alpha().begin()+3, indiv_cutoffs.begin(),
-      [&](double a) { return cutFunc(a, 1e-10); });
-
-    CHECK( sh.cutoff_radius() == Approx(*std::max_element(
-      indiv_cutoffs.begin(), indiv_cutoffs.end()
-    )));
+    check_cutoff_radius( sh, 1e-10 ); 
 
   }
 
@@ -151,13 +149,13 @@ TEST_CASE("Shell", "[basisset]") {
     Shell<double> sh( nprim, AngularMomentum(2), SphericalType(false),
       alpha, coeff, center );
 
-    CHECK(sh.cutoff_radius() == Approx( cutFunc( alpha[0], 1e-10 ) ));    
+    check_cutoff_radius( sh, 1e-10 ); 
 
     sh.set_shell_tolerance( 1e-10 );
-    CHECK(sh.cutoff_radius() == Approx( cutFunc( alpha[0], 1e-10 ) ));    
+    check_cutoff_radius( sh, 1e-10 ); 
 
     sh.set_shell_tolerance( 1e-7 );
-    CHECK(sh.cutoff_radius() == Approx( cutFunc( alpha[0], 1e-7 ) ));    
+    check_cutoff_radius( sh, 1e-7 ); 
 
   }
 
