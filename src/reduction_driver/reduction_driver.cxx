@@ -1,4 +1,5 @@
 #include "reduction_driver_impl.hpp"
+#include <stdexcept>
 
 namespace GauXC {
 
