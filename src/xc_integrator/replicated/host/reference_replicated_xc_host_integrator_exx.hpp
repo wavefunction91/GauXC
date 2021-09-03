@@ -7,6 +7,7 @@
 #include "host/blas.hpp"
 #include <stdexcept>
 #include <set>
+#include <atomic>
 
 #include <gauxc/util/geometry.hpp>
 
@@ -152,7 +153,7 @@ auto compute_true_f_max( size_t npts, size_t nshells_bra, size_t nbe_bra,
 auto compute_sn_LinK_E_set( size_t nshells, const std::vector<int32_t>& shell_list,
   const double* V_max, size_t ldv, const double* max_F, double E_tol ) {
 
-  std::set<int32_t> eps_E_shells;
+  std::set<int32_t> E_shells;
   for( auto i = 0ul; i < nshells; ++i )
   for( auto j = 0ul; j <= i;      ++j ) {
 
@@ -165,13 +166,13 @@ auto compute_sn_LinK_E_set( size_t nshells, const std::vector<int32_t>& shell_li
 
     const double eps_E_compare = F_i * F_j * V_ij;
     if( eps_E_compare > E_tol )  {
-      eps_E_shells.insert(ish); 
-      eps_E_shells.insert(jsh); 
+      E_shells.insert(ish); 
+      E_shells.insert(jsh); 
     }
 
   }
 
-  return eps_E_shells;
+  return E_shells;
 
 }
 
@@ -179,7 +180,7 @@ auto compute_sn_LinK_K_set( size_t nshells, const std::vector<int32_t>& shell_li
   const double* V_max, size_t ldv, const double* max_F, double max_bf_sum,
   double K_tol ) {
 
-  std::set<int32_t> eps_K_shells;
+  std::set<int32_t> K_shells;
   for( auto i = 0ul; i < nshells; ++i )
   for( auto j = 0ul; j <= i;      ++j ) {
 
@@ -192,13 +193,13 @@ auto compute_sn_LinK_K_set( size_t nshells, const std::vector<int32_t>& shell_li
 
     const double eps_K_compare = std::max(F_i, F_j) * V_ij * max_bf_sum;
     if( eps_K_compare > K_tol )  {
-      eps_K_shells.insert(ish); 
-      eps_K_shells.insert(jsh); 
+      K_shells.insert(ish); 
+      K_shells.insert(jsh); 
     }
 
   }
 
-  return eps_K_shells;
+  return K_shells;
 
 }
 
@@ -206,7 +207,7 @@ auto compute_sn_LinK_ek_set( size_t nshells, const std::vector<int32_t>& shell_l
   const double* V_max, size_t ldv, const double* max_F, double max_bf_sum,
   double E_tol, double K_tol ) {
 
-  std::set<int32_t> eps_ek_shells;
+  std::set<int32_t> ek_shells;
   for( auto i = 0ul; i < nshells; ++i )
   for( auto j = 0ul; j <= i;      ++j ) {
 
@@ -220,13 +221,13 @@ auto compute_sn_LinK_ek_set( size_t nshells, const std::vector<int32_t>& shell_l
     const double eps_E_compare = F_i * F_j * V_ij;
     const double eps_K_compare = std::max(F_i, F_j) * V_ij * max_bf_sum;
     if( eps_K_compare > K_tol or eps_E_compare > E_tol)  {
-      eps_ek_shells.insert(ish); 
-      eps_ek_shells.insert(jsh); 
+      ek_shells.insert(ish); 
+      ek_shells.insert(jsh); 
     }
 
   }
 
-  return eps_ek_shells;
+  return ek_shells;
 
 }
 
@@ -278,42 +279,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     lb_state.modified_weights_are_stored = true;
   }
 
-  // TODO: Get max weight / task + screen
-
   // Zero out integrands
   for( auto j = 0; j < nbf; ++j )
   for( auto i = 0; i < nbf; ++i ) 
     K[i + j*ldk] = 0.;
-
-  // Determine S-junctions
-  std::vector< std::set<int32_t> > S_junctions;
-  for( auto i = 0; i < basis.size(); ++i ) {
-    S_junctions.emplace_back();
-    auto rad = basis.at(i).cutoff_radius();
-    auto cen = basis.at(i).O();
-    for( auto j = 0; j < basis.size(); ++j ) {
-      auto dist = geometry::euclidean_dist( cen, basis.at(j).O() );
-      if( dist <= rad ) S_junctions.back().insert(j);
-    }
-  }
-
-  // Determine P-junctions
-  std::vector< std::set<int32_t> > P_junctions;
-  for( auto i = 0; i < basis.size(); ++i ) {
-    P_junctions.emplace_back();
-    for( auto j = 0; j < basis.size(); ++j ) {
-      auto i_st = basis_map.shell_to_first_ao(i);
-      auto i_sz = basis_map.shell_size(i);
-      auto j_st = basis_map.shell_to_first_ao(j);
-      auto j_sz = basis_map.shell_size(j);
-      double nrm = 0;
-      for( auto ii = 0; ii < i_sz; ++ii )
-      for( auto jj = 0; jj < j_sz; ++jj ) {
-        nrm = std::max( nrm, std::abs( P[ii+i_st + (jj+j_st)*ldp] ) );
-      }
-      if( nrm > 1e-10 ) P_junctions.back().insert(j);
-    }
-  }
 
    
   // Compute V upper bounds per shell pair
@@ -324,17 +293,17 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     V_max[i + j*nshells_bf] = util::max_coulomb( basis.at(i), basis.at(j) );
   }
 
+  // Absolute value of P
   std::vector<double> P_abs(nbf*nbf);
   for( auto i = 0; i < nbf*nbf; ++i ) P_abs[i] = std::abs(P[i]);
 
-
   // Loop over tasks
   const size_t ntasks = tasks.size();
-  size_t nskip = 0;
+  std::atomic_size_t nskip = 0;
 
   // Full shell list
   std::vector<int32_t> full_shell_list_( basis.nshells() );
-  std::iota( full_shell_list_.begin(), full_shell_list_.end(), 0 ); // Don't screen for now
+  std::iota( full_shell_list_.begin(), full_shell_list_.end(), 0 );
   std::vector< std::array<int32_t,3> > full_submat_map = { {0, nbf, 0} };
 
   #pragma omp parallel
@@ -366,18 +335,12 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     
 
 
-    // Allocate data
+    // Allocate data screening independent data
     host_data.basis_eval.resize( npts * nbe_bfn );
-    host_data.zmat      .resize( npts * nbf );
-    host_data.gmat      .resize( npts * nbf );
     host_data.nbe_scr   .resize( nbe_bfn * nbf );
-
-
-    // Alias/Partition out scratch memory
     auto* basis_eval = host_data.basis_eval.data();
     auto* nbe_scr    = host_data.nbe_scr.data();
-    auto* zmat       = host_data.zmat.data();
-    auto* gmat       = host_data.gmat.data();
+
 
 
     // Evaluate collocation B(mu,i)
@@ -385,6 +348,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     lwd->eval_collocation( npts, nshells_bfn, nbe_bfn, points, basis, 
       shell_list_bfn, basis_eval );
 
+    // Screening settings
+    const bool screen_ek = true;
+    const double eps_K   = 1e-8;
+    const double eps_E   = 1e-8;
 
     // Compute Max BF Sum
     auto max_bf_sum = 
@@ -397,20 +364,17 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         lwd, nbe_scr );
 
     // Get shell pair screening for integrals
-    auto eps_ek_shell_set = 
+    auto ek_shell_set = 
       compute_sn_LinK_ek_set( nshells_bf, full_shell_list_,
         V_max.data(), nshells_bf, max_F_approx.data(), max_bf_sum,
-        1e-6, 1e-6 );
+        eps_E, eps_K );
 
-    // Bail on task if 
-    if( eps_ek_shell_set.size() == 0 ) {
-      #pragma omp atomic
-      nskip++;
-
+    // Bail on task if no shells are needed after ek screening
+    if( ek_shell_set.size() == 0 ) {
+      nskip++; // this is atomic
       continue;
     }
 
-    const bool screen_ek = true;
 
     // Convert ek shell set -> vector
     std::vector<int32_t> ek_shell_list;
@@ -419,12 +383,19 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       ek_shell_list = full_shell_list_;
       ek_submat_map = full_submat_map;
     } else {
-      ek_shell_list = decltype(ek_shell_list)( eps_ek_shell_set.begin(), eps_ek_shell_set.end() );
+      ek_shell_list = decltype(ek_shell_list)( ek_shell_set.begin(), ek_shell_set.end() );
       std::tie( ek_submat_map, std::ignore ) =
         gen_compressed_submat_map( basis_map, ek_shell_list, nbf, nbf );
     }
     const auto nbe_ek = basis.nbf_subset( ek_shell_list.begin(), ek_shell_list.end() );
     const auto nshells_ek = ek_shell_list.size();
+
+
+    // Allocate Screening Dependent Data
+    host_data.zmat.resize( npts * nbe_ek );
+    host_data.gmat.resize( npts * nbe_ek );
+    auto* zmat = host_data.zmat.data();
+    auto* gmat = host_data.gmat.data();
 
     // Evaluate F(mu,i) = P(mu,nu) * B(nu,i)
     // mu runs over significant ek shells
@@ -434,8 +405,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       submat_map_bfn, P, ldp, basis_eval, nbe_bfn, zmat, nbe_ek, nbe_scr );
 
     // Get True Max F for shell pairs
-    //auto max_F = compute_true_f_max( npts, nshells_bf, nbf, basis_map,
-    //  full_shell_list_, weights, zmat, nbf );
+    //auto max_F = compute_true_f_max( npts, nshells_ek, nbe_ek, basis_map,
+    //  ek_shell_list, weights, zmat, nbe_ek );
 
 
     // Compute G(mu,i) = w(i) * A(mu,nu,i) * F(nu,i)
@@ -448,7 +419,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // mu runs over bfn shell list
     // nu runs over ek shells
     // i runs over all points
-    //  nbe_ek << ", " << ldk << std::endl;
     #pragma omp critical
     lwd->inc_exx_k( npts, nbf, nbe_bfn, nbe_ek, basis_eval, submat_map_bfn,
       ek_submat_map, gmat, nbe_ek, K, ldk, nbe_scr );
@@ -456,13 +426,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   } // Loop over tasks 
 
   } // End OpenMP region
-
-  //std::cout << std::scientific << std::setprecision(6);
-  //for( size_t iT = 0; iT < ntasks; ++iT ) {
-  //  std::cout << iT << ", " << bfn_sums[iT] << ", " << fmat_sums[iT] << ", " 
-  //    << gmat_sums[iT] << ", " << kmat_sums[iT] << std::endl;
-  //}
-
 
   // Symmetrize VXC
   for( auto j = 0; j < nbf; ++j ) 
