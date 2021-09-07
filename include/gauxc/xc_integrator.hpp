@@ -4,6 +4,7 @@
 
 #include <gauxc/types.hpp>
 #include <gauxc/load_balancer.hpp>
+#include <gauxc/xc_integrator_settings.hpp>
 
 namespace GauXC {
 
@@ -11,6 +12,7 @@ namespace detail {
   template <typename MatrixType>
   class XCIntegratorImpl;
 }
+
 
 
 template <typename MatrixType>
@@ -44,7 +46,8 @@ public:
 
   exc_vxc_type  eval_exc_vxc ( const MatrixType& );
   exc_grad_type eval_exc_grad( const MatrixType& );
-  exx_type      eval_exx     ( const MatrixType& );
+  exx_type      eval_exx     ( const MatrixType&, 
+                               const IntegratorSettingsEXX& = IntegratorSettingsEXX{} );
 
 
   const util::Timer& get_timings() const;

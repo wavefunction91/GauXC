@@ -34,9 +34,10 @@ typename XCIntegrator<MatrixType>::exc_grad_type
 
 template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exx_type
-  XCIntegrator<MatrixType>::eval_exx( const MatrixType& P ) {
+  XCIntegrator<MatrixType>::eval_exx( const MatrixType&     P,
+                                      const IntegratorSettingsEXX& settings ) {
   if( not pimpl_ ) throw std::runtime_error("Not Initialized");
-  return pimpl_->eval_exx(P);
+  return pimpl_->eval_exx(P,settings);
 };
 
 template <typename MatrixType>

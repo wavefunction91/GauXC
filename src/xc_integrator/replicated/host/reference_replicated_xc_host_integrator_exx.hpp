@@ -17,7 +17,8 @@ namespace detail {
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
   eval_exx_( int64_t m, int64_t n, const value_type* P,
-                 int64_t ldp, value_type* K, int64_t ldk ) {
+             int64_t ldp, value_type* K, int64_t ldk,
+             const IntegratorSettingsEXX& settings ) {
 
   const auto& basis = this->load_balancer_->basis();
 
@@ -39,9 +40,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    exx_local_work_( P, ldp, K, ldk );
+    exx_local_work_( P, ldp, K, ldk, settings );
   });
 
+  #ifdef GAUXC_ENABLE_MPI
+  this->timer_.time_op("XCIntegrator.LocalWait", [&](){
+    MPI_Barrier( this->load_balancer_->comm() );
+  });
+  #endif
 
   // Reduce Results
   this->timer_.time_op("XCIntegrator.Allreduce", [&](){
@@ -247,7 +253,7 @@ auto compute_sn_LinK_ek_set( size_t nshells, const std::vector<int32_t>& shell_l
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
   exx_local_work_( const value_type* P, int64_t ldp, 
-    value_type* K, int64_t ldk ) {
+    value_type* K, int64_t ldk, const IntegratorSettingsEXX& settings ) {
 
   // Cast LWD to LocalHostWorkDriver
   auto* lwd = dynamic_cast<LocalHostWorkDriver*>(this->local_work_driver_.get());
@@ -256,6 +262,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   const auto& basis = this->load_balancer_->basis();
   const auto& mol   = this->load_balancer_->molecule();
   const auto& meta  = this->load_balancer_->molmeta();
+
+  // XXX Check that basis is cartesian
+  //for( auto& sh : basis ) if(sh.pure()) throw std::runtime_error("sn-LinK EXX Only Works With Cartesian Functions");
 
   // Get basis map
   BasisSetMap basis_map(basis,mol);
@@ -306,6 +315,29 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   std::iota( full_shell_list_.begin(), full_shell_list_.end(), 0 );
   std::vector< std::array<int32_t,3> > full_submat_map = { {0, nbf, 0} };
 
+  // Screening settings
+  IntegratorSettingsSNLinK sn_link_settings;
+  if( auto* tmp = dynamic_cast<const IntegratorSettingsSNLinK*>(&settings) ) {
+    sn_link_settings = *tmp;
+  }
+
+  const bool screen_ek = sn_link_settings.screen_ek;
+  const double eps_K   = sn_link_settings.k_tol;
+  const double eps_E   = sn_link_settings.energy_tol;
+
+  int world_rank = 0;
+  #ifdef GAUXC_ENABLE_MPI
+  auto comm = this->load_balancer_->comm();
+  MPI_Comm_rank( comm, &world_rank );
+  #endif
+  if( !world_rank ) {
+    std::cout << "sn-LinK Settings:" << std::endl
+              << "  SCREEN_EK     = " << std::boolalpha << screen_ek << std::endl
+              << "  EPS_E         = " << eps_E << std::endl
+              << "  EPS_K         = " << eps_K << std::endl
+              << std::endl;
+  }
+
   #pragma omp parallel
   {
 
@@ -347,11 +379,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // mu ranges over the bfn shell list and i runs over all points
     lwd->eval_collocation( npts, nshells_bfn, nbe_bfn, points, basis, 
       shell_list_bfn, basis_eval );
-
-    // Screening settings
-    const bool screen_ek = true;
-    const double eps_K   = 1e-6;
-    const double eps_E   = 1e-6;
 
     // Compute Max BF Sum
     auto max_bf_sum = 
@@ -427,7 +454,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   } // End OpenMP region
 
-  // Symmetrize VXC
+  // Symmetrize K
   for( auto j = 0; j < nbf; ++j ) 
   for( auto i = 0; i < j;   ++i ) {
     const auto K_ij = K[i + j*ldk];

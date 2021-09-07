@@ -21,7 +21,8 @@ protected:
 
   virtual exc_vxc_type  eval_exc_vxc_ ( const MatrixType& P ) = 0;
   virtual exc_grad_type eval_exc_grad_( const MatrixType& P ) = 0;
-  virtual exx_type      eval_exx_     ( const MatrixType& P ) = 0;
+  virtual exx_type      eval_exx_     ( const MatrixType&     P, 
+                                        const IntegratorSettingsEXX& settings ) = 0;
   virtual const util::Timer& get_timings_() const = 0;
   virtual const LoadBalancer& get_load_balancer_() const = 0;
   
@@ -64,8 +65,8 @@ public:
    *  @param[in] P The alpha density matrix
    *  @returns Excact Exchange Matrix
    */
-  exx_type eval_exx( const MatrixType& P ) {
-    return eval_exx_(P);
+  exx_type eval_exx( const MatrixType& P, const IntegratorSettingsEXX& settings ) {
+    return eval_exx_(P,settings);
   }
 
   /** Get internal timers

@@ -4,6 +4,7 @@
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
+#include "ini_input.hpp"
 #define EIGEN_DONT_VECTORIZE
 #include <Eigen/Core>
 
@@ -26,7 +27,59 @@ int main(int argc, char** argv) {
     std::vector< std::string > opts( argc );
     for( int i = 0; i < argc; ++i ) opts[i] = argv[i];
 
-    std::string ref_file  = opts.at(1);
+    //std::string ref_file  = opts.at(1);
+    auto input_file = opts.at(1);
+    INIFile input(input_file);
+
+    // Require Ref file
+    auto ref_file = input.getData<std::string>("GAUXC.REF_FILE");
+
+    // Optional Args
+    std::string grid_spec = "ULTRAFINE";
+    double      basis_tol = 1e-10;
+    std::string func_spec = "PBE0";
+    bool integrate_vxc    = true;
+    bool integrate_exx    = false;
+
+    auto string_to_upper = []( auto& str ) {
+      std::transform( str.begin(), str.end(), str.begin(), ::toupper );
+    };
+
+    if( input.containsData("GAUXC.GRID") ) {
+      grid_spec = input.getData<std::string>("GAUXC.GRID");
+      string_to_upper( grid_spec );
+    }
+
+    if( input.containsData("GAUXC.BASIS_TOL") )
+      basis_tol = input.getData<double>("GAUXC.BASIS_TOL");
+
+    if( input.containsData("GAUXC.FUNC") ) {
+      func_spec = input.getData<std::string>("GAUXC.FUNC");
+      string_to_upper( func_spec );
+    }
+
+    if( input.containsData("GAUXC.INTEGRATE_VXC" ) )
+      integrate_vxc = input.getData<bool>("GAUXC.INTEGRATE_VXC");
+    if( input.containsData("GAUXC.INTEGRATE_EXX" ) )
+      integrate_exx = input.getData<bool>("GAUXC.INTEGRATE_EXX");
+
+
+    if( !world_rank ) {
+      std::cout << "DRIVER SETTINGS: " << std::endl
+                << "  REF_FILE     = " << ref_file << std::endl
+                << "  GRID         = " << grid_spec << std::endl
+                << "  BASIS_TOL    = " << basis_tol << std::endl
+                << "  FUNCTIONAL   = " << func_spec << std::endl
+                << "  VXC (?)      = " << std::boolalpha << integrate_vxc << std::endl
+                << "  EXX (?)      = " << std::boolalpha << integrate_exx << std::endl
+                << std::endl;
+    }
+
+    IntegratorSettingsSNLinK sn_link_settings;
+    if( input.containsData("EXX.TOL_E") )
+      sn_link_settings.energy_tol = input.getData<double>("EXX.TOL_E");
+    if( input.containsData("EXX.TOL_K") )
+      sn_link_settings.k_tol = input.getData<double>("EXX.TOL_K");
 
     // Read Molecule
     Molecule mol;
@@ -37,18 +90,21 @@ int main(int argc, char** argv) {
     //}
 
     // Construct MolGrid / MolMeta
-    //MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
-    MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
-    auto meta = std::make_shared<MolMeta>( mol );
+    std::map< std::string, AtomicGridSizeDefault > mg_map = {
+      {"FINE",      AtomicGridSizeDefault::FineGrid},
+      {"ULTRAFINE", AtomicGridSizeDefault::UltraFineGrid},
+      {"SUPERFINE", AtomicGridSizeDefault::SuperFineGrid}
+    };
+
+    MolGrid mg( mg_map.at(grid_spec), mol);
 
     // Read BasisSet
     BasisSet<double> basis; 
     read_hdf5_record( basis, ref_file, "/BASIS" );
-    std::cout << basis.nbf() << std::endl;
+    //std::cout << basis.nbf() << std::endl;
 
     for( auto& sh : basis ){ 
-      //sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
-      sh.set_shell_tolerance( 1e-8 );
+      sh.set_shell_tolerance( basis_tol );
     }
 
     //std::cout << "Basis" << std::endl;
@@ -70,11 +126,12 @@ int main(int argc, char** argv) {
     //LoadBalancerFactory lb_factory(ExecutionSpace::Device, "Default");
     //LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Replicated-FillIn");
     LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Replicated");
-    auto lb = lb_factory.get_shared_instance( GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, mg, basis);
+    auto lb = lb_factory.get_shared_instance( GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, 
+      mg, basis);
 
     // Setup XC functional
-    functional_type func( Backend::builtin, Functional::PBE0, Spin::Unpolarized );
-    //functional_type func( Backend::builtin, Functional::BLYP, Spin::Unpolarized );
+    functional_type func( Backend::builtin, functional_map.value(func_spec), 
+      Spin::Unpolarized );
 
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;
@@ -94,14 +151,20 @@ int main(int argc, char** argv) {
       K_ref   = matrix_type( dims[0], dims[1] );
 
       dset.read( P.data() );
-      dset = file.getDataSet("/VXC");
-      dset.read( VXC_ref.data() );
 
-      dset = file.getDataSet("/K");
-      dset.read( K_ref.data() );
+      if( integrate_vxc ) {
+        dset = file.getDataSet("/VXC");
+        dset.read( VXC_ref.data() );
 
-      dset = file.getDataSet("/EXC");
-      dset.read( &EXC_ref );
+        dset = file.getDataSet("/EXC");
+        dset.read( &EXC_ref );
+      }
+
+      if( integrate_exx ) {
+        dset = file.getDataSet("/K");
+        dset.read( K_ref.data() );
+      }
+
     }
 
     //std::cout << "NBF = " << basis.nbf() << std::endl;
@@ -111,13 +174,22 @@ int main(int argc, char** argv) {
 #endif
     auto xc_int_start = std::chrono::high_resolution_clock::now();
 
-    auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
-    auto K = integrator.eval_exx(P);
+    matrix_type VXC, K;
+    double EXC;
+
+    if( integrate_vxc ) {
+      std::tie(EXC, VXC) = integrator.eval_exc_vxc( P );
+    } else {
+      EXC = EXC_ref;
+      VXC = VXC_ref;
+    }
+
+    if( integrate_exx ) K = integrator.eval_exx(P, sn_link_settings);
+    else                K = K_ref;
+
     //std::cout << (K).block(0,0,5,5) << std::endl << std::endl;
     //std::cout << (K_ref).block(0,0,5,5) << std::endl << std::endl;
     //std::cout << (K - K_ref).block(0,0,5,5) << std::endl << std::endl;
-    //matrix_type K = K_ref;
-
 #ifdef GAUXC_ENABLE_MPI
     MPI_Barrier( MPI_COMM_WORLD );
 #endif
@@ -125,24 +197,54 @@ int main(int argc, char** argv) {
     auto xc_int_end   = std::chrono::high_resolution_clock::now();
     double xc_int_dur = std::chrono::duration<double>( xc_int_end - xc_int_start ).count();
 
+    util::MPITimer mpi_lb_timings( MPI_COMM_WORLD, lb->get_timings() );
+    util::MPITimer mpi_xc_timings( MPI_COMM_WORLD, integrator.get_timings() );
     if( !world_rank ) {
 
+      std::cout << std::scientific << std::setprecision(5) << std::endl;
       std::cout << "Load Balancer Timings" << std::endl;
       for( const auto& [name, dur] : lb->get_timings().all_timings() ) {
+        #ifdef GAUXC_ENABLE_MPI
+        const auto avg     = mpi_lb_timings.get_avg_duration(name).count();
+        const auto min     = mpi_lb_timings.get_min_duration(name).count();
+        const auto max     = mpi_lb_timings.get_max_duration(name).count();
+        const auto std_dev = mpi_lb_timings.get_std_dev(name).count();
+        #endif
         std::cout << "  " << std::setw(30) << name << ": " 
-                  << std::setw(10) << dur.count() << " ms" << std::endl;
+        #ifdef GAUXC_ENABLE_MPI
+                  << "AVG = " << std::setw(12) << avg << " ms, " 
+                  << "MIN = " << std::setw(12) << min << " ms, " 
+                  << "MAX = " << std::setw(12) << max << " ms, " 
+                  << "STDDEV = " << std::setw(12) << std_dev << " ms" << std::endl;
+        #else
+                  << std::setw(12) << dur.count() << " ms" << std::endl;
+        #endif
       }
 
       std::cout << "Integrator Timings" << std::endl;
       for( const auto& [name, dur] : integrator.get_timings().all_timings() ) {
+        #ifdef GAUXC_ENABLE_MPI
+        const auto avg     = mpi_xc_timings.get_avg_duration(name).count();
+        const auto min     = mpi_xc_timings.get_min_duration(name).count();
+        const auto max     = mpi_xc_timings.get_max_duration(name).count();
+        const auto std_dev = mpi_xc_timings.get_std_dev(name).count();
+        #endif
         std::cout << "  " << std::setw(30) << name << ": " 
-                  << std::setw(10) << dur.count() << " ms" << std::endl;
+        #ifdef GAUXC_ENABLE_MPI
+                  << "AVG = " << std::setw(12) << avg << " ms, " 
+                  << "MIN = " << std::setw(12) << min << " ms, " 
+                  << "MAX = " << std::setw(12) << max << " ms, " 
+                  << "STDDEV = " << std::setw(12) << std_dev << " ms" << std::endl;
+        #else
+                  << std::setw(12) << dur.count() << " ms" << std::endl;
+        #endif
       }
 
-      std::cout << std::scientific << std::setprecision(16);
+      std::cout << std::scientific << std::setprecision(14);
 
       std::cout << "XC Int Duration  = " << xc_int_dur << " s" << std::endl;
 
+      if( integrate_vxc ) {
       std::cout << "EXC (ref)        = " << EXC_ref << std::endl;
       std::cout << "EXC (calc)       = " << EXC     << std::endl;
       std::cout << "EXC Diff         = " << std::abs(EXC_ref - EXC) / EXC_ref 
@@ -152,11 +254,14 @@ int main(int argc, char** argv) {
       std::cout << "| VXC (calc) |_F = " << VXC.norm() << std::endl;
       std::cout << "RMS VXC Diff     = " << (VXC_ref - VXC).norm() / basis.nbf()
                                          << std::endl;
+      }
 
+      if( integrate_exx ) {
       std::cout << "| K (ref)  |_F = " << K_ref.norm() << std::endl;
       std::cout << "| K (calc) |_F = " << K.norm() << std::endl;
       std::cout << "RMS K Diff     = " << (K_ref - K).norm() / basis.nbf()
                                          << std::endl;
+      }
     }
   }
 #ifdef GAUXC_ENABLE_MPI

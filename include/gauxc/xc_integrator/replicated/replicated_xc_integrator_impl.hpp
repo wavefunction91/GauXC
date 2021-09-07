@@ -35,7 +35,8 @@ protected:
   virtual void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
                                int64_t ldp, value_type* EXC_GRAD ) = 0;
   virtual void eval_exx_( int64_t m, int64_t n, const value_type* P,
-                          int64_t ldp, value_type* K, int64_t ldk ) = 0;
+                          int64_t ldp, value_type* K, int64_t ldk,
+                          const IntegratorSettingsEXX& settings ) = 0;
 
 public:
 
@@ -55,7 +56,8 @@ public:
                       int64_t ldp, value_type* EXC_GRAD );
 
   void eval_exx( int64_t m, int64_t n, const value_type* P,
-                 int64_t ldp, value_type* K, int64_t ldk );
+                 int64_t ldp, value_type* K, int64_t ldk,
+                 const IntegratorSettingsEXX& settings );
 
   inline const util::Timer& get_timings() const { return timer_; }
 

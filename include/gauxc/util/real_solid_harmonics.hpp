@@ -153,7 +153,7 @@ public:
     for( int j = 0; j < ket_sph_sz; ++j ) {
       double tmp = 0.;
       for( int k = 0; k < ket_cart_sz; ++k ) {
-        tmp += cart[ i*ldc + k ] * table_.at(ket_l)[ k + j*ket_sph_sz ]; 
+        tmp += cart[ i*ldc + k ] * table_.at(ket_l)[ j + k*ket_sph_sz ]; 
       }
       sph[ i*lds + j ] = tmp;
     }
