@@ -38,8 +38,9 @@ int main(int argc, char** argv) {
     std::string grid_spec = "ULTRAFINE";
     double      basis_tol = 1e-10;
     std::string func_spec = "PBE0";
-    bool integrate_vxc    = true;
-    bool integrate_exx    = false;
+    bool integrate_vxc      = true;
+    bool integrate_exx      = false;
+    bool integrate_exc_grad = false;
 
     auto string_to_upper = []( auto& str ) {
       std::transform( str.begin(), str.end(), str.begin(), ::toupper );
@@ -62,6 +63,8 @@ int main(int argc, char** argv) {
       integrate_vxc = input.getData<bool>("GAUXC.INTEGRATE_VXC");
     if( input.containsData("GAUXC.INTEGRATE_EXX" ) )
       integrate_exx = input.getData<bool>("GAUXC.INTEGRATE_EXX");
+    if( input.containsData("GAUXC.INTEGRATE_EXC_GRAD" ) )
+      integrate_exc_grad = input.getData<bool>("GAUXC.INTEGRATE_EXC_GRAD");
 
 
     if( !world_rank ) {
@@ -177,11 +180,25 @@ int main(int argc, char** argv) {
     matrix_type VXC, K;
     double EXC;
 
+      std::cout << std::scientific << std::setprecision(6);
     if( integrate_vxc ) {
       std::tie(EXC, VXC) = integrator.eval_exc_vxc( P );
+      std::cout << "EXC = " << EXC << std::endl;
     } else {
       EXC = EXC_ref;
       VXC = VXC_ref;
+    }
+
+    if( integrate_exc_grad ) {
+      auto EXC_GRAD = integrator.eval_exc_grad( P );
+      std::cout << "EXC Gradient:" << std::endl;
+      for( auto iAt = 0; iAt < mol.size(); ++iAt ) {
+        std::cout << "  " 
+                  << std::setw(16) << EXC_GRAD[3*iAt + 0] 
+                  << std::setw(16) << EXC_GRAD[3*iAt + 1] 
+                  << std::setw(16) << EXC_GRAD[3*iAt + 2] 
+                  << std::endl;
+      }
     }
 
     if( integrate_exx ) K = integrator.eval_exx(P, sn_link_settings);

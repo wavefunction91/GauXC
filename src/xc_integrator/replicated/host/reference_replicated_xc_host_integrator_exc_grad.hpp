@@ -93,7 +93,12 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Loop over tasks
   const size_t ntasks = tasks.size();
+  #pragma omp parallel
+  {
+
   XCHostData<value_type> host_data; // Thread local host data
+
+  #pragma omp for schedule(dynamic)
   for( size_t iT = 0; iT < ntasks; ++iT ) {
 
     // Alias current task
@@ -185,10 +190,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Evaluate X matrix (P * B/Bx/By/Bz) -> store in Z
     // XXX: This assumes that bfn + gradients are contiguous in memory
     if( func.is_gga() ) {
-      lwd->eval_xmat( npts, nbf, nbe, submat_map, P, ldp, basis_eval, nbe,
+      lwd->eval_xmat( 4*npts, nbf, nbe, submat_map, P, ldp, basis_eval, nbe,
         zmat, nbe, nbe_scr );
     } else {
-      lwd->eval_xmat( 4*npts, nbf, nbe, submat_map, P, ldp, basis_eval, nbe,
+      lwd->eval_xmat( npts, nbf, nbe, submat_map, P, ldp, basis_eval, nbe,
         zmat, nbe, nbe_scr );
     }
 
@@ -269,15 +274,20 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
       } // loop over bfns + grid points
 
+      #pragma omp atomic
       EXC_GRAD[3*iAt + 0] += -2 * g_acc_x;
+      #pragma omp atomic
       EXC_GRAD[3*iAt + 1] += -2 * g_acc_y;
+      #pragma omp atomic
       EXC_GRAD[3*iAt + 2] += -2 * g_acc_z;
 
       bf_off += sh_sz; // Increment basis offset
 
     } // End loop over shells 
-
+        
   } // End loop over tasks
+
+  } // OpenMP Region
 
   
 }

@@ -337,7 +337,6 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
   const size_t nbe_cart = basis.nbf_cart_subset( shell_list, shell_list + nshells );
 
 
-#if 1
   std::vector<double> X_cart, G_cart;
   if( any_pure ){
     X_cart.resize( nbe_cart * npts );
@@ -364,82 +363,34 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
       ioff_cart += shell_cart_sz;
     }
   }
-#endif
 
 
 
   {
-  size_t ioff = 0;
   size_t ioff_cart = 0;
-  for( int i = 0; i < nshells; ++i ) {
-    const auto ish = shell_list[i];
-    const auto& bra       = basis.at(ish);
-    const int bra_l       = bra.l();
-    const int bra_sz      = bra.size();
-    const int bra_cart_sz = bra.cart_size();
-    const bool need_transform_bra = bra.pure() and bra_l > 0;
 
-    size_t joff = 0;
+  const auto* X_use = any_pure ? X_cart.data() : X;
+  auto*       G_use = any_pure ? G_cart.data() : G;
+  const auto ldx_use = any_pure ? nbe_cart : ldx;
+  const auto ldg_use = any_pure ? nbe_cart : ldg;
+
+  for( int i = 0; i < nshells; ++i ) {
+    const auto ish        = shell_list[i];
+    const auto& bra       = basis.at(ish);
+    const int bra_cart_sz = bra.cart_size();
+
     size_t joff_cart = 0;
     for( int j = 0; j <= i; ++j ) {
       const auto jsh        = shell_list[j];
       const auto& ket       = basis.at(jsh);
-      const int ket_l       = ket.l();
-      const int ket_sz      = ket.size();
       const int ket_cart_sz = ket.cart_size();
-      const bool need_transform_ket = ket.pure() and ket_l > 0;
 
-      //const int shpair_sz      = bra_sz * ket_sz;
       const int shpair_cart_sz = bra_cart_sz * ket_cart_sz;
 
       std::vector<double> _tmp( shpair_cart_sz * npts );
 
       compute_integral_shell_pair( npts, rys_basis[ish], rys_basis[jsh], _points,
         _tmp.data() );
-#if 0
-      const auto* Xj = X + joff;
-      const auto* Xi = X + ioff;
-      auto*       Gj = G + joff;
-      auto*       Gi = G + ioff;
-      const auto need_tform = need_transform_bra or need_transform_ket;
-
-      for( int k = 0; k < npts; ++k ) {
-        auto Xjk = Xj + k*ldx;
-        auto Xik = Xi + k*ldx;
-        auto Gjk = Gj + k*ldg;
-        auto Gik = Gi + k*ldg;
-
-        std::vector<double> _tmp_sph( bra_sz * ket_sz, 0. );
-        auto* ints = _tmp.data() + k * shpair_cart_sz;
-        if( need_transform_bra and need_transform_ket )
-          sph_trans.tform_both_rm( bra_l, ket_l, ints, ket_cart_sz, 
-            _tmp_sph.data(), ket_sz );
-        else if( need_transform_bra )
-          sph_trans.tform_bra_rm( bra_l, ket_sz, ints, ket_cart_sz, 
-            _tmp_sph.data(), ket_sz );
-        else if( need_transform_ket )
-          sph_trans.tform_ket_rm( bra_sz, ket_l, ints, ket_cart_sz, 
-            _tmp_sph.data(), ket_sz );
-
-        if( need_tform ) ints = _tmp_sph.data();
-
-        for( int ii = 0; ii < bra_sz; ++ii )
-        for( int jj = 0; jj < ket_sz; ++jj ) {
-          Gik[ii] += weights[k] * ints[ii*ket_sz + jj] * Xjk[jj];
-	      }
-
-       	if( i != j )
-        for( int ii = 0; ii < bra_sz; ++ii )
-        for( int jj = 0; jj < ket_sz; ++jj ) {
-          Gjk[jj] += weights[k] * ints[ii*ket_sz + jj] * Xik[ii];
-	      }
-      }
-#else
-
-      const auto* X_use = any_pure ? X_cart.data() : X;
-      auto*       G_use = any_pure ? G_cart.data() : G;
-      const auto ldx_use = any_pure ? nbe_cart : ldx;
-      const auto ldg_use = any_pure ? nbe_cart : ldg;
 
       const auto* Xj = X_use + joff_cart;
       const auto* Xi = X_use + ioff_cart;
@@ -466,17 +417,12 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
       
       }
 
-#endif
-
-      joff += ket_sz;
       joff_cart += ket_cart_sz;
     }
-    ioff += bra_sz;
     ioff_cart += bra_cart_sz;
   }
   }
 
-#if 1
   // Transform G back to spherical
   if( any_pure ) {
     int ioff = 0;
@@ -499,7 +445,6 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
       ioff_cart += shell_cart_sz;
     }
   }
-#endif
 
 }
 

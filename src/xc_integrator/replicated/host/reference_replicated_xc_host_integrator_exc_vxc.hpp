@@ -112,7 +112,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   #pragma omp for schedule(dynamic)
   for( size_t iT = 0; iT < ntasks; ++iT ) {
 
-    std::cout << iT << "/" << ntasks << std::endl;
+    //std::cout << iT << "/" << ntasks << std::endl;
     // Alias current task
     const auto& task = tasks[iT];
 
