@@ -319,14 +319,6 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
   // Cast points to Rys format (binary compatable)
   point* _points = reinterpret_cast<point*>(const_cast<double*>(points));
 
-#if 0
-  std::vector<double> V_max( nshells * nshells );
-  for( auto i = 0; i < nshells; ++i )
-  for( auto j = 0; j < nshells; ++j ) {
-    V_max[i + j*nshells] = util::max_coulomb( basis.at(i), basis.at(j) );
-  }
-#endif
-
   // Set G to zero
   for( int j = 0; j < npts; ++j )
   for( int i = 0; i < nbe;  ++i ) {
@@ -339,22 +331,62 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
   // Spherical Harmonic Transformer
   util::SphericalHarmonicTransform sph_trans(5);
 
+  const bool any_pure = std::any_of( shell_list, shell_list + nshells,
+    [&](const auto& i){ return basis.at(i).pure(); } );
+
+  const size_t nbe_cart = basis.nbf_cart_subset( shell_list, shell_list + nshells );
+
+
+#if 1
+  std::vector<double> X_cart, G_cart;
+  if( any_pure ){
+    X_cart.resize( nbe_cart * npts );
+    G_cart.resize( nbe_cart * npts, 0. );
+
+    // Transform X into cartesian
+    int ioff = 0;
+    int ioff_cart = 0;
+    for( int i = 0; i < nshells; ++i ) {
+      const auto ish = shell_list[i];
+      const auto& shell      = basis.at(ish);
+      const int shell_l       = shell.l();
+      const int shell_sz      = shell.size();
+      const int shell_cart_sz = shell.cart_size();
+
+      if( shell.pure() and shell_l > 0 ) {
+        sph_trans.itform_bra_cm( shell_l, npts, X + ioff, ldx,
+          X_cart.data() + ioff_cart, nbe_cart );
+      } else {
+        blas::lacpy( 'A', shell_sz, npts, X + ioff, ldx,
+          X_cart.data() + ioff_cart, nbe_cart );
+      }
+      ioff += shell_sz;
+      ioff_cart += shell_cart_sz;
+    }
+  }
+#endif
+
+
+
+  {
   size_t ioff = 0;
+  size_t ioff_cart = 0;
   for( int i = 0; i < nshells; ++i ) {
     const auto ish = shell_list[i];
     const auto& bra       = basis.at(ish);
     const int bra_l       = bra.l();
     const int bra_sz      = bra.size();
-    const int bra_cart_sz = (bra_l+1) * (bra_l+2) / 2;
+    const int bra_cart_sz = bra.cart_size();
     const bool need_transform_bra = bra.pure() and bra_l > 0;
 
     size_t joff = 0;
+    size_t joff_cart = 0;
     for( int j = 0; j <= i; ++j ) {
       const auto jsh        = shell_list[j];
       const auto& ket       = basis.at(jsh);
       const int ket_l       = ket.l();
       const int ket_sz      = ket.size();
-      const int ket_cart_sz = (ket_l+1) * (ket_l+2) / 2;
+      const int ket_cart_sz = ket.cart_size();
       const bool need_transform_ket = ket.pure() and ket_l > 0;
 
       //const int shpair_sz      = bra_sz * ket_sz;
@@ -364,13 +396,13 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
 
       compute_integral_shell_pair( npts, rys_basis[ish], rys_basis[jsh], _points,
         _tmp.data() );
-
-      const auto need_tform = need_transform_bra or need_transform_ket;
-
+#if 0
       const auto* Xj = X + joff;
       const auto* Xi = X + ioff;
       auto*       Gj = G + joff;
       auto*       Gi = G + ioff;
+      const auto need_tform = need_transform_bra or need_transform_ket;
+
       for( int k = 0; k < npts; ++k ) {
         auto Xjk = Xj + k*ldx;
         auto Xik = Xi + k*ldx;
@@ -380,13 +412,13 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
         std::vector<double> _tmp_sph( bra_sz * ket_sz, 0. );
         auto* ints = _tmp.data() + k * shpair_cart_sz;
         if( need_transform_bra and need_transform_ket )
-          sph_trans.tform_both( bra_l, ket_l, ints, ket_cart_sz, 
+          sph_trans.tform_both_rm( bra_l, ket_l, ints, ket_cart_sz, 
             _tmp_sph.data(), ket_sz );
         else if( need_transform_bra )
-          sph_trans.tform_bra( bra_l, ket_sz, ints, ket_cart_sz, 
+          sph_trans.tform_bra_rm( bra_l, ket_sz, ints, ket_cart_sz, 
             _tmp_sph.data(), ket_sz );
         else if( need_transform_ket )
-          sph_trans.tform_ket( bra_sz, ket_l, ints, ket_cart_sz, 
+          sph_trans.tform_ket_rm( bra_sz, ket_l, ints, ket_cart_sz, 
             _tmp_sph.data(), ket_sz );
 
         if( need_tform ) ints = _tmp_sph.data();
@@ -402,12 +434,72 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
           Gjk[jj] += weights[k] * ints[ii*ket_sz + jj] * Xik[ii];
 	      }
       }
+#else
+
+      const auto* X_use = any_pure ? X_cart.data() : X;
+      auto*       G_use = any_pure ? G_cart.data() : G;
+      const auto ldx_use = any_pure ? nbe_cart : ldx;
+      const auto ldg_use = any_pure ? nbe_cart : ldg;
+
+      const auto* Xj = X_use + joff_cart;
+      const auto* Xi = X_use + ioff_cart;
+      auto*       Gj = G_use + joff_cart;
+      auto*       Gi = G_use + ioff_cart;
+
+      for( int k = 0; k < npts; ++k ) {
+        auto Xjk = Xj + k*ldx_use;
+        auto Xik = Xi + k*ldx_use;
+        auto Gjk = Gj + k*ldg_use;
+        auto Gik = Gi + k*ldg_use;
+
+        auto* ints = _tmp.data() + k * shpair_cart_sz;
+        for( int ii = 0; ii < bra_cart_sz; ++ii )
+        for( int jj = 0; jj < ket_cart_sz; ++jj ) {
+          Gik[ii] += weights[k] * ints[ii*ket_cart_sz + jj] * Xjk[jj];
+	      }
+
+       	if( i != j )
+        for( int ii = 0; ii < bra_cart_sz; ++ii )
+        for( int jj = 0; jj < ket_cart_sz; ++jj ) {
+          Gjk[jj] += weights[k] * ints[ii*ket_cart_sz + jj] * Xik[ii];
+	      }
+      
+      }
+
+#endif
 
       joff += ket_sz;
+      joff_cart += ket_cart_sz;
     }
     ioff += bra_sz;
+    ioff_cart += bra_cart_sz;
+  }
   }
 
+#if 1
+  // Transform G back to spherical
+  if( any_pure ) {
+    int ioff = 0;
+    int ioff_cart = 0;
+    for( int i = 0; i < nshells; ++i ) {
+      const auto ish = shell_list[i];
+      const auto& shell      = basis.at(ish);
+      const int shell_l       = shell.l();
+      const int shell_sz      = shell.size();
+      const int shell_cart_sz = shell.cart_size();
+
+      if( shell.pure() and shell_l > 0 ) {
+        sph_trans.tform_bra_cm( shell_l, npts, G_cart.data() + ioff_cart, nbe_cart,
+          G + ioff, ldg );
+      } else {
+        blas::lacpy( 'A', shell_sz, npts, G_cart.data() + ioff_cart, nbe_cart,
+          G + ioff, ldg );
+      }
+      ioff += shell_sz;
+      ioff_cart += shell_cart_sz;
+    }
+  }
+#endif
 
 }
 

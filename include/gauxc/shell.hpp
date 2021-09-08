@@ -176,8 +176,14 @@ public:
     return cutoff_radius_;
   }
 
+  inline HOST_DEVICE_ACCESSIBLE int32_t cart_size() const {
+    return (l_+1)*(l_+2)/2;
+  }
+  inline HOST_DEVICE_ACCESSIBLE int32_t pure_size() const {
+    return 2*l_ + 1;
+  }
   inline HOST_DEVICE_ACCESSIBLE int32_t size() const {;
-    return pure_ ? 2*l_ + 1 : (l_+1)*(l_+2)/2;
+    return pure_ ? pure_size() : cart_size();
   }
 
   inline const prim_array& alpha()  const { return alpha_; }

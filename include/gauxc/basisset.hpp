@@ -67,6 +67,13 @@ struct BasisSet : public std::vector<Shell<F>> {
       } );
   };
 
+  inline int32_t nbf_cart()     const {
+    return std::accumulate( this->cbegin(), this->cend(), 0ul,
+      [](const auto& a, const auto& b) { 
+        return a + b.cart_size();
+      } );
+  };
+
   /**
    *  @brief Determine the number of basis functions contained in a
    *  specified subset of the BasisSet object.
@@ -87,6 +94,15 @@ struct BasisSet : public std::vector<Shell<F>> {
     int32_t _nbf = 0;
     for( auto it = shell_list_begin; it != shell_list_end; ++it )
       _nbf += std::vector<Shell<F>>::at(*it).size();
+    return _nbf;
+  }
+
+  template <typename IntegralIterator>
+  inline int32_t nbf_cart_subset( IntegralIterator shell_list_begin,
+                                  IntegralIterator shell_list_end ) const {
+    int32_t _nbf = 0;
+    for( auto it = shell_list_begin; it != shell_list_end; ++it )
+      _nbf += std::vector<Shell<F>>::at(*it).cart_size();
     return _nbf;
   }
 

@@ -123,12 +123,11 @@ public:
             real_solid_harmonic_coeff(l,m,ix,iy,iz);
         }
       }
-
     }
 
   }
 
-  inline void tform_bra( int bra_l, int nket, const double* cart,
+  inline void tform_bra_rm( int bra_l, int nket, const double* cart,
     int ldc, double* sph, int lds ) {
 
     const int bra_cart_sz = (bra_l+1) * (bra_l+2)/2;
@@ -144,7 +143,55 @@ public:
 
   }
 
-  inline void tform_ket( int nbra, int ket_l, const double* cart,
+  inline void tform_bra_cm( int bra_l, int nket, const double* cart,
+    int ldc, double* sph, int lds ) {
+
+    const int bra_cart_sz = (bra_l+1) * (bra_l+2)/2;
+    const int bra_sph_sz  = 2*bra_l + 1;
+    for( int i = 0; i < bra_sph_sz; ++i )
+    for( int j = 0; j < nket;       ++j ) {
+      double tmp = 0.;
+      for( int k = 0; k < bra_cart_sz; ++k ) {
+        tmp += table_.at(bra_l)[ i + k*bra_sph_sz ] * cart[ k + j*ldc ];
+      }
+      sph[ i + j*lds ] = tmp;
+    }
+
+  }
+
+  inline void itform_bra_rm( int bra_l, int nket, const double* sph,
+    int lds, double* cart, int ldc ) {
+
+    const int bra_cart_sz = (bra_l+1) * (bra_l+2)/2;
+    const int bra_sph_sz  = 2*bra_l + 1;
+    for( int i = 0; i < bra_cart_sz; ++i )
+    for( int j = 0; j < nket;        ++j ) {
+      double tmp = 0.;
+      for(int k = 0; k < bra_sph_sz; ++k ) {
+        tmp += table_.at(bra_l)[ k + i*bra_sph_sz] * sph[ k*lds + j ];
+      }
+      cart[ i*ldc + j ] = tmp;
+    }
+
+  }
+
+  inline void itform_bra_cm( int bra_l, int nket, const double* sph,
+    int lds, double* cart, int ldc ) {
+
+    const int bra_cart_sz = (bra_l+1) * (bra_l+2)/2;
+    const int bra_sph_sz  = 2*bra_l + 1;
+    for( int i = 0; i < bra_cart_sz; ++i )
+    for( int j = 0; j < nket;        ++j ) {
+      double tmp = 0.;
+      for(int k = 0; k < bra_sph_sz; ++k ) {
+        tmp += table_.at(bra_l)[ k + i*bra_sph_sz] * sph[ k + j*lds ];
+      }
+      cart[ i + j*ldc ] = tmp;
+    }
+
+  }
+
+  inline void tform_ket_rm( int nbra, int ket_l, const double* cart,
     int ldc, double* sph, int lds ) {
 
     const int ket_cart_sz = (ket_l+1) * (ket_l+2)/2;
@@ -160,7 +207,7 @@ public:
 
   }
 
-  inline void tform_both( int bra_l, int ket_l, const double* cart,
+  inline void tform_both_rm( int bra_l, int ket_l, const double* cart,
     int ldc, double* sph, int lds ) {
 
     //const int bra_cart_sz = (bra_l+1) * (bra_l+2)/2;
@@ -168,8 +215,8 @@ public:
     const int bra_sph_sz  = 2*bra_l + 1;
     //const int ket_sph_sz  = 2*ket_l + 1;
     std::vector<double> row_tmp( bra_sph_sz * ket_cart_sz );
-    tform_bra( bra_l, ket_cart_sz, cart, ldc, row_tmp.data(), ket_cart_sz );
-    tform_ket( bra_sph_sz, ket_l,  row_tmp.data(), ket_cart_sz, sph, lds  );
+    tform_bra_rm( bra_l, ket_cart_sz, cart, ldc, row_tmp.data(), ket_cart_sz );
+    tform_ket_rm( bra_sph_sz, ket_l,  row_tmp.data(), ket_cart_sz, sph, lds  );
 
   }
 
