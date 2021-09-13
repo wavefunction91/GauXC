@@ -214,7 +214,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       func.eval_exc_vxc( npts, den_eval, eps, vrho );
 
 
-    // TODO: Increment EXC Gradient
+    // Increment EXC Gradient
     size_t bf_off = 0;
     for( auto ish = 0; ish < nshells; ++ish ) {
       const int sh_idx = shell_list[ish];
