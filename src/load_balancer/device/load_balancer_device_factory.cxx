@@ -19,11 +19,13 @@ std::shared_ptr<LoadBalancer> LoadBalancerDeviceFactory::get_shared_instance(
   if( kernel_name == "DEFAULT" ) kernel_name = "REPLICATED";
 
   std::unique_ptr<detail::LoadBalancerImpl> ptr = nullptr;
+  #ifdef GAUXC_ENABLE_CUDA
   if( kernel_name == "REPLICATED" ) {
     ptr = std::make_unique<detail::DeviceReplicatedLoadBalancer>(
       GAUXC_MPI_CODE(comm,) mol, mg, basis
     );
   }
+  #endif
 
   if( ! ptr ) throw std::runtime_error("Load Balancer Kernel Not Recognized");
 

@@ -105,7 +105,7 @@ auto compute_approx_f_max( size_t npts, size_t nshells_bf, size_t nbf,
   // Compute approximate F max over basis functions
   std::vector<double> max_F_approx_bfn( nbf );
   std::vector<std::array<int32_t,3>> submat_full = {
-    std::array<int32_t,3>{0, nbf, 0}
+    std::array<int32_t,3>{0, (int32_t)nbf, 0}
   };
 
   lwd->eval_exx_fmat( 1, nbf, nbf, nbe_bfn, submat_full, submat_bfn,

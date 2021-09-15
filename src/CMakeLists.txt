@@ -1,5 +1,8 @@
 # Parallelism
-find_package( OpenMP  REQUIRED )
+if( NOT GAUXC_ENABLE_HIP )
+  # This breaks for Cray HIP with is the target of GauXC ECP
+  find_package( OpenMP  REQUIRED )
+endif()
 if( GAUXC_ENABLE_MPI )
   message( STATUS "GauXC Enabling MPI" )
   find_package( MPI REQUIRED )
@@ -66,8 +69,10 @@ configure_file(
 target_link_libraries( gauxc PUBLIC 
   ExchCXX::ExchCXX 
   IntegratorXX::IntegratorXX 
-  OpenMP::OpenMP_CXX
 )
+if( TARGET OpenMP::OpenMP_CXX )
+  target_link_libraries( gauxc PUBLIC OpenMP::OpenMP_CXX )
+endif()
 
 if( GAUXC_ENABLE_MPI )
   target_link_libraries( gauxc PUBLIC MPI::MPI_C MPI::MPI_CXX )
