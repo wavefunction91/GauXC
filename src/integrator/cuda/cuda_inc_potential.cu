@@ -117,6 +117,50 @@ void task_inc_potential( size_t                ntasks,
                          size_t                LDV,
                          cudaStream_t          stream );
 
+template <typename T>
+__global__ void symmetrize_matrix_device( size_t nbf, size_t LDA, T* A ) {
+  const size_t block_size = warp_size;
+
+  __shared__ T buffer[block_size][block_size+1];  // Pad shared memory to resolve shared memory
+
+  const size_t num_blocks = ((nbf + block_size - 1) / block_size);
+
+  for (int i = blockIdx.x; i < num_blocks; i += gridDim.x) {
+    // TODO This could be load balanced if need be
+    const int i_coord = i * block_size;
+    for (int j = i; j < num_blocks; j++) {
+      const int j_coord = j * block_size;
+
+      // Read in block to buffer
+      // TODO These could be vector reads/writes if this becomes significant
+      if (i_coord + threadIdx.y < nbf && j_coord + threadIdx.x < nbf) {
+        buffer[threadIdx.y][threadIdx.x] = A[(i_coord + threadIdx.y) * LDA + j_coord + threadIdx.x];
+      }
+      __syncthreads();
+
+      // Write buffer
+      if (j_coord + threadIdx.y < nbf && i_coord + threadIdx.x < nbf) {
+        if ((j_coord != i_coord || threadIdx.x < threadIdx.y)) { // handles the diagonal block
+          A[(j_coord + threadIdx.y) * LDA + i_coord + threadIdx.x] = buffer[threadIdx.x][threadIdx.y];
+        }
+      }
+      __syncthreads();
+    }
+  }
+}
+
+template <typename T>
+void symmetrize_matrix( size_t nbf, size_t LDV, T* V_device, cudaStream_t stream) {
+  const size_t num_blocks = ((LDV + warp_size - 1) / warp_size);
+  // Warp size must equal max_warps_per_thread_block must equal 32
+  dim3 threads(warp_size, max_warps_per_thread_block), blocks(num_blocks);
+  symmetrize_matrix_device<<<blocks, threads, 0, stream>>>(nbf, LDV, V_device);
+}
+
+template
+void symmetrize_matrix( size_t nbf, size_t LDV, double* V_device, cudaStream_t stream );
+
+
 }
 }
 }

@@ -23,6 +23,21 @@ void process_batches_cuda_replicated_p(
   F*                     n_el
 );
 
+#ifdef GAUXC_ENABLE_NCCL
+template <typename F>
+void device_allreduce(
+  ncclComm_t             nccl_comm,
+  XCCudaData<F>    &     cuda_data
+); 
+#endif
+
+template <typename F>
+void device_transfer(
+  XCCudaData<F>    &     cuda_data,
+  F*                     VXC,
+  F*                     EXC,
+  F*                     NEL
+); 
 
 template <typename F, typename... Args>
 inline void process_batches_cuda_replicated_p( size_t n_deriv, Args&&... args ) {

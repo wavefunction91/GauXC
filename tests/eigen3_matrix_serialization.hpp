@@ -1,7 +1,15 @@
 #pragma once
 
 #include <cereal/cereal.hpp>
+
+#ifdef __PGI
+  #define _GAUXC_COMP_IS_PGI
+  #undef __PGI
+#endif
 #include <Eigen/Core>
+#ifdef _GAUXC_COMP_IS_PGI
+  #define __PGI
+#endif
 
 namespace cereal {
 
