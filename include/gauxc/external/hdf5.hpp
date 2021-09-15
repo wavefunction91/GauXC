@@ -3,10 +3,6 @@
 #include <gauxc/shell.hpp>
 #include <gauxc/atom.hpp>
 
-#if __has_include(<Eigen/Core>)
-#include <Eigen/Core>
-#endif
-
 namespace GauXC {
 void write_hdf5_record( const std::vector<Shell<double>>& shell, std::string fname, std::string dset );
 void write_hdf5_record( const std::vector<Atom>& mol, std::string fname, std::string dset );

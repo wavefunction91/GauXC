@@ -26,6 +26,7 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
     throw std::runtime_error("Must Populate Submat Maps");
 
 
+
   // Dimensions
   const size_t npts     = points.size();
   const size_t nbe      = task.nbe;
@@ -53,6 +54,10 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   const size_t mem_submat_cut = 3 * ncut * sizeof(int32_t);
   const size_t mem_submat_block = nblock * sizeof(int32_t);
 
+  // Shell -> Task maps
+  const size_t mem_shell_to_task_idx = nshells * sizeof(int32_t);
+  const size_t mem_shell_to_task_off = nshells * sizeof(int32_t);
+
   // Memroty associated with added a task to the indirection
   const size_t mem_task = sizeof(XCDeviceTask);
 
@@ -62,6 +67,7 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
     ( mem_zmat_lda_gga )                                      +
     ( mem_shell_list + mem_shell_offs )                       +
     ( mem_submat_cut + mem_submat_block )                     +
+    ( mem_shell_to_task_idx + mem_shell_to_task_off )         +
     ( mem_task );
 }
 
@@ -141,6 +147,13 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
   aos_stack.submat_cut_device   = mem.aligned_alloc<int32_t>( 3 * total_ncut_task_batch , csl);
   aos_stack.submat_block_device = mem.aligned_alloc<int32_t>( total_nblock_task_batch , csl);
 
+
+  // Shell -> Task buffers
+  aos_stack.shell_to_task_idx_device = 
+    mem.aligned_alloc<int32_t>( total_nshells_task_batch );
+  aos_stack.shell_to_task_off_device = 
+    mem.aligned_alloc<int32_t>( total_nshells_task_batch );
+
   // Update dynmem data for derived impls
   return device_buffer_t{ mem.stack(), mem.nleft() };
 }
@@ -168,6 +181,9 @@ void XCDeviceAoSData::pack_and_send(
   std::vector< size_t > shell_offs_pack;
   std::vector< std::array<int32_t, 3> > submat_cut_pack;
   std::vector< int32_t > submat_block_pack;
+
+  std::vector< std::vector<int32_t> > shell_to_task_idx( global_dims.nshells ),
+                                      shell_to_task_off( global_dims.nshells );
 
   // Contatenation utility
   auto concat_iterable = []( auto& a, const auto& b ) {
@@ -201,6 +217,13 @@ void XCDeviceAoSData::pack_and_send(
     for( auto i = 1ul; i < nshells; ++i )
       shell_offs.at(i) = shell_offs.at(i-1) + 
                            basis_map.shell_size( shell_list.at(i-1) );
+
+    // Setup Shell -> Task
+    const auto itask = std::distance( task_begin, it );
+    for( auto i = 0; i < nshells; ++i ) {
+      shell_to_task_idx[ shell_list.at(i) ].emplace_back(itask);
+      shell_to_task_off[ shell_list.at(i) ].emplace_back(shell_offs[i]);
+    }
 
     // Pack Shell indexing
     concat_iterable( shell_list_pack, shell_list );
@@ -322,6 +345,46 @@ void XCDeviceAoSData::pack_and_send(
   // Send indirection 
   device_backend_->copy_async( host_device_tasks.size(), host_device_tasks.data(), 
     aos_stack.device_tasks, "send_tasks_device" );
+
+  // Construct Shell -> Task
+  std::vector<int32_t> concat_shell_to_task_idx, concat_shell_to_task_off;
+  {
+    const size_t total_nshells = total_nshells_task_batch * sizeof(int32_t);
+    buffer_adaptor 
+      shell_idx_mem( aos_stack.shell_to_task_idx_device, total_nshells );
+    buffer_adaptor 
+      shell_off_mem( aos_stack.shell_to_task_off_device, total_nshells );
+
+
+    host_shell_to_task_ntask.clear();
+    host_shell_to_task_idx.clear();
+    host_shell_to_task_off.clear();
+    host_shell_to_task_l.clear();
+    for( auto ish = 0; ish < global_dims.nshells; ++ish ) {
+      const auto ntask = shell_to_task_idx[ish].size();
+      host_shell_to_task_ntask.emplace_back(ntask);
+      host_shell_to_task_l.emplace_back(basis_map.shell_l(ish));
+
+      host_shell_to_task_idx.emplace_back(
+        shell_idx_mem.aligned_alloc<int32_t>( ntask )
+      );
+      host_shell_to_task_off.emplace_back(
+        shell_off_mem.aligned_alloc<int32_t>( ntask )
+      );
+
+      // Pack data
+      concat_iterable( shell_to_task_idx[ish], concat_shell_to_task_idx );
+      concat_iterable( shell_to_task_off[ish], concat_shell_to_task_off );
+    }
+
+    // Send Data
+    device_backend_->copy_async( concat_shell_to_task_idx.size(),
+      concat_shell_to_task_idx.data(), aos_stack.shell_to_task_idx_device,
+      "shell_to_task_idx_device" );
+    device_backend_->copy_async( concat_shell_to_task_off.size(),
+      concat_shell_to_task_off.data(), aos_stack.shell_to_task_off_device,
+      "shell_to_task_off_device" );
+  }
 
   // Synchronize on the copy stream to keep host vecs in scope
   device_backend_->master_queue_synchronize(); 

@@ -1,0 +1,21 @@
+#pragma once
+
+#include "collocation/collocation_shell_to_task_kernels_cartesian_l0.hpp"
+#include "collocation/collocation_shell_to_task_kernels_cartesian_l1.hpp"
+#include "collocation/collocation_shell_to_task_kernels_cartesian_l2.hpp"
+#include "collocation/collocation_shell_to_task_kernels_cartesian_l3.hpp"
+
+#include "collocation/collocation_shell_to_task_kernels_cartesian_l0_gradient.hpp"
+#include "collocation/collocation_shell_to_task_kernels_cartesian_l1_gradient.hpp"
+#include "collocation/collocation_shell_to_task_kernels_cartesian_l2_gradient.hpp"
+#include "collocation/collocation_shell_to_task_kernels_cartesian_l3_gradient.hpp"
+
+#include "collocation/collocation_shell_to_task_kernels_spherical_l0.hpp"
+#include "collocation/collocation_shell_to_task_kernels_spherical_l1.hpp"
+#include "collocation/collocation_shell_to_task_kernels_spherical_l2.hpp"
+#include "collocation/collocation_shell_to_task_kernels_spherical_l3.hpp"
+
+#include "collocation/collocation_shell_to_task_kernels_spherical_l0_gradient.hpp"
+#include "collocation/collocation_shell_to_task_kernels_spherical_l1_gradient.hpp"
+#include "collocation/collocation_shell_to_task_kernels_spherical_l2_gradient.hpp"
+#include "collocation/collocation_shell_to_task_kernels_spherical_l3_gradient.hpp"

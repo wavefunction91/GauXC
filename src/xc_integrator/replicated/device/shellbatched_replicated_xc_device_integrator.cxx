@@ -445,7 +445,8 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   eval_exx_( int64_t m, int64_t n, const value_type* P,
-             int64_t ldp, value_type* K, int64_t ldk ) { }
+             int64_t ldp, value_type* K, int64_t ldk,
+             const IntegratorSettingsEXX& settings) { }
 
 
 template class ShellBatchedReplicatedXCDeviceIntegrator<double>;

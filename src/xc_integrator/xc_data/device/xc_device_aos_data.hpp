@@ -39,6 +39,9 @@ struct XCDeviceAoSData : public XCDeviceStackData {
     int32_t* submat_block_device = nullptr;
       ///< Contiguous batch local submatrix blocking factors for task batch
 
+    int32_t* shell_to_task_idx_device = nullptr;
+    int32_t* shell_to_task_off_device = nullptr;
+
     // Indirection
     XCDeviceTask* device_tasks = nullptr; ///< Task indirection in device memory
 
@@ -47,6 +50,11 @@ struct XCDeviceAoSData : public XCDeviceStackData {
 
   std::vector<XCDeviceTask> host_device_tasks; ///< Task indirection in host memory
   aos_stack_data aos_stack;
+
+  std::vector<size_t>   host_shell_to_task_ntask;
+  std::vector<size_t>   host_shell_to_task_l;
+  std::vector<int32_t*> host_shell_to_task_idx;
+  std::vector<int32_t*> host_shell_to_task_off;
 
   XCDeviceAoSData() = delete;
   inline XCDeviceAoSData( std::unique_ptr<DeviceBackend>&& ptr ) :

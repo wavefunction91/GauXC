@@ -14,6 +14,7 @@ class BasisSetMap {
   int32_t nshells_; ///< Number of basis shells
 
   std::vector<int32_t>      shell_sizes_;       ///< Shell sizes
+  std::vector<int32_t>      shell_ls_;
   std::vector<int32_t>      shell_to_first_ao_; ///< Map from shell index to first basis function of that shell
   std::vector<ao_range>     shell_to_ao_range_; ///< Map from shell index to range of basis functions for that shell
   std::vector<int32_t>      shell_to_center_;
@@ -31,8 +32,11 @@ public:
     nshells_( basis.nshells() ) {	
 
     shell_sizes_.resize( nshells_ );
-    for( int32_t i = 0; i < nshells_; ++i )
+    shell_ls_.resize( nshells_ );
+    for( int32_t i = 0; i < nshells_; ++i ) {
       shell_sizes_[i] = basis.at(i).size();
+      shell_ls_[i]    = basis.at(i).l(); 
+    }
 
     shell_to_first_ao_.reserve( nshells_ );
     shell_to_ao_range_.reserve( nshells_ );
@@ -94,6 +98,8 @@ public:
 
   /// Return container that stores the shell sizes (non-const)
   auto& shell_sizes() { return shell_sizes_; }
+
+  auto shell_l(size_t i) const { return shell_ls_.at(i); }
 
   const auto& shell_to_center() const { return shell_to_center_; }
   auto& shell_to_center() { return shell_to_center_; }

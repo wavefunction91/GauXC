@@ -36,6 +36,8 @@ int main(int argc, char** argv) {
 
     // Optional Args
     std::string grid_spec = "ULTRAFINE";
+    std::string lb_exec_space_str = "Host";
+    std::string int_exec_space_str = "Host";
     double      basis_tol = 1e-10;
     std::string func_spec = "PBE0";
     bool integrate_vxc      = true;
@@ -66,15 +68,34 @@ int main(int argc, char** argv) {
     if( input.containsData("GAUXC.INTEGRATE_EXC_GRAD" ) )
       integrate_exc_grad = input.getData<bool>("GAUXC.INTEGRATE_EXC_GRAD");
 
+    if( input.containsData("GAUXC.LB_EXEC_SPACE") )
+      lb_exec_space_str = input.getData<std::string>("GAUXC.LB_EXEC_SPACE");
+    if( input.containsData("GAUXC.INT_EXEC_SPACE") )
+      int_exec_space_str = input.getData<std::string>("GAUXC.INT_EXEC_SPACE");
+
+    string_to_upper( lb_exec_space_str );
+    string_to_upper( int_exec_space_str );
+
+    std::map< std::string, ExecutionSpace > exec_space_map = {
+      { "HOST",   ExecutionSpace::Host },
+      #ifdef GAUXC_ENABLE_DEVICE
+      { "DEVICE", ExecutionSpace::Device }
+      #endif
+    };
+
+    auto lb_exec_space = exec_space_map.at(lb_exec_space_str);
+    auto int_exec_space = exec_space_map.at(int_exec_space_str);
 
     if( !world_rank ) {
       std::cout << "DRIVER SETTINGS: " << std::endl
-                << "  REF_FILE     = " << ref_file << std::endl
-                << "  GRID         = " << grid_spec << std::endl
-                << "  BASIS_TOL    = " << basis_tol << std::endl
-                << "  FUNCTIONAL   = " << func_spec << std::endl
-                << "  VXC (?)      = " << std::boolalpha << integrate_vxc << std::endl
-                << "  EXX (?)      = " << std::boolalpha << integrate_exx << std::endl
+                << "  REF_FILE       = " << ref_file << std::endl
+                << "  GRID           = " << grid_spec << std::endl
+                << "  BASIS_TOL      = " << basis_tol << std::endl
+                << "  FUNCTIONAL     = " << func_spec << std::endl
+                << "  LB_EXEC_SPACE  = " << lb_exec_space_str << std::endl
+                << "  INT_EXEC_SPACE = " << int_exec_space_str << std::endl
+                << "  VXC (?)        = " << std::boolalpha << integrate_vxc << std::endl
+                << "  EXX (?)        = " << std::boolalpha << integrate_exx << std::endl
                 << std::endl;
     }
 
@@ -128,7 +149,7 @@ int main(int argc, char** argv) {
     // Setup load balancer
     //LoadBalancerFactory lb_factory(ExecutionSpace::Device, "Default");
     //LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Replicated-FillIn");
-    LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Replicated");
+    LoadBalancerFactory lb_factory( lb_exec_space, "Replicated");
     auto lb = lb_factory.get_shared_instance( GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, 
       mg, basis);
 
@@ -138,7 +159,7 @@ int main(int argc, char** argv) {
 
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;
-    XCIntegratorFactory<matrix_type> integrator_factory( ExecutionSpace::Host, 
+    XCIntegratorFactory<matrix_type> integrator_factory( int_exec_space , 
       "Replicated", "Default", "Default", "Default" );
     auto integrator = integrator_factory.get_instance( func, lb );
 

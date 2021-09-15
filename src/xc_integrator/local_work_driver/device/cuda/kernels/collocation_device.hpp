@@ -59,4 +59,28 @@ void eval_collocation_masked_combined_deriv1(
   cudaStream_t  stream
 );
 
+void eval_collocation_shell_to_task(
+  size_t          nshells,
+  Shell<double>*  shells_device,
+  const int32_t** shell_to_task_idx,
+  const int32_t** shell_to_task_off,
+  const int32_t*  shell_to_task_ntask,
+  const int32_t*  shell_to_task_ls,
+  const int32_t*  shell_to_task_pure,
+  XCDeviceTask*   device_tasks,
+  cudaStream_t    stream
+); 
+
+void eval_collocation_shell_to_task_gradient(
+  size_t          nshells,
+  Shell<double>*  shells_device,
+  const int32_t** shell_to_task_idx,
+  const int32_t** shell_to_task_off,
+  const int32_t*  shell_to_task_ntask,
+  const int32_t*  shell_to_task_ls,
+  const int32_t*  shell_to_task_pure,
+  XCDeviceTask*   device_tasks,
+  cudaStream_t    stream
+); 
+
 } // namespace GauXC

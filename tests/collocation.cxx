@@ -48,9 +48,15 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
   SECTION( "CUDA Eval" ) {
     test_cuda_collocation( basis, ref_data );
   }
+  SECTION( "CUDA Shell to Task Eval" ) {
+    test_cuda_collocation_shell_to_task( basis, ref_data );
+  }
 
   SECTION( "CUDA Eval Grad" ) {
     test_cuda_collocation_deriv1( basis, ref_data );
+  }
+  SECTION( "CUDA Shell to Task Eval Grad" ) {
+    test_cuda_collocation_shell_to_task_gradient( basis, ref_data );
   }
 #endif // GAUXC_ENABLE_CUDA
 
