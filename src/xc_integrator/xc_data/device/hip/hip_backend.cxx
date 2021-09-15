@@ -5,8 +5,8 @@ namespace GauXC {
 HIPBackend::HIPBackend() {
 
   // Create HIP Stream and CUBLAS Handles and make them talk to eachother
-  master_stream = std::make_unique< util::hip_stream >();
-  master_handle = std::make_unique< util::hipblas_handle >();
+  master_stream = std::make_shared< util::hip_stream >();
+  master_handle = std::make_shared< util::hipblas_handle >();
 
   hipblasSetStream( *master_handle, *master_stream );
 
@@ -36,6 +36,10 @@ void HIPBackend::free_device_buffer( void* ptr ) {
 void HIPBackend::master_queue_synchronize() {
   auto stat = hipStreamSynchronize( *master_stream );
   GAUXC_HIP_ERROR( "StreamSynchronized Failed", stat );
+}
+
+std::any HIPBackend::type_erased_queue() {
+  return master_stream;
 }
 
 void HIPBackend::create_blas_queue_pool(int32_t ns) {

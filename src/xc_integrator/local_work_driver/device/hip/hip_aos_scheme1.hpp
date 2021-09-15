@@ -26,6 +26,7 @@ struct HipAoSScheme1 : public detail::LocalDeviceWorkDriverPIMPL {
   void inc_exc( XCDeviceData* ) override final;
   void inc_nel( XCDeviceData* ) override final;
   void inc_vxc( XCDeviceData* ) override final;
+  void symmetrize_vxc( XCDeviceData* ) override final;
 
   std::unique_ptr<XCDeviceData> create_device_data() override final;
 
