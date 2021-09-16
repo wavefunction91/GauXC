@@ -6,7 +6,6 @@
 //#include "hip_aos_scheme1_weights.hpp"
 #include "kernels/hipblas_extensions.hpp"
 #include "kernels/uvvars.hpp"
-#include "kernels/zmat_vxc.hpp"
 #include "kernels/pack_submat.hpp"
 #include "kernels/hip_inc_potential.hpp"
 #include "kernels/symmetrize_mat.hpp"
@@ -270,49 +269,6 @@ void HipAoSScheme1::eval_kern_exc_vxc_gga( const functional_type& func,
 }
 
 
-void HipAoSScheme1::eval_zmat_lda_vxc( XCDeviceData* _data){
-
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
-
-  auto device_backend = dynamic_cast<HIPBackend*>(data->device_backend_.get());
-  if( !device_backend ) throw std::runtime_error("BAD BACKEND CAST");
-
-  auto& tasks = data->host_device_tasks;
-  const auto ntasks = tasks.size();
-  size_t nbe_max = 0, npts_max = 0;
-  for( auto& task : tasks ) {
-    nbe_max  = std::max( nbe_max, task.nbe );
-    npts_max = std::max( npts_max, task.npts );
-  }
-
-  auto aos_stack     = data->aos_stack;
-  zmat_lda_vxc_hip( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
-    *device_backend->master_stream );
-
-}
-
-void HipAoSScheme1::eval_zmat_gga_vxc( XCDeviceData* _data){
-
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
-
-  auto device_backend = dynamic_cast<HIPBackend*>(data->device_backend_.get());
-  if( !device_backend ) throw std::runtime_error("BAD BACKEND CAST");
-
-  auto& tasks = data->host_device_tasks;
-  const auto ntasks = tasks.size();
-  size_t nbe_max = 0, npts_max = 0;
-  for( auto& task : tasks ) {
-    nbe_max  = std::max( nbe_max, task.nbe );
-    npts_max = std::max( npts_max, task.npts );
-  }
-
-  auto aos_stack     = data->aos_stack;
-  zmat_gga_vxc_hip( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
-    *device_backend->master_stream );
-
-}
 
 void HipAoSScheme1::inc_exc( XCDeviceData* _data){
 

@@ -38,7 +38,7 @@ void HIPBackend::master_queue_synchronize() {
   GAUXC_HIP_ERROR( "StreamSynchronized Failed", stat );
 }
 
-std::any HIPBackend::type_erased_queue() {
+type_erased_queue HIPBackend::queue() {
   return type_erased_queue(master_stream);
 }
 
