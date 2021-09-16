@@ -5,10 +5,11 @@
 #include "kernels/hip_ssf_1d.hpp"
 //#include "hip_aos_scheme1_weights.hpp"
 #include "kernels/hipblas_extensions.hpp"
-//#include "kernels/uvvars.hpp"
+#include "kernels/uvvars.hpp"
 #include "kernels/zmat_vxc.hpp"
-//#include "kernels/pack_submat.hpp"
-//#include "kernels/hip_inc_potential.hpp"
+#include "kernels/pack_submat.hpp"
+#include "kernels/hip_inc_potential.hpp"
+#include "kernels/symmetrize_mat.hpp"
 
 namespace GauXC {
 
@@ -94,7 +95,6 @@ void HipAoSScheme1::eval_collocation_gradient( XCDeviceData* _data ) {
   
 }
 
-#if 0
 void HipAoSScheme1::eval_xmat( XCDeviceData* _data){
 
   auto* data = dynamic_cast<Data*>(_data);
@@ -105,11 +105,13 @@ void HipAoSScheme1::eval_xmat( XCDeviceData* _data){
 
   auto tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
+  auto static_stack  = data->static_stack;
+  auto aos_stack  = data->aos_stack;
 
   // Pack density matrix 
   const auto nbf = data->global_dims.nbf;
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
-  pack_submat( ntasks, aos_stack.device_tasks, data->dmat_device, nbf, 
+  pack_submat( ntasks, aos_stack.device_tasks, static_stack.dmat_device, nbf, 
     submat_block_size, *device_backend->master_stream );
 
 
@@ -158,8 +160,10 @@ void HipAoSScheme1::eval_uvvar_lda( XCDeviceData* _data ){
     npts_max = std::max( npts_max, task.npts );
   }
 
+  auto base_stack    = data->base_stack;
+  auto aos_stack    = data->aos_stack;
   // Zero density
-  util::hip_set_zero_async( data->total_npts_task_batch, data->den_eval_device,
+  util::hip_set_zero_async( data->total_npts_task_batch, base_stack.den_eval_device,
     *device_backend->master_stream, "Den Zero" );
 
   // Evaluate U variables
@@ -188,24 +192,27 @@ void HipAoSScheme1::eval_uvvar_gga( XCDeviceData* _data ){
     npts_max = std::max( npts_max, task.npts );
   }
 
+  auto base_stack    = data->base_stack;
+  auto aos_stack    = data->aos_stack;
+
   // Zero density + gradient
-  util::hip_set_zero_async( data->total_npts_task_batch, data->den_eval_device,
+  util::hip_set_zero_async( data->total_npts_task_batch, base_stack.den_eval_device,
     *device_backend->master_stream, "Den Zero" );
-  util::hip_set_zero_async( data->total_npts_task_batch, data->den_x_eval_device,
+  util::hip_set_zero_async( data->total_npts_task_batch, base_stack.den_x_eval_device,
     *device_backend->master_stream, "DenX Zero" );
-  util::hip_set_zero_async( data->total_npts_task_batch, data->den_y_eval_device,
+  util::hip_set_zero_async( data->total_npts_task_batch, base_stack.den_y_eval_device,
     *device_backend->master_stream, "DenY Zero" );
-  util::hip_set_zero_async( data->total_npts_task_batch, data->den_z_eval_device,
+  util::hip_set_zero_async( data->total_npts_task_batch, base_stack.den_z_eval_device,
     *device_backend->master_stream, "DenZ Zero" );
 
   // Evaluate U variables
   eval_uvvars_gga_hip( ntasks, data->total_npts_task_batch, nbe_max, npts_max, 
-    aos_stack.device_tasks, data->den_x_eval_device, data->den_y_eval_device,
-    data->den_z_eval_device, data->gamma_eval_device, 
+    aos_stack.device_tasks, base_stack.den_x_eval_device, base_stack.den_y_eval_device,
+    base_stack.den_z_eval_device, base_stack.gamma_eval_device, 
     *device_backend->master_stream );
 
 }
-#endif
+      
 
 void HipAoSScheme1::eval_kern_exc_vxc_lda( const functional_type& func, 
   XCDeviceData* _data ) {
@@ -339,7 +346,6 @@ void HipAoSScheme1::inc_nel( XCDeviceData* _data){
 
 }
 
-#if 0
 void HipAoSScheme1::inc_vxc( XCDeviceData* _data){
 
   auto* data = dynamic_cast<Data*>(_data);
@@ -377,9 +383,25 @@ void HipAoSScheme1::inc_vxc( XCDeviceData* _data){
   // Increment global VXC
   const auto nbf = data->global_dims.nbf;
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
-  task_inc_potential( ntasks, aos_stack.device_tasks, data->vxc_device, nbf,
+  auto aos_stack     = data->aos_stack;
+  auto static_stack     = data->static_stack;
+  task_inc_potential( ntasks, aos_stack.device_tasks, static_stack.vxc_device, nbf,
     submat_block_size, *device_backend->master_stream );
 }
-#endif
+
+void HipAoSScheme1::symmetrize_vxc( XCDeviceData* _data) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) throw std::runtime_error("BAD DATA CAST");
+
+  auto device_backend = dynamic_cast<HIPBackend*>(data->device_backend_.get());
+  if( !device_backend ) throw std::runtime_error("BAD BACKEND CAST");
+
+  const auto nbf = data->global_dims.nbf;
+  auto static_stack  = data->static_stack;
+  symmetrize_matrix( nbf, static_stack.vxc_device, nbf, 
+    *device_backend->master_stream ); 
+
+}
 
 }

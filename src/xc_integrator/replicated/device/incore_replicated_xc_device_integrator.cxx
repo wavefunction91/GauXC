@@ -273,6 +273,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // Determine next task batch, send relevant data to device (EXC VXC only)
     task_it = 
       device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
+    std::cout << std::distance( task_begin, task_it ) << std::endl;
 
     /*** Process the batches ***/
 

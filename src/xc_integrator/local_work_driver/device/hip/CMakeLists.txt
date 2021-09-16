@@ -6,11 +6,12 @@ target_sources(gauxc PRIVATE
   kernels/grid_to_center.hip
   kernels/hip_ssf_1d.hip
   #cuda_aos_scheme1_weights.cu # cuda_ssf_2d w/ CudaAoSScheme1 constants
-  #kernels/pack_submat.cu
+  kernels/pack_submat.hip
   kernels/hipblas_extensions.hip
-  #kernels/uvvars.cu
+  kernels/uvvars.hip
   kernels/zmat_vxc.hip
-  #kernels/cuda_inc_potential.cu
+  kernels/hip_inc_potential.hip
+  kernels/symmetrize_mat.hip
 
 )
 

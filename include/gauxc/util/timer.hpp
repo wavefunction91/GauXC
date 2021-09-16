@@ -172,7 +172,7 @@ public:
 
   MPITimer() = delete;
   inline MPITimer( MPI_Comm comm, const Timer& timer ) : 
-    comm_(comm), rank_timer_(timer) { get_stats(); }
+    rank_timer_(timer), comm_(comm) { get_stats(); }
 
   inline void get_stats( std::string key ) {
     int world_size; MPI_Comm_size( comm_, &world_size );

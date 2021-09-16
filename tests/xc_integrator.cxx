@@ -101,7 +101,7 @@ TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
   }
 #endif
 
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_ENABLE_DEVICE
   SECTION( "Device" ) {
     SECTION( "Incore - MPI Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) reference_file, 
