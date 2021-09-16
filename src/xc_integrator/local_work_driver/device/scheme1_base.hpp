@@ -7,6 +7,8 @@ namespace GauXC {
 struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
 
   // Device Common APIs
+  void eval_collocation( XCDeviceData* ) override final;
+  void eval_collocation_gradient( XCDeviceData* ) override final;
   void eval_zmat_lda_vxc( XCDeviceData* ) override final;
   void eval_zmat_gga_vxc( XCDeviceData* ) override final;
 
