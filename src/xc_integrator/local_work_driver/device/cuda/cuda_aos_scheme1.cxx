@@ -1,7 +1,8 @@
 #include "cuda_aos_scheme1.hpp"
 #include "device/cuda/cuda_backend.hpp"
 #include "cuda_aos_scheme1_weights.hpp"
-#include "kernels/cublas_extensions.hpp"
+//#include "kernels/cublas_extensions.hpp"
+#include "device/common/device_blas.hpp"
 #include "kernels/uvvars.hpp"
 #include "kernels/pack_submat.hpp"
 #include "kernels/cuda_inc_potential.hpp"
@@ -59,36 +60,30 @@ void CudaAoSScheme1::eval_xmat( XCDeviceData* _data){
 
 
   // Sync blas streams with master stream
-  util::cuda_event master_event;
-  master_event.record( *device_backend->master_stream );
-  for( auto& stream : device_backend->blas_streams ) stream.wait( master_event );
+  data->device_backend_->sync_blas_pool_with_master();
 
   // Launch GEMM in round-robin
-  const auto n_blas_streams = device_backend->blas_streams.size();
+  const auto n_blas_streams = data->device_backend_->blas_pool_size();
   size_t nsingle = 0;
   for( size_t iT = 0; iT < ntasks; ++iT ) {
     auto& task = tasks[iT];
     if(task.ncut > 1)
-      gemm( device_backend->blas_handles[iT % n_blas_streams], CUBLAS_OP_N,
-        CUBLAS_OP_N, task.npts, task.nbe, task.nbe, 1., task.bf, task.npts,
-        task.nbe_scr, task.nbe, 0., task.zmat, task.npts );
+      gemm( data->device_backend_->blas_pool_handle(iT % n_blas_streams), 
+        DeviceBlasOp::NoTrans, DeviceBlasOp::NoTrans, 
+        task.npts, task.nbe, task.nbe, 1., task.bf, task.npts, task.nbe_scr, 
+        task.nbe, 0., task.zmat, task.npts );
     else {
-      gemm( device_backend->blas_handles[iT % n_blas_streams], CUBLAS_OP_N,
-        CUBLAS_OP_N, task.npts, task.nbe, task.nbe, 1., task.bf, task.npts,
+      gemm( data->device_backend_->blas_pool_handle(iT % n_blas_streams), 
+        DeviceBlasOp::NoTrans, DeviceBlasOp::NoTrans,
+        task.npts, task.nbe, task.nbe, 1., task.bf, task.npts,
         static_stack.dmat_device + task.ibf_begin*(nbf+1), nbf, 
         0., task.zmat, task.npts );
       nsingle++;
     }
   }
 
-  //std::cout << nsingle << ", " << ntasks << ", " << double(nsingle)/ntasks << std::endl;
   // Record completion of BLAS ops on master stream
-  std::vector< util::cuda_event > blas_events( n_blas_streams );
-  for( size_t iS = 0; iS < n_blas_streams; ++iS )
-    blas_events[iS].record( device_backend->blas_streams[iS] );
-
-  for( auto& event : blas_events )
-    device_backend->master_stream->wait( event );
+  data->device_backend_->sync_master_with_blas_pool();
 
 }
 
@@ -181,9 +176,9 @@ void CudaAoSScheme1::eval_kern_exc_vxc_lda( const functional_type& func,
     base_stack.eps_eval_device, base_stack.vrho_eval_device, 
     *device_backend->master_stream );
 
-  hadamard_product( *device_backend->master_handle, data->total_npts_task_batch, 1, 
+  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.eps_eval_device, 1 );
-  hadamard_product( *device_backend->master_handle, data->total_npts_task_batch, 1, 
+  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.vrho_eval_device, 1 );
 
 }
@@ -205,11 +200,11 @@ void CudaAoSScheme1::eval_kern_exc_vxc_gga( const functional_type& func,
     base_stack.gamma_eval_device, base_stack.eps_eval_device, base_stack.vrho_eval_device, 
     base_stack.vgamma_eval_device, *device_backend->master_stream );
 
-  hadamard_product( *device_backend->master_handle, data->total_npts_task_batch, 1, 
+  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.eps_eval_device, 1 );
-  hadamard_product( *device_backend->master_handle, data->total_npts_task_batch, 1, 
+  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.vrho_eval_device, 1 );
-  hadamard_product( *device_backend->master_handle, data->total_npts_task_batch, 1, 
+  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.vgamma_eval_device, 1 );
 
 }
@@ -217,80 +212,7 @@ void CudaAoSScheme1::eval_kern_exc_vxc_gga( const functional_type& func,
 
 
 
-#if 0
-void CudaAoSScheme1::eval_zmat_lda_vxc( XCDeviceData* _data){
 
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
-
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
-
-  auto& tasks = data->host_device_tasks;
-  const auto ntasks = tasks.size();
-  size_t nbe_max = 0, npts_max = 0;
-  for( auto& task : tasks ) {
-    nbe_max  = std::max( nbe_max, task.nbe );
-    npts_max = std::max( npts_max, task.npts );
-  }
-
-  auto aos_stack     = data->aos_stack;
-  zmat_lda_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
-    data->device_backend_->queue() );
-
-}
-
-void CudaAoSScheme1::eval_zmat_gga_vxc( XCDeviceData* _data){
-
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
-
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
-
-  auto& tasks = data->host_device_tasks;
-  const auto ntasks = tasks.size();
-  size_t nbe_max = 0, npts_max = 0;
-  for( auto& task : tasks ) {
-    nbe_max  = std::max( nbe_max, task.nbe );
-    npts_max = std::max( npts_max, task.npts );
-  }
-
-  auto aos_stack     = data->aos_stack;
-  zmat_gga_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
-    data->device_backend_->queue() );
-
-}
-#endif
-
-void CudaAoSScheme1::inc_exc( XCDeviceData* _data){
-
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
-
-  auto device_backend = dynamic_cast<CUDABackend*>(data->device_backend_.get());
-  if( !device_backend ) throw std::runtime_error("BAD BACKEND CAST");
-
-  auto base_stack    = data->base_stack;
-  auto static_stack  = data->static_stack;
-  gdot( *device_backend->master_handle, data->total_npts_task_batch,
-    base_stack.eps_eval_device, 1, base_stack.den_eval_device, 1, 
-    static_stack.acc_scr_device, static_stack.exc_device );
-
-}
-void CudaAoSScheme1::inc_nel( XCDeviceData* _data){
-
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
-
-  auto device_backend = dynamic_cast<CUDABackend*>(data->device_backend_.get());
-  if( !device_backend ) throw std::runtime_error("BAD BACKEND CAST");
-
-  auto base_stack    = data->base_stack;
-  auto static_stack  = data->static_stack;
-  gdot( *device_backend->master_handle, data->total_npts_task_batch,
-    base_stack.weights_device, 1, base_stack.den_eval_device, 1, 
-    static_stack.acc_scr_device, static_stack.nel_device );
-
-}
 
 
 
@@ -314,8 +236,8 @@ void CudaAoSScheme1::inc_vxc( XCDeviceData* _data){
   const auto n_blas_streams = device_backend->blas_streams.size();
   for( size_t iT = 0; iT < ntasks; ++iT ) {
     auto& task = tasks[iT];
-    syr2k( device_backend->blas_handles[iT % n_blas_streams], 
-      CUBLAS_FILL_MODE_LOWER, CUBLAS_OP_T, task.nbe, task.npts, 1.,
+    syr2k( data->device_backend_->blas_pool_handle(iT % n_blas_streams), 
+      DeviceBlasUplo::Lower, DeviceBlasOp::Trans, task.nbe, task.npts, 1.,
       task.bf, task.npts, task.zmat, task.npts, 0., task.nbe_scr,
       task.nbe );
   }

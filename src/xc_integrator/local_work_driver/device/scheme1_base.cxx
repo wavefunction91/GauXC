@@ -1,6 +1,7 @@
 #include "scheme1_base.hpp"
 #include "device/common/zmat_vxc.hpp"
 #include "device/common/collocation_device.hpp"
+#include "device/common/device_blas.hpp"
 
 namespace GauXC {
 
@@ -94,6 +95,39 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
     static_stack.shells_device, aos_stack.device_tasks, 
     data->device_backend_->queue() );
   
+}
+
+
+
+
+
+void AoSScheme1Base::inc_exc( XCDeviceData* _data ){
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) throw std::runtime_error("BAD DATA CAST");
+
+  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+
+  auto base_stack    = data->base_stack;
+  auto static_stack  = data->static_stack;
+  gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
+    base_stack.eps_eval_device, 1, base_stack.den_eval_device, 1, 
+    static_stack.acc_scr_device, static_stack.exc_device );
+
+}
+void AoSScheme1Base::inc_nel( XCDeviceData* _data ){
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) throw std::runtime_error("BAD DATA CAST");
+
+  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+
+  auto base_stack    = data->base_stack;
+  auto static_stack  = data->static_stack;
+  gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
+    base_stack.weights_device, 1, base_stack.den_eval_device, 1, 
+    static_stack.acc_scr_device, static_stack.nel_device );
+
 }
 
 }

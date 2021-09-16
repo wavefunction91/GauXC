@@ -11,6 +11,8 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   void eval_collocation_gradient( XCDeviceData* ) override final;
   void eval_zmat_lda_vxc( XCDeviceData* ) override final;
   void eval_zmat_gga_vxc( XCDeviceData* ) override final;
+  void inc_exc( XCDeviceData* ) override final;
+  void inc_nel( XCDeviceData* ) override final;
 
   using Data = Scheme1DataBase;
 

@@ -18,8 +18,6 @@ struct HipAoSScheme1 : public AoSScheme1Base {
   void eval_uvvar_gga( XCDeviceData* ) override final;
   void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* ) override final;
   void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* ) override final;
-  void inc_exc( XCDeviceData* ) override final;
-  void inc_nel( XCDeviceData* ) override final;
   void inc_vxc( XCDeviceData* ) override final;
   void symmetrize_vxc( XCDeviceData* ) override final;
 

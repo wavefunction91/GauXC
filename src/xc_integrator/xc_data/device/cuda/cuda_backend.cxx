@@ -36,16 +36,54 @@ void CUDABackend::master_queue_synchronize() {
   cudaStreamSynchronize( *master_stream );
 }
 
+
 type_erased_queue CUDABackend::queue() {
   return type_erased_queue(master_stream);
 }
 
+
+
 void CUDABackend::create_blas_queue_pool(int32_t ns) {
   blas_streams.resize(ns);
   blas_handles.resize(ns);
-  for( auto i = 0; i < ns; ++i )
-    cublasSetStream( blas_handles[i], blas_streams[i] );
+  for( auto i = 0; i < ns; ++i ) {
+    blas_handles[i] = std::make_shared<util::cublas_handle>();
+    cublasSetStream( *blas_handles[i], blas_streams[i] );
+  }
 }
+
+void CUDABackend::sync_master_with_blas_pool() {
+  const auto n_streams = blas_streams.size();
+  std::vector<util::cuda_event> blas_events( n_streams );
+  for( size_t iS = 0; iS < n_streams; ++iS )
+    blas_events[iS].record( blas_streams[iS] );
+
+  for( auto& event : blas_events ) master_stream->wait(event);
+}
+
+void CUDABackend::sync_blas_pool_with_master() {
+  util::cuda_event master_event;
+  master_event.record( *master_stream );
+  for( auto& stream : blas_streams ) stream.wait( master_event );
+}
+
+size_t CUDABackend::blas_pool_size(){ return blas_streams.size(); }
+
+type_erased_blas_handle CUDABackend::blas_pool_handle(int32_t i) {
+  return type_erased_blas_handle( blas_handles.at(i) );
+}
+type_erased_blas_handle CUDABackend::master_blas_handle() {
+  return type_erased_blas_handle( master_handle );
+}
+
+
+
+
+
+
+
+
+
 
 void CUDABackend::copy_async_( size_t sz, const void* src, void* dest,
   std::string msg ) {

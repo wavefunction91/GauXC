@@ -2,6 +2,7 @@
 #include <tuple>
 #include <vector>
 #include "type_erased_queue.hpp"
+#include "type_erased_blas_handle.hpp"
 
 namespace GauXC {
 
@@ -16,7 +17,13 @@ public:
   virtual void              free_device_buffer( void* ptr ) = 0;
   virtual void              master_queue_synchronize() = 0;
   virtual void              create_blas_queue_pool(int32_t)   = 0;
-  virtual type_erased_queue queue() = 0;
+  virtual void              sync_master_with_blas_pool() = 0;
+  virtual void              sync_blas_pool_with_master() = 0;
+  virtual size_t            blas_pool_size() = 0;
+
+  virtual type_erased_queue       queue() = 0;
+  virtual type_erased_blas_handle blas_pool_handle(int32_t) = 0;
+  virtual type_erased_blas_handle master_blas_handle() = 0;
 
   virtual ~DeviceBackend() noexcept = default;
 

@@ -1,11 +1,31 @@
-#include "cublas_extensions.hpp"
 #include <gauxc/util/cublas_util.hpp>
 #include <gauxc/util/div_ceil.hpp>
 #include "exceptions/cublas_exception.hpp"
 
 #include "device_specific/cuda_device_constants.hpp"
+#include "device/common/device_blas.hpp"
 
 namespace GauXC {
+
+cublasOperation_t device_op_to_cublas( DeviceBlasOp op ) {
+  switch( op ) {
+    case DeviceBlasOp::NoTrans: return CUBLAS_OP_N;
+    case DeviceBlasOp::Trans:   return CUBLAS_OP_T;
+    default:
+      throw std::runtime_error("Unsupported DeviceBlasOp");
+      return CUBLAS_OP_N;
+  }
+}
+
+cublasFillMode_t device_uplo_to_cublas( DeviceBlasUplo uplo ) {
+  switch(uplo) {
+    case DeviceBlasUplo::Upper: return CUBLAS_FILL_MODE_UPPER;
+    case DeviceBlasUplo::Lower: return CUBLAS_FILL_MODE_LOWER;
+    default:
+      throw std::runtime_error("Unsupported DeviceBlasUplo");
+      return CUBLAS_FILL_MODE_LOWER;
+  }
+}
 
 template <typename T>
 __global__ void increment_kernel( const T* X, T* Y ) {
@@ -19,7 +39,7 @@ void increment( const T* X, T* Y, cudaStream_t stream ) {
 }
 
 template <>
-void dot( cublasHandle_t handle,
+void dot( type_erased_blas_handle generic_handle,
           int            N,
           const double*  X,
           int            INCX,
@@ -27,13 +47,15 @@ void dot( cublasHandle_t handle,
           int            INCY,
           double*        RES ) {
 
+  cublasHandle_t handle = generic_handle.blas_handle_as<util::cublas_handle>();
+
   auto stat = cublasDdot( handle, N, X, INCX, Y, INCY, RES );
   GAUXC_CUBLAS_ERROR("CUBLAS DDOT FAILED", stat );
 
 }
 
 template <typename T>
-void gdot( cublasHandle_t handle,
+void gdot( type_erased_blas_handle generic_handle,
            int       N,
            const T*  X,
            int       INCX,
@@ -42,14 +64,16 @@ void gdot( cublasHandle_t handle,
            T*        SCR,
            T*        RES ) {
 
-  dot( handle, N, X, INCX, Y, INCY, SCR );
+
+  dot( generic_handle, N, X, INCX, Y, INCY, SCR );
+  cublasHandle_t handle = generic_handle.blas_handle_as<util::cublas_handle>();
   auto stream = util::get_stream(handle);
   increment( SCR, RES, stream );
 
 }
 
 template 
-void gdot( cublasHandle_t handle,
+void gdot( type_erased_blas_handle generic_handle,
            int            N,
            const double*  X,
            int            INCX,
@@ -87,7 +111,7 @@ void __global__ hadamard_product_kernel( int      M,
 
 
 template <typename T>
-void hadamard_product( cublasHandle_t handle,
+void hadamard_product( type_erased_blas_handle generic_handle,
                        int            M,
                        int            N,
                        const T*       A,
@@ -95,6 +119,8 @@ void hadamard_product( cublasHandle_t handle,
                        T*             B,
                        int            LDB ) {
 
+
+  cublasHandle_t handle = generic_handle.blas_handle_as<util::cublas_handle>();
   auto stream = util::get_stream(handle);
   dim3 threads(cuda::warp_size, cuda::max_warps_per_thread_block);
   dim3 blocks( util::div_ceil( M, threads.x ),
@@ -105,7 +131,7 @@ void hadamard_product( cublasHandle_t handle,
 }
  
 template 
-void hadamard_product( cublasHandle_t handle,
+void hadamard_product( type_erased_blas_handle generic_handle,
                        int            M,
                        int            N,
                        const double*  A,
@@ -117,28 +143,33 @@ void hadamard_product( cublasHandle_t handle,
 
 
 template <>
-void gemm( cublasHandle_t handle, 
-           cublasOperation_t TA, cublasOperation_t TB,
+void gemm( type_erased_blas_handle generic_handle, 
+           DeviceBlasOp TA, DeviceBlasOp TB,
            int M, int N, int K, double ALPHA, 
            const double* A, int LDA, const double* B, int LDB,
            double BETA, double* C, int LDC ) {
 
-  auto stat = cublasDgemm( handle, TA, TB, M, N, K, &ALPHA, A, LDA,
-                           B, LDB, &BETA, C, LDC );
+
+  cublasHandle_t handle = generic_handle.blas_handle_as<util::cublas_handle>();
+  auto stat = cublasDgemm( handle, device_op_to_cublas(TA), 
+    device_op_to_cublas(TB), M, N, K, &ALPHA, A, LDA,
+    B, LDB, &BETA, C, LDC );
   GAUXC_CUBLAS_ERROR("CUBLAS DGEMM FAILED", stat);
 
 }
 
 
 template <>
-void syr2k( cublasHandle_t handle, 
-            cublasFillMode_t UPLO, cublasOperation_t Trans,
+void syr2k( type_erased_blas_handle generic_handle, 
+            DeviceBlasUplo UPLO, DeviceBlasOp Trans,
             int M, int K, double ALPHA, 
             const double* A, int LDA, const double* B, int LDB,
             double BETA, double* C, int LDC ) {
 
-  auto stat = cublasDsyr2k( handle, UPLO, Trans, M, K, &ALPHA, A, LDA, B, LDB,
-                           &BETA, C, LDC );
+  cublasHandle_t handle = generic_handle.blas_handle_as<util::cublas_handle>();
+  auto stat = cublasDsyr2k( handle, device_uplo_to_cublas(UPLO), 
+    device_op_to_cublas(Trans), M, K, &ALPHA, A, LDA, B, LDB,
+    &BETA, C, LDC );
   GAUXC_CUBLAS_ERROR("CUBLAS DSYR2K FAILED", stat);
 
 }
