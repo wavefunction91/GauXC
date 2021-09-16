@@ -1,6 +1,7 @@
-#include "hip_inc_potential.hpp"
 #include "device_specific/hip_device_constants.hpp"
+#include "device/common/inc_potential.hpp"
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/util/hip_util.hpp>
 
 
 namespace GauXC {
@@ -59,9 +60,10 @@ void task_inc_potential( size_t        ntasks,
                          double*       V_device,
                          size_t        LDV,
                          size_t        submat_block_size,
-                         hipStream_t  stream ) {
+                         type_erased_queue queue ) {
 
 
+  hipStream_t stream = queue.queue_as<util::hip_stream>();
   dim3 threads(hip::warp_size,hip::max_warps_per_thread_block,1), 
        blocks(1,1,ntasks);
   hipLaunchKernelGGL(inc_by_submat_combined_kernel, blocks, threads, 0, stream , 

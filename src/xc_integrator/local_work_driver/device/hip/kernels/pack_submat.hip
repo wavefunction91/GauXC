@@ -1,6 +1,7 @@
 #include "device_specific/hip_device_constants.hpp"
-#include "pack_submat.hpp"
+#include "device/common/pack_submat.hpp"
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/util/hip_util.hpp>
 
 namespace GauXC {
 
@@ -60,9 +61,9 @@ void submat_set_combined_kernel( size_t           ntasks,
 
 
 void pack_submat( size_t ntasks, XCDeviceTask* device_tasks, const double* A,
-  int32_t LDA, int32_t submat_block_size, hipStream_t stream ) {
+  int32_t LDA, int32_t submat_block_size, type_erased_queue queue ) {
 
-
+  hipStream_t stream = queue.queue_as<util::hip_stream>();
   dim3 threads(hip::warp_size,hip::max_warps_per_thread_block,1), blocks(1,1,ntasks);
   hipLaunchKernelGGL(submat_set_combined_kernel, dim3(blocks), dim3(threads), 0, stream , 
     ntasks, device_tasks, A, LDA

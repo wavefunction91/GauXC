@@ -8,6 +8,7 @@
 #include "device/hip/kernels/collocation_masked_combined_kernels.hpp"
 
 #include "device_specific/hip_device_constants.hpp"
+#include "device/common/collocation_device.hpp"
 
 namespace GauXC {
 
@@ -22,8 +23,10 @@ void eval_collocation_masked(
   const size_t*   offs_device,
   const T*        pts_device,
   T*              eval_device,
-  hipStream_t    stream
+  type_erased_queue queue
 ) {
+
+  hipStream_t stream = queue.queue_as<util::hip_stream>();
 
   auto nmax_threads = util::hip_kernel_max_threads_per_block( 
     collocation_device_masked_kernel<T>
@@ -49,7 +52,7 @@ void eval_collocation_masked(
   const size_t*        offs_device,
   const double*        pts_device,
   double*              eval_device,
-  hipStream_t         stream
+  type_erased_queue queue
 );
 
 
@@ -62,8 +65,10 @@ void eval_collocation_masked_combined(
   size_t        nshells_max,
   Shell<T>*     shells_device,
   XCDeviceTask* device_tasks,
-  hipStream_t  stream
+  type_erased_queue queue
 ) {
+
+  hipStream_t stream = queue.queue_as<util::hip_stream>();
 
   auto nmax_threads = util::hip_kernel_max_threads_per_block( 
     collocation_device_masked_combined_kernel<T>
@@ -86,7 +91,7 @@ void eval_collocation_masked_combined(
   size_t                nshells_max,
   Shell<double>*        shells_device,
   XCDeviceTask* device_tasks,
-  hipStream_t          stream
+  type_erased_queue queue
 );
 
 
@@ -112,8 +117,10 @@ void eval_collocation_masked_deriv1(
   T*              deval_device_x,
   T*              deval_device_y,
   T*              deval_device_z,
-  hipStream_t    stream
+  type_erased_queue queue
 ) {
+
+  hipStream_t stream = queue.queue_as<util::hip_stream>();
 
   auto nmax_threads = util::hip_kernel_max_threads_per_block( 
     collocation_device_masked_combined_kernel<T>
@@ -143,7 +150,7 @@ void eval_collocation_masked_deriv1(
   double*              deval_device_x,
   double*              deval_device_y,
   double*              deval_device_z,
-  hipStream_t         stream
+  type_erased_queue queue
 );
 
 
@@ -168,8 +175,10 @@ void eval_collocation_masked_combined_deriv1(
   size_t        nshells_max,
   Shell<T>*     shells_device,
   XCDeviceTask* device_tasks,
-  hipStream_t  stream
+  type_erased_queue queue
 ) {
+
+  hipStream_t stream = queue.queue_as<util::hip_stream>();
 
   auto nmax_threads = util::hip_kernel_max_threads_per_block( 
     collocation_device_masked_combined_kernel_deriv1<T>
@@ -191,7 +200,7 @@ void eval_collocation_masked_combined_deriv1(
   size_t                nshells_max,
   Shell<double>*        shells_device,
   XCDeviceTask* device_tasks,
-  hipStream_t          stream
+  type_erased_queue queue
 );
 
 

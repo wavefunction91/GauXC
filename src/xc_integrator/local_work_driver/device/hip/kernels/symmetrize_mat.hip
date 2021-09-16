@@ -1,4 +1,6 @@
-#include "symmetrize_mat.hpp"
+#include "device/common/symmetrize_mat.hpp"
+#include "hip/hip_runtime.h"
+#include <gauxc/util/hip_util.hpp>
 
 namespace GauXC {
 
@@ -38,8 +40,9 @@ __global__ void symmetrize_matrix_kernel( int N, double* A, int LDA ) {
 
 }
 
-void symmetrize_matrix( int32_t N, double* A, size_t LDA, hipStream_t stream ) {
+void symmetrize_matrix( int32_t N, double* A, size_t LDA, type_erased_queue queue ) {
 
+  hipStream_t stream = queue.queue_as<util::hip_stream>();
   constexpr int block_size = 32;
   const int n_rc_blocks = div_ceil( N, block_size );
   const size_t n_total_blocks = n_rc_blocks * (n_rc_blocks+1) / 2;

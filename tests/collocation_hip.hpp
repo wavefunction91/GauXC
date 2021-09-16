@@ -1,6 +1,6 @@
 #ifdef GAUXC_ENABLE_HIP
 #include "collocation_common.hpp"
-#include "device/hip/kernels/collocation_device.hpp"
+#include "device/common/collocation_device.hpp"
 #include <gauxc/util/hip_util.hpp>
 
 
@@ -22,7 +22,7 @@ void test_hip_collocation( const BasisSet<double>& basis, std::ifstream& in_file
   std::vector<Shell<double>> shells( basis );
   util::hip_copy( basis.size(), shells_device, shells.data() );
 
-  hipStream_t stream = 0;
+  type_erased_queue stream( std::make_shared<util::hip_stream>() );
   for( auto& d : ref_data ) {
     const auto npts = d.pts.size();
     const auto nbf  = d.eval.size() / npts;
@@ -116,7 +116,7 @@ void test_hip_collocation_deriv1( const BasisSet<double>& basis, std::ifstream& 
   std::vector<Shell<double>> shells( basis );
   util::hip_copy( basis.size(), shells_device, shells.data() );
 
-  hipStream_t stream = 0;
+  type_erased_queue stream( std::make_shared<util::hip_stream>() );
   for( auto& d : ref_data ) {
     const auto npts = d.pts.size();
     const auto nbf  = d.eval.size() / npts;

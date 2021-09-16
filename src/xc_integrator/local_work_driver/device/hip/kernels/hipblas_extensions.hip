@@ -1,5 +1,5 @@
 #include "hip/hip_runtime.h"
-#include "hipblas_extensions.hpp"
+#include "device/common/device_blas.hpp"
 #include <gauxc/util/hipblas_util.hpp>
 #include <gauxc/util/div_ceil.hpp>
 #include "exceptions/hipblas_exception.hpp"
@@ -7,6 +7,26 @@
 #include "device_specific/hip_device_constants.hpp"
 
 namespace GauXC {
+
+hipblasOperation_t device_op_to_hipblas( DeviceBlasOp op ) {
+  switch( op ) {
+    case DeviceBlasOp::NoTrans: return HIPBLAS_OP_N;
+    case DeviceBlasOp::Trans:   return HIPBLAS_OP_T;
+    default:
+      throw std::runtime_error("Unsupported DeviceBlasOp");
+      return HIPBLAS_OP_N;
+  }
+}
+
+hipblasFillMode_t device_uplo_to_hipblas( DeviceBlasUplo uplo ) {
+  switch(uplo) {
+    case DeviceBlasUplo::Upper: return HIPBLAS_FILL_MODE_UPPER;
+    case DeviceBlasUplo::Lower: return HIPBLAS_FILL_MODE_LOWER;
+    default:
+      throw std::runtime_error("Unsupported DeviceBlasUplo");
+      return HIPBLAS_FILL_MODE_LOWER;
+  }
+}
 
 template <typename T>
 __global__ void increment_kernel( const T* X, T* Y ) {
@@ -20,7 +40,7 @@ void increment( const T* X, T* Y, hipStream_t stream ) {
 }
 
 template <>
-void dot( hipblasHandle_t handle,
+void dot( type_erased_blas_handle generic_handle,
           int            N,
           const double*  X,
           int            INCX,
@@ -28,13 +48,14 @@ void dot( hipblasHandle_t handle,
           int            INCY,
           double*        RES ) {
 
+  hipblasHandle_t handle = generic_handle.blas_handle_as<util::hipblas_handle>();
   auto stat = hipblasDdot( handle, N, X, INCX, Y, INCY, RES );
   GAUXC_HIPBLAS_ERROR("HIPBLAS DDOT FAILED", stat );
 
 }
 
 template <typename T>
-void gdot( hipblasHandle_t handle,
+void gdot( type_erased_blas_handle generic_handle,
            int       N,
            const T*  X,
            int       INCX,
@@ -43,14 +64,15 @@ void gdot( hipblasHandle_t handle,
            T*        SCR,
            T*        RES ) {
 
-  dot( handle, N, X, INCX, Y, INCY, SCR );
+  dot( generic_handle, N, X, INCX, Y, INCY, SCR );
+  hipblasHandle_t handle = generic_handle.blas_handle_as<util::hipblas_handle>();
   auto stream = util::get_stream(handle);
   increment( SCR, RES, stream );
 
 }
 
 template 
-void gdot( hipblasHandle_t handle,
+void gdot( type_erased_blas_handle generic_handle,
            int            N,
            const double*  X,
            int            INCX,
@@ -88,7 +110,7 @@ void __global__ hadamard_product_kernel( int      M,
 
 
 template <typename T>
-void hadamard_product( hipblasHandle_t handle,
+void hadamard_product( type_erased_blas_handle generic_handle,
                        int            M,
                        int            N,
                        const T*       A,
@@ -96,6 +118,7 @@ void hadamard_product( hipblasHandle_t handle,
                        T*             B,
                        int            LDB ) {
 
+  hipblasHandle_t handle = generic_handle.blas_handle_as<util::hipblas_handle>();
   auto stream = util::get_stream(handle);
   dim3 threads(hip::warp_size, hip::max_warps_per_thread_block);
   dim3 blocks( util::div_ceil( M, threads.x ),
@@ -106,7 +129,7 @@ void hadamard_product( hipblasHandle_t handle,
 }
  
 template 
-void hadamard_product( hipblasHandle_t handle,
+void hadamard_product( type_erased_blas_handle generic_handle,
                        int            M,
                        int            N,
                        const double*  A,
@@ -118,28 +141,32 @@ void hadamard_product( hipblasHandle_t handle,
 
 
 template <>
-void gemm( hipblasHandle_t handle, 
-           hipblasOperation_t TA, hipblasOperation_t TB,
+void gemm( type_erased_blas_handle generic_handle, 
+           DeviceBlasOp TA, DeviceBlasOp TB,
            int M, int N, int K, double ALPHA, 
            const double* A, int LDA, const double* B, int LDB,
            double BETA, double* C, int LDC ) {
 
-  auto stat = hipblasDgemm( handle, TA, TB, M, N, K, &ALPHA, A, LDA,
-                           B, LDB, &BETA, C, LDC );
+  hipblasHandle_t handle = generic_handle.blas_handle_as<util::hipblas_handle>();
+  auto stat = hipblasDgemm( handle, device_op_to_hipblas(TA), 
+    device_op_to_hipblas(TB), M, N, K, &ALPHA, A, LDA,
+    B, LDB, &BETA, C, LDC );
   GAUXC_HIPBLAS_ERROR("HIPBLAS DGEMM FAILED", stat);
 
 }
 
 
 template <>
-void syr2k( hipblasHandle_t handle, 
-            hipblasFillMode_t UPLO, hipblasOperation_t Trans,
+void syr2k( type_erased_blas_handle generic_handle, 
+            DeviceBlasUplo UPLO, DeviceBlasOp Trans,
             int M, int K, double ALPHA, 
             const double* A, int LDA, const double* B, int LDB,
             double BETA, double* C, int LDC ) {
 
-  auto stat = hipblasDsyr2k( handle, UPLO, Trans, M, K, &ALPHA, A, LDA, B, LDB,
-                           &BETA, C, LDC );
+  hipblasHandle_t handle = generic_handle.blas_handle_as<util::hipblas_handle>();
+  auto stat = hipblasDsyr2k( handle, device_uplo_to_hipblas(UPLO), 
+    device_op_to_hipblas(Trans), M, K, &ALPHA, A, LDA, B, LDB,
+    &BETA, C, LDC );
   GAUXC_HIPBLAS_ERROR("HIPBLAS DSYR2K FAILED", stat);
 
 }

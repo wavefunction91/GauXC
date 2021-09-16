@@ -2,6 +2,8 @@ target_sources(gauxc PRIVATE
   hip_aos_scheme1_data.cxx
   hip_aos_scheme1.cxx
 
+  xc_functional_eval_wrapper.cxx
+
   kernels/collocation_device.hip
   kernels/grid_to_center.hip
   kernels/hip_ssf_1d.hip
