@@ -5,6 +5,10 @@ target_sources( gauxc PRIVATE
   scheme1_data_base.cxx
 )
 
+if( GAUXC_ENABLE_MAGMA )
+  find_package( MAGMA REQUIRED )
+endif()
+
 if(GAUXC_ENABLE_CUDA)
   add_subdirectory( cuda )
 endif()
