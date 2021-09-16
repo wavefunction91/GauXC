@@ -43,15 +43,23 @@ public:
     set_zero_( sz * sizeof(T), data, msg );
   }
 
+  template <typename T>
+  void set_zero_async_master_queue(size_t sz, T* data, std::string msg) {
+    set_zero_async_master_queue_( sz * sizeof(T), data, msg );
+  }
+
 protected:
 
   virtual void copy_async_( size_t sz, const void* src, void* dest, 
                             std::string msg ) = 0;
-  virtual void set_zero_( size_t sz, void* data, std::string msg) = 0;
 
   virtual void copy_async_2d_( size_t M, size_t N, const void* A, size_t LDA,
     void* B, size_t LDB, std::string msg ) = 0;
 
+
+  virtual void set_zero_( size_t sz, void* data, std::string msg) = 0;
+  virtual void set_zero_async_master_queue_( size_t sz, void* data, 
+    std::string msg) = 0;
 };
 
 }

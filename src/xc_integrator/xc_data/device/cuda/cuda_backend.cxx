@@ -96,6 +96,11 @@ void CUDABackend::set_zero_(size_t sz, void* data, std::string msg ) {
   GAUXC_CUDA_ERROR( "CUDA Memset Failed ["+msg+"]", stat );
 }
 
+void CUDABackend::set_zero_async_master_queue_(size_t sz, void* data, std::string msg ) {
+  auto stat = cudaMemsetAsync( data, 0, sz, *master_stream );
+  GAUXC_CUDA_ERROR( "CUDA Memset Failed ["+msg+"]", stat );
+}
+
 void CUDABackend::copy_async_2d_( size_t M, size_t N, const void* A, size_t LDA,
   void* B, size_t LDB, std::string msg ) {
   auto stat = cudaMemcpy2DAsync( B, LDB, A, LDA, M, N, cudaMemcpyDefault,

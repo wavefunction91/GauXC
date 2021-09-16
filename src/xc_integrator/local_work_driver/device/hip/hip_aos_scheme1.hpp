@@ -13,13 +13,6 @@ struct HipAoSScheme1 : public AoSScheme1Base {
 
   // API Overrides
   void partition_weights( XCDeviceData* ) override final;
-  void eval_xmat( XCDeviceData* ) override final;
-  void eval_uvvar_lda( XCDeviceData* ) override final;
-  void eval_uvvar_gga( XCDeviceData* ) override final;
-  void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* ) override final;
-  void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* ) override final;
-  void inc_vxc( XCDeviceData* ) override final;
-  void symmetrize_vxc( XCDeviceData* ) override final;
 
   std::unique_ptr<XCDeviceData> create_device_data() override final;
 

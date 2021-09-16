@@ -1,6 +1,7 @@
-#include "cuda_inc_potential.hpp"
+#include "device/common/inc_potential.hpp"
 #include "device_specific/cuda_device_constants.hpp"
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/util/cuda_util.hpp>
 
 
 namespace GauXC {
@@ -91,7 +92,9 @@ void task_inc_potential( size_t        ntasks,
                          double*       V_device,
                          size_t        LDV,
                          size_t        submat_block_size,
-                         cudaStream_t  stream ) {
+                         type_erased_queue  queue ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>();
 
   dim3 threads( cuda::warp_size/2, cuda::max_warps_per_thread_block * 2, 1 );
   dim3 blocks( 1,1, ntasks );
