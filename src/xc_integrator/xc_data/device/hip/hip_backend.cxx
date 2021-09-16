@@ -39,7 +39,7 @@ void HIPBackend::master_queue_synchronize() {
 }
 
 std::any HIPBackend::type_erased_queue() {
-  return master_stream;
+  return type_erased_queue(master_stream);
 }
 
 void HIPBackend::create_blas_queue_pool(int32_t ns) {

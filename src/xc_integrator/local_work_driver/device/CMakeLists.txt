@@ -7,6 +7,7 @@ target_sources( gauxc PRIVATE
 
 if( GAUXC_ENABLE_MAGMA )
   find_package( MAGMA REQUIRED )
+  target_link_libraries( gauxc PUBLIC MAGMA::magma )
 endif()
 
 if(GAUXC_ENABLE_CUDA)

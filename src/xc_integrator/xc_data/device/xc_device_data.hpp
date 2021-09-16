@@ -6,6 +6,7 @@
 //#include <gauxc/reduction_driver.hpp>
 #include <any>
 #include <cstring>
+#include "type_erased_queue.hpp"
 
 namespace GauXC {
 
@@ -87,7 +88,7 @@ struct XCDeviceData {
   virtual double* vxc_device_data() = 0;
   virtual double* exc_device_data() = 0;
   virtual double* nel_device_data() = 0;
-  virtual std::any type_erased_queue() = 0;
+  virtual type_erased_queue queue() = 0;
 
 
 };

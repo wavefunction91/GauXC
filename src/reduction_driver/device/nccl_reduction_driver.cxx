@@ -5,6 +5,7 @@
 #include <iostream>
 
 #include <gauxc/util/cuda_util.hpp>
+#include "device/type_erased_queue.hpp"
 
 namespace GauXC {
 
@@ -33,9 +34,9 @@ cudaStream_t get_cuda_stream_from_optional_args( std::any& args ) {
   cudaStream_t stream = 0;
 
   if( args.has_value() ) {
-    using stream_type = std::shared_ptr<util::cuda_stream>;
-    if( auto passed_stream = std::any_cast<stream_type>( &args ) ) {
-      stream = *(*passed_stream);
+    if( auto ptr = std::any_cast<type_erased_queue>( &args ) ) 
+    if( auto passed_stream = ptr->queue_as_ptr<util::cuda_stream>() ) {
+      stream = *passed_stream;
     }
   }
 

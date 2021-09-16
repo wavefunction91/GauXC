@@ -60,7 +60,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     auto vxc_device = device_data_ptr->vxc_device_data();
     auto exc_device = device_data_ptr->exc_device_data();
     auto nel_device = device_data_ptr->nel_device_data();
-    auto queue      = device_data_ptr->type_erased_queue();
+    auto queue      = device_data_ptr->queue();
     this->timer_.time_op("XCIntegrator.Allreduce", [&](){
       this->reduction_driver_->allreduce_inplace( vxc_device, nbf*nbf, ReductionOp::Sum, queue );
       this->reduction_driver_->allreduce_inplace( exc_device, 1,       ReductionOp::Sum, queue );
@@ -273,7 +273,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // Determine next task batch, send relevant data to device (EXC VXC only)
     task_it = 
       device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
-    std::cout << std::distance( task_begin, task_it ) << std::endl;
 
     /*** Process the batches ***/
 

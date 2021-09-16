@@ -1,7 +1,7 @@
 #pragma once
 #include <tuple>
 #include <vector>
-#include <any>
+#include "type_erased_queue.hpp"
 
 namespace GauXC {
 
@@ -11,12 +11,12 @@ public:
 
   using device_buffer_t = std::tuple<void*, size_t>;
 
-  virtual device_buffer_t allocate_device_buffer(int64_t sz) = 0;
-  virtual size_t          get_available_mem() = 0;
-  virtual void            free_device_buffer( void* ptr ) = 0;
-  virtual void            master_queue_synchronize() = 0;
-  virtual void            create_blas_queue_pool(int32_t)   = 0;
-  virtual std::any        type_erased_queue() = 0;
+  virtual device_buffer_t   allocate_device_buffer(int64_t sz) = 0;
+  virtual size_t            get_available_mem() = 0;
+  virtual void              free_device_buffer( void* ptr ) = 0;
+  virtual void              master_queue_synchronize() = 0;
+  virtual void              create_blas_queue_pool(int32_t)   = 0;
+  virtual type_erased_queue queue() = 0;
 
   virtual ~DeviceBackend() noexcept = default;
 

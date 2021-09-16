@@ -36,8 +36,8 @@ void CUDABackend::master_queue_synchronize() {
   cudaStreamSynchronize( *master_stream );
 }
 
-std::any CUDABackend::type_erased_queue() {
-  return master_stream;
+type_erased_queue CUDABackend::queue() {
+  return type_erased_queue(master_stream);
 }
 
 void CUDABackend::create_blas_queue_pool(int32_t ns) {
