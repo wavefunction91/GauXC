@@ -1,5 +1,6 @@
-#include "zmat_vxc.hpp"
+#include "device/common/zmat_vxc.hpp"
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/util/cuda_util.hpp>
 #include "device_specific/cuda_device_constants.hpp"
 
 namespace GauXC {
@@ -37,11 +38,13 @@ __global__ void zmat_lda_vxc_kernel( size_t        ntasks,
 
 
 
-void zmat_lda_vxc_cuda( size_t           ntasks,
-                         int32_t          max_nbf,
-                         int32_t          max_npts,
-                         XCDeviceTask* tasks_device,
-                         cudaStream_t     stream ) {
+void zmat_lda_vxc( size_t            ntasks,
+                   int32_t           max_nbf,
+                   int32_t           max_npts,
+                   XCDeviceTask*     tasks_device,
+                   type_erased_queue queue ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
 
 
   dim3 threads(cuda::warp_size,cuda::max_warps_per_thread_block,1);
@@ -113,11 +116,13 @@ __global__ void zmat_gga_vxc_kernel( size_t        ntasks,
   }
 }
 
-void zmat_gga_vxc_cuda( size_t        ntasks,
-                        int32_t       max_nbf,
-                        int32_t       max_npts,
-                        XCDeviceTask* tasks_device,
-                        cudaStream_t  stream ) {
+void zmat_gga_vxc( size_t            ntasks,
+                   int32_t           max_nbf,
+                   int32_t           max_npts,
+                   XCDeviceTask*     tasks_device,
+                   type_erased_queue queue ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
 
 
   dim3 threads(cuda::warp_size,cuda::max_warps_per_thread_block,1);

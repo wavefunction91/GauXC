@@ -4,10 +4,11 @@
 #include "cuda_aos_scheme1_weights.hpp"
 #include "kernels/cublas_extensions.hpp"
 #include "kernels/uvvars.hpp"
-#include "kernels/zmat_vxc.hpp"
 #include "kernels/pack_submat.hpp"
 #include "kernels/cuda_inc_potential.hpp"
 #include "kernels/symmetrize_mat.hpp"
+
+//#include "device/common/zmat_vxc.hpp"
 
 namespace GauXC {
 
@@ -266,13 +267,13 @@ void CudaAoSScheme1::eval_kern_exc_vxc_gga( const functional_type& func,
 
 
 
+#if 0
 void CudaAoSScheme1::eval_zmat_lda_vxc( XCDeviceData* _data){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) throw std::runtime_error("BAD DATA CAST");
 
-  auto device_backend = dynamic_cast<CUDABackend*>(data->device_backend_.get());
-  if( !device_backend ) throw std::runtime_error("BAD BACKEND CAST");
+  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
 
   auto& tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
@@ -283,8 +284,8 @@ void CudaAoSScheme1::eval_zmat_lda_vxc( XCDeviceData* _data){
   }
 
   auto aos_stack     = data->aos_stack;
-  zmat_lda_vxc_cuda( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
-    *device_backend->master_stream );
+  zmat_lda_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
+    data->device_backend_->queue() );
 
 }
 
@@ -293,8 +294,7 @@ void CudaAoSScheme1::eval_zmat_gga_vxc( XCDeviceData* _data){
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) throw std::runtime_error("BAD DATA CAST");
 
-  auto device_backend = dynamic_cast<CUDABackend*>(data->device_backend_.get());
-  if( !device_backend ) throw std::runtime_error("BAD BACKEND CAST");
+  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
 
   auto& tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
@@ -305,10 +305,12 @@ void CudaAoSScheme1::eval_zmat_gga_vxc( XCDeviceData* _data){
   }
 
   auto aos_stack     = data->aos_stack;
-  zmat_gga_vxc_cuda( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
-    *device_backend->master_stream );
+  zmat_gga_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
+    data->device_backend_->queue() );
 
 }
+#endif
+
 void CudaAoSScheme1::inc_exc( XCDeviceData* _data){
 
   auto* data = dynamic_cast<Data*>(_data);

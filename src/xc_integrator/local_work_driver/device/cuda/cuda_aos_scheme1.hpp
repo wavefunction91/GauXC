@@ -1,10 +1,9 @@
 #pragma once
-#include "device/local_device_work_driver_pimpl.hpp"
-#include "device/scheme1_data_base.hpp"
+#include "device/scheme1_base.hpp"
 
 namespace GauXC {
 
-struct CudaAoSScheme1 : public detail::LocalDeviceWorkDriverPIMPL {
+struct CudaAoSScheme1 : public AoSScheme1Base {
 
   // Algorithmic constants
   static constexpr uint32_t weight_unroll = 4;
@@ -21,8 +20,6 @@ struct CudaAoSScheme1 : public detail::LocalDeviceWorkDriverPIMPL {
   void eval_uvvar_gga( XCDeviceData* ) override final;
   void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* ) override final;
   void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* ) override final;
-  void eval_zmat_lda_vxc( XCDeviceData* ) override final;
-  void eval_zmat_gga_vxc( XCDeviceData* ) override final;
   void inc_exc( XCDeviceData* ) override final;
   void inc_nel( XCDeviceData* ) override final;
   void inc_vxc( XCDeviceData* ) override final;
