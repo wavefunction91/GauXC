@@ -1,5 +1,6 @@
-#include "symmetrize_mat.hpp"
+#include "device/common/symmetrize_mat.hpp"
 #include "device_specific/cuda_device_constants.hpp"
+#include <gauxc/util/cuda_util.hpp>
 
 namespace GauXC {
 
@@ -37,7 +38,8 @@ __global__ void symmetrize_matrix_device( size_t N, double* A, size_t LDA ) {
 
 
 
-void symmetrize_matrix( int32_t N, double* A, size_t LDA, cudaStream_t stream ) {
+void symmetrize_matrix( int32_t N, double* A, size_t LDA, type_erased_queue queue ) {
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>();
   const size_t num_blocks = ((N + cuda::warp_size - 1) / cuda::warp_size);
   // Warp size must equal max_warps_per_thread_block must equal 32
   dim3 threads(cuda::warp_size, cuda::max_warps_per_thread_block), blocks(num_blocks);

@@ -2,6 +2,8 @@ target_sources(gauxc PRIVATE
   cuda_aos_scheme1_data.cxx
   cuda_aos_scheme1.cxx
 
+  xc_functional_eval_wrapper.cxx
+
   kernels/collocation_device.cu
   #kernels/cuda_weights.cu
   kernels/grid_to_center.cu

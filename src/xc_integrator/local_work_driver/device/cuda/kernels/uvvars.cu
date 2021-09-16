@@ -1,7 +1,8 @@
-#include "uvvars.hpp"
+#include "device/common/uvvars.hpp"
 #include "cuda_extensions.hpp"
 #include "device_specific/cuda_device_constants.hpp"
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/util/cuda_util.hpp>
 
 namespace GauXC {
 
@@ -164,9 +165,10 @@ __global__ void eval_vvars_gga_kernel(
 
 
 
-void eval_uvvars_lda_cuda( size_t ntasks, int32_t nbf_max, int32_t npts_max,
-  XCDeviceTask* device_tasks, cudaStream_t stream ) {
+void eval_uvvars_lda( size_t ntasks, int32_t nbf_max, int32_t npts_max,
+  XCDeviceTask* device_tasks, type_erased_queue queue ) {
 
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>();
   dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block, 1 );
   dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
                util::div_ceil( npts_max, threads.y ),
@@ -177,10 +179,11 @@ void eval_uvvars_lda_cuda( size_t ntasks, int32_t nbf_max, int32_t npts_max,
 }
 
 
-void eval_uvvars_gga_cuda( size_t ntasks, size_t npts_total, int32_t nbf_max, 
+void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max, 
   int32_t npts_max, XCDeviceTask* device_tasks, const double* denx, 
-  const double* deny, const double* denz, double* gamma, cudaStream_t stream ) {
+  const double* deny, const double* denz, double* gamma, type_erased_queue queue ) {
 
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>();
 
   // U Variables
   {

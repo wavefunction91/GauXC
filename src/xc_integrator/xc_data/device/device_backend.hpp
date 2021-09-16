@@ -2,6 +2,7 @@
 #include <tuple>
 #include <vector>
 #include "type_erased_queue.hpp"
+#include "type_erased_blas_handle.hpp"
 
 namespace GauXC {
 
@@ -16,7 +17,13 @@ public:
   virtual void              free_device_buffer( void* ptr ) = 0;
   virtual void              master_queue_synchronize() = 0;
   virtual void              create_blas_queue_pool(int32_t)   = 0;
-  virtual type_erased_queue queue() = 0;
+  virtual void              sync_master_with_blas_pool() = 0;
+  virtual void              sync_blas_pool_with_master() = 0;
+  virtual size_t            blas_pool_size() = 0;
+
+  virtual type_erased_queue       queue() = 0;
+  virtual type_erased_blas_handle blas_pool_handle(int32_t) = 0;
+  virtual type_erased_blas_handle master_blas_handle() = 0;
 
   virtual ~DeviceBackend() noexcept = default;
 
@@ -36,15 +43,23 @@ public:
     set_zero_( sz * sizeof(T), data, msg );
   }
 
+  template <typename T>
+  void set_zero_async_master_queue(size_t sz, T* data, std::string msg) {
+    set_zero_async_master_queue_( sz * sizeof(T), data, msg );
+  }
+
 protected:
 
   virtual void copy_async_( size_t sz, const void* src, void* dest, 
                             std::string msg ) = 0;
-  virtual void set_zero_( size_t sz, void* data, std::string msg) = 0;
 
   virtual void copy_async_2d_( size_t M, size_t N, const void* A, size_t LDA,
     void* B, size_t LDB, std::string msg ) = 0;
 
+
+  virtual void set_zero_( size_t sz, void* data, std::string msg) = 0;
+  virtual void set_zero_async_master_queue_( size_t sz, void* data, 
+    std::string msg) = 0;
 };
 
 }

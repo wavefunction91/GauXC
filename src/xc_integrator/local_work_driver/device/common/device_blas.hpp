@@ -1,10 +1,20 @@
 #pragma once
-#include <hipblas.h>
+#include "device/type_erased_blas_handle.hpp"
 
 namespace GauXC {
 
+enum class DeviceBlasOp : unsigned char {
+  NoTrans,
+  Trans
+};
+
+enum class DeviceBlasUplo : unsigned char {
+  Upper,
+  Lower
+};
+
 template <typename T>
-void dot( hipblasHandle_t handle,
+void dot( type_erased_blas_handle handle,
           int            N,
           const T*       X,
           int            INCX,
@@ -13,7 +23,7 @@ void dot( hipblasHandle_t handle,
           T*             RES );
 
 template <typename T>
-void gdot( hipblasHandle_t handle,
+void gdot( type_erased_blas_handle handle,
           int            N,
            const T*       X,
            int            INCX,
@@ -24,7 +34,7 @@ void gdot( hipblasHandle_t handle,
 
 
 template <typename T>
-void hadamard_product( hipblasHandle_t handle,
+void hadamard_product( type_erased_blas_handle handle,
                        int            M,
                        int            N,
                        const T*       A,
@@ -34,16 +44,17 @@ void hadamard_product( hipblasHandle_t handle,
                        
 
 template <typename T>
-void gemm( hipblasHandle_t handle, 
-           hipblasOperation_t TA, hipblasOperation_t TB,
+void gemm( type_erased_blas_handle handle, 
+           DeviceBlasOp TA, DeviceBlasOp TB,
            int M, int N, int K, T ALPHA, 
            const T* A, int LDA, const T* B, int LDB,
            T BETA, T* C, int LDC );
 
 template <typename T>
-void syr2k( hipblasHandle_t handle, 
-            hipblasFillMode_t UPLO, hipblasOperation_t Trans,
+void syr2k( type_erased_blas_handle handle, 
+            DeviceBlasUplo UPLO, DeviceBlasOp Trans,
             int M, int K, T ALPHA, 
             const T* A, int LDA, const T* B, int LDB,
             T BETA, T* C, int LDC );
 }
+

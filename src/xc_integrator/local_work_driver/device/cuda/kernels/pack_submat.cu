@@ -1,6 +1,7 @@
-#include "pack_submat.hpp"
+#include "device/common/pack_submat.hpp"
 #include "device_specific/cuda_device_constants.hpp"
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/util/cuda_util.hpp>
 
 namespace GauXC {
 
@@ -99,7 +100,9 @@ void submat_set_combined_kernel( size_t        ntasks,
 
 
 void pack_submat( size_t ntasks, XCDeviceTask* device_tasks, const double* A,
-  int32_t LDA, int32_t submat_block_size, cudaStream_t stream ) {
+  int32_t LDA, int32_t submat_block_size, type_erased_queue queue ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>();
 
   dim3 threads( cuda::warp_size/2, cuda::max_warps_per_thread_block * 2, 1 );
   dim3 blocks( 1,1, ntasks );
