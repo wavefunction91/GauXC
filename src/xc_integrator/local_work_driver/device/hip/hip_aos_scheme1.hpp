@@ -13,8 +13,6 @@ struct HipAoSScheme1 : public AoSScheme1Base {
 
   // API Overrides
   void partition_weights( XCDeviceData* ) override final;
-  void eval_collocation( XCDeviceData* ) override final;
-  void eval_collocation_gradient( XCDeviceData* ) override final;
   void eval_xmat( XCDeviceData* ) override final;
   void eval_uvvar_lda( XCDeviceData* ) override final;
   void eval_uvvar_gga( XCDeviceData* ) override final;

@@ -3,6 +3,7 @@
 #include "exceptions/cuda_exception.hpp"
 #include <gauxc/xc_task.hpp>
 
+#include "device/common/collocation_device.hpp"
 #include "device/cuda/kernels/collocation_masked_kernels.hpp"
 #include "device/cuda/kernels/collocation_masked_combined_kernels.hpp"
 #include "device/cuda/kernels/collocation_shell_to_task_kernels.hpp"
@@ -14,16 +15,18 @@ namespace GauXC {
  
 template <typename T>
 void eval_collocation_masked(
-  size_t          nshells,
-  size_t          nbf,
-  size_t          npts,
-  const Shell<T>* shells_device,
-  const size_t*   mask_device,
-  const size_t*   offs_device,
-  const T*        pts_device,
-  T*              eval_device,
-  cudaStream_t    stream
+  size_t            nshells,
+  size_t            nbf,
+  size_t            npts,
+  const Shell<T>*   shells_device,
+  const size_t*     mask_device,
+  const size_t*     offs_device,
+  const T*          pts_device,
+  T*                eval_device,
+  type_erased_queue queue
 ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
 
   auto nmax_threads = util::cuda_kernel_max_threads_per_block( 
     collocation_device_masked_kernel<T>
@@ -51,7 +54,7 @@ void eval_collocation_masked(
   const size_t*        offs_device,
   const double*        pts_device,
   double*              eval_device,
-  cudaStream_t         stream
+  type_erased_queue    queue
 );
 
 
@@ -59,13 +62,15 @@ void eval_collocation_masked(
 
 template <typename T>
 void eval_collocation_masked_combined(
-  size_t        ntasks,
-  size_t        npts_max,
-  size_t        nshells_max,
-  Shell<T>*     shells_device,
-  XCDeviceTask* device_tasks,
-  cudaStream_t  stream
+  size_t            ntasks,
+  size_t            npts_max,
+  size_t            nshells_max,
+  Shell<T>*         shells_device,
+  XCDeviceTask*     device_tasks,
+  type_erased_queue queue
 ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
 
   auto nmax_threads = util::cuda_kernel_max_threads_per_block( 
     collocation_device_masked_combined_kernel<T>
@@ -85,12 +90,12 @@ void eval_collocation_masked_combined(
 
 template
 void eval_collocation_masked_combined(
-  size_t                ntasks,
-  size_t                npts_max,
-  size_t                nshells_max,
-  Shell<double>*        shells_device,
-  XCDeviceTask* device_tasks,
-  cudaStream_t          stream
+  size_t            ntasks,
+  size_t            npts_max,
+  size_t            nshells_max,
+  Shell<double>*    shells_device,
+  XCDeviceTask*     device_tasks,
+  type_erased_queue queue
 );
 
 
@@ -116,8 +121,10 @@ void eval_collocation_masked_deriv1(
   T*              deval_device_x,
   T*              deval_device_y,
   T*              deval_device_z,
-  cudaStream_t    stream
+  type_erased_queue queue
 ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
 
   auto nmax_threads = util::cuda_kernel_max_threads_per_block( 
     collocation_device_masked_combined_kernel<T>
@@ -149,7 +156,7 @@ void eval_collocation_masked_deriv1(
   double*              deval_device_x,
   double*              deval_device_y,
   double*              deval_device_z,
-  cudaStream_t         stream
+  type_erased_queue    queue
 );
 
 
@@ -174,8 +181,10 @@ void eval_collocation_masked_combined_deriv1(
   size_t        nshells_max,
   Shell<T>*     shells_device,
   XCDeviceTask* device_tasks,
-  cudaStream_t  stream
+  type_erased_queue queue
 ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
 
   auto nmax_threads = util::cuda_kernel_max_threads_per_block( 
     collocation_device_masked_combined_kernel_deriv1<T>
@@ -199,7 +208,7 @@ void eval_collocation_masked_combined_deriv1(
   size_t                nshells_max,
   Shell<double>*        shells_device,
   XCDeviceTask* device_tasks,
-  cudaStream_t          stream
+  type_erased_queue queue
 );
 
 
@@ -279,8 +288,10 @@ void eval_collocation_shell_to_task(
   const int32_t*  shell_to_task_ls,
   const int32_t*  shell_to_task_pure,
   XCDeviceTask*   device_tasks,
-  cudaStream_t    stream
+  type_erased_queue queue
 ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
 
   // Loop over shells
   for( auto i = 0; i < nshells; ++i ) {
@@ -382,8 +393,10 @@ void eval_collocation_shell_to_task_gradient(
   const int32_t*  shell_to_task_ls,
   const int32_t*  shell_to_task_pure,
   XCDeviceTask*   device_tasks,
-  cudaStream_t    stream
+  type_erased_queue queue
 ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
 
   // Loop over shells
   for( auto i = 0; i < nshells; ++i ) {

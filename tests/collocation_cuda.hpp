@@ -1,6 +1,6 @@
 #ifdef GAUXC_ENABLE_CUDA
 #include "collocation_common.hpp"
-#include "device/cuda/kernels/collocation_device.hpp"
+#include "device/common/collocation_device.hpp"
 #include <gauxc/util/cuda_util.hpp>
 
 
@@ -22,7 +22,7 @@ void test_cuda_collocation( const BasisSet<double>& basis, std::ifstream& in_fil
   std::vector<Shell<double>> shells( basis );
   util::cuda_copy( basis.size(), shells_device, shells.data() );
 
-  cudaStream_t stream = 0;
+  type_erased_queue stream( std::make_shared<util::cuda_stream>() );
   for( auto& d : ref_data ) {
     const auto npts = d.pts.size();
     const auto nbf  = d.eval.size() / npts;
@@ -116,7 +116,7 @@ void test_cuda_collocation_deriv1( const BasisSet<double>& basis, std::ifstream&
   std::vector<Shell<double>> shells( basis );
   util::cuda_copy( basis.size(), shells_device, shells.data() );
 
-  cudaStream_t stream = 0;
+  type_erased_queue stream( std::make_shared<util::cuda_stream>() );
   for( auto& d : ref_data ) {
     const auto npts = d.pts.size();
     const auto nbf  = d.eval.size() / npts;
@@ -270,7 +270,7 @@ void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis, std::if
   }
 
 
-  cudaStream_t stream = 0;
+  type_erased_queue stream( std::make_shared<util::cuda_stream>() );
   int itask = 0;
   for( auto& d : ref_data ) {
     const auto npts = d.pts.size();
@@ -393,7 +393,7 @@ void test_cuda_collocation_shell_to_task_gradient( const BasisSet<double>& basis
   }
 
   //std::cout << "NBF = " << basis.nbf() << std::endl;
-  cudaStream_t stream = 0;
+  type_erased_queue stream( std::make_shared<util::cuda_stream>() );
   int itask = 0;
   for( auto& d : ref_data ) {
     const auto npts = d.pts.size();
