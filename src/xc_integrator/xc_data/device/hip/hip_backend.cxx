@@ -10,6 +10,11 @@ HIPBackend::HIPBackend() {
 
   hipblasSetStream( *master_handle, *master_stream );
 
+#ifdef GAUXC_ENABLE_MAGMA
+  // Setup MAGMA queue with CUDA stream / cuBLAS handle
+  master_magma_queue_ = std::make_shared< util::magma_queue >(0, *master_stream, *master_handle);
+#endif
+
 }
 
 HIPBackend::~HIPBackend() noexcept = default;
@@ -85,6 +90,7 @@ void HIPBackend::set_zero_(size_t sz, void* data, std::string msg ) {
   auto stat = hipMemset( data, 0, sz );
   GAUXC_HIP_ERROR( "HIP Memset Failed ["+msg+"]", stat );
 }
+
 void HIPBackend::set_zero_async_master_queue_(size_t sz, void* data, std::string msg ) {
   auto stat = hipMemsetAsync( data, 0, sz, *master_stream );
   GAUXC_HIP_ERROR( "HIP Memset Failed ["+msg+"]", stat );

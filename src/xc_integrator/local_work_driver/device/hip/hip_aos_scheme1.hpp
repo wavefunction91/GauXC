@@ -16,7 +16,7 @@ struct HipAoSScheme1 {
 }
 
 template <typename Base = AoSScheme1Base>
-struct HipAoSScheme1 : public AoSScheme1Base {
+struct HipAoSScheme1 : public Base {
 
   // API Overrides
   void partition_weights( XCDeviceData* ) override final;
