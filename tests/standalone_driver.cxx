@@ -38,6 +38,9 @@ int main(int argc, char** argv) {
     std::string grid_spec = "ULTRAFINE";
     std::string lb_exec_space_str = "Host";
     std::string int_exec_space_str = "Host";
+    std::string integrator_kernel = "Default";
+    std::string lwd_kernel         = "Default";
+    std::string reduction_kernel   = "Default";
     double      basis_tol = 1e-10;
     std::string func_spec = "PBE0";
     bool integrate_vxc      = true;
@@ -73,8 +76,18 @@ int main(int argc, char** argv) {
     if( input.containsData("GAUXC.INT_EXEC_SPACE") )
       int_exec_space_str = input.getData<std::string>("GAUXC.INT_EXEC_SPACE");
 
+    if( input.containsData("GAUXC.INTEGRATOR_KERNEL") )
+      integrator_kernel = input.getData<std::string>("GAUXC.INTEGRATOR_KERNEL");
+    if( input.containsData("GAUXC.LWD_KERNEL") )
+      lwd_kernel = input.getData<std::string>("GAUXC.LWD_KERNEL");
+    if( input.containsData("GAUXC.REDUCTION_KERNEL") )
+      reduction_kernel = input.getData<std::string>("GAUXC.REDUCTION_KERNEL");
+
     string_to_upper( lb_exec_space_str );
     string_to_upper( int_exec_space_str );
+    string_to_upper( integrator_kernel );
+    string_to_upper( lwd_kernel );
+    string_to_upper( reduction_kernel );
 
     std::map< std::string, ExecutionSpace > exec_space_map = {
       { "HOST",   ExecutionSpace::Host },
@@ -160,7 +173,7 @@ int main(int argc, char** argv) {
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;
     XCIntegratorFactory<matrix_type> integrator_factory( int_exec_space , 
-      "Replicated", "Default", "Default", "Default" );
+      "Replicated", integrator_kernel, lwd_kernel, reduction_kernel );
     auto integrator = integrator_factory.get_instance( func, lb );
 
     // Read in reference data
