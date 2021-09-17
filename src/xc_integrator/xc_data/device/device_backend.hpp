@@ -1,8 +1,14 @@
 #pragma once
 #include <tuple>
 #include <vector>
+#include <memory>
 #include "type_erased_queue.hpp"
 #include "type_erased_blas_handle.hpp"
+#include <gauxc/gauxc_config.hpp>
+
+#ifdef GAUXC_ENABLE_MAGMA
+#include "device_specific/magma_util.hpp"
+#endif
 
 namespace GauXC {
 
@@ -24,6 +30,10 @@ public:
   virtual type_erased_queue       queue() = 0;
   virtual type_erased_blas_handle blas_pool_handle(int32_t) = 0;
   virtual type_erased_blas_handle master_blas_handle() = 0;
+
+  #ifdef GAUXC_ENABLE_MAGMA
+  inline util::magma_queue* master_magma_queue(){ return master_magma_queue_.get(); }
+  #endif
 
   virtual ~DeviceBackend() noexcept = default;
 
@@ -49,6 +59,11 @@ public:
   }
 
 protected:
+
+
+  #ifdef GAUXC_ENABLE_MAGMA
+  std::shared_ptr<util::magma_queue> master_magma_queue_;
+  #endif
 
   virtual void copy_async_( size_t sz, const void* src, void* dest, 
                             std::string msg ) = 0;

@@ -10,6 +10,11 @@ CUDABackend::CUDABackend() {
 
   cublasSetStream( *master_handle, *master_stream );
 
+#ifdef GAUXC_ENABLE_MAGMA
+  // Setup MAGMA queue with CUDA stream / cuBLAS handle
+  master_magma_queue_ = std::make_shared< util::magma_queue >(0, *master_stream, *master_handle);
+#endif
+
 }
 
 CUDABackend::~CUDABackend() noexcept = default;

@@ -2,9 +2,6 @@
 #include "device/common/pack_submat.hpp"
 #include "device/common/inc_potential.hpp"
 #include "device/common/device_blas.hpp"
-#include "device/cuda/cuda_backend.hpp"
-
-#include "device_specific/magma_util.hpp"
 
 namespace GauXC {
 
@@ -27,9 +24,7 @@ void AoSScheme1MAGMABase::eval_xmat( XCDeviceData* _data){
     nbf, submat_block_size, data->device_backend_->queue() );
 
 
-  auto cuda_backend = dynamic_cast<CUDABackend*>(data->device_backend_.get());
-  util::magma_queue master_queue( 0, *cuda_backend->master_stream, *cuda_backend->master_handle );
-
+  auto master_queue = data->device_backend_->master_magma_queue();
   auto magma_stack = data->magma_stack;
   magmablas_dgemm_vbatched( MagmaNoTrans, MagmaNoTrans,
     magma_stack.m_array_device, magma_stack.n_array_device, 
@@ -37,8 +32,7 @@ void AoSScheme1MAGMABase::eval_xmat( XCDeviceData* _data){
     1., magma_stack.bf_array_device,   magma_stack.ld_bf_array_device,
         magma_stack.dmat_array_device, magma_stack.ld_dmat_array_device,
     0., magma_stack.zmat_array_device, magma_stack.ld_zmat_array_device,
-    ntasks, master_queue );
-  data->device_backend_->master_queue_synchronize(); 
+    ntasks, *master_queue );
 
 }
 
@@ -52,17 +46,14 @@ void AoSScheme1MAGMABase::inc_vxc( XCDeviceData* _data){
   auto& tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
 
-  auto cuda_backend = dynamic_cast<CUDABackend*>(data->device_backend_.get());
-  util::magma_queue master_queue( 0, *cuda_backend->master_stream, *cuda_backend->master_handle );
-
+  auto master_queue = data->device_backend_->master_magma_queue();
   auto magma_stack = data->magma_stack;
   magmablas_dsyr2k_vbatched( MagmaLower, MagmaTrans, 
     magma_stack.n_array_device, magma_stack.m_array_device,
     1., magma_stack.bf_array_device,   magma_stack.ld_bf_array_device, 
         magma_stack.zmat_array_device, magma_stack.ld_zmat_array_device,
     0., magma_stack.vmat_array_device, magma_stack.ld_vmat_array_device, 
-    ntasks, master_queue );
-  data->device_backend_->master_queue_synchronize(); 
+    ntasks, *master_queue );
 
   // Increment global VXC
   const auto nbf = data->global_dims.nbf;
