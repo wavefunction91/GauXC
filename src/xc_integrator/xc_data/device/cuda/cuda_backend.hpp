@@ -1,8 +1,8 @@
 #pragma once
 #include "device/device_backend.hpp"
 #include <memory>
-#include <gauxc/util/cuda_util.hpp>
-#include <gauxc/util/cublas_util.hpp>
+#include "device_specific/cuda_util.hpp"
+#include "device_specific/cublas_util.hpp"
 
 namespace GauXC {
 

@@ -1,6 +1,6 @@
 #include "replicated_cuda_load_balancer.hpp"
 #include <gauxc/util/div_ceil.hpp>
-#include <gauxc/util/cuda_util.hpp>
+#include "device_specific/cuda_util.hpp"
 
 #include <thrust/host_vector.h>
 #include <thrust/system/cuda/experimental/pinned_allocator.h>

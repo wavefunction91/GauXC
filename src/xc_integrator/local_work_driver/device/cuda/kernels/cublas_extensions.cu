@@ -1,8 +1,8 @@
-#include <gauxc/util/cublas_util.hpp>
 #include <gauxc/util/div_ceil.hpp>
 #include "exceptions/cublas_exception.hpp"
 
 #include "device_specific/cuda_device_constants.hpp"
+#include "device_specific/cublas_util.hpp"
 #include "device/common/device_blas.hpp"
 
 namespace GauXC {

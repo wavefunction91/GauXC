@@ -1,5 +1,5 @@
 #include <gauxc/util/div_ceil.hpp>
-#include <gauxc/util/cuda_util.hpp>
+#include "device_specific/cuda_util.hpp"
 #include "exceptions/cuda_exception.hpp"
 #include <gauxc/xc_task.hpp>
 

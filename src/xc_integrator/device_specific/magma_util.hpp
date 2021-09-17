@@ -1,8 +1,10 @@
 #pragma once
 #include <gauxc/gauxc_config.hpp>
-#include "exceptions/magma_exception.hpp"
 
 #ifdef GAUXC_ENABLE_MAGMA
+#include <magma_v2.h>
+#include "exceptions/magma_exception.hpp"
+
 
 namespace GauXC {
 namespace util  {

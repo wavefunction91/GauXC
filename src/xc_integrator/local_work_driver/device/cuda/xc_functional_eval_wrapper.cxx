@@ -1,5 +1,5 @@
 #include "device/common/xc_functional_eval_wrapper.hpp"
-#include <gauxc/util/cuda_util.hpp>
+#include "device_specific/cuda_util.hpp"
 
 namespace GauXC {
 

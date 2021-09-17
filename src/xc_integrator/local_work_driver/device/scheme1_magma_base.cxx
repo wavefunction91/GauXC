@@ -4,8 +4,7 @@
 #include "device/common/device_blas.hpp"
 #include "device/cuda/cuda_backend.hpp"
 
-#include <magma_v2.h>
-#include <gauxc/util/magma_util.hpp>
+#include "device_specific/magma_util.hpp"
 
 namespace GauXC {
 

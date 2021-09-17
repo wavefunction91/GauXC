@@ -5,7 +5,7 @@
 #include <gauxc/util/div_ceil.hpp>
 
 #ifdef GAUXC_ENABLE_CUDA
-#include <gauxc/util/cuda_util.hpp>
+#include "device_specific/cuda_util.hpp"
 #include "device/cuda/cuda_aos_scheme1.hpp"
 #include "device/cuda/cuda_aos_scheme1_weights.hpp"
       

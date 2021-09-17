@@ -4,7 +4,7 @@
 #include <map>
 #include <iostream>
 
-#include <gauxc/util/cuda_util.hpp>
+#include "device_specific/cuda_util.hpp"
 #include "device/type_erased_queue.hpp"
 
 namespace GauXC {

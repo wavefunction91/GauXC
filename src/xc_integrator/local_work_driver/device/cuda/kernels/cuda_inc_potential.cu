@@ -1,7 +1,7 @@
 #include "device/common/inc_potential.hpp"
 #include "device_specific/cuda_device_constants.hpp"
 #include <gauxc/util/div_ceil.hpp>
-#include <gauxc/util/cuda_util.hpp>
+#include "device_specific/cuda_util.hpp"
 
 
 namespace GauXC {

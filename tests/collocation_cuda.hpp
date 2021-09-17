@@ -1,7 +1,7 @@
 #ifdef GAUXC_ENABLE_CUDA
 #include "collocation_common.hpp"
 #include "device/common/collocation_device.hpp"
-#include <gauxc/util/cuda_util.hpp>
+#include "device_specific/cuda_util.hpp"
 
 
 void test_cuda_collocation( const BasisSet<double>& basis, std::ifstream& in_file) {
