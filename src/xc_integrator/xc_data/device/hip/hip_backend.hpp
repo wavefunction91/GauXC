@@ -1,8 +1,8 @@
 #pragma once
 #include "device/device_backend.hpp"
 #include <memory>
-#include <gauxc/util/hip_util.hpp>
-#include <gauxc/util/hipblas_util.hpp>
+#include "device_specific/hip_util.hpp"
+#include "device_specific/hipblas_util.hpp"
 
 namespace GauXC {
 

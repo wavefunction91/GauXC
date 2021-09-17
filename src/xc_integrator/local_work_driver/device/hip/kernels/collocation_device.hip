@@ -1,6 +1,5 @@
 #include "hip/hip_runtime.h"
 #include <gauxc/util/div_ceil.hpp>
-#include <gauxc/util/hip_util.hpp>
 #include "exceptions/hip_exception.hpp"
 #include <gauxc/xc_task.hpp>
 
@@ -8,6 +7,7 @@
 #include "device/hip/kernels/collocation_masked_combined_kernels.hpp"
 
 #include "device_specific/hip_device_constants.hpp"
+#include "device_specific/hip_util.hpp"
 #include "device/common/collocation_device.hpp"
 
 namespace GauXC {

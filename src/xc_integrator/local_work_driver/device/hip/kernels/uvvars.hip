@@ -2,7 +2,7 @@
 #include "hip_extensions.hpp"
 #include "device_specific/hip_device_constants.hpp"
 #include <gauxc/util/div_ceil.hpp>
-#include <gauxc/util/hip_util.hpp>
+#include "device_specific/hip_util.hpp"
 
 namespace GauXC {
 

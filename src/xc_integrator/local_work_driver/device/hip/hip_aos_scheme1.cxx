@@ -2,22 +2,17 @@
 #include "device/hip/hip_backend.hpp"
 #include "kernels/grid_to_center.hpp"
 #include "kernels/hip_ssf_1d.hpp"
-//#include "hip_aos_scheme1_weights.hpp"
-//#include "kernels/hipblas_extensions.hpp"
-//#include "kernels/uvvars.hpp"
-//#include "kernels/zmat_vxc.hpp"
-//#include "kernels/pack_submat.hpp"
-//#include "kernels/hip_inc_potential.hpp"
-//#include "kernels/symmetrize_mat.hpp"
 
 namespace GauXC {
 
-std::unique_ptr<XCDeviceData> HipAoSScheme1::create_device_data() {
+template <typename Base>
+std::unique_ptr<XCDeviceData> HipAoSScheme1<Base>::create_device_data() {
   return std::make_unique<Data>();
 }
 
- 
-void HipAoSScheme1::partition_weights( XCDeviceData* _data ) {
+
+template <typename Base>
+void HipAoSScheme1<Base>::partition_weights( XCDeviceData* _data ) {
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) throw std::runtime_error("BAD DATA CAST");
 
@@ -44,6 +39,10 @@ void HipAoSScheme1::partition_weights( XCDeviceData* _data ) {
 }
 
 
+template struct HipAoSScheme1<AoSScheme1Base>;
+#ifdef GAUXC_ENABLE_MAGMA
+template struct HipAoSScheme1<AoSScheme1MAGMABase>;
+#endif
 
 
 }

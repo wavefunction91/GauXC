@@ -1,6 +1,6 @@
 #include "hip/hip_runtime.h"
 #include "device/common/device_blas.hpp"
-#include <gauxc/util/hipblas_util.hpp>
+#include "device_specific/hipblas_util.hpp"
 #include <gauxc/util/div_ceil.hpp>
 #include "exceptions/hipblas_exception.hpp"
 

@@ -1,7 +1,7 @@
 #include "hip/hip_runtime.h"
 #include "device/common/zmat_vxc.hpp"
 #include <gauxc/util/div_ceil.hpp>
-#include <gauxc/util/hip_util.hpp>
+#include "device_specific/hip_util.hpp"
 #include "device_specific/hip_device_constants.hpp"
 
 namespace GauXC {

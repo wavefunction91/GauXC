@@ -1,5 +1,5 @@
 #include "device/common/xc_functional_eval_wrapper.hpp"
-#include <gauxc/util/hip_util.hpp>
+#include "device_specific/hip_util.hpp"
 
 namespace GauXC {
 

@@ -5,7 +5,7 @@
 #include <gauxc/util/div_ceil.hpp>
 
 #ifdef GAUXC_ENABLE_HIP
-#include <gauxc/util/hip_util.hpp>
+#include "device_specific/hip_util.hpp"
 #include "device/hip/kernels/grid_to_center.hpp"
 #include "device/hip/kernels/hip_ssf_1d.hpp"
       

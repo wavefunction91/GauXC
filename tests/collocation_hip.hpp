@@ -1,7 +1,7 @@
 #ifdef GAUXC_ENABLE_HIP
 #include "collocation_common.hpp"
 #include "device/common/collocation_device.hpp"
-#include <gauxc/util/hip_util.hpp>
+#include "device_specific/hip_util.hpp"
 
 
 void test_hip_collocation( const BasisSet<double>& basis, std::ifstream& in_file) {

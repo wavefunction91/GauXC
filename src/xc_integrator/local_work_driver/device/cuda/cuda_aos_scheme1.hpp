@@ -18,16 +18,6 @@ struct CudaAoSScheme1 {
 template <typename Base = AoSScheme1Base>
 struct CudaAoSScheme1 : public Base {
 
-  //// Algorithmic constants
-  //constexpr uint32_t weight_unroll = 
-  //  alg_constants::CudaAoSScheme1::weight_unroll;
-  //constexpr uint32_t weight_thread_block = 
-  //  alg_constants::CudaAoSScheme1::weight_thread_block;
-  //constexpr uint32_t weight_thread_block_per_sm = 
-  //  alg_constants::CudaAoSScheme1::weight_thread_block_per_sm;
-  //constexpr uint32_t max_submat_blocks = 
-  //  alg_constants::CudaAoSScheme1::max_submat_blocks;
-
   // API Overrides
   void partition_weights( XCDeviceData* ) override final;
 

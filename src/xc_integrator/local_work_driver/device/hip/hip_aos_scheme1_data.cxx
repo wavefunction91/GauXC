@@ -5,26 +5,30 @@
 
 namespace GauXC {
 
-HipAoSScheme1::Data::~Data() noexcept = default;
+template <typename Base>
+HipAoSScheme1<Base>::Data::~Data() noexcept = default;
 
-HipAoSScheme1::Data::Data() :
-  Scheme1DataBase( std::make_unique<HIPBackend>() ) { }
+template <typename Base>
+HipAoSScheme1<Base>::Data::Data() :
+  Base::Data( std::make_unique<HIPBackend>() ) { }
 
-size_t HipAoSScheme1::Data::get_ldatoms() {
-  //constexpr auto weight_unroll = HipAoSScheme1::weight_unroll;
+template <typename Base>
+size_t HipAoSScheme1<Base>::Data::get_ldatoms() {
+  //constexpr auto weight_unroll = HipAoSScheme1<Base>::weight_unroll;
   constexpr auto weight_unroll = 1;
-  return util::div_ceil( global_dims.natoms, weight_unroll ) * weight_unroll;
+  return util::div_ceil( this->global_dims.natoms, weight_unroll ) * weight_unroll;
 }
 
-size_t HipAoSScheme1::Data::get_rab_align() {
+template <typename Base>
+size_t HipAoSScheme1<Base>::Data::get_rab_align() {
   return sizeof(double2);
 }
 
 
-size_t HipAoSScheme1::Data::get_submat_chunk_size(int32_t LDA, int32_t dev_id) {
+template <typename Base>
+size_t HipAoSScheme1<Base>::Data::get_submat_chunk_size(int32_t LDA, int32_t dev_id) {
 
-  //constexpr auto max_submat_blocks = HipAoSScheme1::max_submat_blocks;
-
+  constexpr int max_submat_blocks = 10;
   int l2_cache_size;
   hipDeviceGetAttribute(&l2_cache_size, hipDeviceAttributeL2CacheSize, dev_id);
 
@@ -38,5 +42,9 @@ size_t HipAoSScheme1::Data::get_submat_chunk_size(int32_t LDA, int32_t dev_id) {
 
 }
 
+template struct HipAoSScheme1<AoSScheme1Base>::Data;
+#ifdef GAUXC_ENABLE_MAGMA
+template struct HipAoSScheme1<AoSScheme1MAGMABase>::Data;
+#endif
 
 }

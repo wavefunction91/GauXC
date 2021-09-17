@@ -5,7 +5,7 @@
 #include <gauxc/util/div_ceil.hpp>
 #include <numeric>
 #include <iostream>
-#include <gauxc/util/hip_util.hpp>
+#include "device_specific/hip_util.hpp"
 
 static constexpr auto eps_d = std::numeric_limits<double>::epsilon();
 

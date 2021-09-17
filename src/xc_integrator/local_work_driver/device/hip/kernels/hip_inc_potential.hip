@@ -1,7 +1,7 @@
 #include "device_specific/hip_device_constants.hpp"
 #include "device/common/inc_potential.hpp"
 #include <gauxc/util/div_ceil.hpp>
-#include <gauxc/util/hip_util.hpp>
+#include "device_specific/hip_util.hpp"
 
 
 namespace GauXC {

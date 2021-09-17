@@ -32,6 +32,7 @@ LocalWorkDriverFactory::ptr_return_t
     using scheme1_magma   = CudaAoSScheme1<AoSScheme1MAGMABase>;
 #elif defined(GAUXC_ENABLE_HIP)
     using scheme1_default = HipAoSScheme1<>;
+    using scheme1_magma   = HipAoSScheme1<AoSScheme1MAGMABase>;
 #endif
 
 #ifdef GAUXC_ENABLE_DEVICE

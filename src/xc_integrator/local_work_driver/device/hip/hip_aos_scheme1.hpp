@@ -1,15 +1,22 @@
 #pragma once
 #include "device/scheme1_base.hpp"
+#include "device/scheme1_magma_base.hpp"
 
 namespace GauXC {
 
-struct HipAoSScheme1 : public AoSScheme1Base {
+namespace alg_constants {
 
-  // Algorithmic constants
+struct HipAoSScheme1 {
   //static constexpr uint32_t weight_unroll = 4;
   //static constexpr uint32_t weight_thread_block = 640;
   //static constexpr uint32_t weight_thread_block_per_sm = 2;
   static constexpr uint32_t max_submat_blocks = 10;
+};
+
+}
+
+template <typename Base = AoSScheme1Base>
+struct HipAoSScheme1 : public AoSScheme1Base {
 
   // API Overrides
   void partition_weights( XCDeviceData* ) override final;
@@ -20,8 +27,14 @@ struct HipAoSScheme1 : public AoSScheme1Base {
 
 };
 
+extern template struct HipAoSScheme1<AoSScheme1Base>;
+#ifdef GAUXC_ENABLE_MAGMA
+extern template struct HipAoSScheme1<AoSScheme1MAGMABase>;
+#endif
 
-struct HipAoSScheme1::Data : public Scheme1DataBase {
+
+template <typename Base>
+struct HipAoSScheme1<Base>::Data : public Base::Data {
 
   virtual ~Data() noexcept;
   Data();
@@ -32,6 +45,11 @@ struct HipAoSScheme1::Data : public Scheme1DataBase {
   size_t get_rab_align() override final;
 
 };
+
+extern template struct HipAoSScheme1<AoSScheme1Base>::Data;
+#ifdef GAUXC_ENABLE_MAGMA
+extern template struct HipAoSScheme1<AoSScheme1MAGMABase>::Data;
+#endif
 
 
 }
