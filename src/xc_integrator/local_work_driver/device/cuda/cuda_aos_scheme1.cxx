@@ -1,28 +1,16 @@
 #include "cuda_aos_scheme1.hpp"
 #include "device/cuda/cuda_backend.hpp"
 #include "cuda_aos_scheme1_weights.hpp"
-//#include "kernels/cublas_extensions.hpp"
-//#include "kernels/uvvars.hpp"
-//#include "kernels/pack_submat.hpp"
-//#include "kernels/cuda_inc_potential.hpp"
-//#include "kernels/symmetrize_mat.hpp"
-
-//#include "device/common/zmat_vxc.hpp"
-//#include "device/common/device_blas.hpp"
-//#include "device/common/xc_functional_eval_wrapper.hpp"
-//#include "device/common/uvvars.hpp"
-//#include "device/common/pack_submat.hpp"
-//#include "device/common/inc_potential.hpp"
-//#include "device/common/symmetrize_mat.hpp"
 
 namespace GauXC {
 
-std::unique_ptr<XCDeviceData> CudaAoSScheme1::create_device_data() {
+template <typename Base>
+std::unique_ptr<XCDeviceData> CudaAoSScheme1<Base>::create_device_data() {
   return std::make_unique<Data>();
 }
 
- 
-void CudaAoSScheme1::partition_weights( XCDeviceData* _data ) {
+template <typename Base> 
+void CudaAoSScheme1<Base>::partition_weights( XCDeviceData* _data ) {
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) throw std::runtime_error("BAD DATA CAST");
 
@@ -43,6 +31,10 @@ void CudaAoSScheme1::partition_weights( XCDeviceData* _data ) {
 }
 
 
+template struct CudaAoSScheme1<AoSScheme1Base>;
+#ifdef GAUXC_ENABLE_MAGMA
+template struct CudaAoSScheme1<AoSScheme1MAGMABase>;
+#endif
 
 
 

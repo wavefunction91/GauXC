@@ -24,7 +24,7 @@ struct HipAoSScheme1 : public AoSScheme1Base {
 struct HipAoSScheme1::Data : public Scheme1DataBase {
 
   virtual ~Data() noexcept;
-  Data(bool batch_l3_blas = true);
+  Data();
 
   // Final overrides
   size_t get_submat_chunk_size(int32_t,int32_t) override final;

@@ -164,6 +164,7 @@ void XCDeviceAoSData::pack_and_send(
   host_task_iterator task_begin, host_task_iterator task_end,
   const BasisSetMap& basis_map ) {
 
+
   // Pack and send base data
   XCDeviceStackData::pack_and_send( terms, task_begin, task_end, basis_map );
 

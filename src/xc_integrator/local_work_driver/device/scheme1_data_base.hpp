@@ -20,18 +20,17 @@ struct Scheme1DataBase : public XCDeviceAoSData {
   scheme1_data scheme1_stack;
 
   virtual ~Scheme1DataBase() noexcept;
-  Scheme1DataBase(std::unique_ptr<DeviceBackend>&& ptr, bool batch_l3_blas = true);
+  Scheme1DataBase(std::unique_ptr<DeviceBackend>&& ptr);
 
   // Final overrides
   void add_extra_to_indirection(integrator_term_tracker, 
     std::vector<XCDeviceTask>& ) override final;
 
   // Overrideable API's
-  virtual size_t get_mem_req( integrator_term_tracker, const host_task_type&) override;
+  virtual size_t get_mem_req( integrator_term_tracker, 
+    const host_task_type&) override;
   virtual size_t get_static_mem_requirement() override; 
   virtual void reset_allocations() override;
-  //virtual device_buffer_t alloc_pack_and_send( integrator_term_tracker, 
-  //  device_buffer_t buf, const BasisSetMap&) override;
   virtual device_buffer_t allocate_dynamic_stack( integrator_term_tracker terms,
     host_task_iterator begin, host_task_iterator end, device_buffer_t buf )
     override;

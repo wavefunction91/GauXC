@@ -5,24 +5,31 @@
 
 namespace GauXC {
 
-CudaAoSScheme1::Data::~Data() noexcept = default;
+template <typename Base>
+CudaAoSScheme1<Base>::Data::~Data() noexcept = default;
 
-CudaAoSScheme1::Data::Data(bool batch_l3_blas) :
-  Scheme1DataBase( std::make_unique<CUDABackend>(), batch_l3_blas ) { }
+template <typename Base>
+CudaAoSScheme1<Base>::Data::Data() :
+  Base::Data( std::make_unique<CUDABackend>() ) { }
 
-size_t CudaAoSScheme1::Data::get_ldatoms() {
-  constexpr auto weight_unroll = CudaAoSScheme1::weight_unroll;
-  return util::div_ceil( global_dims.natoms, weight_unroll ) * weight_unroll;
+template <typename Base>
+size_t CudaAoSScheme1<Base>::Data::get_ldatoms() {
+  constexpr auto weight_unroll = alg_constants::CudaAoSScheme1::weight_unroll;
+  return util::div_ceil( this->global_dims.natoms, weight_unroll ) * weight_unroll;
 }
 
-size_t CudaAoSScheme1::Data::get_rab_align() {
+template <typename Base>
+size_t CudaAoSScheme1<Base>::Data::get_rab_align() {
   return sizeof(double2);
 }
 
 
-size_t CudaAoSScheme1::Data::get_submat_chunk_size(int32_t LDA, int32_t dev_id) {
+template <typename Base>
+size_t CudaAoSScheme1<Base>::Data::get_submat_chunk_size(int32_t LDA, 
+  int32_t dev_id) {
 
-  constexpr auto max_submat_blocks = CudaAoSScheme1::max_submat_blocks;
+  constexpr auto max_submat_blocks = 
+    alg_constants::CudaAoSScheme1::max_submat_blocks;
 
   int l2_cache_size;
   cudaDeviceGetAttribute(&l2_cache_size, cudaDevAttrL2CacheSize, dev_id);
@@ -36,6 +43,11 @@ size_t CudaAoSScheme1::Data::get_submat_chunk_size(int32_t LDA, int32_t dev_id) 
   return block_size;
 
 }
+
+template struct CudaAoSScheme1<AoSScheme1Base>::Data;
+#ifdef GAUXC_ENABLE_MAGMA
+template struct CudaAoSScheme1<AoSScheme1MAGMABase>::Data;
+#endif
 
 
 }

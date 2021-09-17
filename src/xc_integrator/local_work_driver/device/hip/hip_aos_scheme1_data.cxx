@@ -7,8 +7,8 @@ namespace GauXC {
 
 HipAoSScheme1::Data::~Data() noexcept = default;
 
-HipAoSScheme1::Data::Data(bool batch_l3_blas) :
-  Scheme1DataBase( std::make_unique<HIPBackend>(), batch_l3_blas ) { }
+HipAoSScheme1::Data::Data() :
+  Scheme1DataBase( std::make_unique<HIPBackend>() ) { }
 
 size_t HipAoSScheme1::Data::get_ldatoms() {
   //constexpr auto weight_unroll = HipAoSScheme1::weight_unroll;

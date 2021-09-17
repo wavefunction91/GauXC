@@ -12,10 +12,12 @@ void cuda_aos_scheme1_weights_wrapper( int32_t npts, int32_t natoms,
   double* dist, int32_t lddist, const int32_t* iparent,
   const double* dist_nearest, double* weights, cudaStream_t stream ) {
 
-  constexpr auto weight_unroll = CudaAoSScheme1::weight_unroll;
-  constexpr auto weight_thread_block = CudaAoSScheme1::weight_thread_block;
+  constexpr auto weight_unroll = 
+    alg_constants::CudaAoSScheme1::weight_unroll;
+  constexpr auto weight_thread_block = 
+    alg_constants::CudaAoSScheme1::weight_thread_block;
   constexpr auto weight_thread_block_per_sm = 
-    CudaAoSScheme1::weight_thread_block_per_sm;
+    alg_constants::CudaAoSScheme1::weight_thread_block_per_sm;
 
 
 

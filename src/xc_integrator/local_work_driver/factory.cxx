@@ -27,17 +27,18 @@ LocalWorkDriverFactory::ptr_return_t
   case ExecutionSpace::Device:
     if( name == "DEFAULT" ) name = "SCHEME1";
 
+#ifdef GAUXC_ENABLE_CUDA
+    using scheme1_default = CudaAoSScheme1<>;
+    using scheme1_magma   = CudaAoSScheme1<AoSScheme1MAGMABase>;
+#elif defined(GAUXC_ENABLE_HIP)
+    using scheme1_default = HipAoSScheme1<>;
+#endif
+
 #ifdef GAUXC_ENABLE_DEVICE
     if( name == "SCHEME1" )
-#ifdef GAUXC_ENABLE_CUDA
-      return std::make_unique<LocalDeviceWorkDriver>(
-        std::make_unique<CudaAoSScheme1>()
-      );
-#elif defined(GAUXC_ENABLE_HIP)
-      return std::make_unique<LocalDeviceWorkDriver>(
-        std::make_unique<HipAoSScheme1>()
-      );
-#endif
+      return std::make_unique<LocalDeviceWorkDriver>( std::make_unique<scheme1_default>() );
+    else if( name == "SCHEME1-MAGMA" )
+      return std::make_unique<LocalDeviceWorkDriver>( std::make_unique<scheme1_magma>() );
     else
 #endif
       throw std::runtime_error("LWD Not Recognized");

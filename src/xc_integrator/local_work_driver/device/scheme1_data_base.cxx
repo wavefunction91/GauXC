@@ -5,16 +5,16 @@ namespace GauXC {
 
 Scheme1DataBase::~Scheme1DataBase() noexcept = default;
 
-Scheme1DataBase::Scheme1DataBase(std::unique_ptr<DeviceBackend>&& ptr, 
-  bool batch_l3_blas) : XCDeviceAoSData(std::move(ptr)) {
+Scheme1DataBase::Scheme1DataBase(std::unique_ptr<DeviceBackend>&& ptr ) : 
+  base_type(std::move(ptr)) {
 
-  if( batch_l3_blas && device_backend_ ) 
+  if( device_backend_ ) 
     device_backend_->create_blas_queue_pool(4);
 
 }
 
 void Scheme1DataBase::reset_allocations() {
-  XCDeviceAoSData::reset_allocations();
+  base_type::reset_allocations();
   scheme1_stack.reset();
 }
 
@@ -62,7 +62,7 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
   device_buffer_t buf ){
 
   // Allocate base info on the stack
-  buf = XCDeviceAoSData::allocate_dynamic_stack( terms, task_begin, task_end,
+  buf = base_type::allocate_dynamic_stack( terms, task_begin, task_end,
     buf );
 
   // All local memory is weights related
@@ -96,7 +96,7 @@ void Scheme1DataBase::pack_and_send(
   const BasisSetMap& basis_map ) {
 
   // Pack and send base data
-  XCDeviceAoSData::pack_and_send( terms, task_begin, task_end, basis_map );
+  base_type::pack_and_send( terms, task_begin, task_end, basis_map );
 
   // All local memory is weights related
   if( not terms.weights ) return;

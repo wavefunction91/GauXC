@@ -1,15 +1,32 @@
 #pragma once
 #include "device/scheme1_base.hpp"
+#include "device/scheme1_magma_base.hpp"
 
 namespace GauXC {
 
-struct CudaAoSScheme1 : public AoSScheme1Base {
+namespace alg_constants {
 
-  // Algorithmic constants
+struct CudaAoSScheme1 {
   static constexpr uint32_t weight_unroll = 4;
   static constexpr uint32_t weight_thread_block = 640;
   static constexpr uint32_t weight_thread_block_per_sm = 2;
   static constexpr uint32_t max_submat_blocks = 10;
+};
+
+}
+
+template <typename Base = AoSScheme1Base>
+struct CudaAoSScheme1 : public Base {
+
+  //// Algorithmic constants
+  //constexpr uint32_t weight_unroll = 
+  //  alg_constants::CudaAoSScheme1::weight_unroll;
+  //constexpr uint32_t weight_thread_block = 
+  //  alg_constants::CudaAoSScheme1::weight_thread_block;
+  //constexpr uint32_t weight_thread_block_per_sm = 
+  //  alg_constants::CudaAoSScheme1::weight_thread_block_per_sm;
+  //constexpr uint32_t max_submat_blocks = 
+  //  alg_constants::CudaAoSScheme1::max_submat_blocks;
 
   // API Overrides
   void partition_weights( XCDeviceData* ) override final;
@@ -20,11 +37,17 @@ struct CudaAoSScheme1 : public AoSScheme1Base {
 
 };
 
+extern template struct CudaAoSScheme1<AoSScheme1Base>;
+#ifdef GAUXC_ENABLE_MAGMA
+extern template struct CudaAoSScheme1<AoSScheme1MAGMABase>;
+#endif
 
-struct CudaAoSScheme1::Data : public Scheme1DataBase {
+
+template <typename Base>
+struct CudaAoSScheme1<Base>::Data : public Base::Data {
 
   virtual ~Data() noexcept;
-  Data(bool batch_l3_blas = true);
+  Data();
 
   // Final overrides
   size_t get_submat_chunk_size(int32_t,int32_t) override final;
@@ -33,5 +56,9 @@ struct CudaAoSScheme1::Data : public Scheme1DataBase {
 
 };
 
+extern template struct CudaAoSScheme1<AoSScheme1Base>::Data;
+#ifdef GAUXC_ENABLE_MAGMA
+extern template struct CudaAoSScheme1<AoSScheme1MAGMABase>::Data;
+#endif
 
 }
