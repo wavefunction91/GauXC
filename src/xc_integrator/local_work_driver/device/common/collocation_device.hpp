@@ -2,6 +2,7 @@
 #include <gauxc/shell.hpp>
 #include "device/xc_device_task.hpp"
 #include "device/type_erased_queue.hpp"
+#include "shell_to_task.hpp"
 
 namespace GauXC {
 
@@ -64,25 +65,19 @@ void eval_collocation_masked_combined_deriv1(
 
 
 void eval_collocation_shell_to_task(
-  size_t            nshells,
-  Shell<double>*    shells_device,
-  const int32_t**   shell_to_task_idx,
-  const int32_t**   shell_to_task_off,
-  const int32_t*    shell_to_task_ntask,
-  const int32_t*    shell_to_task_ls,
-  const int32_t*    shell_to_task_pure,
-  XCDeviceTask*     device_tasks,
-  type_erased_queue queue );
+  uint32_t           nshells,
+  uint32_t           L,
+  uint32_t           pure,
+  ShellToTaskDevice* shell_to_task_device,
+  XCDeviceTask*      device_tasks,
+  type_erased_queue  queue );
 
 void eval_collocation_shell_to_task_gradient(
-  size_t            nshells,
-  Shell<double>*    shells_device,
-  const int32_t**   shell_to_task_idx,
-  const int32_t**   shell_to_task_off,
-  const int32_t*    shell_to_task_ntask,
-  const int32_t*    shell_to_task_ls,
-  const int32_t*    shell_to_task_pure,
-  XCDeviceTask*     device_tasks,
-  type_erased_queue queue );
+  uint32_t           nshells,
+  uint32_t           L,
+  uint32_t           pure,
+  ShellToTaskDevice* shell_to_task_device,
+  XCDeviceTask*      device_tasks,
+  type_erased_queue  queue );
 
 } // namespace GauXC

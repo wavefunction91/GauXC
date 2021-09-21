@@ -85,6 +85,8 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
 
   if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
 
+  std::cout << "IN COLLOCATION " << data->global_dims.nshells << std::endl;
+#if 1
   auto tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
 
@@ -99,6 +101,19 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
   eval_collocation_masked_combined_deriv1( ntasks, npts_max, nshells_max,
     static_stack.shells_device, aos_stack.device_tasks, 
     data->device_backend_->queue() );
+#else
+
+  const auto nshells = data->global_dims.nshells;
+  auto static_stack  = data->static_stack;
+  auto aos_stack     = data->aos_stack;
+
+  eval_collocation_shell_to_task_gradient( nshells, static_stack.shells_device,
+    data->host_shell_to_task_idx.data(), data->host_shell_to_task_off.data(), 
+    data->host_shell_to_task_ntask.data(), data->host_shell_to_task_l.data(),
+    data->host_shell_to_task_pure.data(), aos_stack.device_tasks, 
+    data->device_backend_->queue() );
+
+#endif
   
 }
 

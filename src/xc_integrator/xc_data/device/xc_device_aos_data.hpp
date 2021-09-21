@@ -51,8 +51,9 @@ struct XCDeviceAoSData : public XCDeviceStackData {
   std::vector<XCDeviceTask> host_device_tasks; ///< Task indirection in host memory
   aos_stack_data aos_stack;
 
-  std::vector<size_t>   host_shell_to_task_ntask;
-  std::vector<size_t>   host_shell_to_task_l;
+  std::vector<int32_t>  host_shell_to_task_ntask;
+  std::vector<int32_t>  host_shell_to_task_l;
+  std::vector<int32_t>  host_shell_to_task_pure;
   std::vector<int32_t*> host_shell_to_task_idx;
   std::vector<int32_t*> host_shell_to_task_off;
 

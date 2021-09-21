@@ -361,10 +361,12 @@ void XCDeviceAoSData::pack_and_send(
     host_shell_to_task_idx.clear();
     host_shell_to_task_off.clear();
     host_shell_to_task_l.clear();
+    host_shell_to_task_pure.clear();
     for( auto ish = 0; ish < global_dims.nshells; ++ish ) {
       const auto ntask = shell_to_task_idx[ish].size();
       host_shell_to_task_ntask.emplace_back(ntask);
       host_shell_to_task_l.emplace_back(basis_map.shell_l(ish));
+      host_shell_to_task_pure.emplace_back(basis_map.shell_pure(ish));
 
       host_shell_to_task_idx.emplace_back(
         shell_idx_mem.aligned_alloc<int32_t>( ntask )
@@ -374,8 +376,8 @@ void XCDeviceAoSData::pack_and_send(
       );
 
       // Pack data
-      concat_iterable( shell_to_task_idx[ish], concat_shell_to_task_idx );
-      concat_iterable( shell_to_task_off[ish], concat_shell_to_task_off );
+      concat_iterable( concat_shell_to_task_idx, shell_to_task_idx[ish] );
+      concat_iterable( concat_shell_to_task_off, shell_to_task_off[ish] );
     }
 
     // Send Data

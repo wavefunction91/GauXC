@@ -26,19 +26,23 @@ struct ref_collocation_data {
 
 };
 
-void check_collocation_transpose( int npts, int nbf, const double* ref_val, const double* comp_val ) {
+void check_collocation_transpose( int npts, int nbf, const double* ref_val, const double* comp_val, std::string msg = "" ) {
 
   // Check transpose
   for( int i = 0; i < nbf;  ++i )
-  for( int j = 0; j < npts; ++j )
+  for( int j = 0; j < npts; ++j ) {
+    INFO(msg << " IBF = " << i << " IPT = " << j);
     CHECK( ref_val[ i + j*nbf ] == Approx( comp_val[ i*npts + j ] ) );
+  }
 
 }
 
 void check_collocation( int npts, int nbf, const double* ref_val, const double* comp_val ) {
 
   for( int i = 0; i < nbf;  ++i )
-  for( int j = 0; j < npts; ++j )
+  for( int j = 0; j < npts; ++j ) {
+    INFO("IBF = " << i << " IPT = " << j);
     CHECK( ref_val[ i + j*nbf ] == Approx( comp_val[ i + j*nbf ] ) );
+  }
 
 }

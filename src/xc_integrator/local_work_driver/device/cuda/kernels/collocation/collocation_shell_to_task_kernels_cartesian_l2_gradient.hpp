@@ -1,43 +1,39 @@
 #pragma once
-#include <gauxc/shell.hpp>
-#include <cooperative_groups.h>
 #include "collocation_device_constants.hpp"
 #include "device/xc_device_task.hpp"
 #include "device_specific/cuda_device_constants.hpp"
+#include "device/common/shell_to_task.hpp"
 #include <cassert>
 
 namespace GauXC {
 
-__global__ __launch_bounds__(1024,1) void collocation_device_shell_to_task_kernel_cartesian_gradient_2(
-  size_t                            ntasks,
-  const Shell<double>* __restrict__ shell,
-  const int32_t*       __restrict__ task_idx,
-  const int32_t*       __restrict__ task_shell_offs,
-  XCDeviceTask*        __restrict__ device_tasks
+
+__global__ __launch_bounds__(512,1) void collocation_device_shell_to_task_kernel_cartesian_gradient_2(
+  int32_t                         nshell,
+  ShellToTaskDevice* __restrict__ shell_to_task,
+  XCDeviceTask*      __restrict__ device_tasks
 ) {
+
+
+  __shared__ double alpha[detail::shell_nprim_max], coeff[detail::shell_nprim_max];
+
+  for( auto ish = blockIdx.y; ish < nshell; ish += gridDim.y ) {
+  const auto ntasks   = shell_to_task[ish].ntask;
+  const auto shell    = shell_to_task[ish].shell_device;
+  const auto task_idx = shell_to_task[ish].task_idx_device;
+  const auto task_shell_offs = shell_to_task[ish].task_shell_offs_device;
+
 
   // Load Shell Data into registers / SM
   const auto nprim = shell->nprim();
   const double3 O  = *reinterpret_cast<const double3*>(shell->O_data());
 
-#if 0
-  namespace cg = cooperative_groups; 
-  auto launch_grid  = cg::this_grid();
-  auto thread_block = cg::this_thread_block();
-  auto block_warp_partition = cg::tiled_partition<cuda::warp_size>(thread_block);
+  const int warp_rank      = threadIdx.x % cuda::warp_size;
+  const int block_warp_id  = threadIdx.x / cuda::warp_size;
+  const int global_warp_id = (threadIdx.x + blockIdx.x*blockDim.x) / cuda::warp_size;
+  const int nwarp_global   = max((blockDim.x*gridDim.x) / cuda::warp_size,1);
 
-  const auto warp_rank       = block_warp_partition.thread_rank();
-  const auto block_warp_id   = block_warp_partition.meta_group_rank();
-  const auto global_warp_id  = launch_grid.thread_rank() / cuda::warp_size;
-  const auto nwarp_global    = launch_grid.size() / cuda::warp_size;
-#else
-  const int warp_rank      = threadIdx.x % 32;
-  const int block_warp_id  = threadIdx.x / 32;
-  const int global_warp_id = (threadIdx.x + blockIdx.x*blockDim.x) / 32;
-  const int nwarp_global   = (blockDim.x*gridDim.x) / 32;
-#endif
-
-  __shared__ double alpha[detail::shell_nprim_max], coeff[detail::shell_nprim_max];
+  if(ish) __syncthreads(); // Sync to avoid invalidation of cache for warps working on a different shell
   // Read in coeffs/exps into SM on first warp
   if( block_warp_id == 0 ) {
     auto* coeff_gm = shell->coeff_data();
@@ -47,12 +43,9 @@ __global__ __launch_bounds__(1024,1) void collocation_device_shell_to_task_kerne
        coeff[i] = coeff_gm[i];
     }
   }
-  #if 0
-  thread_block.sync(); // Sync once SM is populated 
-  #else
-  __syncthreads();
-  #endif
+  __syncthreads(); // Sync once SM is populated 
 
+#if 1
   // Loop over tasks assigned to shells
   // Place each task on a different warp + schedule across blocks
   for( int itask = global_warp_id; itask < ntasks; itask += nwarp_global ) {
@@ -60,12 +53,12 @@ __global__ __launch_bounds__(1024,1) void collocation_device_shell_to_task_kerne
     const auto*              task   = device_tasks + task_idx[itask];
     const auto* __restrict__ points = reinterpret_cast<double3*>(task->points);
     const auto               npts   = task->npts;
-    const auto               shoff  = task_shell_offs[itask];
+    const auto               shoff  = task_shell_offs[itask] * npts;
 
-    auto* __restrict__ basis_eval = task->bf + shoff*npts;
-    auto* __restrict__ basis_x_eval = task->dbfx + shoff*npts;
-    auto* __restrict__ basis_y_eval = task->dbfy + shoff*npts;
-    auto* __restrict__ basis_z_eval = task->dbfz + shoff*npts;
+    auto* __restrict__ basis_eval = task->bf + shoff;
+    auto* __restrict__ basis_x_eval = task->dbfx + shoff;
+    auto* __restrict__ basis_y_eval = task->dbfy + shoff;
+    auto* __restrict__ basis_z_eval = task->dbfz + shoff;
 
     // Loop over points in task
     // Assign each point to separate thread within the warp
@@ -97,79 +90,77 @@ __global__ __launch_bounds__(1024,1) void collocation_device_shell_to_task_kerne
 
       
       // Evaluate the angular part of bfn
-      double ang_eval;
-      double dang_eval_x, dang_eval_y, dang_eval_z;
-
-      ang_eval = radial_eval*x*x;
-      dang_eval_x = x*(2*radial_eval + radial_eval_x*x);
-      dang_eval_y = radial_eval_y*x*x;
-      dang_eval_z = radial_eval_z*x*x;
-
-      basis_eval  [ipt + 0*npts] = ang_eval;
-      basis_x_eval[ipt + 0*npts] = dang_eval_x;
-      basis_y_eval[ipt + 0*npts] = dang_eval_y;
-      basis_z_eval[ipt + 0*npts] = dang_eval_z;
 
 
-      ang_eval = radial_eval*x*y;
-      dang_eval_x = y*(radial_eval + radial_eval_x*x);
-      dang_eval_y = x*(radial_eval + radial_eval_y*y);
-      dang_eval_z = radial_eval_z*x*y;
 
-      basis_eval  [ipt + 1*npts] = ang_eval;
-      basis_x_eval[ipt + 1*npts] = dang_eval_x;
-      basis_y_eval[ipt + 1*npts] = dang_eval_y;
-      basis_z_eval[ipt + 1*npts] = dang_eval_z;
+      double ang_eval_0;
+      double ang_eval_1;
+      double ang_eval_2;
+      double ang_eval_3;
 
 
-      ang_eval = radial_eval*x*z;
-      dang_eval_x = z*(radial_eval + radial_eval_x*x);
-      dang_eval_y = radial_eval_y*x*z;
-      dang_eval_z = x*(radial_eval + radial_eval_z*z);
+      ang_eval_0 = radial_eval*x*x;
+      ang_eval_1 = radial_eval*x*y;
+      ang_eval_2 = radial_eval*x*z;
+      ang_eval_3 = radial_eval*y*y;
+      basis_eval[ipt + 0*npts] = ang_eval_0;
+      basis_eval[ipt + 1*npts] = ang_eval_1;
+      basis_eval[ipt + 2*npts] = ang_eval_2;
+      basis_eval[ipt + 3*npts] = ang_eval_3;
 
-      basis_eval  [ipt + 2*npts] = ang_eval;
-      basis_x_eval[ipt + 2*npts] = dang_eval_x;
-      basis_y_eval[ipt + 2*npts] = dang_eval_y;
-      basis_z_eval[ipt + 2*npts] = dang_eval_z;
-
-
-      ang_eval = radial_eval*y*y;
-      dang_eval_x = radial_eval_x*y*y;
-      dang_eval_y = y*(2*radial_eval + radial_eval_y*y);
-      dang_eval_z = radial_eval_z*y*y;
-
-      basis_eval  [ipt + 3*npts] = ang_eval;
-      basis_x_eval[ipt + 3*npts] = dang_eval_x;
-      basis_y_eval[ipt + 3*npts] = dang_eval_y;
-      basis_z_eval[ipt + 3*npts] = dang_eval_z;
+      ang_eval_0 = radial_eval*y*z;
+      ang_eval_1 = radial_eval*z*z;
+      basis_eval[ipt + 4*npts] = ang_eval_0;
+      basis_eval[ipt + 5*npts] = ang_eval_1;
 
 
-      ang_eval = radial_eval*y*z;
-      dang_eval_x = radial_eval_x*y*z;
-      dang_eval_y = z*(radial_eval + radial_eval_y*y);
-      dang_eval_z = y*(radial_eval + radial_eval_z*z);
+      double dang_eval_x_0, dang_eval_y_0, dang_eval_z_0;
+      double dang_eval_x_1, dang_eval_y_1, dang_eval_z_1;
+      double dang_eval_x_2, dang_eval_y_2, dang_eval_z_2;
+      double dang_eval_x_3, dang_eval_y_3, dang_eval_z_3;
 
-      basis_eval  [ipt + 4*npts] = ang_eval;
-      basis_x_eval[ipt + 4*npts] = dang_eval_x;
-      basis_y_eval[ipt + 4*npts] = dang_eval_y;
-      basis_z_eval[ipt + 4*npts] = dang_eval_z;
+      dang_eval_x_0 = x*(2*radial_eval + radial_eval_x*x);
+      dang_eval_y_0 = radial_eval_y*x*x;
+      dang_eval_z_0 = radial_eval_z*x*x;
+      dang_eval_x_1 = y*(radial_eval + radial_eval_x*x);
+      dang_eval_y_1 = x*(radial_eval + radial_eval_y*y);
+      dang_eval_z_1 = radial_eval_z*x*y;
+      dang_eval_x_2 = z*(radial_eval + radial_eval_x*x);
+      dang_eval_y_2 = radial_eval_y*x*z;
+      dang_eval_z_2 = x*(radial_eval + radial_eval_z*z);
+      dang_eval_x_3 = radial_eval_x*y*y;
+      dang_eval_y_3 = y*(2*radial_eval + radial_eval_y*y);
+      dang_eval_z_3 = radial_eval_z*y*y;
+      basis_x_eval[ipt + 0*npts] = dang_eval_x_0;
+      basis_y_eval[ipt + 0*npts] = dang_eval_y_0;
+      basis_z_eval[ipt + 0*npts] = dang_eval_z_0;
+      basis_x_eval[ipt + 1*npts] = dang_eval_x_1;
+      basis_y_eval[ipt + 1*npts] = dang_eval_y_1;
+      basis_z_eval[ipt + 1*npts] = dang_eval_z_1;
+      basis_x_eval[ipt + 2*npts] = dang_eval_x_2;
+      basis_y_eval[ipt + 2*npts] = dang_eval_y_2;
+      basis_z_eval[ipt + 2*npts] = dang_eval_z_2;
+      basis_x_eval[ipt + 3*npts] = dang_eval_x_3;
+      basis_y_eval[ipt + 3*npts] = dang_eval_y_3;
+      basis_z_eval[ipt + 3*npts] = dang_eval_z_3;
 
+      dang_eval_x_0 = radial_eval_x*y*z;
+      dang_eval_y_0 = z*(radial_eval + radial_eval_y*y);
+      dang_eval_z_0 = y*(radial_eval + radial_eval_z*z);
+      dang_eval_x_1 = radial_eval_x*z*z;
+      dang_eval_y_1 = radial_eval_y*z*z;
+      dang_eval_z_1 = z*(2*radial_eval + radial_eval_z*z);
+      basis_x_eval[ipt + 4*npts] = dang_eval_x_0;
+      basis_y_eval[ipt + 4*npts] = dang_eval_y_0;
+      basis_z_eval[ipt + 4*npts] = dang_eval_z_0;
+      basis_x_eval[ipt + 5*npts] = dang_eval_x_1;
+      basis_y_eval[ipt + 5*npts] = dang_eval_y_1;
+      basis_z_eval[ipt + 5*npts] = dang_eval_z_1;
 
-      ang_eval = radial_eval*z*z;
-      dang_eval_x = radial_eval_x*z*z;
-      dang_eval_y = radial_eval_y*z*z;
-      dang_eval_z = z*(2*radial_eval + radial_eval_z*z);
+    } // Loop over points within task
+  } // Loop over tasks
+  #endif
+  } // Loop over shells
+} // end kernel
 
-      basis_eval  [ipt + 5*npts] = ang_eval;
-      basis_x_eval[ipt + 5*npts] = dang_eval_x;
-      basis_y_eval[ipt + 5*npts] = dang_eval_y;
-      basis_z_eval[ipt + 5*npts] = dang_eval_z;
-
-
-      
-    }
-
-  }
-}
-
-}
+} // namespace GauXC

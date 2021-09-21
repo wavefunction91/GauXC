@@ -214,6 +214,32 @@ void eval_collocation_masked_combined_deriv1(
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 uint32_t max_threads_shell_to_task_collocation( int32_t l, bool pure ) {
   if( pure ) {
     switch(l) {
@@ -234,45 +260,37 @@ uint32_t max_threads_shell_to_task_collocation( int32_t l, bool pure ) {
 }
 
 template <typename... Args>
-void dispatch_shell_to_task_collocation( cudaStream_t stream, int32_t l, bool pure, Args&&... args ) {
-  dim3 block(10);
+void dispatch_shell_to_task_collocation( cudaStream_t stream, int32_t l, bool pure, int32_t nshells, Args&&... args ) {
   dim3 threads = max_threads_shell_to_task_collocation(l,pure);
+  dim3 block(1, nshells);
   if( pure ) {
     switch(l) {
       case 0:
-        collocation_device_shell_to_task_kernel_cartesian_0<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_cartesian_0<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
       case 1:
-        collocation_device_shell_to_task_kernel_spherical_1<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_spherical_1<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
       case 2:
-        collocation_device_shell_to_task_kernel_spherical_2<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_spherical_2<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
       case 3:
-        collocation_device_shell_to_task_kernel_spherical_3<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_spherical_3<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
     }
   } else {
     switch(l) {
       case 0:
-        collocation_device_shell_to_task_kernel_cartesian_0<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_cartesian_0<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
       case 1:
-        collocation_device_shell_to_task_kernel_cartesian_1<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_cartesian_1<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
       case 2:
-        collocation_device_shell_to_task_kernel_cartesian_2<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_cartesian_2<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
       case 3:
-        collocation_device_shell_to_task_kernel_cartesian_3<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_cartesian_3<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
     }
   }
@@ -280,37 +298,19 @@ void dispatch_shell_to_task_collocation( cudaStream_t stream, int32_t l, bool pu
 
 
 void eval_collocation_shell_to_task(
-  size_t          nshells,
-  Shell<double>*  shells_device,
-  const int32_t** shell_to_task_idx,
-  const int32_t** shell_to_task_off,
-  const int32_t*  shell_to_task_ntask,
-  const int32_t*  shell_to_task_ls,
-  const int32_t*  shell_to_task_pure,
-  XCDeviceTask*   device_tasks,
-  type_erased_queue queue
+  uint32_t           nshells,
+  uint32_t           L,
+  uint32_t           pure,
+  ShellToTaskDevice* shell_to_task_device,
+  XCDeviceTask*      device_tasks,
+  type_erased_queue  queue 
 ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
 
-  // Loop over shells
-  for( auto i = 0; i < nshells; ++i ) {
+  dispatch_shell_to_task_collocation( stream, L, pure, nshells, 
+    shell_to_task_device, device_tasks );
 
-    const auto* shell    = shells_device + i;
-    const auto* task_idx = shell_to_task_idx[i];
-    const auto* task_off = shell_to_task_off[i];
-    const auto  ntask    = shell_to_task_ntask[i];
-    const auto  l        = shell_to_task_ls[i];
-    const auto  pure     = shell_to_task_pure[i];
-
-    if( ntask ) {
-      dispatch_shell_to_task_collocation( stream, l, pure, 
-        ntask, shell, task_idx, task_off, device_tasks
-      );
-    }
-
-
-  }
 
 }
 
@@ -335,92 +335,63 @@ uint32_t max_threads_shell_to_task_collocation_gradient( int32_t l, bool pure ) 
 }
 
 template <typename... Args>
-void dispatch_shell_to_task_collocation_gradient( cudaStream_t stream, int32_t l, bool pure, Args&&... args ) {
-  dim3 block(10);
+void dispatch_shell_to_task_collocation_gradient( cudaStream_t stream, int32_t l, bool pure, uint32_t nshells, Args&&... args ) {
+
+  //dim3 threads = max_threads_shell_to_task_collocation(l,pure);
+  //uint32_t nwarp_per_block = threads.x / cuda::warp_size;
+  //dim3 block(32, 1);
   dim3 threads = max_threads_shell_to_task_collocation(l,pure);
-  std::cout << threads.x << ", " << block.x << std::endl;
+  dim3 block(1, nshells);
+
   if( pure ) {
     switch(l) {
       case 0:
-        collocation_device_shell_to_task_kernel_cartesian_gradient_0<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_cartesian_gradient_0<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
       case 1:
-        collocation_device_shell_to_task_kernel_spherical_gradient_1<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_spherical_gradient_1<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
       case 2:
-        collocation_device_shell_to_task_kernel_spherical_gradient_2<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_spherical_gradient_2<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
       case 3:
-        collocation_device_shell_to_task_kernel_spherical_gradient_3<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_spherical_gradient_3<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
     }
   } else {
     switch(l) {
       case 0:
-        collocation_device_shell_to_task_kernel_cartesian_gradient_0<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_cartesian_gradient_0<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
       case 1:
-        collocation_device_shell_to_task_kernel_cartesian_gradient_1<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_cartesian_gradient_1<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
       case 2:
-        collocation_device_shell_to_task_kernel_cartesian_gradient_2<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_cartesian_gradient_2<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
       case 3:
-        collocation_device_shell_to_task_kernel_cartesian_gradient_3<<<block,threads,0,stream>>>(
-          std::forward<Args>(args)... );
+        collocation_device_shell_to_task_kernel_cartesian_gradient_3<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
         break;
     }
   }
 
-  auto err = cudaDeviceSynchronize();
-  GAUXC_CUDA_ERROR( "COLLOCATION KERNEL", err );
 }
 
 
 void eval_collocation_shell_to_task_gradient(
-  size_t          nshells,
-  Shell<double>*  shells_device,
-  const int32_t** shell_to_task_idx,
-  const int32_t** shell_to_task_off,
-  const int32_t*  shell_to_task_ntask,
-  const int32_t*  shell_to_task_ls,
-  const int32_t*  shell_to_task_pure,
-  XCDeviceTask*   device_tasks,
-  type_erased_queue queue
+  uint32_t           nshells,
+  uint32_t           L,
+  uint32_t           pure,
+  ShellToTaskDevice* shell_to_task_device,
+  XCDeviceTask*      device_tasks,
+  type_erased_queue  queue 
 ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
 
-  // Loop over shells
-  for( auto i = 0; i < nshells; ++i ) {
+  dispatch_shell_to_task_collocation_gradient( stream, L, pure, nshells, 
+    shell_to_task_device, device_tasks );
 
-    const auto* shell    = shells_device + i;
-    const auto* task_idx = shell_to_task_idx[i];
-    const auto* task_off = shell_to_task_off[i];
-    const auto  ntask    = shell_to_task_ntask[i];
-    const auto  l        = shell_to_task_ls[i];
-    const auto  pure     = shell_to_task_pure[i];
-
-    if( ntask ) {
-    //if(l == 0)
-      dispatch_shell_to_task_collocation_gradient( stream, l, pure, 
-        ntask, shell, task_idx, task_off, device_tasks
-      );
-    //else
-    //  dispatch_shell_to_task_collocation( stream, l, pure, 
-    //    ntask, shell, task_idx, task_off, device_tasks
-    //  );
-    }
-
-
-  }
 
 }
 

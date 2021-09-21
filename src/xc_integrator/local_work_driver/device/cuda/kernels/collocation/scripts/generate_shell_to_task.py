@@ -28,10 +28,14 @@ def generate_shell_to_task_lines( ang, do_grad = False ):
     bf_y_eval = sympy.simplify( a_y * bf + a * bf_y )
     bf_z_eval = sympy.simplify( a_z * bf + a * bf_z )
 
-    bf_eval_str = 'ang_eval = {};'.format(bf_eval)
-    bf_x_eval_str = 'dang_eval_x = {};'.format(bf_x_eval)
-    bf_y_eval_str = 'dang_eval_y = {};'.format(bf_y_eval)
-    bf_z_eval_str = 'dang_eval_z = {};'.format(bf_z_eval)
+    #bf_eval_str = 'ang_eval = {};'.format(bf_eval)
+    #bf_x_eval_str = 'dang_eval_x = {};'.format(bf_x_eval)
+    #bf_y_eval_str = 'dang_eval_y = {};'.format(bf_y_eval)
+    #bf_z_eval_str = 'dang_eval_z = {};'.format(bf_z_eval)
+    bf_eval_str   = '{}'.format(bf_eval  )
+    bf_x_eval_str = '{}'.format(bf_x_eval)
+    bf_y_eval_str = '{}'.format(bf_y_eval)
+    bf_z_eval_str = '{}'.format(bf_z_eval)
 
     if L >= 2:
       for k in range(2,L+1):
@@ -166,8 +170,8 @@ def generate_code_gradient( eval_lines, eval_lines_dx, eval_lines_dy, eval_lines
 
 
 # Generate kernels
-template_fname = 'templates/collocation_shell_to_task_kernels.hpp'
 for L in range( L_max + 1 ):
+  template_fname = 'templates/collocation_shell_to_task_kernels.hpp'
   cart_header_fname = "collocation_shell_to_task_kernels_cartesian_l" + str(L) + ".hpp"
   sph_header_fname  = "collocation_shell_to_task_kernels_spherical_l" + str(L) + ".hpp"
   
@@ -182,3 +186,15 @@ for L in range( L_max + 1 ):
     L, 'spherical_gradient', template_fname, sph_header_fname )
 
 
+  #template_fname = 'templates/collocation_shell_to_task_combined_kernels.hpp'
+  #cart_header_fname = "collocation_shell_to_task_combined_kernels_cartesian_l" + str(L) + ".hpp"
+  #sph_header_fname  = "collocation_shell_to_task_combined_kernels_spherical_l" + str(L) + ".hpp"
+  #generate_code( cart_bf_lines[L], L, 'cartesian', template_fname, cart_header_fname )
+  #generate_code( sph_bf_lines[L], L, 'spherical', template_fname, sph_header_fname )
+
+  #cart_header_fname = "collocation_shell_to_task_combined_kernels_cartesian_l" + str(L) + "_gradient.hpp"
+  #sph_header_fname  = "collocation_shell_to_task_combined_kernels_spherical_l" + str(L) + "_gradient.hpp"
+  #generate_code_gradient( cart_bf_lines[L], cart_bfx_lines[L], cart_bfy_lines[L], cart_bfz_lines[L],
+  #  L, 'cartesian_gradient', template_fname, cart_header_fname )
+  #generate_code_gradient( sph_bf_lines[L], sph_bfx_lines[L], sph_bfy_lines[L], sph_bfz_lines[L],
+  #  L, 'spherical_gradient', template_fname, sph_header_fname )
