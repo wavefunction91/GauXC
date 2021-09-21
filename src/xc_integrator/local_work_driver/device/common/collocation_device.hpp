@@ -65,19 +65,15 @@ void eval_collocation_masked_combined_deriv1(
 
 
 void eval_collocation_shell_to_task(
-  uint32_t           nshells,
-  uint32_t           L,
-  uint32_t           pure,
-  ShellToTaskDevice* shell_to_task_device,
-  XCDeviceTask*      device_tasks,
-  type_erased_queue  queue );
+  uint32_t                    max_l,
+  AngularMomentumShellToTaskBatch* l_batched_shell_to_task,
+  XCDeviceTask*               device_tasks,
+  type_erased_queue           queue );
 
 void eval_collocation_shell_to_task_gradient(
-  uint32_t           nshells,
-  uint32_t           L,
-  uint32_t           pure,
-  ShellToTaskDevice* shell_to_task_device,
-  XCDeviceTask*      device_tasks,
-  type_erased_queue  queue );
+  uint32_t                    max_l,
+  AngularMomentumShellToTaskBatch* l_batched_shell_to_task,
+  XCDeviceTask*               device_tasks,
+  type_erased_queue           queue );
 
 } // namespace GauXC

@@ -136,6 +136,20 @@ public:
 
   auto shell_l(size_t i) const { return shell_ls_.at(i); }
   auto shell_pure(size_t i) const { return shell_pure_.at(i); }
+
+  inline uint32_t max_l() const {
+    return *std::max_element(shell_ls_.begin(), shell_ls_.end());
+  }
+
+  inline size_t nshells_with_l(uint32_t l) const {
+    return std::count( shell_ls_.begin(), shell_ls_.end(), l );
+  }
+
+  inline bool l_purity(uint32_t l) const {
+    // Find first shell with L
+    auto first_shell_w_l = std::find( shell_ls_.begin(), shell_ls_.end(), l );
+    return shell_pure( std::distance( shell_ls_.begin(), first_shell_w_l ) );
+  }
 }; // class BasisSetMap
 
 } // namespace GauXC

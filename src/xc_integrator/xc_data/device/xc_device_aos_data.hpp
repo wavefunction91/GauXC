@@ -2,8 +2,10 @@
 
 #include "xc_device_stack_data.hpp"
 #include "xc_device_task.hpp"
+#include "device/common/shell_to_task.hpp"
 
 namespace GauXC {
+
 
 /// Base type for XCDeviceData instances that address task batches as AoS
 struct XCDeviceAoSData : public XCDeviceStackData {
@@ -39,9 +41,6 @@ struct XCDeviceAoSData : public XCDeviceStackData {
     int32_t* submat_block_device = nullptr;
       ///< Contiguous batch local submatrix blocking factors for task batch
 
-    int32_t* shell_to_task_idx_device = nullptr;
-    int32_t* shell_to_task_off_device = nullptr;
-
     // Indirection
     XCDeviceTask* device_tasks = nullptr; ///< Task indirection in device memory
 
@@ -51,11 +50,29 @@ struct XCDeviceAoSData : public XCDeviceStackData {
   std::vector<XCDeviceTask> host_device_tasks; ///< Task indirection in host memory
   aos_stack_data aos_stack;
 
+#if 0
   std::vector<int32_t>  host_shell_to_task_ntask;
   std::vector<int32_t>  host_shell_to_task_l;
   std::vector<int32_t>  host_shell_to_task_pure;
   std::vector<int32_t*> host_shell_to_task_idx;
   std::vector<int32_t*> host_shell_to_task_off;
+#else
+  struct shell_to_task_data {
+    std::vector<AngularMomentumShellToTaskBatch> l_batched_shell_to_task;
+    ShellToTaskDevice* shell_to_task_device;
+
+    int32_t* shell_to_task_idx_device = nullptr;
+    int32_t* shell_to_task_off_device = nullptr;
+
+    inline void reset() {
+      shell_to_task_device = nullptr;
+      shell_to_task_idx_device = nullptr;
+      shell_to_task_off_device = nullptr;
+      l_batched_shell_to_task.clear();
+    }
+  };
+  shell_to_task_data shell_to_task_stack;
+#endif
 
   XCDeviceAoSData() = delete;
   inline XCDeviceAoSData( std::unique_ptr<DeviceBackend>&& ptr ) :

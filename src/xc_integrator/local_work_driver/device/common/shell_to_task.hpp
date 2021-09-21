@@ -10,4 +10,11 @@ struct ShellToTaskDevice {
   Shell<double>*   shell_device;
 };
 
+struct AngularMomentumShellToTaskBatch {
+  size_t             ntask_average;
+  size_t             nshells_in_batch;
+  ShellToTaskDevice* shell_to_task_device;
+  uint32_t           pure;
+};
+
 }

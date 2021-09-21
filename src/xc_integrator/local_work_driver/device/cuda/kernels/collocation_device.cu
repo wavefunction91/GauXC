@@ -298,18 +298,21 @@ void dispatch_shell_to_task_collocation( cudaStream_t stream, int32_t l, bool pu
 
 
 void eval_collocation_shell_to_task(
-  uint32_t           nshells,
-  uint32_t           L,
-  uint32_t           pure,
-  ShellToTaskDevice* shell_to_task_device,
-  XCDeviceTask*      device_tasks,
-  type_erased_queue  queue 
+  uint32_t                    max_l,
+  AngularMomentumShellToTaskBatch* l_batched_shell_to_task,
+  XCDeviceTask*               device_tasks,
+  type_erased_queue           queue 
 ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
 
-  dispatch_shell_to_task_collocation( stream, L, pure, nshells, 
-    shell_to_task_device, device_tasks );
+  for( auto l = 0u; l <= max_l; ++l ) {
+    auto pure = l_batched_shell_to_task[l].pure;
+    auto shell_to_task_device = l_batched_shell_to_task[l].shell_to_task_device;
+    auto nshells = l_batched_shell_to_task[l].nshells_in_batch;
+    dispatch_shell_to_task_collocation( stream, l, pure, nshells, 
+      shell_to_task_device, device_tasks );
+  }
 
 
 }
@@ -379,18 +382,21 @@ void dispatch_shell_to_task_collocation_gradient( cudaStream_t stream, int32_t l
 
 
 void eval_collocation_shell_to_task_gradient(
-  uint32_t           nshells,
-  uint32_t           L,
-  uint32_t           pure,
-  ShellToTaskDevice* shell_to_task_device,
-  XCDeviceTask*      device_tasks,
-  type_erased_queue  queue 
+  uint32_t                    max_l,
+  AngularMomentumShellToTaskBatch* l_batched_shell_to_task,
+  XCDeviceTask*               device_tasks,
+  type_erased_queue           queue 
 ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
 
-  dispatch_shell_to_task_collocation_gradient( stream, L, pure, nshells, 
-    shell_to_task_device, device_tasks );
+  for( auto l = 0u; l <= max_l; ++l ) {
+    auto pure = l_batched_shell_to_task[l].pure;
+    auto shell_to_task_device = l_batched_shell_to_task[l].shell_to_task_device;
+    auto nshells = l_batched_shell_to_task[l].nshells_in_batch;
+    dispatch_shell_to_task_collocation_gradient( stream, l, pure, nshells, 
+      shell_to_task_device, device_tasks );
+  }
 
 
 }

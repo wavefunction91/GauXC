@@ -2,6 +2,7 @@
 #include "collocation_common.hpp"
 #include "device/common/collocation_device.hpp"
 #include "device_specific/cuda_util.hpp"
+#include <gauxc/basisset_map.hpp>
 
 
 auto populate_device_cuda( const BasisSet<double>& basis,
@@ -109,7 +110,7 @@ void cuda_check_collocation( const std::vector<XCDeviceTask>& tasks,
 
 
 
-void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::ifstream& in_file, bool grad ) {
+void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, const BasisSetMap& basis_map, std::ifstream& in_file, bool grad ) {
 
 
 
@@ -157,16 +158,16 @@ void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::
   util::cuda_free( tasks_device, shells_device );
 }
 
-void test_cuda_collocation( const BasisSet<double>& basis, 
+void test_cuda_collocation( const BasisSet<double>& basis, const BasisSetMap& basis_map, 
   std::ifstream& in_file ) {
 
-  test_cuda_collocation_masked_combined( basis, in_file, false );
+  test_cuda_collocation_masked_combined( basis, basis_map, in_file, false );
 
 }
-void test_cuda_collocation_deriv1( const BasisSet<double>& basis, 
+void test_cuda_collocation_deriv1( const BasisSet<double>& basis, const BasisSetMap& basis_map, 
   std::ifstream& in_file ) {
 
-  test_cuda_collocation_masked_combined( basis, in_file, true );
+  test_cuda_collocation_masked_combined( basis, basis_map, in_file, true );
 
 }
   
@@ -184,7 +185,7 @@ void test_cuda_collocation_deriv1( const BasisSet<double>& basis,
 
 
 
-void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis, 
+void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,  const BasisSetMap& basis_map,
   std::ifstream& in_file, bool grad) {
 
   // Load reference data
@@ -271,6 +272,7 @@ void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,
   }
 
 
+#if 0
   auto max_l = std::max_element(basis.begin(),basis.end(),
     [](const auto&a, const auto& b){ return a.l() < b.l(); } )->l();
   std::vector<uint32_t> l_counts( max_l+1 );
@@ -282,19 +284,31 @@ void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,
       [&](auto& s){ return s.l() == l; } );
     l_pure[l] = f->pure();
   }
+#endif
 
   auto* shell_to_task_device = util::cuda_malloc<ShellToTaskDevice>(basis.size());
   util::cuda_copy( basis.size(), shell_to_task_device, shell_to_task.data() );
   util::cuda_device_sync();
 
-
-#if 1
+  auto max_l = std::max_element(basis.begin(),basis.end(),
+    [](const auto&a, const auto& b){ return a.l() < b.l(); } )->l();
+  std::vector<AngularMomentumShellToTaskBatch> l_batched_shell_to_task(max_l+1);
+  {
   auto* p = shell_to_task_device;
   for( auto l = 0; l <= max_l; ++l ) {
-    if( grad ) eval_collocation_shell_to_task_gradient( l_counts[l], l, l_pure[l], p, tasks_device, stream );
-    else       eval_collocation_shell_to_task         ( l_counts[l], l, l_pure[l], p ,tasks_device, stream );
-    p += l_counts[l];
+    auto nsh = basis_map.nshells_with_l(l);
+    auto pure = basis_map.l_purity(l);
+    l_batched_shell_to_task[l].nshells_in_batch     = nsh;
+    l_batched_shell_to_task[l].pure                 = pure;
+    l_batched_shell_to_task[l].shell_to_task_device = p;
+    p += nsh;
   }
+  }
+
+
+#if 1
+  if( grad ) eval_collocation_shell_to_task_gradient( max_l, l_batched_shell_to_task.data(), tasks_device, stream );
+  else       eval_collocation_shell_to_task         ( max_l, l_batched_shell_to_task.data(), tasks_device, stream );
 #else
   for( auto i = 0; i < basis.size(); ++i ) {
     auto l = basis.at(shell_idx[i]).l();
@@ -321,16 +335,16 @@ void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,
 
 
 
-void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis, 
+void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,  const BasisSetMap& basis_map,
   std::ifstream& in_file) {
 
-  test_cuda_collocation_shell_to_task(basis,in_file,false);
+  test_cuda_collocation_shell_to_task(basis,basis_map,in_file,false);
 
 }
-void test_cuda_collocation_shell_to_task_gradient( const BasisSet<double>& basis, 
+void test_cuda_collocation_shell_to_task_gradient( const BasisSet<double>& basis,  const BasisSetMap& basis_map,
   std::ifstream& in_file) {
 
-  test_cuda_collocation_shell_to_task(basis,in_file,true);
+  test_cuda_collocation_shell_to_task(basis,basis_map,in_file,true);
 
 }
 
