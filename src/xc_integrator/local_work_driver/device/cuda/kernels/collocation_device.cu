@@ -260,9 +260,14 @@ uint32_t max_threads_shell_to_task_collocation( int32_t l, bool pure ) {
 }
 
 template <typename... Args>
-void dispatch_shell_to_task_collocation( cudaStream_t stream, int32_t l, bool pure, int32_t nshells, Args&&... args ) {
+void dispatch_shell_to_task_collocation( cudaStream_t stream, int32_t l, 
+  bool pure, int32_t ntask_average, int32_t nshells, Args&&... args ) {
+
   dim3 threads = max_threads_shell_to_task_collocation(l,pure);
-  dim3 block(1, nshells);
+  int nwarp_per_block = threads.x / cuda::warp_size;
+  int n_task_blocks = util::div_ceil( ntask_average, nwarp_per_block );
+  dim3 block(n_task_blocks, nshells);
+
   if( pure ) {
     switch(l) {
       case 0:
@@ -310,7 +315,8 @@ void eval_collocation_shell_to_task(
     auto pure = l_batched_shell_to_task[l].pure;
     auto shell_to_task_device = l_batched_shell_to_task[l].shell_to_task_device;
     auto nshells = l_batched_shell_to_task[l].nshells_in_batch;
-    dispatch_shell_to_task_collocation( stream, l, pure, nshells, 
+    auto ntask_average = std::max(1ul, l_batched_shell_to_task[l].ntask_average);
+    dispatch_shell_to_task_collocation( stream, l, pure, ntask_average, nshells, 
       shell_to_task_device, device_tasks );
   }
 
@@ -338,13 +344,13 @@ uint32_t max_threads_shell_to_task_collocation_gradient( int32_t l, bool pure ) 
 }
 
 template <typename... Args>
-void dispatch_shell_to_task_collocation_gradient( cudaStream_t stream, int32_t l, bool pure, uint32_t nshells, Args&&... args ) {
+void dispatch_shell_to_task_collocation_gradient( cudaStream_t stream, int32_t l, 
+  bool pure, uint32_t ntask_average, uint32_t nshells, Args&&... args ) {
 
-  //dim3 threads = max_threads_shell_to_task_collocation(l,pure);
-  //uint32_t nwarp_per_block = threads.x / cuda::warp_size;
-  //dim3 block(32, 1);
   dim3 threads = max_threads_shell_to_task_collocation(l,pure);
-  dim3 block(1, nshells);
+  int nwarp_per_block = threads.x / cuda::warp_size;
+  int n_task_blocks = util::div_ceil( ntask_average, nwarp_per_block );
+  dim3 block(n_task_blocks, nshells);
 
   if( pure ) {
     switch(l) {
@@ -394,8 +400,9 @@ void eval_collocation_shell_to_task_gradient(
     auto pure = l_batched_shell_to_task[l].pure;
     auto shell_to_task_device = l_batched_shell_to_task[l].shell_to_task_device;
     auto nshells = l_batched_shell_to_task[l].nshells_in_batch;
-    dispatch_shell_to_task_collocation_gradient( stream, l, pure, nshells, 
-      shell_to_task_device, device_tasks );
+    auto ntask_average = std::max(1ul, l_batched_shell_to_task[l].ntask_average);
+    dispatch_shell_to_task_collocation_gradient( stream, l, pure, 
+      ntask_average, nshells, shell_to_task_device, device_tasks );
   }
 
 

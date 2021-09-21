@@ -184,6 +184,7 @@ void XCDeviceAoSData::pack_and_send(
     const size_t ncut     = submat_cut.size();
     const size_t nblock   = submat_block.size();
     const size_t npts     = points.size();
+    const size_t nshells = it->shell_list.size();
     const auto nbe        = it->nbe;
 
 
@@ -200,6 +201,7 @@ void XCDeviceAoSData::pack_and_send(
     host_device_tasks.back().ncut         = ncut;
     host_device_tasks.back().nblock       = nblock;
     host_device_tasks.back().iParent      = iAtom;
+    host_device_tasks.back().nshells      = nshells;
     host_device_tasks.back().dist_nearest = dist_nearest;
 
     auto& shell_list = it->shell_list;

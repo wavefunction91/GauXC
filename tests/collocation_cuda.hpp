@@ -274,13 +274,20 @@ void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,  const 
   std::vector<AngularMomentumShellToTaskBatch> l_batched_shell_to_task(max_l+1);
   {
   auto* p = shell_to_task_device;
+  auto* h = shell_to_task.data();
   for( auto l = 0; l <= max_l; ++l ) {
     auto nsh = basis_map.nshells_with_l(l);
     auto pure = basis_map.l_purity(l);
     l_batched_shell_to_task[l].nshells_in_batch     = nsh;
     l_batched_shell_to_task[l].pure                 = pure;
     l_batched_shell_to_task[l].shell_to_task_device = p;
+    
+    size_t total_ntask = std::accumulate( h, h + nsh, 0ul,
+      [](auto& a, auto& b){ return a + b.ntask; } );
+    l_batched_shell_to_task[l].ntask_average = total_ntask / nsh;
+
     p += nsh;
+    h += nsh;
   }
   }
 

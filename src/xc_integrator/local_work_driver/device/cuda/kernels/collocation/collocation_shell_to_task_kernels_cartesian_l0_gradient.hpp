@@ -8,7 +8,7 @@
 namespace GauXC {
 
 
-__global__ __launch_bounds__(512,1) void collocation_device_shell_to_task_kernel_cartesian_gradient_0(
+__global__ __launch_bounds__(256,1) void collocation_device_shell_to_task_kernel_cartesian_gradient_0(
   int32_t                         nshell,
   ShellToTaskDevice* __restrict__ shell_to_task,
   XCDeviceTask*      __restrict__ device_tasks

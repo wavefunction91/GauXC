@@ -260,13 +260,25 @@ void Scheme1DataBase::pack_and_send(
       l_batched_shell_to_task.resize(max_l + 1);
       {
       auto* p = shell_to_task_stack.shell_to_task_device;
+      auto* h = host_shell_to_task.data();
       for( auto l = 0; l <= max_l; ++l ) {
         auto nsh  = basis_map.nshells_with_l(l);
         auto pure = basis_map.l_purity(l);
         l_batched_shell_to_task[l].nshells_in_batch     = nsh;
         l_batched_shell_to_task[l].pure                 = pure;
         l_batched_shell_to_task[l].shell_to_task_device = p;
+
+        size_t total_ntask = std::accumulate( h, h + nsh, 0ul,
+          [](auto& a, auto& b){ return a + b.ntask; } );
+        size_t max_ntask = std::max_element( h, h+nsh,
+          [](auto& a, auto& b){ return a.ntask < b.ntask; } )->ntask;
+        std::cout << "L = " << l << " AVG = " << (total_ntask/nsh) << 
+          " MAX = " << max_ntask << std::endl;
+        //l_batched_shell_to_task[l].ntask_average = total_ntask / nsh;
+        l_batched_shell_to_task[l].ntask_average = max_ntask;
+
         p += nsh;
+        h += nsh;
       }
       }
     } // Shell -> Task data
@@ -308,7 +320,6 @@ void Scheme1DataBase::add_extra_to_indirection(
       const auto nshells = task.nshells;
       task.shell_list   = shell_list_mem.aligned_alloc<size_t>( nshells , csl); 
       task.shell_offs   = shell_offs_mem.aligned_alloc<size_t>( nshells , csl); 
-      task.nshells      = nshells;
     }
   }
 

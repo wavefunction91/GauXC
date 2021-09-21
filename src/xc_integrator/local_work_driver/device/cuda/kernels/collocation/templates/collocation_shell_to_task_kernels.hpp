@@ -9,7 +9,7 @@ namespace GauXC {
 
 $py(do_grad = 'gradient' in type)\
 
-__global__ __launch_bounds__(512,1) void collocation_device_shell_to_task_kernel_$(type)_$(L)(
+__global__ __launch_bounds__(256,1) void collocation_device_shell_to_task_kernel_$(type)_$(L)(
   int32_t                         nshell,
   ShellToTaskDevice* __restrict__ shell_to_task,
   XCDeviceTask*      __restrict__ device_tasks
