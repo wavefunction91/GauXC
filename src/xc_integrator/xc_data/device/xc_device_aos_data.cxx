@@ -19,7 +19,6 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   if( not terms.exc_vxc ) return base_size;
 
   const auto& points     = task.points;
-  const auto& shell_list = task.shell_list;
   const auto& submat_cut = task.submat_map;
   const auto& submat_block = task.submat_block;
   if( !submat_cut.size() or !submat_block.size() )
@@ -32,7 +31,6 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   const size_t nbe      = task.nbe;
   const size_t ncut     = submat_cut.size();
   const size_t nblock   = submat_block.size();
-  const size_t nshells  = shell_list.size();
 
   // Collocation + derivatives
   // TODO: this is dependent on integrand
@@ -49,15 +47,9 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   const size_t mem_nbe_scr = nbe * nbe * sizeof(double);
 
   // Shell index packing 
-  const size_t mem_shell_list = nshells * sizeof(size_t);
-  const size_t mem_shell_offs = nshells * sizeof(size_t);
   const size_t mem_submat_cut = 3 * ncut * sizeof(int32_t);
   const size_t mem_submat_block = nblock * sizeof(int32_t);
 
-  // Shell -> Task maps
-  const size_t mem_shell_to_task_idx  = nshells * sizeof(int32_t);
-  const size_t mem_shell_to_task_off  = nshells * sizeof(int32_t);
-  const size_t mem_shell_to_task_data = nshells * sizeof(ShellToTaskDevice);
 
   // Memroty associated with added a task to the indirection
   const size_t mem_task = sizeof(XCDeviceTask);
@@ -66,10 +58,7 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   return base_size + 
     ( mem_bf + mem_dbfx + mem_dbfy + mem_dbfz + mem_nbe_scr ) +
     ( mem_zmat_lda_gga )                                      +
-    ( mem_shell_list + mem_shell_offs )                       +
     ( mem_submat_cut + mem_submat_block )                     +
-    ( mem_shell_to_task_idx + mem_shell_to_task_off +
-      mem_shell_to_task_data )                                +
     ( mem_task );
 }
 
@@ -101,13 +90,11 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
   // Get dimensions
   total_nbe_sq_task_batch   = 0;
   total_nbe_npts_task_batch = 0; 
-  total_nshells_task_batch  = 0; 
   total_ncut_task_batch     = 0; 
   total_nblock_task_batch   = 0; 
   for( auto it = task_begin; it != task_end; ++it ) {
 
     const auto& points      = it->points;
-    const auto& shell_list  = it->shell_list;
     const auto& submat_cut = it->submat_map;
     const auto& submat_block = it->submat_block;
     if( !submat_cut.size() or !submat_block.size() )
@@ -115,13 +102,11 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
 
     const size_t ncut     = submat_cut.size();
     const size_t nblock   = submat_block.size();
-    const size_t nshells  = shell_list.size();
     const size_t npts     = points.size();
     const auto nbe        = it->nbe;
 
     total_nbe_sq_task_batch   += nbe * nbe;
     total_nbe_npts_task_batch += nbe * npts;
-    total_nshells_task_batch  += nshells;
     total_ncut_task_batch     += ncut;
     total_nblock_task_batch   += nblock;
 
@@ -144,19 +129,9 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
   aos_stack.nbe_scr_device = mem.aligned_alloc<double>( total_nbe_sq_task_batch , csl);
 
   // AoS buffers
-  aos_stack.shell_list_device   = mem.aligned_alloc<size_t>( total_nshells_task_batch , csl);
-  aos_stack.shell_offs_device   = mem.aligned_alloc<size_t>( total_nshells_task_batch , csl);
   aos_stack.submat_cut_device   = mem.aligned_alloc<int32_t>( 3 * total_ncut_task_batch , csl);
   aos_stack.submat_block_device = mem.aligned_alloc<int32_t>( total_nblock_task_batch , csl);
 
-
-  // Shell -> Task buffers
-  shell_to_task_stack.shell_to_task_idx_device = 
-    mem.aligned_alloc<int32_t>( total_nshells_task_batch );
-  shell_to_task_stack.shell_to_task_off_device = 
-    mem.aligned_alloc<int32_t>( total_nshells_task_batch );
-  shell_to_task_stack.shell_to_task_device =
-    mem.aligned_alloc<ShellToTaskDevice>( global_dims.nshells );
 
 
   // Update dynmem data for derived impls
@@ -183,13 +158,9 @@ void XCDeviceAoSData::pack_and_send(
   host_device_tasks.clear();
 
   // Host Packing Arrays
-  std::vector< size_t > shell_list_pack;
-  std::vector< size_t > shell_offs_pack;
   std::vector< std::array<int32_t, 3> > submat_cut_pack;
   std::vector< int32_t > submat_block_pack;
 
-  std::vector< std::vector<int32_t> > shell_to_task_idx( global_dims.nshells ),
-                                      shell_to_task_off( global_dims.nshells );
 
   // Contatenation utility
   auto concat_iterable = []( auto& a, const auto& b ) {
@@ -203,7 +174,6 @@ void XCDeviceAoSData::pack_and_send(
 
     const auto  iAtom       = it->iParent;
     const auto& points      = it->points;
-    const auto& shell_list  = it->shell_list;
     const auto& submat_cut = it->submat_map;
     const auto& submat_block = it->submat_block;
     if( !submat_cut.size() or !submat_block.size() )
@@ -213,27 +183,11 @@ void XCDeviceAoSData::pack_and_send(
     // Dimensions
     const size_t ncut     = submat_cut.size();
     const size_t nblock   = submat_block.size();
-    const size_t nshells  = shell_list.size();
     const size_t npts     = points.size();
     const auto nbe        = it->nbe;
 
-    // Compute offsets
-    std::vector< size_t > shell_offs( nshells );
-    shell_offs.at(0) = 0;
-    for( auto i = 1ul; i < nshells; ++i )
-      shell_offs.at(i) = shell_offs.at(i-1) + 
-                           basis_map.shell_size( shell_list.at(i-1) );
-
-    // Setup Shell -> Task
-    const auto itask = std::distance( task_begin, it );
-    for( auto i = 0; i < nshells; ++i ) {
-      shell_to_task_idx[ shell_list.at(i) ].emplace_back(itask);
-      shell_to_task_off[ shell_list.at(i) ].emplace_back(shell_offs[i]);
-    }
 
     // Pack Shell indexing
-    concat_iterable( shell_list_pack, shell_list );
-    concat_iterable( shell_offs_pack, shell_offs );
     concat_iterable( submat_cut_pack, submat_cut );
     concat_iterable( submat_block_pack, submat_block );
 
@@ -245,12 +199,13 @@ void XCDeviceAoSData::pack_and_send(
     host_device_tasks.back().npts         = npts;
     host_device_tasks.back().ncut         = ncut;
     host_device_tasks.back().nblock       = nblock;
-    host_device_tasks.back().nshells      = nshells;
     host_device_tasks.back().iParent      = iAtom;
     host_device_tasks.back().dist_nearest = dist_nearest;
 
-    host_device_tasks.back().ibf_begin = 
+    auto& shell_list = it->shell_list;
+    host_device_tasks.back().ibf_begin    = 
       basis_map.shell_to_first_ao(shell_list[0]);
+
   }
 
 
@@ -260,10 +215,6 @@ void XCDeviceAoSData::pack_and_send(
 
 
   // Send AoS information early to overlap with indirection construction
-  device_backend_->copy_async( shell_list_pack.size(), shell_list_pack.data(), 
-    aos_stack.shell_list_device, "send_shell_list" );
-  device_backend_->copy_async( shell_offs_pack.size(), shell_offs_pack.data(), 
-    aos_stack.shell_offs_device, "send_shell_offs" );
   device_backend_->copy_async( 3 * submat_cut_pack.size(), 
     submat_cut_pack.data()->data(), aos_stack.submat_cut_device, "send_submat_cut"  ); 
   device_backend_->copy_async( submat_block_pack.size(), submat_block_pack.data(), 
@@ -276,11 +227,8 @@ void XCDeviceAoSData::pack_and_send(
   buffer_adaptor points_mem ( base_stack.points_device,  3*total_npts );
   buffer_adaptor weights_mem( base_stack.weights_device,   total_npts );
 
-  const size_t total_nshells = total_nshells_task_batch * sizeof(size_t);
   const size_t total_ncut    = total_ncut_task_batch * sizeof(int32_t);
   const size_t total_nblock  = total_nblock_task_batch * sizeof(int32_t);
-  buffer_adaptor shell_list_mem( aos_stack.shell_list_device, total_nshells );
-  buffer_adaptor shell_offs_mem( aos_stack.shell_offs_device, total_nshells );
   buffer_adaptor submat_cut_mem( aos_stack.submat_cut_device, 3*total_ncut  );
   buffer_adaptor submat_block_mem( aos_stack.submat_block_device, total_nblock);
 
@@ -310,12 +258,9 @@ void XCDeviceAoSData::pack_and_send(
     const auto nbe     = task.nbe;
     const auto ncut    = task.ncut;
     const auto nblock  = task.nblock;
-    const auto nshells = task.nshells;
 
     task.points       = points_mem .aligned_alloc<double>(3*npts, csl);
     task.weights      = weights_mem.aligned_alloc<double>(npts, csl); 
-    task.shell_list   = shell_list_mem.aligned_alloc<size_t>( nshells , csl); 
-    task.shell_offs   = shell_offs_mem.aligned_alloc<size_t>( nshells , csl); 
     task.submat_cut   = submat_cut_mem.aligned_alloc<int32_t>( 3*ncut , csl);
     task.submat_block = submat_block_mem.aligned_alloc<int32_t>(nblock, csl);
 
@@ -337,7 +282,6 @@ void XCDeviceAoSData::pack_and_send(
     task.vrho   = vrho_mem  .aligned_alloc<double>(npts, csl);
     task.vgamma = vgamma_mem.aligned_alloc<double>(npts, csl);
 
-    //std::cout << i << ", " << nshells << std::endl;
 
     ++i;
   } // Loop over device tasks
@@ -352,76 +296,6 @@ void XCDeviceAoSData::pack_and_send(
   device_backend_->copy_async( host_device_tasks.size(), host_device_tasks.data(), 
     aos_stack.device_tasks, "send_tasks_device" );
 
-  // Construct Shell -> Task
-  std::vector<int32_t> concat_shell_to_task_idx, concat_shell_to_task_off;
-  {
-    const size_t total_nshells = total_nshells_task_batch * sizeof(int32_t);
-    buffer_adaptor 
-      shell_idx_mem( shell_to_task_stack.shell_to_task_idx_device, total_nshells );
-    buffer_adaptor 
-      shell_off_mem( shell_to_task_stack.shell_to_task_off_device, total_nshells );
-
-
-    std::vector<ShellToTaskDevice> host_shell_to_task(global_dims.nshells);
-    for( auto ish = 0; ish < global_dims.nshells; ++ish ) {
-      const auto ntask = shell_to_task_idx[ish].size();
-      auto& bck = host_shell_to_task[ish];
-      bck.ntask = ntask;
-      bck.shell_device = static_stack.shells_device + ish;
-
-      bck.task_idx_device        = shell_idx_mem.aligned_alloc<int32_t>( ntask );
-      bck.task_shell_offs_device = shell_off_mem.aligned_alloc<int32_t>( ntask );
-
-      // Pack data
-      concat_iterable( concat_shell_to_task_idx, shell_to_task_idx[ish] );
-      concat_iterable( concat_shell_to_task_off, shell_to_task_off[ish] );
-    }
-
-    // Send Data
-    device_backend_->copy_async( concat_shell_to_task_idx.size(),
-      concat_shell_to_task_idx.data(), 
-      shell_to_task_stack.shell_to_task_idx_device, "shell_to_task_idx_device" );
-    device_backend_->copy_async( concat_shell_to_task_off.size(),
-      concat_shell_to_task_off.data(), 
-      shell_to_task_stack.shell_to_task_off_device, "shell_to_task_off_device" );
-
-
-    // Sort shell indices by L
-    std::vector<uint32_t> shell_idx( global_dims.nshells );
-    std::iota( shell_idx.begin(), shell_idx.end(), 0 );
-    std::stable_sort( shell_idx.begin(), shell_idx.end(),
-      [&]( auto i, auto j ){ 
-        return basis_map.shell_l(i) < basis_map.shell_l(j); 
-      } );
-
-    {
-    std::vector<ShellToTaskDevice> shell_to_task_sorted( global_dims.nshells );
-    for( auto i = 0; i < global_dims.nshells; ++i ) 
-      shell_to_task_sorted[i] = host_shell_to_task[shell_idx[i]];
-    host_shell_to_task = std::move(shell_to_task_sorted);
-    }
-
-    // Send shell to task maps
-    device_backend_->copy_async( global_dims.nshells, 
-      host_shell_to_task.data(), shell_to_task_stack.shell_to_task_device,
-      "shell_to_task_device" );
-
-
-    // Form angular momenta batches
-    auto max_l = basis_map.max_l();
-    shell_to_task_stack.l_batched_shell_to_task.resize(max_l + 1);
-    {
-    auto* p = shell_to_task_stack.shell_to_task_device;
-    for( auto l = 0; l <= max_l; ++l ) {
-      auto nsh  = basis_map.nshells_with_l(l);
-      auto pure = basis_map.l_purity(l);
-      shell_to_task_stack.l_batched_shell_to_task[l].nshells_in_batch     = nsh;
-      shell_to_task_stack.l_batched_shell_to_task[l].pure                 = pure;
-      shell_to_task_stack.l_batched_shell_to_task[l].shell_to_task_device = p;
-      p += nsh;
-    }
-    }
-  } // Shell -> Task data
 
   // Synchronize on the copy stream to keep host vecs in scope
   device_backend_->master_queue_synchronize(); 

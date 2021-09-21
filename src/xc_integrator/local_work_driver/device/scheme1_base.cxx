@@ -103,12 +103,11 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
 #else
 
   std::cout << "IN NEW COLLOCATION " << data->global_dims.nshells << std::endl;
-  auto& s2t_stack    = data->shell_to_task_stack;
   auto aos_stack     = data->aos_stack;
 
-  auto max_l = s2t_stack.l_batched_shell_to_task.size() - 1;
+  auto max_l = data->l_batched_shell_to_task.size() - 1;
   eval_collocation_shell_to_task_gradient( max_l, 
-    s2t_stack.l_batched_shell_to_task.data(), aos_stack.device_tasks,
+    data->l_batched_shell_to_task.data(), aos_stack.device_tasks,
     data->device_backend_->queue() );
 
 #endif

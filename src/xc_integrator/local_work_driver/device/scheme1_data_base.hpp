@@ -1,5 +1,6 @@
 #pragma once
 #include "device/xc_device_aos_data.hpp"
+#include "device/common/shell_to_task.hpp"
 
 namespace GauXC {
 
@@ -17,7 +18,28 @@ struct Scheme1DataBase : public XCDeviceAoSData {
     inline void reset(){ std::memset(this,0,sizeof(scheme1_data)); }
   };
 
-  scheme1_data scheme1_stack;
+  struct collocation_data {
+    size_t*  shell_list_device   = nullptr;
+      ///< Contiguous batch local shell left for task batch
+    size_t*  shell_offs_device   = nullptr;
+      ///< Contiguous batch local shell offsets for task batch
+    inline void reset(){ std::memset(this,0,sizeof(collocation_data)); }
+  };
+
+  struct shell_to_task_data {
+    ShellToTaskDevice* shell_to_task_device;
+
+    int32_t* shell_to_task_idx_device = nullptr;
+    int32_t* shell_to_task_off_device = nullptr;
+
+    inline void reset(){ std::memset(this,0,sizeof(shell_to_task_data)); }
+  };
+
+  size_t total_nshells_task_batch  = 0; ///< Sum of nshells for task batch
+  scheme1_data       scheme1_stack;
+  collocation_data   collocation_stack;
+  shell_to_task_data shell_to_task_stack;
+  std::vector<AngularMomentumShellToTaskBatch> l_batched_shell_to_task;
 
   virtual ~Scheme1DataBase() noexcept;
   Scheme1DataBase(std::unique_ptr<DeviceBackend>&& ptr);

@@ -24,7 +24,7 @@ size_t AoSScheme1MAGMABase::Data::get_mem_req( integrator_term_tracker terms,
   if( not terms.exc_vxc ) return base_size;
 
   return base_size + 
-         3*sizeof(double*) + // batch device pointers
+         4*sizeof(double*) + // batch device pointers
          8*sizeof(int32_t);  // Dimensions + leading dimensions 
                              // (extra handled by get_static_mem_requirement)
 
@@ -48,18 +48,18 @@ AoSScheme1MAGMABase::Data::device_buffer_t
   buffer_adaptor mem( ptr, sz );
 
   const auto ntask = std::distance( task_begin, task_end );
-  magma_stack.dmat_array_device = mem.aligned_alloc<double*>( ntask );
-  magma_stack.vmat_array_device = mem.aligned_alloc<double*>( ntask );
-  magma_stack.zmat_array_device = mem.aligned_alloc<double*>( ntask );
-  magma_stack.bf_array_device   = mem.aligned_alloc<double*>( ntask );
+  magma_stack.dmat_array_device = mem.aligned_alloc<double*>( ntask, csl );
+  magma_stack.vmat_array_device = mem.aligned_alloc<double*>( ntask, csl );
+  magma_stack.zmat_array_device = mem.aligned_alloc<double*>( ntask, csl );
+  magma_stack.bf_array_device   = mem.aligned_alloc<double*>( ntask, csl );
 
-  magma_stack.m_array_device   = mem.aligned_alloc<int32_t>( ntask + 1 );
-  magma_stack.n_array_device   = mem.aligned_alloc<int32_t>( ntask + 1 );
-  magma_stack.k_array_device   = mem.aligned_alloc<int32_t>( ntask + 1 );
-  magma_stack.ld_dmat_array_device = mem.aligned_alloc<int32_t>( ntask + 1 );
-  magma_stack.ld_zmat_array_device = mem.aligned_alloc<int32_t>( ntask + 1 );
-  magma_stack.ld_vmat_array_device = mem.aligned_alloc<int32_t>( ntask + 1 );
-  magma_stack.ld_bf_array_device   = mem.aligned_alloc<int32_t>( ntask + 1 );
+  magma_stack.m_array_device   = mem.aligned_alloc<int32_t>( ntask + 1, csl );
+  magma_stack.n_array_device   = mem.aligned_alloc<int32_t>( ntask + 1, csl );
+  magma_stack.k_array_device   = mem.aligned_alloc<int32_t>( ntask + 1, csl );
+  magma_stack.ld_dmat_array_device = mem.aligned_alloc<int32_t>( ntask + 1, csl );
+  magma_stack.ld_zmat_array_device = mem.aligned_alloc<int32_t>( ntask + 1, csl );
+  magma_stack.ld_vmat_array_device = mem.aligned_alloc<int32_t>( ntask + 1, csl );
+  magma_stack.ld_bf_array_device   = mem.aligned_alloc<int32_t>( ntask + 1, csl );
 
   // Update dynmem data for derived impls
   return device_buffer_t{ mem.stack(), mem.nleft() };
@@ -80,7 +80,7 @@ void AoSScheme1MAGMABase::Data::pack_and_send(
                        ld_dmat_host( ntask ), ld_zmat_host( ntask ), 
                        ld_vmat_host( ntask ), ld_bf_host( ntask );
 
-  auto* static_dmat = static_stack.dmat_device;
+  double* static_dmat = static_stack.dmat_device;
   const auto nbf = global_dims.nbf;
 
   // host_device_tasks should be populated by parent impl called at top
