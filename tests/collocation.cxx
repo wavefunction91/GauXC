@@ -47,14 +47,14 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
 #ifdef GAUXC_ENABLE_CUDA
   BasisSetMap basis_map( basis, mol );
   SECTION( "CUDA Eval" ) {
-    test_cuda_collocation( basis, basis_map, ref_data );
+    test_cuda_collocation( basis, ref_data );
   }
   SECTION( "CUDA Shell to Task Eval" ) {
     test_cuda_collocation_shell_to_task( basis, basis_map, ref_data );
   }
 
   SECTION( "CUDA Eval Grad" ) {
-    test_cuda_collocation_deriv1( basis, basis_map, ref_data );
+    test_cuda_collocation_deriv1( basis, ref_data );
   }
   SECTION( "CUDA Shell to Task Eval Grad" ) {
     test_cuda_collocation_shell_to_task_gradient( basis, basis_map, ref_data );
