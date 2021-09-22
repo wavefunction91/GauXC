@@ -43,8 +43,8 @@ void HIPBackend::master_queue_synchronize() {
   GAUXC_HIP_ERROR( "StreamSynchronized Failed", stat );
 }
 
-type_erased_queue HIPBackend::queue() {
-  return type_erased_queue(master_stream);
+device_queue HIPBackend::queue() {
+  return device_queue(master_stream);
 }
 
 void HIPBackend::create_blas_queue_pool(int32_t ns) {
@@ -73,11 +73,11 @@ void HIPBackend::sync_blas_pool_with_master() {
 
 size_t HIPBackend::blas_pool_size(){ return blas_streams.size(); }
 
-type_erased_blas_handle HIPBackend::blas_pool_handle(int32_t i) {
-  return type_erased_blas_handle( blas_handles.at(i) );
+device_blas_handle HIPBackend::blas_pool_handle(int32_t i) {
+  return device_blas_handle( blas_handles.at(i) );
 }
-type_erased_blas_handle HIPBackend::master_blas_handle() {
-  return type_erased_blas_handle( master_handle );
+device_blas_handle HIPBackend::master_blas_handle() {
+  return device_blas_handle( master_handle );
 }
 
 void HIPBackend::copy_async_( size_t sz, const void* src, void* dest,

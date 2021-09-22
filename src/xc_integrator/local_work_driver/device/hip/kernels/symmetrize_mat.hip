@@ -40,7 +40,7 @@ __global__ void symmetrize_matrix_kernel( int N, double* A, int LDA ) {
 
 }
 
-void symmetrize_matrix( int32_t N, double* A, size_t LDA, type_erased_queue queue ) {
+void symmetrize_matrix( int32_t N, double* A, size_t LDA, device_queue queue ) {
 
   hipStream_t stream = queue.queue_as<util::hip_stream>();
   constexpr int block_size = 32;

@@ -5,16 +5,16 @@
 
 namespace GauXC {
 
-class type_erased_blas_handle {
+class device_blas_handle {
 
   std::any blas_handle_;
 
 public:
 
-  type_erased_blas_handle() = default;
+  device_blas_handle() = default;
 
   template <typename T>
-  type_erased_blas_handle( std::shared_ptr<T> q ) : blas_handle_( std::move(q) ) { }
+  device_blas_handle( std::shared_ptr<T> q ) : blas_handle_( std::move(q) ) { }
 
   template <typename T>
   inline const T* blas_handle_as_ptr() const { 

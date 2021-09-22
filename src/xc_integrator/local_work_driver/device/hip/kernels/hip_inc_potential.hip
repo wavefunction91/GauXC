@@ -60,7 +60,7 @@ void task_inc_potential( size_t        ntasks,
                          double*       V_device,
                          size_t        LDV,
                          size_t        submat_block_size,
-                         type_erased_queue queue ) {
+                         device_queue queue ) {
 
 
   hipStream_t stream = queue.queue_as<util::hip_stream>();

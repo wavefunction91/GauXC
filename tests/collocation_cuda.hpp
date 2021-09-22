@@ -122,7 +122,7 @@ void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::
   }
 
 
-  type_erased_queue stream( std::make_shared<util::cuda_stream>() );
+  device_queue stream( std::make_shared<util::cuda_stream>() );
   auto [shells_device,tasks] = populate_device_cuda( basis, ref_data, grad );
 
 
@@ -196,7 +196,7 @@ void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,  const 
   }
 
   // Populate base task information
-  type_erased_queue stream( std::make_shared<util::cuda_stream>() );
+  device_queue stream( std::make_shared<util::cuda_stream>() );
   auto [shells_device,tasks] = populate_device_cuda( basis, ref_data, grad );
 
   // Send tasks to device

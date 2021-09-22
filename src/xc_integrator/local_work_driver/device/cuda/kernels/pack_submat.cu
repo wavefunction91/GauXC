@@ -100,7 +100,7 @@ void submat_set_combined_kernel( size_t        ntasks,
 
 
 void pack_submat( size_t ntasks, XCDeviceTask* device_tasks, const double* A,
-  int32_t LDA, int32_t submat_block_size, type_erased_queue queue ) {
+  int32_t LDA, int32_t submat_block_size, device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
 

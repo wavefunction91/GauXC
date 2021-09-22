@@ -2,8 +2,8 @@
 #include <tuple>
 #include <vector>
 #include <memory>
-#include "type_erased_queue.hpp"
-#include "type_erased_blas_handle.hpp"
+#include "device_queue.hpp"
+#include "device_blas_handle.hpp"
 #include <gauxc/gauxc_config.hpp>
 
 #ifdef GAUXC_ENABLE_MAGMA
@@ -27,9 +27,9 @@ public:
   virtual void              sync_blas_pool_with_master() = 0;
   virtual size_t            blas_pool_size() = 0;
 
-  virtual type_erased_queue       queue() = 0;
-  virtual type_erased_blas_handle blas_pool_handle(int32_t) = 0;
-  virtual type_erased_blas_handle master_blas_handle() = 0;
+  virtual device_queue       queue() = 0;
+  virtual device_blas_handle blas_pool_handle(int32_t) = 0;
+  virtual device_blas_handle master_blas_handle() = 0;
 
   #ifdef GAUXC_ENABLE_MAGMA
   inline util::magma_queue* master_magma_queue(){ return master_magma_queue_.get(); }

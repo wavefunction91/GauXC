@@ -42,7 +42,7 @@ void zmat_lda_vxc( size_t            ntasks,
                    int32_t           max_nbf,
                    int32_t           max_npts,
                    XCDeviceTask*     tasks_device,
-                   type_erased_queue queue ) {
+                   device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
 
@@ -120,7 +120,7 @@ void zmat_gga_vxc( size_t            ntasks,
                    int32_t           max_nbf,
                    int32_t           max_npts,
                    XCDeviceTask*     tasks_device,
-                   type_erased_queue queue ) {
+                   device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
 

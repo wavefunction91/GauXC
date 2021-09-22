@@ -1,7 +1,7 @@
 #pragma once
 #include <gauxc/shell.hpp>
 #include "device/xc_device_task.hpp"
-#include "device/type_erased_queue.hpp"
+#include "device/device_queue.hpp"
 #include "shell_to_task.hpp"
 
 namespace GauXC {
@@ -17,7 +17,7 @@ void eval_collocation_masked(
   const size_t*     offs_device,
   const T*          pts_device,
   T*                eval_device,
-  type_erased_queue queue );
+  device_queue queue );
 
 
 template <typename T>
@@ -33,7 +33,7 @@ void eval_collocation_masked_deriv1(
   T*                deval_device_x,
   T*                deval_device_y,
   T*                deval_device_z,
-  type_erased_queue queue );
+  device_queue queue );
 
 
 template <typename T>
@@ -43,7 +43,7 @@ void eval_collocation_masked_combined(
   size_t            nshells_max,
   Shell<T>*         shells_device,
   XCDeviceTask*     device_tasks,
-  type_erased_queue queue );
+  device_queue queue );
 
 
 
@@ -55,7 +55,7 @@ void eval_collocation_masked_combined_deriv1(
   size_t        nshells_max,
   Shell<T>*     shells_device,
   XCDeviceTask* device_tasks,
-  type_erased_queue queue );
+  device_queue queue );
 
 
 
@@ -68,12 +68,12 @@ void eval_collocation_shell_to_task(
   uint32_t                    max_l,
   AngularMomentumShellToTaskBatch* l_batched_shell_to_task,
   XCDeviceTask*               device_tasks,
-  type_erased_queue           queue );
+  device_queue           queue );
 
 void eval_collocation_shell_to_task_gradient(
   uint32_t                    max_l,
   AngularMomentumShellToTaskBatch* l_batched_shell_to_task,
   XCDeviceTask*               device_tasks,
-  type_erased_queue           queue );
+  device_queue           queue );
 
 } // namespace GauXC

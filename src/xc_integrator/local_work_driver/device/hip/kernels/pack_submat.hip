@@ -61,7 +61,7 @@ void submat_set_combined_kernel( size_t           ntasks,
 
 
 void pack_submat( size_t ntasks, XCDeviceTask* device_tasks, const double* A,
-  int32_t LDA, int32_t submat_block_size, type_erased_queue queue ) {
+  int32_t LDA, int32_t submat_block_size, device_queue queue ) {
 
   hipStream_t stream = queue.queue_as<util::hip_stream>();
   dim3 threads(hip::warp_size,hip::max_warps_per_thread_block,1), blocks(1,1,ntasks);

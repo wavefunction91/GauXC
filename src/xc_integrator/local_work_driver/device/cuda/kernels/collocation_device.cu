@@ -23,7 +23,7 @@ void eval_collocation_masked(
   const size_t*     offs_device,
   const T*          pts_device,
   T*                eval_device,
-  type_erased_queue queue
+  device_queue queue
 ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
@@ -54,7 +54,7 @@ void eval_collocation_masked(
   const size_t*        offs_device,
   const double*        pts_device,
   double*              eval_device,
-  type_erased_queue    queue
+  device_queue    queue
 );
 
 
@@ -67,7 +67,7 @@ void eval_collocation_masked_combined(
   size_t            nshells_max,
   Shell<T>*         shells_device,
   XCDeviceTask*     device_tasks,
-  type_erased_queue queue
+  device_queue queue
 ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
@@ -95,7 +95,7 @@ void eval_collocation_masked_combined(
   size_t            nshells_max,
   Shell<double>*    shells_device,
   XCDeviceTask*     device_tasks,
-  type_erased_queue queue
+  device_queue queue
 );
 
 
@@ -121,7 +121,7 @@ void eval_collocation_masked_deriv1(
   T*              deval_device_x,
   T*              deval_device_y,
   T*              deval_device_z,
-  type_erased_queue queue
+  device_queue queue
 ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
@@ -156,7 +156,7 @@ void eval_collocation_masked_deriv1(
   double*              deval_device_x,
   double*              deval_device_y,
   double*              deval_device_z,
-  type_erased_queue    queue
+  device_queue    queue
 );
 
 
@@ -181,7 +181,7 @@ void eval_collocation_masked_combined_deriv1(
   size_t        nshells_max,
   Shell<T>*     shells_device,
   XCDeviceTask* device_tasks,
-  type_erased_queue queue
+  device_queue queue
 ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
@@ -208,7 +208,7 @@ void eval_collocation_masked_combined_deriv1(
   size_t                nshells_max,
   Shell<double>*        shells_device,
   XCDeviceTask* device_tasks,
-  type_erased_queue queue
+  device_queue queue
 );
 
 
@@ -306,7 +306,7 @@ void eval_collocation_shell_to_task(
   uint32_t                    max_l,
   AngularMomentumShellToTaskBatch* l_batched_shell_to_task,
   XCDeviceTask*               device_tasks,
-  type_erased_queue           queue 
+  device_queue           queue 
 ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
@@ -391,7 +391,7 @@ void eval_collocation_shell_to_task_gradient(
   uint32_t                    max_l,
   AngularMomentumShellToTaskBatch* l_batched_shell_to_task,
   XCDeviceTask*               device_tasks,
-  type_erased_queue           queue 
+  device_queue           queue 
 ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;

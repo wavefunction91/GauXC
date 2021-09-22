@@ -51,7 +51,7 @@ __global__ void eval_uvars_lda_kernel( size_t           ntasks,
 
 
 void eval_uvvars_lda( size_t ntasks, int32_t nbf_max, int32_t npts_max,
-  XCDeviceTask* device_tasks, type_erased_queue queue ) {
+  XCDeviceTask* device_tasks, device_queue queue ) {
 
   hipStream_t stream = queue.queue_as<util::hip_stream>();
 
@@ -176,7 +176,7 @@ __global__ void eval_vvars_gga_kernel(
 
 void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max, 
   int32_t npts_max, XCDeviceTask* device_tasks, const double* denx, 
-  const double* deny, const double* denz, double* gamma, type_erased_queue queue ) {
+  const double* deny, const double* denz, double* gamma, device_queue queue ) {
 
   hipStream_t stream = queue.queue_as<util::hip_stream>();
 

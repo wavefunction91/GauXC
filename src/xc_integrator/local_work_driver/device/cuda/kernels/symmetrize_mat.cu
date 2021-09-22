@@ -38,7 +38,7 @@ __global__ void symmetrize_matrix_device( size_t N, double* A, size_t LDA ) {
 
 
 
-void symmetrize_matrix( int32_t N, double* A, size_t LDA, type_erased_queue queue ) {
+void symmetrize_matrix( int32_t N, double* A, size_t LDA, device_queue queue ) {
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
   const size_t num_blocks = ((N + cuda::warp_size - 1) / cuda::warp_size);
   // Warp size must equal max_warps_per_thread_block must equal 32

@@ -39,7 +39,7 @@ void increment( const T* X, T* Y, cudaStream_t stream ) {
 }
 
 template <>
-void dot( type_erased_blas_handle generic_handle,
+void dot( device_blas_handle generic_handle,
           int            N,
           const double*  X,
           int            INCX,
@@ -55,7 +55,7 @@ void dot( type_erased_blas_handle generic_handle,
 }
 
 template <typename T>
-void gdot( type_erased_blas_handle generic_handle,
+void gdot( device_blas_handle generic_handle,
            int       N,
            const T*  X,
            int       INCX,
@@ -73,7 +73,7 @@ void gdot( type_erased_blas_handle generic_handle,
 }
 
 template 
-void gdot( type_erased_blas_handle generic_handle,
+void gdot( device_blas_handle generic_handle,
            int            N,
            const double*  X,
            int            INCX,
@@ -111,7 +111,7 @@ void __global__ hadamard_product_kernel( int      M,
 
 
 template <typename T>
-void hadamard_product( type_erased_blas_handle generic_handle,
+void hadamard_product( device_blas_handle generic_handle,
                        int            M,
                        int            N,
                        const T*       A,
@@ -131,7 +131,7 @@ void hadamard_product( type_erased_blas_handle generic_handle,
 }
  
 template 
-void hadamard_product( type_erased_blas_handle generic_handle,
+void hadamard_product( device_blas_handle generic_handle,
                        int            M,
                        int            N,
                        const double*  A,
@@ -143,7 +143,7 @@ void hadamard_product( type_erased_blas_handle generic_handle,
 
 
 template <>
-void gemm( type_erased_blas_handle generic_handle, 
+void gemm( device_blas_handle generic_handle, 
            DeviceBlasOp TA, DeviceBlasOp TB,
            int M, int N, int K, double ALPHA, 
            const double* A, int LDA, const double* B, int LDB,
@@ -160,7 +160,7 @@ void gemm( type_erased_blas_handle generic_handle,
 
 
 template <>
-void syr2k( type_erased_blas_handle generic_handle, 
+void syr2k( device_blas_handle generic_handle, 
             DeviceBlasUplo UPLO, DeviceBlasOp Trans,
             int M, int K, double ALPHA, 
             const double* A, int LDA, const double* B, int LDB,

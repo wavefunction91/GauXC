@@ -42,8 +42,8 @@ void CUDABackend::master_queue_synchronize() {
 }
 
 
-type_erased_queue CUDABackend::queue() {
-  return type_erased_queue(master_stream);
+device_queue CUDABackend::queue() {
+  return device_queue(master_stream);
 }
 
 
@@ -74,11 +74,11 @@ void CUDABackend::sync_blas_pool_with_master() {
 
 size_t CUDABackend::blas_pool_size(){ return blas_streams.size(); }
 
-type_erased_blas_handle CUDABackend::blas_pool_handle(int32_t i) {
-  return type_erased_blas_handle( blas_handles.at(i) );
+device_blas_handle CUDABackend::blas_pool_handle(int32_t i) {
+  return device_blas_handle( blas_handles.at(i) );
 }
-type_erased_blas_handle CUDABackend::master_blas_handle() {
-  return type_erased_blas_handle( master_handle );
+device_blas_handle CUDABackend::master_blas_handle() {
+  return device_blas_handle( master_handle );
 }
 
 

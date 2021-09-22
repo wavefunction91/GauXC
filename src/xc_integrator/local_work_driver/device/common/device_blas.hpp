@@ -1,5 +1,5 @@
 #pragma once
-#include "device/type_erased_blas_handle.hpp"
+#include "device/device_blas_handle.hpp"
 
 namespace GauXC {
 
@@ -14,7 +14,7 @@ enum class DeviceBlasUplo : unsigned char {
 };
 
 template <typename T>
-void dot( type_erased_blas_handle handle,
+void dot( device_blas_handle handle,
           int            N,
           const T*       X,
           int            INCX,
@@ -23,7 +23,7 @@ void dot( type_erased_blas_handle handle,
           T*             RES );
 
 template <typename T>
-void gdot( type_erased_blas_handle handle,
+void gdot( device_blas_handle handle,
           int            N,
            const T*       X,
            int            INCX,
@@ -34,7 +34,7 @@ void gdot( type_erased_blas_handle handle,
 
 
 template <typename T>
-void hadamard_product( type_erased_blas_handle handle,
+void hadamard_product( device_blas_handle handle,
                        int            M,
                        int            N,
                        const T*       A,
@@ -44,14 +44,14 @@ void hadamard_product( type_erased_blas_handle handle,
                        
 
 template <typename T>
-void gemm( type_erased_blas_handle handle, 
+void gemm( device_blas_handle handle, 
            DeviceBlasOp TA, DeviceBlasOp TB,
            int M, int N, int K, T ALPHA, 
            const T* A, int LDA, const T* B, int LDB,
            T BETA, T* C, int LDC );
 
 template <typename T>
-void syr2k( type_erased_blas_handle handle, 
+void syr2k( device_blas_handle handle, 
             DeviceBlasUplo UPLO, DeviceBlasOp Trans,
             int M, int K, T ALPHA, 
             const T* A, int LDA, const T* B, int LDB,

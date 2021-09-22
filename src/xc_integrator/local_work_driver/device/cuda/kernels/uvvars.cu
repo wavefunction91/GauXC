@@ -166,7 +166,7 @@ __global__ void eval_vvars_gga_kernel(
 
 
 void eval_uvvars_lda( size_t ntasks, int32_t nbf_max, int32_t npts_max,
-  XCDeviceTask* device_tasks, type_erased_queue queue ) {
+  XCDeviceTask* device_tasks, device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
   dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block, 1 );
@@ -181,7 +181,7 @@ void eval_uvvars_lda( size_t ntasks, int32_t nbf_max, int32_t npts_max,
 
 void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max, 
   int32_t npts_max, XCDeviceTask* device_tasks, const double* denx, 
-  const double* deny, const double* denz, double* gamma, type_erased_queue queue ) {
+  const double* deny, const double* denz, double* gamma, device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
 

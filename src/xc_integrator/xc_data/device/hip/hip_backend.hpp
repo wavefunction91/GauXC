@@ -17,9 +17,9 @@ struct HIPBackend : public DeviceBackend {
   void              sync_blas_pool_with_master() override final;
   size_t            blas_pool_size() override final;
 
-  type_erased_queue       queue() override final;
-  type_erased_blas_handle blas_pool_handle(int32_t) override final;
-  type_erased_blas_handle master_blas_handle() override final;
+  device_queue       queue() override final;
+  device_blas_handle blas_pool_handle(int32_t) override final;
+  device_blas_handle master_blas_handle() override final;
 
   void copy_async_( size_t sz, const void* src, void* dest, 
                     std::string msg ) override final;

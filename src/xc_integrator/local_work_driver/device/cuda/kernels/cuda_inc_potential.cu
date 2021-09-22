@@ -92,7 +92,7 @@ void task_inc_potential( size_t        ntasks,
                          double*       V_device,
                          size_t        LDV,
                          size_t        submat_block_size,
-                         type_erased_queue  queue ) {
+                         device_queue  queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
 

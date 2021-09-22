@@ -1,9 +1,9 @@
 #pragma once
-#include "device/type_erased_queue.hpp"
+#include "device/device_queue.hpp"
 
 namespace GauXC {
 
-void symmetrize_matrix( int32_t N, double* A, size_t LDA, type_erased_queue queue );
+void symmetrize_matrix( int32_t N, double* A, size_t LDA, device_queue queue );
 
 
 }
