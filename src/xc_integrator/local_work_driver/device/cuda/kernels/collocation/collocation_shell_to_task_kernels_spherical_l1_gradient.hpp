@@ -17,7 +17,7 @@ __global__ __launch_bounds__(256,1) void collocation_device_shell_to_task_kernel
 
   __shared__ double alpha[detail::shell_nprim_max], coeff[detail::shell_nprim_max];
 
-  for( auto ish = blockIdx.y; ish < nshell; ish += gridDim.y ) {
+  for( auto ish = blockIdx.z; ish < nshell; ish += gridDim.z ) {
   const auto ntasks   = shell_to_task[ish].ntask;
   const auto shell    = shell_to_task[ish].shell_device;
   const auto task_idx = shell_to_task[ish].task_idx_device;
@@ -62,7 +62,7 @@ __global__ __launch_bounds__(256,1) void collocation_device_shell_to_task_kernel
 
     // Loop over points in task
     // Assign each point to separate thread within the warp
-    for( int ipt = warp_rank; ipt < npts; ipt += cuda::warp_size ) {
+    for( int ipt = warp_rank /*+ (blockIdx.y*cuda::warp_size)*/; ipt < npts; ipt += (/*gridDim.y * */cuda::warp_size) ) {
       const double3 point = points[ipt];
 
       const auto x = point.x - O.x;

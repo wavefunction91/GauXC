@@ -59,6 +59,7 @@ public:
 
 
 
+#if 0
 class device_queue_pool {
 
   std::vector<device_queue> queues_;
@@ -88,5 +89,6 @@ public:
   T* at_as_ptr( size_t i ) { return queues_.at(i).queue_as_ptr<T>(); }
 
 };
+#endif
 
 }

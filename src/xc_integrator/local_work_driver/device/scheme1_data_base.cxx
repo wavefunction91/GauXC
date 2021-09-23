@@ -267,15 +267,30 @@ void Scheme1DataBase::pack_and_send(
         l_batched_shell_to_task[l].nshells_in_batch     = nsh;
         l_batched_shell_to_task[l].pure                 = pure;
         l_batched_shell_to_task[l].shell_to_task_device = p;
+        size_t max_npts = 0;
+        //for( auto ish = 0; ish < global_dims.nshells; ++ish ) 
+        //if( basis_map.shell_l(ish) == l ) {
+        //  if( not shell_to_task_idx[ish].size() ) continue;
+        //  auto task_idx = 
+        //    *std::max_element( shell_to_task_idx[ish].begin(),
+        //                       shell_to_task_idx[ish].end(),
+        //                       [&](auto i, auto j) {
+        //                         return (task_begin+i)->points.size() <
+        //                                (task_begin+j)->points.size();
+        //                       } );
+        //  max_npts = std::max( max_npts, (task_begin+task_idx)->points.size() );
+       
+        //}
 
         size_t total_ntask = std::accumulate( h, h + nsh, 0ul,
           [](auto& a, auto& b){ return a + b.ntask; } );
         size_t max_ntask = std::max_element( h, h+nsh,
           [](auto& a, auto& b){ return a.ntask < b.ntask; } )->ntask;
         std::cout << "L = " << l << " AVG = " << (total_ntask/nsh) << 
-          " MAX = " << max_ntask << std::endl;
+          " MAX = " << max_ntask << ", " << max_npts << std::endl;
         //l_batched_shell_to_task[l].ntask_average = total_ntask / nsh;
         l_batched_shell_to_task[l].ntask_average = max_ntask;
+        l_batched_shell_to_task[l].npts_average  = max_npts;
 
         p += nsh;
         h += nsh;

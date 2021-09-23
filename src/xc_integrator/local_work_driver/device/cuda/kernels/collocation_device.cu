@@ -266,7 +266,7 @@ void dispatch_shell_to_task_collocation( cudaStream_t stream, int32_t l,
   dim3 threads = max_threads_shell_to_task_collocation(l,pure);
   int nwarp_per_block = threads.x / cuda::warp_size;
   int n_task_blocks = util::div_ceil( ntask_average, nwarp_per_block );
-  dim3 block(n_task_blocks, nshells);
+  dim3 block(n_task_blocks, 1, nshells);
 
   if( pure ) {
     switch(l) {
@@ -350,7 +350,7 @@ void dispatch_shell_to_task_collocation_gradient( cudaStream_t stream, int32_t l
   dim3 threads = max_threads_shell_to_task_collocation(l,pure);
   int nwarp_per_block = threads.x / cuda::warp_size;
   int n_task_blocks = util::div_ceil( ntask_average, nwarp_per_block );
-  dim3 block(n_task_blocks, nshells);
+  dim3 block(n_task_blocks, 1, nshells);
 
   if( pure ) {
     switch(l) {
