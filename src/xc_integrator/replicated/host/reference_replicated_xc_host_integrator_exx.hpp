@@ -362,7 +362,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     size_t nshells_bfn = shell_list_bfn_.size();
     size_t nbe_bfn     = 
       basis.nbf_subset( shell_list_bfn_.begin(), shell_list_bfn_.end() );
-    auto [submat_map_bfn, foo1] = 
+
+    std::vector< std::array<int32_t, 3> > submat_map_bfn;
+    std::tie(submat_map_bfn, std::ignore) =
       gen_compressed_submat_map( basis_map, shell_list_bfn_, nbf, nbf );
     
 

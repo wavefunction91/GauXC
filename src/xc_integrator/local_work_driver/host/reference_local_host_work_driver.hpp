@@ -1,3 +1,4 @@
+#pragma once
 #include "local_host_work_driver_pimpl.hpp"
 
 namespace GauXC {

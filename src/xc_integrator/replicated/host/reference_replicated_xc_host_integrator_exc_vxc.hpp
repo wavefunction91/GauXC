@@ -176,8 +176,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
     // Get the submatrix map for batch
-    auto [submat_map, foo] = 
-      gen_compressed_submat_map( basis_map, task.shell_list, nbf, nbf );
+    std::vector< std::array<int32_t, 3> > submat_map;
+    std::tie(submat_map, std::ignore) =
+          gen_compressed_submat_map(basis_map, task.shell_list, nbf, nbf);
 
     // Evaluate Collocation (+ Grad)
     if( func.is_gga() )
@@ -245,6 +246,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   } // Loop over tasks 
 
   } // End OpenMP region
+
+  std::cout << "N_EL = " << *N_EL << std::endl;
 
   // Symmetrize VXC
   for( int32_t j = 0;   j < nbf; ++j )

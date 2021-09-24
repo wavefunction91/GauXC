@@ -45,7 +45,7 @@ inline constexpr auto parity( int i ) {
 }
 
 inline constexpr double real_solid_harmonic_coeff( int l, int m, int lx, int ly, int lz ) {
-  const auto abs_m = std::abs(m);
+  const auto abs_m = m < 0 ? -m : m;
   auto j           = (lx + ly - abs_m);
 
   if( j % 2 or j < 0 ) return 0.;
