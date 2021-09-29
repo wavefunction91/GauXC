@@ -29,7 +29,10 @@ void collocation_device_masked_combined_kernel(
     const auto               nshells     = task.nshells;
     const auto               nbf         = task.nbe;
     const auto               npts        = task.npts;
-    const auto* __restrict__ pts_device  = task.points;
+    //const auto* __restrict__ pts_device  = task.points;
+    const auto* __restrict__ pts_x_device  = task.points_x;
+    const auto* __restrict__ pts_y_device  = task.points_y;
+    const auto* __restrict__ pts_z_device  = task.points_z;
     const auto* __restrict__ mask_device = task.shell_list;
     const auto* __restrict__ offs_device = task.shell_offs;
 
@@ -42,16 +45,19 @@ void collocation_device_masked_combined_kernel(
     const uint32_t ibf = offs_device[ish];
 
     const auto& shell = shells_device[mask_device[ish]];
-    const auto* pt    = pts_device + 3*ipt;
+    //const auto* pt    = pts_device + 3*ipt;
+    const auto pt_x    = pts_x_device[ipt];
+    const auto pt_y    = pts_y_device[ipt];
+    const auto pt_z    = pts_z_device[ipt];
   
 
     const auto* __restrict__ O     = shell.O_data();
     const auto* __restrict__ alpha = shell.alpha_data();
     const auto* __restrict__ coeff = shell.coeff_data();
 
-    const auto xc = pt[0] - O[0];
-    const auto yc = pt[1] - O[1];
-    const auto zc = pt[2] - O[2];
+    const auto xc = pt_x - O[0];
+    const auto yc = pt_y - O[1];
+    const auto zc = pt_z - O[2];
   
     const auto rsq = xc*xc + yc*yc + zc*zc;
   
@@ -107,7 +113,10 @@ void collocation_device_masked_combined_kernel_deriv1(
     const auto               nshells     = task.nshells;
     const auto               nbf         = task.nbe;
     const auto               npts        = task.npts;
-    const auto* __restrict__ pts_device  = task.points;
+    //const auto* __restrict__ pts_device  = task.points;
+    const auto* __restrict__ pts_x_device  = task.points_x;
+    const auto* __restrict__ pts_y_device  = task.points_y;
+    const auto* __restrict__ pts_z_device  = task.points_z;
     const auto* __restrict__ mask_device = task.shell_list;
     const auto* __restrict__ offs_device = task.shell_offs;
 
@@ -124,16 +133,19 @@ void collocation_device_masked_combined_kernel_deriv1(
 
     const auto& shell = shells_device[mask_device[ish]];
 
-    const auto* pt    = pts_device + 3*ipt;
+    //const auto* pt    = pts_device + 3*ipt;
+    const auto pt_x    = pts_x_device[ipt];
+    const auto pt_y    = pts_y_device[ipt];
+    const auto pt_z    = pts_z_device[ipt];
   
 
     const auto* __restrict__ O     = shell.O_data();
     const auto* __restrict__ alpha = shell.alpha_data();
     const auto* __restrict__ coeff = shell.coeff_data();
 
-    const auto xc = pt[0] - O[0];
-    const auto yc = pt[1] - O[1];
-    const auto zc = pt[2] - O[2];
+    const auto xc = pt_x - O[0];
+    const auto yc = pt_y - O[1];
+    const auto zc = pt_z - O[2];
   
     const auto rsq = xc*xc + yc*yc + zc*zc;
   

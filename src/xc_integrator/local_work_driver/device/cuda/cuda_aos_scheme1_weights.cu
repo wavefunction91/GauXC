@@ -8,7 +8,8 @@
 namespace GauXC {
 
 void cuda_aos_scheme1_weights_wrapper( int32_t npts, int32_t natoms,
-  const double* points, const double* RAB, int32_t ldRAB, const double* coords, 
+  const double* points_x, const double* points_y, const double* points_z, 
+  const double* RAB, int32_t ldRAB, const double* coords, 
   double* dist, int32_t lddist, const int32_t* iparent,
   const double* dist_nearest, double* weights, cudaStream_t stream ) {
 
@@ -22,7 +23,8 @@ void cuda_aos_scheme1_weights_wrapper( int32_t npts, int32_t natoms,
 
 
   // Compute distances from grid to atomic centers
-  compute_grid_to_center_dist( npts, natoms, coords, points, dist, lddist, stream );
+  compute_grid_to_center_dist( npts, natoms, coords, points_x, points_y, points_z, 
+   dist, lddist, stream );
 
 #if 1
   // Get the number of SM's on the device
