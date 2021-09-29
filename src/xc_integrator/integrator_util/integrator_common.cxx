@@ -73,12 +73,11 @@ std::tuple< std::vector< std::array<int32_t, 3> > , std::vector< int32_t > >
   for (int block_start = 0; block_start < end_point; block_start += block_size) {
     const int block_end = block_start + block_size;
     
-    int cut_start = submat_map.at(cut_index).first;
-    int cut_end   = submat_map.at(cut_index).second;
-    while (cut_index < submat_map.size() && cut_start < block_end) {
-      cut_start = submat_map.at(cut_index).first;
-      cut_end   = submat_map.at(cut_index).second;
+    if( cut_index < submat_map.size() ) {
 
+    int cut_start = submat_map[cut_index].first;
+    int cut_end   = submat_map[cut_index].second;
+    while (cut_index < submat_map.size() && cut_start < block_end) {
       if (cut_start < block_start && cut_end < block_start) {
         // In this case the cut starts and stops before the block starts.
 	      // This should never happen as the cut should already have been processed.
@@ -89,7 +88,7 @@ std::tuple< std::vector< std::array<int32_t, 3> > , std::vector< int32_t > >
 	      // incremented because we need to process the rest of it.
 	      delta = block_end - block_start;
 	      submat_map_expand.push_back({block_start, delta, small_index});
-              small_index += delta;
+        small_index += delta;
 
 	      cut_expand_index++;
 	      break;
@@ -107,7 +106,7 @@ std::tuple< std::vector< std::array<int32_t, 3> > , std::vector< int32_t > >
 	      // into the next block. Again, the cut index is not incremented
 	      delta = block_end - cut_start;
 	      submat_map_expand.push_back({cut_start, delta, small_index});
-              small_index += delta;
+        small_index += delta;
 
 	      cut_expand_index++;
 	      break;
@@ -115,13 +114,19 @@ std::tuple< std::vector< std::array<int32_t, 3> > , std::vector< int32_t > >
 	      // In this case, the cut starts and ends within the block
 	      delta = cut_end - cut_start;
 	      submat_map_expand.push_back({cut_start, delta, small_index});
-              small_index += delta;
+        small_index += delta;
 
 	      cut_index++;
 	      cut_expand_index++;
       }
 
+      if( cut_index < submat_map.size() ) {
+        cut_start = submat_map[cut_index].first;
+        cut_end   = submat_map[cut_index].second;
+      }
     }
+
+    } // guard on submat_map access
     submat_block_idx.push_back(cut_expand_index);
   }
   return {submat_map_expand, submat_block_idx};
