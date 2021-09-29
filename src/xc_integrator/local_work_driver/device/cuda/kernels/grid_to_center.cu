@@ -8,7 +8,10 @@ __global__ void compute_grid_to_center_dist(
         size_t npts,
         size_t natoms,
   const double* coords,
-  const double* points,
+  //const double* points,
+  const double* points_x,
+  const double* points_y,
+  const double* points_z,
         double* dist,
         size_t lddist
 ) {
@@ -20,7 +23,7 @@ __global__ void compute_grid_to_center_dist(
   const int coords_block = (npts + cuda::warp_size-1) / cuda::warp_size;
 
   const double3* coords_vec = (double3*) coords;
-  const double3* points_vec = (double3*) points;
+  //const double3* points_vec = (double3*) points;
 
   for (int j = blockIdx.x; j < natoms_block; j += gridDim.x) {
     const int iAtom = j * cuda::warp_size + threadIdx.x;
@@ -31,7 +34,10 @@ __global__ void compute_grid_to_center_dist(
     for (int i = blockIdx.y; i < coords_block; i += gridDim.y) {
       const int iPt_load = i * cuda::warp_size + threadIdx.x;
       if (iPt_load < npts) {
-        point_buffer[threadIdx.x] = points_vec[iPt_load];
+        //point_buffer[threadIdx.x] = points_vec[iPt_load];
+        point_buffer[threadIdx.x].x = points_x[iPt_load];
+        point_buffer[threadIdx.x].y = points_y[iPt_load];
+        point_buffer[threadIdx.x].z = points_z[iPt_load];
       }
       __syncthreads();
 
@@ -54,8 +60,8 @@ __global__ void compute_grid_to_center_dist(
 }
 
 void compute_grid_to_center_dist( int32_t npts, int32_t natoms,
-  const double* coords, const double* points,  double* dist,
-  int32_t lddist, cudaStream_t stream ) {
+  const double* coords, const double* points_x, const double* points_y, 
+  const double* points_z, double* dist, int32_t lddist, cudaStream_t stream ) {
 
     const int distance_thread_y = cuda::max_warps_per_thread_block / 2;
     dim3 threads( cuda::warp_size, distance_thread_y );
@@ -63,7 +69,7 @@ void compute_grid_to_center_dist( int32_t npts, int32_t natoms,
                  util::div_ceil( npts, threads.y * distance_thread_y) );
 
     compute_grid_to_center_dist<<< blocks, threads, 0, stream>>>(
-      npts, natoms, coords, points, dist, lddist
+      npts, natoms, coords, points_x, points_y, points_z, dist, lddist
     );
 
 }

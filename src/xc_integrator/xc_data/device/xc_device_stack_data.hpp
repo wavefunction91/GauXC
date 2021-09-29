@@ -53,7 +53,10 @@ struct XCDeviceStackData : public XCDeviceData {
   size_t total_npts_task_batch = 0; ///< Number of grid points in task batch
   struct base_stack_data {
 
-    double* points_device  = nullptr; ///< Grid points for task batch
+    //double* points_device  = nullptr; ///< Grid points for task batch
+    double* points_x_device = nullptr;
+    double* points_y_device = nullptr;
+    double* points_z_device = nullptr;
     double* weights_device = nullptr; ///< Grid weights for task batch
 
     // U variables

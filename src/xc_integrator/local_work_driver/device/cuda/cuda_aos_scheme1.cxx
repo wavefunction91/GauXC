@@ -24,10 +24,10 @@ void CudaAoSScheme1<Base>::partition_weights( XCDeviceData* _data ) {
   auto static_stack  = data->static_stack;
   auto scheme1_stack = data->scheme1_stack;
   cuda_aos_scheme1_weights_wrapper( data->total_npts_task_batch, data->global_dims.natoms,
-    base_stack.points_device, static_stack.rab_device, ldatoms, 
-    static_stack.coords_device, scheme1_stack.dist_scratch_device, ldatoms, 
-    scheme1_stack.iparent_device, scheme1_stack.dist_nearest_device, 
-    base_stack.weights_device, *device_backend->master_stream );
+    base_stack.points_x_device, base_stack.points_y_device, base_stack.points_z_device,
+    static_stack.rab_device, ldatoms, static_stack.coords_device, 
+    scheme1_stack.dist_scratch_device, ldatoms, scheme1_stack.iparent_device, 
+    scheme1_stack.dist_nearest_device, base_stack.weights_device, *device_backend->master_stream );
 }
 
 
