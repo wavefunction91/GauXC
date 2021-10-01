@@ -9,13 +9,16 @@ namespace GauXC {
 
 
 __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel_cartesian_gradient_3(
-  uint32_t                         nshell,
+  uint32_t                        nshell,
   ShellToTaskDevice* __restrict__ shell_to_task,
   XCDeviceTask*      __restrict__ device_tasks
 ) {
 
 
-  __shared__ double alpha[detail::shell_nprim_max], coeff[detail::shell_nprim_max];
+  __shared__ double alpha[16][detail::shell_nprim_max]; 
+  __shared__ double coeff[16][detail::shell_nprim_max];
+  double* my_alpha = alpha[threadIdx.x/32];
+  double* my_coeff = coeff[threadIdx.x/32];
 
   for( auto ish = blockIdx.z; ish < nshell; ish += gridDim.z ) {
   const uint32_t ntasks      = shell_to_task[ish].ntask;
@@ -28,24 +31,19 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
   const uint32_t nprim = shell->nprim();
   const double3 O  = *reinterpret_cast<const double3*>(shell->O_data());
 
-  const int warp_rank      = threadIdx.x % cuda::warp_size;
-  const int block_warp_id  = threadIdx.x / cuda::warp_size;
   const int global_warp_id = (threadIdx.x + blockIdx.x*blockDim.x) / cuda::warp_size;
   const int nwarp_global   = max((blockDim.x*gridDim.x) / cuda::warp_size,1);
 
-  if(ish) __syncthreads(); // Sync to avoid invalidation of cache for warps working on a different shell
   // Read in coeffs/exps into SM on first warp
-  if( block_warp_id == 0 ) {
+  {
     auto* coeff_gm = shell->coeff_data();
     auto* alpha_gm = shell->alpha_data();
-    for( int i = warp_rank; i < detail::shell_nprim_max; i += cuda::warp_size ) {
-       alpha[i] = alpha_gm[i];
-       coeff[i] = coeff_gm[i];
-    }
+    static_assert( detail::shell_nprim_max == cuda::warp_size );
+    const int warp_rank = threadIdx.x % cuda::warp_size;
+    my_alpha[warp_rank] = alpha_gm[warp_rank];
+    my_coeff[warp_rank] = coeff_gm[warp_rank];
   }
-  __syncthreads(); // Sync once SM is populated 
 
-#if 1
   // Loop over tasks assigned to shells
   // Place each task on a different warp + schedule across blocks
   for( int itask = global_warp_id; itask < ntasks; itask += nwarp_global ) {
@@ -64,7 +62,8 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
 
     // Loop over points in task
     // Assign each point to separate thread within the warp
-    for( int ipt = warp_rank /*+ (blockIdx.y*cuda::warp_size)*/; ipt < npts; ipt += (/*gridDim.y * */cuda::warp_size) ) {
+    #pragma unroll 1
+    for( int ipt = threadIdx.x % cuda::warp_size; ipt < npts; ipt += cuda::warp_size ) {
       //const double3 point = points[ipt];
       double3 point;
       point.x = points_x[ipt];
@@ -85,8 +84,8 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
 
       #pragma unroll 1
       for( uint32_t i = 0; i < nprim; ++i ) {
-        const auto a = alpha[i];
-        const auto e = coeff[i] * std::exp( - a * rsq );
+        const auto a = my_alpha[i];
+        const auto e = my_coeff[i] * std::exp( - a * rsq );
 
         radial_eval += e;
 
@@ -201,7 +200,7 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
 
     } // Loop over points within task
   } // Loop over tasks
-  #endif
+        
   } // Loop over shells
 } // end kernel
 
