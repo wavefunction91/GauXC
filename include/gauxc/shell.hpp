@@ -35,7 +35,7 @@ using AngularMomentum = detail::NamedType< int32_t, struct AngularMomentumType >
 using SphericalType   = detail::NamedType< int32_t, struct SphericalTypeType >;
 
 template <typename F>
-class Shell {
+class alignas(256) Shell {
 
 public:
 
@@ -44,13 +44,13 @@ public:
 
 private:
 
-  int32_t nprim_;
-  int32_t l_;
-  int32_t pure_;
-
   prim_array alpha_;
   prim_array coeff_;
   cart_array O_;
+
+  int32_t nprim_;
+  int32_t l_;
+  int32_t pure_;
 
   double cutoff_radius_;
   double shell_tolerance_{detail::default_shell_tolerance}; 

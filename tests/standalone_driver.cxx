@@ -1,6 +1,7 @@
 #include <gauxc/xc_integrator.hpp>
 #include <gauxc/xc_integrator/impl.hpp>
 #include <gauxc/xc_integrator/integrator_factory.hpp>
+#include <gauxc/util/div_ceil.hpp>
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
@@ -165,6 +166,18 @@ int main(int argc, char** argv) {
     LoadBalancerFactory lb_factory( lb_exec_space, "Replicated");
     auto lb = lb_factory.get_shared_instance( GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, 
       mg, basis);
+
+    {
+      auto& tasks = lb->get_tasks();
+      size_t total_npts = 0, total_npts_fixed = 0;
+      for( auto&& task : tasks ) {
+        auto npts = task.points.size();
+        auto npts_fix = util::div_ceil( npts, 32 ) * 32;
+        total_npts += npts;
+        total_npts_fixed += npts_fix;
+      }
+      std::cout << "TOTAL NPTS = " << total_npts << " , FIXED = " << total_npts_fixed << std::endl;
+    }
 
     // Setup XC functional
     functional_type func( Backend::builtin, functional_map.value(func_spec), 

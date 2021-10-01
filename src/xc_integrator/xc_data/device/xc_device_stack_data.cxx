@@ -298,9 +298,9 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   // Grid
   //base_stack.points_device = 
   //  mem.aligned_alloc<double>( 3 * total_npts_task_batch , csl);
-  base_stack.points_x_device = mem.aligned_alloc<double>( total_npts_task_batch , csl);
-  base_stack.points_y_device = mem.aligned_alloc<double>( total_npts_task_batch , csl);
-  base_stack.points_z_device = mem.aligned_alloc<double>( total_npts_task_batch , csl);
+  base_stack.points_x_device = mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
+  base_stack.points_y_device = mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
+  base_stack.points_z_device = mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
 
   base_stack.weights_device = 
     mem.aligned_alloc<double>( total_npts_task_batch , csl);
@@ -309,25 +309,25 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   if( terms.exc_vxc ) {
     // U Variables
     base_stack.den_eval_device   = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
     base_stack.den_x_eval_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
     base_stack.den_y_eval_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
     base_stack.den_z_eval_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
 
     // V Variables
     base_stack.gamma_eval_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, csl);
 
     // XC output
     base_stack.eps_eval_device    = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, csl);
     base_stack.vrho_eval_device   = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, csl);
     base_stack.vgamma_eval_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, csl);
   }
 
   // Update dynmem data for derived impls
