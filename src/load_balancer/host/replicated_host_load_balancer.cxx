@@ -113,6 +113,22 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
         //auto& points = task.points;
         //auto  nbe    = task.nbe;
 
+        if( task.points.size() % pad_value_ ) {
+          // Pad the points with zero-weights
+          size_t npts = task.points.size();
+          size_t npts_add = pad_value_ - (npts % pad_value_);
+
+          // Copy first point to the remainder to ensure same spatially locality
+          const auto pt_to_add = task.points.front();
+          task.points.insert( task.points.end(), npts_add, pt_to_add );
+
+          // Fill weights remainder with zeros
+          task.weights.insert( task.weights.end(), npts_add, 0.0 );
+
+          // Update NPTS
+          task.npts = task.points.size();
+        }
+
         // Get rank with minimum work
         auto min_rank_it = 
           std::min_element( global_workload.begin(), global_workload.end() );

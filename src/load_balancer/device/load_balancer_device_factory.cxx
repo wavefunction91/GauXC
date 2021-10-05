@@ -9,7 +9,8 @@ namespace GauXC {
 
 std::shared_ptr<LoadBalancer> LoadBalancerDeviceFactory::get_shared_instance(
   std::string kernel_name, GAUXC_MPI_CODE(MPI_Comm comm,)
-  const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis
+  const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis,
+  size_t pv
 ) {
 
   std::transform(kernel_name.begin(), kernel_name.end(), 
@@ -22,7 +23,7 @@ std::shared_ptr<LoadBalancer> LoadBalancerDeviceFactory::get_shared_instance(
   #ifdef GAUXC_ENABLE_CUDA
   if( kernel_name == "REPLICATED" ) {
     ptr = std::make_unique<detail::DeviceReplicatedLoadBalancer>(
-      GAUXC_MPI_CODE(comm,) mol, mg, basis
+      GAUXC_MPI_CODE(comm,) mol, mg, basis, pv
     );
   }
   #endif

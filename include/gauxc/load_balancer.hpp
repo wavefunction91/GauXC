@@ -45,6 +45,7 @@ public:
   size_t max_npts()       const;
   size_t max_nbe()        const;
   size_t max_npts_x_nbe() const;
+  size_t pad_value()      const;
 
   const Molecule& molecule() const;
   const MolMeta&  molmeta()  const;
@@ -69,10 +70,12 @@ public:
   LoadBalancerFactory( ExecutionSpace ex, std::string kernel_name );
 
   LoadBalancer get_instance( GAUXC_MPI_CODE(MPI_Comm comm,) 
-    const Molecule& mol, const MolGrid& mg, const BasisSet<double>& );
+    const Molecule& mol, const MolGrid& mg, const BasisSet<double>&,
+    size_t pad_val = 1 );
   std::shared_ptr<LoadBalancer> get_shared_instance( 
     GAUXC_MPI_CODE(MPI_Comm comm,) 
-    const Molecule& mol, const MolGrid& mg, const BasisSet<double>& );
+    const Molecule& mol, const MolGrid& mg, const BasisSet<double>&,
+    size_t pad_val = 1 );
 
 private:
 
