@@ -24,7 +24,7 @@ typename ReplicatedXCDeviceIntegratorFactory<ValueType>::ptr_return_t
 
   // Make sure that the LWD is a valid LocalDeviceWorkDriver
   if(not dynamic_cast<LocalDeviceWorkDriver*>(lwd.get())) {
-    throw std::runtime_error("Passed LWD Not valid for Device ExSpace");
+    GAUXC_GENERIC_EXCEPTION("Passed LWD Not valid for Device ExSpace");
   }
 
   std::transform(integrator_kernel.begin(), integrator_kernel.end(), 
@@ -42,9 +42,7 @@ typename ReplicatedXCDeviceIntegratorFactory<ValueType>::ptr_return_t
     );
 
   else
-    throw std::runtime_error("INTEGRATOR KERNEL NOT RECOGNIZED");
-
-  return nullptr;
+    GAUXC_GENERIC_EXCEPTION("INTEGRATOR KERNEL " + integrator_kernel + " NOT RECOGNIZED");
 
 
 }

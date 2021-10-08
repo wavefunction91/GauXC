@@ -14,7 +14,7 @@ LocalDeviceWorkDriver::LocalDeviceWorkDriver( LocalDeviceWorkDriver&& other ) no
   pimpl_(std::move(other.pimpl_)) { }
 
 #define throw_if_invalid_pimpl(ptr) \
-  if(not ptr) throw std::runtime_error(std::string("INVALID LocalDeviceWorkDriver PIMPL: ") + std::string(__PRETTY_FUNCTION__) );
+  if(not ptr) GAUXC_PIMPL_NOT_INITIALIZED()
 
 
 

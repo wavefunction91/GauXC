@@ -14,10 +14,10 @@ std::unique_ptr<XCDeviceData> HipAoSScheme1<Base>::create_device_data() {
 template <typename Base>
 void HipAoSScheme1<Base>::partition_weights( XCDeviceData* _data ) {
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
   auto device_backend = dynamic_cast<HIPBackend*>(data->device_backend_.get());
-  if( !device_backend ) throw std::runtime_error("BAD BACKEND CAST");
+  if( !device_backend ) GAUXC_BAD_BACKEND_CAST();
 
   const auto ldatoms = data->get_ldatoms();
   auto base_stack    = data->base_stack;

@@ -13,7 +13,7 @@ hipblasOperation_t device_op_to_hipblas( DeviceBlasOp op ) {
     case DeviceBlasOp::NoTrans: return HIPBLAS_OP_N;
     case DeviceBlasOp::Trans:   return HIPBLAS_OP_T;
     default:
-      throw std::runtime_error("Unsupported DeviceBlasOp");
+      GAUXC_GENERIC_EXCEPTION("Unsupported DeviceBlasOp");
       return HIPBLAS_OP_N;
   }
 }
@@ -23,7 +23,7 @@ hipblasFillMode_t device_uplo_to_hipblas( DeviceBlasUplo uplo ) {
     case DeviceBlasUplo::Upper: return HIPBLAS_FILL_MODE_UPPER;
     case DeviceBlasUplo::Lower: return HIPBLAS_FILL_MODE_LOWER;
     default:
-      throw std::runtime_error("Unsupported DeviceBlasUplo");
+      GAUXC_GENERIC_EXCEPTION("Unsupported DeviceBlasUplo");
       return HIPBLAS_FILL_MODE_LOWER;
   }
 }

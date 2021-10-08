@@ -27,15 +27,14 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
   // Check that P / VXC are sane
   const int64_t nbf = basis.nbf();
-  std::string fun_name = __PRETTY_FUNCTION__;
   if( m != n ) 
-    throw std::logic_error(fun_name + " P/VXC Must Be Square");
+    GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
   if( m != nbf ) 
-    throw std::logic_error(fun_name + " P/VXC Must Have Same Dimension as Basis");
+    GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
   if( ldp < nbf )
-    throw std::logic_error(fun_name + " Invalid LDP");
+    GAUXC_GENERIC_EXCEPTION("Invalid LDP");
   if( ldvxc < nbf )
-    throw std::logic_error(fun_name + " Invalid LDVXC");
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXC");
 
 
   // Get Tasks

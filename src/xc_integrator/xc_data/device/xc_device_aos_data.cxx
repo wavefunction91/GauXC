@@ -22,7 +22,7 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   const auto& submat_cut = task.submat_map;
   const auto& submat_block = task.submat_block;
   if( !submat_cut.size() or !submat_block.size() )
-    throw std::runtime_error("Must Populate Submat Maps");
+    GAUXC_GENERIC_EXCEPTION("Must Populate Submat Maps");
 
 
 
@@ -98,7 +98,7 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
     const auto& submat_cut = it->submat_map;
     const auto& submat_block = it->submat_block;
     if( !submat_cut.size() or !submat_block.size() )
-      throw std::runtime_error("Must Populate Submat Maps");
+      GAUXC_GENERIC_EXCEPTION("Must Populate Submat Maps");
 
     const size_t ncut     = submat_cut.size();
     const size_t nblock   = submat_block.size();
@@ -148,7 +148,7 @@ void XCDeviceAoSData::pack_and_send(
   // Pack and send base data
   XCDeviceStackData::pack_and_send( terms, task_begin, task_end, basis_map );
 
-  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
 
   // All data that currently resides in AoS is XC related and can be skipped
   // for weights
@@ -177,7 +177,7 @@ void XCDeviceAoSData::pack_and_send(
     const auto& submat_cut = it->submat_map;
     const auto& submat_block = it->submat_block;
     if( !submat_cut.size() or !submat_block.size() )
-      throw std::runtime_error("Must Populate Submat Maps");
+      GAUXC_GENERIC_EXCEPTION("Must Populate Submat Maps");
     const auto dist_nearest = it->dist_nearest;
 
     // Dimensions

@@ -1,4 +1,5 @@
 #include "hdf5_util.hpp"
+#include <gauxc/exceptions.hpp>
 
 namespace GauXC {
 
@@ -13,13 +14,13 @@ void read_hdf5_record( std::vector<Shell<double>>& basis, std::string fname,
   
 
   auto d_id = H5Dopen( file.getId(), dset.c_str(), H5P_DEFAULT );
-  if( d_id < 0 ) throw std::runtime_error("Dataset Open Failed");
+  if( d_id < 0 ) GAUXC_GENERIC_EXCEPTION("Dataset Open Failed");
 
   auto space_id = H5Dget_space( d_id );
-  if( space_id < 0 ) throw std::runtime_error( "Space Retreival failed" );
+  if( space_id < 0 ) GAUXC_GENERIC_EXCEPTION( "Space Retreival failed" );
 
   auto ndims = H5Sget_simple_extent_ndims( space_id );
-  if( ndims != 1 ) throw std::runtime_error("Only supported for 1D data structures");
+  if( ndims != 1 ) GAUXC_GENERIC_EXCEPTION("Only supported for 1D data structures");
 
   hsize_t size;
   H5Sget_simple_extent_dims( space_id, &size, NULL );
@@ -53,13 +54,13 @@ void read_hdf5_record( std::vector<Atom>& mol, std::string fname, std::string ds
   File file( fname, File::ReadOnly );
   
   auto d_id = H5Dopen( file.getId(), dset.c_str(), H5P_DEFAULT );
-  if( d_id < 0 ) throw std::runtime_error("Dataset Open Failed");
+  if( d_id < 0 ) GAUXC_GENERIC_EXCEPTION("Dataset Open Failed");
 
   auto space_id = H5Dget_space( d_id );
-  if( space_id < 0 ) throw std::runtime_error( "Space Retreival failed" );
+  if( space_id < 0 ) GAUXC_GENERIC_EXCEPTION( "Space Retreival failed" );
 
   auto ndims = H5Sget_simple_extent_ndims( space_id );
-  if( ndims != 1 ) throw std::runtime_error("Only supported for 1D data structures");
+  if( ndims != 1 ) GAUXC_GENERIC_EXCEPTION("Only supported for 1D data structures");
 
   hsize_t size;
   H5Sget_simple_extent_dims( space_id, &size, NULL );
@@ -84,7 +85,7 @@ void read_hdf5_record( int32_t M, int32_t N, double* A, int32_t LDA,
   auto space = data.getSpace();
   auto dims = space.getDimensions();
 
-  if( dims.size() > 2 ) throw std::runtime_error("Dataset not a matrix");
+  if( dims.size() > 2 ) GAUXC_GENERIC_EXCEPTION("Dataset not a matrix");
 
 }
 

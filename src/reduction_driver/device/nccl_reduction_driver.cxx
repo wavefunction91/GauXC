@@ -67,7 +67,7 @@ void NCCLReductionDriver::allreduce_typeerased( const void* src, void* dest,
   auto err = ncclAllReduce( src, dest, size, get_nccl_datatype(idx), 
     get_nccl_op(op), *nccl_comm_, 0 );
 
-  if( err != ncclSuccess ) throw std::runtime_error("NCCL FAILED");
+  if( err != ncclSuccess ) GAUXC_GENERIC_EXCEPTION("NCCL FAILED");
   synchronize();
 
 }
@@ -85,7 +85,7 @@ void NCCLReductionDriver::allreduce_inplace_typeerased( void* data, size_t size,
   auto err = ncclAllReduce( data, data, size, get_nccl_datatype(idx),
     get_nccl_op(op), *nccl_comm_, stream );
 
-  if( err != ncclSuccess ) throw std::runtime_error("NCCL FAILED");
+  if( err != ncclSuccess ) GAUXC_GENERIC_EXCEPTION("NCCL FAILED");
   synchronize();
 
 

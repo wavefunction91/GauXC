@@ -2,6 +2,7 @@
 #include "rys_integral.h"
 #include <vector>
 #include <gauxc/util/geometry.hpp>
+#include <gauxc/exceptions.hpp>
 
 
 namespace GauXC {
@@ -114,7 +115,7 @@ inline double max_coulomb( int l_a, int l_b, double Kab, double Rab, double alph
   const int l_a_m = l_a - (l_a % 2);
   const int l_b_m = l_b - (l_b % 2);
 
-  if( l_a_p > 4 or l_b_p > 4 ) throw std::runtime_error("Case Not Handled"); 
+  if( l_a_p > 4 or l_b_p > 4 ) GAUXC_GENERIC_EXCEPTION("Case Not Handled"); 
 
   double V_pm = std::numeric_limits<double>::infinity();
   if( l_a_p == 0 and l_b_m == 0 ) 

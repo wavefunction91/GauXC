@@ -1,6 +1,7 @@
 #pragma once
 
 #include <gauxc/xc_integrator/replicated/replicated_xc_integrator_impl.hpp>
+#include <gauxc/exceptions.hpp>
 
 // Implementations of ReplicatedXCIntegrator public API
 
@@ -25,13 +26,13 @@ ReplicatedXCIntegrator<MatrixType>::
 
 template <typename MatrixType>
 const util::Timer& ReplicatedXCIntegrator<MatrixType>::get_timings_() const {
-  if( not pimpl_ ) throw std::runtime_error( "Not Initialized" );
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->get_timings();
 }
 
 template <typename MatrixType>
 const LoadBalancer& ReplicatedXCIntegrator<MatrixType>::get_load_balancer_() const {
-  if( not pimpl_ ) throw std::runtime_error( "Not Initialized" );
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->get_load_balancer();
 }
 
@@ -40,10 +41,10 @@ template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type 
   ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P ) {
 
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   matrix_type VXC( P.rows(), P.cols() );
   value_type  EXC;
 
-  if( not pimpl_ ) throw std::runtime_error( "Not Initialized" );
   pimpl_->eval_exc_vxc( P.rows(), P.cols(), P.data(), P.rows(),
                         VXC.data(), VXC.rows(), &EXC );
 
@@ -55,7 +56,7 @@ template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type 
   ReplicatedXCIntegrator<MatrixType>::eval_exc_grad_( const MatrixType& P ) {
 
-  if( not pimpl_ ) throw std::runtime_error( "Not Initialized" );
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
 
   std::vector<value_type> EXC_GRAD( 3*pimpl_->load_balancer().molecule().natoms() );
   pimpl_->eval_exc_grad( P.rows(), P.cols(), P.data(), P.rows(),
@@ -69,7 +70,7 @@ template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exx_type 
   ReplicatedXCIntegrator<MatrixType>::eval_exx_( const MatrixType& P, const IntegratorSettingsEXX& settings ) {
 
-  if( not pimpl_ ) throw std::runtime_error( "Not Initialized" );
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   
   matrix_type K( P.rows(), P.cols() );
 

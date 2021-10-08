@@ -66,8 +66,7 @@ public:
           ex_, integrator_kernel_, func, lb, std::move(lwd), rd
         )
       );
-    else
-      throw std::runtime_error("INTEGRATOR TYPE NOT RECOGNIZED");
+    else GAUXC_GENERIC_EXCEPTION("INTEGRATOR TYPE NOT RECOGNIZED");
 
     return nullptr;
 

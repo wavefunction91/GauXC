@@ -4,6 +4,7 @@
 #include <gauxc/xc_integrator/replicated/replicated_xc_device_integrator.hpp>
 #endif
 #include <gauxc/xc_integrator/replicated/impl.hpp>
+#include <gauxc/exceptions.hpp>
 
 namespace GauXC {
 
@@ -58,7 +59,7 @@ struct ReplicatedXCIntegratorFactory {
       #endif
 
       default:
-        throw std::runtime_error("ReplicatedXCIntegrator type not Recognized");
+        GAUXC_GENERIC_EXCEPTION("ReplicatedXCIntegrator ExecutionSpace Not Supported");
     }
 
     return nullptr;

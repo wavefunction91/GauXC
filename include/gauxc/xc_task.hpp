@@ -7,6 +7,7 @@
 #include <numeric>
 #include <gauxc/gauxc_config.hpp>
 #include <gauxc/shell.hpp>
+#include <gauxc/exceptions.hpp>
 
 namespace GauXC {
 
@@ -27,7 +28,7 @@ struct XCTask {
 
   void merge_with( const XCTask& other ) {
     if( shell_list != other.shell_list or iParent != other.iParent )
-      throw std::runtime_error("Cannot merge");
+      GAUXC_GENERIC_EXCEPTION("Cannot Perform Requested Merge: Incompatible Tasks");
     points.insert( points.end(), other.points.begin(), other.points.end() );
     weights.insert( weights.end(), other.weights.begin(), other.weights.end() );
     npts = points.size();
@@ -50,7 +51,7 @@ struct XCTask {
     auto weights_it = weights.begin() + old_sz;
     for( auto it = begin; it != end; ++it ) {
       if( shell_list != it->shell_list or iParent != it->iParent )
-        throw std::runtime_error("Cannot merge");
+        GAUXC_GENERIC_EXCEPTION("Cannot Perform Requested Task Merge");
       points_it  = std::copy( it->points.begin(), it->points.end(), points_it );
       weights_it = std::copy( it->weights.begin(), it->weights.end(), weights_it );
     }
@@ -76,43 +77,5 @@ struct XCTask {
   }
 };
 
-
-#if 0
-#ifdef GAUXC_ENABLE_CUDA
-namespace cuda {
-
-template <typename T>
-struct XCTaskDevice {
-
-  size_t nbe;
-  size_t npts;
-  size_t ncut;
-  size_t nblock;
-  size_t nshells;
-
-  double* points;
-  double* weights;
-  size_t* shell_list;
-  size_t* shell_offs;
-  int32_t* submat_cut;
-  int32_t* submat_block;
-
-  Shell<T>* shells;
-  double*   nbe_scr;
-  double*   zmat;
-  double*   bf, *dbfx, *dbfy, *dbfz;
-  double*   den, *ddenx, *ddeny, *ddenz;
-  double*   eps, *gamma;
-  double*   vrho, *vgamma;
-
-  size_t iParent;
-  double dist_nearest;
-  double * dist_scratch;
-
-};
-
-}
-#endif
-#endif
 
 }

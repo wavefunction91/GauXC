@@ -22,7 +22,7 @@ LocalWorkDriverFactory::ptr_return_t
         std::make_unique<ReferenceLocalHostWorkDriver>()
       );
     else
-      throw std::runtime_error("LWD Not Recognized");
+      GAUXC_GENERIC_EXCEPTION("LWD Not Recognized: " + name);
 
   case ExecutionSpace::Device:
     if( name == "DEFAULT" ) name = "SCHEME1";
@@ -42,11 +42,11 @@ LocalWorkDriverFactory::ptr_return_t
       return std::make_unique<LocalDeviceWorkDriver>( std::make_unique<scheme1_magma>() );
     else
 #endif
-      throw std::runtime_error("LWD Not Recognized");
+      GAUXC_GENERIC_EXCEPTION("LWD Not Recognized: " + name);
 
 
   default:
-    throw std::runtime_error("Execution Space Not Regognized");
+    GAUXC_GENERIC_EXCEPTION("Execution Space Not Regognized");
 
   }
 

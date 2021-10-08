@@ -28,7 +28,7 @@ std::shared_ptr<LoadBalancer> LoadBalancerDeviceFactory::get_shared_instance(
   }
   #endif
 
-  if( ! ptr ) throw std::runtime_error("Load Balancer Kernel Not Recognized");
+  if( ! ptr ) GAUXC_GENERIC_EXCEPTION("Load Balancer Kernel Not Recognized: " + kernel_name);
 
   return std::make_shared<LoadBalancer>(std::move(ptr));
 

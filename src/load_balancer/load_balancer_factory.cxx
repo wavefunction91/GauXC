@@ -28,7 +28,7 @@ std::shared_ptr<LoadBalancer> LoadBalancerFactory::get_shared_instance(
         GAUXC_MPI_CODE(comm,) mol, mg, basis, pad_value );
     #endif
     default:
-      throw std::runtime_error("Unrecognized LB space");
+      GAUXC_GENERIC_EXCEPTION("Unrecognized Execution Space");
    }
 
 

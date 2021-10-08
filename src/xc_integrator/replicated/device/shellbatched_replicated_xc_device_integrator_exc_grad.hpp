@@ -20,7 +20,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
                  int64_t ldp, value_type* EXC_GRAD ) { 
                  
-  throw std::runtime_error(std::string(__PRETTY_FUNCTION__) + " NYI" );                 
+  GAUXC_GENERIC_EXCEPTION("NYI" );                 
 }
 
 }

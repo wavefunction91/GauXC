@@ -29,7 +29,7 @@ std::shared_ptr<LoadBalancer> LoadBalancerHostFactory::get_shared_instance(
       GAUXC_MPI_CODE(comm,) mol, mg, basis, pv
     );
 
-  if( ! ptr ) throw std::runtime_error("Load Balancer Kernel Not Recognized");
+  if( ! ptr ) GAUXC_GENERIC_EXCEPTION("Load Balancer Kernel Not Recognized: " + kernel_name);
 
   return std::make_shared<LoadBalancer>(std::move(ptr));
 

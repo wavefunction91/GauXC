@@ -31,7 +31,7 @@ double* XCDeviceStackData::vxc_device_data() { return static_stack.vxc_device; }
 double* XCDeviceStackData::exc_device_data() { return static_stack.exc_device; }
 double* XCDeviceStackData::nel_device_data() { return static_stack.nel_device; }
 device_queue XCDeviceStackData::queue() { 
-  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
   return device_backend_->queue();
 }
 
@@ -49,7 +49,7 @@ void XCDeviceStackData::reset_allocations() {
 void XCDeviceStackData::allocate_static_data_weights( int32_t natoms ) {
 
   if( allocated_terms.weights ) 
-    throw std::runtime_error("Attempting to reallocate Stack Weights");
+    GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack Weights");
 
   // Save state
   global_dims.natoms  = natoms;
@@ -74,7 +74,7 @@ void XCDeviceStackData::allocate_static_data_weights( int32_t natoms ) {
 void XCDeviceStackData::allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) {
 
   if( allocated_terms.exc_vxc ) 
-    throw std::runtime_error("Attempting to reallocate Stack EXC VXC");
+    GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXC VXC");
 
   // Save state
   global_dims.nshells = nshells;
@@ -107,10 +107,10 @@ void XCDeviceStackData::allocate_static_data_exc_vxc( int32_t nbf, int32_t nshel
 void XCDeviceStackData::send_static_data_weights( const Molecule& mol, const MolMeta& meta ) {
 
   if( not allocated_terms.weights ) 
-    throw std::runtime_error("Weights Not Stack Allocated");
+    GAUXC_GENERIC_EXCEPTION("Weights Not Stack Allocated");
 
   const auto natoms = global_dims.natoms;
-  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
 
   // Copy Atomic Coordinates
   std::vector<double> coords( 3*natoms );
@@ -136,11 +136,11 @@ void XCDeviceStackData::send_static_data_exc_vxc( const double* P, int32_t ldp,
   const BasisSet<double>& basis ) {
 
   if( not allocated_terms.exc_vxc ) 
-    throw std::runtime_error("EXC_VXC Not Stack Allocated");
+    GAUXC_GENERIC_EXCEPTION("EXC_VXC Not Stack Allocated");
 
   const auto nbf    = global_dims.nbf;
-  if( ldp != (int)nbf ) throw std::runtime_error("LDP must bf NBF");
-  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+  if( ldp != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDP must bf NBF");
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
 
   // Copy Density
   device_backend_->copy_async( nbf*nbf, P, static_stack.dmat_device, "P H2D" );
@@ -160,7 +160,7 @@ void XCDeviceStackData::send_static_data_exc_vxc( const double* P, int32_t ldp,
 
 void XCDeviceStackData::zero_integrands() {
 
-  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
 
   const auto nbf = global_dims.nbf;
   device_backend_->set_zero( nbf*nbf, static_stack.vxc_device, "VXC Zero" );
@@ -177,8 +177,8 @@ void XCDeviceStackData::retrieve_xc_integrands( double* EXC, double* N_EL,
   double* VXC, int32_t ldvxc ) {
 
   const auto nbf = global_dims.nbf;
-  if( ldvxc != (int)nbf ) throw std::runtime_error("LDVXC must bf NBF");
-  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+  if( ldvxc != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDVXC must bf NBF");
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
   
   device_backend_->copy_async( nbf*nbf, static_stack.vxc_device, VXC,  "VXC D2H" );
   device_backend_->copy_async( 1,       static_stack.nel_device, N_EL, "NEL D2H" );
@@ -198,7 +198,7 @@ XCDeviceStackData::host_task_iterator XCDeviceStackData::generate_buffers(
 ) {
 
   if( get_static_mem_requirement() > dynmem_sz )
-    throw std::runtime_error("Insufficient memory to even start!");
+    GAUXC_GENERIC_EXCEPTION("Insufficient memory to even start!");
 
   size_t mem_left = dynmem_sz - get_static_mem_requirement();
 
@@ -337,7 +337,7 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
 void XCDeviceStackData::pack_and_send( integrator_term_tracker terms,
   host_task_iterator task_begin, host_task_iterator task_end, const BasisSetMap& ) {
 
-  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
 
   // Host data packing arrays
   //std::vector< std::array<double,3> > points_pack;
@@ -392,14 +392,14 @@ void XCDeviceStackData::pack_and_send( integrator_term_tracker terms,
 
 void XCDeviceStackData::copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) {
 
-  if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
 
   // Sanity check that npts is consistent
   size_t local_npts = std::accumulate( task_begin, task_end, 0ul, 
     []( const auto& a, const auto& b ) { return a + b.points.size(); } );
 
   if( local_npts != total_npts_task_batch )
-    throw std::runtime_error("NPTS MISMATCH");
+    GAUXC_GENERIC_EXCEPTION("NPTS MISMATCH");
 
   // Copy weights into contiguous host data
   std::vector<double> weights_host(local_npts);
