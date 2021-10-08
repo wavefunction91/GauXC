@@ -9,44 +9,24 @@ from io import StringIO
 L_max = 6
 if len(sys.argv) > 1: L_max = int(sys.argv[1])
 
-def generate_shell_to_task_lines( ang, do_grad = False, do_hess = False ):
+def generate_shell_to_task_lines( ang, do_grad = False ):
   [x,y,z,r] = sympy.symbols('x y z r', real=True)
-  [bf,bf_x,bf_y,bf_z,bf_xx,bf_xy,bf_xz,bf_yy,bf_yz,bf_zz] = sympy.symbols('radial_eval radial_eval_x radial_eval_y radial_eval_z radial_eval_xx radial_eval_xy radial_eval_xz radial_eval_yy radial_eval_yz radial_eval_zz',real=True)
+  [bf,bf_x,bf_y,bf_z] = sympy.symbols('radial_eval radial_eval_x radial_eval_y radial_eval_z',real=True)
 
   bf_eval_strs = []
   bf_x_eval_strs = []
   bf_y_eval_strs = []
   bf_z_eval_strs = []
-  bf_xx_eval_strs = []
-  bf_xy_eval_strs = []
-  bf_xz_eval_strs = []
-  bf_yy_eval_strs = []
-  bf_yz_eval_strs = []
-  bf_zz_eval_strs = []
   for j in range(len(ang)):
     a       = ang[j]
     a_x = sympy.diff( a, x )
     a_y = sympy.diff( a, y )
     a_z = sympy.diff( a, z )
-    a_xx = sympy.diff( a, x, x )
-    a_xy = sympy.diff( a, x, y )
-    a_xz = sympy.diff( a, x, z )
-    a_yy = sympy.diff( a, y, y )
-    a_yz = sympy.diff( a, y, z )
-    a_zz = sympy.diff( a, z, z )
 
     bf_eval = sympy.simplify( a * bf )
     bf_x_eval = sympy.simplify( a_x * bf + a * bf_x )
     bf_y_eval = sympy.simplify( a_y * bf + a * bf_y )
     bf_z_eval = sympy.simplify( a_z * bf + a * bf_z )
-
-    bf_xx_eval = sympy.simplify( a_xx * bf + 2 * a_x * bf_x + a * bf_xx )
-    bf_yy_eval = sympy.simplify( a_yy * bf + 2 * a_y * bf_y + a * bf_yy )
-    bf_zz_eval = sympy.simplify( a_zz * bf + 2 * a_z * bf_z + a * bf_zz )
-
-    bf_xy_eval = sympy.simplify( a_xy * bf + a_x * bf_y + a_y * bf_x + a * bf_xy )
-    bf_xz_eval = sympy.simplify( a_xz * bf + a_x * bf_z + a_z * bf_x + a * bf_xz )
-    bf_yz_eval = sympy.simplify( a_yz * bf + a_y * bf_z + a_z * bf_y + a * bf_yz )
 
     #bf_eval_str = 'ang_eval = {};'.format(bf_eval)
     #bf_x_eval_str = 'dang_eval_x = {};'.format(bf_x_eval)
@@ -56,13 +36,6 @@ def generate_shell_to_task_lines( ang, do_grad = False, do_hess = False ):
     bf_x_eval_str = '{}'.format(bf_x_eval)
     bf_y_eval_str = '{}'.format(bf_y_eval)
     bf_z_eval_str = '{}'.format(bf_z_eval)
-
-    bf_xx_eval_str = '{}'.format(bf_xx_eval)
-    bf_xy_eval_str = '{}'.format(bf_xy_eval)
-    bf_xz_eval_str = '{}'.format(bf_xz_eval)
-    bf_yy_eval_str = '{}'.format(bf_yy_eval)
-    bf_yz_eval_str = '{}'.format(bf_yz_eval)
-    bf_zz_eval_str = '{}'.format(bf_zz_eval)
 
     if L >= 2:
       for k in range(2,L+1):
@@ -76,40 +49,13 @@ def generate_shell_to_task_lines( ang, do_grad = False, do_hess = False ):
           bf_x_eval_str = bf_x_eval_str.replace(pow_str,repl_str)
           bf_y_eval_str = bf_y_eval_str.replace(pow_str,repl_str)
           bf_z_eval_str = bf_z_eval_str.replace(pow_str,repl_str)
-
-          bf_xx_eval_str = bf_xx_eval_str.replace(pow_str,repl_str)
-          bf_xy_eval_str = bf_xy_eval_str.replace(pow_str,repl_str)
-          bf_xz_eval_str = bf_xz_eval_str.replace(pow_str,repl_str)
-          bf_yy_eval_str = bf_yy_eval_str.replace(pow_str,repl_str)
-          bf_yz_eval_str = bf_yz_eval_str.replace(pow_str,repl_str)
-          bf_zz_eval_str = bf_zz_eval_str.replace(pow_str,repl_str)
-
     bf_eval_strs.append( bf_eval_str )
     bf_x_eval_strs.append( bf_x_eval_str )
     bf_y_eval_strs.append( bf_y_eval_str )
     bf_z_eval_strs.append( bf_z_eval_str )
-    bf_xx_eval_strs.append( bf_xx_eval_str )
-    bf_xy_eval_strs.append( bf_xy_eval_str )
-    bf_xz_eval_strs.append( bf_xz_eval_str )
-    bf_yy_eval_strs.append( bf_yy_eval_str )
-    bf_yz_eval_strs.append( bf_yz_eval_str )
-    bf_zz_eval_strs.append( bf_zz_eval_str )
 
-  ret_vals = [ bf_eval_strs ]
-  if do_grad:
-    ret_vals.append( bf_x_eval_strs )
-    ret_vals.append( bf_y_eval_strs )
-    ret_vals.append( bf_z_eval_strs )
-
-  if do_hess:
-    ret_vals.append( bf_xx_eval_strs )
-    ret_vals.append( bf_xy_eval_strs )
-    ret_vals.append( bf_xz_eval_strs )
-    ret_vals.append( bf_yy_eval_strs )
-    ret_vals.append( bf_yz_eval_strs )
-    ret_vals.append( bf_zz_eval_strs )
-
-  return ret_vals
+  if not do_grad: return bf_eval_strs
+  else:       return [bf_x_eval_strs, bf_y_eval_strs, bf_z_eval_strs]
 
 
 
