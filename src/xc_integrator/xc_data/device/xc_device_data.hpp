@@ -10,9 +10,18 @@
 
 namespace GauXC {
 
+enum integrator_xc_approx : uint32_t {
+  _UNDEFINED = 0,
+  LDA        = 1,
+  GGA        = 2,
+  MGGA       = 3
+};
+
 struct integrator_term_tracker {
-  bool weights = false;
-  bool exc_vxc = false;
+  bool weights                   = false;
+  bool exc_vxc                   = false;
+  bool exc_grad                  = false;
+  integrator_xc_approx xc_approx = _UNDEFINED;
   inline void reset() {
     std::memset( this, 0, sizeof(integrator_term_tracker) );
   }

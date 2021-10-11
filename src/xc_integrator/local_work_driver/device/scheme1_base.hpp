@@ -21,7 +21,7 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
 
 
   // Overridable APIs
-  virtual void eval_xmat( XCDeviceData* ) override;
+  virtual void eval_xmat( XCDeviceData*, bool do_grad ) override;
   virtual void inc_vxc( XCDeviceData* ) override;
 
   using Data = Scheme1DataBase;

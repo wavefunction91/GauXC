@@ -49,7 +49,7 @@ public:
   void eval_collocation( XCDeviceData* );
   void eval_collocation_gradient( XCDeviceData* );
 
-  void eval_xmat( XCDeviceData* );
+  void eval_xmat( XCDeviceData*, bool do_grad = false );
 
   void eval_uvvar_lda( XCDeviceData* );
   void eval_uvvar_gga( XCDeviceData* );

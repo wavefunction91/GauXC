@@ -5,7 +5,9 @@
 
 namespace GauXC {
 
-void AoSScheme1MAGMABase::eval_xmat( XCDeviceData* _data){
+void AoSScheme1MAGMABase::eval_xmat( XCDeviceData* _data, bool do_grad ){
+
+  if( do_grad ) GAUXC_GENERIC_EXCEPTION("MAGMA + X Gradient NYI");
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();

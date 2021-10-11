@@ -1,8 +1,8 @@
 #include "incore_replicated_xc_device_integrator.hpp"
 #include "device/local_device_work_driver.hpp"
-#include <stdexcept>
 #include "device/xc_device_aos_data.hpp"
 #include <fstream>
+#include <gauxc/exceptions.hpp>
 
 namespace GauXC  {
 namespace detail {
@@ -198,6 +198,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Modify weights if need be
   if( not lb_state.modified_weights_are_stored ) {
+
+  integrator_term_tracker enabled_terms;
+  enabled_terms.weights = true;
+
   this->timer_.time_op("XCIntegrator.Weights", [&]() { 
     const auto natoms = mol.natoms();
     device_data.reset_allocations();
@@ -209,8 +213,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     while( task_it != task_end ) {
       
       // Determine next task batch, send relevant data to device (weights only)
-      integrator_term_tracker enabled_terms;
-      enabled_terms.weights = true;
       auto task_batch_end = 
         device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
 
@@ -228,6 +230,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // Signal that we don't need to do weights again
     lb_state.modified_weights_are_stored = true;
   });
+
   }
 
 #if 0
@@ -259,11 +262,14 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   device_data.zero_integrands();
 
   // Processes batches in groups that saturadate available device memory
+  integrator_term_tracker enabled_terms;
+  enabled_terms.exc_vxc = true;
+  if( func.is_lda() )      enabled_terms.xc_approx = integrator_xc_approx::LDA; 
+  else if( func.is_gga() ) enabled_terms.xc_approx = integrator_xc_approx::GGA; 
+  else GAUXC_GENERIC_EXCEPTION("XC Approx NYI");
+
   auto task_it = task_begin;
   while( task_it != task_end ) {
-
-    integrator_term_tracker enabled_terms;
-    enabled_terms.exc_vxc = true;
 
     // Determine next task batch, send relevant data to device (EXC VXC only)
     task_it = 

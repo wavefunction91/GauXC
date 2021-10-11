@@ -30,8 +30,6 @@ FWD_TO_PIMPL(partition_weights)         // Partition weights
 FWD_TO_PIMPL(eval_collocation)          // Collocation
 FWD_TO_PIMPL(eval_collocation_gradient) // Collocation Gradient
 
-FWD_TO_PIMPL(eval_xmat)                 // X matrix (P * B)
-
 FWD_TO_PIMPL(eval_uvvar_lda)            // U/VVar LDA (density)
 FWD_TO_PIMPL(eval_uvvar_gga)            // U/VVar GGA (density + grad, gamma)
 
@@ -43,6 +41,13 @@ FWD_TO_PIMPL(inc_nel)
 FWD_TO_PIMPL(inc_vxc)                   // Increment VXC by Z 
 
 FWD_TO_PIMPL(symmetrize_vxc)
+
+// X     = P * B
+// dX/dx = P * dB/dx (do_grad)
+void LocalDeviceWorkDriver::eval_xmat( XCDeviceData* device_data, bool do_grad ) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_xmat(device_data, do_grad);
+}
 
 void LocalDeviceWorkDriver::eval_kern_exc_vxc_lda( const functional_type& func,
   XCDeviceData* data) {

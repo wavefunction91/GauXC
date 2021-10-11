@@ -250,20 +250,27 @@ size_t XCDeviceStackData::get_mem_req(
   size_t mem_req = mem_points + mem_weights;
 
   // XC Specific terms
-  if( terms.exc_vxc ) {
+  if( terms.exc_vxc or terms.exc_grad ) {
+
+    if( terms.xc_approx == _UNDEFINED ) GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET");
+    const bool is_lda = terms.xc_approx == LDA;
+    const bool is_gga = terms.xc_approx == GGA;
+  
+    const bool need_grad = is_gga or terms.exc_grad;
+
     // U variables
     const auto mem_den     = npts * sizeof(double);
-    const auto mem_den_x   = npts * sizeof(double);
-    const auto mem_den_y   = npts * sizeof(double);
-    const auto mem_den_z   = npts * sizeof(double);
+    const auto mem_den_x   = need_grad ? npts * sizeof(double) : 0;
+    const auto mem_den_y   = need_grad ? npts * sizeof(double) : 0;
+    const auto mem_den_z   = need_grad ? npts * sizeof(double) : 0;
 
     // V variables
-    const auto mem_gamma = npts * sizeof(double);
+    const auto mem_gamma = (!is_lda) ? npts * sizeof(double) : 0;
 
     // XC output
     const auto mem_eps    = npts * sizeof(double);
     const auto mem_vrho   = npts * sizeof(double);
-    const auto mem_vgamma = npts * sizeof(double);
+    const auto mem_vgamma = (!is_lda) ? npts * sizeof(double) : 0;
 
     mem_req += mem_den + mem_den_x + mem_den_y + mem_den_z +
                mem_gamma + mem_eps + mem_vrho + mem_vgamma;
@@ -306,28 +313,42 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
     mem.aligned_alloc<double>( total_npts_task_batch , csl);
 
   // XC Specific terms
-  if( terms.exc_vxc ) {
+  if( terms.exc_vxc or terms.exc_grad ) {
+
+    if( terms.xc_approx == _UNDEFINED ) GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET");
+    const bool is_lda = terms.xc_approx == LDA;
+    const bool is_gga = terms.xc_approx == GGA;
+  
+    const bool need_grad = is_gga or terms.exc_grad;
+
     // U Variables
     base_stack.den_eval_device   = 
       mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
-    base_stack.den_x_eval_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
-    base_stack.den_y_eval_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
-    base_stack.den_z_eval_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
+
+    if( need_grad ) {
+      base_stack.den_x_eval_device = 
+        mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
+      base_stack.den_y_eval_device = 
+        mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
+      base_stack.den_z_eval_device = 
+        mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
+    }
 
     // V Variables
-    base_stack.gamma_eval_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch, csl);
+    if( !is_lda ) {
+      base_stack.gamma_eval_device = 
+        mem.aligned_alloc<double>( total_npts_task_batch, csl);
+    }
 
     // XC output
     base_stack.eps_eval_device    = 
       mem.aligned_alloc<double>( total_npts_task_batch, csl);
     base_stack.vrho_eval_device   = 
       mem.aligned_alloc<double>( total_npts_task_batch, csl);
-    base_stack.vgamma_eval_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch, csl);
+    if( !is_lda ) {
+      base_stack.vgamma_eval_device = 
+        mem.aligned_alloc<double>( total_npts_task_batch, csl);
+    }
   }
 
   // Update dynmem data for derived impls

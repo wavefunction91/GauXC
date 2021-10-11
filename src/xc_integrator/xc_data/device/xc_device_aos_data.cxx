@@ -1,6 +1,7 @@
 #include "xc_device_aos_data.hpp"
 #include "buffer_adaptor.hpp"
 #include "integrator_util/integrator_common.hpp"
+#include <gauxc/exceptions.hpp>
 
 namespace GauXC {
 
@@ -16,7 +17,13 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   
   // Everything in AoS is not required for current implementations of
   // the weights kernel
-  if( not terms.exc_vxc ) return base_size;
+  if( not (terms.exc_vxc or terms.exc_grad) ) return base_size;
+  if( terms.xc_approx == _UNDEFINED ) GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET");
+  const bool is_lda = terms.xc_approx == LDA;
+  const bool is_gga = terms.xc_approx == GGA;
+
+  const bool need_grad = is_gga or terms.exc_grad;
+  const bool need_hess = is_gga and terms.exc_grad;
 
   const auto& points     = task.points;
   const auto& submat_cut = task.submat_map;
@@ -35,13 +42,15 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   // Collocation + derivatives
   // TODO: this is dependent on integrand
   const size_t mem_bf   = nbe * npts * sizeof(double);
-  const size_t mem_dbfx = mem_bf;
-  const size_t mem_dbfy = mem_bf;
-  const size_t mem_dbfz = mem_bf;
+  const size_t mem_bf_grad = need_grad ? 3*mem_bf : 0;
+  const size_t mem_bf_hess = need_hess ? 6*mem_bf : 0;
 
   // LDA/GGA Z Matrix 
   // TODO: this is dependent on integrand
   const size_t mem_zmat_lda_gga = nbe * npts * sizeof(double);
+
+  // X Matrix graidnet (needed for GGA Gradients)
+  const size_t mem_xmat_grad = (is_gga and terms.exc_grad) ? 3*nbe*npts*sizeof(double) : 0;
 
   // nbe * nbe scratch
   const size_t mem_nbe_scr = nbe * nbe * sizeof(double);
@@ -56,9 +65,9 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
 
 
   return base_size + 
-    ( mem_bf + mem_dbfx + mem_dbfy + mem_dbfz + mem_nbe_scr ) +
-    ( mem_zmat_lda_gga )                                      +
-    ( mem_submat_cut + mem_submat_block )                     +
+    ( mem_bf + mem_bf_grad + mem_bf_hess + mem_nbe_scr ) +
+    ( mem_zmat_lda_gga + mem_xmat_grad )           +
+    ( mem_submat_cut + mem_submat_block )          +
     ( mem_task );
 }
 
@@ -77,7 +86,14 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
 
   // All data that currently resides in AoS is XC related and can be skipped
   // for weights
-  if( not terms.exc_vxc ) return buf; 
+  if( not (terms.exc_vxc or terms.exc_grad) ) return buf; 
+
+  if( terms.xc_approx == _UNDEFINED ) GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET");
+  const bool is_lda = terms.xc_approx == LDA;
+  const bool is_gga = terms.xc_approx == GGA;
+
+  const bool need_grad = is_gga or  terms.exc_grad;
+  const bool need_hess = is_gga and terms.exc_grad;
 
 
   // Current Stack
@@ -116,14 +132,32 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
   const size_t ntask = std::distance( task_begin, task_end );
   aos_stack.device_tasks = mem.aligned_alloc<XCDeviceTask>( ntask , csl);
 
-  // Collocation 
+  // Collocation + derivatives 
   aos_stack.bf_eval_device     = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
-  aos_stack.dbf_x_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
-  aos_stack.dbf_y_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
-  aos_stack.dbf_z_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+  if( need_grad ) {
+    aos_stack.dbf_x_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+    aos_stack.dbf_y_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+    aos_stack.dbf_z_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+  }
+
+  if( need_hess ) {
+    aos_stack.d2bf_xx_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+    aos_stack.d2bf_xy_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+    aos_stack.d2bf_xz_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+    aos_stack.d2bf_yy_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+    aos_stack.d2bf_yz_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+    aos_stack.d2bf_zz_eval_device  = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+  }
 
   // VXC Z Matrix
   aos_stack.zmat_vxc_lda_gga_device = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+
+  // X Matrix Gradient (for GGA EXC Gradient)
+  if( is_gga and terms.exc_grad ) {
+    aos_stack.xmat_dx_device = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+    aos_stack.xmat_dy_device = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+    aos_stack.xmat_dz_device = mem.aligned_alloc<double>( total_nbe_npts_task_batch , csl);
+  }
 
   // Scratch buffer
   aos_stack.nbe_scr_device = mem.aligned_alloc<double>( total_nbe_sq_task_batch , csl);
@@ -152,7 +186,14 @@ void XCDeviceAoSData::pack_and_send(
 
   // All data that currently resides in AoS is XC related and can be skipped
   // for weights
-  if( not terms.exc_vxc ) return; 
+  if( not (terms.exc_vxc or terms.exc_grad) ) return; 
+
+  if( terms.xc_approx == _UNDEFINED ) GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET");
+  const bool is_lda = terms.xc_approx == LDA;
+  const bool is_gga = terms.xc_approx == GGA;
+
+  const bool need_grad = is_gga or terms.exc_grad;
+  const bool need_hess = is_gga and terms.exc_grad;
 
   // Reset AoS
   host_device_tasks.clear();
@@ -247,6 +288,17 @@ void XCDeviceAoSData::pack_and_send(
   buffer_adaptor dbf_y_mem( aos_stack.dbf_y_eval_device, total_nbe_npts );
   buffer_adaptor dbf_z_mem( aos_stack.dbf_z_eval_device, total_nbe_npts );
 
+  buffer_adaptor d2bf_xx_mem( aos_stack.d2bf_xx_eval_device, total_nbe_npts );
+  buffer_adaptor d2bf_xy_mem( aos_stack.d2bf_xy_eval_device, total_nbe_npts );
+  buffer_adaptor d2bf_xz_mem( aos_stack.d2bf_xz_eval_device, total_nbe_npts );
+  buffer_adaptor d2bf_yy_mem( aos_stack.d2bf_yy_eval_device, total_nbe_npts );
+  buffer_adaptor d2bf_yz_mem( aos_stack.d2bf_yz_eval_device, total_nbe_npts );
+  buffer_adaptor d2bf_zz_mem( aos_stack.d2bf_zz_eval_device, total_nbe_npts );
+
+  buffer_adaptor xmat_dx_mem( aos_stack.xmat_dx_device, total_nbe_npts );
+  buffer_adaptor xmat_dy_mem( aos_stack.xmat_dy_device, total_nbe_npts );
+  buffer_adaptor xmat_dz_mem( aos_stack.xmat_dz_device, total_nbe_npts );
+
   buffer_adaptor den_mem   ( base_stack.den_eval_device,   total_npts );
   buffer_adaptor dden_x_mem( base_stack.den_x_eval_device, total_npts );
   buffer_adaptor dden_y_mem( base_stack.den_y_eval_device, total_npts );
@@ -257,7 +309,6 @@ void XCDeviceAoSData::pack_and_send(
   buffer_adaptor vrho_mem( base_stack.vrho_eval_device, total_npts );
   buffer_adaptor vgamma_mem( base_stack.vgamma_eval_device, total_npts );
 
-  size_t i = 0;
   for( auto& task : host_device_tasks ) {
     const auto npts    = task.npts;
     const auto nbe     = task.nbe;
@@ -275,23 +326,42 @@ void XCDeviceAoSData::pack_and_send(
     task.nbe_scr = nbe_mem .aligned_alloc<double>( nbe * nbe  , csl);
     task.zmat    = zmat_mem.aligned_alloc<double>( nbe * npts , csl);
 
-    task.bf   = bf_mem   .aligned_alloc<double>( nbe * npts , csl);
-    task.dbfx = dbf_x_mem.aligned_alloc<double>( nbe * npts , csl);
-    task.dbfy = dbf_y_mem.aligned_alloc<double>( nbe * npts , csl);
-    task.dbfz = dbf_z_mem.aligned_alloc<double>( nbe * npts , csl);
+    task.bf   = bf_mem.aligned_alloc<double>( nbe * npts , csl);
+    if( need_grad ) {
+      task.dbfx = dbf_x_mem.aligned_alloc<double>( nbe * npts , csl);
+      task.dbfy = dbf_y_mem.aligned_alloc<double>( nbe * npts , csl);
+      task.dbfz = dbf_z_mem.aligned_alloc<double>( nbe * npts , csl);
+    }
+    if( need_hess ) {
+      task.d2bfxx = d2bf_xx_mem.aligned_alloc<double>( nbe * npts , csl);
+      task.d2bfxy = d2bf_xy_mem.aligned_alloc<double>( nbe * npts , csl);
+      task.d2bfxz = d2bf_xz_mem.aligned_alloc<double>( nbe * npts , csl);
+      task.d2bfyy = d2bf_yy_mem.aligned_alloc<double>( nbe * npts , csl);
+      task.d2bfyz = d2bf_yz_mem.aligned_alloc<double>( nbe * npts , csl);
+      task.d2bfzz = d2bf_zz_mem.aligned_alloc<double>( nbe * npts , csl);
+    }
 
-    task.den    = den_mem   .aligned_alloc<double>(npts, csl);
-    task.ddenx  = dden_x_mem.aligned_alloc<double>(npts, csl);
-    task.ddeny  = dden_y_mem.aligned_alloc<double>(npts, csl);
-    task.ddenz  = dden_z_mem.aligned_alloc<double>(npts, csl);
+    // X Matrix gradient
+    if( is_gga and terms.exc_grad ) {
+      task.xmat_x = xmat_dx_mem.aligned_alloc<double>( nbe * npts , csl);
+      task.xmat_y = xmat_dy_mem.aligned_alloc<double>( nbe * npts , csl);
+      task.xmat_z = xmat_dz_mem.aligned_alloc<double>( nbe * npts , csl);
+    }
+
+    task.den    = den_mem.aligned_alloc<double>(npts, csl);
+    if( need_grad ) {
+      task.ddenx  = dden_x_mem.aligned_alloc<double>(npts, csl);
+      task.ddeny  = dden_y_mem.aligned_alloc<double>(npts, csl);
+      task.ddenz  = dden_z_mem.aligned_alloc<double>(npts, csl);
+    }
 
     task.eps    = eps_mem   .aligned_alloc<double>(npts, csl);
-    task.gamma  = gamma_mem .aligned_alloc<double>(npts, csl);
     task.vrho   = vrho_mem  .aligned_alloc<double>(npts, csl);
-    task.vgamma = vgamma_mem.aligned_alloc<double>(npts, csl);
+    if( !is_lda ) {
+      task.gamma  = gamma_mem .aligned_alloc<double>(npts, csl);
+      task.vgamma = vgamma_mem.aligned_alloc<double>(npts, csl);
+    }
 
-
-    ++i;
   } // Loop over device tasks
 
   } // Setup indirection

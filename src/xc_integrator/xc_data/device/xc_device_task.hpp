@@ -23,10 +23,19 @@ struct XCDeviceTask {
 
   double*   nbe_scr = nullptr;
   double*   zmat    = nullptr;
+  double*   xmat_x  = nullptr;
+  double*   xmat_y  = nullptr;
+  double*   xmat_z  = nullptr;
   double*   bf      = nullptr;
   double*   dbfx    = nullptr;
   double*   dbfy    = nullptr;
   double*   dbfz    = nullptr;
+  double*   d2bfxx    = nullptr;
+  double*   d2bfxy    = nullptr;
+  double*   d2bfxz    = nullptr;
+  double*   d2bfyy    = nullptr;
+  double*   d2bfyz    = nullptr;
+  double*   d2bfzz    = nullptr;
   double*   den     = nullptr;
   double*   ddenx   = nullptr;
   double*   ddeny   = nullptr;
