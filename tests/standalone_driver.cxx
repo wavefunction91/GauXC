@@ -6,6 +6,7 @@
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
 #include "ini_input.hpp"
+#include <gauxc/exceptions.hpp>
 #define EIGEN_DONT_VECTORIZE
 #include <Eigen/Core>
 
@@ -200,6 +201,10 @@ int main(int argc, char** argv) {
       VXC_ref = matrix_type( dims[0], dims[1] );
       K_ref   = matrix_type( dims[0], dims[1] );
 
+      if( P.rows() != P.cols() ) throw std::runtime_error("Density Must Be Square");
+      if( P.rows() != basis.nbf() ) 
+        throw std::runtime_error("Density Not Compatible With Basis");
+
       dset.read( P.data() );
 
       if( integrate_vxc ) {
@@ -236,8 +241,9 @@ int main(int argc, char** argv) {
       VXC = VXC_ref;
     }
 
+    std::vector<double> EXC_GRAD;
     if( integrate_exc_grad ) {
-      auto EXC_GRAD = integrator.eval_exc_grad( P );
+      EXC_GRAD = integrator.eval_exc_grad( P );
       std::cout << "EXC Gradient:" << std::endl;
       for( auto iAt = 0; iAt < mol.size(); ++iAt ) {
         std::cout << "  " 
@@ -327,6 +333,47 @@ int main(int argc, char** argv) {
                                          << std::endl;
       }
     }
+
+    // Dump out new file
+    if( input.containsData("GAUXC.OUTFILE") ) {
+      // Create File
+      auto outfname = input.getData<std::string>("GAUXC.OUTFILE");
+      { HighFive::File( outfname, HighFive::File::Truncate ); }
+
+      // Write molecule
+      write_hdf5_record( mol, outfname, "/MOLECULE" );
+
+      // Write Basis
+      write_hdf5_record( basis, outfname, "/BASIS" );
+
+      // Write out matrices
+      HighFive::File file( outfname, HighFive::File::ReadWrite );
+      HighFive::DataSpace mat_space( basis.nbf(), basis.nbf() );
+      HighFive::DataSpace sca_space( 1 );
+
+      auto dset = file.createDataSet<double>( "/DENSITY", mat_space );
+      dset.write_raw( P.data() );
+
+      if( integrate_vxc ) {
+        dset = file.createDataSet<double>( "/VXC", mat_space );
+        dset.write_raw( VXC.data() );
+
+        dset = file.createDataSet<double>( "/EXC", sca_space );
+        dset.write_raw( &EXC );
+      }
+
+      if( integrate_exx ) {
+        dset = file.createDataSet<double>( "/K", mat_space );
+        dset.write_raw( K.data() );
+      }
+
+      if( integrate_exc_grad ) {
+        HighFive::DataSpace grad_space( 3*mol.size() );
+        dset = file.createDataSet<double>( "/EXC_GRAD", grad_space );
+        dset.write_raw( EXC_GRAD.data() );
+      }
+    }
+
   }
 #ifdef GAUXC_ENABLE_MPI
   MPI_Finalize();
