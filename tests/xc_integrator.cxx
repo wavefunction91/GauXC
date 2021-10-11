@@ -11,6 +11,7 @@ using namespace GauXC;
 
 void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, ) 
   std::string reference_file, 
+  ExchCXX::Functional func_key, 
   size_t quad_pad_value,
   std::string integrator_kernel = "Default",  
   std::string reduction_kernel  = "Default",
@@ -52,8 +53,7 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, )
   auto lb = lb_factory.get_instance(GAUXC_MPI_CODE(comm,) mol, mg, basis, 
     quad_pad_value);
 
-  functional_type func( ExchCXX::Backend::builtin, ExchCXX::Functional::PBE0, 
-    ExchCXX::Spin::Unpolarized );
+  functional_type func( ExchCXX::Backend::builtin, func_key, ExchCXX::Spin::Unpolarized );
 
   XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", 
     integrator_kernel, lwd_kernel, reduction_kernel );
@@ -91,11 +91,7 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, )
 #endif
 }
 
-
-TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
-
-  const std::string reference_file = 
-    GAUXC_REF_DATA_PATH "/benzene_pbe0_cc-pvdz_ufg_ssf.hdf5";
+void test_integrator(std::string reference_file, ExchCXX::Functional func) {
 
 #ifdef GAUXC_ENABLE_MPI
   MPI_Comm comm = MPI_COMM_WORLD;
@@ -103,7 +99,7 @@ TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
 
 #ifdef GAUXC_ENABLE_HOST
   SECTION( "Host" ) {
-    test_xc_integrator( ExecutionSpace::Host, GAUXC_MPI_CODE(comm,) reference_file,
+    test_xc_integrator( ExecutionSpace::Host, GAUXC_MPI_CODE(comm,) reference_file, func,
       1 );
   }
 #endif
@@ -112,28 +108,44 @@ TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
   SECTION( "Device" ) {
     SECTION( "Incore - MPI Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
-        reference_file, 32, "Default" );
+        reference_file, func, 32, "Default" );
     }
 
     #ifdef GAUXC_ENABLE_MAGMA
     SECTION( "Incore - MPI Reduction - MAGMA" ) {
       test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
-        reference_file, 32, "Default", "Default", "Scheme1-MAGMA" );
+        reference_file, func, 32, "Default", "Default", "Scheme1-MAGMA" );
     }
     #endif
 
     #ifdef GAUXC_ENABLE_NCCL
     SECTION( "Incore - NCCL Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,)
-        reference_file, 32, "Default", "NCCL" );
+        reference_file, func, 32, "Default", "NCCL" );
     }
     #endif
 
     SECTION( "ShellBatched" ) {
       test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
-        reference_file, 32, "ShellBatched" );
+        reference_file, func, 32, "ShellBatched" );
     }
   }
 #endif
+
+}
+
+
+TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
+
+
+  // LDA Test
+  SECTION( "Benzene / SVWN5 / cc-pVDZ" ) {
+    test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf.hdf5", ExchCXX::Functional::SVWN5 );
+  }
+
+  // GGA Test
+  SECTION( "Benzene / PBE0 / cc-pVDZ" ) {
+    test_integrator(GAUXC_REF_DATA_PATH "/benzene_pbe0_cc-pvdz_ufg_ssf.hdf5", ExchCXX::Functional::PBE0 );
+  }
 
 }
