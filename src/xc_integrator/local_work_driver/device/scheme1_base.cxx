@@ -193,7 +193,6 @@ void AoSScheme1Base::eval_uvvar_lda( XCDeviceData* _data ){
 
 void AoSScheme1Base::eval_uvvar_gga( XCDeviceData* _data ){
 
-
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 

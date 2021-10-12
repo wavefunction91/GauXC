@@ -298,7 +298,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     // Evaluate Z matrix
     if( func.is_gga() ) lwd->eval_zmat_gga_vxc( &device_data );
-    else                lwd->eval_zmat_gga_vxc( &device_data );
+    else                lwd->eval_zmat_lda_vxc( &device_data );
 
     // Increment VXC (LT)
     lwd->inc_vxc( &device_data );

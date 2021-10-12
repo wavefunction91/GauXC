@@ -259,10 +259,8 @@ size_t XCDeviceStackData::get_mem_req(
     const bool need_grad = is_gga or terms.exc_grad;
 
     // U variables
-    const auto mem_den     = npts * sizeof(double);
-    const auto mem_den_x   = need_grad ? npts * sizeof(double) : 0;
-    const auto mem_den_y   = need_grad ? npts * sizeof(double) : 0;
-    const auto mem_den_z   = need_grad ? npts * sizeof(double) : 0;
+    const auto mem_den      = npts * sizeof(double);
+    const auto mem_den_grad = need_grad ? 3*mem_den : 0;
 
     // V variables
     const auto mem_gamma = (!is_lda) ? npts * sizeof(double) : 0;
@@ -272,8 +270,7 @@ size_t XCDeviceStackData::get_mem_req(
     const auto mem_vrho   = npts * sizeof(double);
     const auto mem_vgamma = (!is_lda) ? npts * sizeof(double) : 0;
 
-    mem_req += mem_den + mem_den_x + mem_den_y + mem_den_z +
-               mem_gamma + mem_eps + mem_vrho + mem_vgamma;
+    mem_req += mem_den + mem_den_grad + mem_gamma + mem_eps + mem_vrho + mem_vgamma;
    
   }
 

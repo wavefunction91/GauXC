@@ -19,7 +19,7 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   // the weights kernel
   if( not (terms.exc_vxc or terms.exc_grad) ) return base_size;
   if( terms.xc_approx == _UNDEFINED ) GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET");
-  const bool is_lda = terms.xc_approx == LDA;
+  //const bool is_lda = terms.xc_approx == LDA;
   const bool is_gga = terms.xc_approx == GGA;
 
   const bool need_grad = is_gga or terms.exc_grad;
@@ -89,7 +89,7 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
   if( not (terms.exc_vxc or terms.exc_grad) ) return buf; 
 
   if( terms.xc_approx == _UNDEFINED ) GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET");
-  const bool is_lda = terms.xc_approx == LDA;
+  //const bool is_lda = terms.xc_approx == LDA;
   const bool is_gga = terms.xc_approx == GGA;
 
   const bool need_grad = is_gga or  terms.exc_grad;

@@ -168,7 +168,7 @@ int main(int argc, char** argv) {
     auto lb = lb_factory.get_shared_instance( GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, 
       mg, basis);
 
-    {
+    if(0){
       auto& tasks = lb->get_tasks();
       size_t total_npts = 0, total_npts_fixed = 0;
       for( auto&& task : tasks ) {
