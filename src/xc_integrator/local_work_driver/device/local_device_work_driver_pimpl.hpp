@@ -23,6 +23,7 @@ struct LocalDeviceWorkDriverPIMPL {
   virtual void partition_weights( XCDeviceData* ) = 0;
   virtual void eval_collocation( XCDeviceData* ) = 0;
   virtual void eval_collocation_gradient( XCDeviceData* ) = 0;
+  virtual void eval_collocation_hessian( XCDeviceData* ) = 0;
   virtual void eval_xmat( XCDeviceData*, bool do_grad ) = 0;
   virtual void eval_uvvar_lda( XCDeviceData* ) = 0;
   virtual void eval_uvvar_gga( XCDeviceData* ) = 0;

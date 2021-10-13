@@ -115,6 +115,22 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
   
 }
 
+void AoSScheme1Base::eval_collocation_hessian( XCDeviceData* _data ) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto aos_stack     = data->aos_stack;
+
+  auto max_l = data->l_batched_shell_to_task.size() - 1;
+  eval_collocation_shell_to_task_hessian( max_l, 
+    data->l_batched_shell_to_task.data(), aos_stack.device_tasks,
+    data->device_backend_->queue() );
+
+}
+
 
 
 

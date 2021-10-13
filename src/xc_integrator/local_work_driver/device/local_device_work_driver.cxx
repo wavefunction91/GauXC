@@ -29,6 +29,7 @@ FWD_TO_PIMPL(partition_weights)         // Partition weights
 
 FWD_TO_PIMPL(eval_collocation)          // Collocation
 FWD_TO_PIMPL(eval_collocation_gradient) // Collocation Gradient
+FWD_TO_PIMPL(eval_collocation_hessian)  // Collocation Hessian
 
 FWD_TO_PIMPL(eval_uvvar_lda)            // U/VVar LDA (density)
 FWD_TO_PIMPL(eval_uvvar_gga)            // U/VVar GGA (density + grad, gamma)

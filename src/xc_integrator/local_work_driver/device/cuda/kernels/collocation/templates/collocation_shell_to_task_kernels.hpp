@@ -7,7 +7,8 @@
 
 namespace GauXC {
 
-$py(do_grad = 'gradient' in type)\
+$py(do_grad = 'gradient' in type or 'hessian' in type)\
+$py(do_hess = 'hessian' in type)\
 $py(nt = 512)\
 
 __global__ __launch_bounds__($(nt),2) void collocation_device_shell_to_task_kernel_$(type)_$(L)(
@@ -17,8 +18,8 @@ __global__ __launch_bounds__($(nt),2) void collocation_device_shell_to_task_kern
 ) {
 
 
-  __shared__ double alpha[$(nt//32)][detail::shell_nprim_max]; 
-  __shared__ double coeff[$(nt//32)][detail::shell_nprim_max];
+  __shared__ double alpha[$(nt//32)][detail::shell_nprim_max + 1]; 
+  __shared__ double coeff[$(nt//32)][detail::shell_nprim_max + 1];
   double* my_alpha = alpha[threadIdx.x/32];
   double* my_coeff = coeff[threadIdx.x/32];
 
@@ -64,6 +65,15 @@ $if( do_grad )\
     auto* __restrict__ basis_z_eval = task->dbfz + shoff;
 $endif\
 
+$if( do_hess )\
+    auto* __restrict__ basis_xx_eval = task->d2bfxx + shoff;
+    auto* __restrict__ basis_xy_eval = task->d2bfxy + shoff;
+    auto* __restrict__ basis_xz_eval = task->d2bfxz + shoff;
+    auto* __restrict__ basis_yy_eval = task->d2bfyy + shoff;
+    auto* __restrict__ basis_yz_eval = task->d2bfyz + shoff;
+    auto* __restrict__ basis_zz_eval = task->d2bfzz + shoff;
+$endif\
+
     // Loop over points in task
     // Assign each point to separate thread within the warp
     #pragma unroll 1
@@ -83,9 +93,10 @@ $endif\
       // Evaluate radial part of bfn
       double radial_eval = 0.;
 $if( do_grad )\
-      double radial_eval_x = 0.;
-      double radial_eval_y = 0.;
-      double radial_eval_z = 0.;
+      double radial_eval_alpha = 0.;
+$endif\
+$if( do_hess )\
+      double radial_eval_alpha_squared = 0.;
 $endif\
 
       #pragma unroll 1
@@ -95,15 +106,81 @@ $endif\
 
         radial_eval += e;
 $if( do_grad )\
-
-        const auto ae = 2. * a * e;
-        radial_eval_x -= ae * x;
-        radial_eval_y -= ae * y;
-        radial_eval_z -= ae * z;
+        radial_eval_alpha += a * e;
+$endif\
+$if( do_hess )\
+        radial_eval_alpha_squared += a * a * e;
 $endif\
       }
 
+$if( do_grad )\
+      radial_eval_alpha *= -2;
+$endif\
+$if( do_hess )\
+      radial_eval_alpha_squared *= 4;
+$endif\
+
       
+
+      // Evaluate basis function
+$for( j in range(len(eval_lines)) )\
+      basis_eval[ipt + $(j)*npts] = $(eval_lines[j]);
+$endfor
+
+    
+$if(do_grad)\
+      // Evaluate first derivative of bfn wrt x
+$for( j in range(len(eval_lines_dx)) )\
+      basis_x_eval[ipt + $(j)*npts] = $(eval_lines_dx[j]);
+$endfor\
+
+      // Evaluate first derivative of bfn wrt y
+$for( j in range(len(eval_lines_dy)) )\
+      basis_y_eval[ipt + $(j)*npts] = $(eval_lines_dy[j]);
+$endfor\
+
+      // Evaluate first derivative of bfn wrt z
+$for( j in range(len(eval_lines_dz)) )\
+      basis_z_eval[ipt + $(j)*npts] = $(eval_lines_dz[j]);
+$endfor\
+$endif\
+
+$if(do_hess)\
+      // Evaluate second derivative of bfn wrt xx
+$for( j in range(len(eval_lines_dxx)) )\
+      basis_xx_eval[ipt + $(j)*npts] = $(eval_lines_dxx[j]);
+$endfor\
+
+      // Evaluate second derivative of bfn wrt xy
+$for( j in range(len(eval_lines_dxy)) )\
+      basis_xy_eval[ipt + $(j)*npts] = $(eval_lines_dxy[j]);
+$endfor\
+
+      // Evaluate second derivative of bfn wrt xz
+$for( j in range(len(eval_lines_dxz)) )\
+      basis_xz_eval[ipt + $(j)*npts] = $(eval_lines_dxz[j]);
+$endfor\
+
+      // Evaluate second derivative of bfn wrt yy
+$for( j in range(len(eval_lines_dyy)) )\
+      basis_yy_eval[ipt + $(j)*npts] = $(eval_lines_dyy[j]);
+$endfor\
+
+      // Evaluate second derivative of bfn wrt yz
+$for( j in range(len(eval_lines_dyz)) )\
+      basis_yz_eval[ipt + $(j)*npts] = $(eval_lines_dyz[j]);
+$endfor\
+
+      // Evaluate second derivative of bfn wrt zz
+$for( j in range(len(eval_lines_dzz)) )\
+      basis_zz_eval[ipt + $(j)*npts] = $(eval_lines_dzz[j]);
+$endfor\
+$endif\
+
+
+
+
+#if 0
       // Evaluate the angular part of bfn
 
 $py(unroll_max = min(len(eval_lines),4))
@@ -165,6 +242,7 @@ $endfor\
 
 $endif\
 $endif\
+#endif
     } // Loop over points within task
   } // Loop over tasks
         

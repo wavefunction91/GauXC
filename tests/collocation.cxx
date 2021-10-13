@@ -42,6 +42,10 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
   SECTION( "Host Eval Grad" ) {
     test_host_collocation_deriv1( basis, ref_data );
   }
+
+  SECTION( "Host Eval Hessian" ) {
+    test_host_collocation_deriv2( basis, ref_data );
+  }
 #endif
 
 #ifdef GAUXC_ENABLE_CUDA
@@ -58,6 +62,10 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
   }
   SECTION( "CUDA Shell to Task Eval Grad" ) {
     test_cuda_collocation_shell_to_task_gradient( basis, basis_map, ref_data );
+  }
+
+  SECTION( "CUDA Shell to Task Eval Hessian" ) {
+    test_cuda_collocation_shell_to_task_hessian( basis, basis_map, ref_data );
   }
 #endif // GAUXC_ENABLE_CUDA
 

@@ -18,10 +18,16 @@ struct ref_collocation_data {
   std::vector<double>               deval_x;
   std::vector<double>               deval_y;
   std::vector<double>               deval_z;
+  std::vector<double>               d2eval_xx;
+  std::vector<double>               d2eval_xy;
+  std::vector<double>               d2eval_xz;
+  std::vector<double>               d2eval_yy;
+  std::vector<double>               d2eval_yz;
+  std::vector<double>               d2eval_zz;
 
   template <typename Archive>
   void serialize( Archive& ar ) {
-    ar( mask, pts, eval, deval_x, deval_y, deval_z );
+    ar( mask, pts, eval, deval_x, deval_y, deval_z, d2eval_xx, d2eval_xy, d2eval_xz, d2eval_yy, d2eval_yz, d2eval_zz );
   }
 
 };

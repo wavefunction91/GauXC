@@ -30,21 +30,29 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
     std::vector<double> eval   ( nbf * npts ),
                         deval_x( nbf * npts ),
                         deval_y( nbf * npts ),
-                        deval_z( nbf * npts );
+                        deval_z( nbf * npts ),
+                        d2eval_xx( nbf * npts ),
+                        d2eval_xy( nbf * npts ),
+                        d2eval_xz( nbf * npts ),
+                        d2eval_yy( nbf * npts ),
+                        d2eval_yz( nbf * npts ),
+                        d2eval_zz( nbf * npts );
 
-    gau2grid_collocation_gradient( npts, mask.size(), nbf,
-                                   pts.data()->data(), basis,
-                                   mask.data(),
-                                   eval.data(), deval_x.data(),
-                                   deval_y.data(), deval_z.data() );
+    gau2grid_collocation_hessian( npts, mask.size(), nbf,
+      pts.data()->data(), basis, mask.data(), eval.data(), 
+      deval_x.data(), deval_y.data(), deval_z.data(),
+      d2eval_xx.data(), d2eval_xy.data(), d2eval_xz.data(),
+      d2eval_yy.data(), d2eval_yz.data(), d2eval_zz.data() );
 
     auto max_abs = *std::max_element( eval.begin(), eval.end(),
                    [](auto a, auto b){ return std::abs(a) < std::abs(b); } );
     if( std::abs(max_abs) < 1e-9 ) continue;
 
     ref_collocation_data d{ std::move(mask), std::move(pts), std::move(eval),
-                            std::move(deval_x), std::move(deval_y),
-                            std::move(deval_z) };
+                            std::move(deval_x), std::move(deval_y), std::move(deval_z),
+                            std::move(d2eval_xx), std::move(d2eval_xy), std::move(d2eval_xz),
+                            std::move(d2eval_yy), std::move(d2eval_yz), std::move(d2eval_zz) 
+                            };
 
     ref_data.emplace_back( std::move(d) );
 
@@ -131,6 +139,68 @@ void test_host_collocation_deriv1( const BasisSet<double>& basis, std::ifstream&
       CHECK( deval_y[i] == Approx( d.deval_y[i] ) );
     for( auto i = 0; i < npts * nbf; ++i )
       CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
+  }
+
+}
+
+void test_host_collocation_deriv2( const BasisSet<double>& basis, std::ifstream& in_file) {
+
+
+
+  std::vector<ref_collocation_data> ref_data;
+
+  {
+    cereal::BinaryInputArchive ar( in_file );
+    ar( ref_data );
+  }
+
+  for( auto& d : ref_data ) {
+
+    const auto npts = d.pts.size();
+    const auto nbf  = d.eval.size() / npts;
+
+    const auto& mask = d.mask;
+    const auto& pts  = d.pts;
+
+    std::vector<double> eval   ( nbf * npts ),
+                        deval_x( nbf * npts ),
+                        deval_y( nbf * npts ),
+                        deval_z( nbf * npts ),
+                        d2eval_xx( nbf * npts ),
+                        d2eval_xy( nbf * npts ),
+                        d2eval_xz( nbf * npts ),
+                        d2eval_yy( nbf * npts ),
+                        d2eval_yz( nbf * npts ),
+                        d2eval_zz( nbf * npts );
+
+
+    gau2grid_collocation_hessian( npts, mask.size(), nbf,
+      pts.data()->data(), basis, mask.data(), eval.data(), 
+      deval_x.data(), deval_y.data(), deval_z.data(),
+      d2eval_xx.data(), d2eval_xy.data(), d2eval_xz.data(),
+      d2eval_yy.data(), d2eval_yz.data(), d2eval_zz.data() );
+
+    for( auto i = 0; i < npts * nbf; ++i )
+      CHECK( eval[i] == Approx( d.eval[i] ) );
+    for( auto i = 0; i < npts * nbf; ++i )
+      CHECK( deval_x[i] == Approx( d.deval_x[i] ) );
+    for( auto i = 0; i < npts * nbf; ++i )
+      CHECK( deval_y[i] == Approx( d.deval_y[i] ) );
+    for( auto i = 0; i < npts * nbf; ++i )
+      CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
+
+    for( auto i = 0; i < npts * nbf; ++i )
+      CHECK( d2eval_xx[i] == Approx( d.d2eval_xx[i] ) );
+    for( auto i = 0; i < npts * nbf; ++i )
+      CHECK( d2eval_xy[i] == Approx( d.d2eval_xy[i] ) );
+    for( auto i = 0; i < npts * nbf; ++i )
+      CHECK( d2eval_xz[i] == Approx( d.d2eval_xz[i] ) );
+    for( auto i = 0; i < npts * nbf; ++i )
+      CHECK( d2eval_yy[i] == Approx( d.d2eval_yy[i] ) );
+    for( auto i = 0; i < npts * nbf; ++i )
+      CHECK( d2eval_yz[i] == Approx( d.d2eval_yz[i] ) );
+    for( auto i = 0; i < npts * nbf; ++i )
+      CHECK( d2eval_zz[i] == Approx( d.d2eval_zz[i] ) );
   }
 
 }

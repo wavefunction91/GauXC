@@ -9,6 +9,7 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   // Device Common APIs (final overrides)
   void eval_collocation( XCDeviceData* ) override final;
   void eval_collocation_gradient( XCDeviceData* ) override final;
+  void eval_collocation_hessian( XCDeviceData* ) override final;
   void eval_uvvar_lda( XCDeviceData* ) override final;
   void eval_uvvar_gga( XCDeviceData* ) override final;
   void eval_zmat_lda_vxc( XCDeviceData* ) override final;
