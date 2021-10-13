@@ -1,7 +1,13 @@
+#include <math.h>
+#include "boys_computation.h"
+#include "integral_data_types.h"
+
+#define PI 3.14159265358979323846
+
 void integral_1_1(int npts,
                   shell shellA,
                   shell shellB,
-                  point *points,
+                  point *_points,
                   double *Xi,
                   int ldX,
                   double *Gj,
@@ -9,8 +15,8 @@ void integral_1_1(int npts,
                   double *weights) {
    double temp[9];
 
-   for(int point_idx = 0; point_idx < nr_points; ++point_idx) {
-      point C = *(point_list + point_idx);
+   for(int point_idx = 0; point_idx < npts; ++point_idx) {
+      point C = *(_points + point_idx);
 
       double xA = shellA.origin.x;
       double yA = shellA.origin.y;
@@ -57,48 +63,57 @@ void integral_1_1(int npts,
             double eval = cA * cB * 2 * PI * RHO_INV * exp(-1.0 * (X_AB * X_AB + Y_AB * Y_AB + Z_AB * Z_AB) * aA * aB * RHO_INV);
             double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
 
+#ifdef BOYS_REFERENCE
             t00 = eval * boys_reference(0, tval);
             t01 = eval * boys_reference(1, tval);
             t02 = eval * boys_reference(2, tval);
+#elif BOYS_ASYMP
+            t00 = eval * boys_asymp(0, tval);
+            t01 = eval * boys_asymp(1, tval);
+            t02 = eval * boys_asymp(2, tval);
+#else
+            #error "TYPE NOT DEFINED!"
+#endif
 
-            t10 = X_PA * t00 - X_PC * t01;
-            t11 = X_PA * t01 - X_PC * t02;
+            t10 = X_PB * t00 - X_PC * t01;
+            t11 = X_PB * t01 - X_PC * t02;
             *(temp + 0) = beta_in * (*(temp + 0)) + t10;
 
-            t20 = X_PA * t10 - X_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
+            t20 = X_PB * t10 - X_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
             *(temp + 3) = beta_in * (*(temp + 3)) + t20;
 
-            t20 = Y_PA * t10 - Y_PC * t11;
+            t20 = Y_PB * t10 - Y_PC * t11;
             *(temp + 4) = beta_in * (*(temp + 4)) + t20;
 
-            t20 = Z_PA * t10 - Z_PC * t11;
+            t20 = Z_PB * t10 - Z_PC * t11;
             *(temp + 5) = beta_in * (*(temp + 5)) + t20;
 
-            t10 = Y_PA * t00 - Y_PC * t01;
-            t11 = Y_PA * t01 - Y_PC * t02;
+            t10 = Y_PB * t00 - Y_PC * t01;
+            t11 = Y_PB * t01 - Y_PC * t02;
             *(temp + 1) = beta_in * (*(temp + 1)) + t10;
 
-            t20 = Y_PA * t10 - Y_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
+            t20 = Y_PB * t10 - Y_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
             *(temp + 6) = beta_in * (*(temp + 6)) + t20;
 
-            t20 = Z_PA * t10 - Z_PC * t11;
+            t20 = Z_PB * t10 - Z_PC * t11;
             *(temp + 7) = beta_in * (*(temp + 7)) + t20;
 
-            t10 = Z_PA * t00 - Z_PC * t01;
-            t11 = Z_PA * t01 - Z_PC * t02;
+            t10 = Z_PB * t00 - Z_PC * t01;
+            t11 = Z_PB * t01 - Z_PC * t02;
             *(temp + 2) = beta_in * (*(temp + 2)) + t10;
 
-            t20 = Z_PA * t10 - Z_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
+            t20 = Z_PB * t10 - Z_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
             *(temp + 8) = beta_in * (*(temp + 8)) + t20;
 
             beta_in = 1.0;
          }
       }
 
-      double *Xik = *(Xi + point_idx * ldX);
-      double *Gjk = *(Gj + point_idx * ldG);
+      double *Xik = (Xi + point_idx * ldX);
+      double *Gjk = (Gj + point_idx * ldG);
 
       double const_value, X_ABp, Y_ABp, Z_ABp, comb_m_i, comb_n_j, comb_p_k, rcp_i, rcp_j, rcp_k;
+      double t0, t1, t2;
 
       X_ABp = 1.0; comb_m_i = 1.0;
       Y_ABp = 1.0; comb_n_j = 1.0;
@@ -112,7 +127,7 @@ void integral_1_1(int npts,
       t2 = *(temp + 5) * const_value;
       *(Gjk + 2) += *(Xik + 0) * t2;
 
-      X_ABp *= X_AB; rcp_i = 1.0 / (1.0 * 1); comb_m_i = (comb_m_i * 1) * rcp_i;
+      X_ABp *= (-1.0) * X_AB; rcp_i = 1.0 / (1.0 * 1); comb_m_i = (comb_m_i * 1) * rcp_i;
       Y_ABp = 1.0; comb_n_j = 1.0;
       Z_ABp = 1.0; comb_p_k = 1.0;
       const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
@@ -136,7 +151,7 @@ void integral_1_1(int npts,
       t2 = *(temp + 7) * const_value;
       *(Gjk + 2) += *(Xik + 1) * t2;
 
-      Y_ABp *= Y_AB; rcp_j = 1.0 / (1.0 * 1); comb_n_j = (comb_n_j * 1) * rcp_j;
+      Y_ABp *= (-1.0) * Y_AB; rcp_j = 1.0 / (1.0 * 1); comb_n_j = (comb_n_j * 1) * rcp_j;
       Z_ABp = 1.0; comb_p_k = 1.0;
       const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
 
@@ -159,7 +174,7 @@ void integral_1_1(int npts,
       t2 = *(temp + 8) * const_value;
       *(Gjk + 2) += *(Xik + 2) * t2;
 
-      Z_ABp *= Z_AB; rcp_k = 1.0 / (1.0 * 1); comb_p_k = (comb_p_k * 1) * rcp_k
+      Z_ABp *= (-1.0) * Z_AB; rcp_k = 1.0 / (1.0 * 1); comb_p_k = (comb_p_k * 1) * rcp_k;
       const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
 
       t0 = *(temp + 0) * const_value;

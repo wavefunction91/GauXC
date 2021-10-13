@@ -1,18 +1,21 @@
-#include <integral_0_0.h>
-#include <integral_1_0.h>
-#include <integral_1_1.h>
-#include <integral_2_0.h>
-#include <integral_2_1.h>
-#include <integral_2_2.h>
-#include <integral_3_0.h>
-#include <integral_3_1.h>
-#include <integral_3_2.h>
-#include <integral_3_3.h>
-#include <integral_4_0.h>
-#include <integral_4_1.h>
-#include <integral_4_2.h>
-#include <integral_4_3.h>
-#include <integral_4_4.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include "integral_data_types.h"
+#include "integral_0_0.h"
+#include "integral_1_0.h"
+#include "integral_1_1.h"
+#include "integral_2_0.h"
+#include "integral_2_1.h"
+#include "integral_2_2.h"
+#include "integral_3_0.h"
+#include "integral_3_1.h"
+#include "integral_3_2.h"
+#include "integral_3_3.h"
+#include "integral_4_0.h"
+#include "integral_4_1.h"
+#include "integral_4_2.h"
+#include "integral_4_3.h"
+#include "integral_4_4.h"
 
 void compute_integral_shell_pair(int npts,
                   shell shellA,

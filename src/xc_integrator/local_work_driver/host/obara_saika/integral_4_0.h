@@ -1,4 +1,4 @@
-#ifdef __MY_INTEGRAL_4_0
+#ifndef __MY_INTEGRAL_4_0
 #define __MY_INTEGRAL_4_0
 
 void integral_4_0(int npts,

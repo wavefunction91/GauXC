@@ -1,4 +1,4 @@
-#ifdef __MY_INTEGRAL_OBARA_SAIKA
+#ifndef __MY_INTEGRAL_OBARA_SAIKA
 #define __MY_INTEGRAL_OBARA_SAIKA
 
 void compute_integral_shell_pair(int npts,
