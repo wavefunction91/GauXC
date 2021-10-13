@@ -385,6 +385,9 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
       const auto& ket       = basis.at(jsh);
       const int ket_cart_sz = ket.cart_size();
 
+      compute_integral_shell_pair(npts, rys_basis[ish], rys_basis[jsh], _points, (Xi + ioff_cart), (Xj + joff_cart), ldx_use, (Gi + ioff_cart), (Gj + j_offcart), ldg_use, weights);
+      
+      /*
       const int shpair_cart_sz = bra_cart_sz * ket_cart_sz;
 
       std::vector<double> _tmp( shpair_cart_sz * npts );
@@ -414,15 +417,15 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
         for( int jj = 0; jj < ket_cart_sz; ++jj ) {
           Gjk[jj] += weights[k] * ints[ii*ket_cart_sz + jj] * Xik[ii];
 	      }
+      */
       
       }
-
       joff_cart += ket_cart_sz;
     }
     ioff_cart += bra_cart_sz;
   }
-  }
-
+}
+  
   // Transform G back to spherical
   if( any_pure ) {
     int ioff = 0;
