@@ -11,6 +11,7 @@ using namespace GauXC;
 
 void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, ) 
   std::string reference_file, 
+  size_t quad_pad_value,
   std::string integrator_kernel = "Default",  
   std::string reduction_kernel  = "Default",
   std::string lwd_kernel        = "Default" ) {
@@ -48,7 +49,8 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, )
 
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
   //LoadBalancerFactory lb_factory(ExecutionSpace::Host, "REPLICATED-FILLIN");
-  auto lb = lb_factory.get_instance(GAUXC_MPI_CODE(comm,) mol, mg, basis);
+  auto lb = lb_factory.get_instance(GAUXC_MPI_CODE(comm,) mol, mg, basis, 
+    quad_pad_value);
 
   functional_type func( ExchCXX::Backend::builtin, ExchCXX::Functional::PBE0, 
     ExchCXX::Spin::Unpolarized );
@@ -101,34 +103,35 @@ TEST_CASE( "Benzene / PBE0 / cc-pVDZ", "[xc-integrator]" ) {
 
 #ifdef GAUXC_ENABLE_HOST
   SECTION( "Host" ) {
-    test_xc_integrator( ExecutionSpace::Host, GAUXC_MPI_CODE(comm,) reference_file );
+    test_xc_integrator( ExecutionSpace::Host, GAUXC_MPI_CODE(comm,) reference_file,
+      1 );
   }
 #endif
 
 #ifdef GAUXC_ENABLE_DEVICE
   SECTION( "Device" ) {
     SECTION( "Incore - MPI Reduction" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) reference_file, 
-        "Default" );
+      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
+        reference_file, 32, "Default" );
     }
 
     #ifdef GAUXC_ENABLE_MAGMA
     SECTION( "Incore - MPI Reduction - MAGMA" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) reference_file, 
-        "Default", "Default", "Scheme1-MAGMA" );
+      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
+        reference_file, 32, "Default", "Default", "Scheme1-MAGMA" );
     }
     #endif
 
     #ifdef GAUXC_ENABLE_NCCL
     SECTION( "Incore - NCCL Reduction" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) reference_file, 
-        "Default", "NCCL" );
+      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,)
+        reference_file, 32, "Default", "NCCL" );
     }
     #endif
 
     SECTION( "ShellBatched" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) reference_file, 
-        "ShellBatched" );
+      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
+        reference_file, 32, "ShellBatched" );
     }
   }
 #endif

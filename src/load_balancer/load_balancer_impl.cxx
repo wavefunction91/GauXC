@@ -3,20 +3,21 @@
 namespace GauXC::detail {
 
 LoadBalancerImpl::LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm comm,) const Molecule& mol, 
-  const MolGrid& mg, const basis_type& basis, std::shared_ptr<MolMeta> molmeta ) :
+  const MolGrid& mg, const basis_type& basis, std::shared_ptr<MolMeta> molmeta, size_t pv ) :
   GAUXC_MPI_CODE(comm_(comm),) 
   mol_( std::make_shared<Molecule>(mol) ),
   mg_( std::make_shared<MolGrid>(mg)  ),
   basis_( std::make_shared<basis_type>(basis) ),
-  molmeta_( molmeta ) { }
+  molmeta_( molmeta ),
+  pad_value_(pv) { }
 
 LoadBalancerImpl::LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm comm,) const Molecule& mol, 
-  const MolGrid& mg, const basis_type& basis, const MolMeta& molmeta ) :
-  LoadBalancerImpl( GAUXC_MPI_CODE(comm,) mol, mg, basis, std::make_shared<MolMeta>(molmeta) ) { }
+  const MolGrid& mg, const basis_type& basis, const MolMeta& molmeta, size_t pv ) :
+  LoadBalancerImpl( GAUXC_MPI_CODE(comm,) mol, mg, basis, std::make_shared<MolMeta>(molmeta), pv ) { }
 
 LoadBalancerImpl::LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm comm,) const Molecule& mol, 
-  const MolGrid& mg, const basis_type& basis ) :
-  LoadBalancerImpl( GAUXC_MPI_CODE(comm,) mol, mg, basis, std::make_shared<MolMeta>(mol) ) { }
+  const MolGrid& mg, const basis_type& basis, size_t pv ) :
+  LoadBalancerImpl( GAUXC_MPI_CODE(comm,) mol, mg, basis, std::make_shared<MolMeta>(mol), pv ) { }
 
 
 LoadBalancerImpl::LoadBalancerImpl( const LoadBalancerImpl& ) = default;
@@ -77,6 +78,10 @@ size_t LoadBalancerImpl::max_npts_x_nbe() const {
 
   return it->nbe * it->points.size();
 
+}
+
+size_t LoadBalancerImpl::pad_value() const {
+  return pad_value_;
 }
 
 

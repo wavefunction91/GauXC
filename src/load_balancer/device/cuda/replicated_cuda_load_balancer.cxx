@@ -215,7 +215,11 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
       for( size_t ibatch = 0; ibatch < nbatches; ++ibatch ) {
         auto [ npts, pts_b, pts_en, w_b, w_en ] = (batcher.begin() + ibatch).range();
         XCTask task = std::move( temp_tasks.at( idx ) );
-        task.nbe = nbe_vec[idx];
+        task.nbe  = nbe_vec[idx];
+
+        // Update npts with (possibly) padded value
+        size_t npts_padded = util::div_ceil(npts, pad_value_) * pad_value_;
+        task.npts = npts_padded;
 
         // Get rank with minimum work
         auto min_rank_it = 
@@ -229,8 +233,24 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
           // Course grain screening
           if( shell_list.size() ) {
             task.shell_list = shell_list;
-            task.points = std::vector<std::array<double,3>>( pts_b, pts_en );
-            task.weights = std::vector<double>( w_b, w_en );
+
+            // Get local copy of points weights
+            std::vector<std::array<double,3>> points(pts_b, pts_en);
+            std::vector<double>               weights(w_b, w_en);
+
+            if( points.size() % pad_value_ ) {
+              size_t npts_add = pad_value_ - (npts % pad_value_);
+              // Copy first point to the remainder to ensure same 
+              // spatially locality
+              const auto pt_to_add = points.front();
+              points.insert( points.end(), npts_add, pt_to_add );
+
+              // Fill weights remainder with zeros
+              weights.insert( weights.end(), npts_add, 0.0 );
+            }
+
+            task.points  = std::move(points);
+            task.weights = std::move(weights);
             local_work.push_back( std::move(task) );
           }
         }

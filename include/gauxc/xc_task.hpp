@@ -66,7 +66,8 @@ struct XCTask {
 
   template <typename Archive>
   void serialize( Archive& ar ) {
-    ar( iParent, nbe, dist_nearest, shell_list, points, weights );  
+    ar( iParent, nbe, npts, dist_nearest, max_weight, 
+      shell_list, points, weights );  
   }
 
 

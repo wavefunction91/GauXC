@@ -226,8 +226,11 @@ void XCDeviceAoSData::pack_and_send(
   {
 
   const size_t total_npts    = total_npts_task_batch * sizeof(double);
-  buffer_adaptor points_mem ( base_stack.points_device,  3*total_npts );
-  buffer_adaptor weights_mem( base_stack.weights_device,   total_npts );
+  //buffer_adaptor points_mem ( base_stack.points_device,  3*total_npts );
+  buffer_adaptor points_x_mem( base_stack.points_x_device,  total_npts );
+  buffer_adaptor points_y_mem( base_stack.points_y_device,  total_npts );
+  buffer_adaptor points_z_mem( base_stack.points_z_device,  total_npts );
+  buffer_adaptor weights_mem ( base_stack.weights_device,   total_npts );
 
   const size_t total_ncut    = total_ncut_task_batch * sizeof(int32_t);
   const size_t total_nblock  = total_nblock_task_batch * sizeof(int32_t);
@@ -261,7 +264,10 @@ void XCDeviceAoSData::pack_and_send(
     const auto ncut    = task.ncut;
     const auto nblock  = task.nblock;
 
-    task.points       = points_mem .aligned_alloc<double>(3*npts, csl);
+    //task.points       = points_mem .aligned_alloc<double>(3*npts, csl);
+    task.points_x     = points_x_mem.aligned_alloc<double>(npts, csl);
+    task.points_y     = points_y_mem.aligned_alloc<double>(npts, csl);
+    task.points_z     = points_z_mem.aligned_alloc<double>(npts, csl);
     task.weights      = weights_mem.aligned_alloc<double>(npts, csl); 
     task.submat_cut   = submat_cut_mem.aligned_alloc<int32_t>( 3*ncut , csl);
     task.submat_block = submat_block_mem.aligned_alloc<int32_t>(nblock, csl);

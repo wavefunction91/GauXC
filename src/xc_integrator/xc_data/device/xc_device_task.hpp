@@ -11,7 +11,10 @@ struct XCDeviceTask {
   size_t nshells   = 0;
   size_t ibf_begin = 0;
 
-  double* points         = nullptr;
+  //double* points         = nullptr;
+  double* points_x       = nullptr;
+  double* points_y       = nullptr;
+  double* points_z       = nullptr;
   double* weights        = nullptr;
   size_t* shell_list     = nullptr;
   size_t* shell_offs     = nullptr;

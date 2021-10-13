@@ -29,7 +29,10 @@ auto populate_device_cuda( const BasisSet<double>& basis,
     task.npts    = npts;
     task.nshells = mask.size();
 
-    task.points     = util::cuda_malloc<double>( 3 * npts );
+    //task.points     = util::cuda_malloc<double>( 3 * npts );
+    task.points_x     = util::cuda_malloc<double>( npts );
+    task.points_y     = util::cuda_malloc<double>( npts );
+    task.points_z     = util::cuda_malloc<double>( npts );
     task.shell_offs = util::cuda_malloc<size_t>( mask.size() );
     task.shell_list = util::cuda_malloc<size_t>( mask.size() );
     task.bf         = util::cuda_malloc<double>( nbf * npts );
@@ -39,12 +42,24 @@ auto populate_device_cuda( const BasisSet<double>& basis,
       task.dbfz       = util::cuda_malloc<double>( nbf * npts );
     }
 
-    auto* pts_device = task.points;
+    //auto* pts_device = task.points;
+    auto* pts_x_device = task.points_x;
+    auto* pts_y_device = task.points_y;
+    auto* pts_z_device = task.points_z;
     auto* offs_device = task.shell_offs;
     auto* mask_device = task.shell_list;
 
 
-    util::cuda_copy( 3*npts, pts_device, pts.data()->data() );
+    //util::cuda_copy( 3*npts, pts_device, pts.data()->data() );
+    std::vector<double> pts_x, pts_y, pts_z;
+    for( auto pt : pts ) {
+      pts_x.emplace_back(pt[0]);
+      pts_y.emplace_back(pt[1]);
+      pts_z.emplace_back(pt[2]);
+    }
+    util::cuda_copy( npts, pts_x_device, pts_x.data() );
+    util::cuda_copy( npts, pts_y_device, pts_y.data() );
+    util::cuda_copy( npts, pts_z_device, pts_z.data() );
 
     std::vector<size_t> mask_ul( mask.size() );
     std::copy( mask.begin(), mask.end(), mask_ul.begin() );
@@ -152,7 +167,7 @@ void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::
 
 
   for( auto& t : tasks ) {
-    util::cuda_free( t.points, t.shell_offs, t.shell_list, t.bf );
+    util::cuda_free( t.points_x, t.points_y, t.points_z, t.shell_offs, t.shell_list, t.bf );
     if(grad) util::cuda_free( t.dbfx, t.dbfy, t.dbfz );
   }
   util::cuda_free( tasks_device, shells_device );
@@ -306,7 +321,7 @@ void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,  const 
 
       
   for( auto& t : tasks ) {
-    util::cuda_free( t.points, t.shell_offs, t.shell_list, t.bf );
+    util::cuda_free( t.points_x, t.points_y, t.points_z, t.shell_offs, t.shell_list, t.bf );
     if(grad) util::cuda_free( t.dbfx, t.dbfy, t.dbfz );
   }
   util::cuda_free( tasks_device, shells_device, shell_to_task_device );

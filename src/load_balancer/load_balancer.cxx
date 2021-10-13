@@ -41,6 +41,10 @@ size_t LoadBalancer::max_npts_x_nbe() const {
   if( not pimpl_ ) throw std::runtime_error("Not Initialized");
   return pimpl_->max_npts_x_nbe();
 }
+size_t LoadBalancer::pad_value() const {
+  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  return pimpl_->pad_value();
+}
 
 
 

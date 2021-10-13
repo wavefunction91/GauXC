@@ -296,8 +296,12 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   buffer_adaptor mem( ptr, sz );
 
   // Grid
-  base_stack.points_device = 
-    mem.aligned_alloc<double>( 3 * total_npts_task_batch , csl);
+  //base_stack.points_device = 
+  //  mem.aligned_alloc<double>( 3 * total_npts_task_batch , csl);
+  base_stack.points_x_device = mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
+  base_stack.points_y_device = mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
+  base_stack.points_z_device = mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
+
   base_stack.weights_device = 
     mem.aligned_alloc<double>( total_npts_task_batch , csl);
 
@@ -305,25 +309,25 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   if( terms.exc_vxc ) {
     // U Variables
     base_stack.den_eval_device   = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
     base_stack.den_x_eval_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
     base_stack.den_y_eval_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
     base_stack.den_z_eval_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
 
     // V Variables
     base_stack.gamma_eval_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, csl);
 
     // XC output
     base_stack.eps_eval_device    = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, csl);
     base_stack.vrho_eval_device   = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, csl);
     base_stack.vgamma_eval_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch , csl);
+      mem.aligned_alloc<double>( total_npts_task_batch, csl);
   }
 
   // Update dynmem data for derived impls
@@ -336,7 +340,8 @@ void XCDeviceStackData::pack_and_send( integrator_term_tracker terms,
   if( not device_backend_ ) throw std::runtime_error("Invalid Device Backend");
 
   // Host data packing arrays
-  std::vector< std::array<double,3> > points_pack;
+  //std::vector< std::array<double,3> > points_pack;
+  std::vector<double> points_x_pack, points_y_pack, points_z_pack;
   std::vector< double > weights_pack;
 
   // Contatenation utility
@@ -350,15 +355,31 @@ void XCDeviceStackData::pack_and_send( integrator_term_tracker terms,
     const auto& points  = it->points;
     const auto& weights = it->weights;
 
-    concat_iterable( points_pack,  points  );
+    //concat_iterable( points_pack,  points  );
+    std::vector<double> pts_x, pts_y, pts_z;
+    for( auto pt : points ) {
+      pts_x.emplace_back( pt[0] );
+      pts_y.emplace_back( pt[1] );
+      pts_z.emplace_back( pt[2] );
+    }
+    concat_iterable( points_x_pack, pts_x );
+    concat_iterable( points_y_pack, pts_y );
+    concat_iterable( points_z_pack, pts_z );
+
     concat_iterable( weights_pack, weights );
     
   } // Loop over tasks
 
 
   // Send grid data
-  device_backend_->copy_async( 3*points_pack.size(), points_pack.data()->data(),
-              base_stack.points_device, "send points buffer" );
+  //device_backend_->copy_async( 3*points_pack.size(), points_pack.data()->data(),
+  //            base_stack.points_device, "send points buffer" );
+  device_backend_->copy_async( points_x_pack.size(), points_x_pack.data(),
+              base_stack.points_x_device, "send points_x buffer" );
+  device_backend_->copy_async( points_y_pack.size(), points_y_pack.data(),
+              base_stack.points_y_device, "send points_y buffer" );
+  device_backend_->copy_async( points_z_pack.size(), points_z_pack.data(),
+              base_stack.points_z_device, "send points_z buffer" );
   device_backend_->copy_async( weights_pack.size(), weights_pack.data(),
               base_stack.weights_device, "send weights buffer" );
 

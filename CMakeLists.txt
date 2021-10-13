@@ -10,9 +10,18 @@ list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake )
 list( APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake/modules )
 include( gauxc-linalg-modules )
 
-# Populate BUILD_TESTING prior to dependencies to avoid clash
+# Guard some options settings to only default when not a subproject
 if(CMAKE_PROJECT_NAME STREQUAL PROJECT_NAME)
+  # Populate BUILD_TESTING prior to dependencies to avoid clash
   include(CTest)
+
+  # Default the built type
+  if( NOT CMAKE_BUILD_TYPE AND NOT CMAKE_CONFIGURATION_TYPES )
+    set( CMAKE_BUILD_TYPE RelWithDebInfo CACHE STRING "Choose the type of build" FORCE )
+    # Set the possible values of build type for cmake-gui
+    set_property(CACHE CMAKE_BUILD_TYPE PROPERTY STRINGS
+      "Debug" "Release" "MinSizeRel" "RelWithDebInfo")
+  endif()
 endif()
 
 
@@ -31,6 +40,7 @@ cmake_dependent_option( GAUXC_ENABLE_MAGMA    "Enable MAGMA Linear Algebra" ON
   "GAUXC_ENABLE_CUDA OR GAUXC_ENABLE_HIP" OFF  )
 cmake_dependent_option( GAUXC_ENABLE_NCCL     "Enable NCCL Collectives    " OFF  
   "GAUXC_ENABLE_CUDA" OFF )
+
 
 if( NOT GAUXC_ENABLE_GAU2GRID )
   message( FATAL_ERROR "Gau2Grid is currently a required dependency which 

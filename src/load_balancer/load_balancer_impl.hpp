@@ -26,6 +26,8 @@ protected:
 
   util::Timer               timer_;
 
+  size_t                    pad_value_;
+
   virtual std::vector< XCTask > create_local_tasks_() const = 0;
 
 public:
@@ -33,11 +35,11 @@ public:
   LoadBalancerImpl() = delete;
 
   LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm,) const Molecule&, const MolGrid& mg,  
-    const basis_type& );
+    const basis_type&, size_t pv );
   LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm,) const Molecule&, const MolGrid& mg,  
-    const basis_type&, const MolMeta& );
+    const basis_type&, const MolMeta&, size_t pv );
   LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm,) const Molecule&, const MolGrid& mg,  
-    const basis_type&, std::shared_ptr<MolMeta> );
+    const basis_type&, std::shared_ptr<MolMeta>, size_t pv );
 
   LoadBalancerImpl( const LoadBalancerImpl& );
   LoadBalancerImpl( LoadBalancerImpl&& ) noexcept;
@@ -52,6 +54,7 @@ public:
   size_t max_npts()       const;
   size_t max_nbe()        const;
   size_t max_npts_x_nbe() const;
+  size_t pad_value()      const;
 
   const Molecule& molecule() const;
   const MolMeta&  molmeta()  const;
