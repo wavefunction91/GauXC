@@ -17,6 +17,8 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* ) override final;
   void inc_exc( XCDeviceData* ) override final;
   void inc_nel( XCDeviceData* ) override final;
+  void inc_exc_grad_lda( XCDeviceData* ) override final;
+  void inc_exc_grad_gga( XCDeviceData* ) override final;
   void symmetrize_vxc( XCDeviceData* ) override final;
 
 

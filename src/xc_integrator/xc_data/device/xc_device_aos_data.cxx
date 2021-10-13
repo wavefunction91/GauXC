@@ -95,7 +95,6 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
   const bool need_grad = is_gga or  terms.exc_grad;
   const bool need_hess = is_gga and terms.exc_grad;
 
-
   // Current Stack
   auto [ ptr, sz ] = buf;
   buffer_adaptor mem( ptr, sz );

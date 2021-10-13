@@ -232,9 +232,9 @@ int main(int argc, char** argv) {
     matrix_type VXC, K;
     double EXC;
 
-      std::cout << std::scientific << std::setprecision(6);
     if( integrate_vxc ) {
       std::tie(EXC, VXC) = integrator.eval_exc_vxc( P );
+      std::cout << std::scientific << std::setprecision(6);
       std::cout << "EXC = " << EXC << std::endl;
     } else {
       EXC = EXC_ref;
@@ -245,6 +245,7 @@ int main(int argc, char** argv) {
     if( integrate_exc_grad ) {
       EXC_GRAD = integrator.eval_exc_grad( P );
       std::cout << "EXC Gradient:" << std::endl;
+      std::cout << std::scientific << std::setprecision(6);
       for( auto iAt = 0; iAt < mol.size(); ++iAt ) {
         std::cout << "  " 
                   << std::setw(16) << EXC_GRAD[3*iAt + 0] 

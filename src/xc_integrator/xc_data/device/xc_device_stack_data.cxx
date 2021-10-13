@@ -98,6 +98,33 @@ void XCDeviceStackData::allocate_static_data_exc_vxc( int32_t nbf, int32_t nshel
   allocated_terms.exc_vxc = true;
 }
 
+void XCDeviceStackData::allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) {
+
+  if( allocated_terms.exc_grad ) 
+    GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXC GRAD");
+
+  // Save state
+  global_dims.nshells = nshells;
+  global_dims.nbf     = nbf; 
+  global_dims.natoms  = natoms; 
+
+  // Allocate static memory with proper alignment
+  buffer_adaptor mem( dynmem_ptr, dynmem_sz );
+
+  static_stack.shells_device     = mem.aligned_alloc<Shell<double>>( nshells , csl);
+  static_stack.exc_grad_device   = mem.aligned_alloc<double>( 3*natoms , csl);
+  static_stack.nel_device        = mem.aligned_alloc<double>( 1 , csl);
+  static_stack.acc_scr_device    = mem.aligned_alloc<double>( 1 , csl);
+
+  static_stack.dmat_device = mem.aligned_alloc<double>( nbf * nbf , csl);
+
+  // Get current stack location
+  dynmem_ptr = mem.stack();
+  dynmem_sz  = mem.nleft(); 
+
+  allocated_terms.exc_grad = true;
+}
+
 
 
 
@@ -132,11 +159,11 @@ void XCDeviceStackData::send_static_data_weights( const Molecule& mol, const Mol
   device_backend_->master_queue_synchronize(); 
 }
 
-void XCDeviceStackData::send_static_data_exc_vxc( const double* P, int32_t ldp,
+void XCDeviceStackData::send_static_data_density_basis( const double* P, int32_t ldp,
   const BasisSet<double>& basis ) {
 
-  if( not allocated_terms.exc_vxc ) 
-    GAUXC_GENERIC_EXCEPTION("EXC_VXC Not Stack Allocated");
+  if( not (allocated_terms.exc_vxc or allocated_terms.exc_grad) ) 
+    GAUXC_GENERIC_EXCEPTION("Density/Basis Not Stack Allocated");
 
   const auto nbf    = global_dims.nbf;
   if( ldp != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDP must bf NBF");
@@ -158,14 +185,24 @@ void XCDeviceStackData::send_static_data_exc_vxc( const double* P, int32_t ldp,
 
 
 
-void XCDeviceStackData::zero_integrands() {
+void XCDeviceStackData::zero_exc_vxc_integrands() {
 
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
 
   const auto nbf = global_dims.nbf;
   device_backend_->set_zero( nbf*nbf, static_stack.vxc_device, "VXC Zero" );
-  device_backend_->set_zero( 1,       static_stack.nel_device, "NEL Zero" );
   device_backend_->set_zero( 1,       static_stack.exc_device, "EXC Zero" );
+  device_backend_->set_zero( 1,       static_stack.nel_device, "NEL Zero" );
+
+}
+
+void XCDeviceStackData::zero_exc_grad_integrands() {
+
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
+
+  const auto natoms = global_dims.natoms;
+  device_backend_->set_zero( 3*natoms, static_stack.exc_grad_device, "EXC Gradient Zero" );
+  device_backend_->set_zero( 1,        static_stack.nel_device, "NEL Zero" );
 
 }
 
@@ -173,7 +210,7 @@ void XCDeviceStackData::zero_integrands() {
 
 
 
-void XCDeviceStackData::retrieve_xc_integrands( double* EXC, double* N_EL,
+void XCDeviceStackData::retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
   double* VXC, int32_t ldvxc ) {
 
   const auto nbf = global_dims.nbf;
@@ -183,6 +220,16 @@ void XCDeviceStackData::retrieve_xc_integrands( double* EXC, double* N_EL,
   device_backend_->copy_async( nbf*nbf, static_stack.vxc_device, VXC,  "VXC D2H" );
   device_backend_->copy_async( 1,       static_stack.nel_device, N_EL, "NEL D2H" );
   device_backend_->copy_async( 1,       static_stack.exc_device, EXC,  "EXC D2H" );
+
+}
+
+void XCDeviceStackData::retrieve_exc_grad_integrands( double* EXC_GRAD, double* N_EL ) {
+
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
+  
+  const auto natoms = global_dims.natoms;
+  device_backend_->copy_async( 3*natoms, static_stack.exc_grad_device, EXC_GRAD,  "EXC Gradient D2H" );
+  device_backend_->copy_async( 1,        static_stack.nel_device,      N_EL,      "NEL D2H" );
 
 }
 

@@ -7,6 +7,7 @@
 #include "device/common/pack_submat.hpp"
 #include "device/common/inc_potential.hpp"
 #include "device/common/symmetrize_mat.hpp"
+#include "device/common/increment_exc_grad.hpp"
 
 namespace GauXC {
 
@@ -425,6 +426,37 @@ void AoSScheme1Base::symmetrize_vxc( XCDeviceData* _data) {
   auto static_stack  = data->static_stack;
   symmetrize_matrix( nbf, static_stack.vxc_device, nbf, 
     data->device_backend_->queue() ); 
+
+}
+
+
+
+
+void AoSScheme1Base::inc_exc_grad_lda( XCDeviceData* _data ) {
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  const auto nshell = data->global_dims.nshells;
+  increment_exc_grad_lda( nshell, 
+    data->shell_to_task_stack.shell_to_task_device, 
+    data->aos_stack.device_tasks,
+    data->static_stack.exc_grad_device,
+    data->device_backend_->queue() ); 
+
+}
+
+void AoSScheme1Base::inc_exc_grad_gga( XCDeviceData* _data ) {
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+
+  GAUXC_GENERIC_EXCEPTION("NYI");
 
 }
 

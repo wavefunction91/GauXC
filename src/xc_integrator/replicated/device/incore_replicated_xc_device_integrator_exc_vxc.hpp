@@ -63,7 +63,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     });
 
     // Retrieve data to host
-    device_data_ptr->retrieve_xc_integrands( EXC, &N_EL, VXC, ldvxc );
+    device_data_ptr->retrieve_exc_vxc_integrands( EXC, &N_EL, VXC, ldvxc );
 
 
   } else {
@@ -128,10 +128,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Copy static data to device
   //device_data.send_static_data( P, ldp, basis, mol, meta );
   device_data.send_static_data_weights( mol, meta );
-  device_data.send_static_data_exc_vxc( P, ldp, basis );
+  device_data.send_static_data_density_basis( P, ldp, basis );
 
   // Zero integrands
-  device_data.zero_integrands();
+  device_data.zero_exc_vxc_integrands();
 
   integrator_term_tracker enabled_terms;
   enabled_terms.weights = true;
@@ -194,6 +194,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 #else
 
 
+  // TODO: Refactor this into separate function
   auto& lb_state = this->load_balancer_->state();
 
   // Modify weights if need be
@@ -256,10 +257,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   const auto nshells = basis.nshells();
   device_data.reset_allocations();
   device_data.allocate_static_data_exc_vxc( nbf, nshells );
-  device_data.send_static_data_exc_vxc( P, ldp, basis );
+  device_data.send_static_data_density_basis( P, ldp, basis );
 
   // Zero integrands
-  device_data.zero_integrands();
+  device_data.zero_exc_vxc_integrands();
 
   // Processes batches in groups that saturadate available device memory
   integrator_term_tracker enabled_terms;
@@ -325,7 +326,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   exc_vxc_local_work_( basis, P, ldp, task_begin, task_end, device_data );
 
   // Receive XC terms from host
-  device_data.retrieve_xc_integrands( EXC, N_EL, VXC, ldvxc );
+  device_data.retrieve_exc_vxc_integrands( EXC, N_EL, VXC, ldvxc );
 
 }
 

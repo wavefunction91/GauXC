@@ -44,17 +44,17 @@ struct XCDeviceData {
   virtual void reset_allocations() = 0;
   virtual void allocate_static_data_weights( int32_t natoms ) = 0;
   virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) = 0;
+  virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) = 0;
 
   // Send persistent data from host to device
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
-  virtual void send_static_data_exc_vxc( const double* P, int32_t ldp, const BasisSet<double>& basis ) = 0;
+  virtual void send_static_data_density_basis( const double* P, int32_t ldp, const BasisSet<double>& basis ) = 0;
 
-  /** Zero out the integrands in device memory
-   *
-   *  TODO: this will depend on the integrand, we should refactor this
-   *  to only allocate what is needed
-   */
-  virtual void zero_integrands() = 0;
+  /// Zero out the EXC / VXC integrands in device memory
+  virtual void zero_exc_vxc_integrands() = 0;
+
+  /// Zero out the EXC Gradient integrands in device memory
+  virtual void zero_exc_grad_integrands() = 0;
 
   /** Generate task batch to execute on device
    *
@@ -76,19 +76,21 @@ struct XCDeviceData {
     const BasisSetMap& basis_map, host_task_iterator task_begin,
     host_task_iterator task_end ) = 0;
 
-  /** Retreive XC integrands from device memory
-   *
-   *  TODO: this will depend on the integrand, we should refactor this
-   *  to only allocate what is needed
-   *
-   *  TODO: this might be merged with reduction to allow for e.g. NCCL
+  /** Retreive EXC/VXC integrands from device memory
    *
    *  @param[out] EXC  Integrated XC energy (host) for XC task
    *  @param[out] N_EL Integrated # electrons (host) for XC queue (accuracy metric)
    *  @param[out[ VXC  Integrated XC potential (host) for XC queue
    */
-  virtual void retrieve_xc_integrands( double* EXC, double* N_EL,
+  virtual void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
     double* VXC, int32_t ldvxc ) = 0;
+
+  /** Retreive EXC Gradient integrands from device memory
+   *
+   *  @param[out] EXC_GRAD  Integrated XC Gradient (host) for XC task
+   *  @param[out] N_EL      Integrated # electrons (host) for XC queue (accuracy metric)
+   */
+  virtual void retrieve_exc_grad_integrands( double* EXC_GRAD, double* N_EL ) = 0;
 
 
   virtual void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) = 0;
