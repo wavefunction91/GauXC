@@ -27,7 +27,6 @@ __global__ __launch_bounds__(1024,1) void increment_exc_grad_lda_kernel(
     double g_acc_x(0), g_acc_y(0), g_acc_z(0);
     for( uint32_t itask = global_warp_id; itask < ntasks; itask += nwarp_global ) {
       
-      double tmp_x(0), tmp_y(0), tmp_z(0);
       const auto*    task   = device_tasks + task_idx[itask];
       const uint32_t npts   = task->npts;
       const size_t   shoff  = task_shell_offs[itask] * npts;
@@ -37,15 +36,13 @@ __global__ __launch_bounds__(1024,1) void increment_exc_grad_lda_kernel(
       const auto* __restrict__ basis_z_eval = task->dbfz + shoff;
 
       const auto* __restrict__  zmat = task->zmat + shoff;
+      const auto* __restrict__  vrho = task->vrho;
 
-      const auto* __restrict__  weights = task->weights;
-      const auto* __restrict__  vrho    = task->vrho;
       #pragma unroll 1
       for( uint32_t ipt = threadIdx.x % cuda::warp_size; 
            ipt < npts; 
-           ipt ++/*+= cuda::warp_size*/ ) {
+           ipt += cuda::warp_size ) {
 
-        //const double vrho_i = weights[ipt] * vrho[ipt];
         const double vrho_i = vrho[ipt];
         for( uint32_t ibf = 0; ibf < shsz; ++ibf ) {
           const double z_mu_i    = vrho_i * 2. * zmat[ipt + ibf*npts];
@@ -53,36 +50,27 @@ __global__ __launch_bounds__(1024,1) void increment_exc_grad_lda_kernel(
           const double dbfy_mu_i = basis_y_eval[ipt + ibf*npts];
           const double dbfz_mu_i = basis_z_eval[ipt + ibf*npts];
 
-          tmp_x += z_mu_i * dbfx_mu_i;
-          tmp_y += z_mu_i * dbfy_mu_i;
-          tmp_z += z_mu_i * dbfz_mu_i;
+          g_acc_x += z_mu_i * dbfx_mu_i;
+          g_acc_y += z_mu_i * dbfy_mu_i;
+          g_acc_z += z_mu_i * dbfz_mu_i;
         } // Loop over bfns within a shell
 
       } // Loop over points
 
-      g_acc_x += tmp_x;
-      g_acc_y += tmp_y;
-      g_acc_z += tmp_z;
     } // Loop over tasks assigned to shell
 
-    #if 0
     constexpr auto warp_size = cuda::warp_size;
     g_acc_x = -2. * cuda::warp_reduce_sum<warp_size>( g_acc_x );
     g_acc_y = -2. * cuda::warp_reduce_sum<warp_size>( g_acc_y );
     g_acc_z = -2. * cuda::warp_reduce_sum<warp_size>( g_acc_z );
-    #else
-    g_acc_x *= -2.;
-    g_acc_y *= -2.;
-    g_acc_z *= -2.;
-    #endif
 
-    //if( threadIdx.x == 0 ) {
+    if( (threadIdx.x % cuda::warp_size) == 0 ) {
       const int iCen = shell_to_task[ish].center_idx;
       
       atomicAdd( EXC_GRAD + 3*iCen + 0, g_acc_x );
       atomicAdd( EXC_GRAD + 3*iCen + 1, g_acc_y );
       atomicAdd( EXC_GRAD + 3*iCen + 2, g_acc_z );
-    //}
+    }
 
   } // Loop over shells
 
@@ -100,7 +88,7 @@ void increment_exc_grad_lda( size_t nshell, ShellToTaskDevice* shell_to_task,
   dim3 threads( nthreads_per_block );
   dim3 blocks( nblocks );
   #else
-  dim3 threads(1), blocks(1);
+  dim3 threads(1024), blocks(1,1,nshell);
   #endif
 
   increment_exc_grad_lda_kernel<<<blocks, threads, 0 , stream>>>(
