@@ -1,9 +1,11 @@
 #ifndef __MY_INTEGRAL_4_3
 #define __MY_INTEGRAL_4_3
 
+#include "integral_4_3.h"
+
 void integral_4_3(int npts,
-                  shell shellA,
-                  shell shellB,
+                  shells shellA,
+                  shells shellB,
                   point *points,
                   double *Xi,
                   double *Xj,

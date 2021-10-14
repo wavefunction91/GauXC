@@ -1,3 +1,5 @@
+#include "boys_computation.h"
+
 #include <limits.h>
 #include <math.h>
 #include <stdint.h>

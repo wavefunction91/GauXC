@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include "integral_data_types.h"
+#include "obara_saika_integrals.h"
 #include "integral_0_0.h"
 #include "integral_1_0.h"
 #include "integral_1_1.h"
@@ -18,8 +19,8 @@
 #include "integral_4_4.h"
 
 void compute_integral_shell_pair(int npts,
-                  shell shellA,
-                  shell shellB,
+                  shells shellA,
+                  shells shellB,
                   point *points,
                   double *Xi,
                   double *Xj,

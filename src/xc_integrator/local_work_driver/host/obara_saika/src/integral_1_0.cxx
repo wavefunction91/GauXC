@@ -5,8 +5,8 @@
 #define PI 3.14159265358979323846
 
 void integral_1_0(int npts,
-                  shell shellA,
-                  shell shellB,
+                  shells shellA,
+                  shells shellB,
                   point *_points,
                   double *Xi,
                   double *Xj,

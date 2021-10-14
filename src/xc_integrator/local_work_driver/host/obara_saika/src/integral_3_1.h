@@ -1,9 +1,11 @@
 #ifndef __MY_INTEGRAL_3_1
 #define __MY_INTEGRAL_3_1
 
+#include "integral_3_1.h"
+
 void integral_3_1(int npts,
-                  shell shellA,
-                  shell shellB,
+                  shells shellA,
+                  shells shellB,
                   point *points,
                   double *Xi,
                   double *Xj,
