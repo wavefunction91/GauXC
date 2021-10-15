@@ -151,10 +151,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     /*** Process the batches ***/
 
     // Evaluate collocation
-    if( func.is_gga() ) {
-      GAUXC_GENERIC_EXCEPTION("NYI");
-      //lwd->eval_collocation_hessian( &device_data );
-    } else                lwd->eval_collocation_gradient( &device_data );
+    if( func.is_gga() ) lwd->eval_collocation_hessian ( &device_data );
+    else                lwd->eval_collocation_gradient( &device_data );
 
     // Evaluate X matrix
     const bool do_xmat_grad = func.is_gga();

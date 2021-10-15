@@ -469,10 +469,12 @@ void AoSScheme1Base::inc_exc_grad_gga( XCDeviceData* _data ) {
 
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
-  auto& tasks = data->host_device_tasks;
-  const auto ntasks = tasks.size();
-
-  GAUXC_GENERIC_EXCEPTION("NYI");
+  const auto nshell = data->global_dims.nshells;
+  increment_exc_grad_gga( nshell, 
+    data->shell_to_task_stack.shell_to_task_device, 
+    data->aos_stack.device_tasks,
+    data->static_stack.exc_grad_device,
+    data->device_backend_->queue() ); 
 
 }
 

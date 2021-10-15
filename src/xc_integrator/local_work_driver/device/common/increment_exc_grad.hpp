@@ -8,6 +8,8 @@ namespace GauXC {
 
 void increment_exc_grad_lda( size_t nshell, ShellToTaskDevice* shell_to_task,
   XCDeviceTask* device_tasks, double* EXC_GRAD, device_queue );
+void increment_exc_grad_gga( size_t nshell, ShellToTaskDevice* shell_to_task,
+  XCDeviceTask* device_tasks, double* EXC_GRAD, device_queue );
 
 }
 
