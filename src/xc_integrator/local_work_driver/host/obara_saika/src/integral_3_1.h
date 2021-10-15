@@ -9,9 +9,11 @@ void integral_3_1(int npts,
                   point *points,
                   double *Xi,
                   double *Xj,
+                  int stX,
                   int ldX,
                   double *Gi,
                   double *Gj,
+                  int stG, 
                   int ldG, 
                   double *weights);
 

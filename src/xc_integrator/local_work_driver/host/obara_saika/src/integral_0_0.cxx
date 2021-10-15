@@ -9,8 +9,12 @@ void integral_0_0(int npts,
                   shells shellB,
                   point *_points,
                   double *Xi,
+                  double *Xj,
+                  int stX,
                   int ldX,
+                  double *Gi,
                   double *Gj,
+                  int stG, 
                   int ldG, 
                   double *weights) {
    double temp[1];
@@ -50,9 +54,9 @@ void integral_0_0(int npts,
             double yP = (aA * yA + aB * yB) * RHO_INV;
             double zP = (aA * zA + aB * zB) * RHO_INV;
 
-            double X_PB = (xP - xB);
-            double Y_PB = (yP - yB);
-            double Z_PB = (zP - zB);
+            double X_PA = (xP - xA);
+            double Y_PA = (yP - yA);
+            double Z_PA = (zP - zA);
 
             double X_PC = (xP - xC);
             double Y_PC = (yP - yC);
@@ -77,8 +81,10 @@ void integral_0_0(int npts,
          }
       }
 
-      double *Xik = (Xi + point_idx * ldX);
-      double *Gjk = (Gj + point_idx * ldG);
+      double *Xik = (Xi + point_idx * stX);
+      double *Xjk = (Xj + point_idx * stX);
+      double *Gik = (Gi + point_idx * stG);
+      double *Gjk = (Gj + point_idx * stG);
 
       double const_value, X_ABp, Y_ABp, Z_ABp, comb_m_i, comb_n_j, comb_p_k, rcp_i, rcp_j, rcp_k;
       double t0;
@@ -89,8 +95,11 @@ void integral_0_0(int npts,
       const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
 
       t0 = *(temp + 0) * const_value;
-      *(Gjk + 0) += *(Xik + 0) * t0;
+      *(Gjk + 0 * ldG) += *(Xik + 0 * ldX) * t0;
+      *(Gik + 0 * ldG) += *(Xjk + 0 * ldX) * t0;
 
-      *(Gjk + 0) *= *(weights + point_idx);
+      *(Gjk + 0 * ldG) *= *(weights + point_idx);
+
+      *(Gik + 0 * ldG) *= *(weights + point_idx);
    }
 }

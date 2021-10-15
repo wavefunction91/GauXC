@@ -8,8 +8,12 @@ void integral_0_0(int npts,
                   shells shellB,
                   point *points,
                   double *Xi,
+                  double *Xj,
+                  int stX,
                   int ldX,
                   double *Gi,
+                  double *Gj,
+                  int stG, 
                   int ldG, 
                   double *weights);
 

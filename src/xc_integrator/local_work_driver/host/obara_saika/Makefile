@@ -4,7 +4,8 @@ ARFLGAS = -rc
 CC = g++
 CFGLAS = -Wall -O2 -lm -mavx
 
-BOYS_FUNCTION = -DBOYS_REFERENCE
+#BOYS_FUNCTION = -DBOYS_REFERENCE
+BOYS_FUNCTION = -DBOYS_ASYMP
 
 SRC = ./src
 INCLUDE = ./include
@@ -15,6 +16,12 @@ DEBUG = -DDEBUG
 
 compile:
 	$(CC) -c $(SRC)/boys_computation.cxx -o $(SRC)/boys_computation.o $(CFLAGS)	
+
+	$(CC) -c $(SRC)/integral_0.cxx -o $(SRC)/integral_0.o $(CFLAGS) $(BOYS_FUNCTION)
+	$(CC) -c $(SRC)/integral_1.cxx -o $(SRC)/integral_1.o $(CFLAGS) $(BOYS_FUNCTION)
+	$(CC) -c $(SRC)/integral_2.cxx -o $(SRC)/integral_2.o $(CFLAGS) $(BOYS_FUNCTION)
+	$(CC) -c $(SRC)/integral_3.cxx -o $(SRC)/integral_3.o $(CFLAGS) $(BOYS_FUNCTION)
+	$(CC) -c $(SRC)/integral_4.cxx -o $(SRC)/integral_4.o $(CFLAGS) $(BOYS_FUNCTION)
 
 	$(CC) -c $(SRC)/integral_0_0.cxx -o $(SRC)/integral_0_0.o $(CFLAGS) $(BOYS_FUNCTION)
 	$(CC) -c $(SRC)/integral_1_0.cxx -o $(SRC)/integral_1_0.o $(CFLAGS) $(BOYS_FUNCTION)

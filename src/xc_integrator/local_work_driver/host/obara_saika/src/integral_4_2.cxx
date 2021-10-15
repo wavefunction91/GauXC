@@ -10,9 +10,11 @@ void integral_4_2(int npts,
                   point *_points,
                   double *Xi,
                   double *Xj,
+                  int stX,
                   int ldX,
                   double *Gi,
                   double *Gj,
+                  int stG, 
                   int ldG, 
                   double *weights) {
    double temp[64];
@@ -52,9 +54,9 @@ void integral_4_2(int npts,
             double yP = (aA * yA + aB * yB) * RHO_INV;
             double zP = (aA * zA + aB * zB) * RHO_INV;
 
-            double X_PB = (xP - xB);
-            double Y_PB = (yP - yB);
-            double Z_PB = (zP - zB);
+            double X_PA = (xP - xA);
+            double Y_PA = (yP - yA);
+            double Z_PA = (zP - zA);
 
             double X_PC = (xP - xC);
             double Y_PC = (yP - yC);
@@ -85,345 +87,345 @@ void integral_4_2(int npts,
             #error "TYPE NOT DEFINED!"
 #endif
 
-            t10 = X_PB * t00 - X_PC * t01;
-            t11 = X_PB * t01 - X_PC * t02;
-            t12 = X_PB * t02 - X_PC * t03;
-            t13 = X_PB * t03 - X_PC * t04;
-            t14 = X_PB * t04 - X_PC * t05;
-            t15 = X_PB * t05 - X_PC * t06;
-            t20 = X_PB * t10 - X_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
-            t21 = X_PB * t11 - X_PC * t12 + 0.5 * RHO_INV * 1 * (t01 - t02);
-            t22 = X_PB * t12 - X_PC * t13 + 0.5 * RHO_INV * 1 * (t02 - t03);
-            t23 = X_PB * t13 - X_PC * t14 + 0.5 * RHO_INV * 1 * (t03 - t04);
-            t24 = X_PB * t14 - X_PC * t15 + 0.5 * RHO_INV * 1 * (t04 - t05);
-            t30 = X_PB * t20 - X_PC * t21 + 0.5 * RHO_INV * 2 * (t10 - t11);
-            t31 = X_PB * t21 - X_PC * t22 + 0.5 * RHO_INV * 2 * (t11 - t12);
-            t32 = X_PB * t22 - X_PC * t23 + 0.5 * RHO_INV * 2 * (t12 - t13);
-            t33 = X_PB * t23 - X_PC * t24 + 0.5 * RHO_INV * 2 * (t13 - t14);
-            t40 = X_PB * t30 - X_PC * t31 + 0.5 * RHO_INV * 3 * (t20 - t21);
-            t41 = X_PB * t31 - X_PC * t32 + 0.5 * RHO_INV * 3 * (t21 - t22);
-            t42 = X_PB * t32 - X_PC * t33 + 0.5 * RHO_INV * 3 * (t22 - t23);
+            t10 = X_PA * t00 - X_PC * t01;
+            t11 = X_PA * t01 - X_PC * t02;
+            t12 = X_PA * t02 - X_PC * t03;
+            t13 = X_PA * t03 - X_PC * t04;
+            t14 = X_PA * t04 - X_PC * t05;
+            t15 = X_PA * t05 - X_PC * t06;
+            t20 = X_PA * t10 - X_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
+            t21 = X_PA * t11 - X_PC * t12 + 0.5 * RHO_INV * 1 * (t01 - t02);
+            t22 = X_PA * t12 - X_PC * t13 + 0.5 * RHO_INV * 1 * (t02 - t03);
+            t23 = X_PA * t13 - X_PC * t14 + 0.5 * RHO_INV * 1 * (t03 - t04);
+            t24 = X_PA * t14 - X_PC * t15 + 0.5 * RHO_INV * 1 * (t04 - t05);
+            t30 = X_PA * t20 - X_PC * t21 + 0.5 * RHO_INV * 2 * (t10 - t11);
+            t31 = X_PA * t21 - X_PC * t22 + 0.5 * RHO_INV * 2 * (t11 - t12);
+            t32 = X_PA * t22 - X_PC * t23 + 0.5 * RHO_INV * 2 * (t12 - t13);
+            t33 = X_PA * t23 - X_PC * t24 + 0.5 * RHO_INV * 2 * (t13 - t14);
+            t40 = X_PA * t30 - X_PC * t31 + 0.5 * RHO_INV * 3 * (t20 - t21);
+            t41 = X_PA * t31 - X_PC * t32 + 0.5 * RHO_INV * 3 * (t21 - t22);
+            t42 = X_PA * t32 - X_PC * t33 + 0.5 * RHO_INV * 3 * (t22 - t23);
             *(temp + 0) = beta_in * (*(temp + 0)) + t40;
 
-            t50 = X_PB * t40 - X_PC * t41 + 0.5 * RHO_INV * 4 * (t30 - t31);
-            t51 = X_PB * t41 - X_PC * t42 + 0.5 * RHO_INV * 4 * (t31 - t32);
+            t50 = X_PA * t40 - X_PC * t41 + 0.5 * RHO_INV * 4 * (t30 - t31);
+            t51 = X_PA * t41 - X_PC * t42 + 0.5 * RHO_INV * 4 * (t31 - t32);
             *(temp + 15) = beta_in * (*(temp + 15)) + t50;
 
-            t60 = X_PB * t50 - X_PC * t51 + 0.5 * RHO_INV * 5 * (t40 - t41);
+            t60 = X_PA * t50 - X_PC * t51 + 0.5 * RHO_INV * 5 * (t40 - t41);
             *(temp + 36) = beta_in * (*(temp + 36)) + t60;
 
-            t60 = Y_PB * t50 - Y_PC * t51;
+            t60 = Y_PA * t50 - Y_PC * t51;
             *(temp + 37) = beta_in * (*(temp + 37)) + t60;
 
-            t60 = Z_PB * t50 - Z_PC * t51;
+            t60 = Z_PA * t50 - Z_PC * t51;
             *(temp + 38) = beta_in * (*(temp + 38)) + t60;
 
-            t50 = Y_PB * t40 - Y_PC * t41;
-            t51 = Y_PB * t41 - Y_PC * t42;
+            t50 = Y_PA * t40 - Y_PC * t41;
+            t51 = Y_PA * t41 - Y_PC * t42;
             *(temp + 16) = beta_in * (*(temp + 16)) + t50;
 
-            t60 = Y_PB * t50 - Y_PC * t51 + 0.5 * RHO_INV * 1 * (t40 - t41);
+            t60 = Y_PA * t50 - Y_PC * t51 + 0.5 * RHO_INV * 1 * (t40 - t41);
             *(temp + 39) = beta_in * (*(temp + 39)) + t60;
 
-            t60 = Z_PB * t50 - Z_PC * t51;
+            t60 = Z_PA * t50 - Z_PC * t51;
             *(temp + 40) = beta_in * (*(temp + 40)) + t60;
 
-            t50 = Z_PB * t40 - Z_PC * t41;
-            t51 = Z_PB * t41 - Z_PC * t42;
+            t50 = Z_PA * t40 - Z_PC * t41;
+            t51 = Z_PA * t41 - Z_PC * t42;
             *(temp + 17) = beta_in * (*(temp + 17)) + t50;
 
-            t60 = Z_PB * t50 - Z_PC * t51 + 0.5 * RHO_INV * 1 * (t40 - t41);
+            t60 = Z_PA * t50 - Z_PC * t51 + 0.5 * RHO_INV * 1 * (t40 - t41);
             *(temp + 41) = beta_in * (*(temp + 41)) + t60;
 
-            t40 = Y_PB * t30 - Y_PC * t31;
-            t41 = Y_PB * t31 - Y_PC * t32;
-            t42 = Y_PB * t32 - Y_PC * t33;
+            t40 = Y_PA * t30 - Y_PC * t31;
+            t41 = Y_PA * t31 - Y_PC * t32;
+            t42 = Y_PA * t32 - Y_PC * t33;
             *(temp + 1) = beta_in * (*(temp + 1)) + t40;
 
-            t50 = Y_PB * t40 - Y_PC * t41 + 0.5 * RHO_INV * 1 * (t30 - t31);
-            t51 = Y_PB * t41 - Y_PC * t42 + 0.5 * RHO_INV * 1 * (t31 - t32);
+            t50 = Y_PA * t40 - Y_PC * t41 + 0.5 * RHO_INV * 1 * (t30 - t31);
+            t51 = Y_PA * t41 - Y_PC * t42 + 0.5 * RHO_INV * 1 * (t31 - t32);
             *(temp + 18) = beta_in * (*(temp + 18)) + t50;
 
-            t60 = Y_PB * t50 - Y_PC * t51 + 0.5 * RHO_INV * 2 * (t40 - t41);
+            t60 = Y_PA * t50 - Y_PC * t51 + 0.5 * RHO_INV * 2 * (t40 - t41);
             *(temp + 42) = beta_in * (*(temp + 42)) + t60;
 
-            t60 = Z_PB * t50 - Z_PC * t51;
+            t60 = Z_PA * t50 - Z_PC * t51;
             *(temp + 43) = beta_in * (*(temp + 43)) + t60;
 
-            t50 = Z_PB * t40 - Z_PC * t41;
-            t51 = Z_PB * t41 - Z_PC * t42;
+            t50 = Z_PA * t40 - Z_PC * t41;
+            t51 = Z_PA * t41 - Z_PC * t42;
             *(temp + 19) = beta_in * (*(temp + 19)) + t50;
 
-            t60 = Z_PB * t50 - Z_PC * t51 + 0.5 * RHO_INV * 1 * (t40 - t41);
+            t60 = Z_PA * t50 - Z_PC * t51 + 0.5 * RHO_INV * 1 * (t40 - t41);
             *(temp + 44) = beta_in * (*(temp + 44)) + t60;
 
-            t40 = Z_PB * t30 - Z_PC * t31;
-            t41 = Z_PB * t31 - Z_PC * t32;
-            t42 = Z_PB * t32 - Z_PC * t33;
+            t40 = Z_PA * t30 - Z_PC * t31;
+            t41 = Z_PA * t31 - Z_PC * t32;
+            t42 = Z_PA * t32 - Z_PC * t33;
             *(temp + 2) = beta_in * (*(temp + 2)) + t40;
 
-            t50 = Z_PB * t40 - Z_PC * t41 + 0.5 * RHO_INV * 1 * (t30 - t31);
-            t51 = Z_PB * t41 - Z_PC * t42 + 0.5 * RHO_INV * 1 * (t31 - t32);
+            t50 = Z_PA * t40 - Z_PC * t41 + 0.5 * RHO_INV * 1 * (t30 - t31);
+            t51 = Z_PA * t41 - Z_PC * t42 + 0.5 * RHO_INV * 1 * (t31 - t32);
             *(temp + 20) = beta_in * (*(temp + 20)) + t50;
 
-            t60 = Z_PB * t50 - Z_PC * t51 + 0.5 * RHO_INV * 2 * (t40 - t41);
+            t60 = Z_PA * t50 - Z_PC * t51 + 0.5 * RHO_INV * 2 * (t40 - t41);
             *(temp + 45) = beta_in * (*(temp + 45)) + t60;
 
-            t30 = Y_PB * t20 - Y_PC * t21;
-            t31 = Y_PB * t21 - Y_PC * t22;
-            t32 = Y_PB * t22 - Y_PC * t23;
-            t33 = Y_PB * t23 - Y_PC * t24;
-            t40 = Y_PB * t30 - Y_PC * t31 + 0.5 * RHO_INV * 1 * (t20 - t21);
-            t41 = Y_PB * t31 - Y_PC * t32 + 0.5 * RHO_INV * 1 * (t21 - t22);
-            t42 = Y_PB * t32 - Y_PC * t33 + 0.5 * RHO_INV * 1 * (t22 - t23);
+            t30 = Y_PA * t20 - Y_PC * t21;
+            t31 = Y_PA * t21 - Y_PC * t22;
+            t32 = Y_PA * t22 - Y_PC * t23;
+            t33 = Y_PA * t23 - Y_PC * t24;
+            t40 = Y_PA * t30 - Y_PC * t31 + 0.5 * RHO_INV * 1 * (t20 - t21);
+            t41 = Y_PA * t31 - Y_PC * t32 + 0.5 * RHO_INV * 1 * (t21 - t22);
+            t42 = Y_PA * t32 - Y_PC * t33 + 0.5 * RHO_INV * 1 * (t22 - t23);
             *(temp + 3) = beta_in * (*(temp + 3)) + t40;
 
-            t50 = Y_PB * t40 - Y_PC * t41 + 0.5 * RHO_INV * 2 * (t30 - t31);
-            t51 = Y_PB * t41 - Y_PC * t42 + 0.5 * RHO_INV * 2 * (t31 - t32);
+            t50 = Y_PA * t40 - Y_PC * t41 + 0.5 * RHO_INV * 2 * (t30 - t31);
+            t51 = Y_PA * t41 - Y_PC * t42 + 0.5 * RHO_INV * 2 * (t31 - t32);
             *(temp + 21) = beta_in * (*(temp + 21)) + t50;
 
-            t60 = Y_PB * t50 - Y_PC * t51 + 0.5 * RHO_INV * 3 * (t40 - t41);
+            t60 = Y_PA * t50 - Y_PC * t51 + 0.5 * RHO_INV * 3 * (t40 - t41);
             *(temp + 46) = beta_in * (*(temp + 46)) + t60;
 
-            t60 = Z_PB * t50 - Z_PC * t51;
+            t60 = Z_PA * t50 - Z_PC * t51;
             *(temp + 47) = beta_in * (*(temp + 47)) + t60;
 
-            t50 = Z_PB * t40 - Z_PC * t41;
-            t51 = Z_PB * t41 - Z_PC * t42;
+            t50 = Z_PA * t40 - Z_PC * t41;
+            t51 = Z_PA * t41 - Z_PC * t42;
             *(temp + 22) = beta_in * (*(temp + 22)) + t50;
 
-            t60 = Z_PB * t50 - Z_PC * t51 + 0.5 * RHO_INV * 1 * (t40 - t41);
+            t60 = Z_PA * t50 - Z_PC * t51 + 0.5 * RHO_INV * 1 * (t40 - t41);
             *(temp + 48) = beta_in * (*(temp + 48)) + t60;
 
-            t40 = Z_PB * t30 - Z_PC * t31;
-            t41 = Z_PB * t31 - Z_PC * t32;
-            t42 = Z_PB * t32 - Z_PC * t33;
+            t40 = Z_PA * t30 - Z_PC * t31;
+            t41 = Z_PA * t31 - Z_PC * t32;
+            t42 = Z_PA * t32 - Z_PC * t33;
             *(temp + 4) = beta_in * (*(temp + 4)) + t40;
 
-            t50 = Z_PB * t40 - Z_PC * t41 + 0.5 * RHO_INV * 1 * (t30 - t31);
-            t51 = Z_PB * t41 - Z_PC * t42 + 0.5 * RHO_INV * 1 * (t31 - t32);
+            t50 = Z_PA * t40 - Z_PC * t41 + 0.5 * RHO_INV * 1 * (t30 - t31);
+            t51 = Z_PA * t41 - Z_PC * t42 + 0.5 * RHO_INV * 1 * (t31 - t32);
             *(temp + 23) = beta_in * (*(temp + 23)) + t50;
 
-            t60 = Z_PB * t50 - Z_PC * t51 + 0.5 * RHO_INV * 2 * (t40 - t41);
+            t60 = Z_PA * t50 - Z_PC * t51 + 0.5 * RHO_INV * 2 * (t40 - t41);
             *(temp + 49) = beta_in * (*(temp + 49)) + t60;
 
-            t30 = Z_PB * t20 - Z_PC * t21;
-            t31 = Z_PB * t21 - Z_PC * t22;
-            t32 = Z_PB * t22 - Z_PC * t23;
-            t33 = Z_PB * t23 - Z_PC * t24;
-            t40 = Z_PB * t30 - Z_PC * t31 + 0.5 * RHO_INV * 1 * (t20 - t21);
-            t41 = Z_PB * t31 - Z_PC * t32 + 0.5 * RHO_INV * 1 * (t21 - t22);
-            t42 = Z_PB * t32 - Z_PC * t33 + 0.5 * RHO_INV * 1 * (t22 - t23);
+            t30 = Z_PA * t20 - Z_PC * t21;
+            t31 = Z_PA * t21 - Z_PC * t22;
+            t32 = Z_PA * t22 - Z_PC * t23;
+            t33 = Z_PA * t23 - Z_PC * t24;
+            t40 = Z_PA * t30 - Z_PC * t31 + 0.5 * RHO_INV * 1 * (t20 - t21);
+            t41 = Z_PA * t31 - Z_PC * t32 + 0.5 * RHO_INV * 1 * (t21 - t22);
+            t42 = Z_PA * t32 - Z_PC * t33 + 0.5 * RHO_INV * 1 * (t22 - t23);
             *(temp + 5) = beta_in * (*(temp + 5)) + t40;
 
-            t50 = Z_PB * t40 - Z_PC * t41 + 0.5 * RHO_INV * 2 * (t30 - t31);
-            t51 = Z_PB * t41 - Z_PC * t42 + 0.5 * RHO_INV * 2 * (t31 - t32);
+            t50 = Z_PA * t40 - Z_PC * t41 + 0.5 * RHO_INV * 2 * (t30 - t31);
+            t51 = Z_PA * t41 - Z_PC * t42 + 0.5 * RHO_INV * 2 * (t31 - t32);
             *(temp + 24) = beta_in * (*(temp + 24)) + t50;
 
-            t60 = Z_PB * t50 - Z_PC * t51 + 0.5 * RHO_INV * 3 * (t40 - t41);
+            t60 = Z_PA * t50 - Z_PC * t51 + 0.5 * RHO_INV * 3 * (t40 - t41);
             *(temp + 50) = beta_in * (*(temp + 50)) + t60;
 
-            t20 = Y_PB * t10 - Y_PC * t11;
-            t21 = Y_PB * t11 - Y_PC * t12;
-            t22 = Y_PB * t12 - Y_PC * t13;
-            t23 = Y_PB * t13 - Y_PC * t14;
-            t24 = Y_PB * t14 - Y_PC * t15;
-            t30 = Y_PB * t20 - Y_PC * t21 + 0.5 * RHO_INV * 1 * (t10 - t11);
-            t31 = Y_PB * t21 - Y_PC * t22 + 0.5 * RHO_INV * 1 * (t11 - t12);
-            t32 = Y_PB * t22 - Y_PC * t23 + 0.5 * RHO_INV * 1 * (t12 - t13);
-            t33 = Y_PB * t23 - Y_PC * t24 + 0.5 * RHO_INV * 1 * (t13 - t14);
-            t40 = Y_PB * t30 - Y_PC * t31 + 0.5 * RHO_INV * 2 * (t20 - t21);
-            t41 = Y_PB * t31 - Y_PC * t32 + 0.5 * RHO_INV * 2 * (t21 - t22);
-            t42 = Y_PB * t32 - Y_PC * t33 + 0.5 * RHO_INV * 2 * (t22 - t23);
+            t20 = Y_PA * t10 - Y_PC * t11;
+            t21 = Y_PA * t11 - Y_PC * t12;
+            t22 = Y_PA * t12 - Y_PC * t13;
+            t23 = Y_PA * t13 - Y_PC * t14;
+            t24 = Y_PA * t14 - Y_PC * t15;
+            t30 = Y_PA * t20 - Y_PC * t21 + 0.5 * RHO_INV * 1 * (t10 - t11);
+            t31 = Y_PA * t21 - Y_PC * t22 + 0.5 * RHO_INV * 1 * (t11 - t12);
+            t32 = Y_PA * t22 - Y_PC * t23 + 0.5 * RHO_INV * 1 * (t12 - t13);
+            t33 = Y_PA * t23 - Y_PC * t24 + 0.5 * RHO_INV * 1 * (t13 - t14);
+            t40 = Y_PA * t30 - Y_PC * t31 + 0.5 * RHO_INV * 2 * (t20 - t21);
+            t41 = Y_PA * t31 - Y_PC * t32 + 0.5 * RHO_INV * 2 * (t21 - t22);
+            t42 = Y_PA * t32 - Y_PC * t33 + 0.5 * RHO_INV * 2 * (t22 - t23);
             *(temp + 6) = beta_in * (*(temp + 6)) + t40;
 
-            t50 = Y_PB * t40 - Y_PC * t41 + 0.5 * RHO_INV * 3 * (t30 - t31);
-            t51 = Y_PB * t41 - Y_PC * t42 + 0.5 * RHO_INV * 3 * (t31 - t32);
+            t50 = Y_PA * t40 - Y_PC * t41 + 0.5 * RHO_INV * 3 * (t30 - t31);
+            t51 = Y_PA * t41 - Y_PC * t42 + 0.5 * RHO_INV * 3 * (t31 - t32);
             *(temp + 25) = beta_in * (*(temp + 25)) + t50;
 
-            t60 = Y_PB * t50 - Y_PC * t51 + 0.5 * RHO_INV * 4 * (t40 - t41);
+            t60 = Y_PA * t50 - Y_PC * t51 + 0.5 * RHO_INV * 4 * (t40 - t41);
             *(temp + 51) = beta_in * (*(temp + 51)) + t60;
 
-            t60 = Z_PB * t50 - Z_PC * t51;
+            t60 = Z_PA * t50 - Z_PC * t51;
             *(temp + 52) = beta_in * (*(temp + 52)) + t60;
 
-            t50 = Z_PB * t40 - Z_PC * t41;
-            t51 = Z_PB * t41 - Z_PC * t42;
+            t50 = Z_PA * t40 - Z_PC * t41;
+            t51 = Z_PA * t41 - Z_PC * t42;
             *(temp + 26) = beta_in * (*(temp + 26)) + t50;
 
-            t60 = Z_PB * t50 - Z_PC * t51 + 0.5 * RHO_INV * 1 * (t40 - t41);
+            t60 = Z_PA * t50 - Z_PC * t51 + 0.5 * RHO_INV * 1 * (t40 - t41);
             *(temp + 53) = beta_in * (*(temp + 53)) + t60;
 
-            t40 = Z_PB * t30 - Z_PC * t31;
-            t41 = Z_PB * t31 - Z_PC * t32;
-            t42 = Z_PB * t32 - Z_PC * t33;
+            t40 = Z_PA * t30 - Z_PC * t31;
+            t41 = Z_PA * t31 - Z_PC * t32;
+            t42 = Z_PA * t32 - Z_PC * t33;
             *(temp + 7) = beta_in * (*(temp + 7)) + t40;
 
-            t50 = Z_PB * t40 - Z_PC * t41 + 0.5 * RHO_INV * 1 * (t30 - t31);
-            t51 = Z_PB * t41 - Z_PC * t42 + 0.5 * RHO_INV * 1 * (t31 - t32);
+            t50 = Z_PA * t40 - Z_PC * t41 + 0.5 * RHO_INV * 1 * (t30 - t31);
+            t51 = Z_PA * t41 - Z_PC * t42 + 0.5 * RHO_INV * 1 * (t31 - t32);
             *(temp + 27) = beta_in * (*(temp + 27)) + t50;
 
-            t60 = Z_PB * t50 - Z_PC * t51 + 0.5 * RHO_INV * 2 * (t40 - t41);
+            t60 = Z_PA * t50 - Z_PC * t51 + 0.5 * RHO_INV * 2 * (t40 - t41);
             *(temp + 54) = beta_in * (*(temp + 54)) + t60;
 
-            t30 = Z_PB * t20 - Z_PC * t21;
-            t31 = Z_PB * t21 - Z_PC * t22;
-            t32 = Z_PB * t22 - Z_PC * t23;
-            t33 = Z_PB * t23 - Z_PC * t24;
-            t40 = Z_PB * t30 - Z_PC * t31 + 0.5 * RHO_INV * 1 * (t20 - t21);
-            t41 = Z_PB * t31 - Z_PC * t32 + 0.5 * RHO_INV * 1 * (t21 - t22);
-            t42 = Z_PB * t32 - Z_PC * t33 + 0.5 * RHO_INV * 1 * (t22 - t23);
+            t30 = Z_PA * t20 - Z_PC * t21;
+            t31 = Z_PA * t21 - Z_PC * t22;
+            t32 = Z_PA * t22 - Z_PC * t23;
+            t33 = Z_PA * t23 - Z_PC * t24;
+            t40 = Z_PA * t30 - Z_PC * t31 + 0.5 * RHO_INV * 1 * (t20 - t21);
+            t41 = Z_PA * t31 - Z_PC * t32 + 0.5 * RHO_INV * 1 * (t21 - t22);
+            t42 = Z_PA * t32 - Z_PC * t33 + 0.5 * RHO_INV * 1 * (t22 - t23);
             *(temp + 8) = beta_in * (*(temp + 8)) + t40;
 
-            t50 = Z_PB * t40 - Z_PC * t41 + 0.5 * RHO_INV * 2 * (t30 - t31);
-            t51 = Z_PB * t41 - Z_PC * t42 + 0.5 * RHO_INV * 2 * (t31 - t32);
+            t50 = Z_PA * t40 - Z_PC * t41 + 0.5 * RHO_INV * 2 * (t30 - t31);
+            t51 = Z_PA * t41 - Z_PC * t42 + 0.5 * RHO_INV * 2 * (t31 - t32);
             *(temp + 28) = beta_in * (*(temp + 28)) + t50;
 
-            t60 = Z_PB * t50 - Z_PC * t51 + 0.5 * RHO_INV * 3 * (t40 - t41);
+            t60 = Z_PA * t50 - Z_PC * t51 + 0.5 * RHO_INV * 3 * (t40 - t41);
             *(temp + 55) = beta_in * (*(temp + 55)) + t60;
 
-            t20 = Z_PB * t10 - Z_PC * t11;
-            t21 = Z_PB * t11 - Z_PC * t12;
-            t22 = Z_PB * t12 - Z_PC * t13;
-            t23 = Z_PB * t13 - Z_PC * t14;
-            t24 = Z_PB * t14 - Z_PC * t15;
-            t30 = Z_PB * t20 - Z_PC * t21 + 0.5 * RHO_INV * 1 * (t10 - t11);
-            t31 = Z_PB * t21 - Z_PC * t22 + 0.5 * RHO_INV * 1 * (t11 - t12);
-            t32 = Z_PB * t22 - Z_PC * t23 + 0.5 * RHO_INV * 1 * (t12 - t13);
-            t33 = Z_PB * t23 - Z_PC * t24 + 0.5 * RHO_INV * 1 * (t13 - t14);
-            t40 = Z_PB * t30 - Z_PC * t31 + 0.5 * RHO_INV * 2 * (t20 - t21);
-            t41 = Z_PB * t31 - Z_PC * t32 + 0.5 * RHO_INV * 2 * (t21 - t22);
-            t42 = Z_PB * t32 - Z_PC * t33 + 0.5 * RHO_INV * 2 * (t22 - t23);
+            t20 = Z_PA * t10 - Z_PC * t11;
+            t21 = Z_PA * t11 - Z_PC * t12;
+            t22 = Z_PA * t12 - Z_PC * t13;
+            t23 = Z_PA * t13 - Z_PC * t14;
+            t24 = Z_PA * t14 - Z_PC * t15;
+            t30 = Z_PA * t20 - Z_PC * t21 + 0.5 * RHO_INV * 1 * (t10 - t11);
+            t31 = Z_PA * t21 - Z_PC * t22 + 0.5 * RHO_INV * 1 * (t11 - t12);
+            t32 = Z_PA * t22 - Z_PC * t23 + 0.5 * RHO_INV * 1 * (t12 - t13);
+            t33 = Z_PA * t23 - Z_PC * t24 + 0.5 * RHO_INV * 1 * (t13 - t14);
+            t40 = Z_PA * t30 - Z_PC * t31 + 0.5 * RHO_INV * 2 * (t20 - t21);
+            t41 = Z_PA * t31 - Z_PC * t32 + 0.5 * RHO_INV * 2 * (t21 - t22);
+            t42 = Z_PA * t32 - Z_PC * t33 + 0.5 * RHO_INV * 2 * (t22 - t23);
             *(temp + 9) = beta_in * (*(temp + 9)) + t40;
 
-            t50 = Z_PB * t40 - Z_PC * t41 + 0.5 * RHO_INV * 3 * (t30 - t31);
-            t51 = Z_PB * t41 - Z_PC * t42 + 0.5 * RHO_INV * 3 * (t31 - t32);
+            t50 = Z_PA * t40 - Z_PC * t41 + 0.5 * RHO_INV * 3 * (t30 - t31);
+            t51 = Z_PA * t41 - Z_PC * t42 + 0.5 * RHO_INV * 3 * (t31 - t32);
             *(temp + 29) = beta_in * (*(temp + 29)) + t50;
 
-            t60 = Z_PB * t50 - Z_PC * t51 + 0.5 * RHO_INV * 4 * (t40 - t41);
+            t60 = Z_PA * t50 - Z_PC * t51 + 0.5 * RHO_INV * 4 * (t40 - t41);
             *(temp + 56) = beta_in * (*(temp + 56)) + t60;
 
-            t10 = Y_PB * t00 - Y_PC * t01;
-            t11 = Y_PB * t01 - Y_PC * t02;
-            t12 = Y_PB * t02 - Y_PC * t03;
-            t13 = Y_PB * t03 - Y_PC * t04;
-            t14 = Y_PB * t04 - Y_PC * t05;
-            t15 = Y_PB * t05 - Y_PC * t06;
-            t20 = Y_PB * t10 - Y_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
-            t21 = Y_PB * t11 - Y_PC * t12 + 0.5 * RHO_INV * 1 * (t01 - t02);
-            t22 = Y_PB * t12 - Y_PC * t13 + 0.5 * RHO_INV * 1 * (t02 - t03);
-            t23 = Y_PB * t13 - Y_PC * t14 + 0.5 * RHO_INV * 1 * (t03 - t04);
-            t24 = Y_PB * t14 - Y_PC * t15 + 0.5 * RHO_INV * 1 * (t04 - t05);
-            t30 = Y_PB * t20 - Y_PC * t21 + 0.5 * RHO_INV * 2 * (t10 - t11);
-            t31 = Y_PB * t21 - Y_PC * t22 + 0.5 * RHO_INV * 2 * (t11 - t12);
-            t32 = Y_PB * t22 - Y_PC * t23 + 0.5 * RHO_INV * 2 * (t12 - t13);
-            t33 = Y_PB * t23 - Y_PC * t24 + 0.5 * RHO_INV * 2 * (t13 - t14);
-            t40 = Y_PB * t30 - Y_PC * t31 + 0.5 * RHO_INV * 3 * (t20 - t21);
-            t41 = Y_PB * t31 - Y_PC * t32 + 0.5 * RHO_INV * 3 * (t21 - t22);
-            t42 = Y_PB * t32 - Y_PC * t33 + 0.5 * RHO_INV * 3 * (t22 - t23);
+            t10 = Y_PA * t00 - Y_PC * t01;
+            t11 = Y_PA * t01 - Y_PC * t02;
+            t12 = Y_PA * t02 - Y_PC * t03;
+            t13 = Y_PA * t03 - Y_PC * t04;
+            t14 = Y_PA * t04 - Y_PC * t05;
+            t15 = Y_PA * t05 - Y_PC * t06;
+            t20 = Y_PA * t10 - Y_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
+            t21 = Y_PA * t11 - Y_PC * t12 + 0.5 * RHO_INV * 1 * (t01 - t02);
+            t22 = Y_PA * t12 - Y_PC * t13 + 0.5 * RHO_INV * 1 * (t02 - t03);
+            t23 = Y_PA * t13 - Y_PC * t14 + 0.5 * RHO_INV * 1 * (t03 - t04);
+            t24 = Y_PA * t14 - Y_PC * t15 + 0.5 * RHO_INV * 1 * (t04 - t05);
+            t30 = Y_PA * t20 - Y_PC * t21 + 0.5 * RHO_INV * 2 * (t10 - t11);
+            t31 = Y_PA * t21 - Y_PC * t22 + 0.5 * RHO_INV * 2 * (t11 - t12);
+            t32 = Y_PA * t22 - Y_PC * t23 + 0.5 * RHO_INV * 2 * (t12 - t13);
+            t33 = Y_PA * t23 - Y_PC * t24 + 0.5 * RHO_INV * 2 * (t13 - t14);
+            t40 = Y_PA * t30 - Y_PC * t31 + 0.5 * RHO_INV * 3 * (t20 - t21);
+            t41 = Y_PA * t31 - Y_PC * t32 + 0.5 * RHO_INV * 3 * (t21 - t22);
+            t42 = Y_PA * t32 - Y_PC * t33 + 0.5 * RHO_INV * 3 * (t22 - t23);
             *(temp + 10) = beta_in * (*(temp + 10)) + t40;
 
-            t50 = Y_PB * t40 - Y_PC * t41 + 0.5 * RHO_INV * 4 * (t30 - t31);
-            t51 = Y_PB * t41 - Y_PC * t42 + 0.5 * RHO_INV * 4 * (t31 - t32);
+            t50 = Y_PA * t40 - Y_PC * t41 + 0.5 * RHO_INV * 4 * (t30 - t31);
+            t51 = Y_PA * t41 - Y_PC * t42 + 0.5 * RHO_INV * 4 * (t31 - t32);
             *(temp + 30) = beta_in * (*(temp + 30)) + t50;
 
-            t60 = Y_PB * t50 - Y_PC * t51 + 0.5 * RHO_INV * 5 * (t40 - t41);
+            t60 = Y_PA * t50 - Y_PC * t51 + 0.5 * RHO_INV * 5 * (t40 - t41);
             *(temp + 57) = beta_in * (*(temp + 57)) + t60;
 
-            t60 = Z_PB * t50 - Z_PC * t51;
+            t60 = Z_PA * t50 - Z_PC * t51;
             *(temp + 58) = beta_in * (*(temp + 58)) + t60;
 
-            t50 = Z_PB * t40 - Z_PC * t41;
-            t51 = Z_PB * t41 - Z_PC * t42;
+            t50 = Z_PA * t40 - Z_PC * t41;
+            t51 = Z_PA * t41 - Z_PC * t42;
             *(temp + 31) = beta_in * (*(temp + 31)) + t50;
 
-            t60 = Z_PB * t50 - Z_PC * t51 + 0.5 * RHO_INV * 1 * (t40 - t41);
+            t60 = Z_PA * t50 - Z_PC * t51 + 0.5 * RHO_INV * 1 * (t40 - t41);
             *(temp + 59) = beta_in * (*(temp + 59)) + t60;
 
-            t40 = Z_PB * t30 - Z_PC * t31;
-            t41 = Z_PB * t31 - Z_PC * t32;
-            t42 = Z_PB * t32 - Z_PC * t33;
+            t40 = Z_PA * t30 - Z_PC * t31;
+            t41 = Z_PA * t31 - Z_PC * t32;
+            t42 = Z_PA * t32 - Z_PC * t33;
             *(temp + 11) = beta_in * (*(temp + 11)) + t40;
 
-            t50 = Z_PB * t40 - Z_PC * t41 + 0.5 * RHO_INV * 1 * (t30 - t31);
-            t51 = Z_PB * t41 - Z_PC * t42 + 0.5 * RHO_INV * 1 * (t31 - t32);
+            t50 = Z_PA * t40 - Z_PC * t41 + 0.5 * RHO_INV * 1 * (t30 - t31);
+            t51 = Z_PA * t41 - Z_PC * t42 + 0.5 * RHO_INV * 1 * (t31 - t32);
             *(temp + 32) = beta_in * (*(temp + 32)) + t50;
 
-            t60 = Z_PB * t50 - Z_PC * t51 + 0.5 * RHO_INV * 2 * (t40 - t41);
+            t60 = Z_PA * t50 - Z_PC * t51 + 0.5 * RHO_INV * 2 * (t40 - t41);
             *(temp + 60) = beta_in * (*(temp + 60)) + t60;
 
-            t30 = Z_PB * t20 - Z_PC * t21;
-            t31 = Z_PB * t21 - Z_PC * t22;
-            t32 = Z_PB * t22 - Z_PC * t23;
-            t33 = Z_PB * t23 - Z_PC * t24;
-            t40 = Z_PB * t30 - Z_PC * t31 + 0.5 * RHO_INV * 1 * (t20 - t21);
-            t41 = Z_PB * t31 - Z_PC * t32 + 0.5 * RHO_INV * 1 * (t21 - t22);
-            t42 = Z_PB * t32 - Z_PC * t33 + 0.5 * RHO_INV * 1 * (t22 - t23);
+            t30 = Z_PA * t20 - Z_PC * t21;
+            t31 = Z_PA * t21 - Z_PC * t22;
+            t32 = Z_PA * t22 - Z_PC * t23;
+            t33 = Z_PA * t23 - Z_PC * t24;
+            t40 = Z_PA * t30 - Z_PC * t31 + 0.5 * RHO_INV * 1 * (t20 - t21);
+            t41 = Z_PA * t31 - Z_PC * t32 + 0.5 * RHO_INV * 1 * (t21 - t22);
+            t42 = Z_PA * t32 - Z_PC * t33 + 0.5 * RHO_INV * 1 * (t22 - t23);
             *(temp + 12) = beta_in * (*(temp + 12)) + t40;
 
-            t50 = Z_PB * t40 - Z_PC * t41 + 0.5 * RHO_INV * 2 * (t30 - t31);
-            t51 = Z_PB * t41 - Z_PC * t42 + 0.5 * RHO_INV * 2 * (t31 - t32);
+            t50 = Z_PA * t40 - Z_PC * t41 + 0.5 * RHO_INV * 2 * (t30 - t31);
+            t51 = Z_PA * t41 - Z_PC * t42 + 0.5 * RHO_INV * 2 * (t31 - t32);
             *(temp + 33) = beta_in * (*(temp + 33)) + t50;
 
-            t60 = Z_PB * t50 - Z_PC * t51 + 0.5 * RHO_INV * 3 * (t40 - t41);
+            t60 = Z_PA * t50 - Z_PC * t51 + 0.5 * RHO_INV * 3 * (t40 - t41);
             *(temp + 61) = beta_in * (*(temp + 61)) + t60;
 
-            t20 = Z_PB * t10 - Z_PC * t11;
-            t21 = Z_PB * t11 - Z_PC * t12;
-            t22 = Z_PB * t12 - Z_PC * t13;
-            t23 = Z_PB * t13 - Z_PC * t14;
-            t24 = Z_PB * t14 - Z_PC * t15;
-            t30 = Z_PB * t20 - Z_PC * t21 + 0.5 * RHO_INV * 1 * (t10 - t11);
-            t31 = Z_PB * t21 - Z_PC * t22 + 0.5 * RHO_INV * 1 * (t11 - t12);
-            t32 = Z_PB * t22 - Z_PC * t23 + 0.5 * RHO_INV * 1 * (t12 - t13);
-            t33 = Z_PB * t23 - Z_PC * t24 + 0.5 * RHO_INV * 1 * (t13 - t14);
-            t40 = Z_PB * t30 - Z_PC * t31 + 0.5 * RHO_INV * 2 * (t20 - t21);
-            t41 = Z_PB * t31 - Z_PC * t32 + 0.5 * RHO_INV * 2 * (t21 - t22);
-            t42 = Z_PB * t32 - Z_PC * t33 + 0.5 * RHO_INV * 2 * (t22 - t23);
+            t20 = Z_PA * t10 - Z_PC * t11;
+            t21 = Z_PA * t11 - Z_PC * t12;
+            t22 = Z_PA * t12 - Z_PC * t13;
+            t23 = Z_PA * t13 - Z_PC * t14;
+            t24 = Z_PA * t14 - Z_PC * t15;
+            t30 = Z_PA * t20 - Z_PC * t21 + 0.5 * RHO_INV * 1 * (t10 - t11);
+            t31 = Z_PA * t21 - Z_PC * t22 + 0.5 * RHO_INV * 1 * (t11 - t12);
+            t32 = Z_PA * t22 - Z_PC * t23 + 0.5 * RHO_INV * 1 * (t12 - t13);
+            t33 = Z_PA * t23 - Z_PC * t24 + 0.5 * RHO_INV * 1 * (t13 - t14);
+            t40 = Z_PA * t30 - Z_PC * t31 + 0.5 * RHO_INV * 2 * (t20 - t21);
+            t41 = Z_PA * t31 - Z_PC * t32 + 0.5 * RHO_INV * 2 * (t21 - t22);
+            t42 = Z_PA * t32 - Z_PC * t33 + 0.5 * RHO_INV * 2 * (t22 - t23);
             *(temp + 13) = beta_in * (*(temp + 13)) + t40;
 
-            t50 = Z_PB * t40 - Z_PC * t41 + 0.5 * RHO_INV * 3 * (t30 - t31);
-            t51 = Z_PB * t41 - Z_PC * t42 + 0.5 * RHO_INV * 3 * (t31 - t32);
+            t50 = Z_PA * t40 - Z_PC * t41 + 0.5 * RHO_INV * 3 * (t30 - t31);
+            t51 = Z_PA * t41 - Z_PC * t42 + 0.5 * RHO_INV * 3 * (t31 - t32);
             *(temp + 34) = beta_in * (*(temp + 34)) + t50;
 
-            t60 = Z_PB * t50 - Z_PC * t51 + 0.5 * RHO_INV * 4 * (t40 - t41);
+            t60 = Z_PA * t50 - Z_PC * t51 + 0.5 * RHO_INV * 4 * (t40 - t41);
             *(temp + 62) = beta_in * (*(temp + 62)) + t60;
 
-            t10 = Z_PB * t00 - Z_PC * t01;
-            t11 = Z_PB * t01 - Z_PC * t02;
-            t12 = Z_PB * t02 - Z_PC * t03;
-            t13 = Z_PB * t03 - Z_PC * t04;
-            t14 = Z_PB * t04 - Z_PC * t05;
-            t15 = Z_PB * t05 - Z_PC * t06;
-            t20 = Z_PB * t10 - Z_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
-            t21 = Z_PB * t11 - Z_PC * t12 + 0.5 * RHO_INV * 1 * (t01 - t02);
-            t22 = Z_PB * t12 - Z_PC * t13 + 0.5 * RHO_INV * 1 * (t02 - t03);
-            t23 = Z_PB * t13 - Z_PC * t14 + 0.5 * RHO_INV * 1 * (t03 - t04);
-            t24 = Z_PB * t14 - Z_PC * t15 + 0.5 * RHO_INV * 1 * (t04 - t05);
-            t30 = Z_PB * t20 - Z_PC * t21 + 0.5 * RHO_INV * 2 * (t10 - t11);
-            t31 = Z_PB * t21 - Z_PC * t22 + 0.5 * RHO_INV * 2 * (t11 - t12);
-            t32 = Z_PB * t22 - Z_PC * t23 + 0.5 * RHO_INV * 2 * (t12 - t13);
-            t33 = Z_PB * t23 - Z_PC * t24 + 0.5 * RHO_INV * 2 * (t13 - t14);
-            t40 = Z_PB * t30 - Z_PC * t31 + 0.5 * RHO_INV * 3 * (t20 - t21);
-            t41 = Z_PB * t31 - Z_PC * t32 + 0.5 * RHO_INV * 3 * (t21 - t22);
-            t42 = Z_PB * t32 - Z_PC * t33 + 0.5 * RHO_INV * 3 * (t22 - t23);
+            t10 = Z_PA * t00 - Z_PC * t01;
+            t11 = Z_PA * t01 - Z_PC * t02;
+            t12 = Z_PA * t02 - Z_PC * t03;
+            t13 = Z_PA * t03 - Z_PC * t04;
+            t14 = Z_PA * t04 - Z_PC * t05;
+            t15 = Z_PA * t05 - Z_PC * t06;
+            t20 = Z_PA * t10 - Z_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
+            t21 = Z_PA * t11 - Z_PC * t12 + 0.5 * RHO_INV * 1 * (t01 - t02);
+            t22 = Z_PA * t12 - Z_PC * t13 + 0.5 * RHO_INV * 1 * (t02 - t03);
+            t23 = Z_PA * t13 - Z_PC * t14 + 0.5 * RHO_INV * 1 * (t03 - t04);
+            t24 = Z_PA * t14 - Z_PC * t15 + 0.5 * RHO_INV * 1 * (t04 - t05);
+            t30 = Z_PA * t20 - Z_PC * t21 + 0.5 * RHO_INV * 2 * (t10 - t11);
+            t31 = Z_PA * t21 - Z_PC * t22 + 0.5 * RHO_INV * 2 * (t11 - t12);
+            t32 = Z_PA * t22 - Z_PC * t23 + 0.5 * RHO_INV * 2 * (t12 - t13);
+            t33 = Z_PA * t23 - Z_PC * t24 + 0.5 * RHO_INV * 2 * (t13 - t14);
+            t40 = Z_PA * t30 - Z_PC * t31 + 0.5 * RHO_INV * 3 * (t20 - t21);
+            t41 = Z_PA * t31 - Z_PC * t32 + 0.5 * RHO_INV * 3 * (t21 - t22);
+            t42 = Z_PA * t32 - Z_PC * t33 + 0.5 * RHO_INV * 3 * (t22 - t23);
             *(temp + 14) = beta_in * (*(temp + 14)) + t40;
 
-            t50 = Z_PB * t40 - Z_PC * t41 + 0.5 * RHO_INV * 4 * (t30 - t31);
-            t51 = Z_PB * t41 - Z_PC * t42 + 0.5 * RHO_INV * 4 * (t31 - t32);
+            t50 = Z_PA * t40 - Z_PC * t41 + 0.5 * RHO_INV * 4 * (t30 - t31);
+            t51 = Z_PA * t41 - Z_PC * t42 + 0.5 * RHO_INV * 4 * (t31 - t32);
             *(temp + 35) = beta_in * (*(temp + 35)) + t50;
 
-            t60 = Z_PB * t50 - Z_PC * t51 + 0.5 * RHO_INV * 5 * (t40 - t41);
+            t60 = Z_PA * t50 - Z_PC * t51 + 0.5 * RHO_INV * 5 * (t40 - t41);
             *(temp + 63) = beta_in * (*(temp + 63)) + t60;
 
             beta_in = 1.0;
          }
       }
 
-      double *Xik = (Xi + point_idx * ldX);
-      double *Xjk = (Xj + point_idx * ldX);
-      double *Gik = (Gi + point_idx * ldG);
-      double *Gjk = (Gj + point_idx * ldG);
+      double *Xik = (Xi + point_idx * stX);
+      double *Xjk = (Xj + point_idx * stX);
+      double *Gik = (Gi + point_idx * stG);
+      double *Gjk = (Gj + point_idx * stG);
 
       for(int c0 = 0; c0 <= 2; ++c0) {
          for(int c1 = 0; c1 <= c0; ++c1) {
@@ -451,111 +453,111 @@ void integral_4_2(int npts,
 
                      mv = 4 + m - i; pv = 0 + p - k;
                      double t0 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 0) += *(Xik + idxB) * t0;
-                     *(Gik + idxB) += *(Xjk + 0) * t0;
+                     *(Gjk + 0 * ldG) += *(Xik + idxB * ldX) * t0;
+                     *(Gik + idxB * ldG) += *(Xjk + 0 * ldX) * t0;
 
                      mv = 3 + m - i; pv = 0 + p - k;
                      double t1 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 1) += *(Xik + idxB) * t1;
-                     *(Gik + idxB) += *(Xjk + 1) * t1;
+                     *(Gjk + 1 * ldG) += *(Xik + idxB * ldX) * t1;
+                     *(Gik + idxB * ldG) += *(Xjk + 1 * ldX) * t1;
 
                      mv = 3 + m - i; pv = 1 + p - k;
                      double t2 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 2) += *(Xik + idxB) * t2;
-                     *(Gik + idxB) += *(Xjk + 2) * t2;
+                     *(Gjk + 2 * ldG) += *(Xik + idxB * ldX) * t2;
+                     *(Gik + idxB * ldG) += *(Xjk + 2 * ldX) * t2;
 
                      mv = 2 + m - i; pv = 0 + p - k;
                      double t3 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 3) += *(Xik + idxB) * t3;
-                     *(Gik + idxB) += *(Xjk + 3) * t3;
+                     *(Gjk + 3 * ldG) += *(Xik + idxB * ldX) * t3;
+                     *(Gik + idxB * ldG) += *(Xjk + 3 * ldX) * t3;
 
                      mv = 2 + m - i; pv = 1 + p - k;
                      double t4 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 4) += *(Xik + idxB) * t4;
-                     *(Gik + idxB) += *(Xjk + 4) * t4;
+                     *(Gjk + 4 * ldG) += *(Xik + idxB * ldX) * t4;
+                     *(Gik + idxB * ldG) += *(Xjk + 4 * ldX) * t4;
 
                      mv = 2 + m - i; pv = 2 + p - k;
                      double t5 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 5) += *(Xik + idxB) * t5;
-                     *(Gik + idxB) += *(Xjk + 5) * t5;
+                     *(Gjk + 5 * ldG) += *(Xik + idxB * ldX) * t5;
+                     *(Gik + idxB * ldG) += *(Xjk + 5 * ldX) * t5;
 
                      mv = 1 + m - i; pv = 0 + p - k;
                      double t6 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 6) += *(Xik + idxB) * t6;
-                     *(Gik + idxB) += *(Xjk + 6) * t6;
+                     *(Gjk + 6 * ldG) += *(Xik + idxB * ldX) * t6;
+                     *(Gik + idxB * ldG) += *(Xjk + 6 * ldX) * t6;
 
                      mv = 1 + m - i; pv = 1 + p - k;
                      double t7 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 7) += *(Xik + idxB) * t7;
-                     *(Gik + idxB) += *(Xjk + 7) * t7;
+                     *(Gjk + 7 * ldG) += *(Xik + idxB * ldX) * t7;
+                     *(Gik + idxB * ldG) += *(Xjk + 7 * ldX) * t7;
 
                      mv = 1 + m - i; pv = 2 + p - k;
                      double t8 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 8) += *(Xik + idxB) * t8;
-                     *(Gik + idxB) += *(Xjk + 8) * t8;
+                     *(Gjk + 8 * ldG) += *(Xik + idxB * ldX) * t8;
+                     *(Gik + idxB * ldG) += *(Xjk + 8 * ldX) * t8;
 
                      mv = 1 + m - i; pv = 3 + p - k;
                      double t9 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 9) += *(Xik + idxB) * t9;
-                     *(Gik + idxB) += *(Xjk + 9) * t9;
+                     *(Gjk + 9 * ldG) += *(Xik + idxB * ldX) * t9;
+                     *(Gik + idxB * ldG) += *(Xjk + 9 * ldX) * t9;
 
                      mv = 0 + m - i; pv = 0 + p - k;
                      double t10 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 10) += *(Xik + idxB) * t10;
-                     *(Gik + idxB) += *(Xjk + 10) * t10;
+                     *(Gjk + 10 * ldG) += *(Xik + idxB * ldX) * t10;
+                     *(Gik + idxB * ldG) += *(Xjk + 10 * ldX) * t10;
 
                      mv = 0 + m - i; pv = 1 + p - k;
                      double t11 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 11) += *(Xik + idxB) * t11;
-                     *(Gik + idxB) += *(Xjk + 11) * t11;
+                     *(Gjk + 11 * ldG) += *(Xik + idxB * ldX) * t11;
+                     *(Gik + idxB * ldG) += *(Xjk + 11 * ldX) * t11;
 
                      mv = 0 + m - i; pv = 2 + p - k;
                      double t12 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 12) += *(Xik + idxB) * t12;
-                     *(Gik + idxB) += *(Xjk + 12) * t12;
+                     *(Gjk + 12 * ldG) += *(Xik + idxB * ldX) * t12;
+                     *(Gik + idxB * ldG) += *(Xjk + 12 * ldX) * t12;
 
                      mv = 0 + m - i; pv = 3 + p - k;
                      double t13 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 13) += *(Xik + idxB) * t13;
-                     *(Gik + idxB) += *(Xjk + 13) * t13;
+                     *(Gjk + 13 * ldG) += *(Xik + idxB * ldX) * t13;
+                     *(Gik + idxB * ldG) += *(Xjk + 13 * ldX) * t13;
 
                      mv = 0 + m - i; pv = 4 + p - k;
                      double t14 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 14) += *(Xik + idxB) * t14;
-                     *(Gik + idxB) += *(Xjk + 14) * t14;
+                     *(Gjk + 14 * ldG) += *(Xik + idxB * ldX) * t14;
+                     *(Gik + idxB * ldG) += *(Xjk + 14 * ldX) * t14;
 
-                     Z_ABp *= (-1.0) * Z_AB; rcp_k = 1.0 / (1.0 * (k + 1)); comb_p_k = (comb_p_k * (p - k)) * rcp_k;
+                     Z_ABp *= Z_AB; rcp_k = 1.0 / (1.0 * (k + 1)); comb_p_k = (comb_p_k * (p - k)) * rcp_k;
                   }
 
-                  Y_ABp *= (-1.0) * Y_AB; rcp_j = 1.0 / (1.0 * (j + 1)); comb_n_j = (comb_n_j * (n - j)) * rcp_j;
+                  Y_ABp *= Y_AB; rcp_j = 1.0 / (1.0 * (j + 1)); comb_n_j = (comb_n_j * (n - j)) * rcp_j;
                }
 
-               X_ABp *= (-1.0) * X_AB; rcp_i = 1.0 / (1.0 * (i + 1)); comb_m_i = (comb_m_i * (m - i)) * rcp_i;
+               X_ABp *= X_AB; rcp_i = 1.0 / (1.0 * (i + 1)); comb_m_i = (comb_m_i * (m - i)) * rcp_i;
             }
          }
       }
 
-      *(Gjk + 0) *= *(weights + point_idx);
-      *(Gjk + 1) *= *(weights + point_idx);
-      *(Gjk + 2) *= *(weights + point_idx);
-      *(Gjk + 3) *= *(weights + point_idx);
-      *(Gjk + 4) *= *(weights + point_idx);
-      *(Gjk + 5) *= *(weights + point_idx);
-      *(Gjk + 6) *= *(weights + point_idx);
-      *(Gjk + 7) *= *(weights + point_idx);
-      *(Gjk + 8) *= *(weights + point_idx);
-      *(Gjk + 9) *= *(weights + point_idx);
-      *(Gjk + 10) *= *(weights + point_idx);
-      *(Gjk + 11) *= *(weights + point_idx);
-      *(Gjk + 12) *= *(weights + point_idx);
-      *(Gjk + 13) *= *(weights + point_idx);
-      *(Gjk + 14) *= *(weights + point_idx);
+      *(Gjk + 0 * ldG) *= *(weights + point_idx);
+      *(Gjk + 1 * ldG) *= *(weights + point_idx);
+      *(Gjk + 2 * ldG) *= *(weights + point_idx);
+      *(Gjk + 3 * ldG) *= *(weights + point_idx);
+      *(Gjk + 4 * ldG) *= *(weights + point_idx);
+      *(Gjk + 5 * ldG) *= *(weights + point_idx);
+      *(Gjk + 6 * ldG) *= *(weights + point_idx);
+      *(Gjk + 7 * ldG) *= *(weights + point_idx);
+      *(Gjk + 8 * ldG) *= *(weights + point_idx);
+      *(Gjk + 9 * ldG) *= *(weights + point_idx);
+      *(Gjk + 10 * ldG) *= *(weights + point_idx);
+      *(Gjk + 11 * ldG) *= *(weights + point_idx);
+      *(Gjk + 12 * ldG) *= *(weights + point_idx);
+      *(Gjk + 13 * ldG) *= *(weights + point_idx);
+      *(Gjk + 14 * ldG) *= *(weights + point_idx);
 
-      *(Gik + 0) *= *(weights + point_idx);
-      *(Gik + 1) *= *(weights + point_idx);
-      *(Gik + 2) *= *(weights + point_idx);
-      *(Gik + 3) *= *(weights + point_idx);
-      *(Gik + 4) *= *(weights + point_idx);
-      *(Gik + 5) *= *(weights + point_idx);
+      *(Gik + 0 * ldG) *= *(weights + point_idx);
+      *(Gik + 1 * ldG) *= *(weights + point_idx);
+      *(Gik + 2 * ldG) *= *(weights + point_idx);
+      *(Gik + 3 * ldG) *= *(weights + point_idx);
+      *(Gik + 4 * ldG) *= *(weights + point_idx);
+      *(Gik + 5 * ldG) *= *(weights + point_idx);
    }
 }

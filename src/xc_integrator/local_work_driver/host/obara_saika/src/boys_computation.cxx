@@ -1,9 +1,13 @@
 #include "boys_computation.h"
 
-#include <limits.h>
-#include <math.h>
-#include <stdint.h>
-#include <float.h>
+#include <iostream>
+#include <limits>
+#include <cmath>
+#include <vector>
+#include <random>
+#include <algorithm>
+#include <array>
+#include <iomanip>
 
 #define PI 3.14159265358979323846
 
@@ -26,12 +30,12 @@ double boys_asymp(int m, double T) {
 
 double boys_reference(int m, double T) {
   double denom = m + 0.5;
-  double term  = exp(-T) / (2 * denom);
+  double term  = std::exp(-T) / (2 * denom);
   double old_term = term;
   double sum = old_term;
 
-  double eps = DBL_EPSILON;
-  double eps_10 = eps / 10;
+  constexpr auto eps = std::numeric_limits<double>::epsilon();
+  constexpr auto eps_10 = eps / 10;
 
   while( term > sum * eps_10 || old_term < term ) {
     denom = denom + 1;

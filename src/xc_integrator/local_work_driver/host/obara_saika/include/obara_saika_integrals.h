@@ -2,14 +2,17 @@
 #define __MY_INTEGRAL_OBARA_SAIKA
 
 void compute_integral_shell_pair(int npts,
-                  shells shellA,
-                  shells shellB,
+                  int i,
+                  int j,
+                  shells *shell_list,
                   point *points,
                   double *Xi,
                   double *Xj,
+                  int stX,
                   int ldX,
                   double *Gi,
                   double *Gj,
+                  int stG, 
                   int ldG, 
                   double *weights);
 

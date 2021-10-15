@@ -4,19 +4,16 @@
 
 #define PI 3.14159265358979323846
 
-void integral_3_3(int npts,
-                  shells shellA,
-                  shells shellB,
-                  point *_points,
-                  double *Xi,
-                  double *Xj,
-                  int stX,
-                  int ldX,
-                  double *Gi,
-                  double *Gj,
-                  int stG, 
-                  int ldG, 
-                  double *weights) {
+void integral_3(int npts,
+               shells shellA,
+               point *_points,
+               double *Xi,
+               int stX,
+               int ldX,
+               double *Gi,
+               int stG, 
+               int ldG, 
+               double *weights) {
    double temp[74];
 
    for(int point_idx = 0; point_idx < npts; ++point_idx) {
@@ -26,22 +23,14 @@ void integral_3_3(int npts,
       double yA = shellA.origin.y;
       double zA = shellA.origin.z;
 
-      double xB = shellB.origin.x;
-      double yB = shellB.origin.y;
-      double zB = shellB.origin.z;
-
-      double X_AB = (xA - xB);
-      double Y_AB = (yA - yB);
-      double Z_AB = (zA - zB);
-
       double beta_in = 0.0;
       for(int i = 0; i < shellA.m; ++i) {
-         for(int j = 0; j < shellB.m; ++j) {
+         for(int j = 0; j < shellA.m; ++j) {
             double aA = shellA.coeff[i].alpha;
             double cA = shellA.coeff[i].coeff;
 
-            double aB = shellB.coeff[j].alpha;
-            double cB = shellB.coeff[j].coeff;
+            double aB = shellA.coeff[j].alpha;
+            double cB = shellA.coeff[j].coeff;
 
             double RHO = aA + aB;
             double RHO_INV = 1.0 / RHO;
@@ -50,21 +39,17 @@ void integral_3_3(int npts,
             double yC = C.y;
             double zC = C.z;
 
-            double xP = (aA * xA + aB * xB) * RHO_INV;
-            double yP = (aA * yA + aB * yB) * RHO_INV;
-            double zP = (aA * zA + aB * zB) * RHO_INV;
+            double X_PA = 0.0;
+            double Y_PA = 0.0;
+            double Z_PA = 0.0;
 
-            double X_PA = (xP - xA);
-            double Y_PA = (yP - yA);
-            double Z_PA = (zP - zA);
-
-            double X_PC = (xP - xC);
-            double Y_PC = (yP - yC);
-            double Z_PC = (zP - zC);
+            double X_PC = (xA - xC);
+            double Y_PC = (yA - yC);
+            double Z_PC = (zA - zC);
 
             double t00, t01, t02, t03, t04, t05, t06, t10, t11, t12, t13, t14, t15, t20, t21, t22, t23, t24, t30, t31, t32, t33, t40, t41, t42, t50, t51, t60;
 
-            double eval = cA * cB * 2 * PI * RHO_INV * exp(-1.0 * (X_AB * X_AB + Y_AB * Y_AB + Z_AB * Z_AB) * aA * aB * RHO_INV);
+            double eval = cA * cB * 2 * PI * RHO_INV;
             double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
 
 #ifdef BOYS_REFERENCE
@@ -443,9 +428,7 @@ void integral_3_3(int npts,
       }
 
       double *Xik = (Xi + point_idx * stX);
-      double *Xjk = (Xj + point_idx * stX);
       double *Gik = (Gi + point_idx * stG);
-      double *Gjk = (Gj + point_idx * stG);
 
       for(int c0 = 0; c0 <= 3; ++c0) {
          for(int c1 = 0; c1 <= c0; ++c1) {
@@ -455,93 +438,49 @@ void integral_3_3(int npts,
 
             int idxB = (((3 - m) * (3 - m + 1)) >> 1) + p;
 
-            double X_ABp = 1.0, comb_m_i = 1.0;
-            for(int i = 0; i <= m; ++i) {
-               double rcp_i;
+            int mv, pv;
 
-               double Y_ABp = 1.0, comb_n_j = 1.0;
-               for(int j = 0; j <= n; ++j) {
-                  double rcp_j;
+            mv = 3 + m; pv = 0 + p;
+            double t0 = *(temp + 46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv);
+            *(Gik + 0 * ldG) += *(Xik + idxB * ldX) * t0;
 
-                  double Z_ABp = 1.0, comb_p_k = 1.0;
-                  for(int k = 0; k <= p; ++k) {
-                     double rcp_k;
-                     int mv, pv, Lv = 6 - i - j - k;
+            mv = 2 + m; pv = 0 + p;
+            double t1 = *(temp + 46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv);
+            *(Gik + 1 * ldG) += *(Xik + idxB * ldX) * t1;
 
-                     int offset = (Lv * (Lv + 1) * (Lv + 2) - 60) / 6;
-                     double const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+            mv = 2 + m; pv = 1 + p;
+            double t2 = *(temp + 46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv);
+            *(Gik + 2 * ldG) += *(Xik + idxB * ldX) * t2;
 
-                     mv = 3 + m - i; pv = 0 + p - k;
-                     double t0 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 0 * ldG) += *(Xik + idxB * ldX) * t0;
-                     *(Gik + idxB * ldG) += *(Xjk + 0 * ldX) * t0;
+            mv = 1 + m; pv = 0 + p;
+            double t3 = *(temp + 46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv);
+            *(Gik + 3 * ldG) += *(Xik + idxB * ldX) * t3;
 
-                     mv = 2 + m - i; pv = 0 + p - k;
-                     double t1 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 1 * ldG) += *(Xik + idxB * ldX) * t1;
-                     *(Gik + idxB * ldG) += *(Xjk + 1 * ldX) * t1;
+            mv = 1 + m; pv = 1 + p;
+            double t4 = *(temp + 46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv);
+            *(Gik + 4 * ldG) += *(Xik + idxB * ldX) * t4;
 
-                     mv = 2 + m - i; pv = 1 + p - k;
-                     double t2 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 2 * ldG) += *(Xik + idxB * ldX) * t2;
-                     *(Gik + idxB * ldG) += *(Xjk + 2 * ldX) * t2;
+            mv = 1 + m; pv = 2 + p;
+            double t5 = *(temp + 46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv);
+            *(Gik + 5 * ldG) += *(Xik + idxB * ldX) * t5;
 
-                     mv = 1 + m - i; pv = 0 + p - k;
-                     double t3 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 3 * ldG) += *(Xik + idxB * ldX) * t3;
-                     *(Gik + idxB * ldG) += *(Xjk + 3 * ldX) * t3;
+            mv = 0 + m; pv = 0 + p;
+            double t6 = *(temp + 46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv);
+            *(Gik + 6 * ldG) += *(Xik + idxB * ldX) * t6;
 
-                     mv = 1 + m - i; pv = 1 + p - k;
-                     double t4 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 4 * ldG) += *(Xik + idxB * ldX) * t4;
-                     *(Gik + idxB * ldG) += *(Xjk + 4 * ldX) * t4;
+            mv = 0 + m; pv = 1 + p;
+            double t7 = *(temp + 46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv);
+            *(Gik + 7 * ldG) += *(Xik + idxB * ldX) * t7;
 
-                     mv = 1 + m - i; pv = 2 + p - k;
-                     double t5 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 5 * ldG) += *(Xik + idxB * ldX) * t5;
-                     *(Gik + idxB * ldG) += *(Xjk + 5 * ldX) * t5;
+            mv = 0 + m; pv = 2 + p;
+            double t8 = *(temp + 46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv);
+            *(Gik + 8 * ldG) += *(Xik + idxB * ldX) * t8;
 
-                     mv = 0 + m - i; pv = 0 + p - k;
-                     double t6 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 6 * ldG) += *(Xik + idxB * ldX) * t6;
-                     *(Gik + idxB * ldG) += *(Xjk + 6 * ldX) * t6;
-
-                     mv = 0 + m - i; pv = 1 + p - k;
-                     double t7 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 7 * ldG) += *(Xik + idxB * ldX) * t7;
-                     *(Gik + idxB * ldG) += *(Xjk + 7 * ldX) * t7;
-
-                     mv = 0 + m - i; pv = 2 + p - k;
-                     double t8 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 8 * ldG) += *(Xik + idxB * ldX) * t8;
-                     *(Gik + idxB * ldG) += *(Xjk + 8 * ldX) * t8;
-
-                     mv = 0 + m - i; pv = 3 + p - k;
-                     double t9 = *(temp + offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * const_value;
-                     *(Gjk + 9 * ldG) += *(Xik + idxB * ldX) * t9;
-                     *(Gik + idxB * ldG) += *(Xjk + 9 * ldX) * t9;
-
-                     Z_ABp *= Z_AB; rcp_k = 1.0 / (1.0 * (k + 1)); comb_p_k = (comb_p_k * (p - k)) * rcp_k;
-                  }
-
-                  Y_ABp *= Y_AB; rcp_j = 1.0 / (1.0 * (j + 1)); comb_n_j = (comb_n_j * (n - j)) * rcp_j;
-               }
-
-               X_ABp *= X_AB; rcp_i = 1.0 / (1.0 * (i + 1)); comb_m_i = (comb_m_i * (m - i)) * rcp_i;
-            }
+            mv = 0 + m; pv = 3 + p;
+            double t9 = *(temp + 46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv);
+            *(Gik + 9 * ldG) += *(Xik + idxB * ldX) * t9;
          }
       }
-
-      *(Gjk + 0 * ldG) *= *(weights + point_idx);
-      *(Gjk + 1 * ldG) *= *(weights + point_idx);
-      *(Gjk + 2 * ldG) *= *(weights + point_idx);
-      *(Gjk + 3 * ldG) *= *(weights + point_idx);
-      *(Gjk + 4 * ldG) *= *(weights + point_idx);
-      *(Gjk + 5 * ldG) *= *(weights + point_idx);
-      *(Gjk + 6 * ldG) *= *(weights + point_idx);
-      *(Gjk + 7 * ldG) *= *(weights + point_idx);
-      *(Gjk + 8 * ldG) *= *(weights + point_idx);
-      *(Gjk + 9 * ldG) *= *(weights + point_idx);
 
       *(Gik + 0 * ldG) *= *(weights + point_idx);
       *(Gik + 1 * ldG) *= *(weights + point_idx);
