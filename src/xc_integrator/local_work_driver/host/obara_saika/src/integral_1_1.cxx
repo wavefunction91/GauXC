@@ -67,18 +67,9 @@ void integral_1_1(int npts,
             double eval = cA * cB * 2 * PI * RHO_INV * exp(-1.0 * (X_AB * X_AB + Y_AB * Y_AB + Z_AB * Z_AB) * aA * aB * RHO_INV);
             double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
 
-#ifdef BOYS_REFERENCE
-            t00 = eval * boys_reference(0, tval);
-            t01 = eval * boys_reference(1, tval);
-            t02 = eval * boys_reference(2, tval);
-#elif BOYS_ASYMP
-            t00 = eval * boys_asymp(0, tval);
-            t01 = eval * boys_asymp(1, tval);
-            t02 = eval * boys_asymp(2, tval);
-#else
-            #error "TYPE NOT DEFINED!"
-#endif
-
+            t00 = eval * boys_function(0, tval);
+            t01 = eval * boys_function(1, tval);
+            t02 = eval * boys_function(2, tval);
             t10 = X_PA * t00 - X_PC * t01;
             t11 = X_PA * t01 - X_PC * t02;
             *(temp + 0) = beta_in * (*(temp + 0)) + t10;
@@ -126,94 +117,86 @@ void integral_1_1(int npts,
       Z_ABp = 1.0; comb_p_k = 1.0;
       const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
 
-      t0 = *(temp + 3) * const_value;
-      *(Gjk + 0 * ldG) += *(Xik + 0 * ldX) * t0;
+      t0 = *(temp + 3) * const_value * (*(weights + point_idx));
       *(Gik + 0 * ldG) += *(Xjk + 0 * ldX) * t0;
-      t1 = *(temp + 4) * const_value;
-      *(Gjk + 1 * ldG) += *(Xik + 0 * ldX) * t1;
-      *(Gik + 0 * ldG) += *(Xjk + 1 * ldX) * t1;
-      t2 = *(temp + 5) * const_value;
-      *(Gjk + 2 * ldG) += *(Xik + 0 * ldX) * t2;
-      *(Gik + 0 * ldG) += *(Xjk + 2 * ldX) * t2;
+      *(Gjk + 0 * ldG) += *(Xik + 0 * ldX) * t0;
+      t1 = *(temp + 4) * const_value * (*(weights + point_idx));
+      *(Gik + 1 * ldG) += *(Xjk + 0 * ldX) * t1;
+      *(Gjk + 0 * ldG) += *(Xik + 1 * ldX) * t1;
+      t2 = *(temp + 5) * const_value * (*(weights + point_idx));
+      *(Gik + 2 * ldG) += *(Xjk + 0 * ldX) * t2;
+      *(Gjk + 0 * ldG) += *(Xik + 2 * ldX) * t2;
 
       X_ABp *= X_AB; rcp_i = 1.0 / (1.0 * 1); comb_m_i = (comb_m_i * 1) * rcp_i;
       Y_ABp = 1.0; comb_n_j = 1.0;
       Z_ABp = 1.0; comb_p_k = 1.0;
       const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
 
-      t0 = *(temp + 0) * const_value;
-      *(Gjk + 0 * ldG) += *(Xik + 0 * ldX) * t0;
+      t0 = *(temp + 0) * const_value * (*(weights + point_idx));
       *(Gik + 0 * ldG) += *(Xjk + 0 * ldX) * t0;
-      t1 = *(temp + 1) * const_value;
-      *(Gjk + 1 * ldG) += *(Xik + 0 * ldX) * t1;
-      *(Gik + 0 * ldG) += *(Xjk + 1 * ldX) * t1;
-      t2 = *(temp + 2) * const_value;
-      *(Gjk + 2 * ldG) += *(Xik + 0 * ldX) * t2;
-      *(Gik + 0 * ldG) += *(Xjk + 2 * ldX) * t2;
+      *(Gjk + 0 * ldG) += *(Xik + 0 * ldX) * t0;
+      t1 = *(temp + 1) * const_value * (*(weights + point_idx));
+      *(Gik + 1 * ldG) += *(Xjk + 0 * ldX) * t1;
+      *(Gjk + 0 * ldG) += *(Xik + 1 * ldX) * t1;
+      t2 = *(temp + 2) * const_value * (*(weights + point_idx));
+      *(Gik + 2 * ldG) += *(Xjk + 0 * ldX) * t2;
+      *(Gjk + 0 * ldG) += *(Xik + 2 * ldX) * t2;
 
       X_ABp = 1.0; comb_m_i = 1.0;
       Y_ABp = 1.0; comb_n_j = 1.0;
       Z_ABp = 1.0; comb_p_k = 1.0;
       const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
 
-      t0 = *(temp + 4) * const_value;
-      *(Gjk + 0 * ldG) += *(Xik + 1 * ldX) * t0;
-      *(Gik + 1 * ldG) += *(Xjk + 0 * ldX) * t0;
-      t1 = *(temp + 6) * const_value;
-      *(Gjk + 1 * ldG) += *(Xik + 1 * ldX) * t1;
+      t0 = *(temp + 4) * const_value * (*(weights + point_idx));
+      *(Gik + 0 * ldG) += *(Xjk + 1 * ldX) * t0;
+      *(Gjk + 1 * ldG) += *(Xik + 0 * ldX) * t0;
+      t1 = *(temp + 6) * const_value * (*(weights + point_idx));
       *(Gik + 1 * ldG) += *(Xjk + 1 * ldX) * t1;
-      t2 = *(temp + 7) * const_value;
-      *(Gjk + 2 * ldG) += *(Xik + 1 * ldX) * t2;
-      *(Gik + 1 * ldG) += *(Xjk + 2 * ldX) * t2;
+      *(Gjk + 1 * ldG) += *(Xik + 1 * ldX) * t1;
+      t2 = *(temp + 7) * const_value * (*(weights + point_idx));
+      *(Gik + 2 * ldG) += *(Xjk + 1 * ldX) * t2;
+      *(Gjk + 1 * ldG) += *(Xik + 2 * ldX) * t2;
 
       Y_ABp *= Y_AB; rcp_j = 1.0 / (1.0 * 1); comb_n_j = (comb_n_j * 1) * rcp_j;
       Z_ABp = 1.0; comb_p_k = 1.0;
       const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
 
-      t0 = *(temp + 0) * const_value;
-      *(Gjk + 0 * ldG) += *(Xik + 1 * ldX) * t0;
-      *(Gik + 1 * ldG) += *(Xjk + 0 * ldX) * t0;
-      t1 = *(temp + 1) * const_value;
-      *(Gjk + 1 * ldG) += *(Xik + 1 * ldX) * t1;
+      t0 = *(temp + 0) * const_value * (*(weights + point_idx));
+      *(Gik + 0 * ldG) += *(Xjk + 1 * ldX) * t0;
+      *(Gjk + 1 * ldG) += *(Xik + 0 * ldX) * t0;
+      t1 = *(temp + 1) * const_value * (*(weights + point_idx));
       *(Gik + 1 * ldG) += *(Xjk + 1 * ldX) * t1;
-      t2 = *(temp + 2) * const_value;
-      *(Gjk + 2 * ldG) += *(Xik + 1 * ldX) * t2;
-      *(Gik + 1 * ldG) += *(Xjk + 2 * ldX) * t2;
+      *(Gjk + 1 * ldG) += *(Xik + 1 * ldX) * t1;
+      t2 = *(temp + 2) * const_value * (*(weights + point_idx));
+      *(Gik + 2 * ldG) += *(Xjk + 1 * ldX) * t2;
+      *(Gjk + 1 * ldG) += *(Xik + 2 * ldX) * t2;
 
       X_ABp = 1.0; comb_m_i = 1.0;
       Y_ABp = 1.0; comb_n_j = 1.0;
       Z_ABp = 1.0; comb_p_k = 1.0;
       const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
 
-      t0 = *(temp + 5) * const_value;
-      *(Gjk + 0 * ldG) += *(Xik + 2 * ldX) * t0;
-      *(Gik + 2 * ldG) += *(Xjk + 0 * ldX) * t0;
-      t1 = *(temp + 7) * const_value;
-      *(Gjk + 1 * ldG) += *(Xik + 2 * ldX) * t1;
-      *(Gik + 2 * ldG) += *(Xjk + 1 * ldX) * t1;
-      t2 = *(temp + 8) * const_value;
-      *(Gjk + 2 * ldG) += *(Xik + 2 * ldX) * t2;
+      t0 = *(temp + 5) * const_value * (*(weights + point_idx));
+      *(Gik + 0 * ldG) += *(Xjk + 2 * ldX) * t0;
+      *(Gjk + 2 * ldG) += *(Xik + 0 * ldX) * t0;
+      t1 = *(temp + 7) * const_value * (*(weights + point_idx));
+      *(Gik + 1 * ldG) += *(Xjk + 2 * ldX) * t1;
+      *(Gjk + 2 * ldG) += *(Xik + 1 * ldX) * t1;
+      t2 = *(temp + 8) * const_value * (*(weights + point_idx));
       *(Gik + 2 * ldG) += *(Xjk + 2 * ldX) * t2;
+      *(Gjk + 2 * ldG) += *(Xik + 2 * ldX) * t2;
 
       Z_ABp *= Z_AB; rcp_k = 1.0 / (1.0 * 1); comb_p_k = (comb_p_k * 1) * rcp_k;
       const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
 
-      t0 = *(temp + 0) * const_value;
-      *(Gjk + 0 * ldG) += *(Xik + 2 * ldX) * t0;
-      *(Gik + 2 * ldG) += *(Xjk + 0 * ldX) * t0;
-      t1 = *(temp + 1) * const_value;
-      *(Gjk + 1 * ldG) += *(Xik + 2 * ldX) * t1;
-      *(Gik + 2 * ldG) += *(Xjk + 1 * ldX) * t1;
-      t2 = *(temp + 2) * const_value;
-      *(Gjk + 2 * ldG) += *(Xik + 2 * ldX) * t2;
+      t0 = *(temp + 0) * const_value * (*(weights + point_idx));
+      *(Gik + 0 * ldG) += *(Xjk + 2 * ldX) * t0;
+      *(Gjk + 2 * ldG) += *(Xik + 0 * ldX) * t0;
+      t1 = *(temp + 1) * const_value * (*(weights + point_idx));
+      *(Gik + 1 * ldG) += *(Xjk + 2 * ldX) * t1;
+      *(Gjk + 2 * ldG) += *(Xik + 1 * ldX) * t1;
+      t2 = *(temp + 2) * const_value * (*(weights + point_idx));
       *(Gik + 2 * ldG) += *(Xjk + 2 * ldX) * t2;
-
-      *(Gjk + 0 * ldG) *= *(weights + point_idx);
-      *(Gjk + 1 * ldG) *= *(weights + point_idx);
-      *(Gjk + 2 * ldG) *= *(weights + point_idx);
-
-      *(Gik + 0 * ldG) *= *(weights + point_idx);
-      *(Gik + 1 * ldG) *= *(weights + point_idx);
-      *(Gik + 2 * ldG) *= *(weights + point_idx);
+      *(Gjk + 2 * ldG) += *(Xik + 2 * ldX) * t2;
    }
 }

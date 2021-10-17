@@ -11,16 +11,16 @@ int main(int argc, char** argv) {
 
   // Benzene
   std::vector<libint2::Atom> atoms = {
-    //libint2::Atom{ 6,  6.92768e-01,  -1.77656e+00,   1.40218e-03},
-    //    libint2::Atom{ 6,  3.35108e+00,  -1.77668e+00,   2.21098e-03},
-    //    libint2::Atom{ 6,  4.68035e+00,   5.25219e-01,   1.22454e-03},
-    //    libint2::Atom{ 6,  3.35121e+00,   2.82744e+00,  -7.02978e-04},
-    //    libint2::Atom{ 6,  6.93087e-01,   2.82756e+00,  -1.55902e-03},
-    //    libint2::Atom{ 6, -6.36278e-01,   5.25491e-01,  -4.68652e-04},
-    //    libint2::Atom{ 1, -3.41271e-01,  -3.56759e+00,   2.21287e-03},
-    //    libint2::Atom{ 1,  4.38492e+00,  -3.56783e+00,   3.73599e-03},
-    //    libint2::Atom{ 1,  6.74844e+00,   5.25274e-01,   1.88028e-03},
-    //    libint2::Atom{ 1,  4.38551e+00,   4.61832e+00,  -1.48721e-03},
+    libint2::Atom{ 6,  6.92768e-01,  -1.77656e+00,   1.40218e-03},
+    libint2::Atom{ 6,  3.35108e+00,  -1.77668e+00,   2.21098e-03},
+    libint2::Atom{ 6,  4.68035e+00,   5.25219e-01,   1.22454e-03},
+    libint2::Atom{ 6,  3.35121e+00,   2.82744e+00,  -7.02978e-04},
+    libint2::Atom{ 6,  6.93087e-01,   2.82756e+00,  -1.55902e-03},
+    libint2::Atom{ 6, -6.36278e-01,   5.25491e-01,  -4.68652e-04},
+    libint2::Atom{ 1, -3.41271e-01,  -3.56759e+00,   2.21287e-03},
+    libint2::Atom{ 1,  4.38492e+00,  -3.56783e+00,   3.73599e-03},
+    libint2::Atom{ 1,  6.74844e+00,   5.25274e-01,   1.88028e-03},
+    libint2::Atom{ 1,  4.38551e+00,   4.61832e+00,  -1.48721e-03},
     libint2::Atom{ 1, -3.41001e-01,   4.61857e+00,  -3.05569e-03},
     libint2::Atom{ 1, -2.70437e+00,   5.25727e-01,  -1.09793e-03} 
   };
@@ -75,17 +75,11 @@ int main(int argc, char** argv) {
 
   // Generate a random F matrix
   std::vector<double> F( ngrid * nbf );
-  //std::generate( F.begin(), F.end(), [&](){ return dist_x(gen); } );
-  for(int i = 0; i < ngrid * nbf; ++i) {
-    F[i] = 1.0;
-  }
-
+  std::generate( F.begin(), F.end(), [&](){ return dist_x(gen); } );
+  
   // Generate random grid weights
   std::vector<double> w( ngrid );
-  //std::generate( w.begin(), w.end(), [&](){ return dist_x(gen); } );
-  for(int i = 0; i < ngrid; ++i) {
-    w[i] = 1.0;
-  }
+  std::generate( w.begin(), w.end(), [&](){ return dist_x(gen); } );
 
   // Compute A
   std::vector<double> A( nbf * nbf * ngrid );
@@ -181,20 +175,17 @@ int main(int argc, char** argv) {
   double *Gj = G_own.data();
 
   std::cout << nshells << std::endl;
-  
+
   int ioff_cart = 0;
   for( int i = 0; i < nshells; ++i) {
     shells bra_shell = _shells[i];
     int bra_cart_size = (bra_shell.L + 1) * (bra_shell.L + 2) / 2;
-    
+  
     int joff_cart = 0;
     for( int j = 0; j <= i; ++j) {
       shells ket_shell = _shells[j];
       int ket_cart_size = (ket_shell.L + 1) * (ket_shell.L + 2) / 2;
 
-      std::cout << bra_shell.L << " " << ket_shell.L << std::endl;
-
-      //if(bra_shell >= ket_shell.L) {
       compute_integral_shell_pair(ngrid,
 				  i,
 				  j,
@@ -212,15 +203,15 @@ int main(int argc, char** argv) {
 
       joff_cart += ket_cart_size;
     }
-    printf("\n");
+    
     ioff_cart += bra_cart_size;
   }
 
   int correct = 1;
   
   for( int i = 0; i < nbf * ngrid; ++i) {
-    printf("%lf %lf\n", G_libint[i], G_own[i]);
     if(fabs(G_libint[i] - G_own[i]) > 1e-6) {
+      printf("%lf %lf\n", G_libint[i], G_own[i]);
       correct = 0;
     }
   }

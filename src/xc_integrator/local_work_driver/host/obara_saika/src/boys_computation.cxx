@@ -46,3 +46,11 @@ double boys_reference(int m, double T) {
 
   return sum;
 }
+
+double boys_function(int m, double T) {
+  if(T < 117) {
+    return boys_reference(m, T);
+  } else {
+    return boys_asymp(m, T);
+  }
+}

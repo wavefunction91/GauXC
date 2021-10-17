@@ -52,22 +52,11 @@ void integral_2(int npts,
             double eval = cA * cB * 2 * PI * RHO_INV;
             double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
 
-#ifdef BOYS_REFERENCE
-            t00 = eval * boys_reference(0, tval);
-            t01 = eval * boys_reference(1, tval);
-            t02 = eval * boys_reference(2, tval);
-            t03 = eval * boys_reference(3, tval);
-            t04 = eval * boys_reference(4, tval);
-#elif BOYS_ASYMP
-            t00 = eval * boys_asymp(0, tval);
-            t01 = eval * boys_asymp(1, tval);
-            t02 = eval * boys_asymp(2, tval);
-            t03 = eval * boys_asymp(3, tval);
-            t04 = eval * boys_asymp(4, tval);
-#else
-            #error "TYPE NOT DEFINED!"
-#endif
-
+            t00 = eval * boys_function(0, tval);
+            t01 = eval * boys_function(1, tval);
+            t02 = eval * boys_function(2, tval);
+            t03 = eval * boys_function(3, tval);
+            t04 = eval * boys_function(4, tval);
             t10 = X_PA * t00 - X_PC * t01;
             t11 = X_PA * t01 - X_PC * t02;
             t12 = X_PA * t02 - X_PC * t03;
@@ -204,89 +193,82 @@ void integral_2(int npts,
 
       double t0, t1, t2, t3, t4, t5;
 
-      t0 = *(temp + 16);
+      t0 = *(temp + 16) * (*(weights + point_idx));
       *(Gik + 0 * ldG) += *(Xik + 0 * ldX) * t0;
-      t1 = *(temp + 17);
+      t1 = *(temp + 17) * (*(weights + point_idx));
       *(Gik + 1 * ldG) += *(Xik + 0 * ldX) * t1;
-      t2 = *(temp + 18);
+      t2 = *(temp + 18) * (*(weights + point_idx));
       *(Gik + 2 * ldG) += *(Xik + 0 * ldX) * t2;
-      t3 = *(temp + 19);
+      t3 = *(temp + 19) * (*(weights + point_idx));
       *(Gik + 3 * ldG) += *(Xik + 0 * ldX) * t3;
-      t4 = *(temp + 20);
+      t4 = *(temp + 20) * (*(weights + point_idx));
       *(Gik + 4 * ldG) += *(Xik + 0 * ldX) * t4;
-      t5 = *(temp + 21);
+      t5 = *(temp + 21) * (*(weights + point_idx));
       *(Gik + 5 * ldG) += *(Xik + 0 * ldX) * t5;
 
-      t0 = *(temp + 17);
+      t0 = *(temp + 17) * (*(weights + point_idx));
       *(Gik + 0 * ldG) += *(Xik + 1 * ldX) * t0;
-      t1 = *(temp + 19);
+      t1 = *(temp + 19) * (*(weights + point_idx));
       *(Gik + 1 * ldG) += *(Xik + 1 * ldX) * t1;
-      t2 = *(temp + 20);
+      t2 = *(temp + 20) * (*(weights + point_idx));
       *(Gik + 2 * ldG) += *(Xik + 1 * ldX) * t2;
-      t3 = *(temp + 22);
+      t3 = *(temp + 22) * (*(weights + point_idx));
       *(Gik + 3 * ldG) += *(Xik + 1 * ldX) * t3;
-      t4 = *(temp + 23);
+      t4 = *(temp + 23) * (*(weights + point_idx));
       *(Gik + 4 * ldG) += *(Xik + 1 * ldX) * t4;
-      t5 = *(temp + 24);
+      t5 = *(temp + 24) * (*(weights + point_idx));
       *(Gik + 5 * ldG) += *(Xik + 1 * ldX) * t5;
 
-      t0 = *(temp + 18);
+      t0 = *(temp + 18) * (*(weights + point_idx));
       *(Gik + 0 * ldG) += *(Xik + 2 * ldX) * t0;
-      t1 = *(temp + 20);
+      t1 = *(temp + 20) * (*(weights + point_idx));
       *(Gik + 1 * ldG) += *(Xik + 2 * ldX) * t1;
-      t2 = *(temp + 21);
+      t2 = *(temp + 21) * (*(weights + point_idx));
       *(Gik + 2 * ldG) += *(Xik + 2 * ldX) * t2;
-      t3 = *(temp + 23);
+      t3 = *(temp + 23) * (*(weights + point_idx));
       *(Gik + 3 * ldG) += *(Xik + 2 * ldX) * t3;
-      t4 = *(temp + 24);
+      t4 = *(temp + 24) * (*(weights + point_idx));
       *(Gik + 4 * ldG) += *(Xik + 2 * ldX) * t4;
-      t5 = *(temp + 25);
+      t5 = *(temp + 25) * (*(weights + point_idx));
       *(Gik + 5 * ldG) += *(Xik + 2 * ldX) * t5;
 
-      t0 = *(temp + 19);
+      t0 = *(temp + 19) * (*(weights + point_idx));
       *(Gik + 0 * ldG) += *(Xik + 3 * ldX) * t0;
-      t1 = *(temp + 22);
+      t1 = *(temp + 22) * (*(weights + point_idx));
       *(Gik + 1 * ldG) += *(Xik + 3 * ldX) * t1;
-      t2 = *(temp + 23);
+      t2 = *(temp + 23) * (*(weights + point_idx));
       *(Gik + 2 * ldG) += *(Xik + 3 * ldX) * t2;
-      t3 = *(temp + 26);
+      t3 = *(temp + 26) * (*(weights + point_idx));
       *(Gik + 3 * ldG) += *(Xik + 3 * ldX) * t3;
-      t4 = *(temp + 27);
+      t4 = *(temp + 27) * (*(weights + point_idx));
       *(Gik + 4 * ldG) += *(Xik + 3 * ldX) * t4;
-      t5 = *(temp + 28);
+      t5 = *(temp + 28) * (*(weights + point_idx));
       *(Gik + 5 * ldG) += *(Xik + 3 * ldX) * t5;
 
-      t0 = *(temp + 20);
+      t0 = *(temp + 20) * (*(weights + point_idx));
       *(Gik + 0 * ldG) += *(Xik + 4 * ldX) * t0;
-      t1 = *(temp + 23);
+      t1 = *(temp + 23) * (*(weights + point_idx));
       *(Gik + 1 * ldG) += *(Xik + 4 * ldX) * t1;
-      t2 = *(temp + 24);
+      t2 = *(temp + 24) * (*(weights + point_idx));
       *(Gik + 2 * ldG) += *(Xik + 4 * ldX) * t2;
-      t3 = *(temp + 27);
+      t3 = *(temp + 27) * (*(weights + point_idx));
       *(Gik + 3 * ldG) += *(Xik + 4 * ldX) * t3;
-      t4 = *(temp + 28);
+      t4 = *(temp + 28) * (*(weights + point_idx));
       *(Gik + 4 * ldG) += *(Xik + 4 * ldX) * t4;
-      t5 = *(temp + 29);
+      t5 = *(temp + 29) * (*(weights + point_idx));
       *(Gik + 5 * ldG) += *(Xik + 4 * ldX) * t5;
 
-      t0 = *(temp + 21);
+      t0 = *(temp + 21) * (*(weights + point_idx));
       *(Gik + 0 * ldG) += *(Xik + 5 * ldX) * t0;
-      t1 = *(temp + 24);
+      t1 = *(temp + 24) * (*(weights + point_idx));
       *(Gik + 1 * ldG) += *(Xik + 5 * ldX) * t1;
-      t2 = *(temp + 25);
+      t2 = *(temp + 25) * (*(weights + point_idx));
       *(Gik + 2 * ldG) += *(Xik + 5 * ldX) * t2;
-      t3 = *(temp + 28);
+      t3 = *(temp + 28) * (*(weights + point_idx));
       *(Gik + 3 * ldG) += *(Xik + 5 * ldX) * t3;
-      t4 = *(temp + 29);
+      t4 = *(temp + 29) * (*(weights + point_idx));
       *(Gik + 4 * ldG) += *(Xik + 5 * ldX) * t4;
-      t5 = *(temp + 30);
+      t5 = *(temp + 30) * (*(weights + point_idx));
       *(Gik + 5 * ldG) += *(Xik + 5 * ldX) * t5;
-
-      *(Gik + 0 * ldG) *= *(weights + point_idx);
-      *(Gik + 1 * ldG) *= *(weights + point_idx);
-      *(Gik + 2 * ldG) *= *(weights + point_idx);
-      *(Gik + 3 * ldG) *= *(weights + point_idx);
-      *(Gik + 4 * ldG) *= *(weights + point_idx);
-      *(Gik + 5 * ldG) *= *(weights + point_idx);
    }
 }

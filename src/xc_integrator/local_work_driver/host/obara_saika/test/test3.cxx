@@ -79,10 +79,22 @@ int main(int argc, char** argv) {
   std::vector<double> F( ngrid * nbf );
   std::generate( F.begin(), F.end(), [&](){ return dist_x(gen); } );
 
+  /*
+  for(int i = 0; i < ngrid * nbf; ++i) {
+    F[i] = 1.0;
+  }
+  */
+  
   // Generate random grid weights
   std::vector<double> w( ngrid );
   std::generate( w.begin(), w.end(), [&](){ return dist_x(gen); } );
 
+  /*
+  for(int i = 0; i < ngrid; ++i) {
+    w[i] = 1.0;
+  }
+  */
+  
   // Compute A
   std::vector<double> A( nbf * nbf * ngrid );
   
@@ -91,36 +103,38 @@ int main(int argc, char** argv) {
   
   using col_major_mat = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
   using col_major_map = Eigen::Map< col_major_mat >;
-  
+
   // correctness - libint implementation
   for( int k = 0; k < ngrid; ++k ) {
     auto& engine = engines.at(k);
     const auto& engine_buf = engine.results();
 
-    int skip_loop = 0;
-    
     col_major_map A_k( A.data() + nbf * nbf * k, nbf, nbf );
 
     for( int j = 0; j < basis.size(); ++j) {
       auto bf_j = shell2bf[j];
       auto nj   = basis[j].size();
       
-      for( int i = 0; i <= j; ++i) {
+      for( int i = 0; i < basis.size(); ++i) {
         auto bf_i = shell2bf[i];
         auto ni   = basis[i].size();
-
-	if((i == j) && (basis[i].contr[0].l == lA) && (basis[j].contr[0].l == lB)) {
-	  engine.compute( basis[i], basis[j] );
+	
+	if((i == lA) && (j == lB)) {
+	  std::cout << basis[i].contr[0].l << " " << basis[j].contr[0].l << std::endl;
 	  
+	  engine.compute( basis[i], basis[j] );
+	
 	  const_row_major_map buf_map( engine_buf[0], ni, nj );
 	  A_k.block( bf_i, bf_j, ni, nj ) = buf_map;
-
-	  skip_loop = 1;
+	} else if((i == lB) && (j == lA)) {
+	  std::cout << basis[i].contr[0].l << " " << basis[j].contr[0].l << std::endl;
+	  
+	  engine.compute( basis[i], basis[j] );
+	
+	  const_row_major_map buf_map( engine_buf[0], ni, nj );
+	  A_k.block( bf_i, bf_j, ni, nj ) = buf_map;
 	}
-
-	if(skip_loop) break;
       }
-      if(skip_loop) break;
     }
   }
 
@@ -176,28 +190,23 @@ int main(int argc, char** argv) {
   for(int i = 0; i < ngrid * nbf; ++i) {
     G_own[i] = 0.0;
   }
-  
   double *Xi = F.data();
   double *Xj = F.data();
 
   double *Gi = G_own.data();
   double *Gj = G_own.data();
 
-  std::cout << nshells << std::endl;
-
-  int skip_loop = 0;
-
   int ioff_cart = 0;
   for( int i = 0; i < nshells; ++i) {
     shells bra_shell = _shells[i];
     int bra_cart_size = (bra_shell.L + 1) * (bra_shell.L + 2) / 2;
-  
+      
     int joff_cart = 0;
     for( int j = 0; j <= i; ++j) {
       shells ket_shell = _shells[j];
       int ket_cart_size = (ket_shell.L + 1) * (ket_shell.L + 2) / 2;
 
-      if((i == j) && (bra_shell.L == lA) && (ket_shell.L == lB)) {
+      if((i == lA) && (j == lB)) {
 	std::cout << bra_shell.L << " " << ket_shell.L << std::endl;
 	compute_integral_shell_pair(ngrid,
 				    i,
@@ -213,15 +222,10 @@ int main(int argc, char** argv) {
 				    1,
 				    ngrid,
 				    w.data());
-	skip_loop = 1;
       }
-
-      if(skip_loop) break;
       joff_cart += ket_cart_size;
     }
-
-    if(skip_loop) break;
-    ioff_cart += bra_cart_size;
+    ioff_cart += bra_cart_size;  
   }
 
   int correct = 1;

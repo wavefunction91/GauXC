@@ -52,18 +52,9 @@ void integral_1(int npts,
             double eval = cA * cB * 2 * PI * RHO_INV;
             double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
 
-#ifdef BOYS_REFERENCE
-            t00 = eval * boys_reference(0, tval);
-            t01 = eval * boys_reference(1, tval);
-            t02 = eval * boys_reference(2, tval);
-#elif BOYS_ASYMP
-            t00 = eval * boys_asymp(0, tval);
-            t01 = eval * boys_asymp(1, tval);
-            t02 = eval * boys_asymp(2, tval);
-#else
-            #error "TYPE NOT DEFINED!"
-#endif
-
+            t00 = eval * boys_function(0, tval);
+            t01 = eval * boys_function(1, tval);
+            t02 = eval * boys_function(2, tval);
             t10 = X_PA * t00 - X_PC * t01;
             t11 = X_PA * t01 - X_PC * t02;
             *(temp + 0) = beta_in * (*(temp + 0)) + t10;
@@ -103,29 +94,25 @@ void integral_1(int npts,
 
       double t0, t1, t2;
 
-      t0 = *(temp + 3);
+      t0 = *(temp + 3) * (*(weights + point_idx));
       *(Gik + 0 * ldG) += *(Xik + 0 * ldX) * t0;
-      t1 = *(temp + 4);
+      t1 = *(temp + 4) * (*(weights + point_idx));
       *(Gik + 1 * ldG) += *(Xik + 0 * ldX) * t1;
-      t2 = *(temp + 5);
+      t2 = *(temp + 5) * (*(weights + point_idx));
       *(Gik + 2 * ldG) += *(Xik + 0 * ldX) * t2;
 
-      t0 = *(temp + 4);
+      t0 = *(temp + 4) * (*(weights + point_idx));
       *(Gik + 0 * ldG) += *(Xik + 1 * ldX) * t0;
-      t1 = *(temp + 6);
+      t1 = *(temp + 6) * (*(weights + point_idx));
       *(Gik + 1 * ldG) += *(Xik + 1 * ldX) * t1;
-      t2 = *(temp + 7);
+      t2 = *(temp + 7) * (*(weights + point_idx));
       *(Gik + 2 * ldG) += *(Xik + 1 * ldX) * t2;
 
-      t0 = *(temp + 5);
+      t0 = *(temp + 5) * (*(weights + point_idx));
       *(Gik + 0 * ldG) += *(Xik + 2 * ldX) * t0;
-      t1 = *(temp + 7);
+      t1 = *(temp + 7) * (*(weights + point_idx));
       *(Gik + 1 * ldG) += *(Xik + 2 * ldX) * t1;
-      t2 = *(temp + 8);
+      t2 = *(temp + 8) * (*(weights + point_idx));
       *(Gik + 2 * ldG) += *(Xik + 2 * ldX) * t2;
-
-      *(Gik + 0 * ldG) *= *(weights + point_idx);
-      *(Gik + 1 * ldG) *= *(weights + point_idx);
-      *(Gik + 2 * ldG) *= *(weights + point_idx);
    }
 }

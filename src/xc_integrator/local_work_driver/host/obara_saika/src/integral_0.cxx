@@ -42,6 +42,7 @@ void integral_0(int npts,
             double X_PA = 0.0;
             double Y_PA = 0.0;
             double Z_PA = 0.0;
+
             double X_PC = (xA - xC);
             double Y_PC = (yA - yC);
             double Z_PC = (zA - zC);
@@ -51,14 +52,7 @@ void integral_0(int npts,
             double eval = cA * cB * 2 * PI * RHO_INV;
             double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
 
-#ifdef BOYS_REFERENCE
-            t00 = eval * boys_reference(0, tval);
-#elif BOYS_ASYMP
-            t00 = eval * boys_asymp(0, tval);
-#else
-            #error "TYPE NOT DEFINED!"
-#endif
-
+            t00 = eval * boys_function(0, tval);
             *(temp + 0) = beta_in * (*(temp + 0)) + t00;
 
             beta_in = 1.0;
@@ -70,9 +64,7 @@ void integral_0(int npts,
 
       double t0;
 
-      t0 = *(temp + 0);
+      t0 = *(temp + 0) * (*(weights + point_idx));
       *(Gik + 0 * ldG) += *(Xik + 0 * ldX) * t0;
-
-      *(Gik + 0 * ldG) *= *(weights + point_idx);
    }
 }

@@ -51,11 +51,9 @@ int main(int argc, char** argv) {
     return std::array<double,3>{ dist_x(gen), dist_y(gen), dist_z(gen) };
   };
 
-  if( argc != 4 ) throw std::runtime_error("Must Specify NGrid");
+  if( argc != 2 ) throw std::runtime_error("Must Specify NGrid");
   
   const int ngrid = std::stoll( std::string(argv[1]) );
-  const int lA = std::stoll( std::string(argv[2]) );
-  const int lB = std::stoll( std::string(argv[3]) );
   
   std::vector< std::array<double,3> > grid_points( ngrid );
   std::generate( grid_points.begin(), grid_points.end(), gen_grid_point );
@@ -77,17 +75,11 @@ int main(int argc, char** argv) {
 
   // Generate a random F matrix
   std::vector<double> F( ngrid * nbf );
-  //std::generate( F.begin(), F.end(), [&](){ return dist_x(gen); } );
-  for(int i = 0; i < ngrid * nbf; ++i) {
-    F[i] = 1.0;
-  }
+  std::generate( F.begin(), F.end(), [&](){ return dist_x(gen); } );
 
   // Generate random grid weights
   std::vector<double> w( ngrid );
-  //std::generate( w.begin(), w.end(), [&](){ return dist_x(gen); } );
-  for(int i = 0; i < ngrid; ++i) {
-    w[i] = 1.0;
-  }
+  std::generate( w.begin(), w.end(), [&](){ return dist_x(gen); } );
 
   // Compute A
   std::vector<double> A( nbf * nbf * ngrid );
@@ -181,20 +173,17 @@ int main(int argc, char** argv) {
   double *Gi = G_own.data();
   double *Gj = G_own.data();
 
-  std::cout << nshells << std::endl;
-  
   int ioff_cart = 0;
   for( int i = 0; i < nshells; ++i) {
     shells bra_shell = _shells[i];
     int bra_cart_size = (bra_shell.L + 1) * (bra_shell.L + 2) / 2;
-    
+  
     int joff_cart = 0;
     for( int j = 0; j <= i; ++j) {
       shells ket_shell = _shells[j];
       int ket_cart_size = (ket_shell.L + 1) * (ket_shell.L + 2) / 2;
 
       if(i == j) {
-	std::cout << bra_shell.L << " " << ket_shell.L << std::endl;
 	compute_integral_shell_pair(ngrid,
 				    i,
 				    j,
@@ -209,19 +198,19 @@ int main(int argc, char** argv) {
 				    1,
 				    ngrid,
 				    w.data());
-	getchar();
       }
-
+      
       joff_cart += ket_cart_size;
     }
+    
     ioff_cart += bra_cart_size;
   }
 
   int correct = 1;
   
   for( int i = 0; i < nbf * ngrid; ++i) {
-    printf("%lf - %lf = %lf\n", G_libint[i], G_own[i], G_libint[i] - G_own[i]);
     if(fabs(G_libint[i] - G_own[i]) > 1e-6) {
+      printf("%lf - %lf = %lf\n", G_libint[i], G_own[i], G_libint[i] - G_own[i]);
       correct = 0;
     }
   }

@@ -52,30 +52,15 @@ void integral_4(int npts,
             double eval = cA * cB * 2 * PI * RHO_INV;
             double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
 
-#ifdef BOYS_REFERENCE
-            t00 = eval * boys_reference(0, tval);
-            t01 = eval * boys_reference(1, tval);
-            t02 = eval * boys_reference(2, tval);
-            t03 = eval * boys_reference(3, tval);
-            t04 = eval * boys_reference(4, tval);
-            t05 = eval * boys_reference(5, tval);
-            t06 = eval * boys_reference(6, tval);
-            t07 = eval * boys_reference(7, tval);
-            t08 = eval * boys_reference(8, tval);
-#elif BOYS_ASYMP
-            t00 = eval * boys_asymp(0, tval);
-            t01 = eval * boys_asymp(1, tval);
-            t02 = eval * boys_asymp(2, tval);
-            t03 = eval * boys_asymp(3, tval);
-            t04 = eval * boys_asymp(4, tval);
-            t05 = eval * boys_asymp(5, tval);
-            t06 = eval * boys_asymp(6, tval);
-            t07 = eval * boys_asymp(7, tval);
-            t08 = eval * boys_asymp(8, tval);
-#else
-            #error "TYPE NOT DEFINED!"
-#endif
-
+            t00 = eval * boys_function(0, tval);
+            t01 = eval * boys_function(1, tval);
+            t02 = eval * boys_function(2, tval);
+            t03 = eval * boys_function(3, tval);
+            t04 = eval * boys_function(4, tval);
+            t05 = eval * boys_function(5, tval);
+            t06 = eval * boys_function(6, tval);
+            t07 = eval * boys_function(7, tval);
+            t08 = eval * boys_function(8, tval);
             t10 = X_PA * t00 - X_PC * t01;
             t11 = X_PA * t01 - X_PC * t02;
             t12 = X_PA * t02 - X_PC * t03;
@@ -930,21 +915,5 @@ void integral_4(int npts,
             *(Gik + 14 * ldG) += *(Xik + idxB * ldX) * t14;
          }
       }
-
-      *(Gik + 0 * ldG) *= *(weights + point_idx);
-      *(Gik + 1 * ldG) *= *(weights + point_idx);
-      *(Gik + 2 * ldG) *= *(weights + point_idx);
-      *(Gik + 3 * ldG) *= *(weights + point_idx);
-      *(Gik + 4 * ldG) *= *(weights + point_idx);
-      *(Gik + 5 * ldG) *= *(weights + point_idx);
-      *(Gik + 6 * ldG) *= *(weights + point_idx);
-      *(Gik + 7 * ldG) *= *(weights + point_idx);
-      *(Gik + 8 * ldG) *= *(weights + point_idx);
-      *(Gik + 9 * ldG) *= *(weights + point_idx);
-      *(Gik + 10 * ldG) *= *(weights + point_idx);
-      *(Gik + 11 * ldG) *= *(weights + point_idx);
-      *(Gik + 12 * ldG) *= *(weights + point_idx);
-      *(Gik + 13 * ldG) *= *(weights + point_idx);
-      *(Gik + 14 * ldG) *= *(weights + point_idx);
    }
 }
