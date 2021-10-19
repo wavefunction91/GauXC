@@ -1,6 +1,7 @@
 #include <libint2.hpp>
 #include <integral_data_types.h>
 #include <obara_saika_integrals.h>
+#include <chebyshev_boys_function.hpp>
 #include <vector>
 #include <iostream>
 #include <algorithm>
@@ -8,6 +9,11 @@
 
 int main(int argc, char** argv) {
   libint2::initialize();
+  int ncheb   = 13;
+  int nseg    = 60;
+  int maxM    = 10;
+  double maxT = 117;
+  GauXC::gauxc_boys_init(ncheb, maxM, nseg, 1e-10, maxT);
 
   // Benzene
   std::vector<libint2::Atom> atoms = {
@@ -219,4 +225,5 @@ int main(int argc, char** argv) {
   std::cout << "Correctness: " << correct << std::endl;
   
   libint2::finalize();  // done with libint
+  GauXC::gauxc_boys_finalize();
 }

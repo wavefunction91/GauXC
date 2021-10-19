@@ -4,7 +4,7 @@
 #include "integral_0.h"
 
 void integral_0(size_t npts,
-               shells shellA,
+               shell_pair shpair,
                point *points,
                double *Xi,
                int stX,

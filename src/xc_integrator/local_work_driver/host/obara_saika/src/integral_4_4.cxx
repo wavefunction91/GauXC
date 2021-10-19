@@ -5,8 +5,7 @@
 #define PI 3.14159265358979323846
 
 void integral_4_4(size_t npts,
-                  shells shellA,
-                  shells shellB,
+                  shell_pair shpair,
                   point *_points,
                   double *Xi,
                   double *Xj,
@@ -26,41 +25,34 @@ void integral_4_4(size_t npts,
    for(size_t point_idx = 0; point_idx < npts; ++point_idx) {
       point C = *(_points + point_idx);
 
-      double xA = shellA.origin.x;
-      double yA = shellA.origin.y;
-      double zA = shellA.origin.z;
+      double xA = shpair.rA.x;
+      double yA = shpair.rA.y;
+      double zA = shpair.rA.z;
 
-      double xB = shellB.origin.x;
-      double yB = shellB.origin.y;
-      double zB = shellB.origin.z;
+      double xB = shpair.rB.x;
+      double yB = shpair.rB.y;
+      double zB = shpair.rB.z;
 
-      double X_AB = (xA - xB);
-      double Y_AB = (yA - yB);
-      double Z_AB = (zA - zB);
+      double X_AB = shpair.rAB.x;
+      double Y_AB = shpair.rAB.y;
+      double Z_AB = shpair.rAB.z;
 
       double beta_in = 0.0;
-      for(int i = 0; i < shellA.m; ++i) {
-         for(int j = 0; j < shellB.m; ++j) {
-            double aA = shellA.coeff[i].alpha;
-            double cA = shellA.coeff[i].coeff;
-
-            double aB = shellB.coeff[j].alpha;
-            double cB = shellB.coeff[j].coeff;
-
-            double RHO = aA + aB;
+      for(int ij = 0; ij < shpair.nprim_pair; ++ij ) {
+            double RHO = shpair.prim_pairs[ij].gamma;
             double RHO_INV = 1.0 / RHO;
 
             double xC = C.x;
             double yC = C.y;
             double zC = C.z;
 
-            double xP = (aA * xA + aB * xB) * RHO_INV;
-            double yP = (aA * yA + aB * yB) * RHO_INV;
-            double zP = (aA * zA + aB * zB) * RHO_INV;
+            double xP = shpair.prim_pairs[ij].P.x;
+            double yP = shpair.prim_pairs[ij].P.y;
+            double zP = shpair.prim_pairs[ij].P.z;
 
-            double X_PA = (xP - xA);
-            double Y_PA = (yP - yA);
-            double Z_PA = (zP - zA);
+            double X_PA = shpair.prim_pairs[ij].PA.x;
+            double Y_PA = shpair.prim_pairs[ij].PA.y;
+            double Z_PA = shpair.prim_pairs[ij].PA.z;
 
             double X_PC = (xP - xC);
             double Y_PC = (yP - yC);
@@ -68,7 +60,7 @@ void integral_4_4(size_t npts,
 
             double t00, t01, t02, t03, t04, t05, t06, t07, t08, t10, t11, t12, t13, t14, t15, t16, t17, t20, t21, t22, t23, t24, t25, t26, t30, t31, t32, t33, t34, t35, t40, t41, t42, t43, t44, t50, t51, t52, t53, t60, t61, t62, t70, t71, t80;
 
-            double eval = cA * cB * 2 * PI * RHO_INV * exp(-1.0 * (X_AB * X_AB + Y_AB * Y_AB + Z_AB * Z_AB) * aA * aB * RHO_INV);
+            double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;
             double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
 
             t00 = eval * boys_function(0, tval);
@@ -857,7 +849,6 @@ void integral_4_4(size_t npts,
             *(temp + 144) = beta_in * (*(temp + 144)) + t80;
 
             beta_in = 1.0;
-         }
       }
 
       double *Xik = (Xi + point_idx * stX);

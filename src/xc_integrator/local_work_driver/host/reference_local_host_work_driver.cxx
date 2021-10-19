@@ -547,7 +547,7 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
       const auto& ket       = basis.at(jsh);
       const int ket_cart_sz = ket.cart_size();
 
-#if 1
+#if 0
       const int shpair_cart_sz = bra_cart_sz * ket_cart_sz;
 
       std::vector<double> _tmp( shpair_cart_sz * npts );
@@ -593,7 +593,6 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
 
   for( auto i = 0; i < nbe_cart; ++i )
   for( auto j = 0; j < npts;     ++j ) {
-    if( std::isnan(G_cart_rm[i*npts + j]) ) std::cout << "NANS!!!" << std::endl;
     G_use[i + j*ldx_use] = G_cart_rm[i*npts + j];
   }
   

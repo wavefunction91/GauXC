@@ -4,8 +4,7 @@
 #include "integral_2_2.h"
 
 void integral_2_2(size_t npts,
-                  shells shellA,
-                  shells shellB,
+                  shell_pair shpair,
                   point *points,
                   double *Xi,
                   double *Xj,

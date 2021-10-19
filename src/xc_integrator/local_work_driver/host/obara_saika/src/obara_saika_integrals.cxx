@@ -37,12 +37,19 @@ void compute_integral_shell_pair(size_t npts,
                   int stG, 
                   int ldG, 
                   double *weights) {
+   shell_pair shpair;
+   // Account for permutational symmetry in kernels
+   if( shell_list[i].L >= shell_list[j].L )
+     generate_shell_pair(shell_list[i], shell_list[j], shpair);
+   else
+     generate_shell_pair(shell_list[j], shell_list[i], shpair);
+
    if (i == j) {
       int lA = shell_list[i].L;
 
       if(lA == 0) {
          integral_0(npts,
-                    shell_list[i],
+                    shpair,
                     points,
                     Xi,
                     stX,
@@ -53,7 +60,7 @@ void compute_integral_shell_pair(size_t npts,
                     weights);
       } else if(lA == 1) {
         integral_1(npts,
-                   shell_list[i],
+                   shpair,
                    points,
                    Xi,
                    stX,
@@ -64,7 +71,7 @@ void compute_integral_shell_pair(size_t npts,
                    weights);
       } else if(lA == 2) {
         integral_2(npts,
-                   shell_list[i],
+                   shpair,
                    points,
                    Xi,
                    stX,
@@ -75,7 +82,7 @@ void compute_integral_shell_pair(size_t npts,
                    weights);
       } else if(lA == 3) {
         integral_3(npts,
-                   shell_list[i],
+                   shpair,
                    points,
                    Xi,
                    stX,
@@ -86,7 +93,7 @@ void compute_integral_shell_pair(size_t npts,
                    weights);
       } else if(lA == 4) {
         integral_4(npts,
-                   shell_list[i],
+                   shpair,
                    points,
                    Xi,
                    stX,
@@ -104,8 +111,7 @@ void compute_integral_shell_pair(size_t npts,
 
       if((lA == 0) && (lB == 0)) {
          integral_0_0(npts,
-                      shell_list[i],
-                      shell_list[j],
+                      shpair,
                       points,
                       Xi,
                       Xj,
@@ -118,8 +124,7 @@ void compute_integral_shell_pair(size_t npts,
                       weights);
       } else if((lA == 1) && (lB == 0)) {
             integral_1_0(npts,
-                         shell_list[i],
-                         shell_list[j],
+                         shpair,
                          points,
                          Xi,
                          Xj,
@@ -132,8 +137,7 @@ void compute_integral_shell_pair(size_t npts,
                          weights);
       } else if((lA == 0) && (lB == 1)) {
          integral_1_0(npts,
-                      shell_list[j],
-                      shell_list[i],
+                      shpair,
                       points,
                       Xj,
                       Xi,
@@ -146,8 +150,7 @@ void compute_integral_shell_pair(size_t npts,
                       weights);
       } else if((lA == 1) && (lB == 1)) {
         integral_1_1(npts,
-                     shell_list[i],
-                     shell_list[j],
+                     shpair,
                      points,
                      Xi,
                      Xj,
@@ -160,8 +163,7 @@ void compute_integral_shell_pair(size_t npts,
                      weights);
       } else if((lA == 2) && (lB == 0)) {
             integral_2_0(npts,
-                         shell_list[i],
-                         shell_list[j],
+                         shpair,
                          points,
                          Xi,
                          Xj,
@@ -174,8 +176,7 @@ void compute_integral_shell_pair(size_t npts,
                          weights);
       } else if((lA == 0) && (lB == 2)) {
          integral_2_0(npts,
-                      shell_list[j],
-                      shell_list[i],
+                      shpair,
                       points,
                       Xj,
                       Xi,
@@ -188,8 +189,7 @@ void compute_integral_shell_pair(size_t npts,
                       weights);
       } else if((lA == 2) && (lB == 1)) {
             integral_2_1(npts,
-                         shell_list[i],
-                         shell_list[j],
+                         shpair,
                          points,
                          Xi,
                          Xj,
@@ -202,8 +202,7 @@ void compute_integral_shell_pair(size_t npts,
                          weights);
       } else if((lA == 1) && (lB == 2)) {
          integral_2_1(npts,
-                      shell_list[j],
-                      shell_list[i],
+                      shpair,
                       points,
                       Xj,
                       Xi,
@@ -216,8 +215,7 @@ void compute_integral_shell_pair(size_t npts,
                       weights);
       } else if((lA == 2) && (lB == 2)) {
         integral_2_2(npts,
-                     shell_list[i],
-                     shell_list[j],
+                     shpair,
                      points,
                      Xi,
                      Xj,
@@ -230,8 +228,7 @@ void compute_integral_shell_pair(size_t npts,
                      weights);
       } else if((lA == 3) && (lB == 0)) {
             integral_3_0(npts,
-                         shell_list[i],
-                         shell_list[j],
+                         shpair,
                          points,
                          Xi,
                          Xj,
@@ -244,8 +241,7 @@ void compute_integral_shell_pair(size_t npts,
                          weights);
       } else if((lA == 0) && (lB == 3)) {
          integral_3_0(npts,
-                      shell_list[j],
-                      shell_list[i],
+                      shpair,
                       points,
                       Xj,
                       Xi,
@@ -258,8 +254,7 @@ void compute_integral_shell_pair(size_t npts,
                       weights);
       } else if((lA == 3) && (lB == 1)) {
             integral_3_1(npts,
-                         shell_list[i],
-                         shell_list[j],
+                         shpair,
                          points,
                          Xi,
                          Xj,
@@ -272,8 +267,7 @@ void compute_integral_shell_pair(size_t npts,
                          weights);
       } else if((lA == 1) && (lB == 3)) {
          integral_3_1(npts,
-                      shell_list[j],
-                      shell_list[i],
+                      shpair,
                       points,
                       Xj,
                       Xi,
@@ -286,8 +280,7 @@ void compute_integral_shell_pair(size_t npts,
                       weights);
       } else if((lA == 3) && (lB == 2)) {
             integral_3_2(npts,
-                         shell_list[i],
-                         shell_list[j],
+                         shpair,
                          points,
                          Xi,
                          Xj,
@@ -300,8 +293,7 @@ void compute_integral_shell_pair(size_t npts,
                          weights);
       } else if((lA == 2) && (lB == 3)) {
          integral_3_2(npts,
-                      shell_list[j],
-                      shell_list[i],
+                      shpair,
                       points,
                       Xj,
                       Xi,
@@ -314,8 +306,7 @@ void compute_integral_shell_pair(size_t npts,
                       weights);
       } else if((lA == 3) && (lB == 3)) {
         integral_3_3(npts,
-                     shell_list[i],
-                     shell_list[j],
+                     shpair,
                      points,
                      Xi,
                      Xj,
@@ -328,8 +319,7 @@ void compute_integral_shell_pair(size_t npts,
                      weights);
       } else if((lA == 4) && (lB == 0)) {
             integral_4_0(npts,
-                         shell_list[i],
-                         shell_list[j],
+                         shpair,
                          points,
                          Xi,
                          Xj,
@@ -342,8 +332,7 @@ void compute_integral_shell_pair(size_t npts,
                          weights);
       } else if((lA == 0) && (lB == 4)) {
          integral_4_0(npts,
-                      shell_list[j],
-                      shell_list[i],
+                      shpair,
                       points,
                       Xj,
                       Xi,
@@ -356,8 +345,7 @@ void compute_integral_shell_pair(size_t npts,
                       weights);
       } else if((lA == 4) && (lB == 1)) {
             integral_4_1(npts,
-                         shell_list[i],
-                         shell_list[j],
+                         shpair,
                          points,
                          Xi,
                          Xj,
@@ -370,8 +358,7 @@ void compute_integral_shell_pair(size_t npts,
                          weights);
       } else if((lA == 1) && (lB == 4)) {
          integral_4_1(npts,
-                      shell_list[j],
-                      shell_list[i],
+                      shpair,
                       points,
                       Xj,
                       Xi,
@@ -384,8 +371,7 @@ void compute_integral_shell_pair(size_t npts,
                       weights);
       } else if((lA == 4) && (lB == 2)) {
             integral_4_2(npts,
-                         shell_list[i],
-                         shell_list[j],
+                         shpair,
                          points,
                          Xi,
                          Xj,
@@ -398,8 +384,7 @@ void compute_integral_shell_pair(size_t npts,
                          weights);
       } else if((lA == 2) && (lB == 4)) {
          integral_4_2(npts,
-                      shell_list[j],
-                      shell_list[i],
+                      shpair,
                       points,
                       Xj,
                       Xi,
@@ -412,8 +397,7 @@ void compute_integral_shell_pair(size_t npts,
                       weights);
       } else if((lA == 4) && (lB == 3)) {
             integral_4_3(npts,
-                         shell_list[i],
-                         shell_list[j],
+                         shpair,
                          points,
                          Xi,
                          Xj,
@@ -426,8 +410,7 @@ void compute_integral_shell_pair(size_t npts,
                          weights);
       } else if((lA == 3) && (lB == 4)) {
          integral_4_3(npts,
-                      shell_list[j],
-                      shell_list[i],
+                      shpair,
                       points,
                       Xj,
                       Xi,
@@ -440,8 +423,7 @@ void compute_integral_shell_pair(size_t npts,
                       weights);
       } else if((lA == 4) && (lB == 4)) {
         integral_4_4(npts,
-                     shell_list[i],
-                     shell_list[j],
+                     shpair,
                      points,
                      Xi,
                      Xj,
@@ -456,4 +438,5 @@ void compute_integral_shell_pair(size_t npts,
          printf("Type not defined!\n");
       }
    }
+  delete shpair.prim_pairs;
 }

@@ -4,8 +4,7 @@
 #include "integral_3_3.h"
 
 void integral_3_3(size_t npts,
-                  shells shellA,
-                  shells shellB,
+                  shell_pair shpair,
                   point *points,
                   double *Xi,
                   double *Xj,
