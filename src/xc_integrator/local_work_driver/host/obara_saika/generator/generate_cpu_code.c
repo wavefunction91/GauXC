@@ -256,7 +256,7 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "\n");
   fprintf(f, "#define PI 3.14159265358979323846\n");
   fprintf(f, "\n");
-  fprintf(f, "void integral_%d(int npts,\n", lA);
+  fprintf(f, "void integral_%d(size_t npts,\n", lA);
   fprintf(f, "               shells shellA,\n");
   fprintf(f, "               point *_points,\n");
   fprintf(f, "               double *Xi,\n");
@@ -273,8 +273,11 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   }
 
   fprintf(f, "   double temp[%d];\n\n", size - partial_size);
+  fprintf(f, "   for(int i = 0; i < %d; ++i) {\n", size - partial_size);
+  fprintf(f, "      temp[i] = 0.0;\n");
+  fprintf(f, "   }\n\n");
   
-  fprintf(f, "   for(int point_idx = 0; point_idx < npts; ++point_idx) {\n");
+  fprintf(f, "   for(size_t point_idx = 0; point_idx < npts; ++point_idx) {\n");
   fprintf(f, "      point C = *(_points + point_idx);\n\n");
 
   fprintf(f, "      double xA = shellA.origin.x;\n");
@@ -418,7 +421,7 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "\n");
   fprintf(f, "#define PI 3.14159265358979323846\n");
   fprintf(f, "\n");
-  fprintf(f, "void integral_%d_%d(int npts,\n", lA, lB);
+  fprintf(f, "void integral_%d_%d(size_t npts,\n", lA, lB);
   fprintf(f, "                  shells shellA,\n");
   fprintf(f, "                  shells shellB,\n");
   fprintf(f, "                  point *_points,\n");
@@ -438,8 +441,11 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   }
 
   fprintf(f, "   double temp[%d];\n\n", size - partial_size);
-  
-  fprintf(f, "   for(int point_idx = 0; point_idx < npts; ++point_idx) {\n");
+  fprintf(f, "   for(int i = 0; i < %d; ++i) {\n", size - partial_size);
+  fprintf(f, "      temp[i] = 0.0;\n");
+  fprintf(f, "   }\n\n");
+
+  fprintf(f, "   for(size_t point_idx = 0; point_idx < npts; ++point_idx) {\n");
   fprintf(f, "      point C = *(_points + point_idx);\n\n");
 
   fprintf(f, "      double xA = shellA.origin.x;\n");
@@ -660,7 +666,7 @@ void generate_diagonal_header_files(int lA) {
   fprintf(f, "\n");
   fprintf(f, "#include \"integral_%d.h\"\n", lA);
   fprintf(f, "\n");
-  fprintf(f, "void integral_%d(int npts,\n", lA);
+  fprintf(f, "void integral_%d(size_t npts,\n", lA);
   fprintf(f, "               shells shellA,\n");
   fprintf(f, "               point *points,\n");
   fprintf(f, "               double *Xi,\n");
@@ -688,7 +694,7 @@ void generate_off_diagonal_header_files(int lA, int lB) {
   fprintf(f, "\n");
   fprintf(f, "#include \"integral_%d_%d.h\"\n", lA, lB);
   fprintf(f, "\n");
-  fprintf(f, "void integral_%d_%d(int npts,\n", lA, lB);
+  fprintf(f, "void integral_%d_%d(size_t npts,\n", lA, lB);
   fprintf(f, "                  shells shellA,\n");
   fprintf(f, "                  shells shellB,\n");
   fprintf(f, "                  point *points,\n");
@@ -719,7 +725,7 @@ void generate_main_files(int lA) {
   fprintf(f, "#ifndef __MY_INTEGRAL_OBARA_SAIKA\n");
   fprintf(f, "#define __MY_INTEGRAL_OBARA_SAIKA\n");
   fprintf(f, "\n");
-  fprintf(f, "void compute_integral_shell_pair(int npts,\n");
+  fprintf(f, "void compute_integral_shell_pair(size_t npts,\n");
   fprintf(f, "                  int i,\n");
   fprintf(f, "                  int j,\n");
   fprintf(f, "                  shells *shell_list,\n");
@@ -757,7 +763,7 @@ void generate_main_files(int lA) {
   }
   
   fprintf(f, "\n");
-  fprintf(f, "void compute_integral_shell_pair(int npts,\n");
+  fprintf(f, "void compute_integral_shell_pair(size_t npts,\n");
   fprintf(f, "                  int i,\n");
   fprintf(f, "                  int j,\n");
   fprintf(f, "                  shells *shell_list,\n");
