@@ -4,7 +4,7 @@
 
 #define PI 3.14159265358979323846
 
-void integral_3_1(int npts,
+void integral_3_1(size_t npts,
                   shells shellA,
                   shells shellB,
                   point *_points,
@@ -19,7 +19,11 @@ void integral_3_1(int npts,
                   double *weights) {
    double temp[25];
 
-   for(int point_idx = 0; point_idx < npts; ++point_idx) {
+   for(int i = 0; i < 25; ++i) {
+      temp[i] = 0.0;
+   }
+
+   for(size_t point_idx = 0; point_idx < npts; ++point_idx) {
       point C = *(_points + point_idx);
 
       double xA = shellA.origin.x;

@@ -23,7 +23,7 @@
 #include "integral_4_3.h"
 #include "integral_4_4.h"
 
-void compute_integral_shell_pair(int npts,
+void compute_integral_shell_pair(size_t npts,
                   int i,
                   int j,
                   shells *shell_list,
