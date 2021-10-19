@@ -1,0 +1,32 @@
+set( GAUXC_OBARA_SAIKA_HOST_SRC
+     src/integral_0.cxx
+     src/integral_1.cxx
+     src/integral_2.cxx
+     src/integral_3.cxx
+     src/integral_4.cxx
+     src/integral_0_0.cxx
+     src/integral_1_0.cxx
+     src/integral_1_1.cxx
+     src/integral_2_0.cxx
+     src/integral_2_1.cxx
+     src/integral_2_2.cxx
+     src/integral_3_0.cxx
+     src/integral_3_1.cxx
+     src/integral_3_2.cxx
+     src/integral_3_3.cxx
+     src/integral_4_0.cxx
+     src/integral_4_1.cxx
+     src/integral_4_2.cxx
+     src/integral_4_3.cxx
+     src/integral_4_4.cxx
+     src/obara_saika_integrals.cxx
+     src/boys_computation.cxx
+     src/chebyshev_boys_function.cxx
+)
+target_sources( gauxc PRIVATE ${GAUXC_OBARA_SAIKA_HOST_SRC} )
+target_include_directories( gauxc PRIVATE
+  $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
+)
+
+find_package( Boost REQUIRED )
+target_link_libraries( gauxc PRIVATE Boost::headers )

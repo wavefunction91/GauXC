@@ -3,7 +3,7 @@
 
 #include "integral_2.h"
 
-void integral_2(int npts,
+void integral_2(size_t npts,
                shells shellA,
                point *points,
                double *Xi,

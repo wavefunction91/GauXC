@@ -1,7 +1,7 @@
 #ifndef __MY_INTEGRAL_OBARA_SAIKA
 #define __MY_INTEGRAL_OBARA_SAIKA
 
-void compute_integral_shell_pair(int npts,
+void compute_integral_shell_pair(size_t npts,
                   int i,
                   int j,
                   shells *shell_list,

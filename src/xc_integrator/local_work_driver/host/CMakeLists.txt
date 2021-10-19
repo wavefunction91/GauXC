@@ -19,3 +19,4 @@ if( GAUXC_ENABLE_GAU2GRID )
 endif()
 
 add_subdirectory(rys)
+add_subdirectory(obara_saika)

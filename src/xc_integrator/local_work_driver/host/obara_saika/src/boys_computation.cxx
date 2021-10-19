@@ -1,4 +1,5 @@
 #include "boys_computation.h"
+#include "chebyshev_boys_function.hpp"
 
 #include <iostream>
 #include <limits>
@@ -8,6 +9,7 @@
 #include <algorithm>
 #include <array>
 #include <iomanip>
+#include <cassert>
 
 #define PI 3.14159265358979323846
 
@@ -48,9 +50,18 @@ double boys_reference(int m, double T) {
 }
 
 double boys_function(int m, double T) {
-  if(T < 117) {
+#if 0
+  if(T < 1e-10) {
+    return 1. / (2*m + 1);
+  } else if(T < 117) {
     return boys_reference(m, T);
   } else {
     return boys_asymp(m, T);
   }
+#else
+  assert( GauXC::chebyshev_boys_instance );
+  double val;
+  GauXC::chebyshev_boys_instance->eval( 1, m, &T, &val );
+  return val;
+#endif
 }
