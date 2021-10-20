@@ -235,7 +235,7 @@ void traverse_dfs_vrr(FILE *f, int lA, int lB, struct node *root_node) {
     }
 
     if(root_node -> valid) {
-      fprintf(f, "            *(temp + %d) += t%d%d;\n", root_node -> offset, root_node -> offset, root_node -> level, 0);
+      fprintf(f, "            *(temp + %d) += t%d%d;\n", root_node -> offset, root_node -> level, 0);
       fprintf(f, "\n");
     }
     
