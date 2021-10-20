@@ -3,7 +3,7 @@
 
 #include "integral_4_1.h"
 
-void integral_4_1(int npts,
+void integral_4_1(size_t npts,
                   shells shellA,
                   shells shellB,
                   point *points,

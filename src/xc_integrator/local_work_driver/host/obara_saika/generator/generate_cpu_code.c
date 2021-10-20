@@ -235,7 +235,7 @@ void traverse_dfs_vrr(FILE *f, int lA, int lB, struct node *root_node) {
     }
 
     if(root_node -> valid) {
-      fprintf(f, "            *(temp + %d) = beta_in * (*(temp + %d)) + t%d%d;\n", root_node -> offset, root_node -> offset, root_node -> level, 0);
+      fprintf(f, "            *(temp + %d) = (*(temp + %d)) + t%d%d;\n", root_node -> offset, root_node -> offset, root_node -> level, 0);
       fprintf(f, "\n");
     }
     
@@ -284,7 +284,6 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "      double yA = shellA.origin.y;\n");
   fprintf(f, "      double zA = shellA.origin.z;\n");
   fprintf(f, "\n");
-  fprintf(f, "      double beta_in = 0.0;\n");
   fprintf(f, "      for(int i = 0; i < shellA.m; ++i) {\n");
   fprintf(f, "         for(int j = 0; j < shellA.m; ++j) {\n");
   fprintf(f, "            double aA = shellA.coeff[i].alpha;\n");
@@ -321,7 +320,6 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "\n");
   traverse_dfs_vrr(f, lA, lA, root_node);
 
-  fprintf(f, "            beta_in = 1.0;\n");
   fprintf(f, "         }\n");
   fprintf(f, "      }\n");
   fprintf(f, "\n");
@@ -460,7 +458,6 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "      double Y_AB = (yA - yB);\n");
   fprintf(f, "      double Z_AB = (zA - zB);\n");
   fprintf(f, "\n");
-  fprintf(f, "      double beta_in = 0.0;\n");
   fprintf(f, "      for(int i = 0; i < shellA.m; ++i) {\n");
   fprintf(f, "         for(int j = 0; j < shellB.m; ++j) {\n");
 
@@ -502,7 +499,6 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "\n");
   traverse_dfs_vrr(f, lA, lB, root_node);
 
-  fprintf(f, "            beta_in = 1.0;\n");
   fprintf(f, "         }\n");
   fprintf(f, "      }\n");
   fprintf(f, "\n");
