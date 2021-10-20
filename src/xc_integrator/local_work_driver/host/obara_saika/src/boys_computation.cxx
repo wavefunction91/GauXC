@@ -34,8 +34,8 @@ double boys_reference(int m, double T) {
   double old_term = term;
   double sum = old_term;
 
-  constexpr auto eps = std::numeric_limits<double>::epsilon();
-  constexpr auto eps_10 = eps / 10;
+  double eps = std::numeric_limits<double>::epsilon();
+  double eps_10 = eps / 10;
 
   while( term > sum * eps_10 || old_term < term ) {
     denom = denom + 1;
