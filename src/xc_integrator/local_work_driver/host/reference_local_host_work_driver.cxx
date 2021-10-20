@@ -8,13 +8,23 @@
 
 #include <gauxc/basisset_map.hpp>
 #include "rys_integral.h"
+#include "obara_saika_integrals.h"
+#include "chebyshev_boys_function.hpp"
 #include <gauxc/util/real_solid_harmonics.hpp>
 #include "integrator_util/integral_bounds.hpp"
 
 namespace GauXC {
 
-ReferenceLocalHostWorkDriver::ReferenceLocalHostWorkDriver() = default; 
-ReferenceLocalHostWorkDriver::~ReferenceLocalHostWorkDriver() noexcept = default;
+ReferenceLocalHostWorkDriver::ReferenceLocalHostWorkDriver() {
+  int ncheb   = 13;
+  int nseg    = 60;
+  int maxM    = 10;
+  double maxT = 117;
+  gauxc_boys_init( ncheb, maxM, nseg, 1e-10, maxT );
+}; 
+ReferenceLocalHostWorkDriver::~ReferenceLocalHostWorkDriver() noexcept {
+  gauxc_boys_finalize();
+};
 
 // Partition weights
 void ReferenceLocalHostWorkDriver::partition_weights( XCWeightAlg weight_alg, 
@@ -311,6 +321,7 @@ void ReferenceLocalHostWorkDriver::eval_exx_fmat( size_t npts, size_t nbf,
 
 
 
+#if 0
 void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
   size_t nbe, const double* points, const double* weights, 
   const BasisSet<double>& basis, const BasisSetMap& basis_map, 
@@ -385,9 +396,13 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
       const auto& ket       = basis.at(jsh);
       const int ket_cart_sz = ket.cart_size();
 
-      compute_integral_shell_pair(npts, rys_basis[ish], rys_basis[jsh], _points, (Xi + ioff_cart), (Xj + joff_cart), ldx_use, (Gi + ioff_cart), (Gj + j_offcart), ldg_use, weights);
-      
-      /*
+#if 0
+
+      compute_integral_shell_pair( npts, ish, jsh, rys_basis._shells.data(), _points, 
+        const_cast<double*>(X_use + ioff_cart), const_cast<double*>(X_use + joff_cart), ldx_use, 1, 
+        G_use + ioff_cart, G_use + joff_cart, ldx_use, 1, 
+        const_cast<double*>(weights) );
+#else
       const int shpair_cart_sz = bra_cart_sz * ket_cart_sz;
 
       std::vector<double> _tmp( shpair_cart_sz * npts );
@@ -417,9 +432,9 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
         for( int jj = 0; jj < ket_cart_sz; ++jj ) {
           Gjk[jj] += weights[k] * ints[ii*ket_cart_sz + jj] * Xik[ii];
 	      }
-      */
       
       }
+#endif
       joff_cart += ket_cart_sz;
     }
     ioff_cart += bra_cart_sz;
@@ -450,6 +465,163 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
   }
 
 }
+#else
+void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
+  size_t nbe, const double* points, const double* weights, 
+  const BasisSet<double>& basis, const BasisSetMap& basis_map, 
+  const int32_t* shell_list, const double* X, size_t ldx, double* G, size_t ldg ) {
+
+  // Cast points to Rys format (binary compatable)
+  point* _points = reinterpret_cast<point*>(const_cast<double*>(points));
+
+  // Set G to zero
+  for( int j = 0; j < npts; ++j )
+  for( int i = 0; i < nbe;  ++i ) {
+    G[i + j*ldg] = 0.;
+  }
+
+  // Copy the basis set 
+  RysBasis rys_basis(basis);
+
+  // Spherical Harmonic Transformer
+  util::SphericalHarmonicTransform sph_trans(5);
+
+  const bool any_pure = std::any_of( shell_list, shell_list + nshells,
+    [&](const auto& i){ return basis.at(i).pure(); } );
+
+  const size_t nbe_cart = basis.nbf_cart_subset( shell_list, shell_list + nshells );
+
+
+  std::vector<double> X_cart, G_cart;
+  if( any_pure ){
+    X_cart.resize( nbe_cart * npts );
+    G_cart.resize( nbe_cart * npts, 0. );
+
+    // Transform X into cartesian
+    int ioff = 0;
+    int ioff_cart = 0;
+    for( int i = 0; i < nshells; ++i ) {
+      const auto ish = shell_list[i];
+      const auto& shell      = basis.at(ish);
+      const int shell_l       = shell.l();
+      const int shell_sz      = shell.size();
+      const int shell_cart_sz = shell.cart_size();
+
+      if( shell.pure() and shell_l > 0 ) {
+        sph_trans.itform_bra_cm( shell_l, npts, X + ioff, ldx,
+          X_cart.data() + ioff_cart, nbe_cart );
+      } else {
+        blas::lacpy( 'A', shell_sz, npts, X + ioff, ldx,
+          X_cart.data() + ioff_cart, nbe_cart );
+      }
+      ioff += shell_sz;
+      ioff_cart += shell_cart_sz;
+    }
+  }
+
+
+  const auto* X_use = any_pure ? X_cart.data() : X;
+  auto*       G_use = any_pure ? G_cart.data() : G;
+  const auto ldx_use = any_pure ? nbe_cart : ldx;
+  const auto ldg_use = any_pure ? nbe_cart : ldg;
+
+  std::vector<double> X_cart_rm( nbe_cart*npts,0. ), G_cart_rm( nbe_cart*npts,0. );
+  for( auto i = 0; i < nbe_cart; ++i )
+  for( auto j = 0; j < npts;     ++j ) {
+    X_cart_rm[i*npts + j] = X_use[i + j*ldx_use];
+  }
+
+
+  {
+  size_t ioff_cart = 0;
+
+  //std::cout << rys_basis._shells.size() << ", " << basis.size() << ", " << npts*nbe_cart*nbe_cart << std::endl;
+  for( int i = 0; i < nshells; ++i ) {
+    const auto ish        = shell_list[i];
+    const auto& bra       = basis.at(ish);
+    const int bra_cart_sz = bra.cart_size();
+
+    size_t joff_cart = 0;
+    for( int j = 0; j <= i; ++j ) {
+      const auto jsh        = shell_list[j];
+      const auto& ket       = basis.at(jsh);
+      const int ket_cart_sz = ket.cart_size();
+
+#if 0
+      const int shpair_cart_sz = bra_cart_sz * ket_cart_sz;
+
+      std::vector<double> _tmp( shpair_cart_sz * npts );
+
+      compute_integral_shell_pair( npts, rys_basis[ish], rys_basis[jsh], _points,
+        _tmp.data() );
+
+      const auto* Xj = X_cart_rm.data() + joff_cart*npts;
+      const auto* Xi = X_cart_rm.data() + ioff_cart*npts;
+      auto*       Gj = G_cart_rm.data() + joff_cart*npts;
+      auto*       Gi = G_cart_rm.data() + ioff_cart*npts;
+
+      for( int ii = 0; ii < bra_cart_sz; ++ii )
+      for( int jj = 0; jj < ket_cart_sz; ++jj ) {
+
+        for( int k = 0; k < npts; ++k ) {
+          Gi[ii*npts + k] += weights[k] * 
+            _tmp[ ii*ket_cart_sz + jj + k*shpair_cart_sz ] *
+            Xj[jj*npts + k];
+        }
+
+        if( i != j )
+        for( int k = 0; k < npts; ++k ) {
+          Gj[jj*npts + k] += weights[k] * 
+            _tmp[ ii*ket_cart_sz + jj + k*shpair_cart_sz ] *
+            Xi[ii*npts + k];
+        }
+
+      }
+#else
+      compute_integral_shell_pair( npts, ish, jsh, rys_basis._shells.data(), _points,
+        X_cart_rm.data()+ioff_cart*npts, X_cart_rm.data()+joff_cart*npts, 1, npts,
+        G_cart_rm.data()+ioff_cart*npts, G_cart_rm.data()+joff_cart*npts, 1, npts,
+        const_cast<double*>(weights) );
+
+#endif
+
+      joff_cart += ket_cart_sz;
+    }
+    ioff_cart += bra_cart_sz;
+  }
+  }
+
+  for( auto i = 0; i < nbe_cart; ++i )
+  for( auto j = 0; j < npts;     ++j ) {
+    G_use[i + j*ldx_use] = G_cart_rm[i*npts + j];
+  }
+  
+  // Transform G back to spherical
+  if( any_pure ) {
+    int ioff = 0;
+    int ioff_cart = 0;
+    for( int i = 0; i < nshells; ++i ) {
+      const auto ish = shell_list[i];
+      const auto& shell      = basis.at(ish);
+      const int shell_l       = shell.l();
+      const int shell_sz      = shell.size();
+      const int shell_cart_sz = shell.cart_size();
+
+      if( shell.pure() and shell_l > 0 ) {
+        sph_trans.tform_bra_cm( shell_l, npts, G_cart.data() + ioff_cart, nbe_cart,
+          G + ioff, ldg );
+      } else {
+        blas::lacpy( 'A', shell_sz, npts, G_cart.data() + ioff_cart, nbe_cart,
+          G + ioff, ldg );
+      }
+      ioff += shell_sz;
+      ioff_cart += shell_cart_sz;
+    }
+  }
+
+}
+
+#endif
 
 
 

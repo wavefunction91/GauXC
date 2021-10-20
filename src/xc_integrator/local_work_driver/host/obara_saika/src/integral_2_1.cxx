@@ -5,8 +5,7 @@
 #define PI 3.14159265358979323846
 
 void integral_2_1(size_t npts,
-                  shells shellA,
-                  shells shellB,
+                  shell_pair shpair,
                   point *_points,
                   double *Xi,
                   double *Xj,
@@ -23,44 +22,29 @@ void integral_2_1(size_t npts,
       temp[i] = 0.0;
    }
 
+   double X_AB = shpair.rAB.x;
+   double Y_AB = shpair.rAB.y;
+   double Z_AB = shpair.rAB.z;
+
    for(size_t point_idx = 0; point_idx < npts; ++point_idx) {
       point C = *(_points + point_idx);
 
-      double xA = shellA.origin.x;
-      double yA = shellA.origin.y;
-      double zA = shellA.origin.z;
-
-      double xB = shellB.origin.x;
-      double yB = shellB.origin.y;
-      double zB = shellB.origin.z;
-
-      double X_AB = (xA - xB);
-      double Y_AB = (yA - yB);
-      double Z_AB = (zA - zB);
-
       double beta_in = 0.0;
-      for(int i = 0; i < shellA.m; ++i) {
-         for(int j = 0; j < shellB.m; ++j) {
-            double aA = shellA.coeff[i].alpha;
-            double cA = shellA.coeff[i].coeff;
-
-            double aB = shellB.coeff[j].alpha;
-            double cB = shellB.coeff[j].coeff;
-
-            double RHO = aA + aB;
+      for(int ij = 0; ij < shpair.nprim_pair; ++ij ) {
+            double RHO = shpair.prim_pairs[ij].gamma;
             double RHO_INV = 1.0 / RHO;
+
+            double xP = shpair.prim_pairs[ij].P.x;
+            double yP = shpair.prim_pairs[ij].P.y;
+            double zP = shpair.prim_pairs[ij].P.z;
+
+            double X_PA = shpair.prim_pairs[ij].PA.x;
+            double Y_PA = shpair.prim_pairs[ij].PA.y;
+            double Z_PA = shpair.prim_pairs[ij].PA.z;
 
             double xC = C.x;
             double yC = C.y;
             double zC = C.z;
-
-            double xP = (aA * xA + aB * xB) * RHO_INV;
-            double yP = (aA * yA + aB * yB) * RHO_INV;
-            double zP = (aA * zA + aB * zB) * RHO_INV;
-
-            double X_PA = (xP - xA);
-            double Y_PA = (yP - yA);
-            double Z_PA = (zP - zA);
 
             double X_PC = (xP - xC);
             double Y_PC = (yP - yC);
@@ -68,7 +52,7 @@ void integral_2_1(size_t npts,
 
             double t00, t01, t02, t03, t10, t11, t12, t20, t21, t30;
 
-            double eval = cA * cB * 2 * PI * RHO_INV * exp(-1.0 * (X_AB * X_AB + Y_AB * Y_AB + Z_AB * Z_AB) * aA * aB * RHO_INV);
+            double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;
             double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
 
             t00 = eval * boys_function(0, tval);
@@ -139,7 +123,6 @@ void integral_2_1(size_t npts,
             *(temp + 15) = beta_in * (*(temp + 15)) + t30;
 
             beta_in = 1.0;
-         }
       }
 
       double *Xik = (Xi + point_idx * stX);

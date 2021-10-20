@@ -5,7 +5,7 @@
 #define PI 3.14159265358979323846
 
 void integral_2(size_t npts,
-               shells shellA,
+               shell_pair shpair,
                point *_points,
                double *Xi,
                int stX,
@@ -23,29 +23,22 @@ void integral_2(size_t npts,
    for(size_t point_idx = 0; point_idx < npts; ++point_idx) {
       point C = *(_points + point_idx);
 
-      double xA = shellA.origin.x;
-      double yA = shellA.origin.y;
-      double zA = shellA.origin.z;
+      double xA = shpair.rA.x;
+      double yA = shpair.rA.y;
+      double zA = shpair.rA.z;
 
       double beta_in = 0.0;
-      for(int i = 0; i < shellA.m; ++i) {
-         for(int j = 0; j < shellA.m; ++j) {
-            double aA = shellA.coeff[i].alpha;
-            double cA = shellA.coeff[i].coeff;
-
-            double aB = shellA.coeff[j].alpha;
-            double cB = shellA.coeff[j].coeff;
-
-            double RHO = aA + aB;
+      for( int ij = 0; ij < shpair.nprim_pair; ++ij ) {
+            double RHO = shpair.prim_pairs[ij].gamma;
             double RHO_INV = 1.0 / RHO;
 
             double xC = C.x;
             double yC = C.y;
             double zC = C.z;
 
-            double X_PA = 0.0;
-            double Y_PA = 0.0;
-            double Z_PA = 0.0;
+            constexpr double X_PA = 0.0;
+            constexpr double Y_PA = 0.0;
+            constexpr double Z_PA = 0.0;
 
             double X_PC = (xA - xC);
             double Y_PC = (yA - yC);
@@ -53,7 +46,7 @@ void integral_2(size_t npts,
 
             double t00, t01, t02, t03, t04, t10, t11, t12, t13, t20, t21, t22, t30, t31, t40;
 
-            double eval = cA * cB * 2 * PI * RHO_INV;
+            double eval = shpair.prim_pairs[ij].coeff_prod * 2 * PI * RHO_INV;
             double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
 
             t00 = eval * boys_function(0, tval);
@@ -189,7 +182,6 @@ void integral_2(size_t npts,
             *(temp + 30) = beta_in * (*(temp + 30)) + t40;
 
             beta_in = 1.0;
-         }
       }
 
       double *Xik = (Xi + point_idx * stX);
