@@ -235,7 +235,7 @@ void traverse_dfs_vrr(FILE *f, int lA, int lB, struct node *root_node) {
     }
 
     if(root_node -> valid) {
-      fprintf(f, "            *(temp + %d) = (*(temp + %d)) + t%d%d;\n", root_node -> offset, root_node -> offset, root_node -> level, 0);
+      fprintf(f, "            *(temp + %d) += t%d%d;\n", root_node -> offset, root_node -> offset, root_node -> level, 0);
       fprintf(f, "\n");
     }
     
@@ -288,7 +288,7 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "      double yA = shpair.rA.y;\n");
   fprintf(f, "      double zA = shpair.rA.z;\n");
   fprintf(f, "\n");
-  fprintf(f, "      double beta_in = 0.0;\n");
+//fprintf(f, "      double beta_in = 0.0;\n");
 //fprintf(f, "      for(int i = 0; i < shellA.m; ++i) {\n");
 //fprintf(f, "         for(int j = 0; j < shellA.m; ++j) {\n");
   fprintf(f, "      for( int ij = 0; ij < shpair.nprim_pair; ++ij ) {\n");
@@ -326,7 +326,7 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "            double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);\n");
   fprintf(f, "\n");
   traverse_dfs_vrr(f, lA, lA, root_node);
-  fprintf(f, "            beta_in = 1.0;\n");
+//fprintf(f, "            beta_in = 1.0;\n");
 //fprintf(f, "         }\n");
   fprintf(f, "      }\n");
   fprintf(f, "\n");
@@ -475,7 +475,7 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
 //fprintf(f, "      double X_AB = (xA - xB);\n");
 //fprintf(f, "      double Y_AB = (yA - yB);\n");
 //fprintf(f, "      double Z_AB = (zA - zB);\n");
-  fprintf(f, "      double beta_in = 0.0;\n");
+//fprintf(f, "      double beta_in = 0.0;\n");
 //fprintf(f, "      for(int i = 0; i < shellA.m; ++i) {\n");
 //fprintf(f, "         for(int j = 0; j < shellB.m; ++j) {\n");
   fprintf(f, "      for(int ij = 0; ij < shpair.nprim_pair; ++ij ) {\n");
@@ -525,7 +525,7 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "            double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);\n");
   fprintf(f, "\n");
   traverse_dfs_vrr(f, lA, lB, root_node);
-  fprintf(f, "            beta_in = 1.0;\n");
+//fprintf(f, "            beta_in = 1.0;\n");
 //fprintf(f, "         }\n");
   fprintf(f, "      }\n");
   fprintf(f, "\n");
