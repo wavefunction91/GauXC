@@ -14,31 +14,35 @@ void integral_2(size_t npts,
                int stG, 
                int ldG, 
                double *weights) {
-   double temp[31];
+   double temp[31 * NPTS_LOCAL];
 
-   for(int i = 0; i < 31; ++i) {
+   for(int i = 0; i < 31 * NPTS_LOCAL; ++i) {
       temp[i] = 0.0;
    }
 
-   for(size_t point_idx = 0; point_idx < npts; ++point_idx) {
-      point C = *(_points + point_idx);
+   for(size_t p_outer = 0; p_outer < npts; p_outer += NPTS_LOCAL) {
+      point *_point_outer = (_points + p_outer);
 
       double xA = shpair.rA.x;
       double yA = shpair.rA.y;
       double zA = shpair.rA.z;
 
-      double beta_in = 0.0;
       for( int ij = 0; ij < shpair.nprim_pair; ++ij ) {
-            double RHO = shpair.prim_pairs[ij].gamma;
-            double RHO_INV = 1.0 / RHO;
+         double RHO = shpair.prim_pairs[ij].gamma;
+         double RHO_INV = 1.0 / RHO;
+
+         constexpr double X_PA = 0.0;
+         constexpr double Y_PA = 0.0;
+         constexpr double Z_PA = 0.0;
+
+         double eval = shpair.prim_pairs[ij].coeff_prod * 2 * PI * RHO_INV;
+
+         for(int p_inner = 0; p_inner < NPTS_LOCAL; ++p_inner) {
+            point C = *(_point_outer + p_inner);
 
             double xC = C.x;
             double yC = C.y;
             double zC = C.z;
-
-            constexpr double X_PA = 0.0;
-            constexpr double Y_PA = 0.0;
-            constexpr double Z_PA = 0.0;
 
             double X_PC = (xA - xC);
             double Y_PC = (yA - yC);
@@ -46,7 +50,6 @@ void integral_2(size_t npts,
 
             double t00, t01, t02, t03, t04, t10, t11, t12, t13, t20, t21, t22, t30, t31, t40;
 
-            double eval = shpair.prim_pairs[ij].coeff_prod * 2 * PI * RHO_INV;
             double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
 
             t00 = eval * boys_function(0, tval);
@@ -61,72 +64,53 @@ void integral_2(size_t npts,
             t20 = X_PA * t10 - X_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
             t21 = X_PA * t11 - X_PC * t12 + 0.5 * RHO_INV * 1 * (t01 - t02);
             t22 = X_PA * t12 - X_PC * t13 + 0.5 * RHO_INV * 1 * (t02 - t03);
-            *(temp + 0) = beta_in * (*(temp + 0)) + t20;
-
+            *(temp + 0 * NPTS_LOCAL + p_inner) += t20;
             t30 = X_PA * t20 - X_PC * t21 + 0.5 * RHO_INV * 2 * (t10 - t11);
             t31 = X_PA * t21 - X_PC * t22 + 0.5 * RHO_INV * 2 * (t11 - t12);
-            *(temp + 6) = beta_in * (*(temp + 6)) + t30;
-
+            *(temp + 6 * NPTS_LOCAL + p_inner) += t30;
             t40 = X_PA * t30 - X_PC * t31 + 0.5 * RHO_INV * 3 * (t20 - t21);
-            *(temp + 16) = beta_in * (*(temp + 16)) + t40;
-
+            *(temp + 16 * NPTS_LOCAL + p_inner) += t40;
             t40 = Y_PA * t30 - Y_PC * t31;
-            *(temp + 17) = beta_in * (*(temp + 17)) + t40;
-
+            *(temp + 17 * NPTS_LOCAL + p_inner) += t40;
             t40 = Z_PA * t30 - Z_PC * t31;
-            *(temp + 18) = beta_in * (*(temp + 18)) + t40;
-
+            *(temp + 18 * NPTS_LOCAL + p_inner) += t40;
             t30 = Y_PA * t20 - Y_PC * t21;
             t31 = Y_PA * t21 - Y_PC * t22;
-            *(temp + 7) = beta_in * (*(temp + 7)) + t30;
-
+            *(temp + 7 * NPTS_LOCAL + p_inner) += t30;
             t40 = Y_PA * t30 - Y_PC * t31 + 0.5 * RHO_INV * 1 * (t20 - t21);
-            *(temp + 19) = beta_in * (*(temp + 19)) + t40;
-
+            *(temp + 19 * NPTS_LOCAL + p_inner) += t40;
             t40 = Z_PA * t30 - Z_PC * t31;
-            *(temp + 20) = beta_in * (*(temp + 20)) + t40;
-
+            *(temp + 20 * NPTS_LOCAL + p_inner) += t40;
             t30 = Z_PA * t20 - Z_PC * t21;
             t31 = Z_PA * t21 - Z_PC * t22;
-            *(temp + 8) = beta_in * (*(temp + 8)) + t30;
-
+            *(temp + 8 * NPTS_LOCAL + p_inner) += t30;
             t40 = Z_PA * t30 - Z_PC * t31 + 0.5 * RHO_INV * 1 * (t20 - t21);
-            *(temp + 21) = beta_in * (*(temp + 21)) + t40;
-
+            *(temp + 21 * NPTS_LOCAL + p_inner) += t40;
             t20 = Y_PA * t10 - Y_PC * t11;
             t21 = Y_PA * t11 - Y_PC * t12;
             t22 = Y_PA * t12 - Y_PC * t13;
-            *(temp + 1) = beta_in * (*(temp + 1)) + t20;
-
+            *(temp + 1 * NPTS_LOCAL + p_inner) += t20;
             t30 = Y_PA * t20 - Y_PC * t21 + 0.5 * RHO_INV * 1 * (t10 - t11);
             t31 = Y_PA * t21 - Y_PC * t22 + 0.5 * RHO_INV * 1 * (t11 - t12);
-            *(temp + 9) = beta_in * (*(temp + 9)) + t30;
-
+            *(temp + 9 * NPTS_LOCAL + p_inner) += t30;
             t40 = Y_PA * t30 - Y_PC * t31 + 0.5 * RHO_INV * 2 * (t20 - t21);
-            *(temp + 22) = beta_in * (*(temp + 22)) + t40;
-
+            *(temp + 22 * NPTS_LOCAL + p_inner) += t40;
             t40 = Z_PA * t30 - Z_PC * t31;
-            *(temp + 23) = beta_in * (*(temp + 23)) + t40;
-
+            *(temp + 23 * NPTS_LOCAL + p_inner) += t40;
             t30 = Z_PA * t20 - Z_PC * t21;
             t31 = Z_PA * t21 - Z_PC * t22;
-            *(temp + 10) = beta_in * (*(temp + 10)) + t30;
-
+            *(temp + 10 * NPTS_LOCAL + p_inner) += t30;
             t40 = Z_PA * t30 - Z_PC * t31 + 0.5 * RHO_INV * 1 * (t20 - t21);
-            *(temp + 24) = beta_in * (*(temp + 24)) + t40;
-
+            *(temp + 24 * NPTS_LOCAL + p_inner) += t40;
             t20 = Z_PA * t10 - Z_PC * t11;
             t21 = Z_PA * t11 - Z_PC * t12;
             t22 = Z_PA * t12 - Z_PC * t13;
-            *(temp + 2) = beta_in * (*(temp + 2)) + t20;
-
+            *(temp + 2 * NPTS_LOCAL + p_inner) += t20;
             t30 = Z_PA * t20 - Z_PC * t21 + 0.5 * RHO_INV * 1 * (t10 - t11);
             t31 = Z_PA * t21 - Z_PC * t22 + 0.5 * RHO_INV * 1 * (t11 - t12);
-            *(temp + 11) = beta_in * (*(temp + 11)) + t30;
-
+            *(temp + 11 * NPTS_LOCAL + p_inner) += t30;
             t40 = Z_PA * t30 - Z_PC * t31 + 0.5 * RHO_INV * 2 * (t20 - t21);
-            *(temp + 25) = beta_in * (*(temp + 25)) + t40;
-
+            *(temp + 25 * NPTS_LOCAL + p_inner) += t40;
             t10 = Y_PA * t00 - Y_PC * t01;
             t11 = Y_PA * t01 - Y_PC * t02;
             t12 = Y_PA * t02 - Y_PC * t03;
@@ -134,37 +118,28 @@ void integral_2(size_t npts,
             t20 = Y_PA * t10 - Y_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
             t21 = Y_PA * t11 - Y_PC * t12 + 0.5 * RHO_INV * 1 * (t01 - t02);
             t22 = Y_PA * t12 - Y_PC * t13 + 0.5 * RHO_INV * 1 * (t02 - t03);
-            *(temp + 3) = beta_in * (*(temp + 3)) + t20;
-
+            *(temp + 3 * NPTS_LOCAL + p_inner) += t20;
             t30 = Y_PA * t20 - Y_PC * t21 + 0.5 * RHO_INV * 2 * (t10 - t11);
             t31 = Y_PA * t21 - Y_PC * t22 + 0.5 * RHO_INV * 2 * (t11 - t12);
-            *(temp + 12) = beta_in * (*(temp + 12)) + t30;
-
+            *(temp + 12 * NPTS_LOCAL + p_inner) += t30;
             t40 = Y_PA * t30 - Y_PC * t31 + 0.5 * RHO_INV * 3 * (t20 - t21);
-            *(temp + 26) = beta_in * (*(temp + 26)) + t40;
-
+            *(temp + 26 * NPTS_LOCAL + p_inner) += t40;
             t40 = Z_PA * t30 - Z_PC * t31;
-            *(temp + 27) = beta_in * (*(temp + 27)) + t40;
-
+            *(temp + 27 * NPTS_LOCAL + p_inner) += t40;
             t30 = Z_PA * t20 - Z_PC * t21;
             t31 = Z_PA * t21 - Z_PC * t22;
-            *(temp + 13) = beta_in * (*(temp + 13)) + t30;
-
+            *(temp + 13 * NPTS_LOCAL + p_inner) += t30;
             t40 = Z_PA * t30 - Z_PC * t31 + 0.5 * RHO_INV * 1 * (t20 - t21);
-            *(temp + 28) = beta_in * (*(temp + 28)) + t40;
-
+            *(temp + 28 * NPTS_LOCAL + p_inner) += t40;
             t20 = Z_PA * t10 - Z_PC * t11;
             t21 = Z_PA * t11 - Z_PC * t12;
             t22 = Z_PA * t12 - Z_PC * t13;
-            *(temp + 4) = beta_in * (*(temp + 4)) + t20;
-
+            *(temp + 4 * NPTS_LOCAL + p_inner) += t20;
             t30 = Z_PA * t20 - Z_PC * t21 + 0.5 * RHO_INV * 1 * (t10 - t11);
             t31 = Z_PA * t21 - Z_PC * t22 + 0.5 * RHO_INV * 1 * (t11 - t12);
-            *(temp + 14) = beta_in * (*(temp + 14)) + t30;
-
+            *(temp + 14 * NPTS_LOCAL + p_inner) += t30;
             t40 = Z_PA * t30 - Z_PC * t31 + 0.5 * RHO_INV * 2 * (t20 - t21);
-            *(temp + 29) = beta_in * (*(temp + 29)) + t40;
-
+            *(temp + 29 * NPTS_LOCAL + p_inner) += t40;
             t10 = Z_PA * t00 - Z_PC * t01;
             t11 = Z_PA * t01 - Z_PC * t02;
             t12 = Z_PA * t02 - Z_PC * t03;
@@ -172,99 +147,55 @@ void integral_2(size_t npts,
             t20 = Z_PA * t10 - Z_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
             t21 = Z_PA * t11 - Z_PC * t12 + 0.5 * RHO_INV * 1 * (t01 - t02);
             t22 = Z_PA * t12 - Z_PC * t13 + 0.5 * RHO_INV * 1 * (t02 - t03);
-            *(temp + 5) = beta_in * (*(temp + 5)) + t20;
-
+            *(temp + 5 * NPTS_LOCAL + p_inner) += t20;
             t30 = Z_PA * t20 - Z_PC * t21 + 0.5 * RHO_INV * 2 * (t10 - t11);
             t31 = Z_PA * t21 - Z_PC * t22 + 0.5 * RHO_INV * 2 * (t11 - t12);
-            *(temp + 15) = beta_in * (*(temp + 15)) + t30;
-
+            *(temp + 15 * NPTS_LOCAL + p_inner) += t30;
             t40 = Z_PA * t30 - Z_PC * t31 + 0.5 * RHO_INV * 3 * (t20 - t21);
-            *(temp + 30) = beta_in * (*(temp + 30)) + t40;
-
-            beta_in = 1.0;
+            *(temp + 30 * NPTS_LOCAL + p_inner) += t40;
+         }
       }
 
-      double *Xik = (Xi + point_idx * stX);
-      double *Gik = (Gi + point_idx * stG);
+      for(int p_inner = 0; p_inner < NPTS_LOCAL; ++p_inner) {;
+         double *Xik = (Xi + (NPTS_LOCAL * p_outer + p_inner) * stX);
+         double *Gik = (Gi + (NPTS_LOCAL * p_outer + p_inner) * stG);
 
-      double t0, t1, t2, t3, t4, t5;
-
-      t0 = *(temp + 16) * (*(weights + point_idx));
-      *(Gik + 0 * ldG) += *(Xik + 0 * ldX) * t0;
-      t1 = *(temp + 17) * (*(weights + point_idx));
-      *(Gik + 1 * ldG) += *(Xik + 0 * ldX) * t1;
-      t2 = *(temp + 18) * (*(weights + point_idx));
-      *(Gik + 2 * ldG) += *(Xik + 0 * ldX) * t2;
-      t3 = *(temp + 19) * (*(weights + point_idx));
-      *(Gik + 3 * ldG) += *(Xik + 0 * ldX) * t3;
-      t4 = *(temp + 20) * (*(weights + point_idx));
-      *(Gik + 4 * ldG) += *(Xik + 0 * ldX) * t4;
-      t5 = *(temp + 21) * (*(weights + point_idx));
-      *(Gik + 5 * ldG) += *(Xik + 0 * ldX) * t5;
-
-      t0 = *(temp + 17) * (*(weights + point_idx));
-      *(Gik + 0 * ldG) += *(Xik + 1 * ldX) * t0;
-      t1 = *(temp + 19) * (*(weights + point_idx));
-      *(Gik + 1 * ldG) += *(Xik + 1 * ldX) * t1;
-      t2 = *(temp + 20) * (*(weights + point_idx));
-      *(Gik + 2 * ldG) += *(Xik + 1 * ldX) * t2;
-      t3 = *(temp + 22) * (*(weights + point_idx));
-      *(Gik + 3 * ldG) += *(Xik + 1 * ldX) * t3;
-      t4 = *(temp + 23) * (*(weights + point_idx));
-      *(Gik + 4 * ldG) += *(Xik + 1 * ldX) * t4;
-      t5 = *(temp + 24) * (*(weights + point_idx));
-      *(Gik + 5 * ldG) += *(Xik + 1 * ldX) * t5;
-
-      t0 = *(temp + 18) * (*(weights + point_idx));
-      *(Gik + 0 * ldG) += *(Xik + 2 * ldX) * t0;
-      t1 = *(temp + 20) * (*(weights + point_idx));
-      *(Gik + 1 * ldG) += *(Xik + 2 * ldX) * t1;
-      t2 = *(temp + 21) * (*(weights + point_idx));
-      *(Gik + 2 * ldG) += *(Xik + 2 * ldX) * t2;
-      t3 = *(temp + 23) * (*(weights + point_idx));
-      *(Gik + 3 * ldG) += *(Xik + 2 * ldX) * t3;
-      t4 = *(temp + 24) * (*(weights + point_idx));
-      *(Gik + 4 * ldG) += *(Xik + 2 * ldX) * t4;
-      t5 = *(temp + 25) * (*(weights + point_idx));
-      *(Gik + 5 * ldG) += *(Xik + 2 * ldX) * t5;
-
-      t0 = *(temp + 19) * (*(weights + point_idx));
-      *(Gik + 0 * ldG) += *(Xik + 3 * ldX) * t0;
-      t1 = *(temp + 22) * (*(weights + point_idx));
-      *(Gik + 1 * ldG) += *(Xik + 3 * ldX) * t1;
-      t2 = *(temp + 23) * (*(weights + point_idx));
-      *(Gik + 2 * ldG) += *(Xik + 3 * ldX) * t2;
-      t3 = *(temp + 26) * (*(weights + point_idx));
-      *(Gik + 3 * ldG) += *(Xik + 3 * ldX) * t3;
-      t4 = *(temp + 27) * (*(weights + point_idx));
-      *(Gik + 4 * ldG) += *(Xik + 3 * ldX) * t4;
-      t5 = *(temp + 28) * (*(weights + point_idx));
-      *(Gik + 5 * ldG) += *(Xik + 3 * ldX) * t5;
-
-      t0 = *(temp + 20) * (*(weights + point_idx));
-      *(Gik + 0 * ldG) += *(Xik + 4 * ldX) * t0;
-      t1 = *(temp + 23) * (*(weights + point_idx));
-      *(Gik + 1 * ldG) += *(Xik + 4 * ldX) * t1;
-      t2 = *(temp + 24) * (*(weights + point_idx));
-      *(Gik + 2 * ldG) += *(Xik + 4 * ldX) * t2;
-      t3 = *(temp + 27) * (*(weights + point_idx));
-      *(Gik + 3 * ldG) += *(Xik + 4 * ldX) * t3;
-      t4 = *(temp + 28) * (*(weights + point_idx));
-      *(Gik + 4 * ldG) += *(Xik + 4 * ldX) * t4;
-      t5 = *(temp + 29) * (*(weights + point_idx));
-      *(Gik + 5 * ldG) += *(Xik + 4 * ldX) * t5;
-
-      t0 = *(temp + 21) * (*(weights + point_idx));
-      *(Gik + 0 * ldG) += *(Xik + 5 * ldX) * t0;
-      t1 = *(temp + 24) * (*(weights + point_idx));
-      *(Gik + 1 * ldG) += *(Xik + 5 * ldX) * t1;
-      t2 = *(temp + 25) * (*(weights + point_idx));
-      *(Gik + 2 * ldG) += *(Xik + 5 * ldX) * t2;
-      t3 = *(temp + 28) * (*(weights + point_idx));
-      *(Gik + 3 * ldG) += *(Xik + 5 * ldX) * t3;
-      t4 = *(temp + 29) * (*(weights + point_idx));
-      *(Gik + 4 * ldG) += *(Xik + 5 * ldX) * t4;
-      t5 = *(temp + 30) * (*(weights + point_idx));
-      *(Gik + 5 * ldG) += *(Xik + 5 * ldX) * t5;
+         *(Gik + 0 * ldG) += *(Xik + 0 * ldX) * (*(temp + 16 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 1 * ldG) += *(Xik + 0 * ldX) * (*(temp + 17 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 2 * ldG) += *(Xik + 0 * ldX) * (*(temp + 18 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 3 * ldG) += *(Xik + 0 * ldX) * (*(temp + 19 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 4 * ldG) += *(Xik + 0 * ldX) * (*(temp + 20 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 5 * ldG) += *(Xik + 0 * ldX) * (*(temp + 21 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 0 * ldG) += *(Xik + 1 * ldX) * (*(temp + 17 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 1 * ldG) += *(Xik + 1 * ldX) * (*(temp + 19 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 2 * ldG) += *(Xik + 1 * ldX) * (*(temp + 20 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 3 * ldG) += *(Xik + 1 * ldX) * (*(temp + 22 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 4 * ldG) += *(Xik + 1 * ldX) * (*(temp + 23 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 5 * ldG) += *(Xik + 1 * ldX) * (*(temp + 24 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 0 * ldG) += *(Xik + 2 * ldX) * (*(temp + 18 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 1 * ldG) += *(Xik + 2 * ldX) * (*(temp + 20 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 2 * ldG) += *(Xik + 2 * ldX) * (*(temp + 21 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 3 * ldG) += *(Xik + 2 * ldX) * (*(temp + 23 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 4 * ldG) += *(Xik + 2 * ldX) * (*(temp + 24 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 5 * ldG) += *(Xik + 2 * ldX) * (*(temp + 25 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 0 * ldG) += *(Xik + 3 * ldX) * (*(temp + 19 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 1 * ldG) += *(Xik + 3 * ldX) * (*(temp + 22 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 2 * ldG) += *(Xik + 3 * ldX) * (*(temp + 23 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 3 * ldG) += *(Xik + 3 * ldX) * (*(temp + 26 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 4 * ldG) += *(Xik + 3 * ldX) * (*(temp + 27 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 5 * ldG) += *(Xik + 3 * ldX) * (*(temp + 28 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 0 * ldG) += *(Xik + 4 * ldX) * (*(temp + 20 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 1 * ldG) += *(Xik + 4 * ldX) * (*(temp + 23 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 2 * ldG) += *(Xik + 4 * ldX) * (*(temp + 24 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 3 * ldG) += *(Xik + 4 * ldX) * (*(temp + 27 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 4 * ldG) += *(Xik + 4 * ldX) * (*(temp + 28 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 5 * ldG) += *(Xik + 4 * ldX) * (*(temp + 29 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 0 * ldG) += *(Xik + 5 * ldX) * (*(temp + 21 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 1 * ldG) += *(Xik + 5 * ldX) * (*(temp + 24 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 2 * ldG) += *(Xik + 5 * ldX) * (*(temp + 25 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 3 * ldG) += *(Xik + 5 * ldX) * (*(temp + 28 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 4 * ldG) += *(Xik + 5 * ldX) * (*(temp + 29 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 5 * ldG) += *(Xik + 5 * ldX) * (*(temp + 30 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+      }
    }
 }

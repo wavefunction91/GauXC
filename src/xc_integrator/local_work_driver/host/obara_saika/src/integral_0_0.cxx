@@ -16,9 +16,9 @@ void integral_0_0(size_t npts,
                   int stG, 
                   int ldG, 
                   double *weights) {
-   double temp[1];
+   double temp[1 * NPTS_LOCAL];
 
-   for(int i = 0; i < 1; ++i) {
+   for(int i = 0; i < 1 * NPTS_LOCAL; ++i) {
       temp[i] = 0.0;
    }
 
@@ -26,21 +26,25 @@ void integral_0_0(size_t npts,
    double Y_AB = shpair.rAB.y;
    double Z_AB = shpair.rAB.z;
 
-   for(size_t point_idx = 0; point_idx < npts; ++point_idx) {
-      point C = *(_points + point_idx);
+   for(size_t p_outer = 0; p_outer < npts; p_outer += NPTS_LOCAL) {
+      point *_point_outer = (_points + p_outer);
 
-      double beta_in = 0.0;
       for(int ij = 0; ij < shpair.nprim_pair; ++ij ) {
-            double RHO = shpair.prim_pairs[ij].gamma;
-            double RHO_INV = 1.0 / RHO;
+         double RHO = shpair.prim_pairs[ij].gamma;
+         double RHO_INV = 1.0 / RHO;
 
-            double xP = shpair.prim_pairs[ij].P.x;
-            double yP = shpair.prim_pairs[ij].P.y;
-            double zP = shpair.prim_pairs[ij].P.z;
+         double xP = shpair.prim_pairs[ij].P.x;
+         double yP = shpair.prim_pairs[ij].P.y;
+         double zP = shpair.prim_pairs[ij].P.z;
 
-            double X_PA = shpair.prim_pairs[ij].PA.x;
-            double Y_PA = shpair.prim_pairs[ij].PA.y;
-            double Z_PA = shpair.prim_pairs[ij].PA.z;
+         double X_PA = shpair.prim_pairs[ij].PA.x;
+         double Y_PA = shpair.prim_pairs[ij].PA.y;
+         double Z_PA = shpair.prim_pairs[ij].PA.z;
+
+         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;
+
+         for(int p_inner = 0; p_inner < NPTS_LOCAL; ++p_inner) {
+            point C = *(_point_outer + p_inner);
 
             double xC = C.x;
             double yC = C.y;
@@ -52,30 +56,29 @@ void integral_0_0(size_t npts,
 
             double t00;
 
-            double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;
             double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
 
             t00 = eval * boys_function(0, tval);
-            *(temp + 0) = beta_in * (*(temp + 0)) + t00;
-
-            beta_in = 1.0;
+            *(temp + 0 * NPTS_LOCAL + p_inner) += t00;
+         }
       }
 
-      double *Xik = (Xi + point_idx * stX);
-      double *Xjk = (Xj + point_idx * stX);
-      double *Gik = (Gi + point_idx * stG);
-      double *Gjk = (Gj + point_idx * stG);
+      for(int p_inner = 0; p_inner < NPTS_LOCAL; ++p_inner) {
+         double *Xik = (Xi + (NPTS_LOCAL * p_outer + p_inner) * stX);
+         double *Xjk = (Xj + (NPTS_LOCAL * p_outer + p_inner) * stX);
+         double *Gik = (Gi + (NPTS_LOCAL * p_outer + p_inner) * stG);
+         double *Gjk = (Gj + (NPTS_LOCAL * p_outer + p_inner) * stG);
 
-      double const_value, X_ABp, Y_ABp, Z_ABp, comb_m_i, comb_n_j, comb_p_k, rcp_i, rcp_j, rcp_k;
-      double t0;
+         double const_value, X_ABp, Y_ABp, Z_ABp, comb_m_i, comb_n_j, comb_p_k, rcp_i, rcp_j, rcp_k;
+         double t0;
 
-      X_ABp = 1.0; comb_m_i = 1.0;
-      Y_ABp = 1.0; comb_n_j = 1.0;
-      Z_ABp = 1.0; comb_p_k = 1.0;
-      const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
-
-      t0 = *(temp + 0) * const_value * (*(weights + point_idx));
-      *(Gik + 0 * ldG) += *(Xjk + 0 * ldX) * t0;
-      *(Gjk + 0 * ldG) += *(Xik + 0 * ldX) * t0;
+         X_ABp = 1.0; comb_m_i = 1.0;
+         Y_ABp = 1.0; comb_n_j = 1.0;
+         Z_ABp = 1.0; comb_p_k = 1.0;
+         const_value = *(weights + p_outer * NPTS_LOCAL + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+         t0 = *(temp + 0 * NPTS_LOCAL + p_inner) * const_value;
+         *(Gik + 0 * ldG) += *(Xjk + 0 * ldX) * t0;
+         *(Gjk + 0 * ldG) += *(Xik + 0 * ldX) * t0;
+      }
    }
 }
