@@ -452,30 +452,31 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "      temp[i] = 0.0;\n");
   fprintf(f, "   }\n\n");
 
+  fprintf(f, "   double X_AB = shpair.rAB.x;\n");
+  fprintf(f, "   double Y_AB = shpair.rAB.y;\n");
+  fprintf(f, "   double Z_AB = shpair.rAB.z;\n");
+  fprintf(f, "\n");
+
   fprintf(f, "   for(size_t point_idx = 0; point_idx < npts; ++point_idx) {\n");
   fprintf(f, "      point C = *(_points + point_idx);\n\n");
 
 //fprintf(f, "      double xA = shellA.origin.x;\n");
 //fprintf(f, "      double yA = shellA.origin.y;\n");
 //fprintf(f, "      double zA = shellA.origin.z;\n\n");
-  fprintf(f, "      double xA = shpair.rA.x;\n");
-  fprintf(f, "      double yA = shpair.rA.y;\n");
-  fprintf(f, "      double zA = shpair.rA.z;\n\n");
+//fprintf(f, "      double xA = shpair.rA.x;\n");
+//fprintf(f, "      double yA = shpair.rA.y;\n");
+//fprintf(f, "      double zA = shpair.rA.z;\n\n");
 
 //fprintf(f, "      double xB = shellB.origin.x;\n");
 //fprintf(f, "      double yB = shellB.origin.y;\n");
 //fprintf(f, "      double zB = shellB.origin.z;\n");
-  fprintf(f, "      double xB = shpair.rB.x;\n");
-  fprintf(f, "      double yB = shpair.rB.y;\n");
-  fprintf(f, "      double zB = shpair.rB.z;\n");
-  fprintf(f, "\n");
+//fprintf(f, "      double xB = shpair.rB.x;\n");
+//fprintf(f, "      double yB = shpair.rB.y;\n");
+//fprintf(f, "      double zB = shpair.rB.z;\n");
+//fprintf(f, "\n");
 //fprintf(f, "      double X_AB = (xA - xB);\n");
 //fprintf(f, "      double Y_AB = (yA - yB);\n");
 //fprintf(f, "      double Z_AB = (zA - zB);\n");
-  fprintf(f, "      double X_AB = shpair.rAB.x;\n");
-  fprintf(f, "      double Y_AB = shpair.rAB.y;\n");
-  fprintf(f, "      double Z_AB = shpair.rAB.z;\n");
-  fprintf(f, "\n");
   fprintf(f, "      double beta_in = 0.0;\n");
 //fprintf(f, "      for(int i = 0; i < shellA.m; ++i) {\n");
 //fprintf(f, "         for(int j = 0; j < shellB.m; ++j) {\n");
@@ -491,10 +492,6 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "            double RHO = shpair.prim_pairs[ij].gamma;\n");
   fprintf(f, "            double RHO_INV = 1.0 / RHO;\n");
   fprintf(f, "\n");
-  fprintf(f, "            double xC = C.x;\n");
-  fprintf(f, "            double yC = C.y;\n");
-  fprintf(f, "            double zC = C.z;\n");
-  fprintf(f, "\n");
 //fprintf(f, "            double xP = (aA * xA + aB * xB) * RHO_INV;\n");
 //fprintf(f, "            double yP = (aA * yA + aB * yB) * RHO_INV;\n");
 //fprintf(f, "            double zP = (aA * zA + aB * zB) * RHO_INV;\n");
@@ -508,6 +505,10 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "            double X_PA = shpair.prim_pairs[ij].PA.x;\n");
   fprintf(f, "            double Y_PA = shpair.prim_pairs[ij].PA.y;\n");
   fprintf(f, "            double Z_PA = shpair.prim_pairs[ij].PA.z;\n");
+  fprintf(f, "\n");
+  fprintf(f, "            double xC = C.x;\n");
+  fprintf(f, "            double yC = C.y;\n");
+  fprintf(f, "            double zC = C.z;\n");
   fprintf(f, "\n");
   fprintf(f, "            double X_PC = (xP - xC);\n");
   fprintf(f, "            double Y_PC = (yP - yC);\n");
