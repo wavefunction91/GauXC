@@ -4,6 +4,11 @@
 
 #define PI 3.14159265358979323846
 
+#define MIN(a,b)			\
+  ({ __typeof__ (a) _a = (a);	        \
+  __typeof__ (b) _b = (b);		\
+  _a < _b ? _a : _b; })
+
 void integral_3(size_t npts,
                shell_pair shpair,
                point *_points,
@@ -21,6 +26,7 @@ void integral_3(size_t npts,
    }
 
    for(size_t p_outer = 0; p_outer < npts; p_outer += NPTS_LOCAL) {
+      size_t npts_inner = MIN(NPTS_LOCAL, npts - p_outer);
       point *_point_outer = (_points + p_outer);
 
       double xA = shpair.rA.x;
@@ -37,7 +43,7 @@ void integral_3(size_t npts,
 
          double eval = shpair.prim_pairs[ij].coeff_prod * 2 * PI * RHO_INV;
 
-         for(int p_inner = 0; p_inner < NPTS_LOCAL; ++p_inner) {
+         for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {
             point C = *(_point_outer + p_inner);
 
             double xC = C.x;
@@ -339,7 +345,7 @@ void integral_3(size_t npts,
          }
       }
 
-      for(int p_inner = 0; p_inner < NPTS_LOCAL; ++p_inner) {;
+      for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {;
          double *Xik = (Xi + (NPTS_LOCAL * p_outer + p_inner) * stX);
          double *Gik = (Gi + (NPTS_LOCAL * p_outer + p_inner) * stG);
 

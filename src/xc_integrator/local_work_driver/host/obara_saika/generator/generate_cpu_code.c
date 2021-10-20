@@ -255,6 +255,11 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "\n");
   fprintf(f, "#define PI 3.14159265358979323846\n");
   fprintf(f, "\n");
+  fprintf(f, "#define MIN(a,b)			\\\n"); 
+  fprintf(f, "  ({ __typeof__ (a) _a = (a);	        \\\n");
+  fprintf(f, "  __typeof__ (b) _b = (b);		\\\n");
+  fprintf(f, "  _a < _b ? _a : _b; })\n");
+  fprintf(f, "\n");
   fprintf(f, "void integral_%d(size_t npts,\n", lA);
 //fprintf(f, "               shells shellA,\n");
   fprintf(f, "               shell_pair shpair,\n");
@@ -278,6 +283,7 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "   }\n\n");
   
   fprintf(f, "   for(size_t p_outer = 0; p_outer < npts; p_outer += NPTS_LOCAL) {\n");
+  fprintf(f, "      size_t npts_inner = MIN(NPTS_LOCAL, npts - p_outer);\n");
   fprintf(f, "      point *_point_outer = (_points + p_outer);\n\n");
 
 //fprintf(f, "      double xA = shellA.origin.x;\n");
@@ -307,7 +313,7 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "\n");
   fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * 2 * PI * RHO_INV;\n");
   fprintf(f, "\n");
-  fprintf(f, "         for(int p_inner = 0; p_inner < NPTS_LOCAL; ++p_inner) {\n");
+  fprintf(f, "         for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
   fprintf(f, "            point C = *(_point_outer + p_inner);\n");
   fprintf(f, "\n");  
   fprintf(f, "            double xC = C.x;\n");
@@ -333,7 +339,7 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "         }\n");
   fprintf(f, "      }\n");
   fprintf(f, "\n");
-  fprintf(f, "      for(int p_inner = 0; p_inner < NPTS_LOCAL; ++p_inner) {;\n");
+  fprintf(f, "      for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {;\n");
   fprintf(f, "         double *Xik = (Xi + (NPTS_LOCAL * p_outer + p_inner) * stX);\n");
   fprintf(f, "         double *Gik = (Gi + (NPTS_LOCAL * p_outer + p_inner) * stG);\n");
   fprintf(f, "\n");
@@ -411,6 +417,11 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "\n");
   fprintf(f, "#define PI 3.14159265358979323846\n");
   fprintf(f, "\n");
+  fprintf(f, "#define MIN(a,b)			\\\n"); 
+  fprintf(f, "  ({ __typeof__ (a) _a = (a);	        \\\n");
+  fprintf(f, "  __typeof__ (b) _b = (b);		\\\n");
+  fprintf(f, "  _a < _b ? _a : _b; })\n");
+  fprintf(f, "\n");
   fprintf(f, "void integral_%d_%d(size_t npts,\n", lA, lB);
 //fprintf(f, "                  shells shellA,\n");
 //fprintf(f, "                  shells shellB,\n");
@@ -442,6 +453,7 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "\n");
 
   fprintf(f, "   for(size_t p_outer = 0; p_outer < npts; p_outer += NPTS_LOCAL) {\n");
+  fprintf(f, "      size_t npts_inner = MIN(NPTS_LOCAL, npts - p_outer);\n");
   fprintf(f, "      point *_point_outer = (_points + p_outer);\n\n");
 //fprintf(f, "      double xA = shellA.origin.x;\n");
 //fprintf(f, "      double yA = shellA.origin.y;\n");
@@ -491,7 +503,7 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
 //fprintf(f, "         double eval = cA * cB * 2 * PI * RHO_INV * exp(-1.0 * (X_AB * X_AB + Y_AB * Y_AB + Z_AB * Z_AB) * aA * aB * RHO_INV);\n");
   fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;\n");
   fprintf(f, "\n");
-  fprintf(f, "         for(int p_inner = 0; p_inner < NPTS_LOCAL; ++p_inner) {\n");
+  fprintf(f, "         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
   fprintf(f, "            point C = *(_point_outer + p_inner);\n");
   fprintf(f, "\n");
   fprintf(f, "            double xC = C.x;\n");
@@ -517,7 +529,7 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "         }\n");
   fprintf(f, "      }\n");
   fprintf(f, "\n");
-  fprintf(f, "      for(int p_inner = 0; p_inner < NPTS_LOCAL; ++p_inner) {\n");
+  fprintf(f, "      for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
   fprintf(f, "         double *Xik = (Xi + (NPTS_LOCAL * p_outer + p_inner) * stX);\n");
   fprintf(f, "         double *Xjk = (Xj + (NPTS_LOCAL * p_outer + p_inner) * stX);\n");
   fprintf(f, "         double *Gik = (Gi + (NPTS_LOCAL * p_outer + p_inner) * stG);\n");
