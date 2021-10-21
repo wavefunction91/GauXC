@@ -42,7 +42,7 @@ void ReferenceLocalHostWorkDriver::partition_weights( XCWeightAlg weight_alg,
       reference_lko_weights_host( mol, meta, task_begin, task_end );
       break;
     default:
-      throw std::runtime_error("Weight Alg Not Supported");
+      GAUXC_GENERIC_EXCEPTION("Weight Alg Not Supported");
   }
 
 
@@ -194,8 +194,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc( size_t npts, size_t nbf,
   const double* dbasis_z_eval, const double* dden_x_eval, 
   const double* dden_y_eval, const double* dden_z_eval, double* Z, size_t ldz ) {
 
-  if( ldz != nbf ) 
-    throw std::logic_error(std::string("INVALID DIMS")+std::string(__PRETTY_FUNCTION__));
+  if( ldz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
   blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z, nbf );
 
   for( int32_t i = 0; i < (int32_t)npts; ++i ) {

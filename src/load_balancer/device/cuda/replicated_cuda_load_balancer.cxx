@@ -303,7 +303,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   if( not task_equiv( *lw_it, *cur_uniq_it ) ) {
 
     if( cur_uniq_it == local_work_unique.end() )
-      throw std::runtime_error("Messed up in unique");
+      GAUXC_GENERIC_EXCEPTION("Messed up in unique");
 
     cur_uniq_it->merge_with( cur_lw_begin, lw_it );
 

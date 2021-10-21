@@ -4,6 +4,7 @@
 #include <integratorxx/quadratures/muraknowles.hpp>
 #include <integratorxx/quadratures/mhl.hpp>
 #include <integratorxx/composite_quadratures/spherical_quadrature.hpp>
+#include <gauxc/exceptions.hpp>
 
 namespace GauXC {
 namespace detail {
@@ -80,7 +81,7 @@ void GridImpl::generate() {
       break;
 
     default:
-      throw std::runtime_error("Unsupported Radial Quadrature");
+      GAUXC_GENERIC_EXCEPTION("Unsupported Radial Quadrature");
 
   }
   

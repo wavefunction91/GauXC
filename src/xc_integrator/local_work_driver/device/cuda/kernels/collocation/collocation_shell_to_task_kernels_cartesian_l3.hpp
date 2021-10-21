@@ -15,8 +15,8 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
 ) {
 
 
-  __shared__ double alpha[16][detail::shell_nprim_max]; 
-  __shared__ double coeff[16][detail::shell_nprim_max];
+  __shared__ double alpha[16][detail::shell_nprim_max + 1]; 
+  __shared__ double coeff[16][detail::shell_nprim_max + 1];
   double* my_alpha = alpha[threadIdx.x/32];
   double* my_coeff = coeff[threadIdx.x/32];
 
@@ -57,6 +57,7 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
 
     auto* __restrict__ basis_eval = task->bf + shoff;
 
+
     // Loop over points in task
     // Assign each point to separate thread within the warp
     #pragma unroll 1
@@ -84,7 +85,29 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
         radial_eval += e;
       }
 
+
       
+
+      // Evaluate basis function
+      basis_eval[ipt + 0*npts] = radial_eval*x*x*x;
+      basis_eval[ipt + 1*npts] = radial_eval*x*x*y;
+      basis_eval[ipt + 2*npts] = radial_eval*x*x*z;
+      basis_eval[ipt + 3*npts] = radial_eval*x*y*y;
+      basis_eval[ipt + 4*npts] = radial_eval*x*y*z;
+      basis_eval[ipt + 5*npts] = radial_eval*x*z*z;
+      basis_eval[ipt + 6*npts] = radial_eval*y*y*y;
+      basis_eval[ipt + 7*npts] = radial_eval*y*y*z;
+      basis_eval[ipt + 8*npts] = radial_eval*y*z*z;
+      basis_eval[ipt + 9*npts] = radial_eval*z*z*z;
+
+
+    
+
+
+
+
+
+#if 0
       // Evaluate the angular part of bfn
 
 
@@ -119,6 +142,7 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       basis_eval[ipt + 9*npts] = ang_eval_1;
 
 
+#endif
     } // Loop over points within task
   } // Loop over tasks
         

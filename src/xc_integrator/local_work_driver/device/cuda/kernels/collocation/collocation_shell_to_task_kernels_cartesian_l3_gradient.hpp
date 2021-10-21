@@ -15,8 +15,8 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
 ) {
 
 
-  __shared__ double alpha[16][detail::shell_nprim_max]; 
-  __shared__ double coeff[16][detail::shell_nprim_max];
+  __shared__ double alpha[16][detail::shell_nprim_max + 1]; 
+  __shared__ double coeff[16][detail::shell_nprim_max + 1];
   double* my_alpha = alpha[threadIdx.x/32];
   double* my_coeff = coeff[threadIdx.x/32];
 
@@ -60,6 +60,7 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
     auto* __restrict__ basis_y_eval = task->dbfy + shoff;
     auto* __restrict__ basis_z_eval = task->dbfz + shoff;
 
+
     // Loop over points in task
     // Assign each point to separate thread within the warp
     #pragma unroll 1
@@ -78,9 +79,7 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
 
       // Evaluate radial part of bfn
       double radial_eval = 0.;
-      double radial_eval_x = 0.;
-      double radial_eval_y = 0.;
-      double radial_eval_z = 0.;
+      double radial_eval_alpha = 0.;
 
       #pragma unroll 1
       for( uint32_t i = 0; i < nprim; ++i ) {
@@ -88,14 +87,68 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
         const auto e = my_coeff[i] * std::exp( - a * rsq );
 
         radial_eval += e;
-
-        const auto ae = 2. * a * e;
-        radial_eval_x -= ae * x;
-        radial_eval_y -= ae * y;
-        radial_eval_z -= ae * z;
+        radial_eval_alpha += a * e;
       }
 
+      radial_eval_alpha *= -2;
+
       
+
+      // Evaluate basis function
+      basis_eval[ipt + 0*npts] = radial_eval*x*x*x;
+      basis_eval[ipt + 1*npts] = radial_eval*x*x*y;
+      basis_eval[ipt + 2*npts] = radial_eval*x*x*z;
+      basis_eval[ipt + 3*npts] = radial_eval*x*y*y;
+      basis_eval[ipt + 4*npts] = radial_eval*x*y*z;
+      basis_eval[ipt + 5*npts] = radial_eval*x*z*z;
+      basis_eval[ipt + 6*npts] = radial_eval*y*y*y;
+      basis_eval[ipt + 7*npts] = radial_eval*y*y*z;
+      basis_eval[ipt + 8*npts] = radial_eval*y*z*z;
+      basis_eval[ipt + 9*npts] = radial_eval*z*z*z;
+
+
+    
+      // Evaluate first derivative of bfn wrt x
+      basis_x_eval[ipt + 0*npts] = x*x*(3*radial_eval + radial_eval_alpha*x*x);
+      basis_x_eval[ipt + 1*npts] = x*y*(2*radial_eval + radial_eval_alpha*x*x);
+      basis_x_eval[ipt + 2*npts] = x*z*(2*radial_eval + radial_eval_alpha*x*x);
+      basis_x_eval[ipt + 3*npts] = y*y*(radial_eval + radial_eval_alpha*x*x);
+      basis_x_eval[ipt + 4*npts] = y*z*(radial_eval + radial_eval_alpha*x*x);
+      basis_x_eval[ipt + 5*npts] = z*z*(radial_eval + radial_eval_alpha*x*x);
+      basis_x_eval[ipt + 6*npts] = radial_eval_alpha*x*y*y*y;
+      basis_x_eval[ipt + 7*npts] = radial_eval_alpha*x*y*y*z;
+      basis_x_eval[ipt + 8*npts] = radial_eval_alpha*x*y*z*z;
+      basis_x_eval[ipt + 9*npts] = radial_eval_alpha*x*z*z*z;
+
+      // Evaluate first derivative of bfn wrt y
+      basis_y_eval[ipt + 0*npts] = radial_eval_alpha*x*x*x*y;
+      basis_y_eval[ipt + 1*npts] = x*x*(radial_eval + radial_eval_alpha*y*y);
+      basis_y_eval[ipt + 2*npts] = radial_eval_alpha*x*x*y*z;
+      basis_y_eval[ipt + 3*npts] = x*y*(2*radial_eval + radial_eval_alpha*y*y);
+      basis_y_eval[ipt + 4*npts] = x*z*(radial_eval + radial_eval_alpha*y*y);
+      basis_y_eval[ipt + 5*npts] = radial_eval_alpha*x*y*z*z;
+      basis_y_eval[ipt + 6*npts] = y*y*(3*radial_eval + radial_eval_alpha*y*y);
+      basis_y_eval[ipt + 7*npts] = y*z*(2*radial_eval + radial_eval_alpha*y*y);
+      basis_y_eval[ipt + 8*npts] = z*z*(radial_eval + radial_eval_alpha*y*y);
+      basis_y_eval[ipt + 9*npts] = radial_eval_alpha*y*z*z*z;
+
+      // Evaluate first derivative of bfn wrt z
+      basis_z_eval[ipt + 0*npts] = radial_eval_alpha*x*x*x*z;
+      basis_z_eval[ipt + 1*npts] = radial_eval_alpha*x*x*y*z;
+      basis_z_eval[ipt + 2*npts] = x*x*(radial_eval + radial_eval_alpha*z*z);
+      basis_z_eval[ipt + 3*npts] = radial_eval_alpha*x*y*y*z;
+      basis_z_eval[ipt + 4*npts] = x*y*(radial_eval + radial_eval_alpha*z*z);
+      basis_z_eval[ipt + 5*npts] = x*z*(2*radial_eval + radial_eval_alpha*z*z);
+      basis_z_eval[ipt + 6*npts] = radial_eval_alpha*y*y*y*z;
+      basis_z_eval[ipt + 7*npts] = y*y*(radial_eval + radial_eval_alpha*z*z);
+      basis_z_eval[ipt + 8*npts] = y*z*(2*radial_eval + radial_eval_alpha*z*z);
+      basis_z_eval[ipt + 9*npts] = z*z*(3*radial_eval + radial_eval_alpha*z*z);
+
+
+
+
+
+#if 0
       // Evaluate the angular part of bfn
 
 
@@ -135,18 +188,18 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       double dang_eval_x_2, dang_eval_y_2, dang_eval_z_2;
       double dang_eval_x_3, dang_eval_y_3, dang_eval_z_3;
 
-      dang_eval_x_0 = x*x*(3*radial_eval + radial_eval_x*x);
-      dang_eval_y_0 = radial_eval_y*x*x*x;
-      dang_eval_z_0 = radial_eval_z*x*x*x;
-      dang_eval_x_1 = x*y*(2*radial_eval + radial_eval_x*x);
-      dang_eval_y_1 = x*x*(radial_eval + radial_eval_y*y);
-      dang_eval_z_1 = radial_eval_z*x*x*y;
-      dang_eval_x_2 = x*z*(2*radial_eval + radial_eval_x*x);
-      dang_eval_y_2 = radial_eval_y*x*x*z;
-      dang_eval_z_2 = x*x*(radial_eval + radial_eval_z*z);
-      dang_eval_x_3 = y*y*(radial_eval + radial_eval_x*x);
-      dang_eval_y_3 = x*y*(2*radial_eval + radial_eval_y*y);
-      dang_eval_z_3 = radial_eval_z*x*y*y;
+      dang_eval_x_0 = x*x*(3*radial_eval + radial_eval_alpha*x*x);
+      dang_eval_y_0 = radial_eval_alpha*x*x*x*y;
+      dang_eval_z_0 = radial_eval_alpha*x*x*x*z;
+      dang_eval_x_1 = x*y*(2*radial_eval + radial_eval_alpha*x*x);
+      dang_eval_y_1 = x*x*(radial_eval + radial_eval_alpha*y*y);
+      dang_eval_z_1 = radial_eval_alpha*x*x*y*z;
+      dang_eval_x_2 = x*z*(2*radial_eval + radial_eval_alpha*x*x);
+      dang_eval_y_2 = radial_eval_alpha*x*x*y*z;
+      dang_eval_z_2 = x*x*(radial_eval + radial_eval_alpha*z*z);
+      dang_eval_x_3 = y*y*(radial_eval + radial_eval_alpha*x*x);
+      dang_eval_y_3 = x*y*(2*radial_eval + radial_eval_alpha*y*y);
+      dang_eval_z_3 = radial_eval_alpha*x*y*y*z;
       basis_x_eval[ipt + 0*npts] = dang_eval_x_0;
       basis_y_eval[ipt + 0*npts] = dang_eval_y_0;
       basis_z_eval[ipt + 0*npts] = dang_eval_z_0;
@@ -160,18 +213,18 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       basis_y_eval[ipt + 3*npts] = dang_eval_y_3;
       basis_z_eval[ipt + 3*npts] = dang_eval_z_3;
 
-      dang_eval_x_0 = y*z*(radial_eval + radial_eval_x*x);
-      dang_eval_y_0 = x*z*(radial_eval + radial_eval_y*y);
-      dang_eval_z_0 = x*y*(radial_eval + radial_eval_z*z);
-      dang_eval_x_1 = z*z*(radial_eval + radial_eval_x*x);
-      dang_eval_y_1 = radial_eval_y*x*z*z;
-      dang_eval_z_1 = x*z*(2*radial_eval + radial_eval_z*z);
-      dang_eval_x_2 = radial_eval_x*y*y*y;
-      dang_eval_y_2 = y*y*(3*radial_eval + radial_eval_y*y);
-      dang_eval_z_2 = radial_eval_z*y*y*y;
-      dang_eval_x_3 = radial_eval_x*y*y*z;
-      dang_eval_y_3 = y*z*(2*radial_eval + radial_eval_y*y);
-      dang_eval_z_3 = y*y*(radial_eval + radial_eval_z*z);
+      dang_eval_x_0 = y*z*(radial_eval + radial_eval_alpha*x*x);
+      dang_eval_y_0 = x*z*(radial_eval + radial_eval_alpha*y*y);
+      dang_eval_z_0 = x*y*(radial_eval + radial_eval_alpha*z*z);
+      dang_eval_x_1 = z*z*(radial_eval + radial_eval_alpha*x*x);
+      dang_eval_y_1 = radial_eval_alpha*x*y*z*z;
+      dang_eval_z_1 = x*z*(2*radial_eval + radial_eval_alpha*z*z);
+      dang_eval_x_2 = radial_eval_alpha*x*y*y*y;
+      dang_eval_y_2 = y*y*(3*radial_eval + radial_eval_alpha*y*y);
+      dang_eval_z_2 = radial_eval_alpha*y*y*y*z;
+      dang_eval_x_3 = radial_eval_alpha*x*y*y*z;
+      dang_eval_y_3 = y*z*(2*radial_eval + radial_eval_alpha*y*y);
+      dang_eval_z_3 = y*y*(radial_eval + radial_eval_alpha*z*z);
       basis_x_eval[ipt + 4*npts] = dang_eval_x_0;
       basis_y_eval[ipt + 4*npts] = dang_eval_y_0;
       basis_z_eval[ipt + 4*npts] = dang_eval_z_0;
@@ -185,12 +238,12 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       basis_y_eval[ipt + 7*npts] = dang_eval_y_3;
       basis_z_eval[ipt + 7*npts] = dang_eval_z_3;
 
-      dang_eval_x_0 = radial_eval_x*y*z*z;
-      dang_eval_y_0 = z*z*(radial_eval + radial_eval_y*y);
-      dang_eval_z_0 = y*z*(2*radial_eval + radial_eval_z*z);
-      dang_eval_x_1 = radial_eval_x*z*z*z;
-      dang_eval_y_1 = radial_eval_y*z*z*z;
-      dang_eval_z_1 = z*z*(3*radial_eval + radial_eval_z*z);
+      dang_eval_x_0 = radial_eval_alpha*x*y*z*z;
+      dang_eval_y_0 = z*z*(radial_eval + radial_eval_alpha*y*y);
+      dang_eval_z_0 = y*z*(2*radial_eval + radial_eval_alpha*z*z);
+      dang_eval_x_1 = radial_eval_alpha*x*z*z*z;
+      dang_eval_y_1 = radial_eval_alpha*y*z*z*z;
+      dang_eval_z_1 = z*z*(3*radial_eval + radial_eval_alpha*z*z);
       basis_x_eval[ipt + 8*npts] = dang_eval_x_0;
       basis_y_eval[ipt + 8*npts] = dang_eval_y_0;
       basis_z_eval[ipt + 8*npts] = dang_eval_z_0;
@@ -198,6 +251,7 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       basis_y_eval[ipt + 9*npts] = dang_eval_y_1;
       basis_z_eval[ipt + 9*npts] = dang_eval_z_1;
 
+#endif
     } // Loop over points within task
   } // Loop over tasks
         

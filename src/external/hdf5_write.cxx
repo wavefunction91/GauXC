@@ -1,4 +1,5 @@
 #include "hdf5_util.hpp"
+#include <gauxc/exceptions.hpp>
 
 namespace GauXC {
 
@@ -17,7 +18,7 @@ void write_hdf5_record( const std::vector<Shell<double>>& basis, std::string fna
   auto d_id = H5Dcreate( file.getId(), dset.c_str(), shell_type, space.getId(),
     H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
 
-  if( d_id < 0 ) throw std::runtime_error("Dataset Creation Failed");
+  if( d_id < 0 ) GAUXC_GENERIC_EXCEPTION("Dataset Creation Failed");
 
   std::vector<shell_t> shells;
   for( auto& shell : basis ) {
@@ -50,7 +51,7 @@ void write_hdf5_record( const std::vector<Atom>& mol, std::string fname, std::st
   auto d_id = H5Dcreate( file.getId(), dset.c_str(), atom_type, space.getId(),
     H5P_DEFAULT, H5P_DEFAULT, H5P_DEFAULT );
 
-  if( d_id < 0 ) throw std::runtime_error("Dataset Creation Failed");
+  if( d_id < 0 ) GAUXC_GENERIC_EXCEPTION("Dataset Creation Failed");
 
   H5Dwrite( d_id, atom_type, space.getId(), space.getId(), H5P_DEFAULT, 
     mol.data() );

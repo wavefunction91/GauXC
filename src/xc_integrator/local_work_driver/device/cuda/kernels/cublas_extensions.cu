@@ -12,7 +12,7 @@ cublasOperation_t device_op_to_cublas( DeviceBlasOp op ) {
     case DeviceBlasOp::NoTrans: return CUBLAS_OP_N;
     case DeviceBlasOp::Trans:   return CUBLAS_OP_T;
     default:
-      throw std::runtime_error("Unsupported DeviceBlasOp");
+      GAUXC_GENERIC_EXCEPTION("Unsupported DeviceBlasOp");
       return CUBLAS_OP_N;
   }
 }
@@ -22,7 +22,7 @@ cublasFillMode_t device_uplo_to_cublas( DeviceBlasUplo uplo ) {
     case DeviceBlasUplo::Upper: return CUBLAS_FILL_MODE_UPPER;
     case DeviceBlasUplo::Lower: return CUBLAS_FILL_MODE_LOWER;
     default:
-      throw std::runtime_error("Unsupported DeviceBlasUplo");
+      GAUXC_GENERIC_EXCEPTION("Unsupported DeviceBlasUplo");
       return CUBLAS_FILL_MODE_LOWER;
   }
 }

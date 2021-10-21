@@ -23,7 +23,7 @@ typename ReplicatedXCHostIntegratorFactory<ValueType>::ptr_return_t
 
   // Make sure that the LWD is a valid LocalHostWorkDriver
   if(not dynamic_cast<LocalHostWorkDriver*>(lwd.get())) {
-    throw std::runtime_error("Passed LWD Not valid for Host ExSpace");
+    GAUXC_GENERIC_EXCEPTION("Passed LWD Not valid for Host ExSpace");
   }
 
   std::transform(integrator_kernel.begin(), integrator_kernel.end(), 
@@ -37,7 +37,7 @@ typename ReplicatedXCHostIntegratorFactory<ValueType>::ptr_return_t
     );
 
   else
-    throw std::runtime_error("INTEGRATOR KERNEL NOT RECOGNIZED");
+    GAUXC_GENERIC_EXCEPTION("INTEGRATOR KERNEL: " + integrator_kernel + " NOT RECOGNIZED");
 
   return nullptr;
 

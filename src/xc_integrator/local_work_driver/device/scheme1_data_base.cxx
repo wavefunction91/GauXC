@@ -46,7 +46,7 @@ size_t Scheme1DataBase::get_mem_req( integrator_term_tracker terms,
                  mem_iparent * sizeof(int32_t);
   }
 
-  if( terms.exc_vxc ) {
+  if( terms.exc_vxc or terms.exc_grad ) {
     const auto& shell_list = task.shell_list;
     const size_t nshells  = shell_list.size();
 
@@ -97,7 +97,7 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
       mem.aligned_alloc<int32_t>( total_npts_task_batch, csl );
   }
 
-  if( terms.exc_vxc ) {
+  if( terms.exc_vxc or terms.exc_grad ) {
     total_nshells_task_batch  = 0; 
     for( auto it = task_begin; it != task_end; ++it ) {
       const auto& shell_list  = it->shell_list;
@@ -162,7 +162,7 @@ void Scheme1DataBase::pack_and_send(
       "send dist_nearest" );
   }
 
-  if( terms.exc_vxc ) {
+  if( terms.exc_vxc or terms.exc_grad ) {
     // Contatenation utility
     auto concat_iterable = []( auto& a, const auto& b ) {
       a.insert( a.end(), b.begin(), b.end() );
@@ -215,6 +215,8 @@ void Scheme1DataBase::pack_and_send(
         const auto ntask = shell_to_task_idx[ish].size();
         auto& bck = host_shell_to_task[ish];
         bck.ntask = ntask;
+        bck.center_idx = basis_map.shell_to_center( ish );
+        bck.true_idx   = ish;
         bck.shell_device = static_stack.shells_device + ish;
 
         bck.task_idx_device        = shell_idx_mem.aligned_alloc<int32_t>( ntask, csl );
@@ -325,7 +327,7 @@ void Scheme1DataBase::add_extra_to_indirection(
     }
   }
 
-  if( terms.exc_vxc ) {
+  if( terms.exc_vxc or terms.exc_grad ) {
     const size_t total_nshells = total_nshells_task_batch * sizeof(size_t);
     buffer_adaptor 
       shell_list_mem( collocation_stack.shell_list_device, total_nshells );

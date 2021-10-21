@@ -18,15 +18,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Check that P / VXC are sane
   const int64_t nbf = basis.nbf();
-  std::string fun_name = __PRETTY_FUNCTION__;
   if( m != n ) 
-    throw std::logic_error(fun_name + " P/VXC Must Be Square");
+    GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
   if( m != nbf ) 
-    throw std::logic_error(fun_name + " P/VXC Must Have Same Dimension as Basis");
+    GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
   if( ldp < nbf )
-    throw std::logic_error(fun_name + " Invalid LDP");
+    GAUXC_GENERIC_EXCEPTION("Invalid LDP");
   if( ldvxc < nbf )
-    throw std::logic_error(fun_name + " Invalid LDVXC");
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXC");
 
 
   // Get Tasks
@@ -45,7 +44,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   this->timer_.time_op("XCIntegrator.Allreduce", [&](){
 
     if( not this->reduction_driver_->takes_host_memory() )
-      throw std::runtime_error("This Module Only Works With Host Reductions");
+      GAUXC_GENERIC_EXCEPTION("This Module Only Works With Host Reductions");
 
     this->reduction_driver_->allreduce_inplace( VXC, nbf*nbf, ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );

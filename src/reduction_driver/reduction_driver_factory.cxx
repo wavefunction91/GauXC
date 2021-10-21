@@ -8,6 +8,7 @@
 
 #include <algorithm>
 #include <iostream>
+#include <gauxc/exceptions.hpp>
 
 namespace GauXC {
 
@@ -29,7 +30,7 @@ std::shared_ptr<ReductionDriver> ReductionDriverFactory::get_shared_instance(
       ptr = std::make_unique<NCCLReductionDriver>(GAUXC_MPI_CODE(comm));
   #endif
 
-  if( !ptr ) throw std::runtime_error("Unknown Reduction Driver");
+  if( !ptr ) GAUXC_GENERIC_EXCEPTION("Unknown Reduction Driver " + kernel_name);
 
   return std::make_shared<ReductionDriver>(std::move(ptr));
 

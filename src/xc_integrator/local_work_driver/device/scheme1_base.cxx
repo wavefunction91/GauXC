@@ -7,15 +7,16 @@
 #include "device/common/pack_submat.hpp"
 #include "device/common/inc_potential.hpp"
 #include "device/common/symmetrize_mat.hpp"
+#include "device/common/increment_exc_grad.hpp"
 
 namespace GauXC {
 
 void AoSScheme1Base::eval_zmat_lda_vxc( XCDeviceData* _data){
 
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   auto& tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
@@ -34,9 +35,9 @@ void AoSScheme1Base::eval_zmat_lda_vxc( XCDeviceData* _data){
 void AoSScheme1Base::eval_zmat_gga_vxc( XCDeviceData* _data){
 
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   auto& tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
@@ -57,9 +58,9 @@ void AoSScheme1Base::eval_zmat_gga_vxc( XCDeviceData* _data){
 void AoSScheme1Base::eval_collocation( XCDeviceData* _data ) {
 
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   auto tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
@@ -81,9 +82,9 @@ void AoSScheme1Base::eval_collocation( XCDeviceData* _data ) {
 void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
 
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
 #if 0
   auto tasks = data->host_device_tasks;
@@ -114,6 +115,22 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
   
 }
 
+void AoSScheme1Base::eval_collocation_hessian( XCDeviceData* _data ) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto aos_stack     = data->aos_stack;
+
+  auto max_l = data->l_batched_shell_to_task.size() - 1;
+  eval_collocation_shell_to_task_hessian( max_l, 
+    data->l_batched_shell_to_task.data(), aos_stack.device_tasks,
+    data->device_backend_->queue() );
+
+}
+
 
 
 
@@ -121,9 +138,9 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
 void AoSScheme1Base::inc_exc( XCDeviceData* _data ){
 
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   auto base_stack    = data->base_stack;
   auto static_stack  = data->static_stack;
@@ -135,9 +152,9 @@ void AoSScheme1Base::inc_exc( XCDeviceData* _data ){
 void AoSScheme1Base::inc_nel( XCDeviceData* _data ){
 
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   auto base_stack    = data->base_stack;
   auto static_stack  = data->static_stack;
@@ -164,9 +181,9 @@ void AoSScheme1Base::inc_nel( XCDeviceData* _data ){
 void AoSScheme1Base::eval_uvvar_lda( XCDeviceData* _data ){
 
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   auto& tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
@@ -193,11 +210,10 @@ void AoSScheme1Base::eval_uvvar_lda( XCDeviceData* _data ){
 
 void AoSScheme1Base::eval_uvvar_gga( XCDeviceData* _data ){
 
-
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   auto& tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
@@ -235,11 +251,11 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
   XCDeviceData* _data ) {
 
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
-  if( !func.is_lda() ) throw std::runtime_error("XC Kernel not LDA!");
+  if( !func.is_lda() ) GAUXC_GENERIC_EXCEPTION("XC Kernel not LDA!");
 
   auto base_stack    = data->base_stack;
   GauXC::eval_kern_exc_vxc_lda( func, data->total_npts_task_batch, 
@@ -258,11 +274,11 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
   XCDeviceData* _data ) {
 
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
-  if( !func.is_gga() ) throw std::runtime_error("XC Kernel not GGA!");
+  if( !func.is_gga() ) GAUXC_GENERIC_EXCEPTION("XC Kernel not GGA!");
 
   auto base_stack    = data->base_stack;
   GauXC::eval_kern_exc_vxc_gga( func, data->total_npts_task_batch, 
@@ -288,12 +304,12 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
 
 
 
-void AoSScheme1Base::eval_xmat( XCDeviceData* _data){
+void AoSScheme1Base::eval_xmat( XCDeviceData* _data, bool do_grad ){
 
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   auto tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
@@ -310,11 +326,17 @@ void AoSScheme1Base::eval_xmat( XCDeviceData* _data){
   // Sync blas streams with master stream
   data->device_backend_->sync_blas_pool_with_master();
 
+  auto do_gemm = [&]( auto& handle, size_t npts, size_t nbe, auto* bf_ptr, auto* den_ptr, int ldden, auto* x_ptr ) {
+    gemm( handle, DeviceBlasOp::NoTrans, DeviceBlasOp::NoTrans, npts, nbe, nbe, 1., bf_ptr, npts,
+      den_ptr, ldden, 0., x_ptr, npts ); 
+  };
+
   // Launch GEMM in round-robin
   const auto n_blas_streams = data->device_backend_->blas_pool_size();
-  size_t nsingle = 0;
+  //size_t nsingle = 0;
   for( size_t iT = 0; iT < ntasks; ++iT ) {
     auto& task = tasks[iT];
+    #if 0
     if(task.ncut > 1)
       gemm( data->device_backend_->blas_pool_handle(iT % n_blas_streams), 
         DeviceBlasOp::NoTrans, DeviceBlasOp::NoTrans, 
@@ -328,6 +350,17 @@ void AoSScheme1Base::eval_xmat( XCDeviceData* _data){
         0., task.zmat, task.npts );
       nsingle++;
     }
+    #else
+      auto den_ptr = task.ncut > 1 ? task.nbe_scr : static_stack.dmat_device + task.ibf_begin*(nbf+1);
+      int  ldden   = task.ncut > 1 ? task.nbe : nbf;
+      auto handle = data->device_backend_->blas_pool_handle( iT % n_blas_streams );
+      do_gemm( handle, task.npts, task.nbe, task.bf, den_ptr, ldden, task.zmat );
+      if( do_grad ) {
+        do_gemm( handle, task.npts, task.nbe, task.dbfx, den_ptr, ldden, task.xmat_x );
+        do_gemm( handle, task.npts, task.nbe, task.dbfy, den_ptr, ldden, task.xmat_y );
+        do_gemm( handle, task.npts, task.nbe, task.dbfz, den_ptr, ldden, task.xmat_z );
+      }
+    #endif
   }
 
   // Record completion of BLAS ops on master stream
@@ -352,9 +385,9 @@ void AoSScheme1Base::eval_xmat( XCDeviceData* _data){
 void AoSScheme1Base::inc_vxc( XCDeviceData* _data){
 
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   auto& tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
@@ -400,14 +433,47 @@ void AoSScheme1Base::inc_vxc( XCDeviceData* _data){
 void AoSScheme1Base::symmetrize_vxc( XCDeviceData* _data) {
 
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
 
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   const auto nbf = data->global_dims.nbf;
   auto static_stack  = data->static_stack;
   symmetrize_matrix( nbf, static_stack.vxc_device, nbf, 
+    data->device_backend_->queue() ); 
+
+}
+
+
+
+
+void AoSScheme1Base::inc_exc_grad_lda( XCDeviceData* _data ) {
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  const auto nshell = data->global_dims.nshells;
+  increment_exc_grad_lda( nshell, 
+    data->shell_to_task_stack.shell_to_task_device, 
+    data->aos_stack.device_tasks,
+    data->static_stack.exc_grad_device,
+    data->device_backend_->queue() ); 
+
+}
+
+void AoSScheme1Base::inc_exc_grad_gga( XCDeviceData* _data ) {
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  const auto nshell = data->global_dims.nshells;
+  increment_exc_grad_gga( nshell, 
+    data->shell_to_task_stack.shell_to_task_device, 
+    data->aos_stack.device_tasks,
+    data->static_stack.exc_grad_device,
     data->device_backend_->queue() ); 
 
 }

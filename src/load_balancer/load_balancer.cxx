@@ -16,60 +16,60 @@ LoadBalancer::~LoadBalancer() noexcept = default;
 
 
 const std::vector<XCTask>& LoadBalancer::get_tasks() const {
-  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->get_tasks();
 }
 std::vector<XCTask>& LoadBalancer::get_tasks() {
-  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->get_tasks();
 }
 
 const util::Timer& LoadBalancer::get_timings() const {
-  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->get_timings();
 }
 
 size_t LoadBalancer::max_npts() const {
-  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->max_npts();
 }
 size_t LoadBalancer::max_nbe() const {
-  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->max_nbe();
 }
 size_t LoadBalancer::max_npts_x_nbe() const {
-  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->max_npts_x_nbe();
 }
 size_t LoadBalancer::pad_value() const {
-  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->pad_value();
 }
 
 
 
 const Molecule& LoadBalancer::molecule() const {
-  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->molecule();
 }
 const MolMeta& LoadBalancer::molmeta() const {
-  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->molmeta();
 }
 
 const LoadBalancer::basis_type& LoadBalancer::basis() const {
-  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->basis();
 }
 
 LoadBalancerState& LoadBalancer::state() {
-  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->state();
 }
 
 #ifdef GAUXC_ENABLE_MPI
 MPI_Comm LoadBalancer::comm() const {
-  if( not pimpl_ ) throw std::runtime_error("Not Initialized");
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->comm();
 }
 #endif

@@ -1,4 +1,5 @@
 #include "molgrid_impl.hpp"
+#include <gauxc/exceptions.hpp>
 
 namespace GauXC {
 namespace detail {
@@ -69,7 +70,7 @@ void MolGridImpl::generate( RadialQuad rq, const Molecule& mol ) {
 
     auto gsz_it = grid_sizes_.find( Z );
     if( gsz_it == grid_sizes_.end() )
-      throw std::runtime_error("Grid Size Map Does Not Contain Z = " + 
+      GAUXC_GENERIC_EXCEPTION("Grid Size Map Does Not Contain Z = " + 
         std::to_string( Z.get() )
       );
 
@@ -77,7 +78,7 @@ void MolGridImpl::generate( RadialQuad rq, const Molecule& mol ) {
 
     auto rscl_it = scal_factors_.find( Z );
     if( rscl_it == scal_factors_.end() )
-      throw std::runtime_error("Scaling Factor Map Does Not Contain Z = " + 
+      GAUXC_GENERIC_EXCEPTION("Scaling Factor Map Does Not Contain Z = " + 
         std::to_string( Z.get() )
       );
 

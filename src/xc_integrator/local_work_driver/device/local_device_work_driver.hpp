@@ -48,8 +48,9 @@ public:
 
   void eval_collocation( XCDeviceData* );
   void eval_collocation_gradient( XCDeviceData* );
+  void eval_collocation_hessian( XCDeviceData* );
 
-  void eval_xmat( XCDeviceData* );
+  void eval_xmat( XCDeviceData*, bool do_grad = false );
 
   void eval_uvvar_lda( XCDeviceData* );
   void eval_uvvar_gga( XCDeviceData* );
@@ -63,6 +64,8 @@ public:
   void inc_exc( XCDeviceData* );
   void inc_nel( XCDeviceData* );
   void inc_vxc( XCDeviceData* );
+  void inc_exc_grad_lda( XCDeviceData* );
+  void inc_exc_grad_gga( XCDeviceData* );
 
   void symmetrize_vxc( XCDeviceData* );
 

@@ -1,5 +1,6 @@
 #pragma once
 #include <memory>
+#include <gauxc/exceptions.hpp>
 
 //#define csl __PRETTY_FUNCTION__
 #define csl std::string(__FILE__) + ": " + std::to_string(__LINE__)
@@ -54,7 +55,7 @@ public:
     }
 
     //throw std::bad_alloc();
-    throw std::runtime_error("device std::bad_alloc " + msg 
+    GAUXC_GENERIC_EXCEPTION("device std::bad_alloc " + msg 
       + " nalloc = " + std::to_string(len*sizeof(T)) 
       + " nleft = " +std::to_string(nleft_));
 

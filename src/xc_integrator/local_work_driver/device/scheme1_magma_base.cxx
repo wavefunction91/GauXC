@@ -5,12 +5,14 @@
 
 namespace GauXC {
 
-void AoSScheme1MAGMABase::eval_xmat( XCDeviceData* _data){
+void AoSScheme1MAGMABase::eval_xmat( XCDeviceData* _data, bool do_grad ){
+
+  if( do_grad ) GAUXC_GENERIC_EXCEPTION("MAGMA + X Gradient NYI");
 
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   auto tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
@@ -39,9 +41,9 @@ void AoSScheme1MAGMABase::eval_xmat( XCDeviceData* _data){
 void AoSScheme1MAGMABase::inc_vxc( XCDeviceData* _data){
 
   auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) throw std::runtime_error("BAD DATA CAST");
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  if( not data->device_backend_ ) throw std::runtime_error("INVALID DEVICE BACKEND");
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   auto& tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();

@@ -22,9 +22,21 @@ struct XCDeviceAoSData : public XCDeviceStackData {
     double* dbf_y_eval_device = nullptr; ///< Derivative of `bf_eval_device` wrt y
     double* dbf_z_eval_device = nullptr; ///< Derivative of `bf_eval_device` wrt z
 
+    double* d2bf_xx_eval_device = nullptr; ///< 2nd Derivative of `bf_eval_device` wrt x+x
+    double* d2bf_xy_eval_device = nullptr; ///< 2nd Derivative of `bf_eval_device` wrt x+y
+    double* d2bf_xz_eval_device = nullptr; ///< 2nd Derivative of `bf_eval_device` wrt x+z
+    double* d2bf_yy_eval_device = nullptr; ///< 2nd Derivative of `bf_eval_device` wrt y+y
+    double* d2bf_yz_eval_device = nullptr; ///< 2nd Derivative of `bf_eval_device` wrt y+z
+    double* d2bf_zz_eval_device = nullptr; ///< 2nd Derivative of `bf_eval_device` wrt z+z
+
     // VXC Z Matrix
     double* zmat_vxc_lda_gga_device = nullptr;
       ///< Contiguous batch local Z matrix for LDA/GGA VXC for task batch
+
+    // X mat gradients
+    double* xmat_dx_device = nullptr;
+    double* xmat_dy_device = nullptr;
+    double* xmat_dz_device = nullptr;
 
     // Scratch buffer
     double* nbe_scr_device = nullptr; ///< nbe*nbe scratch allocated for task batch

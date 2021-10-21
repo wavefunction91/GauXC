@@ -76,4 +76,10 @@ void eval_collocation_shell_to_task_gradient(
   XCDeviceTask*               device_tasks,
   device_queue           queue );
 
+void eval_collocation_shell_to_task_hessian(
+  uint32_t                    max_l,
+  AngularMomentumShellToTaskBatch* l_batched_shell_to_task,
+  XCDeviceTask*               device_tasks,
+  device_queue           queue );
+
 } // namespace GauXC

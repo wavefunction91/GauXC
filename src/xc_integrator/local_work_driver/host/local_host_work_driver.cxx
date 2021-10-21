@@ -14,7 +14,7 @@ LocalHostWorkDriver::LocalHostWorkDriver( LocalHostWorkDriver&& other ) noexcept
   pimpl_(std::move(other.pimpl_)) { }
 
 #define throw_if_invalid_pimpl(ptr) \
-  if(not ptr) throw std::runtime_error(std::string("INVALID LocalHostWorkDriver PIMPL: ") + std::string(__PRETTY_FUNCTION__) );
+  if(not ptr) GAUXC_PIMPL_NOT_INITIALIZED()
 
 
 

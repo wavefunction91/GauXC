@@ -1,6 +1,6 @@
 #include "host/blas.hpp"
 #include <type_traits>
-#include <stdexcept>
+#include <gauxc/exceptions.hpp>
 
 extern "C" {
 
@@ -51,7 +51,7 @@ void lacpy( char UPLO, int M, int N, const T* A, int LDA, T* B,
     slacpy_( &UPLO, &M, &N, A, &LDA, B, &LDB );
   else if constexpr ( std::is_same_v<T,double> )
     dlacpy_( &UPLO, &M, &N, A, &LDA, B, &LDB );
-  else throw std::runtime_error("LACPY NYI");
+  else GAUXC_GENERIC_EXCEPTION("LACPY NYI");
 */
 
   if( UPLO == 'L' ) {
@@ -99,7 +99,7 @@ void gemm( char TA, char TB, int M, int N, int K, T ALPHA,
     sgemm_( &TA, &TB, &M, &N, &K, &ALPHA, A, &LDA, B, &LDB, &BETA, C, &LDC );
   else if constexpr ( std::is_same_v<T,double> )
     dgemm_( &TA, &TB, &M, &N, &K, &ALPHA, A, &LDA, B, &LDB, &BETA, C, &LDC );
-  else throw std::runtime_error("GEMM NYI");
+  else GAUXC_GENERIC_EXCEPTION("GEMM NYI");
 
 
 }
@@ -128,7 +128,7 @@ void syr2k( char UPLO, char TRANS, int N, int K, T ALPHA,
     ssyr2k_( &UPLO, &TRANS, &N, &K, &ALPHA, A, &LDA, B, &LDB, &BETA, C, &LDC );
   else if constexpr ( std::is_same_v<T,double> )
     dsyr2k_( &UPLO, &TRANS, &N, &K, &ALPHA, A, &LDA, B, &LDB, &BETA, C, &LDC );
-  else throw std::runtime_error("SYR2K NYI");
+  else GAUXC_GENERIC_EXCEPTION("SYR2K NYI");
 
 
 }
@@ -155,7 +155,7 @@ T dot( int N, const T* X, int INCX, const T* Y, int INCY ) {
     return sdot_(&N, X, &INCX, Y, &INCY);
   else if constexpr ( std::is_same_v<T,double> )
     return ddot_(&N, X, &INCX, Y, &INCY);
-  else throw std::runtime_error("DOT NYI");
+  else GAUXC_GENERIC_EXCEPTION("DOT NYI");
 
   return 0.;
 }
@@ -177,7 +177,7 @@ void axpy( int N, T ALPHA, const T* X, int INCX, T* Y, int INCY ) {
     saxpy_(&N, &ALPHA, X, &INCX, Y, &INCY );
   else if constexpr ( std::is_same_v<T,double> )
     daxpy_(&N, &ALPHA, X, &INCX, Y, &INCY );
-  else throw std::runtime_error("AXPY NYI");
+  else GAUXC_GENERIC_EXCEPTION("AXPY NYI");
 
 }
 
@@ -200,7 +200,7 @@ void scal( int N, T ALPHA, T* X, int INCX ) {
     sscal_(&N, &ALPHA, X, &INCX );
   else if constexpr ( std::is_same_v<T,double> )
     dscal_(&N, &ALPHA, X, &INCX );
-  else throw std::runtime_error("SCAL NYI");
+  else GAUXC_GENERIC_EXCEPTION("SCAL NYI");
 
 }
 

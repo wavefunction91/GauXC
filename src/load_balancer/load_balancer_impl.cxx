@@ -26,7 +26,7 @@ LoadBalancerImpl::LoadBalancerImpl( LoadBalancerImpl&& ) noexcept = default;
 LoadBalancerImpl::~LoadBalancerImpl() noexcept = default;
 
 const std::vector<XCTask>& LoadBalancerImpl::get_tasks() const {
-  if( not local_tasks_.size() ) throw std::runtime_error("No Tasks Created");
+  if( not local_tasks_.size() ) GAUXC_GENERIC_EXCEPTION("No Tasks Created");
   return local_tasks_;
 }
 
