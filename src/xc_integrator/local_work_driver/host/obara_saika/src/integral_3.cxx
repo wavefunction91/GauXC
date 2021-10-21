@@ -346,8 +346,8 @@ void integral_3(size_t npts,
       }
 
       for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {;
-         double *Xik = (Xi + (NPTS_LOCAL * p_outer + p_inner) * stX);
-         double *Gik = (Gi + (NPTS_LOCAL * p_outer + p_inner) * stG);
+         double *Xik = (Xi + (p_outer + p_inner) * stX);
+         double *Gik = (Gi + (p_outer + p_inner) * stG);
 
          for(int c0 = 0; c0 <= 3; ++c0) {
             for(int c1 = 0; c1 <= c0; ++c1) {
@@ -359,25 +359,25 @@ void integral_3(size_t npts,
                int mv, pv;
 
                mv = 3 + m; pv = 0 + p;
-               *(Gik + 0 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+               *(Gik + 0 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
                mv = 2 + m; pv = 0 + p;
-               *(Gik + 1 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+               *(Gik + 1 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
                mv = 2 + m; pv = 1 + p;
-               *(Gik + 2 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+               *(Gik + 2 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
                mv = 1 + m; pv = 0 + p;
-               *(Gik + 3 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+               *(Gik + 3 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
                mv = 1 + m; pv = 1 + p;
-               *(Gik + 4 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+               *(Gik + 4 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
                mv = 1 + m; pv = 2 + p;
-               *(Gik + 5 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+               *(Gik + 5 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
                mv = 0 + m; pv = 0 + p;
-               *(Gik + 6 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+               *(Gik + 6 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
                mv = 0 + m; pv = 1 + p;
-               *(Gik + 7 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+               *(Gik + 7 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
                mv = 0 + m; pv = 2 + p;
-               *(Gik + 8 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+               *(Gik + 8 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
                mv = 0 + m; pv = 3 + p;
-               *(Gik + 9 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+               *(Gik + 9 * ldG) += *(Xik + idxB * ldX) * (*(temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
             }
          }
       }

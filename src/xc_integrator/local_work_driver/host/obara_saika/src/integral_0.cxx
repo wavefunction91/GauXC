@@ -64,10 +64,10 @@ void integral_0(size_t npts,
       }
 
       for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {;
-         double *Xik = (Xi + (NPTS_LOCAL * p_outer + p_inner) * stX);
-         double *Gik = (Gi + (NPTS_LOCAL * p_outer + p_inner) * stG);
+         double *Xik = (Xi + (p_outer + p_inner) * stX);
+         double *Gik = (Gi + (p_outer + p_inner) * stG);
 
-         *(Gik + 0 * ldG) += *(Xik + 0 * ldX) * (*(temp + 0 * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));
+         *(Gik + 0 * ldG) += *(Xik + 0 * ldX) * (*(temp + 0 * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
       }
    }
 }

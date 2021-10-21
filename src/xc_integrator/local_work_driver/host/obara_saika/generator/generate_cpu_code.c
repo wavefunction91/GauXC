@@ -324,8 +324,8 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "      }\n");
   fprintf(f, "\n");
   fprintf(f, "      for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {;\n");
-  fprintf(f, "         double *Xik = (Xi + (NPTS_LOCAL * p_outer + p_inner) * stX);\n");
-  fprintf(f, "         double *Gik = (Gi + (NPTS_LOCAL * p_outer + p_inner) * stG);\n");
+  fprintf(f, "         double *Xik = (Xi + (p_outer + p_inner) * stX);\n");
+  fprintf(f, "         double *Gik = (Gi + (p_outer + p_inner) * stG);\n");
   fprintf(f, "\n");
 
   if(type == 0) {
@@ -347,7 +347,7 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
 
 	int idxA = index_calculation(a, c, lA);
 	fprintf(f, "               mv = %d + m; pv = %d + p;\n", a, c);
-	fprintf(f, "               *(Gik + %d * ldG) += *(Xik + idxB * ldX) * (*(temp + (%d + (((%d - mv) * (%d - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));\n", idxA, (2 * lA * (2 * lA + 1) * (2 * lA + 2) - lA * (lA + 1) * (lA + 2)) / 6, 2 * lA, 2 * lA);
+	fprintf(f, "               *(Gik + %d * ldG) += *(Xik + idxB * ldX) * (*(temp + (%d + (((%d - mv) * (%d - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));\n", idxA, (2 * lA * (2 * lA + 1) * (2 * lA + 2) - lA * (lA + 1) * (lA + 2)) / 6, 2 * lA, 2 * lA);
 	count++;		
       }
     }
@@ -374,7 +374,7 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
 
 	    int offset = (2 * lA * (2 * lA + 1) * (2 * lA + 2) - lA * (lA + 1) * (lA + 2)) / 6;
 		  
-	    fprintf(f, "         *(Gik + %d * ldG) += *(Xik + %d * ldX) * (*(temp + %d * NPTS_LOCAL + p_inner)) * (*(weights + (NPTS_LOCAL * p_outer + p_inner)));\n", idxA, idxB, offset + idx);
+	    fprintf(f, "         *(Gik + %d * ldG) += *(Xik + %d * ldX) * (*(temp + %d * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));\n", idxA, idxB, offset + idx);
       
 	    count++;		
 	  }
@@ -473,10 +473,10 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "      }\n");
   fprintf(f, "\n");
   fprintf(f, "      for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
-  fprintf(f, "         double *Xik = (Xi + (NPTS_LOCAL * p_outer + p_inner) * stX);\n");
-  fprintf(f, "         double *Xjk = (Xj + (NPTS_LOCAL * p_outer + p_inner) * stX);\n");
-  fprintf(f, "         double *Gik = (Gi + (NPTS_LOCAL * p_outer + p_inner) * stG);\n");
-  fprintf(f, "         double *Gjk = (Gj + (NPTS_LOCAL * p_outer + p_inner) * stG);\n");
+  fprintf(f, "         double *Xik = (Xi + (p_outer + p_inner) * stX);\n");
+  fprintf(f, "         double *Xjk = (Xj + (p_outer + p_inner) * stX);\n");
+  fprintf(f, "         double *Gik = (Gi + (p_outer + p_inner) * stG);\n");
+  fprintf(f, "         double *Gjk = (Gj + (p_outer + p_inner) * stG);\n");
   fprintf(f, "\n");
   
   if(type == 0) {
@@ -502,7 +502,7 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
     fprintf(f, "                        int mv, pv, Lv = %d - i - j - k;\n", lA + lB);
     fprintf(f, "\n");
     fprintf(f, "                        int offset = (Lv * (Lv + 1) * (Lv + 2) - %d) / 6;\n", lA * (lA + 1) * (lA + 2));
-    fprintf(f, "                        double const_value = *(weights + NPTS_LOCAL * p_outer + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;\n");
+    fprintf(f, "                        double const_value = *(weights + p_outer + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;\n");
     
     int count = 0;
     for(int r0 = 0; r0 <= lA; ++r0) {
@@ -566,7 +566,7 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
 	  for(int j = 0; j <= n; ++j) {
 	    fprintf(f, "         Z_ABp = 1.0; comb_p_k = 1.0;\n");
 	    for(int k = 0; k <= p; ++k) {
-	      fprintf(f, "         const_value = *(weights + p_outer * NPTS_LOCAL + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;\n");
+	      fprintf(f, "         const_value = *(weights + p_outer + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;\n");
 
 	      int count = 0;
 	      for(int r0 = 0; r0 <= lA; ++r0) {

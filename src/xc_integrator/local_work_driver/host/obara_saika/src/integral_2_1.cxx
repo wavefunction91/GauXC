@@ -119,10 +119,10 @@ void integral_2_1(size_t npts,
       }
 
       for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {
-         double *Xik = (Xi + (NPTS_LOCAL * p_outer + p_inner) * stX);
-         double *Xjk = (Xj + (NPTS_LOCAL * p_outer + p_inner) * stX);
-         double *Gik = (Gi + (NPTS_LOCAL * p_outer + p_inner) * stG);
-         double *Gjk = (Gj + (NPTS_LOCAL * p_outer + p_inner) * stG);
+         double *Xik = (Xi + (p_outer + p_inner) * stX);
+         double *Xjk = (Xj + (p_outer + p_inner) * stX);
+         double *Gik = (Gi + (p_outer + p_inner) * stG);
+         double *Gjk = (Gj + (p_outer + p_inner) * stG);
 
          double const_value, X_ABp, Y_ABp, Z_ABp, comb_m_i, comb_n_j, comb_p_k, rcp_i, rcp_j, rcp_k;
          double t0, t1, t2, t3, t4, t5;
@@ -130,7 +130,7 @@ void integral_2_1(size_t npts,
          X_ABp = 1.0; comb_m_i = 1.0;
          Y_ABp = 1.0; comb_n_j = 1.0;
          Z_ABp = 1.0; comb_p_k = 1.0;
-         const_value = *(weights + p_outer * NPTS_LOCAL + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+         const_value = *(weights + p_outer + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
          t0 = *(temp + 6 * NPTS_LOCAL + p_inner) * const_value;
          *(Gik + 0 * ldG) += *(Xjk + 0 * ldX) * t0;
          *(Gjk + 0 * ldG) += *(Xik + 0 * ldX) * t0;
@@ -152,7 +152,7 @@ void integral_2_1(size_t npts,
          X_ABp *= X_AB; rcp_i = 1.0 / (1.0 * 1); comb_m_i = (comb_m_i * 1) * rcp_i;
          Y_ABp = 1.0; comb_n_j = 1.0;
          Z_ABp = 1.0; comb_p_k = 1.0;
-         const_value = *(weights + p_outer * NPTS_LOCAL + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+         const_value = *(weights + p_outer + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
          t0 = *(temp + 0 * NPTS_LOCAL + p_inner) * const_value;
          *(Gik + 0 * ldG) += *(Xjk + 0 * ldX) * t0;
          *(Gjk + 0 * ldG) += *(Xik + 0 * ldX) * t0;
@@ -174,7 +174,7 @@ void integral_2_1(size_t npts,
          X_ABp = 1.0; comb_m_i = 1.0;
          Y_ABp = 1.0; comb_n_j = 1.0;
          Z_ABp = 1.0; comb_p_k = 1.0;
-         const_value = *(weights + p_outer * NPTS_LOCAL + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+         const_value = *(weights + p_outer + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
          t0 = *(temp + 7 * NPTS_LOCAL + p_inner) * const_value;
          *(Gik + 0 * ldG) += *(Xjk + 1 * ldX) * t0;
          *(Gjk + 1 * ldG) += *(Xik + 0 * ldX) * t0;
@@ -195,7 +195,7 @@ void integral_2_1(size_t npts,
          *(Gjk + 1 * ldG) += *(Xik + 5 * ldX) * t5;
          Y_ABp *= Y_AB; rcp_j = 1.0 / (1.0 * 1); comb_n_j = (comb_n_j * 1) * rcp_j;
          Z_ABp = 1.0; comb_p_k = 1.0;
-         const_value = *(weights + p_outer * NPTS_LOCAL + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+         const_value = *(weights + p_outer + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
          t0 = *(temp + 0 * NPTS_LOCAL + p_inner) * const_value;
          *(Gik + 0 * ldG) += *(Xjk + 1 * ldX) * t0;
          *(Gjk + 1 * ldG) += *(Xik + 0 * ldX) * t0;
@@ -217,7 +217,7 @@ void integral_2_1(size_t npts,
          X_ABp = 1.0; comb_m_i = 1.0;
          Y_ABp = 1.0; comb_n_j = 1.0;
          Z_ABp = 1.0; comb_p_k = 1.0;
-         const_value = *(weights + p_outer * NPTS_LOCAL + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+         const_value = *(weights + p_outer + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
          t0 = *(temp + 8 * NPTS_LOCAL + p_inner) * const_value;
          *(Gik + 0 * ldG) += *(Xjk + 2 * ldX) * t0;
          *(Gjk + 2 * ldG) += *(Xik + 0 * ldX) * t0;
@@ -237,7 +237,7 @@ void integral_2_1(size_t npts,
          *(Gik + 5 * ldG) += *(Xjk + 2 * ldX) * t5;
          *(Gjk + 2 * ldG) += *(Xik + 5 * ldX) * t5;
          Z_ABp *= Z_AB; rcp_k = 1.0 / (1.0 * 1); comb_p_k = (comb_p_k * 1) * rcp_k;
-         const_value = *(weights + p_outer * NPTS_LOCAL + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+         const_value = *(weights + p_outer + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
          t0 = *(temp + 0 * NPTS_LOCAL + p_inner) * const_value;
          *(Gik + 0 * ldG) += *(Xjk + 2 * ldX) * t0;
          *(Gjk + 2 * ldG) += *(Xik + 0 * ldX) * t0;

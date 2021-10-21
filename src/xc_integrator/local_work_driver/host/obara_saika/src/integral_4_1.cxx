@@ -230,10 +230,10 @@ void integral_4_1(size_t npts,
       }
 
       for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {
-         double *Xik = (Xi + (NPTS_LOCAL * p_outer + p_inner) * stX);
-         double *Xjk = (Xj + (NPTS_LOCAL * p_outer + p_inner) * stX);
-         double *Gik = (Gi + (NPTS_LOCAL * p_outer + p_inner) * stG);
-         double *Gjk = (Gj + (NPTS_LOCAL * p_outer + p_inner) * stG);
+         double *Xik = (Xi + (p_outer + p_inner) * stX);
+         double *Xjk = (Xj + (p_outer + p_inner) * stX);
+         double *Gik = (Gi + (p_outer + p_inner) * stG);
+         double *Gjk = (Gj + (p_outer + p_inner) * stG);
 
          for(int c0 = 0; c0 <= 1; ++c0) {
             for(int c1 = 0; c1 <= c0; ++c1) {
@@ -257,7 +257,7 @@ void integral_4_1(size_t npts,
                         int mv, pv, Lv = 5 - i - j - k;
 
                         int offset = (Lv * (Lv + 1) * (Lv + 2) - 120) / 6;
-                        double const_value = *(weights + NPTS_LOCAL * p_outer + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+                        double const_value = *(weights + p_outer + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
                         mv = 4 + m - i; pv = 0 + p - k;
                         double t0 = *(temp + (offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner) * const_value;
                         *(Gik + 0 * ldG) += *(Xjk + idxB * ldX) * t0;
