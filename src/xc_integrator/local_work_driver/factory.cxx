@@ -38,8 +38,10 @@ LocalWorkDriverFactory::ptr_return_t
 #ifdef GAUXC_ENABLE_DEVICE
     if( name == "SCHEME1" )
       return std::make_unique<LocalDeviceWorkDriver>( std::make_unique<scheme1_default>() );
+#ifdef GAUXC_ENABLE_MAGMA
     else if( name == "SCHEME1-MAGMA" )
       return std::make_unique<LocalDeviceWorkDriver>( std::make_unique<scheme1_magma>() );
+#endif
     else
 #endif
       throw std::runtime_error("LWD Not Recognized");
