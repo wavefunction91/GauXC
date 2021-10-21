@@ -277,9 +277,6 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   }
 
   fprintf(f, "   double temp[%d * NPTS_LOCAL];\n\n", size - partial_size);
-  fprintf(f, "   for(int i = 0; i < %d * NPTS_LOCAL; ++i) {\n", size - partial_size);
-  fprintf(f, "      temp[i] = 0.0;\n");
-  fprintf(f, "   }\n\n");
   
   fprintf(f, "   for(size_t p_outer = 0; p_outer < npts; p_outer += NPTS_LOCAL) {\n");
   fprintf(f, "      size_t npts_inner = MIN(NPTS_LOCAL, npts - p_outer);\n");
@@ -287,6 +284,8 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "      double xA = shpair.rA.x;\n");
   fprintf(f, "      double yA = shpair.rA.y;\n");
   fprintf(f, "      double zA = shpair.rA.z;\n");
+  fprintf(f, "\n");
+  fprintf(f, "      for(int i = 0; i < %d * NPTS_LOCAL; ++i) temp[i] = 0.0;\n", size - partial_size);
   fprintf(f, "\n");
   fprintf(f, "      for( int ij = 0; ij < shpair.nprim_pair; ++ij ) {\n");
   fprintf(f, "         double RHO = shpair.prim_pairs[ij].gamma;\n");
@@ -421,9 +420,6 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   }
 
   fprintf(f, "   double temp[%d * NPTS_LOCAL];\n\n", size - partial_size);
-  fprintf(f, "   for(int i = 0; i < %d * NPTS_LOCAL; ++i) {\n", size - partial_size);
-  fprintf(f, "      temp[i] = 0.0;\n");
-  fprintf(f, "   }\n\n");
 
   fprintf(f, "   double X_AB = shpair.rAB.x;\n");
   fprintf(f, "   double Y_AB = shpair.rAB.y;\n");
@@ -433,6 +429,8 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "   for(size_t p_outer = 0; p_outer < npts; p_outer += NPTS_LOCAL) {\n");
   fprintf(f, "      size_t npts_inner = MIN(NPTS_LOCAL, npts - p_outer);\n");
   fprintf(f, "      point *_point_outer = (_points + p_outer);\n\n");
+  fprintf(f, "      for(int i = 0; i < %d * NPTS_LOCAL; ++i) temp[i] = 0.0;\n", size - partial_size);
+  fprintf(f, "\n");
   fprintf(f, "      for(int ij = 0; ij < shpair.nprim_pair; ++ij ) {\n");
   fprintf(f, "         double RHO = shpair.prim_pairs[ij].gamma;\n");
   fprintf(f, "         double RHO_INV = 1.0 / RHO;\n");

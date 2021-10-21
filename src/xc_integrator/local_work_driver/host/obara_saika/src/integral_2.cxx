@@ -21,10 +21,6 @@ void integral_2(size_t npts,
                double *weights) {
    double temp[31 * NPTS_LOCAL];
 
-   for(int i = 0; i < 31 * NPTS_LOCAL; ++i) {
-      temp[i] = 0.0;
-   }
-
    for(size_t p_outer = 0; p_outer < npts; p_outer += NPTS_LOCAL) {
       size_t npts_inner = MIN(NPTS_LOCAL, npts - p_outer);
       point *_point_outer = (_points + p_outer);
@@ -32,6 +28,8 @@ void integral_2(size_t npts,
       double xA = shpair.rA.x;
       double yA = shpair.rA.y;
       double zA = shpair.rA.z;
+
+      for(int i = 0; i < 31 * NPTS_LOCAL; ++i) temp[i] = 0.0;
 
       for( int ij = 0; ij < shpair.nprim_pair; ++ij ) {
          double RHO = shpair.prim_pairs[ij].gamma;
