@@ -255,7 +255,6 @@ XCDeviceStackData::host_task_iterator XCDeviceStackData::generate_buffers(
 
     // Get memory requirement for batch
     size_t mem_req_batch = get_mem_req( terms, *task_it );
-    std::cout << "TASK " << std::distance(task_begin, task_it) << " " << mem_req_batch << std::endl;
 
     // Break out of loop if we can't allocate for this batch
     if( mem_req_batch > mem_left ) break;
