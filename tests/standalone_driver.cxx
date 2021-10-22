@@ -103,14 +103,17 @@ int main(int argc, char** argv) {
 
     if( !world_rank ) {
       std::cout << "DRIVER SETTINGS: " << std::endl
-                << "  REF_FILE       = " << ref_file << std::endl
-                << "  GRID           = " << grid_spec << std::endl
-                << "  BASIS_TOL      = " << basis_tol << std::endl
-                << "  FUNCTIONAL     = " << func_spec << std::endl
-                << "  LB_EXEC_SPACE  = " << lb_exec_space_str << std::endl
-                << "  INT_EXEC_SPACE = " << int_exec_space_str << std::endl
-                << "  VXC (?)        = " << std::boolalpha << integrate_vxc << std::endl
-                << "  EXX (?)        = " << std::boolalpha << integrate_exx << std::endl
+                << "  REF_FILE          = " << ref_file << std::endl
+                << "  GRID              = " << grid_spec << std::endl
+                << "  BASIS_TOL         = " << basis_tol << std::endl
+                << "  FUNCTIONAL        = " << func_spec << std::endl
+                << "  LB_EXEC_SPACE     = " << lb_exec_space_str << std::endl
+                << "  INT_EXEC_SPACE    = " << int_exec_space_str << std::endl
+                << "  INTEGRATOR_KERNEL = " << integrator_kernel << std::endl
+                << "  LWD_KERNEL        = " << lwd_kernel << std::endl
+                << "  REDUCTION_KERNEL  = " << reduction_kernel << std::endl
+                << "  VXC (?)           = " << std::boolalpha << integrate_vxc << std::endl
+                << "  EXX (?)           = " << std::boolalpha << integrate_exx << std::endl
                 << std::endl;
     }
 

@@ -41,7 +41,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Temporary electron count to judge integrator accuracy
   value_type N_EL;
 
-
   if( this->reduction_driver_->takes_device_memory() ) {
 
     // If we can do reductions on the device (e.g. NCCL)
@@ -50,6 +49,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       exc_vxc_local_work_( basis, P, ldp, tasks.begin(), tasks.end(), 
         *device_data_ptr);
     });
+
+    this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
+      MPI_Barrier(this->load_balancer_->comm());
+    });  
 
     // Reduce results in device memory
     auto vxc_device = device_data_ptr->vxc_device_data();
@@ -63,7 +66,9 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     });
 
     // Retrieve data to host
-    device_data_ptr->retrieve_exc_vxc_integrands( EXC, &N_EL, VXC, ldvxc );
+    this->timer_.time_op("XCIntegrator.DeviceToHostCopy",[&](){
+      device_data_ptr->retrieve_exc_vxc_integrands( EXC, &N_EL, VXC, ldvxc );
+    });
 
 
   } else {
@@ -74,6 +79,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       exc_vxc_local_work_( basis, P, ldp, VXC, ldvxc, EXC, 
         &N_EL, tasks.begin(), tasks.end(), *device_data_ptr);
     });
+
+    this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
+      MPI_Barrier(this->load_balancer_->comm());
+    });  
 
     // Reduce Results in host mem
     this->timer_.time_op("XCIntegrator.Allreduce", [&](){
@@ -326,7 +335,9 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   exc_vxc_local_work_( basis, P, ldp, task_begin, task_end, device_data );
 
   // Receive XC terms from host
-  device_data.retrieve_exc_vxc_integrands( EXC, N_EL, VXC, ldvxc );
+  this->timer_.time_op("XCIntegrator.DeviceToHostCopy",[&](){
+    device_data.retrieve_exc_vxc_integrands( EXC, N_EL, VXC, ldvxc );
+  });
 
 }
 
