@@ -173,7 +173,6 @@ void boys_chebyshev( int npts, int m, const double* T, const double* boys_table,
     else {
       int iseg = std::floor( tval / deltaT);
       const double* boys_seg = boys_m + iseg * LDTable;
-      //printf("%d\n",iseg);
 
       const double a = iseg * deltaT;
       const double b = a + deltaT;
