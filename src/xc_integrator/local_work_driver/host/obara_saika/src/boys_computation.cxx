@@ -11,8 +11,14 @@
 #include <iomanip>
 #include <cassert>
 
-#define PI      3.14159265358979323846
-#define SQRT_PI 1.77245385090551602729
+#define PI           3.14159265358979323846
+#define SQRT_PI      1.77245385090551602729
+#define SQRT_PI_OV_2 0.88622692545275801364
+
+#define MIN(a,b)			\
+  ({ __typeof__ (a) _a = (a);	        \
+  __typeof__ (b) _b = (b);		\
+  _a < _b ? _a : _b; })
 
 
 int64_t difact( int64_t i ) {
@@ -154,8 +160,9 @@ double boys_asymp(int m, double T) {
     return SQRT_PI * ifact(2*m) / my_pow_two(2*m+1) / ifact(m) / sqrt(ipow(T, 2 * m + 1));
   }
   #else
+  #if 1
   switch(m) {
-    case 0:  return SQRT_PI * 0.5 * sqrt( 1. / T );
+    case 0:  return SQRT_PI_OV_2 * sqrt( 1. / T );
     case 1:  return boys_asymp_eval<1> ( T );
     case 2:  return boys_asymp_eval<2> ( T );
     case 3:  return boys_asymp_eval<3> ( T );
@@ -173,8 +180,47 @@ double boys_asymp(int m, double T) {
     case 15: return boys_asymp_eval<15>( T );
     case 16: return boys_asymp_eval<16>( T );
   }
+  #else
+  const auto one_ov_t = 1./T;
+  const auto rsqrt_t  = std::sqrt(one_ov_t);
+  double Fm = 0.88622692545275801365 * rsqrt_t;
+  for (int i = 1; i <= m; ++i) {
+    Fm = Fm * (i - 0.5) * one_ov_t;
+  }
+  return Fm;
   #endif
   #endif
+  #endif
+}
+
+void boys_asymp(int npts, int m, const double* T, double* FmT) {
+
+  for(int i_st = 0; i_st < npts; i_st += NPTS_LOCAL) {
+    int ndo = MIN( NPTS_LOCAL, npts - i_st );
+    #pragma unroll NPTS_LOCAL
+    for( int i = 0; i < ndo; ++i ) {
+      switch(m) {
+        case 0:  FmT[i] = SQRT_PI_OV_2 * sqrt( 1. / T[i] );
+        case 1:  FmT[i] = boys_asymp_eval<1> ( T[i] );
+        case 2:  FmT[i] = boys_asymp_eval<2> ( T[i] );
+        case 3:  FmT[i] = boys_asymp_eval<3> ( T[i] );
+        case 4:  FmT[i] = boys_asymp_eval<4> ( T[i] );
+        case 5:  FmT[i] = boys_asymp_eval<5> ( T[i] );
+        case 6:  FmT[i] = boys_asymp_eval<6> ( T[i] );
+        case 7:  FmT[i] = boys_asymp_eval<7> ( T[i] );
+        case 8:  FmT[i] = boys_asymp_eval<8> ( T[i] );
+        case 9:  FmT[i] = boys_asymp_eval<9> ( T[i] );
+        case 10: FmT[i] = boys_asymp_eval<10>( T[i] );
+        case 11: FmT[i] = boys_asymp_eval<11>( T[i] );
+        case 12: FmT[i] = boys_asymp_eval<12>( T[i] );
+        case 13: FmT[i] = boys_asymp_eval<13>( T[i] );
+        case 14: FmT[i] = boys_asymp_eval<14>( T[i] );
+        case 15: FmT[i] = boys_asymp_eval<15>( T[i] );
+        case 16: FmT[i] = boys_asymp_eval<16>( T[i] );
+      }
+    }
+  }
+
 }
 
 double boys_reference(int m, double T) {
@@ -214,7 +260,7 @@ double boys_function(int m, double T) {
 
 }
 
-double boys_function(int m, int npts, const double* T, double* FmT) {
+void boys_function(int m, int npts, const double* T, double* FmT) {
   assert( GauXC::chebyshev_boys_instance );
   GauXC::chebyshev_boys_instance->eval( npts, m, T, FmT );
 }

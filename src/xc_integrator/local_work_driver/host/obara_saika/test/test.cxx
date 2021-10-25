@@ -9,11 +9,15 @@
 
 int main(int argc, char** argv) {
   libint2::initialize();
+  #if 0
   int ncheb   = 13;
   int nseg    = 60;
   int maxM    = 10;
   double maxT = 117;
   GauXC::gauxc_boys_init(ncheb, maxM, nseg, 1e-10, maxT);
+  #else
+  GauXC::gauxc_boys_init();
+  #endif
 
   // Benzene
   std::vector<libint2::Atom> atoms = {
