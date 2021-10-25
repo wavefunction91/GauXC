@@ -2,6 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+#define USE_SIMD_BOYS 1
+
 struct node {
   int iA, jA, kA;
   int iB, jB, kB;
@@ -207,7 +209,11 @@ void traverse_dfs_vrr(FILE *f, int lA, int lB, struct node *root_node) {
   if(root_node != NULL) {
     if(root_node -> level == 0) {
       for(int v = 0; v < root_node -> vars; ++v) {
+  #if USE_SIMD_BOYS
+	fprintf(f, "            t%d%d = eval * FmT[p_inner + %d*NPTS_LOCAL];\n", root_node -> level, v, v);
+  #else
 	fprintf(f, "            t%d%d = eval * boys_function(%d, tval);\n", root_node -> level, v, v);
+  #endif
       }
     } else if (root_node -> level == 1) {
       for(int v = 0; v < root_node -> vars; ++v) {
@@ -276,7 +282,11 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
     partial_size += (i + 1) * (i + 2) / 2;
   }
 
-  fprintf(f, "   double temp[%d * NPTS_LOCAL];\n\n", size - partial_size);
+  fprintf(f, "   double temp[%d * NPTS_LOCAL];\n",   size - partial_size);
+  #if USE_SIMD_BOYS
+  fprintf(f, "   double FmT [%d * NPTS_LOCAL];\n", 2*lA+1); 
+  fprintf(f, "   double Tval[NPTS_LOCAL];\n\n"); 
+  #endif
   
   fprintf(f, "   for(size_t p_outer = 0; p_outer < npts; p_outer += NPTS_LOCAL) {\n");
   fprintf(f, "      size_t npts_inner = MIN(NPTS_LOCAL, npts - p_outer);\n");
@@ -297,6 +307,51 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "\n");
   fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * 2 * PI * RHO_INV;\n");
   fprintf(f, "\n");
+  // Start New Code
+  fprintf(f, "         #if %d\n", USE_SIMD_BOYS);
+  fprintf(f, "         // Evaluate T Values\n");
+  fprintf(f, "         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
+  fprintf(f, "            point C = *(_point_outer + p_inner);\n");
+  fprintf(f, "\n");
+  fprintf(f, "            double xC = C.x;\n");
+  fprintf(f, "            double yC = C.y;\n");
+  fprintf(f, "            double zC = C.z;\n");
+  fprintf(f, "\n");
+  fprintf(f, "            double X_PC = (xA - xC);\n");
+  fprintf(f, "            double Y_PC = (yA - yC);\n");
+  fprintf(f, "            double Z_PC = (zA - zC);\n");
+  fprintf(f, "\n");
+  fprintf(f, "            Tval[p_inner] = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);\n");
+  fprintf(f, "         }\n\n");
+  fprintf(f, "         // Evaluate Boys function\n");
+  for(int l = 0; l < (2*lA+1); ++l) {
+  fprintf(f, "         boys_function(%d, npts_inner, Tval, FmT + %d*NPTS_LOCAL);\n",l,l);
+  }
+  fprintf(f, "\n");
+  fprintf(f, "         // Evaluate VRR Buffer\n");
+  fprintf(f, "         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
+  fprintf(f, "            point C = *(_point_outer + p_inner);\n");
+  fprintf(f, "\n");
+  fprintf(f, "            double xC = C.x;\n");
+  fprintf(f, "            double yC = C.y;\n");
+  fprintf(f, "            double zC = C.z;\n");
+  fprintf(f, "\n");
+  fprintf(f, "            double X_PC = (xA - xC);\n");
+  fprintf(f, "            double Y_PC = (yA - yC);\n");
+  fprintf(f, "            double Z_PC = (zA - zC);\n");
+  fprintf(f, "\n");
+  fprintf(f, "            double ");
+  for(int l = 0; l < (lA + lA); ++l) {
+    for(int k = 0; k < (lA + lA + 1) - l; ++k) {
+      fprintf(f, "t%d%d, ", l, k);
+    }
+  }
+  fprintf(f, "t%d%d;\n", (lA + lA), 0);
+  fprintf(f, "\n");
+  traverse_dfs_vrr(f, lA, lA, root_node);
+  fprintf(f, "         }\n\n");
+  fprintf(f, "         #else\n");
+  // Start Old Code
   fprintf(f, "         for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
   fprintf(f, "            point C = *(_point_outer + p_inner);\n");
   fprintf(f, "\n");  
@@ -320,6 +375,8 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "\n");
   traverse_dfs_vrr(f, lA, lA, root_node);
   fprintf(f, "         }\n");
+  fprintf(f, "\n         #endif\n");
+  // End Old Code
   fprintf(f, "      }\n");
   fprintf(f, "\n");
   fprintf(f, "      for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {;\n");
@@ -419,7 +476,11 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
     partial_size += (i + 1) * (i + 2) / 2;
   }
 
-  fprintf(f, "   double temp[%d * NPTS_LOCAL];\n\n", size - partial_size);
+  fprintf(f, "   double temp[%d * NPTS_LOCAL];\n",   size - partial_size);
+  #if USE_SIMD_BOYS
+  fprintf(f, "   double FmT [%d * NPTS_LOCAL];\n", lA+lB+1); 
+  fprintf(f, "   double Tval[NPTS_LOCAL];\n\n"); 
+  #endif
 
   fprintf(f, "   double X_AB = shpair.rAB.x;\n");
   fprintf(f, "   double Y_AB = shpair.rAB.y;\n");
@@ -445,6 +506,52 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "\n");
   fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;\n");
   fprintf(f, "\n");
+  // Start New Code
+  fprintf(f, "         #if %d\n", USE_SIMD_BOYS);
+  fprintf(f, "         // Evaluate T Values\n");
+  fprintf(f, "         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
+  fprintf(f, "            point C = *(_point_outer + p_inner);\n");
+  fprintf(f, "\n");
+  fprintf(f, "            double xC = C.x;\n");
+  fprintf(f, "            double yC = C.y;\n");
+  fprintf(f, "            double zC = C.z;\n");
+  fprintf(f, "\n");
+  fprintf(f, "            double X_PC = (xP - xC);\n");
+  fprintf(f, "            double Y_PC = (yP - yC);\n");
+  fprintf(f, "            double Z_PC = (zP - zC);\n");
+  fprintf(f, "\n");
+  fprintf(f, "            Tval[p_inner] = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);\n");
+  fprintf(f, "         }\n\n");
+  fprintf(f, "         // Evaluate Boys function\n");
+  for(int l = 0; l < (lA+lB+1); ++l) {
+  fprintf(f, "         boys_function(%d, npts_inner, Tval, FmT + %d*NPTS_LOCAL);\n",l,l);
+  }
+  fprintf(f, "\n");
+  fprintf(f, "         // Evaluate VRR Buffer\n");
+  fprintf(f, "         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
+  fprintf(f, "            point C = *(_point_outer + p_inner);\n");
+  fprintf(f, "\n");
+  fprintf(f, "            double xC = C.x;\n");
+  fprintf(f, "            double yC = C.y;\n");
+  fprintf(f, "            double zC = C.z;\n");
+  fprintf(f, "\n");
+  fprintf(f, "            double X_PC = (xP - xC);\n");
+  fprintf(f, "            double Y_PC = (yP - yC);\n");
+  fprintf(f, "            double Z_PC = (zP - zC);\n");
+  fprintf(f, "\n");
+  fprintf(f, "            double ");
+  for(int l = 0; l < (lA + lB); ++l) {
+    for(int k = 0; k < (lA + lB + 1) - l; ++k) {
+      fprintf(f, "t%d%d, ", l, k);
+    }
+  }
+  fprintf(f, "t%d%d;\n", (lA + lB), 0);
+  fprintf(f, "\n");
+  traverse_dfs_vrr(f, lA, lB, root_node);
+  fprintf(f, "         }\n\n");
+  fprintf(f, "         #else\n");
+  // Start Old Code
+  fprintf(f, "\n");
   fprintf(f, "         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
   fprintf(f, "            point C = *(_point_outer + p_inner);\n");
   fprintf(f, "\n");
@@ -468,6 +575,8 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "\n");
   traverse_dfs_vrr(f, lA, lB, root_node);
   fprintf(f, "         }\n");
+  fprintf(f, "\n         #endif\n");
+  // End Old Code
   fprintf(f, "      }\n");
   fprintf(f, "\n");
   fprintf(f, "      for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");

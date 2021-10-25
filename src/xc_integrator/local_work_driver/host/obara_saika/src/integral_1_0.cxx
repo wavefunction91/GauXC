@@ -22,6 +22,8 @@ void integral_1_0(size_t npts,
                   int ldG, 
                   double *weights) {
    double temp[3 * NPTS_LOCAL];
+   double FmT [2 * NPTS_LOCAL];
+   double Tval[NPTS_LOCAL];
 
    double X_AB = shpair.rAB.x;
    double Y_AB = shpair.rAB.y;
@@ -47,6 +49,52 @@ void integral_1_0(size_t npts,
 
          double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;
 
+         #if 1
+         // Evaluate T Values
+         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {
+            point C = *(_point_outer + p_inner);
+
+            double xC = C.x;
+            double yC = C.y;
+            double zC = C.z;
+
+            double X_PC = (xP - xC);
+            double Y_PC = (yP - yC);
+            double Z_PC = (zP - zC);
+
+            Tval[p_inner] = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
+         }
+
+         // Evaluate Boys function
+         boys_function(0, npts_inner, Tval, FmT + 0*NPTS_LOCAL);
+         boys_function(1, npts_inner, Tval, FmT + 1*NPTS_LOCAL);
+
+         // Evaluate VRR Buffer
+         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {
+            point C = *(_point_outer + p_inner);
+
+            double xC = C.x;
+            double yC = C.y;
+            double zC = C.z;
+
+            double X_PC = (xP - xC);
+            double Y_PC = (yP - yC);
+            double Z_PC = (zP - zC);
+
+            double t00, t01, t10;
+
+            t00 = eval * FmT[p_inner + 0*NPTS_LOCAL];
+            t01 = eval * FmT[p_inner + 1*NPTS_LOCAL];
+            t10 = X_PA * t00 - X_PC * t01;
+            *(temp + 0 * NPTS_LOCAL + p_inner) += t10;
+            t10 = Y_PA * t00 - Y_PC * t01;
+            *(temp + 1 * NPTS_LOCAL + p_inner) += t10;
+            t10 = Z_PA * t00 - Z_PC * t01;
+            *(temp + 2 * NPTS_LOCAL + p_inner) += t10;
+         }
+
+         #else
+
          for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {
             point C = *(_point_outer + p_inner);
 
@@ -62,8 +110,8 @@ void integral_1_0(size_t npts,
 
             double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
 
-            t00 = eval * boys_function(0, tval);
-            t01 = eval * boys_function(1, tval);
+            t00 = eval * FmT[p_inner + 0*NPTS_LOCAL];
+            t01 = eval * FmT[p_inner + 1*NPTS_LOCAL];
             t10 = X_PA * t00 - X_PC * t01;
             *(temp + 0 * NPTS_LOCAL + p_inner) += t10;
             t10 = Y_PA * t00 - Y_PC * t01;
@@ -71,6 +119,8 @@ void integral_1_0(size_t npts,
             t10 = Z_PA * t00 - Z_PC * t01;
             *(temp + 2 * NPTS_LOCAL + p_inner) += t10;
          }
+
+         #endif
       }
 
       for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {

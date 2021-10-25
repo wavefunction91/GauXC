@@ -20,6 +20,8 @@ void integral_1(size_t npts,
                int ldG, 
                double *weights) {
    double temp[9 * NPTS_LOCAL];
+   double FmT [3 * NPTS_LOCAL];
+   double Tval[NPTS_LOCAL];
 
    for(size_t p_outer = 0; p_outer < npts; p_outer += NPTS_LOCAL) {
       size_t npts_inner = MIN(NPTS_LOCAL, npts - p_outer);
@@ -41,7 +43,29 @@ void integral_1(size_t npts,
 
          double eval = shpair.prim_pairs[ij].coeff_prod * 2 * PI * RHO_INV;
 
-         for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {
+         #if 1
+         // Evaluate T Values
+         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {
+            point C = *(_point_outer + p_inner);
+
+            double xC = C.x;
+            double yC = C.y;
+            double zC = C.z;
+
+            double X_PC = (xA - xC);
+            double Y_PC = (yA - yC);
+            double Z_PC = (zA - zC);
+
+            Tval[p_inner] = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
+         }
+
+         // Evaluate Boys function
+         boys_function(0, npts_inner, Tval, FmT + 0*NPTS_LOCAL);
+         boys_function(1, npts_inner, Tval, FmT + 1*NPTS_LOCAL);
+         boys_function(2, npts_inner, Tval, FmT + 2*NPTS_LOCAL);
+
+         // Evaluate VRR Buffer
+         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {
             point C = *(_point_outer + p_inner);
 
             double xC = C.x;
@@ -54,11 +78,9 @@ void integral_1(size_t npts,
 
             double t00, t01, t02, t10, t11, t20;
 
-            double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
-
-            t00 = eval * boys_function(0, tval);
-            t01 = eval * boys_function(1, tval);
-            t02 = eval * boys_function(2, tval);
+            t00 = eval * FmT[p_inner + 0*NPTS_LOCAL];
+            t01 = eval * FmT[p_inner + 1*NPTS_LOCAL];
+            t02 = eval * FmT[p_inner + 2*NPTS_LOCAL];
             t10 = X_PA * t00 - X_PC * t01;
             t11 = X_PA * t01 - X_PC * t02;
             *(temp + 0 * NPTS_LOCAL + p_inner) += t10;
@@ -81,6 +103,50 @@ void integral_1(size_t npts,
             t20 = Z_PA * t10 - Z_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
             *(temp + 8 * NPTS_LOCAL + p_inner) += t20;
          }
+
+         #else
+         for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {
+            point C = *(_point_outer + p_inner);
+
+            double xC = C.x;
+            double yC = C.y;
+            double zC = C.z;
+
+            double X_PC = (xA - xC);
+            double Y_PC = (yA - yC);
+            double Z_PC = (zA - zC);
+
+            double t00, t01, t02, t10, t11, t20;
+
+            double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
+
+            t00 = eval * FmT[p_inner + 0*NPTS_LOCAL];
+            t01 = eval * FmT[p_inner + 1*NPTS_LOCAL];
+            t02 = eval * FmT[p_inner + 2*NPTS_LOCAL];
+            t10 = X_PA * t00 - X_PC * t01;
+            t11 = X_PA * t01 - X_PC * t02;
+            *(temp + 0 * NPTS_LOCAL + p_inner) += t10;
+            t20 = X_PA * t10 - X_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
+            *(temp + 3 * NPTS_LOCAL + p_inner) += t20;
+            t20 = Y_PA * t10 - Y_PC * t11;
+            *(temp + 4 * NPTS_LOCAL + p_inner) += t20;
+            t20 = Z_PA * t10 - Z_PC * t11;
+            *(temp + 5 * NPTS_LOCAL + p_inner) += t20;
+            t10 = Y_PA * t00 - Y_PC * t01;
+            t11 = Y_PA * t01 - Y_PC * t02;
+            *(temp + 1 * NPTS_LOCAL + p_inner) += t10;
+            t20 = Y_PA * t10 - Y_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
+            *(temp + 6 * NPTS_LOCAL + p_inner) += t20;
+            t20 = Z_PA * t10 - Z_PC * t11;
+            *(temp + 7 * NPTS_LOCAL + p_inner) += t20;
+            t10 = Z_PA * t00 - Z_PC * t01;
+            t11 = Z_PA * t01 - Z_PC * t02;
+            *(temp + 2 * NPTS_LOCAL + p_inner) += t10;
+            t20 = Z_PA * t10 - Z_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
+            *(temp + 8 * NPTS_LOCAL + p_inner) += t20;
+         }
+
+         #endif
       }
 
       for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {;
