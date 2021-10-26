@@ -16,10 +16,15 @@ struct boys_asymp_const_coeff {
 
 template <size_t M, typename T>
 inline T boys_asymp( T x ) {
-  const auto x_inv = 1./x;
   if constexpr (M == 0) {
+  #if 1
+    const auto x_inv = 1./x;
     return constants::sqrt_pi_ov_2<> * std::sqrt( x_inv );
+  #else
+    return constants::sqrt_pi_ov_2<> * rsqrt(x);
+  #endif
   } else {
+    const auto x_inv = 1./x;
     constexpr auto const_coeff = boys_asymp_const_coeff<M>::value;
     return const_coeff * std::sqrt( integral_pow<2*M+1>(x_inv) );
   }
