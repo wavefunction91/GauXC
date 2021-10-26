@@ -160,9 +160,9 @@ void monomial_expand( size_t npts, const double* coeff, const double *x,
 
 }
 
-template <uint32_t NCheb, uint32_t MaxT, uint32_t NSegment, uint32_t LDTable>
-void boys_chebyshev( int npts, int m, const double* T, const double* boys_table, double* eval ) {
-  const double* boys_m = boys_table + m * LDTable * NSegment;
+template <uint32_t M, uint32_t NCheb, uint32_t MaxT, uint32_t NSegment, uint32_t LDTable>
+void boys_chebyshev( int npts, const double* T, const double* boys_table, double* eval ) {
+  const double* boys_m = boys_table + M * LDTable * NSegment;
 
   constexpr double deltaT = double(MaxT) / NSegment;
   #if 0
@@ -186,13 +186,15 @@ void boys_chebyshev( int npts, int m, const double* T, const double* boys_table,
 
   if( *min_t >  MaxT ) {
     // All asymptotic case
-    ::boys_asymp(npts, m, T, eval);
+    boys_asymp<M>(npts, T, eval);
   } else {
     #pragma unroll(NPTS_LOCAL)
     for( int i = 0; i < npts; ++i ) {
       const double tval = T[i];
-      if( tval > MaxT ) {eval[i] = ::boys_asymp(m,tval); }
-      else {
+      if( tval > MaxT ) {
+        #pragma noinline
+        eval[i] = boys_asymp<M>(tval); 
+      } else {
         int iseg = std::floor( tval / deltaT);
         const double* boys_seg = boys_m + iseg * LDTable;
 
@@ -208,13 +210,35 @@ void boys_chebyshev( int npts, int m, const double* T, const double* boys_table,
 
 template <uint32_t NCheb, uint32_t MaxM, uint32_t MaxT, uint32_t NSegment, 
           uint32_t LDTable>
-void ChebyshevBoysEvaluator<NCheb,MaxM,MaxT,NSegment,LDTable>::eval( size_t npts, int m, const double* T, 
-  double* FmT ) {
-  boys_chebyshev<NCheb,MaxT,NSegment,LDTable>( npts, m, T, table_.data(), FmT );
+template <uint32_t M>
+void ChebyshevBoysEvaluator<NCheb,MaxM,MaxT,NSegment,LDTable>::
+  eval<M>( size_t npts, const double* T, double* FmT ) {
+  boys_chebyshev<M,NCheb,MaxT,NSegment,LDTable>( npts, T, table_.data(), FmT );
 }
 
 template class ChebyshevBoysEvaluator< 
   detail::default_ncheb, detail::default_max_m, detail::default_max_t 
   >;
 
-}
+#define CHEBY_EVAL_IMPL(M)\
+template void \
+  detail::default_chebyshev_type::eval<M>(size_t,const double*,double*);
+
+CHEBY_EVAL_IMPL(0 );
+CHEBY_EVAL_IMPL(1 );
+CHEBY_EVAL_IMPL(2 );
+CHEBY_EVAL_IMPL(3 );
+CHEBY_EVAL_IMPL(4 );
+CHEBY_EVAL_IMPL(5 );
+CHEBY_EVAL_IMPL(6 );
+CHEBY_EVAL_IMPL(7 );
+CHEBY_EVAL_IMPL(8 );
+CHEBY_EVAL_IMPL(9 );
+CHEBY_EVAL_IMPL(10);
+CHEBY_EVAL_IMPL(11);
+CHEBY_EVAL_IMPL(12);
+CHEBY_EVAL_IMPL(13);
+CHEBY_EVAL_IMPL(14);
+CHEBY_EVAL_IMPL(15);
+CHEBY_EVAL_IMPL(16);
+}               

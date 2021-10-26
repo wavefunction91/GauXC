@@ -14,7 +14,8 @@ class ChebyshevBoysEvaluator {
 public:
 
   ChebyshevBoysEvaluator();
-  void eval( size_t npts, int m, const double* T, double* FmT );
+  template <uint32_t M>
+  void eval( size_t npts, const double* T, double* FmT );
 
 };
 

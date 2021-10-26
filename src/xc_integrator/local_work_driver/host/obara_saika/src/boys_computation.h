@@ -34,6 +34,11 @@ inline void boys_asymp( size_t npts, const T* X, T* FmX ) {
   }
 }
 
+template <size_t M>
+double boys_function( double T );
+template <size_t M>
+void boys_function(int npts, const double* T, double* FmT );
+
 }
 
 
