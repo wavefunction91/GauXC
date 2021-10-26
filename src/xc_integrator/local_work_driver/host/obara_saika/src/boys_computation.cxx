@@ -1,5 +1,6 @@
 #include "boys_computation.h"
 #include "chebyshev_boys_function.hpp"
+#include <gauxc/util/constexpr_math.hpp>
 
 #include <iostream>
 #include <limits>
@@ -21,50 +22,35 @@
   _a < _b ? _a : _b; })
 
 
-int64_t difact( int64_t i ) {
-  int64_t v = 1;
-  for( int k = 0; k < (i/2); ++k ) v *= i - 2 * k;
-  return v;
-}
-
-template <size_t N>
-struct pow_two : std::integral_constant< size_t, (1ul << N) > { };
-
-template <size_t N>
-struct integral_factorial;
-
-template <>
-struct integral_factorial<0ul> : std::integral_constant< size_t, 1ul > { };
-template <size_t N>
-struct integral_factorial : std::integral_constant< size_t, N * integral_factorial<N-1>::value > { };
-
-
-template <size_t N, typename T>
-constexpr T integral_pow(T x) {
-  if constexpr (N == 0) { return T(1.); }
-  else if constexpr (N == 1 ) { return x; }
-  else { return x * integral_pow<N-1>(x); }
-}
+using GauXC::integral_pow_two;
+using GauXC::integral_pow;
+using GauXC::integral_factorial;
 
 template <size_t M>
 struct boys_asymp_const_coeff {
 
-  static constexpr double value = (SQRT_PI / pow_two<2*M+1>::value) *
-                                  (integral_factorial<2*M>::value / integral_factorial<M>::value );
+  static constexpr double value = 
+    (SQRT_PI / integral_pow_two<2*M+1>::value) *
+    (integral_factorial<2*M>::value / integral_factorial<M>::value );
 
 };
 
 template <size_t M, typename T>
-T boys_asymp_eval( T x ) {
-  constexpr auto const_coeff = boys_asymp_const_coeff<M>::value;
+inline T boys_asymp_eval( T x ) {
   const auto x_inv = 1./x;
-  return const_coeff * std::sqrt( integral_pow<2*M+1>(x_inv) );
+  if constexpr (M == 0) {
+    return SQRT_PI_OV_2 * std::sqrt( x_inv );
+  } else {
+    constexpr auto const_coeff = boys_asymp_const_coeff<M>::value;
+    return const_coeff * std::sqrt( integral_pow<2*M+1>(x_inv) );
+  }
+  abort();
 }
 
 double boys_asymp(int m, double T) {
   #if 1
   switch(m) {
-    case 0:  return SQRT_PI_OV_2 * sqrt( 1. / T );
+    case 0:  return boys_asymp_eval<0> ( T );
     case 1:  return boys_asymp_eval<1> ( T );
     case 2:  return boys_asymp_eval<2> ( T );
     case 3:  return boys_asymp_eval<3> ( T );
@@ -82,6 +68,7 @@ double boys_asymp(int m, double T) {
     case 15: return boys_asymp_eval<15>( T );
     case 16: return boys_asymp_eval<16>( T );
   }
+  abort();
   #else
   const auto one_ov_t = 1./T;
   const auto rsqrt_t  = std::sqrt(one_ov_t);
@@ -95,29 +82,26 @@ double boys_asymp(int m, double T) {
 
 void boys_asymp(int npts, int m, const double* T, double* FmT) {
 
-  for(int i_st = 0; i_st < npts; i_st += NPTS_LOCAL) {
-    int ndo = MIN( NPTS_LOCAL, npts - i_st );
-    #pragma unroll NPTS_LOCAL
-    for( int i = 0; i < ndo; ++i ) {
-      switch(m) {
-        case 0:  FmT[i] = SQRT_PI_OV_2 * sqrt( 1. / T[i] );
-        case 1:  FmT[i] = boys_asymp_eval<1> ( T[i] );
-        case 2:  FmT[i] = boys_asymp_eval<2> ( T[i] );
-        case 3:  FmT[i] = boys_asymp_eval<3> ( T[i] );
-        case 4:  FmT[i] = boys_asymp_eval<4> ( T[i] );
-        case 5:  FmT[i] = boys_asymp_eval<5> ( T[i] );
-        case 6:  FmT[i] = boys_asymp_eval<6> ( T[i] );
-        case 7:  FmT[i] = boys_asymp_eval<7> ( T[i] );
-        case 8:  FmT[i] = boys_asymp_eval<8> ( T[i] );
-        case 9:  FmT[i] = boys_asymp_eval<9> ( T[i] );
-        case 10: FmT[i] = boys_asymp_eval<10>( T[i] );
-        case 11: FmT[i] = boys_asymp_eval<11>( T[i] );
-        case 12: FmT[i] = boys_asymp_eval<12>( T[i] );
-        case 13: FmT[i] = boys_asymp_eval<13>( T[i] );
-        case 14: FmT[i] = boys_asymp_eval<14>( T[i] );
-        case 15: FmT[i] = boys_asymp_eval<15>( T[i] );
-        case 16: FmT[i] = boys_asymp_eval<16>( T[i] );
-      }
+  #pragma unroll(NPTS_LOCAL)
+  for( int i = 0; i < npts; ++i ) {
+    switch(m) {
+      case 0:  FmT[i] = boys_asymp_eval<0> ( T[i] );
+      case 1:  FmT[i] = boys_asymp_eval<1> ( T[i] );
+      case 2:  FmT[i] = boys_asymp_eval<2> ( T[i] );
+      case 3:  FmT[i] = boys_asymp_eval<3> ( T[i] );
+      case 4:  FmT[i] = boys_asymp_eval<4> ( T[i] );
+      case 5:  FmT[i] = boys_asymp_eval<5> ( T[i] );
+      case 6:  FmT[i] = boys_asymp_eval<6> ( T[i] );
+      case 7:  FmT[i] = boys_asymp_eval<7> ( T[i] );
+      case 8:  FmT[i] = boys_asymp_eval<8> ( T[i] );
+      case 9:  FmT[i] = boys_asymp_eval<9> ( T[i] );
+      case 10: FmT[i] = boys_asymp_eval<10>( T[i] );
+      case 11: FmT[i] = boys_asymp_eval<11>( T[i] );
+      case 12: FmT[i] = boys_asymp_eval<12>( T[i] );
+      case 13: FmT[i] = boys_asymp_eval<13>( T[i] );
+      case 14: FmT[i] = boys_asymp_eval<14>( T[i] );
+      case 15: FmT[i] = boys_asymp_eval<15>( T[i] );
+      case 16: FmT[i] = boys_asymp_eval<16>( T[i] );
     }
   }
 

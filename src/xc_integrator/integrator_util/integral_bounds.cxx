@@ -2,6 +2,7 @@
 #include "rys_integral.h"
 #include <vector>
 #include <gauxc/util/geometry.hpp>
+#include <gauxc/util/constexpr_math.hpp>
 #include <gauxc/exceptions.hpp>
 
 
@@ -32,12 +33,6 @@ struct RysShell {
   }
 };
 
-
-template <int n, typename T>
-inline constexpr T integral_pow( T x ) {
-  if constexpr (n == 1) return x;
-  else                  return x * integral_pow<n-1>(x);
-}
 
 
 inline constexpr double max_coulomb_00( double Kab, double gamma ) {
