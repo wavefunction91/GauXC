@@ -169,7 +169,7 @@ void boys_chebyshev( int npts, int m, const double* T, const double* boys_table,
 #if 1
   for( int i = 0; i < npts; ++i ) {
     const double tval = T[i];
-    if( tval > MaxT ) {eval[i] = boys_asymp(m,tval); }
+    if( tval > MaxT ) {eval[i] = ::boys_asymp(m,tval); }
     else {
       int iseg = std::floor( tval / deltaT);
       const double* boys_seg = boys_m + iseg * LDTable;
