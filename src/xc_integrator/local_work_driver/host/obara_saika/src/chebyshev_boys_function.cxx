@@ -188,19 +188,29 @@ void boys_chebyshev( int npts, const double* T, const double* boys_table, double
     // All asymptotic case
     boys_asymp<M>(npts, T, eval);
   } else {
-    #pragma unroll(NPTS_LOCAL)
-    for( int i = 0; i < npts; ++i ) {
-      const double tval = T[i];
-      if( tval > MaxT ) {
-        #pragma noinline
-        eval[i] = boys_asymp<M>(tval); 
-      } else {
-        int iseg = std::floor( tval / deltaT);
-        const double* boys_seg = boys_m + iseg * LDTable;
+    if constexpr (M == 0) {
+      //F0(T) = SQRT_PI_OV_2 * ERF( SQRT(T) ) / SQRT(T)
+      #pragma unroll(NPTS_LOCAL)
+      for(int i = 0; i < npts; ++i) {
+        const double sqrt_t = std::sqrt(T[i]);
+        const double inv_sqrt_t = 1./sqrt_t;
+        eval[i] = constants::sqrt_pi_ov_2<> * std::erf(sqrt_t) * inv_sqrt_t;
+      }
+    } else {
+      #pragma unroll(NPTS_LOCAL)
+      for( int i = 0; i < npts; ++i ) {
+        const double tval = T[i];
+        if( tval > MaxT ) {
+          #pragma noinline
+          eval[i] = boys_asymp<M>(tval); 
+        } else {
+          int iseg = std::floor( tval / deltaT);
+          const double* boys_seg = boys_m + iseg * LDTable;
 
-        const double a = iseg * deltaT;
-        const double b = a + deltaT;
-        monomial_expand<NCheb>( 1, boys_seg, T+i, a, b, eval+i );
+          const double a = iseg * deltaT;
+          const double b = a + deltaT;
+          monomial_expand<NCheb>( 1, boys_seg, T+i, a, b, eval+i );
+        }
       }
     }
   }
