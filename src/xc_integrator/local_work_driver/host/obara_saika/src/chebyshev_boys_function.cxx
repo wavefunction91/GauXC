@@ -160,13 +160,13 @@ void monomial_expand( size_t npts, const double* coeff, const double *x,
 
 }
 
-template <uint32_t NCheb, uint32_t MaxM, uint32_t MaxT, uint32_t NSegment, 
-          uint32_t LDTable>
+template <uint32_t NCheb, uint32_t MaxT, uint32_t NSegment, uint32_t LDTable>
 void boys_chebyshev( int npts, int m, const double* T, const double* boys_table, double* eval ) {
   const double* boys_m = boys_table + m * LDTable * NSegment;
 
   constexpr double deltaT = double(MaxT) / NSegment;
-#if 1
+  #if 0
+  #pragma unroll(NPTS_LOCAL)
   for( int i = 0; i < npts; ++i ) {
     const double tval = T[i];
     if( tval > MaxT ) {eval[i] = ::boys_asymp(m,tval); }
@@ -179,43 +179,42 @@ void boys_chebyshev( int npts, int m, const double* T, const double* boys_table,
       monomial_expand<NCheb>( 1, boys_seg, T+i, a, b, eval+i );
     }
   }
-#else
-  //double temp[NPTS_LOCAL];
-  for( int i_st = 0; i_st < npts; i_st += NPTS_LOCAL ) {
-    int ndo = MIN( NPTS_LOCAL, npts - i_st );
-    // Get min/max element
-    auto [min_t_it,max_t_it] = std::minmax_element( T + i_st, T + i_st + ndo );
+  #else
 
-    if( *min_t_it >= MaxT ) {
-      // All asymptotic case
-      //boys_asymp( ndo, m, T + i_st, eval + i_st );
-    } else {
-      // Mixed case - need to figure out a way to vectorize Monomial expansion
-      for( int i = 0; i < npts; ++i ) {
-        const double tval = T[i];
-        if( tval > MaxT ) {eval[i] = boys_asymp(m,tval);}
-        else {
-          int iseg = std::floor( tval / deltaT);
-          const double* boys_seg = boys_m + iseg * LDTable;
-          //printf("%d\n",iseg);
+  // Get min T
+  auto min_t = std::min_element( T, T + npts );
 
-          const double a = iseg * deltaT;
-          const double b = a + deltaT;
-          monomial_expand<NCheb>( 1, boys_seg, T+i, a, b, eval+i );
-        }
+  if( *min_t >  MaxT ) {
+    // All asymptotic case
+    ::boys_asymp(npts, m, T, eval);
+  } else {
+    #pragma unroll(NPTS_LOCAL)
+    for( int i = 0; i < npts; ++i ) {
+      const double tval = T[i];
+      if( tval > MaxT ) {eval[i] = ::boys_asymp(m,tval); }
+      else {
+        int iseg = std::floor( tval / deltaT);
+        const double* boys_seg = boys_m + iseg * LDTable;
+
+        const double a = iseg * deltaT;
+        const double b = a + deltaT;
+        monomial_expand<NCheb>( 1, boys_seg, T+i, a, b, eval+i );
       }
     }
   }
-#endif
+
+  #endif
 }
 
 template <uint32_t NCheb, uint32_t MaxM, uint32_t MaxT, uint32_t NSegment, 
           uint32_t LDTable>
 void ChebyshevBoysEvaluator<NCheb,MaxM,MaxT,NSegment,LDTable>::eval( size_t npts, int m, const double* T, 
   double* FmT ) {
-  boys_chebyshev<NCheb,MaxM,MaxT,NSegment,LDTable>( npts, m, T, table_.data(), FmT );
+  boys_chebyshev<NCheb,MaxT,NSegment,LDTable>( npts, m, T, table_.data(), FmT );
 }
 
-template class ChebyshevBoysEvaluator< detail::default_ncheb, detail::default_max_m, detail::default_max_t >;
+template class ChebyshevBoysEvaluator< 
+  detail::default_ncheb, detail::default_max_m, detail::default_max_t 
+  >;
 
 }

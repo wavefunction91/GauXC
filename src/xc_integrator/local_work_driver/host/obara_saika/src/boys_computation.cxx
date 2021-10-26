@@ -48,23 +48,23 @@ double boys_asymp(int m, double T) {
 void boys_asymp(int npts, int m, const double* T, double* FmT) {
 
   switch(m) {
-    case 0:  return GauXC::boys_asymp<0> ( npts, T, FmT );
-    case 1:  return GauXC::boys_asymp<1> ( npts, T, FmT );
-    case 2:  return GauXC::boys_asymp<2> ( npts, T, FmT );
-    case 3:  return GauXC::boys_asymp<3> ( npts, T, FmT );
-    case 4:  return GauXC::boys_asymp<4> ( npts, T, FmT );
-    case 5:  return GauXC::boys_asymp<5> ( npts, T, FmT );
-    case 6:  return GauXC::boys_asymp<6> ( npts, T, FmT );
-    case 7:  return GauXC::boys_asymp<7> ( npts, T, FmT );
-    case 8:  return GauXC::boys_asymp<8> ( npts, T, FmT );
-    case 9:  return GauXC::boys_asymp<9> ( npts, T, FmT );
-    case 10: return GauXC::boys_asymp<10>( npts, T, FmT );
-    case 11: return GauXC::boys_asymp<11>( npts, T, FmT );
-    case 12: return GauXC::boys_asymp<12>( npts, T, FmT );
-    case 13: return GauXC::boys_asymp<13>( npts, T, FmT );
-    case 14: return GauXC::boys_asymp<14>( npts, T, FmT );
-    case 15: return GauXC::boys_asymp<15>( npts, T, FmT );
-    case 16: return GauXC::boys_asymp<16>( npts, T, FmT );
+    case 0:  GauXC::boys_asymp<0> ( npts, T, FmT ); return;
+    case 1:  GauXC::boys_asymp<1> ( npts, T, FmT ); return;
+    case 2:  GauXC::boys_asymp<2> ( npts, T, FmT ); return;
+    case 3:  GauXC::boys_asymp<3> ( npts, T, FmT ); return;
+    case 4:  GauXC::boys_asymp<4> ( npts, T, FmT ); return;
+    case 5:  GauXC::boys_asymp<5> ( npts, T, FmT ); return;
+    case 6:  GauXC::boys_asymp<6> ( npts, T, FmT ); return;
+    case 7:  GauXC::boys_asymp<7> ( npts, T, FmT ); return;
+    case 8:  GauXC::boys_asymp<8> ( npts, T, FmT ); return;
+    case 9:  GauXC::boys_asymp<9> ( npts, T, FmT ); return;
+    case 10: GauXC::boys_asymp<10>( npts, T, FmT ); return;
+    case 11: GauXC::boys_asymp<11>( npts, T, FmT ); return;
+    case 12: GauXC::boys_asymp<12>( npts, T, FmT ); return;
+    case 13: GauXC::boys_asymp<13>( npts, T, FmT ); return;
+    case 14: GauXC::boys_asymp<14>( npts, T, FmT ); return;
+    case 15: GauXC::boys_asymp<15>( npts, T, FmT ); return;
+    case 16: GauXC::boys_asymp<16>( npts, T, FmT ); return;
   }
 
 }
