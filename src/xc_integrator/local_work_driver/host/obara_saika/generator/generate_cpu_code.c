@@ -3,6 +3,7 @@
 #include <string.h>
 
 #define USE_SIMD_BOYS 1
+#define USE_CONSTEXPR_BOYS 1
 
 struct node {
   int iA, jA, kA;
@@ -212,7 +213,11 @@ void traverse_dfs_vrr(FILE *f, int lA, int lB, struct node *root_node) {
   #if USE_SIMD_BOYS
 	fprintf(f, "            t%d%d = eval * FmT[p_inner + %d*NPTS_LOCAL];\n", root_node -> level, v, v);
   #else
+  #if USE_CONSTEXPR_BOYS
+	fprintf(f, "            t%d%d = eval * GauXC::boys_function<%d>(tval);\n", root_node -> level, v, v);
+  #else
 	fprintf(f, "            t%d%d = eval * boys_function(%d, tval);\n", root_node -> level, v, v);
+  #endif
   #endif
       }
     } else if (root_node -> level == 1) {
@@ -325,7 +330,11 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "         }\n\n");
   fprintf(f, "         // Evaluate Boys function\n");
   for(int l = 0; l < (2*lA+1); ++l) {
+  #if USE_CONSTEXPR_BOYS
+  fprintf(f, "         GauXC::boys_function<%d>(npts_inner, Tval, FmT + %d*NPTS_LOCAL);\n",l,l);
+  #else
   fprintf(f, "         boys_function(%d, npts_inner, Tval, FmT + %d*NPTS_LOCAL);\n",l,l);
+  #endif
   }
   fprintf(f, "\n");
   fprintf(f, "         // Evaluate VRR Buffer\n");
@@ -524,7 +533,11 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "         }\n\n");
   fprintf(f, "         // Evaluate Boys function\n");
   for(int l = 0; l < (lA+lB+1); ++l) {
+  #if USE_CONSTEXPR_BOYS
+  fprintf(f, "         GauXC::boys_function<%d>(npts_inner, Tval, FmT + %d*NPTS_LOCAL);\n",l,l);
+  #else
   fprintf(f, "         boys_function(%d, npts_inner, Tval, FmT + %d*NPTS_LOCAL);\n",l,l);
+  #endif
   }
   fprintf(f, "\n");
   fprintf(f, "         // Evaluate VRR Buffer\n");

@@ -105,6 +105,30 @@ void boys_function( int npts, const double* T, double* FmT ) {
   chebyshev_boys_instance->eval<M>( npts, T, FmT );
 }
 
+#define BOYSF_SCALAR_EVAL(M) template double boys_function<M>(double);
+#define BOYSF_VECTOR_EVAL(M) template void boys_function<M>(int,const double*,double*);
+#define BOYSF_EVAL_IMPL(M) \
+  BOYSF_SCALAR_EVAL(M)\
+  BOYSF_VECTOR_EVAL(M)
+
+BOYSF_EVAL_IMPL(0 )
+BOYSF_EVAL_IMPL(1 )
+BOYSF_EVAL_IMPL(2 )
+BOYSF_EVAL_IMPL(3 )
+BOYSF_EVAL_IMPL(4 )
+BOYSF_EVAL_IMPL(5 )
+BOYSF_EVAL_IMPL(6 )
+BOYSF_EVAL_IMPL(7 )
+BOYSF_EVAL_IMPL(8 )
+BOYSF_EVAL_IMPL(9 )
+BOYSF_EVAL_IMPL(10)
+BOYSF_EVAL_IMPL(11)
+BOYSF_EVAL_IMPL(12)
+BOYSF_EVAL_IMPL(13)
+BOYSF_EVAL_IMPL(14)
+BOYSF_EVAL_IMPL(15)
+BOYSF_EVAL_IMPL(16)
+
 }
 
 

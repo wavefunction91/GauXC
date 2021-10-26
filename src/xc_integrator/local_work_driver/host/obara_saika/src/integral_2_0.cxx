@@ -66,9 +66,9 @@ void integral_2_0(size_t npts,
          }
 
          // Evaluate Boys function
-         boys_function(0, npts_inner, Tval, FmT + 0*NPTS_LOCAL);
-         boys_function(1, npts_inner, Tval, FmT + 1*NPTS_LOCAL);
-         boys_function(2, npts_inner, Tval, FmT + 2*NPTS_LOCAL);
+         GauXC::boys_function<0>(npts_inner, Tval, FmT + 0*NPTS_LOCAL);
+         GauXC::boys_function<1>(npts_inner, Tval, FmT + 1*NPTS_LOCAL);
+         GauXC::boys_function<2>(npts_inner, Tval, FmT + 2*NPTS_LOCAL);
 
          // Evaluate VRR Buffer
          for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {
