@@ -7,7 +7,7 @@
 #include "host/blas.hpp"
 #include <stdexcept>
 #include <set>
-#include <atomic>
+//#include <atomic>
 
 #include <gauxc/util/geometry.hpp>
 
@@ -307,7 +307,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Loop over tasks
   const size_t ntasks = tasks.size();
-  std::atomic_size_t nskip = 0;
+  //std::atomic_size_t nskip = 0;
 
   // Full shell list
   std::vector<int32_t> full_shell_list_( basis.nshells() );
@@ -399,7 +399,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Bail on task if no shells are needed after ek screening
     if( ek_shell_set.size() == 0 ) {
-      nskip++; // this is atomic
+      //nskip++; // this is atomic
       continue;
     }
 
@@ -465,7 +465,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     K[j + i*ldk] = K_symm;
   }
 
-  std::cout << "NSKIP = " << nskip << " / " << ntasks << std::endl;
+  //std::cout << "NSKIP = " << nskip << " / " << ntasks << std::endl;
 }
 
 }

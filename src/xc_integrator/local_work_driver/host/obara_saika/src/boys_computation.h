@@ -2,6 +2,7 @@
 #define _MY_BOYS_COMPUTATION
 #include <gauxc/util/constexpr_math.hpp>
 #include <cmath>
+//#include <mkl_vml.h>
 
 namespace GauXC {
 
@@ -33,10 +34,25 @@ inline T boys_asymp( T x ) {
 
 template <size_t M, typename T>
 inline void boys_asymp( size_t npts, const T* X, T* FmX ) {
+#if 0
+  if constexpr (M==0) {
+    vdInvSqrt( npts, X, FmX );
+    #pragma unroll(NPTS_LOCAL)
+    for( int i = 0; i < npts; ++i ) {
+      FmX[i] = FmX[i] * constants::sqrt_pi_ov_2<>;
+    }
+  } else {
+    #pragma unroll(NPTS_LOCAL)
+    for( int i = 0; i < npts; ++i ) {
+      FmX[i] = boys_asymp<M>(X[i]);
+    }
+  }
+#else
   #pragma unroll(NPTS_LOCAL)
   for( int i = 0; i < npts; ++i ) {
     FmX[i] = boys_asymp<M>(X[i]);
   }
+#endif
 }
 
 template <size_t M>

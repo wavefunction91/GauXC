@@ -4,6 +4,9 @@
 
 namespace GauXC {
 
+template <uint32_t M, uint32_t NCheb, uint32_t MaxT, uint32_t NSegment, uint32_t LDTable>
+void boys_chebyshev( int npts, const double* T, const double* boys_table, double* eval ); 
+
 template <uint32_t NCheb, uint32_t MaxM, uint32_t MaxT, 
   uint32_t NSegment = (MaxT*NCheb)/2, 
   uint32_t LDTable = NCheb+1>
@@ -15,7 +18,9 @@ public:
 
   ChebyshevBoysEvaluator();
   template <uint32_t M>
-  void eval( size_t npts, const double* T, double* FmT );
+  void eval( size_t npts, const double* T, double* FmT ) {
+    boys_chebyshev<M,NCheb,MaxT,NSegment,LDTable>( npts, T, table_.data(), FmT );
+  }
 
 };
 

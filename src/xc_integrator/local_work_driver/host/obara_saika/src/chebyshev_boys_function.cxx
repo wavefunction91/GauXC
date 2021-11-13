@@ -218,6 +218,7 @@ void boys_chebyshev( int npts, const double* T, const double* boys_table, double
   #endif
 }
 
+#if 0
 template <uint32_t NCheb, uint32_t MaxM, uint32_t MaxT, uint32_t NSegment, 
           uint32_t LDTable>
 template <uint32_t M>
@@ -225,6 +226,7 @@ void ChebyshevBoysEvaluator<NCheb,MaxM,MaxT,NSegment,LDTable>::
   eval<M>( size_t npts, const double* T, double* FmT ) {
   boys_chebyshev<M,NCheb,MaxT,NSegment,LDTable>( npts, T, table_.data(), FmT );
 }
+#endif
 
 template class ChebyshevBoysEvaluator< 
   detail::default_ncheb, detail::default_max_m, detail::default_max_t 
@@ -232,7 +234,10 @@ template class ChebyshevBoysEvaluator<
 
 #define CHEBY_EVAL_IMPL(M)\
 template void \
-  detail::default_chebyshev_type::eval<M>(size_t,const double*,double*);
+  detail::default_chebyshev_type::eval<M>(size_t,const double*,double*); \
+template void \
+  boys_chebyshev<M,detail::default_ncheb, detail::default_max_t, (detail::default_max_t*detail::default_ncheb)/2, detail::default_ncheb+1>(\
+    int, const double*, const double*, double*);
 
 CHEBY_EVAL_IMPL(0 );
 CHEBY_EVAL_IMPL(1 );
