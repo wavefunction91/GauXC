@@ -53,7 +53,7 @@ public:
    */
   generic_gauxc_exception( std::string file, std::string function, int line, 
     std::string msg ) :
-    file_(file), line_(line), function_(function), msg_prefix_(msg) {} 
+    file_(file), function_(function), line_(line), msg_prefix_(msg) {} 
 
 };
 

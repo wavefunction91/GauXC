@@ -35,7 +35,7 @@ inline constexpr T sqrt_pi_ov_2 = 0.88622692545275801364;
 
 }
 
-inline constexpr double rsqrt( double x ) {
+inline double rsqrt( double x ) {
   double y = x;
   double x2 = y * 0.5;
   int64_t i = *(int64_t*)&y;
