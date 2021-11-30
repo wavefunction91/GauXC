@@ -196,6 +196,7 @@ int main(int argc, char** argv) {
     // Read in reference data
     matrix_type P,VXC_ref,K_ref;
     double EXC_ref;
+    std::vector<double> EXC_GRAD_ref(3*mol.size());
     {
       HighFive::File file( ref_file, HighFive::File::ReadOnly );
       auto dset = file.getDataSet("/DENSITY");
@@ -211,16 +212,52 @@ int main(int argc, char** argv) {
       dset.read( P.data() );
 
       if( integrate_vxc ) {
-        dset = file.getDataSet("/VXC");
-        dset.read( VXC_ref.data() );
+        try {
+          dset = file.getDataSet("/VXC");
+          dset.read( VXC_ref.data() );
+        } catch(...) {
+          if(world_rank == 0) {
+            std::cout << "Could Not Find Reference VXC" << std::endl;
+          }
+          VXC_ref.fill(0);
+        }
 
-        dset = file.getDataSet("/EXC");
-        dset.read( &EXC_ref );
+        try {
+          dset = file.getDataSet("/EXC");
+          dset.read( &EXC_ref );
+        } catch(...) {
+          if(world_rank == 0) {
+            std::cout << "Could Not Find Reference EXC" << std::endl;
+          }
+          EXC_ref = 0.;
+        }
+      }
+
+      if( integrate_exc_grad ) {
+        try {
+          dset = file.getDataSet("EXC_GRAD");
+          auto xc_grad_dims = dset.getDimensions();
+          if( xc_grad_dims[0] != mol.size() or xc_grad_dims[1] != 3 )
+            throw std::runtime_error("Incorrect dims for EXC_GRAD");
+          dset.read( EXC_GRAD_ref.data() );
+        } catch(...) {
+          if(world_rank == 0) {
+            std::cout << "Could Not Find Reference EXC_GRAD" << std::endl;
+          }
+          std::fill( EXC_GRAD_ref.begin(), EXC_GRAD_ref.end(), 0. );
+        }
       }
 
       if( integrate_exx ) {
-        dset = file.getDataSet("/K");
-        dset.read( K_ref.data() );
+        try {
+          dset = file.getDataSet("/K");
+          dset.read( K_ref.data() );
+        } catch(...) {
+          if(world_rank == 0) {
+            std::cout << "Could Not Find Reference K" << std::endl;
+          }
+          K_ref.fill(0);
+        }
       }
 
     }
@@ -237,7 +274,7 @@ int main(int argc, char** argv) {
 
     if( integrate_vxc ) {
       std::tie(EXC, VXC) = integrator.eval_exc_vxc( P );
-      std::cout << std::scientific << std::setprecision(6);
+      std::cout << std::scientific << std::setprecision(12);
       std::cout << "EXC = " << EXC << std::endl;
     } else {
       EXC = EXC_ref;
@@ -330,6 +367,25 @@ int main(int argc, char** argv) {
                                          << std::endl;
       }
 
+      if(integrate_exc_grad) {
+      double exc_grad_ref_nrm(0.), exc_grad_calc_nrm(0.), exc_grad_diff_nrm(0.);
+      for( auto i = 0; i < 3*mol.size(); ++i ) {
+        const auto ref_val = EXC_GRAD_ref[i];
+        const auto clc_val = EXC_GRAD[i];
+        const auto dif_val = std::abs(ref_val - clc_val);
+        exc_grad_ref_nrm  += ref_val*ref_val;
+        exc_grad_calc_nrm += clc_val*clc_val;
+        exc_grad_diff_nrm += dif_val*dif_val;
+      }
+
+      exc_grad_ref_nrm  = std::sqrt(exc_grad_ref_nrm);
+      exc_grad_calc_nrm = std::sqrt(exc_grad_calc_nrm);
+      exc_grad_diff_nrm = std::sqrt(exc_grad_diff_nrm);
+      std::cout << "| EXC_GRAD (ref)  | = " << exc_grad_ref_nrm << std::endl;
+      std::cout << "| EXC_GRAD (calc) | = " << exc_grad_calc_nrm << std::endl;
+      std::cout << "| EXC_GRAD (diff) | = " << exc_grad_diff_nrm << std::endl;
+      }
+
       if( integrate_exx ) {
       std::cout << "| K (ref)  |_F = " << K_ref.norm() << std::endl;
       std::cout << "| K (calc) |_F = " << K.norm() << std::endl;
@@ -372,7 +428,7 @@ int main(int argc, char** argv) {
       }
 
       if( integrate_exc_grad ) {
-        HighFive::DataSpace grad_space( 3*mol.size() );
+        HighFive::DataSpace grad_space( mol.size(), 3 );
         dset = file.createDataSet<double>( "/EXC_GRAD", grad_space );
         dset.write_raw( EXC_GRAD.data() );
       }

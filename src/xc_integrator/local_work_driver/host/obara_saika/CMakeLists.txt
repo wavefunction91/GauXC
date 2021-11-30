@@ -29,5 +29,5 @@ target_include_directories( gauxc PRIVATE
 )
 target_compile_definitions( gauxc PRIVATE "NPTS_LOCAL=64" )
 
-find_package( Boost REQUIRED )
-target_link_libraries( gauxc PRIVATE Boost::headers )
+#find_package( Boost REQUIRED )
+#target_link_libraries( gauxc PRIVATE Boost::headers )

@@ -13,6 +13,7 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, )
   std::string reference_file, 
   ExchCXX::Functional func_key, 
   size_t quad_pad_value,
+  bool check_grad,
   std::string integrator_kernel = "Default",  
   std::string reduction_kernel  = "Default",
   std::string lwd_kernel        = "Default" ) {
@@ -23,6 +24,7 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, )
   BasisSet<double> basis;
   matrix_type P, VXC_ref;
   double EXC_ref;
+  std::vector<double> EXC_GRAD_ref;
   {
     read_hdf5_record( mol,   reference_file, "/MOLECULE" );
     read_hdf5_record( basis, reference_file, "/BASIS"    );
@@ -39,6 +41,10 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, )
 
     dset = file.getDataSet("/EXC");
     dset.read( &EXC_ref );
+
+    EXC_GRAD_ref.resize( 3*mol.size() );
+    dset = file.getDataSet("/EXC_GRAD");
+    dset.read( EXC_GRAD_ref.data() );
     
   }
 
@@ -82,13 +88,16 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, )
   }
 
 
-#if 0
-  if( ex == ExecutionSpace::Host ) {
-    std::cout << "EXC = " << EXC << std::endl;
+  // Check EXC Grad
+  if( check_grad ) {
     auto EXC_GRAD = integrator.eval_exc_grad( P );
-    for( auto x : EXC_GRAD ) std::cout << x << std::endl;
+    using map_type = Eigen::Map<Eigen::MatrixXd>;
+    map_type EXC_GRAD_ref_map( EXC_GRAD_ref.data(), mol.size(), 3 );
+    map_type EXC_GRAD_map( EXC_GRAD.data(), mol.size(), 3 );
+    auto EXC_GRAD_diff_nrm = (EXC_GRAD_ref_map - EXC_GRAD_map).norm();
+    CHECK( EXC_GRAD_diff_nrm / std::sqrt(3.0*mol.size()) < 1e-10 );
   }
-#endif
+
 }
 
 void test_integrator(std::string reference_file, ExchCXX::Functional func) {
@@ -100,7 +109,7 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func) {
 #ifdef GAUXC_ENABLE_HOST
   SECTION( "Host" ) {
     test_xc_integrator( ExecutionSpace::Host, GAUXC_MPI_CODE(comm,) reference_file, func,
-      1 );
+      1, true );
   }
 #endif
 
@@ -108,26 +117,26 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func) {
   SECTION( "Device" ) {
     SECTION( "Incore - MPI Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
-        reference_file, func, 32, "Default" );
+        reference_file, func, 32, true, "Default" );
     }
 
     #ifdef GAUXC_ENABLE_MAGMA
     SECTION( "Incore - MPI Reduction - MAGMA" ) {
       test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
-        reference_file, func, 32, "Default", "Default", "Scheme1-MAGMA" );
+        reference_file, func, 32, false, "Default", "Default", "Scheme1-MAGMA" );
     }
     #endif
 
     #ifdef GAUXC_ENABLE_NCCL
     SECTION( "Incore - NCCL Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,)
-        reference_file, func, 32, "Default", "NCCL" );
+        reference_file, func, 32, false, "Default", "NCCL" );
     }
     #endif
 
     SECTION( "ShellBatched" ) {
       test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
-        reference_file, func, 32, "ShellBatched" );
+        reference_file, func, 32, false, "ShellBatched" );
     }
   }
 #endif
