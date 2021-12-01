@@ -61,6 +61,9 @@ void MolGridImpl::generate( RadialQuad rq, const Molecule& mol ) {
   std::vector<AtomicNumber> Zs; Zs.reserve( mol.natoms() );
   for( const auto& atom : mol ) Zs.emplace_back( atom.Z );
 
+  std::sort(Zs.begin(),Zs.end(),
+    [](auto& a, auto& b) { return a.get() < b.get(); }
+  );
   auto zuniq_it = std::unique( Zs.begin(), Zs.end() );
   Zs.erase( zuniq_it, Zs.end() );
   Zs.shrink_to_fit();

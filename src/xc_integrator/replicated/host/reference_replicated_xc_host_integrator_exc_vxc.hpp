@@ -86,8 +86,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Compute Partition Weights
   auto& lb_state = this->load_balancer_->state();
   if( not lb_state.modified_weights_are_stored ) {
+  #if 0
     lwd->partition_weights( XCWeightAlg::SSF, mol, meta, 
       tasks.begin(), tasks.end() );
+  #else
+    lwd->partition_weights( XCWeightAlg::Becke, mol, meta, 
+      tasks.begin(), tasks.end() );
+  #endif
     lb_state.modified_weights_are_stored = true;
   }
 

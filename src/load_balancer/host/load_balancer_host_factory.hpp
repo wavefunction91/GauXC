@@ -1,3 +1,4 @@
+#pragma once
 #include <gauxc/load_balancer.hpp>
 
 namespace GauXC {

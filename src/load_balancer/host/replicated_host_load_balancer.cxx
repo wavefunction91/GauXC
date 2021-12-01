@@ -69,11 +69,17 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
 
       if( points.size() == 0 ) continue;
 
+#if 0
       // Microbatch Screening
       auto [shell_list, nbe] = micro_batch_screen( (*this->basis_), lo, up );
 
       // Course grain screening
       if( not shell_list.size() ) continue; 
+#else
+      std::vector<int> shell_list(this->basis_->size());
+      std::iota(shell_list.begin(),shell_list.end(),0);
+      size_t nbe = this->basis_->nbf();
+#endif
 
       // Copy task data
       XCTask task;
