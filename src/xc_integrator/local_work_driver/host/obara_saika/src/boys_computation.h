@@ -4,6 +4,8 @@
 #include <cmath>
 //#include <mkl_vml.h>
 
+#define NPTS_LOCAL 64
+
 namespace GauXC {
 
 template <size_t M>

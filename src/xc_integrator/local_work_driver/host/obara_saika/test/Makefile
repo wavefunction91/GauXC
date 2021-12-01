@@ -1,7 +1,13 @@
-LIBINT_ROOT = /global/cfs/cdirs/m1027/dbwy/mpqc4/li/install/haswell/release
-EIGEN_DIR   = /global/common/sw/cray/cnl7/haswell/eigen/3.3.7/gcc/8.2.0/2wwrykb/include/eigen3
+#LIBINT_ROOT = /global/cfs/cdirs/m1027/dbwy/mpqc4/li/install/haswell/release
+#EIGEN_DIR   = /global/common/sw/cray/cnl7/haswell/eigen/3.3.7/gcc/8.2.0/2wwrykb/include/eigen3
+
+CC = g++-11
+
+LIBINT_ROOT = /home/dtpopovici/Executables/libint
+EIGEN_DIR   = /usr/local/include/eigen3
+
 compile:
-	g++ test.cxx  ../obara_saika.a $(LIBINT_ROOT)/lib/libint2.a -o test.x  -I$(LIBINT_ROOT)/include -I$(EIGEN_DIR) -I../include/ -std=c++1z
-#	g++ test1.cxx ../obara_saika.a $(LIBINT_ROOT)/lib/libint2.a -o test1.x -I$(LIBINT_ROOT)/include -I$(EIGEN_DIR) -I../include/ -std=c++1z
-#	g++ test2.cxx ../obara_saika.a $(LIBINT_ROOT)/lib/libint2.a -o test2.x -I$(LIBINT_ROOT)/include -I$(EIGEN_DIR) -I../include/ -std=c++1z
-#	g++ test3.cxx ../obara_saika.a $(LIBINT_ROOT)/lib/libint2.a -o test3.x -I$(LIBINT_ROOT)/include -I$(EIGEN_DIR) -I../include/ -std=c++1z
+	$(CC) test.cxx  ../obara_saika.a $(LIBINT_ROOT)/lib/libint2.a -o test.x  -I$(LIBINT_ROOT)/include -I$(EIGEN_DIR) -I../include/ -std=c++1z
+#	$(CC) test1.cxx ../obara_saika.a $(LIBINT_ROOT)/lib/libint2.a -o test1.x -I$(LIBINT_ROOT)/include -I$(EIGEN_DIR) -I../include/ -std=c++1z
+#	$(CC) test2.cxx ../obara_saika.a $(LIBINT_ROOT)/lib/libint2.a -o test2.x -I$(LIBINT_ROOT)/include -I$(EIGEN_DIR) -I../include/ -std=c++1z
+#	$(CC) test3.cxx ../obara_saika.a $(LIBINT_ROOT)/lib/libint2.a -o test3.x -I$(LIBINT_ROOT)/include -I$(EIGEN_DIR) -I../include/ -std=c++1z

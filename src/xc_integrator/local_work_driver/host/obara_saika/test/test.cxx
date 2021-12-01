@@ -143,14 +143,19 @@ int main(int argc, char** argv) {
 
   // correctness - own implementation
 
-  std::vector< point > _points;
-
+  std::vector<point>  _points(ngrid);
+  std::vector<double> _points_transposed(3 * ngrid);
+  
   _points.resize(ngrid); 
 
   for( int i = 0; i < ngrid; ++i ){
     _points[i].x = grid_points[i][0];
     _points[i].y = grid_points[i][1];
     _points[i].z = grid_points[i][2];
+
+    _points_transposed[i + 0 * ngrid] = grid_points[i][0];
+    _points_transposed[i + 1 * ngrid] = grid_points[i][1];
+    _points_transposed[i + 2 * ngrid] = grid_points[i][2];
   }
   
   std::vector< shells > _shells;
@@ -200,14 +205,12 @@ int main(int argc, char** argv) {
 				  i,
 				  j,
 				  _shells.data(),
-				  _points.data(),
+				  _points_transposed.data(),
 				  (Xi + ioff_cart * ngrid),
 				  (Xj + joff_cart * ngrid),
-				  1,
 				  ngrid, 
 				  (Gi + ioff_cart * ngrid),
 				  (Gj + joff_cart * ngrid),
-				  1,
 				  ngrid,
 				  w.data());
 

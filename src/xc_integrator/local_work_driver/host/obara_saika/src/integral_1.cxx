@@ -1,6 +1,7 @@
 #include <math.h>
 #include "boys_computation.h"
 #include "integral_data_types.h"
+#include "config_obara_saika.h"
 
 #define PI 3.14159265358979323846
 
@@ -11,29 +12,30 @@
 
 void integral_1(size_t npts,
                shell_pair shpair,
-               point *_points,
+               double *_points,
                double *Xi,
-               int stX,
                int ldX,
                double *Gi,
-               int stG, 
                int ldG, 
                double *weights) {
-   double temp[9 * NPTS_LOCAL];
-   double FmT [3 * NPTS_LOCAL];
-   double Tval[NPTS_LOCAL];
+   __attribute__((__aligned__(64))) double buffer[9 * NPTS_LOCAL + 3 * NPTS_LOCAL + NPTS_LOCAL];
 
-   for(size_t p_outer = 0; p_outer < npts; p_outer += NPTS_LOCAL) {
-      size_t npts_inner = MIN(NPTS_LOCAL, npts - p_outer);
-      point *_point_outer = (_points + p_outer);
+   double *temp = (buffer + 0);
+   double *FmT = (buffer + 9 * NPTS_LOCAL);
+   double *Tval = (buffer + 9 * NPTS_LOCAL + 3 * NPTS_LOCAL);
+
+   size_t npts_upper = NPTS_LOCAL * (npts / NPTS_LOCAL);
+   size_t p_outer = 0;
+   for(p_outer = 0; p_outer < npts_upper; p_outer += NPTS_LOCAL) {
+      double *_point_outer = (_points + p_outer);
 
       double xA = shpair.rA.x;
       double yA = shpair.rA.y;
       double zA = shpair.rA.z;
 
-      for(int i = 0; i < 9 * NPTS_LOCAL; ++i) temp[i] = 0.0;
+      for(int i = 0; i < 9 * NPTS_LOCAL; i += SIMD_LENGTH) SIMD_ALIGNED_STORE((temp + i), SIMD_ZERO());
 
-      for( int ij = 0; ij < shpair.nprim_pair; ++ij ) {
+      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {
          double RHO = shpair.prim_pairs[ij].gamma;
          double RHO_INV = 1.0 / RHO;
 
@@ -41,127 +43,607 @@ void integral_1(size_t npts,
          constexpr double Y_PA = 0.0;
          constexpr double Z_PA = 0.0;
 
-         double eval = shpair.prim_pairs[ij].coeff_prod * 2 * PI * RHO_INV;
+         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;
 
-         #if 1
          // Evaluate T Values
-         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {
-            point C = *(_point_outer + p_inner);
+         for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += SIMD_LENGTH) {
+            SIMD_TYPE xC = SIMD_UNALIGNED_LOAD((_point_outer + p_inner + 0 * npts));
+            SIMD_TYPE yC = SIMD_UNALIGNED_LOAD((_point_outer + p_inner + 1 * npts));
+            SIMD_TYPE zC = SIMD_UNALIGNED_LOAD((_point_outer + p_inner + 2 * npts));
 
-            double xC = C.x;
-            double yC = C.y;
-            double zC = C.z;
+            SIMD_TYPE X_PC = SIMD_SUB(SIMD_DUPLICATE(&(xA)), xC);
+            SIMD_TYPE Y_PC = SIMD_SUB(SIMD_DUPLICATE(&(yA)), yC);
+            SIMD_TYPE Z_PC = SIMD_SUB(SIMD_DUPLICATE(&(zA)), zC);
 
-            double X_PC = (xA - xC);
-            double Y_PC = (yA - yC);
-            double Z_PC = (zA - zC);
-
-            Tval[p_inner] = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
+            X_PC = SIMD_MUL(X_PC, X_PC);
+            X_PC = SIMD_FMA(Y_PC, Y_PC, X_PC);
+            X_PC = SIMD_FMA(Z_PC, Z_PC, X_PC);
+            X_PC = SIMD_MUL(SIMD_DUPLICATE(&(RHO)), X_PC);
+            SIMD_ALIGNED_STORE((Tval + p_inner), X_PC);
          }
 
          // Evaluate Boys function
-         GauXC::boys_function<0>(npts_inner, Tval, FmT + 0*NPTS_LOCAL);
-         GauXC::boys_function<1>(npts_inner, Tval, FmT + 1*NPTS_LOCAL);
-         GauXC::boys_function<2>(npts_inner, Tval, FmT + 2*NPTS_LOCAL);
+         GauXC::boys_function<0>(NPTS_LOCAL, Tval, FmT + 0 * NPTS_LOCAL);
+         GauXC::boys_function<1>(NPTS_LOCAL, Tval, FmT + 1 * NPTS_LOCAL);
+         GauXC::boys_function<2>(NPTS_LOCAL, Tval, FmT + 2 * NPTS_LOCAL);
 
          // Evaluate VRR Buffer
-         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {
-            point C = *(_point_outer + p_inner);
+         for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += SIMD_LENGTH) {
+            SIMD_TYPE xC = SIMD_UNALIGNED_LOAD((_point_outer + p_inner + 0 * npts));
+            SIMD_TYPE yC = SIMD_UNALIGNED_LOAD((_point_outer + p_inner + 1 * npts));
+            SIMD_TYPE zC = SIMD_UNALIGNED_LOAD((_point_outer + p_inner + 2 * npts));
 
-            double xC = C.x;
-            double yC = C.y;
-            double zC = C.z;
+            SIMD_TYPE X_PC = SIMD_SUB(SIMD_DUPLICATE(&(xA)), xC);
+            SIMD_TYPE Y_PC = SIMD_SUB(SIMD_DUPLICATE(&(yA)), yC);
+            SIMD_TYPE Z_PC = SIMD_SUB(SIMD_DUPLICATE(&(zA)), zC);
 
-            double X_PC = (xA - xC);
-            double Y_PC = (yA - yC);
-            double Z_PC = (zA - zC);
+            SIMD_TYPE tx, ty, t00, t01, t02, t10, t11, t20;
 
-            double t00, t01, t02, t10, t11, t20;
-
-            t00 = eval * FmT[p_inner + 0*NPTS_LOCAL];
-            t01 = eval * FmT[p_inner + 1*NPTS_LOCAL];
-            t02 = eval * FmT[p_inner + 2*NPTS_LOCAL];
-            t10 = X_PA * t00 - X_PC * t01;
-            t11 = X_PA * t01 - X_PC * t02;
-            *(temp + 0 * NPTS_LOCAL + p_inner) += t10;
-            t20 = X_PA * t10 - X_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
-            *(temp + 3 * NPTS_LOCAL + p_inner) += t20;
-            t20 = Y_PA * t10 - Y_PC * t11;
-            *(temp + 4 * NPTS_LOCAL + p_inner) += t20;
-            t20 = Z_PA * t10 - Z_PC * t11;
-            *(temp + 5 * NPTS_LOCAL + p_inner) += t20;
-            t10 = Y_PA * t00 - Y_PC * t01;
-            t11 = Y_PA * t01 - Y_PC * t02;
-            *(temp + 1 * NPTS_LOCAL + p_inner) += t10;
-            t20 = Y_PA * t10 - Y_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
-            *(temp + 6 * NPTS_LOCAL + p_inner) += t20;
-            t20 = Z_PA * t10 - Z_PC * t11;
-            *(temp + 7 * NPTS_LOCAL + p_inner) += t20;
-            t10 = Z_PA * t00 - Z_PC * t01;
-            t11 = Z_PA * t01 - Z_PC * t02;
-            *(temp + 2 * NPTS_LOCAL + p_inner) += t10;
-            t20 = Z_PA * t10 - Z_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
-            *(temp + 8 * NPTS_LOCAL + p_inner) += t20;
+            t00 = SIMD_ALIGNED_LOAD((FmT + p_inner + 0 * NPTS_LOCAL));
+            t00 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t00);
+            t01 = SIMD_ALIGNED_LOAD((FmT + p_inner + 1 * NPTS_LOCAL));
+            t01 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t01);
+            t02 = SIMD_ALIGNED_LOAD((FmT + p_inner + 2 * NPTS_LOCAL));
+            t02 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t02);
+            t10 = SIMD_MUL(SIMD_DUPLICATE(&(X_PA)), t00);
+            t10 = SIMD_FNMA(X_PC, t01, t10);
+            t11 = SIMD_MUL(SIMD_DUPLICATE(&(X_PA)), t01);
+            t11 = SIMD_FNMA(X_PC, t02, t11);
+            tx = SIMD_ALIGNED_LOAD((temp + 0 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t10);
+            SIMD_ALIGNED_STORE((temp + 0 * NPTS_LOCAL + p_inner), tx);
+            t20 = SIMD_MUL(SIMD_DUPLICATE(&(X_PA)), t10);
+            t20 = SIMD_FNMA(X_PC, t11, t20);
+            tx = SIMD_SUB(t00, t01);
+            ty = SIMD_SET1(0.5 * 1);
+            ty = SIMD_MUL(ty, SIMD_DUPLICATE(&(RHO_INV)));
+            t20 = SIMD_FMA(tx, ty, t20);
+            tx = SIMD_ALIGNED_LOAD((temp + 3 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t20);
+            SIMD_ALIGNED_STORE((temp + 3 * NPTS_LOCAL + p_inner), tx);
+            t20 = SIMD_MUL(SIMD_DUPLICATE(&(Y_PA)), t10);
+            t20 = SIMD_FNMA(Y_PC, t11, t20);
+            tx = SIMD_ALIGNED_LOAD((temp + 4 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t20);
+            SIMD_ALIGNED_STORE((temp + 4 * NPTS_LOCAL + p_inner), tx);
+            t20 = SIMD_MUL(SIMD_DUPLICATE(&(Z_PA)), t10);
+            t20 = SIMD_FNMA(Z_PC, t11, t20);
+            tx = SIMD_ALIGNED_LOAD((temp + 5 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t20);
+            SIMD_ALIGNED_STORE((temp + 5 * NPTS_LOCAL + p_inner), tx);
+            t10 = SIMD_MUL(SIMD_DUPLICATE(&(Y_PA)), t00);
+            t10 = SIMD_FNMA(Y_PC, t01, t10);
+            t11 = SIMD_MUL(SIMD_DUPLICATE(&(Y_PA)), t01);
+            t11 = SIMD_FNMA(Y_PC, t02, t11);
+            tx = SIMD_ALIGNED_LOAD((temp + 1 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t10);
+            SIMD_ALIGNED_STORE((temp + 1 * NPTS_LOCAL + p_inner), tx);
+            t20 = SIMD_MUL(SIMD_DUPLICATE(&(Y_PA)), t10);
+            t20 = SIMD_FNMA(Y_PC, t11, t20);
+            tx = SIMD_SUB(t00, t01);
+            ty = SIMD_SET1(0.5 * 1);
+            ty = SIMD_MUL(ty, SIMD_DUPLICATE(&(RHO_INV)));
+            t20 = SIMD_FMA(tx, ty, t20);
+            tx = SIMD_ALIGNED_LOAD((temp + 6 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t20);
+            SIMD_ALIGNED_STORE((temp + 6 * NPTS_LOCAL + p_inner), tx);
+            t20 = SIMD_MUL(SIMD_DUPLICATE(&(Z_PA)), t10);
+            t20 = SIMD_FNMA(Z_PC, t11, t20);
+            tx = SIMD_ALIGNED_LOAD((temp + 7 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t20);
+            SIMD_ALIGNED_STORE((temp + 7 * NPTS_LOCAL + p_inner), tx);
+            t10 = SIMD_MUL(SIMD_DUPLICATE(&(Z_PA)), t00);
+            t10 = SIMD_FNMA(Z_PC, t01, t10);
+            t11 = SIMD_MUL(SIMD_DUPLICATE(&(Z_PA)), t01);
+            t11 = SIMD_FNMA(Z_PC, t02, t11);
+            tx = SIMD_ALIGNED_LOAD((temp + 2 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t10);
+            SIMD_ALIGNED_STORE((temp + 2 * NPTS_LOCAL + p_inner), tx);
+            t20 = SIMD_MUL(SIMD_DUPLICATE(&(Z_PA)), t10);
+            t20 = SIMD_FNMA(Z_PC, t11, t20);
+            tx = SIMD_SUB(t00, t01);
+            ty = SIMD_SET1(0.5 * 1);
+            ty = SIMD_MUL(ty, SIMD_DUPLICATE(&(RHO_INV)));
+            t20 = SIMD_FMA(tx, ty, t20);
+            tx = SIMD_ALIGNED_LOAD((temp + 8 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t20);
+            SIMD_ALIGNED_STORE((temp + 8 * NPTS_LOCAL + p_inner), tx);
          }
-
-         #else
-         for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {
-            point C = *(_point_outer + p_inner);
-
-            double xC = C.x;
-            double yC = C.y;
-            double zC = C.z;
-
-            double X_PC = (xA - xC);
-            double Y_PC = (yA - yC);
-            double Z_PC = (zA - zC);
-
-            double t00, t01, t02, t10, t11, t20;
-
-            double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);
-
-            t00 = eval * FmT[p_inner + 0*NPTS_LOCAL];
-            t01 = eval * FmT[p_inner + 1*NPTS_LOCAL];
-            t02 = eval * FmT[p_inner + 2*NPTS_LOCAL];
-            t10 = X_PA * t00 - X_PC * t01;
-            t11 = X_PA * t01 - X_PC * t02;
-            *(temp + 0 * NPTS_LOCAL + p_inner) += t10;
-            t20 = X_PA * t10 - X_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
-            *(temp + 3 * NPTS_LOCAL + p_inner) += t20;
-            t20 = Y_PA * t10 - Y_PC * t11;
-            *(temp + 4 * NPTS_LOCAL + p_inner) += t20;
-            t20 = Z_PA * t10 - Z_PC * t11;
-            *(temp + 5 * NPTS_LOCAL + p_inner) += t20;
-            t10 = Y_PA * t00 - Y_PC * t01;
-            t11 = Y_PA * t01 - Y_PC * t02;
-            *(temp + 1 * NPTS_LOCAL + p_inner) += t10;
-            t20 = Y_PA * t10 - Y_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
-            *(temp + 6 * NPTS_LOCAL + p_inner) += t20;
-            t20 = Z_PA * t10 - Z_PC * t11;
-            *(temp + 7 * NPTS_LOCAL + p_inner) += t20;
-            t10 = Z_PA * t00 - Z_PC * t01;
-            t11 = Z_PA * t01 - Z_PC * t02;
-            *(temp + 2 * NPTS_LOCAL + p_inner) += t10;
-            t20 = Z_PA * t10 - Z_PC * t11 + 0.5 * RHO_INV * 1 * (t00 - t01);
-            *(temp + 8 * NPTS_LOCAL + p_inner) += t20;
-         }
-
-         #endif
       }
 
-      for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {;
-         double *Xik = (Xi + (p_outer + p_inner) * stX);
-         double *Gik = (Gi + (p_outer + p_inner) * stG);
+      for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += SIMD_LENGTH) {
+         double *Xik = (Xi + p_outer + p_inner);
+         double *Gik = (Gi + p_outer + p_inner);
 
-         *(Gik + 0 * ldG) += *(Xik + 0 * ldX) * (*(temp + 3 * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
-         *(Gik + 1 * ldG) += *(Xik + 0 * ldX) * (*(temp + 4 * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
-         *(Gik + 2 * ldG) += *(Xik + 0 * ldX) * (*(temp + 5 * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
-         *(Gik + 0 * ldG) += *(Xik + 1 * ldX) * (*(temp + 4 * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
-         *(Gik + 1 * ldG) += *(Xik + 1 * ldX) * (*(temp + 6 * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
-         *(Gik + 2 * ldG) += *(Xik + 1 * ldX) * (*(temp + 7 * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
-         *(Gik + 0 * ldG) += *(Xik + 2 * ldX) * (*(temp + 5 * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
-         *(Gik + 1 * ldG) += *(Xik + 2 * ldX) * (*(temp + 7 * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
-         *(Gik + 2 * ldG) += *(Xik + 2 * ldX) * (*(temp + 8 * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));
+         SIMD_TYPE tx, wg, xik, gik;
+         tx  = SIMD_ALIGNED_LOAD((temp + 3 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 4 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 5 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 4 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 6 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 7 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 5 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 7 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 8 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+      }
+   }
+
+   // cleanup code
+   for(; p_outer < npts; p_outer += NPTS_LOCAL) {
+      size_t npts_inner = MIN((size_t) NPTS_LOCAL, npts - p_outer);
+      double *_point_outer = (_points + p_outer);
+
+      double xA = shpair.rA.x;
+      double yA = shpair.rA.y;
+      double zA = shpair.rA.z;
+
+      for(int i = 0; i < 9 * NPTS_LOCAL; i += SIMD_LENGTH) SIMD_ALIGNED_STORE((temp + i), SIMD_ZERO());
+
+      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {
+         double RHO = shpair.prim_pairs[ij].gamma;
+         double RHO_INV = 1.0 / RHO;
+
+         constexpr double X_PA = 0.0;
+         constexpr double Y_PA = 0.0;
+         constexpr double Z_PA = 0.0;
+
+         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;
+
+         // Evaluate T Values
+         size_t npts_inner_upper = SIMD_LENGTH * (npts_inner / SIMD_LENGTH);
+         size_t p_inner = 0;
+         for(p_inner = 0; p_inner < npts_inner_upper; p_inner += SIMD_LENGTH) {
+            SIMD_TYPE xC = SIMD_UNALIGNED_LOAD((_point_outer + p_inner + 0 * npts));
+            SIMD_TYPE yC = SIMD_UNALIGNED_LOAD((_point_outer + p_inner + 1 * npts));
+            SIMD_TYPE zC = SIMD_UNALIGNED_LOAD((_point_outer + p_inner + 2 * npts));
+
+            SIMD_TYPE X_PC = SIMD_SUB(SIMD_DUPLICATE(&(xA)), xC);
+            SIMD_TYPE Y_PC = SIMD_SUB(SIMD_DUPLICATE(&(yA)), yC);
+            SIMD_TYPE Z_PC = SIMD_SUB(SIMD_DUPLICATE(&(zA)), zC);
+
+            X_PC = SIMD_MUL(X_PC, X_PC);
+            X_PC = SIMD_FMA(Y_PC, Y_PC, X_PC);
+            X_PC = SIMD_FMA(Z_PC, Z_PC, X_PC);
+            X_PC = SIMD_MUL(SIMD_DUPLICATE(&(RHO)), X_PC);
+            SIMD_ALIGNED_STORE((Tval + p_inner), X_PC);
+         }
+
+         for(; p_inner < npts_inner; p_inner += SCALAR_LENGTH) {
+            SCALAR_TYPE xC = SCALAR_LOAD((_point_outer + p_inner + 0 * npts));
+            SCALAR_TYPE yC = SCALAR_LOAD((_point_outer + p_inner + 1 * npts));
+            SCALAR_TYPE zC = SCALAR_LOAD((_point_outer + p_inner + 2 * npts));
+
+            SCALAR_TYPE X_PC = SCALAR_SUB(SCALAR_DUPLICATE(&(xA)), xC);
+            SCALAR_TYPE Y_PC = SCALAR_SUB(SCALAR_DUPLICATE(&(yA)), yC);
+            SCALAR_TYPE Z_PC = SCALAR_SUB(SCALAR_DUPLICATE(&(zA)), zC);
+
+            X_PC = SCALAR_MUL(X_PC, X_PC);
+            X_PC = SCALAR_FMA(Y_PC, Y_PC, X_PC);
+            X_PC = SCALAR_FMA(Z_PC, Z_PC, X_PC);
+            X_PC = SCALAR_MUL(SCALAR_DUPLICATE(&(RHO)), X_PC);
+            SCALAR_STORE((Tval + p_inner), X_PC);
+         }
+
+         // Evaluate Boys function
+         GauXC::boys_function<0>(npts_inner, Tval, FmT + 0 * NPTS_LOCAL);
+         GauXC::boys_function<1>(npts_inner, Tval, FmT + 1 * NPTS_LOCAL);
+         GauXC::boys_function<2>(npts_inner, Tval, FmT + 2 * NPTS_LOCAL);
+
+         // Evaluate VRR Buffer
+         p_inner = 0;
+         for(p_inner = 0; p_inner < npts_inner_upper; p_inner += SIMD_LENGTH) {
+            SIMD_TYPE xC = SIMD_UNALIGNED_LOAD((_point_outer + p_inner + 0 * npts));
+            SIMD_TYPE yC = SIMD_UNALIGNED_LOAD((_point_outer + p_inner + 1 * npts));
+            SIMD_TYPE zC = SIMD_UNALIGNED_LOAD((_point_outer + p_inner + 2 * npts));
+
+            SIMD_TYPE X_PC = SIMD_SUB(SIMD_DUPLICATE(&(xA)), xC);
+            SIMD_TYPE Y_PC = SIMD_SUB(SIMD_DUPLICATE(&(yA)), yC);
+            SIMD_TYPE Z_PC = SIMD_SUB(SIMD_DUPLICATE(&(zA)), zC);
+
+            SIMD_TYPE tx, ty, t00, t01, t02, t10, t11, t20;
+
+            t00 = SIMD_ALIGNED_LOAD((FmT + p_inner + 0 * NPTS_LOCAL));
+            t00 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t00);
+            t01 = SIMD_ALIGNED_LOAD((FmT + p_inner + 1 * NPTS_LOCAL));
+            t01 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t01);
+            t02 = SIMD_ALIGNED_LOAD((FmT + p_inner + 2 * NPTS_LOCAL));
+            t02 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t02);
+            t10 = SIMD_MUL(SIMD_DUPLICATE(&(X_PA)), t00);
+            t10 = SIMD_FNMA(X_PC, t01, t10);
+            t11 = SIMD_MUL(SIMD_DUPLICATE(&(X_PA)), t01);
+            t11 = SIMD_FNMA(X_PC, t02, t11);
+            tx = SIMD_ALIGNED_LOAD((temp + 0 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t10);
+            SIMD_ALIGNED_STORE((temp + 0 * NPTS_LOCAL + p_inner), tx);
+            t20 = SIMD_MUL(SIMD_DUPLICATE(&(X_PA)), t10);
+            t20 = SIMD_FNMA(X_PC, t11, t20);
+            tx = SIMD_SUB(t00, t01);
+            ty = SIMD_SET1(0.5 * 1);
+            ty = SIMD_MUL(ty, SIMD_DUPLICATE(&(RHO_INV)));
+            t20 = SIMD_FMA(tx, ty, t20);
+            tx = SIMD_ALIGNED_LOAD((temp + 3 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t20);
+            SIMD_ALIGNED_STORE((temp + 3 * NPTS_LOCAL + p_inner), tx);
+            t20 = SIMD_MUL(SIMD_DUPLICATE(&(Y_PA)), t10);
+            t20 = SIMD_FNMA(Y_PC, t11, t20);
+            tx = SIMD_ALIGNED_LOAD((temp + 4 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t20);
+            SIMD_ALIGNED_STORE((temp + 4 * NPTS_LOCAL + p_inner), tx);
+            t20 = SIMD_MUL(SIMD_DUPLICATE(&(Z_PA)), t10);
+            t20 = SIMD_FNMA(Z_PC, t11, t20);
+            tx = SIMD_ALIGNED_LOAD((temp + 5 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t20);
+            SIMD_ALIGNED_STORE((temp + 5 * NPTS_LOCAL + p_inner), tx);
+            t10 = SIMD_MUL(SIMD_DUPLICATE(&(Y_PA)), t00);
+            t10 = SIMD_FNMA(Y_PC, t01, t10);
+            t11 = SIMD_MUL(SIMD_DUPLICATE(&(Y_PA)), t01);
+            t11 = SIMD_FNMA(Y_PC, t02, t11);
+            tx = SIMD_ALIGNED_LOAD((temp + 1 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t10);
+            SIMD_ALIGNED_STORE((temp + 1 * NPTS_LOCAL + p_inner), tx);
+            t20 = SIMD_MUL(SIMD_DUPLICATE(&(Y_PA)), t10);
+            t20 = SIMD_FNMA(Y_PC, t11, t20);
+            tx = SIMD_SUB(t00, t01);
+            ty = SIMD_SET1(0.5 * 1);
+            ty = SIMD_MUL(ty, SIMD_DUPLICATE(&(RHO_INV)));
+            t20 = SIMD_FMA(tx, ty, t20);
+            tx = SIMD_ALIGNED_LOAD((temp + 6 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t20);
+            SIMD_ALIGNED_STORE((temp + 6 * NPTS_LOCAL + p_inner), tx);
+            t20 = SIMD_MUL(SIMD_DUPLICATE(&(Z_PA)), t10);
+            t20 = SIMD_FNMA(Z_PC, t11, t20);
+            tx = SIMD_ALIGNED_LOAD((temp + 7 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t20);
+            SIMD_ALIGNED_STORE((temp + 7 * NPTS_LOCAL + p_inner), tx);
+            t10 = SIMD_MUL(SIMD_DUPLICATE(&(Z_PA)), t00);
+            t10 = SIMD_FNMA(Z_PC, t01, t10);
+            t11 = SIMD_MUL(SIMD_DUPLICATE(&(Z_PA)), t01);
+            t11 = SIMD_FNMA(Z_PC, t02, t11);
+            tx = SIMD_ALIGNED_LOAD((temp + 2 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t10);
+            SIMD_ALIGNED_STORE((temp + 2 * NPTS_LOCAL + p_inner), tx);
+            t20 = SIMD_MUL(SIMD_DUPLICATE(&(Z_PA)), t10);
+            t20 = SIMD_FNMA(Z_PC, t11, t20);
+            tx = SIMD_SUB(t00, t01);
+            ty = SIMD_SET1(0.5 * 1);
+            ty = SIMD_MUL(ty, SIMD_DUPLICATE(&(RHO_INV)));
+            t20 = SIMD_FMA(tx, ty, t20);
+            tx = SIMD_ALIGNED_LOAD((temp + 8 * NPTS_LOCAL + p_inner));
+            tx = SIMD_ADD(tx, t20);
+            SIMD_ALIGNED_STORE((temp + 8 * NPTS_LOCAL + p_inner), tx);
+         }
+
+         for(; p_inner < npts_inner; p_inner += SCALAR_LENGTH) {
+            SCALAR_TYPE xC = SCALAR_LOAD((_point_outer + p_inner + 0 * npts));
+            SCALAR_TYPE yC = SCALAR_LOAD((_point_outer + p_inner + 1 * npts));
+            SCALAR_TYPE zC = SCALAR_LOAD((_point_outer + p_inner + 2 * npts));
+
+            SCALAR_TYPE X_PC = SCALAR_SUB(SCALAR_DUPLICATE(&(xA)), xC);
+            SCALAR_TYPE Y_PC = SCALAR_SUB(SCALAR_DUPLICATE(&(yA)), yC);
+            SCALAR_TYPE Z_PC = SCALAR_SUB(SCALAR_DUPLICATE(&(zA)), zC);
+
+            SCALAR_TYPE tx, ty, t00, t01, t02, t10, t11, t20;
+
+            t00 = SCALAR_LOAD((FmT + p_inner + 0 * NPTS_LOCAL));
+            t00 = SCALAR_MUL(SCALAR_DUPLICATE(&(eval)), t00);
+            t01 = SCALAR_LOAD((FmT + p_inner + 1 * NPTS_LOCAL));
+            t01 = SCALAR_MUL(SCALAR_DUPLICATE(&(eval)), t01);
+            t02 = SCALAR_LOAD((FmT + p_inner + 2 * NPTS_LOCAL));
+            t02 = SCALAR_MUL(SCALAR_DUPLICATE(&(eval)), t02);
+            t10 = SCALAR_MUL(SCALAR_DUPLICATE(&(X_PA)), t00);
+            t10 = SCALAR_FNMA(X_PC, t01, t10);
+            t11 = SCALAR_MUL(SCALAR_DUPLICATE(&(X_PA)), t01);
+            t11 = SCALAR_FNMA(X_PC, t02, t11);
+            tx = SCALAR_LOAD((temp + 0 * NPTS_LOCAL + p_inner));
+            tx = SCALAR_ADD(tx, t10);
+            SCALAR_STORE((temp + 0 * NPTS_LOCAL + p_inner), tx);
+            t20 = SCALAR_MUL(SCALAR_DUPLICATE(&(X_PA)), t10);
+            t20 = SCALAR_FNMA(X_PC, t11, t20);
+            tx = SCALAR_SUB(t00, t01);
+            ty = SCALAR_SET1(0.5 * 1);
+            ty = SCALAR_MUL(ty, SCALAR_DUPLICATE(&(RHO_INV)));
+            t20 = SCALAR_FMA(tx, ty, t20);
+            tx = SCALAR_LOAD((temp + 3 * NPTS_LOCAL + p_inner));
+            tx = SCALAR_ADD(tx, t20);
+            SCALAR_STORE((temp + 3 * NPTS_LOCAL + p_inner), tx);
+            t20 = SCALAR_MUL(SCALAR_DUPLICATE(&(Y_PA)), t10);
+            t20 = SCALAR_FNMA(Y_PC, t11, t20);
+            tx = SCALAR_LOAD((temp + 4 * NPTS_LOCAL + p_inner));
+            tx = SCALAR_ADD(tx, t20);
+            SCALAR_STORE((temp + 4 * NPTS_LOCAL + p_inner), tx);
+            t20 = SCALAR_MUL(SCALAR_DUPLICATE(&(Z_PA)), t10);
+            t20 = SCALAR_FNMA(Z_PC, t11, t20);
+            tx = SCALAR_LOAD((temp + 5 * NPTS_LOCAL + p_inner));
+            tx = SCALAR_ADD(tx, t20);
+            SCALAR_STORE((temp + 5 * NPTS_LOCAL + p_inner), tx);
+            t10 = SCALAR_MUL(SCALAR_DUPLICATE(&(Y_PA)), t00);
+            t10 = SCALAR_FNMA(Y_PC, t01, t10);
+            t11 = SCALAR_MUL(SCALAR_DUPLICATE(&(Y_PA)), t01);
+            t11 = SCALAR_FNMA(Y_PC, t02, t11);
+            tx = SCALAR_LOAD((temp + 1 * NPTS_LOCAL + p_inner));
+            tx = SCALAR_ADD(tx, t10);
+            SCALAR_STORE((temp + 1 * NPTS_LOCAL + p_inner), tx);
+            t20 = SCALAR_MUL(SCALAR_DUPLICATE(&(Y_PA)), t10);
+            t20 = SCALAR_FNMA(Y_PC, t11, t20);
+            tx = SCALAR_SUB(t00, t01);
+            ty = SCALAR_SET1(0.5 * 1);
+            ty = SCALAR_MUL(ty, SCALAR_DUPLICATE(&(RHO_INV)));
+            t20 = SCALAR_FMA(tx, ty, t20);
+            tx = SCALAR_LOAD((temp + 6 * NPTS_LOCAL + p_inner));
+            tx = SCALAR_ADD(tx, t20);
+            SCALAR_STORE((temp + 6 * NPTS_LOCAL + p_inner), tx);
+            t20 = SCALAR_MUL(SCALAR_DUPLICATE(&(Z_PA)), t10);
+            t20 = SCALAR_FNMA(Z_PC, t11, t20);
+            tx = SCALAR_LOAD((temp + 7 * NPTS_LOCAL + p_inner));
+            tx = SCALAR_ADD(tx, t20);
+            SCALAR_STORE((temp + 7 * NPTS_LOCAL + p_inner), tx);
+            t10 = SCALAR_MUL(SCALAR_DUPLICATE(&(Z_PA)), t00);
+            t10 = SCALAR_FNMA(Z_PC, t01, t10);
+            t11 = SCALAR_MUL(SCALAR_DUPLICATE(&(Z_PA)), t01);
+            t11 = SCALAR_FNMA(Z_PC, t02, t11);
+            tx = SCALAR_LOAD((temp + 2 * NPTS_LOCAL + p_inner));
+            tx = SCALAR_ADD(tx, t10);
+            SCALAR_STORE((temp + 2 * NPTS_LOCAL + p_inner), tx);
+            t20 = SCALAR_MUL(SCALAR_DUPLICATE(&(Z_PA)), t10);
+            t20 = SCALAR_FNMA(Z_PC, t11, t20);
+            tx = SCALAR_SUB(t00, t01);
+            ty = SCALAR_SET1(0.5 * 1);
+            ty = SCALAR_MUL(ty, SCALAR_DUPLICATE(&(RHO_INV)));
+            t20 = SCALAR_FMA(tx, ty, t20);
+            tx = SCALAR_LOAD((temp + 8 * NPTS_LOCAL + p_inner));
+            tx = SCALAR_ADD(tx, t20);
+            SCALAR_STORE((temp + 8 * NPTS_LOCAL + p_inner), tx);
+         }
+      }
+
+      size_t npts_inner_upper = SIMD_LENGTH * (npts_inner / SIMD_LENGTH);
+      size_t p_inner = 0;
+      for(p_inner = 0; p_inner < npts_inner_upper; p_inner += SIMD_LENGTH) {
+         double *Xik = (Xi + p_outer + p_inner);
+         double *Gik = (Gi + p_outer + p_inner);
+
+         SIMD_TYPE tx, wg, xik, gik;
+         tx  = SIMD_ALIGNED_LOAD((temp + 3 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 4 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 5 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 4 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 6 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 7 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 5 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 7 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 8 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+      }
+
+      for(; p_inner < npts_inner; p_inner += SCALAR_LENGTH) {
+         double *Xik = (Xi + p_outer + p_inner);
+         double *Gik = (Gi + p_outer + p_inner);
+
+         SCALAR_TYPE tx, wg, xik, gik;
+         tx  = SCALAR_LOAD((temp + 3 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 0 * ldX));
+         gik = SCALAR_LOAD((Gik + 0 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 0 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 4 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 0 * ldX));
+         gik = SCALAR_LOAD((Gik + 1 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 1 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 5 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 0 * ldX));
+         gik = SCALAR_LOAD((Gik + 2 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 2 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 4 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 1 * ldX));
+         gik = SCALAR_LOAD((Gik + 0 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 0 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 6 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 1 * ldX));
+         gik = SCALAR_LOAD((Gik + 1 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 1 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 7 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 1 * ldX));
+         gik = SCALAR_LOAD((Gik + 2 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 2 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 5 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 2 * ldX));
+         gik = SCALAR_LOAD((Gik + 0 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 0 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 7 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 2 * ldX));
+         gik = SCALAR_LOAD((Gik + 1 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 1 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 8 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 2 * ldX));
+         gik = SCALAR_LOAD((Gik + 2 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 2 * ldG), gik);
       }
    }
 }

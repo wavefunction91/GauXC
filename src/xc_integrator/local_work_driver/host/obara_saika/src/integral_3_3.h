@@ -5,14 +5,12 @@
 
 void integral_3_3(size_t npts,
                   shell_pair shpair,
-                  point *points,
+                  double *points,
                   double *Xi,
                   double *Xj,
-                  int stX,
                   int ldX,
                   double *Gi,
                   double *Gj,
-                  int stG, 
                   int ldG, 
                   double *weights);
 
