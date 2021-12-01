@@ -1,23 +1,22 @@
 AR = ar
 ARFLGAS = -rc
 
-CC = g++
-
-BOYS_FUNCTION = -DNPTS_LOCAL=16
-#BOYS_FUNCTION = -DBOYS_ASYMP
+CC = g++-11
 
 SRC = ./src
 INCLUDE = ./include
 TEST = ./test
 
-CFLAGS = -Wall -O2 -lm -mavx -I $(INCLUDE)
+BOYS_FUNCTION = -DX86_AVX -I../../../../../include/
+
+CFLAGS = -Wall -O2 -lm -mavx -mfma -std=c++1z -I$(INCLUDE)
 
 #DEBUG=
 DEBUG = -DDEBUG
 
 compile:
-	$(CC) -c $(SRC)/boys_computation.cxx -o $(SRC)/boys_computation.o $(CFLAGS)	
-	$(CC) -c $(SRC)/chebyshev_boys_function.cxx -o $(SRC)/chebyshev_boys_function.o $(CFLAGS)	
+	$(CC) -c $(SRC)/boys_computation.cxx -o $(SRC)/boys_computation.o $(CFLAGS) $(BOYS_FUNCTION)
+	$(CC) -c $(SRC)/chebyshev_boys_function.cxx -o $(SRC)/chebyshev_boys_function.o $(BOYS_FUNCTION) -I$(INCLUDE)
 
 	$(CC) -c $(SRC)/integral_0.cxx -o $(SRC)/integral_0.o $(CFLAGS) $(BOYS_FUNCTION)
 	$(CC) -c $(SRC)/integral_1.cxx -o $(SRC)/integral_1.o $(CFLAGS) $(BOYS_FUNCTION)
@@ -25,7 +24,7 @@ compile:
 	$(CC) -c $(SRC)/integral_3.cxx -o $(SRC)/integral_3.o $(CFLAGS) $(BOYS_FUNCTION)
 	$(CC) -c $(SRC)/integral_4.cxx -o $(SRC)/integral_4.o $(CFLAGS) $(BOYS_FUNCTION)
 
-	$(CC) -c $(SRC)/integral_0_0.cxx -o $(SRC)/integral_0_0.o $(CFLAGS) $(BOYS_FUNCTION)
+	$(CC) -c $(SRC)/integral_0_0.cxx -o $(SRC)/integral_0_0.o $(CFLAGS) $(BOYS_FUNCTION) 
 	$(CC) -c $(SRC)/integral_1_0.cxx -o $(SRC)/integral_1_0.o $(CFLAGS) $(BOYS_FUNCTION)
 	$(CC) -c $(SRC)/integral_1_1.cxx -o $(SRC)/integral_1_1.o $(CFLAGS) $(BOYS_FUNCTION)
 	$(CC) -c $(SRC)/integral_2_0.cxx -o $(SRC)/integral_2_0.o $(CFLAGS) $(BOYS_FUNCTION)

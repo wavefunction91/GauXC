@@ -476,7 +476,14 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
 
   // Cast points to Rys format (binary compatable)
   point* _points = reinterpret_cast<point*>(const_cast<double*>(points));
+  std::vector<double> _points_transposed(3 * npts);
 
+  for(int i = 0; i < npts; ++i) {
+    _points_transposed[i + 0 * npts] = _points[i].x;
+    _points_transposed[i + 1 * npts] = _points[i].y;
+    _points_transposed[i + 2 * npts] = _points[i].z;
+  }
+  
   // Set G to zero
   for( int j = 0; j < npts; ++j )
   for( int i = 0; i < nbe;  ++i ) {
@@ -581,9 +588,9 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
 
       }
 #else
-      compute_integral_shell_pair( npts, ish, jsh, rys_basis._shells.data(), _points,
-        X_cart_rm.data()+ioff_cart*npts, X_cart_rm.data()+joff_cart*npts, 1, npts,
-        G_cart_rm.data()+ioff_cart*npts, G_cart_rm.data()+joff_cart*npts, 1, npts,
+      compute_integral_shell_pair( npts, ish, jsh, rys_basis._shells.data(), _points_transposed.data(),
+        X_cart_rm.data()+ioff_cart*npts, X_cart_rm.data()+joff_cart*npts, npts,
+        G_cart_rm.data()+ioff_cart*npts, G_cart_rm.data()+joff_cart*npts, npts,
         const_cast<double*>(weights) );
 
 #endif
