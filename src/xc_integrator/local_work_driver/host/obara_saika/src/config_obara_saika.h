@@ -48,7 +48,7 @@
 
 #define SIMD_DUPLICATE(x) *(x)
 
-#elif X86_SSE
+#elif defined(X86_SSE)
 
 #include <immintrin.h>
 
@@ -74,7 +74,7 @@
 
 #define SIMD_DUPLICATE(x) _mm_loaddup_pd(x)
 
-#elif X86_AVX
+#elif defined(X86_AVX)
 
 #include <immintrin.h>
 
@@ -100,7 +100,7 @@
 
 #define SIMD_DUPLICATE(x) _mm256_broadcast_sd(x)
 
-#elif X86_AVX512
+#elif defined(X86_AVX512)
 
 #include <zmmintrin.h>
 
