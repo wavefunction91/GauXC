@@ -218,6 +218,7 @@ void boys_chebyshev( int npts, const double* T, const double* boys_table, double
   #endif
 }
 
+  /*
 #if 0
 template <uint32_t NCheb, uint32_t MaxM, uint32_t MaxT, uint32_t NSegment, 
           uint32_t LDTable>
@@ -256,4 +257,5 @@ CHEBY_EVAL_IMPL(13);
 CHEBY_EVAL_IMPL(14);
 CHEBY_EVAL_IMPL(15);
 CHEBY_EVAL_IMPL(16);
+  */
 }               

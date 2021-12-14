@@ -1,7 +1,8 @@
 #include <math.h>
-#include "boys_computation.h"
-#include "integral_data_types.h"
-#include "config_obara_saika.h"
+#include "../include/chebyshev_boys_computation.hpp"
+#include "integral_data_types.hpp"
+#include "config_obara_saika.hpp"
+#include "integral_1.hpp"
 
 #define PI 3.14159265358979323846
 
@@ -63,9 +64,9 @@ void integral_1(size_t npts,
          }
 
          // Evaluate Boys function
-         GauXC::boys_function<0>(NPTS_LOCAL, Tval, FmT + 0 * NPTS_LOCAL);
-         GauXC::boys_function<1>(NPTS_LOCAL, Tval, FmT + 1 * NPTS_LOCAL);
-         GauXC::boys_function<2>(NPTS_LOCAL, Tval, FmT + 2 * NPTS_LOCAL);
+         GauXC::gauxc_boys_elements<0>(NPTS_LOCAL, Tval, FmT + 0 * NPTS_LOCAL);
+         GauXC::gauxc_boys_elements<1>(NPTS_LOCAL, Tval, FmT + 1 * NPTS_LOCAL);
+         GauXC::gauxc_boys_elements<2>(NPTS_LOCAL, Tval, FmT + 2 * NPTS_LOCAL);
 
          // Evaluate VRR Buffer
          for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += SIMD_LENGTH) {
@@ -297,9 +298,9 @@ void integral_1(size_t npts,
          }
 
          // Evaluate Boys function
-         GauXC::boys_function<0>(npts_inner, Tval, FmT + 0 * NPTS_LOCAL);
-         GauXC::boys_function<1>(npts_inner, Tval, FmT + 1 * NPTS_LOCAL);
-         GauXC::boys_function<2>(npts_inner, Tval, FmT + 2 * NPTS_LOCAL);
+         GauXC::gauxc_boys_elements<0>(npts_inner, Tval, FmT + 0 * NPTS_LOCAL);
+         GauXC::gauxc_boys_elements<1>(npts_inner, Tval, FmT + 1 * NPTS_LOCAL);
+         GauXC::gauxc_boys_elements<2>(npts_inner, Tval, FmT + 2 * NPTS_LOCAL);
 
          // Evaluate VRR Buffer
          p_inner = 0;

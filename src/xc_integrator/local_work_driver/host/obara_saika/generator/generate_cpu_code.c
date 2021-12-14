@@ -554,9 +554,10 @@ void generate_off_diagonal_part_2(FILE *f, int lA, int lB, int type, char *prefi
 
 void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, int type) {
   fprintf(f, "#include <math.h>\n");
-  fprintf(f, "#include \"boys_computation.h\"\n");
-  fprintf(f, "#include \"integral_data_types.h\"\n");
-  fprintf(f, "#include \"config_obara_saika.h\"\n");
+  fprintf(f, "#include \"../include/chebyshev_boys_computation.hpp\"\n");
+  fprintf(f, "#include \"integral_data_types.hpp\"\n");
+  fprintf(f, "#include \"config_obara_saika.hpp\"\n");
+  fprintf(f, "#include \"integral_%d.hpp\"\n", lA);
   fprintf(f, "\n");
   fprintf(f, "#define PI 3.14159265358979323846\n");
   fprintf(f, "\n");
@@ -634,8 +635,8 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
 
   fprintf(f, "         // Evaluate Boys function\n");
   for(int l = 0; l < (2*lA+1); ++l) {
-    fprintf(f, "         GauXC::boys_function<%d>(NPTS_LOCAL, Tval, FmT + %d * NPTS_LOCAL);\n", l, l);
-    //fprintf(f, "         boys_function(%d, NPTS_LOCAL, Tval, FmT + %d * NPTS_LOCAL);\n", l, l);
+    fprintf(f, "         GauXC::gauxc_boys_elements<%d>(NPTS_LOCAL, Tval, FmT + %d * NPTS_LOCAL);\n", l, l);
+    //fprintf(f, "         boys_elements(%d, NPTS_LOCAL, Tval, FmT + %d * NPTS_LOCAL);\n", l, l);
   }
   fprintf(f, "\n");
   fprintf(f, "         // Evaluate VRR Buffer\n");
@@ -708,8 +709,8 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   
   fprintf(f, "         // Evaluate Boys function\n");
   for(int l = 0; l < (2*lA+1); ++l) {
-    fprintf(f, "         GauXC::boys_function<%d>(npts_inner, Tval, FmT + %d * NPTS_LOCAL);\n", l, l);
-    //fprintf(f, "         boys_function(%d, npts_inner, Tval, FmT + %d * NPTS_LOCAL);\n", l, l);
+    fprintf(f, "         GauXC::gauxc_boys_elements<%d>(npts_inner, Tval, FmT + %d * NPTS_LOCAL);\n", l, l);
+    //fprintf(f, "         boys_elements(%d, npts_inner, Tval, FmT + %d * NPTS_LOCAL);\n", l, l);
   }
   fprintf(f, "\n");
 
@@ -764,9 +765,10 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
 
 void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node *root_node, int type) {
   fprintf(f, "#include <math.h>\n");
-  fprintf(f, "#include \"boys_computation.h\"\n");
-  fprintf(f, "#include \"integral_data_types.h\"\n");
-    fprintf(f, "#include \"config_obara_saika.h\"\n");
+  fprintf(f, "#include \"../include/chebyshev_boys_computation.hpp\"\n");
+  fprintf(f, "#include \"integral_data_types.hpp\"\n");
+  fprintf(f, "#include \"config_obara_saika.hpp\"\n");
+  fprintf(f, "#include \"integral_%d_%d.hpp\"\n", lA, lB);
   fprintf(f, "\n");
   fprintf(f, "#define PI 3.14159265358979323846\n");
   fprintf(f, "\n");
@@ -847,8 +849,8 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   
   fprintf(f, "         // Evaluate Boys function\n");
   for(int l = 0; l < (lA+lB+1); ++l) {
-    fprintf(f, "         GauXC::boys_function<%d>(NPTS_LOCAL, Tval, FmT + %d * NPTS_LOCAL);\n",l,l);
-    //fprintf(f, "         boys_function(%d, NPTS_LOCAL, Tval, FmT + %d * NPTS_LOCAL);\n",l,l);
+    fprintf(f, "         GauXC::gauxc_boys_elements<%d>(NPTS_LOCAL, Tval, FmT + %d * NPTS_LOCAL);\n",l,l);
+    //fprintf(f, "         boys_elements(%d, NPTS_LOCAL, Tval, FmT + %d * NPTS_LOCAL);\n",l,l);
   }
   fprintf(f, "\n");
 
@@ -931,8 +933,8 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   
   fprintf(f, "         // Evaluate Boys function\n");
   for(int l = 0; l < (lA+lB+1); ++l) {
-    fprintf(f, "         GauXC::boys_function<%d>(npts_inner, Tval, FmT + %d * NPTS_LOCAL);\n",l,l);
-    //fprintf(f, "         boys_function(%d, npts_inner, Tval, FmT + %d * NPTS_LOCAL);\n",l,l);
+    fprintf(f, "         GauXC::gauxc_boys_elements<%d>(npts_inner, Tval, FmT + %d * NPTS_LOCAL);\n",l,l);
+    //fprintf(f, "         boys_elements(%d, npts_inner, Tval, FmT + %d * NPTS_LOCAL);\n",l,l);
   }
   fprintf(f, "\n");
 
@@ -986,14 +988,12 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
 void generate_diagonal_header_files(int lA) {
   char filename[512];
       
-  sprintf(filename, "integral_%d.h", lA);
+  sprintf(filename, "integral_%d.hpp", lA);
       
   FILE *f = fopen(filename, "w");
 
   fprintf(f, "#ifndef __MY_INTEGRAL_%d\n", lA);
   fprintf(f, "#define __MY_INTEGRAL_%d\n", lA);
-  fprintf(f, "\n");
-  fprintf(f, "#include \"integral_%d.h\"\n", lA);
   fprintf(f, "\n");
   fprintf(f, "void integral_%d(size_t npts,\n", lA);
   fprintf(f, "               shell_pair shpair,\n");
@@ -1012,14 +1012,12 @@ void generate_diagonal_header_files(int lA) {
 void generate_off_diagonal_header_files(int lA, int lB) {
   char filename[512];
       
-  sprintf(filename, "integral_%d_%d.h", lA, lB);
+  sprintf(filename, "integral_%d_%d.hpp", lA, lB);
       
   FILE *f = fopen(filename, "w");
 
   fprintf(f, "#ifndef __MY_INTEGRAL_%d_%d\n", lA, lB);
   fprintf(f, "#define __MY_INTEGRAL_%d_%d\n", lA, lB);
-  fprintf(f, "\n");
-  fprintf(f, "#include \"integral_%d_%d.h\"\n", lA, lB);
   fprintf(f, "\n");
   fprintf(f, "void integral_%d_%d(size_t npts,\n", lA, lB);
   fprintf(f, "                  shell_pair shpair,\n");
@@ -1042,7 +1040,7 @@ void generate_main_files(int lA) {
 
   FILE *f;
   
-  sprintf(filename, "obara_saika_integrals.h");
+  sprintf(filename, "obara_saika_integrals.hpp");
       
   f = fopen(filename, "w");
 
@@ -1072,15 +1070,15 @@ void generate_main_files(int lA) {
 
   fprintf(f, "#include <stdio.h>\n");
   fprintf(f, "#include <stdlib.h>\n");
-  fprintf(f, "#include \"integral_data_types.h\"\n");
-  fprintf(f, "#include \"obara_saika_integrals.h\"\n");
+  fprintf(f, "#include \"integral_data_types.hpp\"\n");
+  fprintf(f, "#include \"obara_saika_integrals.hpp\"\n");
   for(int i = 0; i <= lA; ++i) {
-    fprintf(f, "#include \"integral_%d.h\"\n", i);
+    fprintf(f, "#include \"integral_%d.hpp\"\n", i);
   }
 
   for(int i = 0; i <= lA; ++i) {
     for(int j = 0; j <= i; ++j) {
-      fprintf(f, "#include \"integral_%d_%d.h\"\n", i, j);
+      fprintf(f, "#include \"integral_%d_%d.hpp\"\n", i, j);
     }
   }
 

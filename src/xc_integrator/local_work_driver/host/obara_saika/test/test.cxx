@@ -1,23 +1,17 @@
 #include <libint2.hpp>
-#include <integral_data_types.h>
-#include <obara_saika_integrals.h>
+#include <integral_data_types.hpp>
+#include <obara_saika_integrals.hpp>
 #include <chebyshev_boys_function.hpp>
 #include <vector>
 #include <iostream>
 #include <algorithm>
 #include <random>
+#include <sys/time.h>
 
 int main(int argc, char** argv) {
   libint2::initialize();
-  #if 0
-  int ncheb   = 13;
-  int nseg    = 60;
-  int maxM    = 10;
-  double maxT = 117;
-  GauXC::gauxc_boys_init(ncheb, maxM, nseg, 1e-10, maxT);
-  #else
+  
   GauXC::gauxc_boys_init();
-  #endif
 
   // Benzene
   std::vector<libint2::Atom> atoms = {
@@ -191,11 +185,14 @@ int main(int argc, char** argv) {
 
   std::cout << nshells << std::endl;
 
+struct timeval start, end;
+
+  gettimeofday(&start, NULL);
   int ioff_cart = 0;
   for( int i = 0; i < nshells; ++i) {
     shells bra_shell = _shells[i];
     int bra_cart_size = (bra_shell.L + 1) * (bra_shell.L + 2) / 2;
-  
+
     int joff_cart = 0;
     for( int j = 0; j <= i; ++j) {
       shells ket_shell = _shells[j];
@@ -208,7 +205,7 @@ int main(int argc, char** argv) {
 				  _points_transposed.data(),
 				  (Xi + ioff_cart * ngrid),
 				  (Xj + joff_cart * ngrid),
-				  ngrid, 
+				  ngrid,
 				  (Gi + ioff_cart * ngrid),
 				  (Gj + joff_cart * ngrid),
 				  ngrid,
@@ -216,10 +213,12 @@ int main(int argc, char** argv) {
 
       joff_cart += ket_cart_size;
     }
-    
+
     ioff_cart += bra_cart_size;
   }
 
+  gettimeofday(&end, NULL);
+  
   int correct = 1;
   
   for( int i = 0; i < nbf * ngrid; ++i) {
@@ -229,7 +228,7 @@ int main(int argc, char** argv) {
     }
   }
 
-  std::cout << "Correctness: " << correct << std::endl;
+  std::cout << "Correctness: " << correct << "\tExecution: "<< 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) << std::endl;
   
   libint2::finalize();  // done with libint
   GauXC::gauxc_boys_finalize();

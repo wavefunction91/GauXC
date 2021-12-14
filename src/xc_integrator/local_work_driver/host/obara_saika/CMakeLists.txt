@@ -20,8 +20,7 @@ set( GAUXC_OBARA_SAIKA_HOST_SRC
      src/integral_4_3.cxx
      src/integral_4_4.cxx
      src/obara_saika_integrals.cxx
-     src/boys_computation.cxx
-     src/chebyshev_boys_function.cxx
+     src/chebyshev_boys_computation.cxx
 )
 target_sources( gauxc PRIVATE ${GAUXC_OBARA_SAIKA_HOST_SRC} )
 target_include_directories( gauxc PRIVATE
