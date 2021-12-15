@@ -15,8 +15,7 @@ CFLAGS = -Wall -O2 -lm -mavx -mfma -std=c++1z -I$(INCLUDE)
 DEBUG = -DDEBUG
 
 compile:
-	$(CC) -c $(SRC)/boys_computation.cxx -o $(SRC)/boys_computation.o $(CFLAGS) $(BOYS_FUNCTION)
-	$(CC) -c $(SRC)/chebyshev_boys_function.cxx -o $(SRC)/chebyshev_boys_function.o $(BOYS_FUNCTION) -I$(INCLUDE)
+	$(CC) -c $(SRC)/chebyshev_boys_computation.cxx -o $(SRC)/chebyshev_boys_computation.o $(CFLAGS) $(BOYS_FUNCTION) -I$(INCLUDE)
 
 	$(CC) -c $(SRC)/integral_0.cxx -o $(SRC)/integral_0.o $(CFLAGS) $(BOYS_FUNCTION)
 	$(CC) -c $(SRC)/integral_1.cxx -o $(SRC)/integral_1.o $(CFLAGS) $(BOYS_FUNCTION)
@@ -45,4 +44,4 @@ compile:
 	$(AR) $(ARFLAGS) ./obara_saika.a $(SRC)/*.o
 
 clean:
-	rm -rf ./*.a $(SRC)/*.o $(TEST)/*.x
+	rm -rf ./*.a $(SRC)/*.o
