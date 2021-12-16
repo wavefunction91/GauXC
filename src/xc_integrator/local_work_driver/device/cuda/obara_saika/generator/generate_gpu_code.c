@@ -839,11 +839,10 @@ void generate_main_files(int lA) {
   fprintf(f, "   prim_pair *dev_prim_pairs;\n");
   fprintf(f, "   cudaMalloc((void**)&dev_prim_pairs, np * sizeof(prim_pair));\n\n");
   
-  fprintf(f, "   AB.nprim_pair = np;\n");
   fprintf(f, "   prim_pair *prim_pairs = new prim_pair[np];\n");
   fprintf(f, "   for(int i = 0, ij = 0; i < nprim_A; ++i       )\n");
   fprintf(f, "   for(int j = 0        ; j < nprim_B; ++j, ++ij ) {\n");
-  fprintf(f, "      auto& pair = AB.prim_pairs[ij];\n");
+  fprintf(f, "      auto& pair = prim_pairs[ij];\n");
   fprintf(f, "      pair.coeff_prod = A.coeff[i].coeff * B.coeff[j].coeff;\n\n");
 
   fprintf(f, "      const auto alpha_A = A.coeff[i].alpha;\n");
@@ -868,7 +867,8 @@ void generate_main_files(int lA) {
   fprintf(f, "   }\n\n");
 
   fprintf(f, "   cudaMemcpy(dev_prim_pairs, prim_pairs, np * sizeof(prim_pair), cudaMemcpyHostToDevice);\n\n");
-  fprintf(f, "   AB.prim_pairs = dev_prim_pairs;\n");
+  fprintf(f, "   AB.nprim_pair = np;\n");
+  fprintf(f, "   AB.prim_pairs = dev_prim_pairs;\n\n");
   fprintf(f, "   free(prim_pairs);\n");
   fprintf(f, "}\n");
   

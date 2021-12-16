@@ -41,11 +41,10 @@ void generate_shell_pair( const shells& A, const shells& B, shell_pair& AB) {
    prim_pair *dev_prim_pairs;
    cudaMalloc((void**)&dev_prim_pairs, np * sizeof(prim_pair));
 
-   AB.nprim_pair = np;
    prim_pair *prim_pairs = new prim_pair[np];
    for(int i = 0, ij = 0; i < nprim_A; ++i       )
    for(int j = 0        ; j < nprim_B; ++j, ++ij ) {
-      auto& pair = AB.prim_pairs[ij];
+      auto& pair = prim_pairs[ij];
       pair.coeff_prod = A.coeff[i].coeff * B.coeff[j].coeff;
 
       const auto alpha_A = A.coeff[i].alpha;
@@ -71,7 +70,9 @@ void generate_shell_pair( const shells& A, const shells& B, shell_pair& AB) {
 
    cudaMemcpy(dev_prim_pairs, prim_pairs, np * sizeof(prim_pair), cudaMemcpyHostToDevice);
 
+   AB.nprim_pair = np;	      
    AB.prim_pairs = dev_prim_pairs;
+   
    free(prim_pairs);
 }
 

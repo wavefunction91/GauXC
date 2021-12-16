@@ -1,7 +1,7 @@
 #include <libint2.hpp>
 #include <integral_data_types.hpp>
 #include <obara_saika_integrals.hpp>
-#include <chebyshev_boys_function.hpp>
+#include <chebyshev_boys_computation.hpp>
 #include <vector>
 #include <iostream>
 #include <algorithm>

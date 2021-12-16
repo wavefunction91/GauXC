@@ -141,12 +141,12 @@ namespace GauXC {
   inline double boys_asymp_element( double x ) {
     const auto x_inv = 1./x;
   
-    if constexpr (M == 0) {    
-	return constants::sqrt_pi_ov_2<> * std::sqrt( x_inv );
-      } else {
+    if constexpr (M != 0) {    
       constexpr double const_coeff = (constants::sqrt_pi<> / integral_pow_two<2*M+1>::value) * (integral_factorial<2*M>::value / integral_factorial<M>::value);
       return const_coeff * std::sqrt(integral_pow<2*M+1>(x_inv));
     }
+
+    return constants::sqrt_pi_ov_2<> * std::sqrt( x_inv );
   }
 
   template <int M>
@@ -161,24 +161,22 @@ namespace GauXC {
     const double* boys_m = (boys_table_.data() + M * DEFAULT_LD_TABLE * DEFAULT_NSEGMENT);
     constexpr double deltaT = double(DEFAULT_MAX_T) / DEFAULT_NSEGMENT;
 
-    if constexpr (M == 0) {
-	return boys_asymp_element<M>(T);
-      } else {
-      if(T > DEFAULT_MAX_T) {
-	return boys_asymp_element<M>(T);
-      } else {
-	double eval;
+    if constexpr (M != 0) {
+	if(T < DEFAULT_MAX_T) {
+	  double eval;
 	  
-	int iseg = std::floor(T/ deltaT);
-	const double* boys_seg = boys_m + iseg * DEFAULT_LD_TABLE;
+	  int iseg = std::floor(T/ deltaT);
+	  const double* boys_seg = boys_m + iseg * DEFAULT_LD_TABLE;
 
-	const double a = iseg * deltaT;
-	const double b = a + deltaT;
-	monomial_expand(1, boys_seg, &T, a, b, &eval);
+	  const double a = iseg * deltaT;
+	  const double b = a + deltaT;
+	  monomial_expand(1, boys_seg, &T, a, b, &eval);
 
-	return eval;
+	  return eval;
+	}
       }
-    }
+    
+    return boys_asymp_element<M>(T);
   }
   
   template <int M>

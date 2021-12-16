@@ -1,7 +1,9 @@
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 #include <libint2.hpp>
 #include <integral_data_types.hpp>
 #include <obara_saika_integrals.hpp>
-#include <chebyshev_boys_function.hpp>
+#include <chebyshev_boys_computation.hpp>
 #include <vector>
 #include <iostream>
 #include <algorithm>
@@ -177,11 +179,28 @@ int main(int argc, char** argv) {
   for(int i = 0; i < ngrid * nbf; ++i) {
     G_own[i] = 0.0;
   }
-  double *Xi = F.data();
-  double *Xj = F.data();
 
-  double *Gi = G_own.data();
-  double *Gj = G_own.data();
+  // device arrays
+  double *dev_points;
+  double *dev_X;
+  double *dev_G;
+  double *dev_weights;
+
+  cudaMalloc((void**) &dev_points, 3 * ngrid * sizeof(double));
+  cudaMalloc((void**) &dev_X, ngrid * nbf * sizeof(double));
+  cudaMalloc((void**) &dev_G, ngrid * nbf * sizeof(double));
+  cudaMalloc((void**) &dev_weights, ngrid * sizeof(double));
+
+  cudaMemcpy(dev_points, _points_transposed.data(), 3 * ngrid * sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(dev_X, F.data(), ngrid * nbf * sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(dev_G, G_own.data(), ngrid * nbf * sizeof(double), cudaMemcpyHostToDevice);
+  cudaMemcpy(dev_weights, w.data(), ngrid * sizeof(double), cudaMemcpyHostToDevice);
+  
+  double *Xi = dev_X;
+  double *Xj = dev_X;
+
+  double *Gi = dev_G;
+  double *Gj = dev_G;
 
   std::cout << nshells << std::endl;
 
@@ -202,14 +221,14 @@ struct timeval start, end;
 				  i,
 				  j,
 				  _shells.data(),
-				  _points_transposed.data(),
+				  dev_points,
 				  (Xi + ioff_cart * ngrid),
 				  (Xj + joff_cart * ngrid),
 				  ngrid,
 				  (Gi + ioff_cart * ngrid),
 				  (Gj + joff_cart * ngrid),
 				  ngrid,
-				  w.data());
+				  dev_weights);
 
       joff_cart += ket_cart_size;
     }
@@ -217,7 +236,11 @@ struct timeval start, end;
     ioff_cart += bra_cart_size;
   }
 
+  cudaDeviceSynchronize();
+  
   gettimeofday(&end, NULL);
+
+  cudaMemcpy(G_own.data(), dev_G, ngrid * nbf * sizeof(double), cudaMemcpyDeviceToHost);
   
   int correct = 1;
   
@@ -229,6 +252,11 @@ struct timeval start, end;
   }
 
   std::cout << "Correctness: " << correct << "\tExecution: "<< 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) << std::endl;
+
+  cudaFree(dev_X);
+  cudaFree(dev_G);
+  cudaFree(dev_points);
+  cudaFree(dev_weights);
   
   libint2::finalize();  // done with libint
   GauXC::gauxc_boys_finalize();
