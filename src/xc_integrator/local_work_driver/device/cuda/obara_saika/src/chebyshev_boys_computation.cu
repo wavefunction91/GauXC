@@ -1,3 +1,5 @@
+#include <cuda_runtime.h>
+#include <device_launch_parameters.h>
 #include "chebyshev_boys_computation.hpp"
 #include <gauxc/util/constexpr_math.hpp>
 #include <iostream>
@@ -124,29 +126,30 @@ namespace GauXC {
 
   // these functions are needed
 
-  __device__ inline void monomial_expand(size_t npts, const double* coeff, const double *x, double a, double b, double* eval) {
-    const int n = DEFAULT_NCHEB + 1;
+  __device__ inline __attribute__((always_inline)) double monomial_expand(const double* coeff, const double x, double a, double b) {
+    //const int n = DEFAULT_NCHEB + 1;
     const double sum = a+b;
     const double diff = b-a;
     const double ratio = sum / diff;
     const double fact = 2. / diff;
 
-    double xp[n]; xp[0] = 1.;
+    //double xp[n]; xp[0] = 1.;
+    double xp[DEFAULT_NCHEB + 1]; xp[0] = 1.;
 
-    for(size_t j = 0; j < npts; ++j) {
-      double xt = fact * x[j] - ratio;
+    double xt = fact * x - ratio;
 
-      for(int i = 1; i < n; ++i) xp[i] = xp[i-1] * xt;
+    //for(int i = 1; i < n; ++i) xp[i] = xp[i-1] * xt;
+    for(int i = 1; i < DEFAULT_NCHEB + 1; ++i) xp[i] = xp[i-1] * xt;
 
-      double _val = 0.;
-      for(int i = 0; i < n; ++i) _val += xp[i] * coeff[i];
+    double _val = 0.;
+    //for(int i = 0; i < n; ++i) _val += xp[i] * coeff[i];
+    for(int i = 0; i < DEFAULT_NCHEB + 1; ++i) _val += xp[i] * coeff[i];
 
-      eval[j] = _val;
-    }
+    return _val;
   }
 
   template <int M>
-  __device__ inline double boys_asymp_element( double x ) {
+  __device__ inline __attribute__((always_inline)) double boys_asymp_element( double x ) {
     const auto x_inv = 1./x;
 
     if constexpr (M != 0) {
@@ -156,77 +159,29 @@ namespace GauXC {
 
     return constants::sqrt_pi_ov_2<> * std::sqrt( x_inv ); 
   }
-
-  template <int M>
-  __device__ inline void boys_asymp_elements( size_t npts, const double* X, double* FmX ) {
-    for( size_t i = 0; i < npts; ++i ) {
-      FmX[i] = boys_asymp_element<M>(X[i]);
-    }
-  }
   
   template <int M>
   __device__ double gauxc_boys_element(double T) {
     if constexpr (M != 0) {
-      double* boys_m = (dev_boys_table_ + M * DEFAULT_LD_TABLE * DEFAULT_NSEGMENT);
-      double deltaT = double(DEFAULT_MAX_T) / DEFAULT_NSEGMENT;
-
-      if(T > DEFAULT_MAX_T) {
-	return boys_asymp_element<M>(T);
-      } else {
-	double eval;
+	if (T < DEFAULT_MAX_T) {
+	  double* boys_m = (dev_boys_table_ + M * DEFAULT_LD_TABLE * DEFAULT_NSEGMENT);
+	  double deltaT = double(DEFAULT_MAX_T) / DEFAULT_NSEGMENT;
 	  
-	int iseg = std::floor(T/ deltaT);
-	const double* boys_seg = boys_m + iseg * DEFAULT_LD_TABLE;
-
-	const double a = iseg * deltaT;
-	const double b = a + deltaT;
-	monomial_expand(1, boys_seg, &T, a, b, &eval);
-
-	return eval;
-      }
+	  int iseg = std::floor(T/ deltaT);
+	  const double* boys_seg = (boys_m + iseg * DEFAULT_LD_TABLE);
+	  
+	  const double a = iseg * deltaT;
+	  const double b = a + deltaT;
+	  
+	  return monomial_expand(boys_seg, T, a, b);
+	}
     }
 
     return boys_asymp_element<M>(T);
   }
-  
-  template <int M>
-  __device__ void gauxc_boys_elements(size_t npts, double* T, double* eval) {
-    // Get min T
-    auto min_t = std::min_element( T, T + npts );
-
-    if( *min_t >  DEFAULT_MAX_T ) {
-      boys_asymp_elements<M>(npts, T, eval);
-    } else {
-      if constexpr (M == 0) {
-	  for(size_t i = 0; i < npts; ++i) {
-	    const double sqrt_t = std::sqrt(T[i]);
-	    const double inv_sqrt_t = 1./sqrt_t;
-	    eval[i] = constants::sqrt_pi_ov_2<> * std::erf(sqrt_t) * inv_sqrt_t;
-	  }
-	} else {
-	double* boys_m = dev_boys_table_ + M * DEFAULT_LD_TABLE * DEFAULT_NSEGMENT;
-	double deltaT = double(DEFAULT_MAX_T) / DEFAULT_NSEGMENT;
-
-	for( size_t i = 0; i < npts; ++i ) {
-	  const double tval = T[i];
-	  if( tval > DEFAULT_MAX_T ) {
-	    eval[i] = boys_asymp_element<M>(tval); 
-	  } else {
-	    int iseg = std::floor(tval / deltaT);
-	    const double* boys_seg = boys_m + iseg * DEFAULT_LD_TABLE;
-
-	    const double a = iseg * deltaT;
-	    const double b = a + deltaT;
-	    monomial_expand(1, boys_seg, T+i, a, b, eval+i);
-	  }
-	}
-      }
-    }
-  }
 
 #define BOYS_FUNCTION_IMPLEMENTATION(M)					\
   template __device__ double gauxc_boys_element<M>(double);		\
-  template __device__ void gauxc_boys_elements<M>(size_t, double*, double*);
 
   BOYS_FUNCTION_IMPLEMENTATION( 0);
   BOYS_FUNCTION_IMPLEMENTATION( 1);
@@ -245,117 +200,4 @@ namespace GauXC {
   BOYS_FUNCTION_IMPLEMENTATION(14);
   BOYS_FUNCTION_IMPLEMENTATION(15);
   
-  /*
-  double boys_element(int m, double T) {
-    switch(m) {
-    case 0:
-      return chebyshev_element<0>(T);
-      break;
-    case 1:
-      return chebyshev_element<1>(T);
-      break;
-    case 2:
-      return chebyshev_element<2>(T);
-      break;
-    case 3:
-      return chebyshev_element<3>(T);
-      break;
-    case 4:
-      return chebyshev_element<4>(T);
-      break;
-    case 5:
-      return chebyshev_element<5>(T);
-      break;
-    case 6:
-      return chebyshev_element<6>(T);
-      break;
-    case 7:
-      return chebyshev_element<7>(T);
-      break;
-    case 8:
-      return chebyshev_element<8>(T);
-      break;
-    case 9:
-      return chebyshev_element<9>(T);
-      break;
-    case 10:
-      return chebyshev_element<10>(T);
-      break;
-    case 11:
-      return chebyshev_element<11>(T);
-      break;
-    case 12:
-      return chebyshev_element<12>(T);
-      break;
-    case 13:
-      return chebyshev_element<13>(T);
-      break;
-    case 14:
-      return chebyshev_element<14>(T);
-      break;
-    case 15:
-      return chebyshev_element<15>(T);
-      break;
-    default:
-      return chebyshev_element<16>(T);
-      break;
-    }
-  }
-
-  void boys_elements(int m, size_t npts, double *T, double *eval) {
-    switch(m) {
-    case 0:
-      chebyshev_elements<0>(npts, T, eval);
-      break;
-    case 1:
-      chebyshev_elements<1>(npts, T, eval);
-      break;
-    case 2:
-      chebyshev_elements<2>(npts, T, eval);
-      break;
-    case 3:
-      chebyshev_elements<3>(npts, T, eval);
-      break;
-    case 4:
-      chebyshev_elements<4>(npts, T, eval);
-      break;
-    case 5:
-      chebyshev_elements<5>(npts, T, eval);
-      break;
-    case 6:
-      chebyshev_elements<6>(npts, T, eval);
-      break;
-    case 7:
-      chebyshev_elements<7>(npts, T, eval);
-      break;
-    case 8:
-      chebyshev_elements<8>(npts, T, eval);
-      break;
-    case 9:
-      chebyshev_elements<9>(npts, T, eval);
-      break;
-    case 10:
-      chebyshev_elements<10>(npts, T, eval);
-      break;
-    case 11:
-      chebyshev_elements<11>(npts, T, eval);
-      break;
-    case 12:
-      chebyshev_elements<12>(npts, T, eval);
-      break;
-    case 13:
-      chebyshev_elements<13>(npts, T, eval);
-      break;
-    case 14:
-      chebyshev_elements<14>(npts, T, eval);
-      break;
-    case 15:
-      chebyshev_elements<15>(npts, T, eval);
-      break;
-    default:
-      chebyshev_elements<16>(npts, T, eval);
-      break;
-    }
-  }
-  */
 }

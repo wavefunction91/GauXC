@@ -9,7 +9,7 @@ TEST = ./test
 
 BOYS_FUNCTION = -I../../../../../../include/
 
-CFLAGS = --ptxas-options=-v -arch=sm_70 -gencode=arch=compute_70,code=compute_70 -maxrregcount=128 -std=c++17 --expt-relaxed-constexpr -I$(INCLUDE)
+CFLAGS = --ptxas-options=-v -arch=sm_70 -gencode=arch=compute_70,code=compute_70 -maxrregcount=128 -std=c++17 --expt-relaxed-constexpr -rdc=true -I$(INCLUDE)
 
 #DEBUG=
 DEBUG = -DDEBUG

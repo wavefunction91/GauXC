@@ -23,12 +23,8 @@ namespace GauXC {
   template <int M>
   __device__ double gauxc_boys_element(double T);
 
-  template <int M>
-  void __device__ gauxc_boys_elements(size_t npts, double *T, double *eval);
-
 #define BOYS_FUNCTION_HEADER(M)						\
   extern template __device__ double gauxc_boys_element<M>(double);	\
-  extern template __device__ void gauxc_boys_elements<M>(size_t, double*, double*);
 
   BOYS_FUNCTION_HEADER( 0);
   BOYS_FUNCTION_HEADER( 1);
