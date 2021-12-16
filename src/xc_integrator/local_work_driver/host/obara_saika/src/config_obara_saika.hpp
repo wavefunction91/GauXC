@@ -1,7 +1,7 @@
 #ifndef _MY_SIMD_INSTRUCTIONS
 #define _MY_SIMD_INSTRUCTIONS
 
-#define X86_AVX
+//#define X86_AVX
 #define NPTS_LOCAL 64
 
 #define SCALAR_TYPE double
