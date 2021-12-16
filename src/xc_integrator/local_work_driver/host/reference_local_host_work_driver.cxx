@@ -8,7 +8,7 @@
 
 #include <gauxc/basisset_map.hpp>
 #include "rys_integral.h"
-#include "obara_saika_integrals.h"
+#include "obara_saika_integrals.hpp"
 #include "chebyshev_boys_computation.hpp"
 #include <gauxc/util/real_solid_harmonics.hpp>
 #include "integrator_util/integral_bounds.hpp"
