@@ -12,8 +12,6 @@
 
 int main(int argc, char** argv) {
   libint2::initialize();
-  
-  GauXC::gauxc_boys_init();
 
   // Benzene
   std::vector<libint2::Atom> atoms = {
@@ -186,6 +184,8 @@ int main(int argc, char** argv) {
   double *dev_G;
   double *dev_weights;
 
+  double *dev_boys_table = GauXC::gauxc_boys_init();
+
   cudaMalloc((void**) &dev_points, 3 * ngrid * sizeof(double));
   cudaMalloc((void**) &dev_X, ngrid * nbf * sizeof(double));
   cudaMalloc((void**) &dev_G, ngrid * nbf * sizeof(double));
@@ -228,7 +228,8 @@ struct timeval start, end;
 				  (Gi + ioff_cart * ngrid),
 				  (Gj + joff_cart * ngrid),
 				  ngrid,
-				  dev_weights);
+				  dev_weights,
+				  dev_boys_table);
 
       joff_cart += ket_cart_size;
     }
@@ -259,5 +260,5 @@ struct timeval start, end;
   cudaFree(dev_weights);
   
   libint2::finalize();  // done with libint
-  GauXC::gauxc_boys_finalize();
+  GauXC::gauxc_boys_finalize(dev_boys_table);
 }

@@ -1,5 +1,3 @@
-#include <cuda_runtime.h>
-#include <device_launch_parameters.h>
 #include "chebyshev_boys_computation.hpp"
 #include <gauxc/util/constexpr_math.hpp>
 #include <iostream>
@@ -104,100 +102,22 @@ namespace GauXC {
       }
     }
   }
-
-  __device__ double *dev_boys_table_;
-  double *host_boys_table_;
   
-  void gauxc_boys_init() {
+  double* gauxc_boys_init() {
     double *tmp_ = (double*) malloc(DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1) * sizeof(double));
+    
     generate_boys_table(DEFAULT_NCHEB, DEFAULT_MAX_M, DEFAULT_MAX_T, DEFAULT_NSEGMENT, tmp_, DEFAULT_LD_TABLE);
 
-    cudaMalloc((void**) &host_boys_table_, DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1) * sizeof(double));
-    cudaMemcpy(host_boys_table_, tmp_, DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1) * sizeof(double), cudaMemcpyHostToDevice);
+    double *dev_tmp;
+
+    cudaMalloc((void**)&dev_tmp, DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1) * sizeof(double));
+    cudaMemcpy(dev_tmp, tmp, DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1) * sizeof(double), cudaMemcpyHostToDevice);
     
-    cudaMemcpyToSymbol(dev_boys_table_, &host_boys_table_, sizeof(host_boys_table_));
-
-    free(tmp_);
+    return dev_tmp;
   }
   
-  void gauxc_boys_finalize() {
-    cudaFree(host_boys_table_);
+  void gauxc_boys_finalize(double *tmp) {
+    cudaFree(tmp);
   }
-
-  // these functions are needed
-
-  __device__ inline __attribute__((always_inline)) double monomial_expand(const double* coeff, const double x, double a, double b) {
-    //const int n = DEFAULT_NCHEB + 1;
-    const double sum = a+b;
-    const double diff = b-a;
-    const double ratio = sum / diff;
-    const double fact = 2. / diff;
-
-    //double xp[n]; xp[0] = 1.;
-    double xp[DEFAULT_NCHEB + 1]; xp[0] = 1.;
-
-    double xt = fact * x - ratio;
-
-    //for(int i = 1; i < n; ++i) xp[i] = xp[i-1] * xt;
-    for(int i = 1; i < DEFAULT_NCHEB + 1; ++i) xp[i] = xp[i-1] * xt;
-
-    double _val = 0.;
-    //for(int i = 0; i < n; ++i) _val += xp[i] * coeff[i];
-    for(int i = 0; i < DEFAULT_NCHEB + 1; ++i) _val += xp[i] * coeff[i];
-
-    return _val;
-  }
-
-  template <int M>
-  __device__ inline __attribute__((always_inline)) double boys_asymp_element( double x ) {
-    const auto x_inv = 1./x;
-
-    if constexpr (M != 0) {
-      constexpr double const_coeff = (constants::sqrt_pi<> / integral_pow_two<2*M+1>::value) * (integral_factorial<2*M>::value / integral_factorial<M>::value);
-      return const_coeff * std::sqrt(integral_pow<2*M+1>(x_inv));
-    }
-
-    return constants::sqrt_pi_ov_2<> * std::sqrt( x_inv ); 
-  }
-  
-  template <int M>
-  __device__ double gauxc_boys_element(double T) {
-    if constexpr (M != 0) {
-	if (T < DEFAULT_MAX_T) {
-	  double* boys_m = (dev_boys_table_ + M * DEFAULT_LD_TABLE * DEFAULT_NSEGMENT);
-	  double deltaT = double(DEFAULT_MAX_T) / DEFAULT_NSEGMENT;
-	  
-	  int iseg = std::floor(T/ deltaT);
-	  const double* boys_seg = (boys_m + iseg * DEFAULT_LD_TABLE);
-	  
-	  const double a = iseg * deltaT;
-	  const double b = a + deltaT;
-	  
-	  return monomial_expand(boys_seg, T, a, b);
-	}
-    }
-
-    return boys_asymp_element<M>(T);
-  }
-
-#define BOYS_FUNCTION_IMPLEMENTATION(M)					\
-  template __device__ double gauxc_boys_element<M>(double);		\
-
-  BOYS_FUNCTION_IMPLEMENTATION( 0);
-  BOYS_FUNCTION_IMPLEMENTATION( 1);
-  BOYS_FUNCTION_IMPLEMENTATION( 2);
-  BOYS_FUNCTION_IMPLEMENTATION( 3);
-  BOYS_FUNCTION_IMPLEMENTATION( 4);
-  BOYS_FUNCTION_IMPLEMENTATION( 5);
-  BOYS_FUNCTION_IMPLEMENTATION( 6);
-  BOYS_FUNCTION_IMPLEMENTATION( 7);
-  BOYS_FUNCTION_IMPLEMENTATION( 8);
-  BOYS_FUNCTION_IMPLEMENTATION( 9);
-  BOYS_FUNCTION_IMPLEMENTATION(10);
-  BOYS_FUNCTION_IMPLEMENTATION(11);
-  BOYS_FUNCTION_IMPLEMENTATION(12);
-  BOYS_FUNCTION_IMPLEMENTATION(13);
-  BOYS_FUNCTION_IMPLEMENTATION(14);
-  BOYS_FUNCTION_IMPLEMENTATION(15);
   
 }

@@ -557,7 +557,8 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "                          int ldX,\n");
   fprintf(f, "                          double *Gi,\n");
   fprintf(f, "                          int ldG, \n");
-  fprintf(f, "                          double *weights) {\n");	 
+  fprintf(f, "                          double *weights,\n");
+  fprintf(f, "                          double *boys_table) {\n");	 
 
   int partial_size = 0;
   for(int i = 0; i < lA; ++i) {
@@ -605,7 +606,7 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
 
   fprintf(f, "         // Evaluate Boys function\n");
   for(int l = 0; l < (2*lA+1); ++l) {
-    fprintf(f, "         t0%d = GauXC::gauxc_boys_element<%d>(TVAL);\n", l, l);
+    fprintf(f, "         t0%d = GauXC::gauxc_boys_element<%d>(boys_table, TVAL);\n", l, l);
   }
   fprintf(f, "\n");
   fprintf(f, "         // Evaluate VRR Buffer\n");
@@ -644,7 +645,8 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "                             double *Gi,\n");
   fprintf(f, "                             double *Gj,\n");
   fprintf(f, "                             int ldG, \n");
-  fprintf(f, "                             double *weights) {\n");	 
+  fprintf(f, "                             double *weights, \n");
+  fprintf(f, "                             double *boys_table) {\n");	 
 
   int partial_size = 0;
   for(int i = 0; i < lA; ++i) {
@@ -697,7 +699,7 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   
   fprintf(f, "         // Evaluate Boys function\n");
   for(int l = 0; l < (lA+lB+1); ++l) {
-    fprintf(f, "         t0%d = GauXC::gauxc_boys_element<%d>(TVAL);\n", l, l);
+    fprintf(f, "         t0%d = GauXC::gauxc_boys_element<%d>(boys_table, TVAL);\n", l, l);
   }
   fprintf(f, "\n");
   fprintf(f, "         // Evaluate VRR Buffer\n");
@@ -730,7 +732,8 @@ void generate_diagonal_header_files(int lA) {
   fprintf(f, "                          int ldX,\n");	 
   fprintf(f, "                          double *Gi,\n");
   fprintf(f, "                          int ldG, \n");
-  fprintf(f, "                          double *weights);\n");	   
+  fprintf(f, "                          double *weights, \n");
+  fprintf(f, "                          double *boys_table) {\n");	 
   fprintf(f, "\n");
   fprintf(f, "#endif\n");
   
@@ -756,7 +759,8 @@ void generate_off_diagonal_header_files(int lA, int lB) {
   fprintf(f, "                             double *Gi,\n");
   fprintf(f, "                             double *Gj,\n");
   fprintf(f, "                             int ldG, \n");
-  fprintf(f, "                             double *weights);\n");	   
+  fprintf(f, "                             double *weights,\n");
+  fprintf(f, "                             double *boys_table) {\n");	 
   fprintf(f, "\n");
   fprintf(f, "#endif\n");
   
@@ -786,7 +790,8 @@ void generate_main_files(int lA) {
   fprintf(f, "                             double *Gi,\n");
   fprintf(f, "                             double *Gj,\n");
   fprintf(f, "                             int ldG, \n");
-  fprintf(f, "                             double *weights);\n");	   
+  fprintf(f, "                             double *weights,\n");
+  fprintf(f, "                             double *boys_table) {\n");	 
   fprintf(f, "\n");
   fprintf(f, "#endif\n");
   
@@ -884,7 +889,8 @@ void generate_main_files(int lA) {
   fprintf(f, "                  double *Gi,\n");
   fprintf(f, "                  double *Gj,\n");
   fprintf(f, "                  int ldG, \n");
-  fprintf(f, "                  double *weights) {\n");
+  fprintf(f, "                  double *weights,\n");
+  fprintf(f, "                  double *boys_table) {\n");	 
 
   int size = 0;
   int partial_size = 0;
@@ -917,7 +923,9 @@ void generate_main_files(int lA) {
   fprintf(f, "                                ldX,\n");
   fprintf(f, "                                Gi,\n");
   fprintf(f, "                                ldG, \n");
-  fprintf(f, "                                weights);\n");	   
+  fprintf(f, "                                weights, \n");
+  fprintf(f, "                                boys_table) {\n");
+  
   fprintf(f, "      } else ");
 
   for(int i = 1; i <= lA; ++i) {
@@ -939,7 +947,8 @@ void generate_main_files(int lA) {
     fprintf(f, "                               ldX,\n");
     fprintf(f, "                               Gi,\n");
     fprintf(f, "                               ldG, \n");
-    fprintf(f, "                               weights);\n");
+    fprintf(f, "                               weights, \n");
+    fprintf(f, "                               boys_table) {\n");	 
     fprintf(f, "      } else ");
   }
 
@@ -971,7 +980,8 @@ void generate_main_files(int lA) {
   fprintf(f, "                                  Gi,\n");
   fprintf(f, "                                  Gj,\n");
   fprintf(f, "                                  ldG, \n");
-  fprintf(f, "                                  weights);\n");	   
+  fprintf(f, "                                  weights,\n");
+  fprintf(f, "                                  boys_table) {\n");	 
   fprintf(f, "      } else ");
 
   for(int i = 1; i <= lA; ++i) {
@@ -996,7 +1006,8 @@ void generate_main_files(int lA) {
       fprintf(f, "                                  Gi,\n");
       fprintf(f, "                                  Gj,\n");
       fprintf(f, "                                  ldG, \n");
-      fprintf(f, "                                  weights);\n");
+      fprintf(f, "                                  weights,\n");
+      fprintf(f, "                                  boys_table) {\n");	 
       fprintf(f, "      } else if((lA == %d) && (lB == %d)) {\n", j, i);
       fprintf(f, "         integral_%d_%d<<<320, 128, 128 * %d * sizeof(double)>>>(npts,\n", i, j, size - partial_size);
       fprintf(f, "                                  shpair,\n");
@@ -1007,7 +1018,8 @@ void generate_main_files(int lA) {
       fprintf(f, "                                  Gj,\n");
       fprintf(f, "                                  Gi,\n");
       fprintf(f, "                                  ldG, \n");
-      fprintf(f, "                                  weights);\n");
+      fprintf(f, "                                  weights, \n");
+      fprintf(f, "                                  boys_table) {\n");	 
       fprintf(f, "      } else ");
     }
 
@@ -1031,7 +1043,8 @@ void generate_main_files(int lA) {
     fprintf(f, "                                 Gi,\n");
     fprintf(f, "                                 Gj,\n");
     fprintf(f, "                                 ldG, \n");
-    fprintf(f, "                                 weights);\n");
+    fprintf(f, "                                 weights,\n");
+    fprintf(f, "                                 boys_table) {\n");	 
     fprintf(f, "      } else ");
   }
 

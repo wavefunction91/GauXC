@@ -70,9 +70,9 @@ void generate_shell_pair( const shells& A, const shells& B, shell_pair& AB) {
 
    cudaMemcpy(dev_prim_pairs, prim_pairs, np * sizeof(prim_pair), cudaMemcpyHostToDevice);
 
-   AB.nprim_pair = np;	      
+   AB.nprim_pair = np;
    AB.prim_pairs = dev_prim_pairs;
-   
+
    free(prim_pairs);
 }
 
@@ -87,7 +87,8 @@ void compute_integral_shell_pair(size_t npts,
                   double *Gi,
                   double *Gj,
                   int ldG, 
-                  double *weights) {
+                  double *weights,
+                  double *boys_table) {
    shell_pair shpair;
    // Account for permutational symmetry in kernels
    if( shell_list[i].L >= shell_list[j].L )
@@ -110,7 +111,8 @@ void compute_integral_shell_pair(size_t npts,
                                 ldX,
                                 Gi,
                                 ldG, 
-                                weights);
+                                weights, 
+                                boys_table) {
       } else if(lA == 1) {
         integral_0<<<320, 128, 128 * 9 * sizeof(double)>>>(npts,
                                dev_shpair,
@@ -119,7 +121,8 @@ void compute_integral_shell_pair(size_t npts,
                                ldX,
                                Gi,
                                ldG, 
-                               weights);
+                               weights, 
+                               boys_table) {
       } else if(lA == 2) {
         integral_0<<<320, 128, 128 * 31 * sizeof(double)>>>(npts,
                                dev_shpair,
@@ -128,7 +131,8 @@ void compute_integral_shell_pair(size_t npts,
                                ldX,
                                Gi,
                                ldG, 
-                               weights);
+                               weights, 
+                               boys_table) {
       } else {
          printf("Type not defined!\n");
       }
@@ -146,7 +150,8 @@ void compute_integral_shell_pair(size_t npts,
                                   Gi,
                                   Gj,
                                   ldG, 
-                                  weights);
+                                  weights,
+                                  boys_table) {
       } else if((lA == 1) && (lB == 0)) {
          integral_1_0<<<320, 128, 128 * 3 * sizeof(double)>>>(npts,
                                   dev_shpair,
@@ -157,7 +162,8 @@ void compute_integral_shell_pair(size_t npts,
                                   Gi,
                                   Gj,
                                   ldG, 
-                                  weights);
+                                  weights,
+                                  boys_table) {
       } else if((lA == 0) && (lB == 1)) {
          integral_1_0<<<320, 128, 128 * 3 * sizeof(double)>>>(npts,
                                   dev_shpair,
@@ -168,7 +174,8 @@ void compute_integral_shell_pair(size_t npts,
                                   Gj,
                                   Gi,
                                   ldG, 
-                                  weights);
+                                  weights, 
+                                  boys_table) {
       } else if((lA == 1) && (lB == 1)) {
         integral_1_1<<<320, 128, 128 * 9 * sizeof(double)>>>(npts,
                                  dev_shpair,
@@ -179,7 +186,8 @@ void compute_integral_shell_pair(size_t npts,
                                  Gi,
                                  Gj,
                                  ldG, 
-                                 weights);
+                                 weights,
+                                 boys_table) {
       } else if((lA == 2) && (lB == 0)) {
          integral_2_0<<<320, 128, 128 * 6 * sizeof(double)>>>(npts,
                                   dev_shpair,
@@ -190,7 +198,8 @@ void compute_integral_shell_pair(size_t npts,
                                   Gi,
                                   Gj,
                                   ldG, 
-                                  weights);
+                                  weights,
+                                  boys_table) {
       } else if((lA == 0) && (lB == 2)) {
          integral_2_0<<<320, 128, 128 * 6 * sizeof(double)>>>(npts,
                                   dev_shpair,
@@ -201,7 +210,8 @@ void compute_integral_shell_pair(size_t npts,
                                   Gj,
                                   Gi,
                                   ldG, 
-                                  weights);
+                                  weights, 
+                                  boys_table) {
       } else if((lA == 2) && (lB == 1)) {
          integral_2_1<<<320, 128, 128 * 16 * sizeof(double)>>>(npts,
                                   dev_shpair,
@@ -212,7 +222,8 @@ void compute_integral_shell_pair(size_t npts,
                                   Gi,
                                   Gj,
                                   ldG, 
-                                  weights);
+                                  weights,
+                                  boys_table) {
       } else if((lA == 1) && (lB == 2)) {
          integral_2_1<<<320, 128, 128 * 16 * sizeof(double)>>>(npts,
                                   dev_shpair,
@@ -223,7 +234,8 @@ void compute_integral_shell_pair(size_t npts,
                                   Gj,
                                   Gi,
                                   ldG, 
-                                  weights);
+                                  weights, 
+                                  boys_table) {
       } else if((lA == 2) && (lB == 2)) {
         integral_2_2<<<320, 128, 128 * 31 * sizeof(double)>>>(npts,
                                  dev_shpair,
@@ -234,7 +246,8 @@ void compute_integral_shell_pair(size_t npts,
                                  Gi,
                                  Gj,
                                  ldG, 
-                                 weights);
+                                 weights,
+                                 boys_table) {
       } else {
          printf("Type not defined!\n");
       }

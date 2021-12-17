@@ -8,6 +8,7 @@ __global__ void integral_1(size_t npts,
                           int ldX,
                           double *Gi,
                           int ldG, 
-                          double *weights);
+                          double *weights, 
+                          double *boys_table) {
 
 #endif

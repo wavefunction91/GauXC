@@ -12,6 +12,7 @@ void compute_integral_shell_pair(size_t npts,
                              double *Gi,
                              double *Gj,
                              int ldG, 
-                             double *weights);
+                             double *weights,
+                             double *boys_table) {
 
 #endif
