@@ -20,7 +20,8 @@ __global__ void integral_2_0(size_t npts,
                              double *Gi,
                              double *Gj,
                              int ldG, 
-                             double *weights) {
+                             double *weights, 
+                             double *boys_table) {
    __shared__ double *temp;
    for(size_t p_outer = blockIdx.x * blockDim.x; p_outer < npts; p_outer += gridDim.x * blockDim.x) {
       double *_point_outer = (_points + p_outer);
@@ -59,9 +60,9 @@ __global__ void integral_2_0(size_t npts,
          SCALAR_TYPE t00, t01, t02;
 
          // Evaluate Boys function
-         t00 = GauXC::gauxc_boys_element<0>(TVAL);
-         t01 = GauXC::gauxc_boys_element<1>(TVAL);
-         t02 = GauXC::gauxc_boys_element<2>(TVAL);
+         t00 = GauXC::gauxc_boys_element<0>(boys_table, TVAL);
+         t01 = GauXC::gauxc_boys_element<1>(boys_table, TVAL);
+         t02 = GauXC::gauxc_boys_element<2>(boys_table, TVAL);
 
          // Evaluate VRR Buffer
          SCALAR_TYPE t10, t11, t20, tx, ty;

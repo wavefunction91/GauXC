@@ -14,34 +14,10 @@ namespace GauXC {
 
   // create tables
   
-  void gauxc_boys_init();
+  double *gauxc_boys_init();
   
   void gauxc_boys_finalize();
 
-  // get values
-
-  template <int M>
-  __device__ double gauxc_boys_element(double T);
-
-#define BOYS_FUNCTION_HEADER(M)						\
-  extern template __device__ double gauxc_boys_element<M>(double);	\
-
-  BOYS_FUNCTION_HEADER( 0);
-  BOYS_FUNCTION_HEADER( 1);
-  BOYS_FUNCTION_HEADER( 2);
-  BOYS_FUNCTION_HEADER( 3);
-  BOYS_FUNCTION_HEADER( 4);
-  BOYS_FUNCTION_HEADER( 5);
-  BOYS_FUNCTION_HEADER( 6);
-  BOYS_FUNCTION_HEADER( 7);
-  BOYS_FUNCTION_HEADER( 8);
-  BOYS_FUNCTION_HEADER( 9);
-  BOYS_FUNCTION_HEADER(10);
-  BOYS_FUNCTION_HEADER(11);
-  BOYS_FUNCTION_HEADER(12);
-  BOYS_FUNCTION_HEADER(13);
-  BOYS_FUNCTION_HEADER(14);
-  BOYS_FUNCTION_HEADER(15);
 }
 
 #endif
