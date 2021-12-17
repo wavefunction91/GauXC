@@ -2,7 +2,7 @@
 #define __MY_INTEGRAL_1
 
 __global__ void integral_1(size_t npts,
-                          shell_pair shpair,
+                          shell_pair *shpair,
                           double *points,
                           double *Xi,
                           int ldX,

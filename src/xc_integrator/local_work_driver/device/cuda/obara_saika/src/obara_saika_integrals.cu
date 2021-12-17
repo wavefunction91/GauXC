@@ -95,12 +95,16 @@ void compute_integral_shell_pair(size_t npts,
    else
      generate_shell_pair(shell_list[j], shell_list[i], shpair);
 
+   shell_pair *dev_shpair;
+   cudaMalloc((void**) &dev_shpair, sizeof(shell_pair));
+   cudaMemcpy(dev_shpair, &shpair, sizeof(shell_pair), cudaMemcpyHostToDevice);
+
    if (i == j) {
       int lA = shell_list[i].L;
 
       if(lA == 0) {
          integral_0<<<320, 128, 128 * 1 * sizeof(double)>>>(npts,
-                                shpair,
+                                dev_shpair,
                                 points,
                                 Xi,
                                 ldX,
@@ -109,7 +113,7 @@ void compute_integral_shell_pair(size_t npts,
                                 weights);
       } else if(lA == 1) {
         integral_0<<<320, 128, 128 * 9 * sizeof(double)>>>(npts,
-                               shpair,
+                               dev_shpair,
                                points,
                                Xi,
                                ldX,
@@ -118,7 +122,7 @@ void compute_integral_shell_pair(size_t npts,
                                weights);
       } else if(lA == 2) {
         integral_0<<<320, 128, 128 * 31 * sizeof(double)>>>(npts,
-                               shpair,
+                               dev_shpair,
                                points,
                                Xi,
                                ldX,
@@ -134,7 +138,7 @@ void compute_integral_shell_pair(size_t npts,
 
       if((lA == 0) && (lB == 0)) {
          integral_0_0<<<320, 128, 128 * 1 * sizeof(double)>>>(npts,
-                                  shpair,
+                                  dev_shpair,
                                   points,
                                   Xi,
                                   Xj,
@@ -145,7 +149,7 @@ void compute_integral_shell_pair(size_t npts,
                                   weights);
       } else if((lA == 1) && (lB == 0)) {
          integral_1_0<<<320, 128, 128 * 3 * sizeof(double)>>>(npts,
-                                  shpair,
+                                  dev_shpair,
                                   points,
                                   Xi,
                                   Xj,
@@ -156,7 +160,7 @@ void compute_integral_shell_pair(size_t npts,
                                   weights);
       } else if((lA == 0) && (lB == 1)) {
          integral_1_0<<<320, 128, 128 * 3 * sizeof(double)>>>(npts,
-                                  shpair,
+                                  dev_shpair,
                                   points,
                                   Xj,
                                   Xi,
@@ -167,7 +171,7 @@ void compute_integral_shell_pair(size_t npts,
                                   weights);
       } else if((lA == 1) && (lB == 1)) {
         integral_1_1<<<320, 128, 128 * 9 * sizeof(double)>>>(npts,
-                                 shpair,
+                                 dev_shpair,
                                  points,
                                  Xi,
                                  Xj,
@@ -178,7 +182,7 @@ void compute_integral_shell_pair(size_t npts,
                                  weights);
       } else if((lA == 2) && (lB == 0)) {
          integral_2_0<<<320, 128, 128 * 6 * sizeof(double)>>>(npts,
-                                  shpair,
+                                  dev_shpair,
                                   points,
                                   Xi,
                                   Xj,
@@ -189,7 +193,7 @@ void compute_integral_shell_pair(size_t npts,
                                   weights);
       } else if((lA == 0) && (lB == 2)) {
          integral_2_0<<<320, 128, 128 * 6 * sizeof(double)>>>(npts,
-                                  shpair,
+                                  dev_shpair,
                                   points,
                                   Xj,
                                   Xi,
@@ -200,7 +204,7 @@ void compute_integral_shell_pair(size_t npts,
                                   weights);
       } else if((lA == 2) && (lB == 1)) {
          integral_2_1<<<320, 128, 128 * 16 * sizeof(double)>>>(npts,
-                                  shpair,
+                                  dev_shpair,
                                   points,
                                   Xi,
                                   Xj,
@@ -211,7 +215,7 @@ void compute_integral_shell_pair(size_t npts,
                                   weights);
       } else if((lA == 1) && (lB == 2)) {
          integral_2_1<<<320, 128, 128 * 16 * sizeof(double)>>>(npts,
-                                  shpair,
+                                  dev_shpair,
                                   points,
                                   Xj,
                                   Xi,
@@ -222,7 +226,7 @@ void compute_integral_shell_pair(size_t npts,
                                   weights);
       } else if((lA == 2) && (lB == 2)) {
         integral_2_2<<<320, 128, 128 * 31 * sizeof(double)>>>(npts,
-                                 shpair,
+                                 dev_shpair,
                                  points,
                                  Xi,
                                  Xj,
@@ -236,5 +240,6 @@ void compute_integral_shell_pair(size_t npts,
       }
    }
 
-  cudaFree(shpair.prim_pairs);
+   cudaFree(dev_shpair);
+   cudaFree(shpair.prim_pairs);
 }

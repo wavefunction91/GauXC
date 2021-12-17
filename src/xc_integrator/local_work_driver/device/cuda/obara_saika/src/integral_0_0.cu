@@ -12,7 +12,7 @@
   _a < _b ? _a : _b; })
 
 __global__ void integral_0_0(size_t npts,
-                  shell_pair shpair,
+                  shell_pair *shpair,
                              double *_points,
                              double *Xi,
                              double *Xj,
@@ -29,14 +29,14 @@ __global__ void integral_0_0(size_t npts,
 
       for(int i = 0; i < 1; ++i) SCALAR_STORE((temp + i * blockDim.x + threadIdx.x), SCALAR_ZERO());
 
-      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {
-         double RHO = shpair.prim_pairs[ij].gamma;
+      for(int ij = 0; ij < shpair[0].nprim_pair; ++ij) {
+         double RHO = shpair[0].prim_pairs[ij].gamma;
 
-         double xP = shpair.prim_pairs[ij].P.x;
-         double yP = shpair.prim_pairs[ij].P.y;
-         double zP = shpair.prim_pairs[ij].P.z;
+         double xP = shpair[0].prim_pairs[ij].P.x;
+         double yP = shpair[0].prim_pairs[ij].P.y;
+         double zP = shpair[0].prim_pairs[ij].P.z;
 
-         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;
+         double eval = shpair[0].prim_pairs[ij].coeff_prod * shpair[0].prim_pairs[ij].K;
 
          // Evaluate T Values
          SCALAR_TYPE xC = SCALAR_LOAD((_point_outer + p_inner + 0 * npts));
