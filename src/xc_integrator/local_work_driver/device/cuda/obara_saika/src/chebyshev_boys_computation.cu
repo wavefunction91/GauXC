@@ -104,14 +104,16 @@ namespace GauXC {
   }
   
   double* gauxc_boys_init() {
-    double *tmp_ = (double*) malloc(DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1) * sizeof(double));
+    double *tmp = (double*) malloc(DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1) * sizeof(double));
     
-    generate_boys_table(DEFAULT_NCHEB, DEFAULT_MAX_M, DEFAULT_MAX_T, DEFAULT_NSEGMENT, tmp_, DEFAULT_LD_TABLE);
+    generate_boys_table(DEFAULT_NCHEB, DEFAULT_MAX_M, DEFAULT_MAX_T, DEFAULT_NSEGMENT, tmp, DEFAULT_LD_TABLE);
 
     double *dev_tmp;
 
     cudaMalloc((void**)&dev_tmp, DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1) * sizeof(double));
     cudaMemcpy(dev_tmp, tmp, DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1) * sizeof(double), cudaMemcpyHostToDevice);
+
+    free(tmp);
     
     return dev_tmp;
   }

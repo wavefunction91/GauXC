@@ -733,7 +733,7 @@ void generate_diagonal_header_files(int lA) {
   fprintf(f, "                          double *Gi,\n");
   fprintf(f, "                          int ldG, \n");
   fprintf(f, "                          double *weights, \n");
-  fprintf(f, "                          double *boys_table) {\n");	 
+  fprintf(f, "                          double *boys_table);\n");	 
   fprintf(f, "\n");
   fprintf(f, "#endif\n");
   
@@ -760,7 +760,7 @@ void generate_off_diagonal_header_files(int lA, int lB) {
   fprintf(f, "                             double *Gj,\n");
   fprintf(f, "                             int ldG, \n");
   fprintf(f, "                             double *weights,\n");
-  fprintf(f, "                             double *boys_table) {\n");	 
+  fprintf(f, "                             double *boys_table);\n");	 
   fprintf(f, "\n");
   fprintf(f, "#endif\n");
   
@@ -791,7 +791,7 @@ void generate_main_files(int lA) {
   fprintf(f, "                             double *Gj,\n");
   fprintf(f, "                             int ldG, \n");
   fprintf(f, "                             double *weights,\n");
-  fprintf(f, "                             double *boys_table) {\n");	 
+  fprintf(f, "                             double *boys_table);\n");	 
   fprintf(f, "\n");
   fprintf(f, "#endif\n");
   
@@ -924,7 +924,7 @@ void generate_main_files(int lA) {
   fprintf(f, "                                Gi,\n");
   fprintf(f, "                                ldG, \n");
   fprintf(f, "                                weights, \n");
-  fprintf(f, "                                boys_table) {\n");
+  fprintf(f, "                                boys_table);\n");
   
   fprintf(f, "      } else ");
 
@@ -948,7 +948,7 @@ void generate_main_files(int lA) {
     fprintf(f, "                               Gi,\n");
     fprintf(f, "                               ldG, \n");
     fprintf(f, "                               weights, \n");
-    fprintf(f, "                               boys_table) {\n");	 
+    fprintf(f, "                               boys_table);\n");	 
     fprintf(f, "      } else ");
   }
 
@@ -981,7 +981,7 @@ void generate_main_files(int lA) {
   fprintf(f, "                                  Gj,\n");
   fprintf(f, "                                  ldG, \n");
   fprintf(f, "                                  weights,\n");
-  fprintf(f, "                                  boys_table) {\n");	 
+  fprintf(f, "                                  boys_table);\n");	 
   fprintf(f, "      } else ");
 
   for(int i = 1; i <= lA; ++i) {
@@ -1007,7 +1007,7 @@ void generate_main_files(int lA) {
       fprintf(f, "                                  Gj,\n");
       fprintf(f, "                                  ldG, \n");
       fprintf(f, "                                  weights,\n");
-      fprintf(f, "                                  boys_table) {\n");	 
+      fprintf(f, "                                  boys_table);\n");	 
       fprintf(f, "      } else if((lA == %d) && (lB == %d)) {\n", j, i);
       fprintf(f, "         integral_%d_%d<<<320, 128, 128 * %d * sizeof(double)>>>(npts,\n", i, j, size - partial_size);
       fprintf(f, "                                  shpair,\n");
@@ -1019,7 +1019,7 @@ void generate_main_files(int lA) {
       fprintf(f, "                                  Gi,\n");
       fprintf(f, "                                  ldG, \n");
       fprintf(f, "                                  weights, \n");
-      fprintf(f, "                                  boys_table) {\n");	 
+      fprintf(f, "                                  boys_table);\n");	 
       fprintf(f, "      } else ");
     }
 
@@ -1044,7 +1044,7 @@ void generate_main_files(int lA) {
     fprintf(f, "                                 Gj,\n");
     fprintf(f, "                                 ldG, \n");
     fprintf(f, "                                 weights,\n");
-    fprintf(f, "                                 boys_table) {\n");	 
+    fprintf(f, "                                 boys_table);\n");	 
     fprintf(f, "      } else ");
   }
 

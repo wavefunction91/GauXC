@@ -16,7 +16,7 @@ namespace GauXC {
   
   double *gauxc_boys_init();
   
-  void gauxc_boys_finalize();
+  void gauxc_boys_finalize(double *);
 
 }
 

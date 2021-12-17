@@ -29,10 +29,8 @@ typedef struct {
 typedef struct {
   int lA;
   int lB;
-  int nprim_pair;
   point rA, rB;
   point rAB;
-  prim_pair* prim_pairs;
 } shell_pair;
 
 #endif
