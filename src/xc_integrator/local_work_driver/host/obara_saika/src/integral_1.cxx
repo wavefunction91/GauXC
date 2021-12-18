@@ -63,11 +63,19 @@ void integral_1(size_t npts,
             SIMD_ALIGNED_STORE((Tval + p_inner), X_PC);
          }
 
+	 if(p_outer == 0) {
+	   printf("%lf\n", *(Tval + 0));
+	 }
+	 
          // Evaluate Boys function
          GauXC::gauxc_boys_elements<0>(NPTS_LOCAL, Tval, FmT + 0 * NPTS_LOCAL);
          GauXC::gauxc_boys_elements<1>(NPTS_LOCAL, Tval, FmT + 1 * NPTS_LOCAL);
          GauXC::gauxc_boys_elements<2>(NPTS_LOCAL, Tval, FmT + 2 * NPTS_LOCAL);
 
+	 if(p_outer == 0) {
+	   printf("%lf %lf %lf\n", *(FmT + 0 * NPTS_LOCAL),*(FmT + 1 * NPTS_LOCAL), *(FmT + 2 * NPTS_LOCAL));
+	 }
+	 
          // Evaluate VRR Buffer
          for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += SIMD_LENGTH) {
             SIMD_TYPE xC = SIMD_UNALIGNED_LOAD((_point_outer + p_inner + 0 * npts));

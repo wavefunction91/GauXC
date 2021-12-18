@@ -158,11 +158,11 @@ namespace GauXC {
   
   template <int M>
   double gauxc_boys_element(double T) {
-    const double* boys_m = (boys_table_.data() + M * DEFAULT_LD_TABLE * DEFAULT_NSEGMENT);
-    constexpr double deltaT = double(DEFAULT_MAX_T) / DEFAULT_NSEGMENT;
+    if(T < DEFAULT_MAX_T) {
+      if constexpr (M != 0) {
+	  const double* boys_m = (boys_table_.data() + M * DEFAULT_LD_TABLE * DEFAULT_NSEGMENT);
+	  constexpr double deltaT = double(DEFAULT_MAX_T) / DEFAULT_NSEGMENT;
 
-    if constexpr (M != 0) {
-	if(T < DEFAULT_MAX_T) {
 	  double eval;
 	  
 	  int iseg = std::floor(T/ deltaT);
@@ -174,7 +174,11 @@ namespace GauXC {
 
 	  return eval;
 	}
-      }
+
+      const double sqrt_t = std::sqrt(T);
+      const double inv_sqrt_t = 1./sqrt_t;
+      return constants::sqrt_pi_ov_2<> * std::erf(sqrt_t) * inv_sqrt_t;
+    }
     
     return boys_asymp_element<M>(T);
   }

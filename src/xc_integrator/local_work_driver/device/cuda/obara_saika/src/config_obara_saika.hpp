@@ -2,6 +2,7 @@
 #define _MY_SIMD_INSTRUCTIONS
 
 #include <gauxc/util/constexpr_math.hpp>
+#include <stdio.h>
 
 #define NPTS_LOCAL 64
 
@@ -65,26 +66,30 @@ namespace GauXC {
 	constexpr double const_coeff = (constants::sqrt_pi<> / integral_pow_two<2*M+1>::value) * (integral_factorial<2*M>::value / integral_factorial<M>::value);
 	return const_coeff * std::sqrt(integral_pow<2*M+1>(x_inv));
       }
-
+    
     return constants::sqrt_pi_ov_2<> * std::sqrt( x_inv ); 
   }
   
   template <int M>
   __device__  inline double gauxc_boys_element(double *boys_table, double T) {
-    if constexpr (M != 0) {
-	if (T < DEFAULT_MAX_T) {
-	  double* boys_m = (boys_table + M * DEFAULT_LD_TABLE * DEFAULT_NSEGMENT);
-	  double deltaT = double(DEFAULT_MAX_T) / DEFAULT_NSEGMENT;
-	  
-	  int iseg = std::floor(T/ deltaT);
-	  const double* boys_seg = (boys_m + iseg * DEFAULT_LD_TABLE);
-	  
-	  const double a = iseg * deltaT;
-	  const double b = a + deltaT;
-	  
-	  return monomial_expand(boys_seg, T, a, b);
-	}
-      }
+
+    if(T < DEFAULT_MAX_T) {
+      if constexpr (M != 0) {
+          const double* boys_m = (boys_table + M * DEFAULT_LD_TABLE * DEFAULT_NSEGMENT);
+          constexpr double deltaT = double(DEFAULT_MAX_T) / DEFAULT_NSEGMENT;
+
+          int iseg = std::floor(T/ deltaT);
+          const double* boys_seg = boys_m + iseg * DEFAULT_LD_TABLE;
+
+          const double a = iseg * deltaT;
+          const double b = a + deltaT;
+          return monomial_expand(boys_seg, T, a, b);
+        }
+
+      const double sqrt_t = std::sqrt(T);
+      const double inv_sqrt_t = 1./sqrt_t;
+      return constants::sqrt_pi_ov_2<> * std::erf(sqrt_t) * inv_sqrt_t;
+    }
 
     return boys_asymp_element<M>(T);
   }
