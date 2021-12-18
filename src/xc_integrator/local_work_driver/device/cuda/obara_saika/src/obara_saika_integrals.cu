@@ -93,7 +93,7 @@ void compute_integral_shell_pair(size_t npts,
    prim_pair *dev_prim_pairs;
    cudaMalloc((void**)&dev_prim_pairs, np * sizeof(prim_pair));
    cudaMemcpy(dev_prim_pairs, prim_pairs, np * sizeof(prim_pair), cudaMemcpyHostToDevice);
-   
+
    if (i == j) {
       int lA = shell_list[i].L;
 
@@ -110,7 +110,7 @@ void compute_integral_shell_pair(size_t npts,
 							   weights, 
 							   boys_table);
       } else if(lA == 1) {
-        integral_0<<<320, 128, 128 * 9 * sizeof(double)>>>(npts,
+        integral_1<<<320, 128, 128 * 9 * sizeof(double)>>>(npts,
 							   shpair,
 							   np,
 							   dev_prim_pairs,
@@ -122,7 +122,7 @@ void compute_integral_shell_pair(size_t npts,
 							   weights, 
 							   boys_table);
       } else if(lA == 2) {
-        integral_0<<<320, 128, 128 * 31 * sizeof(double)>>>(npts,
+        integral_2<<<320, 128, 128 * 31 * sizeof(double)>>>(npts,
 							    shpair,
 							    np,
 							    dev_prim_pairs,

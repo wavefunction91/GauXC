@@ -30,17 +30,11 @@ __global__ void integral_0(size_t npts,
 			   double *weights,
 			   double *boys_table) {
   extern __shared__ double temp[];
-
-  if((threadIdx.x == 0) && (blockIdx.x == 0)) {
-    for(int i = 0; i < DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1); ++i) {
-      printf("%lf\n", boys_table[i]);
-    }
-  }
   
    for(size_t p_outer = blockIdx.x * blockDim.x; p_outer < npts; p_outer += gridDim.x * blockDim.x) {
       double *_point_outer = (_points + p_outer);
-
-      size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer);
+      
+      size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer - 1);
 
       double xA = shpair.rA.x;
       double yA = shpair.rA.y;
@@ -62,24 +56,16 @@ __global__ void integral_0(size_t npts,
          SCALAR_TYPE Y_PC = SCALAR_SUB(yA, yC);
          SCALAR_TYPE Z_PC = SCALAR_SUB(zA, zC);
 
-         X_PC = SCALAR_MUL(X_PC, X_PC);
-         X_PC = SCALAR_FMA(Y_PC, Y_PC, X_PC);
-         X_PC = SCALAR_FMA(Z_PC, Z_PC, X_PC);
-         SCALAR_TYPE TVAL = SCALAR_MUL(RHO, X_PC);
-
+         SCALAR_TYPE TVAL = SCALAR_MUL(X_PC, X_PC);
+         TVAL = SCALAR_FMA(Y_PC, Y_PC, TVAL);
+         TVAL = SCALAR_FMA(Z_PC, Z_PC, TVAL);
+         TVAL = SCALAR_MUL(RHO, TVAL);
+	 
          SCALAR_TYPE t00;
-
-	 if((threadIdx.x == 0) && (blockIdx.x == 0)) {
-	   printf("%lf\n", TVAL);
-	 }
 	 
          // Evaluate Boys function
          t00 = GauXC::gauxc_boys_element<0>(boys_table, TVAL);
 
-	 if((threadIdx.x == 0) && (blockIdx.x == 0)) {
-	   printf("%lf\n", t00);
-	 }
-	 
          // Evaluate VRR Buffer
          SCALAR_TYPE tx;
 

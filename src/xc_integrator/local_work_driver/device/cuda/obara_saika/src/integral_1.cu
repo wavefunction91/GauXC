@@ -26,7 +26,7 @@ __global__ void integral_1(size_t npts,
    for(size_t p_outer = blockIdx.x * blockDim.x; p_outer < npts; p_outer += gridDim.x * blockDim.x) {
       double *_point_outer = (_points + p_outer);
 
-      size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer);
+      size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer - 1);
 
       double xA = shpair.rA.x;
       double yA = shpair.rA.y;
@@ -53,18 +53,18 @@ __global__ void integral_1(size_t npts,
          SCALAR_TYPE Y_PC = SCALAR_SUB(yA, yC);
          SCALAR_TYPE Z_PC = SCALAR_SUB(zA, zC);
 
-         X_PC = SCALAR_MUL(X_PC, X_PC);
-         X_PC = SCALAR_FMA(Y_PC, Y_PC, X_PC);
-         X_PC = SCALAR_FMA(Z_PC, Z_PC, X_PC);
-         SCALAR_TYPE TVAL = SCALAR_MUL(RHO, X_PC);
+         SCALAR_TYPE TVAL = SCALAR_MUL(X_PC, X_PC);
+         TVAL = SCALAR_FMA(Y_PC, Y_PC, TVAL);
+         TVAL = SCALAR_FMA(Z_PC, Z_PC, TVAL);
+         TVAL = SCALAR_MUL(RHO, TVAL);
 
          SCALAR_TYPE t00, t01, t02;
-
+	 
          // Evaluate Boys function
          t00 = GauXC::gauxc_boys_element<0>(boys_table, TVAL);
          t01 = GauXC::gauxc_boys_element<1>(boys_table, TVAL);
          t02 = GauXC::gauxc_boys_element<2>(boys_table, TVAL);
-
+	 
          // Evaluate VRR Buffer
          SCALAR_TYPE t10, t11, t20, tx, ty;
 
