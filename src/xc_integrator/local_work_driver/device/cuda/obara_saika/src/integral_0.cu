@@ -11,6 +11,13 @@
   __typeof__ (b) _b = (b);		\
   _a < _b ? _a : _b; })
 
+#define DEFAULT_NCHEB  7
+#define DEFAULT_MAX_M 16
+#define DEFAULT_MAX_T 30
+
+#define DEFAULT_NSEGMENT ((DEFAULT_MAX_T * DEFAULT_NCHEB) / 2)
+#define DEFAULT_LD_TABLE (DEFAULT_NCHEB + 1)
+
 __global__ void integral_0(size_t npts,
 			   shell_pair shpair,
 			   int np,
@@ -24,6 +31,12 @@ __global__ void integral_0(size_t npts,
 			   double *boys_table) {
   extern __shared__ double temp[];
 
+  if((threadIdx.x == 0) && (blockIdx.x == 0)) {
+    for(int i = 0; i < DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1); ++i) {
+      printf("%lf\n", boys_table[i]);
+    }
+  }
+  
    for(size_t p_outer = blockIdx.x * blockDim.x; p_outer < npts; p_outer += gridDim.x * blockDim.x) {
       double *_point_outer = (_points + p_outer);
 
@@ -56,9 +69,17 @@ __global__ void integral_0(size_t npts,
 
          SCALAR_TYPE t00;
 
+	 if((threadIdx.x == 0) && (blockIdx.x == 0)) {
+	   printf("%lf\n", TVAL);
+	 }
+	 
          // Evaluate Boys function
          t00 = GauXC::gauxc_boys_element<0>(boys_table, TVAL);
 
+	 if((threadIdx.x == 0) && (blockIdx.x == 0)) {
+	   printf("%lf\n", t00);
+	 }
+	 
          // Evaluate VRR Buffer
          SCALAR_TYPE tx;
 

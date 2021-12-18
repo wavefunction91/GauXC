@@ -108,6 +108,11 @@ namespace GauXC {
     
     generate_boys_table(DEFAULT_NCHEB, DEFAULT_MAX_M, DEFAULT_MAX_T, DEFAULT_NSEGMENT, tmp, DEFAULT_LD_TABLE);
 
+    /*
+    for(int i = 0; i < DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1); ++i) {
+      printf("%lf\n", tmp[i]);
+    }
+    */
     double *dev_tmp;
 
     cudaMalloc((void**)&dev_tmp, DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1) * sizeof(double));

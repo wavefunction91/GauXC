@@ -1,7 +1,7 @@
 #LIBINT_ROOT = /global/cfs/cdirs/m1027/dbwy/mpqc4/li/install/haswell/release
 #EIGEN_DIR   = /global/common/sw/cray/cnl7/haswell/eigen/3.3.7/gcc/8.2.0/2wwrykb/include/eigen3
 
-CC = CC
+CC = g++
 
 #CONST_LIB = ../../../../../../include/
 #LIBINT_ROOT = /home/dtpopovici/Executables/libint

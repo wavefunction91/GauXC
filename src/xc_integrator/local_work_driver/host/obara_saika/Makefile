@@ -1,7 +1,7 @@
 AR = ar
 ARFLGAS = -rc
 
-CC = CC
+CC = g++
 
 SRC = ./src
 INCLUDE = ./include
