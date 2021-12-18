@@ -7,6 +7,7 @@
 #include <algorithm>
 #include <random>
 #include <sys/time.h>
+#include <float.h>
 
 int main(int argc, char** argv) {
   libint2::initialize();
@@ -25,7 +26,7 @@ int main(int argc, char** argv) {
     //libint2::Atom{ 1,  4.38492e+00,  -3.56783e+00,   3.73599e-03},
     //libint2::Atom{ 1,  6.74844e+00,   5.25274e-01,   1.88028e-03},
     //libint2::Atom{ 1,  4.38551e+00,   4.61832e+00,  -1.48721e-03},
-    //libint2::Atom{ 1, -3.41001e-01,   4.61857e+00,  -3.05569e-03},
+    libint2::Atom{ 1, -3.41001e-01,   4.61857e+00,  -3.05569e-03},
     libint2::Atom{ 1, -2.70437e+00,   5.25727e-01,  -1.09793e-03} 
   };
 
@@ -222,7 +223,7 @@ struct timeval start, end;
   int correct = 1;
   
   for( int i = 0; i < nbf * ngrid; ++i) {
-    if(fabs(G_libint[i] - G_own[i]) > 1e-6) {
+    if((fabs(G_libint[i] - G_own[i]) > 1e-6) || std::isnan(G_own[i])) {
       printf("%lf %lf\n", G_libint[i], G_own[i]);
       correct = 0;
     }

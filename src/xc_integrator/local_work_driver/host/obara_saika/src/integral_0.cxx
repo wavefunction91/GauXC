@@ -4,6 +4,8 @@
 #include "config_obara_saika.hpp"
 #include "integral_0.hpp"
 
+#include <stdio.h>
+
 #define PI 3.14159265358979323846
 
 #define MIN(a,b)			\
@@ -57,11 +59,11 @@ void integral_0(size_t npts,
             X_PC = SIMD_MUL(SIMD_DUPLICATE(&(RHO)), X_PC);
             SIMD_ALIGNED_STORE((Tval + p_inner), X_PC);
          }
-
+	 
          // Evaluate Boys function
          GauXC::gauxc_boys_elements<0>(NPTS_LOCAL, Tval, FmT + 0 * NPTS_LOCAL);
 
-         // Evaluate VRR Buffer
+	 // Evaluate VRR Buffer
          for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += SIMD_LENGTH) {
             SIMD_TYPE tx, t00;
 
