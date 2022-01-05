@@ -54,7 +54,6 @@ public:
 
     }
 
-    //throw std::bad_alloc();
     GAUXC_GENERIC_EXCEPTION("device std::bad_alloc " + msg 
       + " nalloc = " + std::to_string(len*sizeof(T)) 
       + " nleft = " +std::to_string(nleft_));

@@ -26,6 +26,3 @@ target_sources( gauxc PRIVATE ${GAUXC_OBARA_SAIKA_HOST_SRC} )
 target_include_directories( gauxc PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 )
-
-#find_package( Boost REQUIRED )
-#target_link_libraries( gauxc PRIVATE Boost::headers )

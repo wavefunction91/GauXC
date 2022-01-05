@@ -16,15 +16,7 @@
 namespace GauXC {
 
 ReferenceLocalHostWorkDriver::ReferenceLocalHostWorkDriver() {
-#if 0
-  int ncheb   = 7;
-  int maxM    = 16;
-  double maxT = 117;
-  int nseg    = ncheb * maxT;
-  gauxc_boys_init( ncheb, maxM, nseg, 1e-10, maxT );
-#else
   gauxc_boys_init();
-#endif
 }; 
 ReferenceLocalHostWorkDriver::~ReferenceLocalHostWorkDriver() noexcept {
   gauxc_boys_finalize();

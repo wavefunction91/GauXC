@@ -7,7 +7,6 @@
 #include "host/blas.hpp"
 #include <stdexcept>
 #include <set>
-//#include <atomic>
 
 #include <gauxc/util/geometry.hpp>
 
@@ -262,8 +261,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   const auto& mol   = this->load_balancer_->molecule();
   const auto& meta  = this->load_balancer_->molmeta();
 
-  // XXX Check that basis is cartesian
-  //for( auto& sh : basis ) if(sh.pure()) GAUXC_GENERIC_EXCEPTION("sn-LinK EXX Only Works With Cartesian Functions");
 
   // Get basis map
   BasisSetMap basis_map(basis,mol);
@@ -307,7 +304,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Loop over tasks
   const size_t ntasks = tasks.size();
-  //std::atomic_size_t nskip = 0;
 
   // Full shell list
   std::vector<int32_t> full_shell_list_( basis.nshells() );
@@ -399,7 +395,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Bail on task if no shells are needed after ek screening
     if( ek_shell_set.size() == 0 ) {
-      //nskip++; // this is atomic
       continue;
     }
 
@@ -465,7 +460,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     K[j + i*ldk] = K_symm;
   }
 
-  //std::cout << "NSKIP = " << nskip << " / " << ntasks << std::endl;
 }
 
 }
