@@ -57,7 +57,7 @@ if( GAUXC_CXX_HAS_WNON_VIRTUAL_DTOR )
 endif()
 
 if( GAUXC_CXX_HAS_WSHADOW )
-  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wshadow -Werror=shadow> )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wshadow> )
 endif()
 
 

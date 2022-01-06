@@ -1,4 +1,0 @@
-XCDeviceData
-| -> XCDeviceStackData
-|    | -> XCDeviceAoSData
-  

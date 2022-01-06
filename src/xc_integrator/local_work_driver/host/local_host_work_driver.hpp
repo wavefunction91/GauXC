@@ -69,6 +69,7 @@ public:
    *  @param[in] npts     Number of points on which to evaluate the basis
    *  @param[in] nshells  Number of shells to evaluate (length of shell_list)
    *  @param[in] nbe      Total number of basis functions to evaluate (sum over shell_list)
+   *  @param[in] pts      Grid points (AoS)
    *  @param[in] basis    Full basis set
    *  @param[in] shell_list List of indices (0-based) to evaulate from basis
    *
@@ -85,6 +86,7 @@ public:
    *  @param[in] npts     Same as `eval_collocation`
    *  @param[in] nshells  Same as `eval_collocation`
    *  @param[in] nbe      Same as `eval_collocation`
+   *  @param[in] pts      Same as `eval_collocation`
    *  @param[in] basis    Same as `eval_collocation`
    *  @param[in] shell_list Same as `eval_collocation`
    *
@@ -104,6 +106,7 @@ public:
    *  @param[in] npts     Same as `eval_collocation`
    *  @param[in] nshells  Same as `eval_collocation`
    *  @param[in] nbe      Same as `eval_collocation`
+   *  @param[in] pts      Same as `eval_collocation`
    *  @param[in] basis    Same as `eval_collocation`
    *  @param[in] shell_list Same as `eval_collocation`
    *

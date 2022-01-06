@@ -206,23 +206,17 @@ void initialize_tree_structure(int type, int lA, int lB, int size, struct node *
   free(offset_list);
 }
 
-void traverse_dfs_vrr(FILE *f, int lA, int lB, struct node *root_node) {
+void traverse_dfs_vrr(FILE *f, int lA, int lB, struct node *root_node, char *prefix, char *prefix_lsa, char *prefix_lsu) {
   if(root_node != NULL) {
     if(root_node -> level == 0) {
       for(int v = 0; v < root_node -> vars; ++v) {
-  #if USE_SIMD_BOYS
-	fprintf(f, "            t%d%d = eval * FmT[p_inner + %d*NPTS_LOCAL];\n", root_node -> level, v, v);
-  #else
-  #if USE_CONSTEXPR_BOYS
-	fprintf(f, "            t%d%d = eval * GauXC::boys_function<%d>(tval);\n", root_node -> level, v, v);
-  #else
-	fprintf(f, "            t%d%d = eval * boys_function(%d, tval);\n", root_node -> level, v, v);
-  #endif
-  #endif
+	fprintf(f, "            t%d%d = %s_LOAD((FmT + p_inner + %d * NPTS_LOCAL));\n", root_node -> level, v, prefix_lsa, v);
+	fprintf(f, "            t%d%d = %s_MUL(%s_DUPLICATE(&(eval)), t%d%d);\n", root_node -> level, v, prefix, prefix, root_node -> level, v);
       }
     } else if (root_node -> level == 1) {
       for(int v = 0; v < root_node -> vars; ++v) {
-	fprintf(f, "            t%d%d = %s * t%d%d - %s * t%d%d;\n", root_node -> level, v, root_node -> var_pa, root_node -> level - 1, v, root_node -> var_pc, root_node -> level - 1, v + 1);
+	fprintf(f, "            t%d%d = %s_MUL(%s_DUPLICATE(&(%s)), t%d%d);\n", root_node -> level, v, prefix, prefix, root_node -> var_pa, root_node -> level - 1, v);
+	fprintf(f, "            t%d%d = %s_FNMA(%s, t%d%d, t%d%d);\n", root_node -> level, v, prefix, root_node -> var_pc, root_node -> level - 1, v + 1, root_node -> level, v);
       }
     } else {
       int iteration = 0;
@@ -236,21 +230,29 @@ void traverse_dfs_vrr(FILE *f, int lA, int lB, struct node *root_node) {
 
       if(iteration == 0) {
 	for(int v = 0; v < root_node -> vars; ++v) {
-	  fprintf(f, "            t%d%d = %s * t%d%d - %s * t%d%d;\n", root_node -> level, v, root_node -> var_pa, root_node -> level - 1, v, root_node -> var_pc, root_node -> level - 1, v + 1);
+	  fprintf(f, "            t%d%d = %s_MUL(%s_DUPLICATE(&(%s)), t%d%d);\n", root_node -> level, v, prefix, prefix, root_node -> var_pa, root_node -> level - 1, v);
+	  fprintf(f, "            t%d%d = %s_FNMA(%s, t%d%d, t%d%d);\n", root_node -> level, v, prefix, root_node -> var_pc, root_node -> level - 1, v + 1, root_node -> level, v);
 	}
       } else {
 	for(int v = 0; v < root_node -> vars; ++v) {
-	  fprintf(f, "            t%d%d = %s * t%d%d - %s * t%d%d + 0.5 * RHO_INV * %d * (t%d%d - t%d%d);\n", root_node -> level, v, root_node -> var_pa, root_node -> level - 1, v, root_node -> var_pc, root_node -> level - 1, v + 1, iteration, root_node -> level - 2, v, root_node ->level - 2, v + 1);
+	  fprintf(f, "            t%d%d = %s_MUL(%s_DUPLICATE(&(%s)), t%d%d);\n", root_node -> level, v, prefix, prefix, root_node -> var_pa, root_node -> level - 1, v);
+	  fprintf(f, "            t%d%d = %s_FNMA(%s, t%d%d, t%d%d);\n", root_node -> level, v, prefix, root_node -> var_pc, root_node -> level - 1, v + 1, root_node -> level, v);
+	  fprintf(f, "            tx = %s_SUB(t%d%d, t%d%d);\n", prefix, root_node -> level - 2, v, root_node ->level - 2, v + 1);
+	  fprintf(f, "            ty = %s_SET1(0.5 * %d);\n", prefix, iteration);
+	  fprintf(f, "            ty = %s_MUL(ty, %s_DUPLICATE(&(RHO_INV)));\n", prefix, prefix);
+	  fprintf(f, "            t%d%d = %s_FMA(tx, ty, t%d%d);\n", root_node -> level, v, prefix, root_node -> level, v);
 	}
       }
     }
 
     if(root_node -> valid) {
-      fprintf(f, "            *(temp + %d * NPTS_LOCAL + p_inner) += t%d%d;\n", root_node -> offset, root_node -> level, 0);
+      fprintf(f, "            tx = %s_LOAD((temp + %d * NPTS_LOCAL + p_inner));\n", prefix_lsa, root_node -> offset);
+      fprintf(f, "            tx = %s_ADD(tx, t%d%d);\n", prefix, root_node -> level, 0);
+      fprintf(f, "            %s_STORE((temp + %d * NPTS_LOCAL + p_inner), tx);\n", prefix_lsa, root_node -> offset);
     }
     
     for(int i = 0; i < root_node -> nr_children; ++i) {
-      traverse_dfs_vrr(f, lA, lB, root_node -> children[i]);
+      traverse_dfs_vrr(f, lA, lB, root_node -> children[i], prefix, prefix_lsa, prefix_lsu);
     }
   }
 }
@@ -259,138 +261,54 @@ int index_calculation(int i, int j, int L) {
   return (L - i) * (L - i + 1) / 2 + j;
 }
 
-void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, int type) {
-  fprintf(f, "#include <math.h>\n");
-  fprintf(f, "#include \"boys_computation.h\"\n");
-  fprintf(f, "#include \"integral_data_types.h\"\n");
+void generate_part_0(FILE *f, char*variable, char *prefix, char *prefix_lsa, char *prefix_lsu) {
+  fprintf(f, "            %s_TYPE xC = %s_LOAD((_point_outer + p_inner + 0 * npts));\n", prefix, prefix_lsu);
+  fprintf(f, "            %s_TYPE yC = %s_LOAD((_point_outer + p_inner + 1 * npts));\n", prefix, prefix_lsu);
+  fprintf(f, "            %s_TYPE zC = %s_LOAD((_point_outer + p_inner + 2 * npts));\n", prefix, prefix_lsu);
   fprintf(f, "\n");
-  fprintf(f, "#define PI 3.14159265358979323846\n");
+  fprintf(f, "            %s_TYPE X_PC = %s_SUB(%s_DUPLICATE(&(x%s)), xC);\n", prefix, prefix, prefix, variable);
+  fprintf(f, "            %s_TYPE Y_PC = %s_SUB(%s_DUPLICATE(&(y%s)), yC);\n", prefix, prefix, prefix, variable);
+  fprintf(f, "            %s_TYPE Z_PC = %s_SUB(%s_DUPLICATE(&(z%s)), zC);\n", prefix, prefix, prefix, variable);
   fprintf(f, "\n");
-  fprintf(f, "#define MIN(a,b)			\\\n"); 
-  fprintf(f, "  ({ __typeof__ (a) _a = (a);	        \\\n");
-  fprintf(f, "  __typeof__ (b) _b = (b);		\\\n");
-  fprintf(f, "  _a < _b ? _a : _b; })\n");
-  fprintf(f, "\n");
-  fprintf(f, "void integral_%d(size_t npts,\n", lA);
-  fprintf(f, "               shell_pair shpair,\n");
-  fprintf(f, "               point *_points,\n");
-  fprintf(f, "               double *Xi,\n");
-  fprintf(f, "               int stX,\n");
-  fprintf(f, "               int ldX,\n");
-  fprintf(f, "               double *Gi,\n");
-  fprintf(f, "               int stG, \n");
-  fprintf(f, "               int ldG, \n");
-  fprintf(f, "               double *weights) {\n");	 
+  fprintf(f, "            X_PC = %s_MUL(X_PC, X_PC);\n", prefix);
+  fprintf(f, "            X_PC = %s_FMA(Y_PC, Y_PC, X_PC);\n", prefix);
+  fprintf(f, "            X_PC = %s_FMA(Z_PC, Z_PC, X_PC);\n", prefix);
+  fprintf(f, "            X_PC = %s_MUL(%s_DUPLICATE(&(RHO)), X_PC);\n", prefix, prefix);
+  fprintf(f, "            %s_STORE((Tval + p_inner), X_PC);\n", prefix_lsa);
+}
 
-  int partial_size = 0;
-  for(int i = 0; i < lA; ++i) {
-    partial_size += (i + 1) * (i + 2) / 2;
+void generate_part_1(FILE *f, int lA, int lB, struct node *root_node, char *variable, char *prefix, char *prefix_lsa, char *prefix_lsu) {
+  if(lA != 0) {
+    fprintf(f, "            %s_TYPE xC = %s_LOAD((_point_outer + p_inner + 0 * npts));\n", prefix, prefix_lsu);
+    fprintf(f, "            %s_TYPE yC = %s_LOAD((_point_outer + p_inner + 1 * npts));\n", prefix, prefix_lsu);
+    fprintf(f, "            %s_TYPE zC = %s_LOAD((_point_outer + p_inner + 2 * npts));\n", prefix, prefix_lsu);
+    fprintf(f, "\n");
+    fprintf(f, "            %s_TYPE X_PC = %s_SUB(%s_DUPLICATE(&(x%s)), xC);\n", prefix, prefix, prefix, variable);
+    fprintf(f, "            %s_TYPE Y_PC = %s_SUB(%s_DUPLICATE(&(y%s)), yC);\n", prefix, prefix, prefix, variable);
+    fprintf(f, "            %s_TYPE Z_PC = %s_SUB(%s_DUPLICATE(&(z%s)), zC);\n", prefix, prefix, prefix, variable);
+    fprintf(f, "\n");
   }
-
-  fprintf(f, "   double temp[%d * NPTS_LOCAL];\n",   size - partial_size);
-  #if USE_SIMD_BOYS
-  fprintf(f, "   double FmT [%d * NPTS_LOCAL];\n", 2*lA+1); 
-  fprintf(f, "   double Tval[NPTS_LOCAL];\n\n"); 
-  #endif
   
-  fprintf(f, "   for(size_t p_outer = 0; p_outer < npts; p_outer += NPTS_LOCAL) {\n");
-  fprintf(f, "      size_t npts_inner = MIN(NPTS_LOCAL, npts - p_outer);\n");
-  fprintf(f, "      point *_point_outer = (_points + p_outer);\n\n");
-  fprintf(f, "      double xA = shpair.rA.x;\n");
-  fprintf(f, "      double yA = shpair.rA.y;\n");
-  fprintf(f, "      double zA = shpair.rA.z;\n");
-  fprintf(f, "\n");
-  fprintf(f, "      for(int i = 0; i < %d * NPTS_LOCAL; ++i) temp[i] = 0.0;\n", size - partial_size);
-  fprintf(f, "\n");
-  fprintf(f, "      for( int ij = 0; ij < shpair.nprim_pair; ++ij ) {\n");
-  fprintf(f, "         double RHO = shpair.prim_pairs[ij].gamma;\n");
-  fprintf(f, "         double RHO_INV = 1.0 / RHO;\n");
-  fprintf(f, "\n");  
-  fprintf(f, "         constexpr double X_PA = 0.0;\n");
-  fprintf(f, "         constexpr double Y_PA = 0.0;\n");
-  fprintf(f, "         constexpr double Z_PA = 0.0;\n");
-  fprintf(f, "\n");
-  fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * 2 * PI * RHO_INV;\n");
-  fprintf(f, "\n");
-  // Start New Code
-  fprintf(f, "         #if %d\n", USE_SIMD_BOYS);
-  fprintf(f, "         // Evaluate T Values\n");
-  fprintf(f, "         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
-  fprintf(f, "            point C = *(_point_outer + p_inner);\n");
-  fprintf(f, "\n");
-  fprintf(f, "            double xC = C.x;\n");
-  fprintf(f, "            double yC = C.y;\n");
-  fprintf(f, "            double zC = C.z;\n");
-  fprintf(f, "\n");
-  fprintf(f, "            double X_PC = (xA - xC);\n");
-  fprintf(f, "            double Y_PC = (yA - yC);\n");
-  fprintf(f, "            double Z_PC = (zA - zC);\n");
-  fprintf(f, "\n");
-  fprintf(f, "            Tval[p_inner] = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);\n");
-  fprintf(f, "         }\n\n");
-  fprintf(f, "         // Evaluate Boys function\n");
-  for(int l = 0; l < (2*lA+1); ++l) {
-  #if USE_CONSTEXPR_BOYS
-  fprintf(f, "         GauXC::boys_function<%d>(npts_inner, Tval, FmT + %d*NPTS_LOCAL);\n",l,l);
-  #else
-  fprintf(f, "         boys_function(%d, npts_inner, Tval, FmT + %d*NPTS_LOCAL);\n",l,l);
-  #endif
+  fprintf(f, "            %s_TYPE ", prefix);
+  if((lA + lB) <= 1) {
+    fprintf(f, "tx, ");
+  } else {
+    fprintf(f, "tx, ty, ");
   }
-  fprintf(f, "\n");
-  fprintf(f, "         // Evaluate VRR Buffer\n");
-  fprintf(f, "         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
-  fprintf(f, "            point C = *(_point_outer + p_inner);\n");
-  fprintf(f, "\n");
-  fprintf(f, "            double xC = C.x;\n");
-  fprintf(f, "            double yC = C.y;\n");
-  fprintf(f, "            double zC = C.z;\n");
-  fprintf(f, "\n");
-  fprintf(f, "            double X_PC = (xA - xC);\n");
-  fprintf(f, "            double Y_PC = (yA - yC);\n");
-  fprintf(f, "            double Z_PC = (zA - zC);\n");
-  fprintf(f, "\n");
-  fprintf(f, "            double ");
-  for(int l = 0; l < (lA + lA); ++l) {
-    for(int k = 0; k < (lA + lA + 1) - l; ++k) {
+  for(int l = 0; l < (lA + lB); ++l) {
+    for(int k = 0; k < (lA + lB + 1) - l; ++k) {
       fprintf(f, "t%d%d, ", l, k);
     }
   }
-  fprintf(f, "t%d%d;\n", (lA + lA), 0);
+  fprintf(f, "t%d%d;\n", (lA + lB), 0);
   fprintf(f, "\n");
-  traverse_dfs_vrr(f, lA, lA, root_node);
-  fprintf(f, "         }\n\n");
-  fprintf(f, "         #else\n");
-  // Start Old Code
-  fprintf(f, "         for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
-  fprintf(f, "            point C = *(_point_outer + p_inner);\n");
-  fprintf(f, "\n");  
-  fprintf(f, "            double xC = C.x;\n");
-  fprintf(f, "            double yC = C.y;\n");
-  fprintf(f, "            double zC = C.z;\n");
-  fprintf(f, "\n");
-  fprintf(f, "            double X_PC = (xA - xC);\n");
-  fprintf(f, "            double Y_PC = (yA - yC);\n");
-  fprintf(f, "            double Z_PC = (zA - zC);\n");
-  fprintf(f, "\n");
-  fprintf(f, "            double ");
-  for(int l = 0; l < (lA + lA); ++l) {
-    for(int k = 0; k < (lA + lA + 1) - l; ++k) {
-      fprintf(f, "t%d%d, ", l, k);
-    }
-  }
-  fprintf(f, "t%d%d;\n", (lA + lA), 0);
-  fprintf(f, "\n");
-  fprintf(f, "            double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);\n");
-  fprintf(f, "\n");
-  traverse_dfs_vrr(f, lA, lA, root_node);
-  fprintf(f, "         }\n");
-  fprintf(f, "\n         #endif\n");
-  // End Old Code
-  fprintf(f, "      }\n");
-  fprintf(f, "\n");
-  fprintf(f, "      for(size_t p_inner = 0; p_inner < npts_inner; ++p_inner) {;\n");
-  fprintf(f, "         double *Xik = (Xi + (p_outer + p_inner) * stX);\n");
-  fprintf(f, "         double *Gik = (Gi + (p_outer + p_inner) * stG);\n");
+
+  traverse_dfs_vrr(f, lA, lB, root_node, prefix, prefix_lsa, prefix_lsu);
+}
+
+void generate_diagonal_part_2(FILE *f, int lA, int type, char *prefix, char *prefix_lsa, char *prefix_lsu) {
+  fprintf(f, "         double *Xik = (Xi + p_outer + p_inner);\n");
+  fprintf(f, "         double *Gik = (Gi + p_outer + p_inner);\n");
   fprintf(f, "\n");
 
   if(type == 0) {
@@ -403,6 +321,8 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
     fprintf(f, "\n");
     fprintf(f, "               int mv, pv;\n");
     fprintf(f, "\n");
+
+    fprintf(f, "               %s_TYPE tx, wg, xik, gik;\n", prefix);
     
     int count = 0;
     for(int r0 = 0; r0 <= lA; ++r0) {
@@ -412,21 +332,31 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
 
 	int idxA = index_calculation(a, c, lA);
 	fprintf(f, "               mv = %d + m; pv = %d + p;\n", a, c);
-	fprintf(f, "               *(Gik + %d * ldG) += *(Xik + idxB * ldX) * (*(temp + (%d + (((%d - mv) * (%d - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));\n", idxA, (2 * lA * (2 * lA + 1) * (2 * lA + 2) - lA * (lA + 1) * (lA + 2)) / 6, 2 * lA, 2 * lA);
+	
+	fprintf(f, "               tx  = %s_LOAD((temp + (%d + (((%d - mv) * (%d - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));\n", prefix_lsa, (2 * lA * (2 * lA + 1) * (2 * lA + 2) - lA * (lA + 1) * (lA + 2)) / 6, 2 * lA, 2 * lA);
+	fprintf(f, "               wg  = %s_LOAD((weights + p_outer + p_inner));\n\n", prefix_lsu);
+	fprintf(f, "               xik = %s_LOAD((Xik + idxB * ldX));\n", prefix_lsu);
+	fprintf(f, "               gik = %s_LOAD((Gik + %d * ldG));\n\n", prefix_lsu, idxA);
+
+	fprintf(f, "               tx = %s_MUL(tx, wg);\n", prefix);
+	fprintf(f, "               gik = %s_FMA(tx, xik, gik);\n", prefix);
+	fprintf(f, "               %s_STORE((Gik + %d * ldG), gik);\n", prefix_lsu, idxA);
+
 	count++;		
       }
     }
     fprintf(f, "            }\n");
     fprintf(f, "         }\n");
-    fprintf(f, "      }\n");
-  } else if(type == 1) {   
+  } else if(type == 1) {
+    fprintf(f, "         %s_TYPE tx, wg, xik, gik;\n", prefix);
+    
     for(int c0 = 0; c0 <= lA; ++c0) {
       for(int c1 = 0; c1 <= c0; ++c1) {
 	int m = lA - c0;
 	int p = c1;
 
 	int idxB = index_calculation(m, p, lA);
-
+	
 	int count = 0;
 	for(int r0 = 0; r0 <= lA; ++r0) {
 	  for(int r1 = 0; r1 <= r0; ++r1) {
@@ -438,166 +368,33 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
 	    int idx = index_calculation(a + m - 0, c + p - 0, lA + lA - 0 - 0 - 0);
 
 	    int offset = (2 * lA * (2 * lA + 1) * (2 * lA + 2) - lA * (lA + 1) * (lA + 2)) / 6;
-		  
-	    fprintf(f, "         *(Gik + %d * ldG) += *(Xik + %d * ldX) * (*(temp + %d * NPTS_LOCAL + p_inner)) * (*(weights + p_outer + p_inner));\n", idxA, idxB, offset + idx);
+
+	    fprintf(f, "         tx  = %s_LOAD((temp + %d * NPTS_LOCAL + p_inner));\n", prefix_lsa, offset + idx);
+	    fprintf(f, "         wg  = %s_LOAD((weights + p_outer + p_inner));\n\n", prefix_lsu);
+	    fprintf(f, "         xik = %s_LOAD((Xik + %d * ldX));\n", prefix_lsu, idxB);
+	    fprintf(f, "         gik = %s_LOAD((Gik + %d * ldG));\n\n", prefix_lsu, idxA);
+
+	    fprintf(f, "         tx = %s_MUL(tx, wg);\n", prefix);
+	    fprintf(f, "         gik = %s_FMA(tx, xik, gik);\n", prefix);
+	    fprintf(f, "         %s_STORE((Gik + %d * ldG), gik);\n", prefix_lsu, idxA);
       
 	    count++;		
 	  }
 	}
       }
     }
-    fprintf(f, "      }\n");
   } else {
-    fprintf(f, "Type not defined\n");
-  }  
-
-  fprintf(f, "   }\n");
-  fprintf(f, "}\n");
+    printf("Type not defined\n");
+  }
 }
 
-void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node *root_node, int type) {
-  fprintf(f, "#include <math.h>\n");
-  fprintf(f, "#include \"boys_computation.h\"\n");
-  fprintf(f, "#include \"integral_data_types.h\"\n");
+void generate_off_diagonal_part_2(FILE *f, int lA, int lB, int type, char *prefix, char *prefix_lsa, char *prefix_lsu) {
+  fprintf(f, "         double *Xik = (Xi + p_outer + p_inner);\n");
+  fprintf(f, "         double *Xjk = (Xj + p_outer + p_inner);\n");
+  fprintf(f, "         double *Gik = (Gi + p_outer + p_inner);\n");
+  fprintf(f, "         double *Gjk = (Gj + p_outer + p_inner);\n");
   fprintf(f, "\n");
-  fprintf(f, "#define PI 3.14159265358979323846\n");
-  fprintf(f, "\n");
-  fprintf(f, "#define MIN(a,b)			\\\n"); 
-  fprintf(f, "  ({ __typeof__ (a) _a = (a);	        \\\n");
-  fprintf(f, "  __typeof__ (b) _b = (b);		\\\n");
-  fprintf(f, "  _a < _b ? _a : _b; })\n");
-  fprintf(f, "\n");
-  fprintf(f, "void integral_%d_%d(size_t npts,\n", lA, lB);
-  fprintf(f, "                  shell_pair shpair,\n");
-  fprintf(f, "                  point *_points,\n");
-  fprintf(f, "                  double *Xi,\n");
-  fprintf(f, "                  double *Xj,\n");
-  fprintf(f, "                  int stX,\n");
-  fprintf(f, "                  int ldX,\n");
-  fprintf(f, "                  double *Gi,\n");
-  fprintf(f, "                  double *Gj,\n");
-  fprintf(f, "                  int stG, \n");
-  fprintf(f, "                  int ldG, \n");
-  fprintf(f, "                  double *weights) {\n");	 
-
-  int partial_size = 0;
-  for(int i = 0; i < lA; ++i) {
-    partial_size += (i + 1) * (i + 2) / 2;
-  }
-
-  fprintf(f, "   double temp[%d * NPTS_LOCAL];\n",   size - partial_size);
-  #if USE_SIMD_BOYS
-  fprintf(f, "   double FmT [%d * NPTS_LOCAL];\n", lA+lB+1); 
-  fprintf(f, "   double Tval[NPTS_LOCAL];\n\n"); 
-  #endif
-
-  fprintf(f, "   double X_AB = shpair.rAB.x;\n");
-  fprintf(f, "   double Y_AB = shpair.rAB.y;\n");
-  fprintf(f, "   double Z_AB = shpair.rAB.z;\n");
-  fprintf(f, "\n");
-
-  fprintf(f, "   for(size_t p_outer = 0; p_outer < npts; p_outer += NPTS_LOCAL) {\n");
-  fprintf(f, "      size_t npts_inner = MIN(NPTS_LOCAL, npts - p_outer);\n");
-  fprintf(f, "      point *_point_outer = (_points + p_outer);\n\n");
-  fprintf(f, "      for(int i = 0; i < %d * NPTS_LOCAL; ++i) temp[i] = 0.0;\n", size - partial_size);
-  fprintf(f, "\n");
-  fprintf(f, "      for(int ij = 0; ij < shpair.nprim_pair; ++ij ) {\n");
-  fprintf(f, "         double RHO = shpair.prim_pairs[ij].gamma;\n");
-  fprintf(f, "         double RHO_INV = 1.0 / RHO;\n");
-  fprintf(f, "\n");
-  fprintf(f, "         double xP = shpair.prim_pairs[ij].P.x;\n");
-  fprintf(f, "         double yP = shpair.prim_pairs[ij].P.y;\n");
-  fprintf(f, "         double zP = shpair.prim_pairs[ij].P.z;\n");
-  fprintf(f, "\n");  
-  fprintf(f, "         double X_PA = shpair.prim_pairs[ij].PA.x;\n");
-  fprintf(f, "         double Y_PA = shpair.prim_pairs[ij].PA.y;\n");
-  fprintf(f, "         double Z_PA = shpair.prim_pairs[ij].PA.z;\n");
-  fprintf(f, "\n");
-  fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;\n");
-  fprintf(f, "\n");
-  // Start New Code
-  fprintf(f, "         #if %d\n", USE_SIMD_BOYS);
-  fprintf(f, "         // Evaluate T Values\n");
-  fprintf(f, "         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
-  fprintf(f, "            point C = *(_point_outer + p_inner);\n");
-  fprintf(f, "\n");
-  fprintf(f, "            double xC = C.x;\n");
-  fprintf(f, "            double yC = C.y;\n");
-  fprintf(f, "            double zC = C.z;\n");
-  fprintf(f, "\n");
-  fprintf(f, "            double X_PC = (xP - xC);\n");
-  fprintf(f, "            double Y_PC = (yP - yC);\n");
-  fprintf(f, "            double Z_PC = (zP - zC);\n");
-  fprintf(f, "\n");
-  fprintf(f, "            Tval[p_inner] = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);\n");
-  fprintf(f, "         }\n\n");
-  fprintf(f, "         // Evaluate Boys function\n");
-  for(int l = 0; l < (lA+lB+1); ++l) {
-  #if USE_CONSTEXPR_BOYS
-  fprintf(f, "         GauXC::boys_function<%d>(npts_inner, Tval, FmT + %d*NPTS_LOCAL);\n",l,l);
-  #else
-  fprintf(f, "         boys_function(%d, npts_inner, Tval, FmT + %d*NPTS_LOCAL);\n",l,l);
-  #endif
-  }
-  fprintf(f, "\n");
-  fprintf(f, "         // Evaluate VRR Buffer\n");
-  fprintf(f, "         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
-  fprintf(f, "            point C = *(_point_outer + p_inner);\n");
-  fprintf(f, "\n");
-  fprintf(f, "            double xC = C.x;\n");
-  fprintf(f, "            double yC = C.y;\n");
-  fprintf(f, "            double zC = C.z;\n");
-  fprintf(f, "\n");
-  fprintf(f, "            double X_PC = (xP - xC);\n");
-  fprintf(f, "            double Y_PC = (yP - yC);\n");
-  fprintf(f, "            double Z_PC = (zP - zC);\n");
-  fprintf(f, "\n");
-  fprintf(f, "            double ");
-  for(int l = 0; l < (lA + lB); ++l) {
-    for(int k = 0; k < (lA + lB + 1) - l; ++k) {
-      fprintf(f, "t%d%d, ", l, k);
-    }
-  }
-  fprintf(f, "t%d%d;\n", (lA + lB), 0);
-  fprintf(f, "\n");
-  traverse_dfs_vrr(f, lA, lB, root_node);
-  fprintf(f, "         }\n\n");
-  fprintf(f, "         #else\n");
-  // Start Old Code
-  fprintf(f, "\n");
-  fprintf(f, "         for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
-  fprintf(f, "            point C = *(_point_outer + p_inner);\n");
-  fprintf(f, "\n");
-  fprintf(f, "            double xC = C.x;\n");
-  fprintf(f, "            double yC = C.y;\n");
-  fprintf(f, "            double zC = C.z;\n");
-  fprintf(f, "\n");
-  fprintf(f, "            double X_PC = (xP - xC);\n");
-  fprintf(f, "            double Y_PC = (yP - yC);\n");
-  fprintf(f, "            double Z_PC = (zP - zC);\n");
-  fprintf(f, "\n");
-  fprintf(f, "            double ");
-  for(int l = 0; l < (lA + lB); ++l) {
-    for(int k = 0; k < (lA + lB + 1) - l; ++k) {
-      fprintf(f, "t%d%d, ", l, k);
-    }
-  }
-  fprintf(f, "t%d%d;\n", (lA + lB), 0);
-  fprintf(f, "\n");
-  fprintf(f, "            double tval = RHO * (X_PC * X_PC + Y_PC * Y_PC + Z_PC * Z_PC);\n");
-  fprintf(f, "\n");
-  traverse_dfs_vrr(f, lA, lB, root_node);
-  fprintf(f, "         }\n");
-  fprintf(f, "\n         #endif\n");
-  // End Old Code
-  fprintf(f, "      }\n");
-  fprintf(f, "\n");
-  fprintf(f, "      for(int p_inner = 0; p_inner < npts_inner; ++p_inner) {\n");
-  fprintf(f, "         double *Xik = (Xi + (p_outer + p_inner) * stX);\n");
-  fprintf(f, "         double *Xjk = (Xj + (p_outer + p_inner) * stX);\n");
-  fprintf(f, "         double *Gik = (Gi + (p_outer + p_inner) * stG);\n");
-  fprintf(f, "         double *Gjk = (Gj + (p_outer + p_inner) * stG);\n");
-  fprintf(f, "\n");
+  fprintf(f, "         %s_TYPE const_value_v = %s_LOAD((weights + p_outer + p_inner));\n\n", prefix, prefix_lsu);
   
   if(type == 0) {
     fprintf(f, "         for(int c0 = 0; c0 <= %d; ++c0) {\n", lB);
@@ -622,8 +419,10 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
     fprintf(f, "                        int mv, pv, Lv = %d - i - j - k;\n", lA + lB);
     fprintf(f, "\n");
     fprintf(f, "                        int offset = (Lv * (Lv + 1) * (Lv + 2) - %d) / 6;\n", lA * (lA + 1) * (lA + 2));
-    fprintf(f, "                        double const_value = *(weights + p_outer + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;\n");
-    
+    fprintf(f, "                        double const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;\n");
+    fprintf(f, "                        %s_TYPE tx, ty, tz, tw;\n", prefix);
+    fprintf(f, "                        %s_TYPE const_value_w = %s_MUL(const_value_v, %s_DUPLICATE(&(const_value)));\n\n", prefix, prefix, prefix);
+
     int count = 0;
     for(int r0 = 0; r0 <= lA; ++r0) {
       for(int r1 = 0; r1 <= r0; ++r1) {
@@ -632,30 +431,45 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
 
 	int idxA = index_calculation(a, c, lA);
 	fprintf(f, "                        mv = %d + m - i; pv = %d + p - k;\n", a, c);
-	fprintf(f, "                        double t%d = *(temp + (offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner) * const_value;\n", count);
-	fprintf(f, "                        *(Gik + %d * ldG) += *(Xjk + idxB * ldX) * t%d;\n", idxA, count);
-	fprintf(f, "                        *(Gjk + idxB * ldG) += *(Xik + %d * ldX) * t%d;\n", idxA, count);
+	fprintf(f, "                        tx = %s_LOAD((Xik + %d * ldX));\n", prefix_lsu, idxA);
+	fprintf(f, "                        ty = %s_LOAD((Xjk + idxB * ldX));\n", prefix_lsu);
+	fprintf(f, "                        tz = %s_LOAD((Gik + %d * ldG));\n", prefix_lsu, idxA);
+	fprintf(f, "                        tw = %s_LOAD((Gjk + idxB * ldG));\n", prefix_lsu);
+	fprintf(f, "                        %s_TYPE t%d = %s_LOAD((temp + (offset + (((Lv - mv) * (Lv - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));\n", prefix, count, prefix_lsa);
+	fprintf(f, "                        t%d = %s_MUL(t%d, const_value_w);\n", count, prefix, count);
+	fprintf(f, "                        tz = %s_FMA(ty, t%d, tz);\n", prefix, count);
+	fprintf(f, "                        tw = %s_FMA(tx, t%d, tw);\n", prefix, count);
+	fprintf(f, "                        %s_STORE((Gik + %d * ldG), tz);\n", prefix_lsu, idxA);
+	fprintf(f, "                        %s_STORE((Gjk + idxB * ldG), tw);\n", prefix_lsu);
 	count++;		
       }
     }
     fprintf(f, "\n");
-    fprintf(f, "                        Z_ABp *= Z_AB; rcp_k = 1.0 / (1.0 * (k + 1)); comb_p_k = (comb_p_k * (p - k)) * rcp_k;\n");
+    fprintf(f, "                        Z_ABp = SCALAR_MUL(Z_ABp, Z_AB);\n");
+    fprintf(f, "                        rcp_k = SCALAR_RECIPROCAL(k + 1);\n");
+    fprintf(f, "                        comb_p_k = SCALAR_MUL(comb_p_k, p - k);\n");
+    fprintf(f, "                        comb_p_k = SCALAR_MUL(comb_p_k, rcp_k);\n");
     fprintf(f, "                     }\n");
     fprintf(f, "\n");
-    fprintf(f, "                     Y_ABp *= Y_AB; rcp_j = 1.0 / (1.0 * (j + 1)); comb_n_j = (comb_n_j * (n - j)) * rcp_j;\n");
+    fprintf(f, "                     Y_ABp = SCALAR_MUL(Y_ABp, Y_AB);\n");
+    fprintf(f, "                     rcp_j = SCALAR_RECIPROCAL(j + 1);\n");
+    fprintf(f, "                     comb_n_j = SCALAR_MUL(comb_n_j, n - j);\n");
+    fprintf(f, "                     comb_n_j = SCALAR_MUL(comb_n_j, rcp_j);\n");
     fprintf(f, "                  }\n");
     fprintf(f, "\n");
-    fprintf(f, "                  X_ABp *= X_AB; rcp_i = 1.0 / (1.0 * (i + 1)); comb_m_i = (comb_m_i * (m - i)) * rcp_i;\n");
+    fprintf(f, "                  X_ABp = SCALAR_MUL(X_ABp, X_AB);\n");
+    fprintf(f, "                  rcp_i = SCALAR_RECIPROCAL(i + 1);\n");
+    fprintf(f, "                  comb_m_i = SCALAR_MUL(comb_m_i, m - i);\n");
+    fprintf(f, "                  comb_m_i = SCALAR_MUL(comb_m_i, rcp_i);\n");
     fprintf(f, "               }\n");
     fprintf(f, "            }\n");
     fprintf(f, "         }\n");
-    fprintf(f, "      }\n");
   } else if (type == 1) {
-    fprintf(f, "         double const_value, X_ABp, Y_ABp, Z_ABp, comb_m_i, comb_n_j, comb_p_k, rcp_i, rcp_j, rcp_k;\n");
-    
+    fprintf(f, "         double const_value, X_ABp, Y_ABp, Z_ABp, comb_m_i, comb_n_j, comb_p_k;\n");
+    fprintf(f, "         %s_TYPE const_value_w;\n", prefix);
 
     int count = 0;
-    fprintf(f, "         double ");
+    fprintf(f, "         %s_TYPE tx, ty, tz, tw, ", prefix);
     for(int r0 = 0; r0 <= lA - 1; ++r0) {
       for(int r1 = 0; r1 <= r0; ++r1) {
 	fprintf(f, "t%d, ", count);
@@ -671,7 +485,7 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
     fprintf(f, "t%d;\n", count);
     
     fprintf(f, "\n");
-    
+
     for(int c0 = 0; c0 <= lB; ++c0) {
       for(int c1 = 0; c1 <= c0; ++c1) {
 	int m = lB - c0;
@@ -686,7 +500,8 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
 	  for(int j = 0; j <= n; ++j) {
 	    fprintf(f, "         Z_ABp = 1.0; comb_p_k = 1.0;\n");
 	    for(int k = 0; k <= p; ++k) {
-	      fprintf(f, "         const_value = *(weights + p_outer + p_inner) * comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;\n");
+	      fprintf(f, "         const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;\n");
+	      fprintf(f, "         const_value_w = %s_MUL(const_value_v, %s_DUPLICATE(&(const_value)));\n", prefix, prefix);
 
 	      int count = 0;
 	      for(int r0 = 0; r0 <= lA; ++r0) {
@@ -701,35 +516,471 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
 		  int LAB = lA + lB - i - j - k;
 		  int offset = (LAB * (LAB + 1) * (LAB + 2) - lA * (lA + 1) * (lA + 2)) / 6;
 		  
-		  fprintf(f, "         t%d = *(temp + %d * NPTS_LOCAL + p_inner) * const_value;\n", count, offset + idx);
-		  fprintf(f, "         *(Gik + %d * ldG) += *(Xjk + %d * ldX) * t%d;\n", idxA, idxB, count);
-		  fprintf(f, "         *(Gjk + %d * ldG) += *(Xik + %d * ldX) * t%d;\n", idxB, idxA, count);
+		  fprintf(f, "         tx = %s_LOAD((Xik + %d * ldX));\n", prefix_lsu, idxA);
+		  fprintf(f, "         ty = %s_LOAD((Xjk + %d * ldX));\n", prefix_lsu, idxB);
+		  fprintf(f, "         tz = %s_LOAD((Gik + %d * ldG));\n", prefix_lsu, idxA);
+		  fprintf(f, "         tw = %s_LOAD((Gjk + %d * ldG));\n", prefix_lsu, idxB);
+		  fprintf(f, "         t%d = %s_LOAD((temp + %d * NPTS_LOCAL + p_inner));\n", count, prefix_lsa, offset + idx);
+		  fprintf(f, "         t%d = %s_MUL(t%d, const_value_w);\n", count, prefix, count);
+		  fprintf(f, "         tz = %s_FMA(ty, t%d, tz);\n", prefix, count);
+		  fprintf(f, "         tw = %s_FMA(tx, t%d, tw);\n", prefix, count);
+		  fprintf(f, "         %s_STORE((Gik + %d * ldG), tz);\n", prefix_lsu, idxA);
+		  fprintf(f, "         %s_STORE((Gjk + %d * ldG), tw);\n", prefix_lsu, idxB);
       
 		  count++;		
 		}
 	      }
 	      
 	      if(k < p) {
-		fprintf(f, "         Z_ABp *= Z_AB; rcp_k = 1.0 / (1.0 * %d); comb_p_k = (comb_p_k * %d) * rcp_k;\n", k + 1, p - k);
+		fprintf(f, "         Z_ABp = SCALAR_MUL(Z_ABp, Z_AB); comb_p_k = SCALAR_MUL(comb_p_k * %d, SCALAR_RECIPROCAL(%d));\n", p - k, k + 1);
 	      }
 	    }
 
 	    if(j < n) {
-	      fprintf(f, "         Y_ABp *= Y_AB; rcp_j = 1.0 / (1.0 * %d); comb_n_j = (comb_n_j * %d) * rcp_j;\n", j + 1, n - j);
+	      fprintf(f, "         Y_ABp = SCALAR_MUL(Y_ABp, Y_AB); comb_n_j = SCALAR_MUL(comb_n_j * %d, SCALAR_RECIPROCAL(%d));\n", n - j, j + 1);
 	    }
 	  }
 
 	  if(i < m) {
-	    fprintf(f, "         X_ABp *= X_AB; rcp_i = 1.0 / (1.0 * %d); comb_m_i = (comb_m_i * %d) * rcp_i;\n", i + 1, m - i);
+	    fprintf(f, "         X_ABp = SCALAR_MUL(X_ABp, X_AB); comb_m_i = SCALAR_MUL(comb_m_i * %d, SCALAR_RECIPROCAL(%d));\n", m - i, i + 1);
 	  }
 	}
       }
     }
-    fprintf(f, "      }\n");
   } else {
-    fprintf(f, "Type not defined\n");
+    printf("Type not defined\n");
   }  
+}
+
+void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, int type) {
+  fprintf(f, "#include <math.h>\n");
+  fprintf(f, "#include \"../include/chebyshev_boys_computation.hpp\"\n");
+  fprintf(f, "#include \"integral_data_types.hpp\"\n");
+  fprintf(f, "#include \"config_obara_saika.hpp\"\n");
+  fprintf(f, "#include \"integral_%d.hpp\"\n", lA);
+  fprintf(f, "\n");
+  fprintf(f, "#define PI 3.14159265358979323846\n");
+  fprintf(f, "\n");
+  fprintf(f, "#define MIN(a,b)			\\\n"); 
+  fprintf(f, "  ({ __typeof__ (a) _a = (a);	        \\\n");
+  fprintf(f, "  __typeof__ (b) _b = (b);		\\\n");
+  fprintf(f, "  _a < _b ? _a : _b; })\n");
+  fprintf(f, "\n");
+  fprintf(f, "void integral_%d(size_t npts,\n", lA);
+  fprintf(f, "               shell_pair shpair,\n");
+  fprintf(f, "               double *_points,\n");
+  fprintf(f, "               double *Xi,\n");
+  fprintf(f, "               int ldX,\n");
+  fprintf(f, "               double *Gi,\n");
+  fprintf(f, "               int ldG, \n");
+  fprintf(f, "               double *weights) {\n");	 
+
+  int partial_size = 0;
+  for(int i = 0; i < lA; ++i) {
+    partial_size += (i + 1) * (i + 2) / 2;
+  }
+
+  fprintf(f, "   __attribute__((__aligned__(64))) double buffer[%d * NPTS_LOCAL + %d * NPTS_LOCAL + NPTS_LOCAL];\n\n",  size - partial_size, 2 * lA + 1);
   
+  fprintf(f, "   double *temp = (buffer + 0);\n");
+  fprintf(f, "   double *FmT = (buffer + %d * NPTS_LOCAL);\n", size - partial_size); 
+  fprintf(f, "   double *Tval = (buffer + %d * NPTS_LOCAL + %d * NPTS_LOCAL);\n\n", size - partial_size, 2 * lA + 1); 
+
+  char variable[1024];
+  char prefix[1024];
+  char prefix_lsa[1024];
+  char prefix_lsu[1024];
+
+  sprintf(variable, "A");
+
+  fprintf(f, "   size_t npts_upper = NPTS_LOCAL * (npts / NPTS_LOCAL);\n");
+  fprintf(f, "   size_t p_outer = 0;\n");
+  fprintf(f, "   for(p_outer = 0; p_outer < npts_upper; p_outer += NPTS_LOCAL) {\n");
+  fprintf(f, "      double *_point_outer = (_points + p_outer);\n\n");
+  fprintf(f, "      double xA = shpair.rA.x;\n");
+  fprintf(f, "      double yA = shpair.rA.y;\n");
+  fprintf(f, "      double zA = shpair.rA.z;\n");
+  fprintf(f, "\n");
+  fprintf(f, "      for(int i = 0; i < %d * NPTS_LOCAL; i += SIMD_LENGTH) SIMD_ALIGNED_STORE((temp + i), SIMD_ZERO());\n", size - partial_size);
+  fprintf(f, "\n");
+  fprintf(f, "      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {\n");
+  fprintf(f, "         double RHO = shpair.prim_pairs[ij].gamma;\n");
+  if(lA > 0) {
+    fprintf(f, "         double RHO_INV = 1.0 / RHO;\n");
+  }
+  fprintf(f, "\n");
+  if(lA != 0) {
+    fprintf(f, "         constexpr double X_PA = 0.0;\n");
+    fprintf(f, "         constexpr double Y_PA = 0.0;\n");
+    fprintf(f, "         constexpr double Z_PA = 0.0;\n");
+    fprintf(f, "\n");
+  }
+  fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;\n");
+  fprintf(f, "\n");
+  
+  sprintf(prefix, "SIMD");
+  sprintf(prefix_lsa, "SIMD_ALIGNED");
+  sprintf(prefix_lsu, "SIMD_UNALIGNED");
+
+  fprintf(f, "         // Evaluate T Values\n");
+  fprintf(f, "         for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += %s_LENGTH) {\n", prefix);
+  
+  generate_part_0(f, variable, prefix, prefix_lsa, prefix_lsu);
+  
+  fprintf(f, "         }\n\n");
+
+  sprintf(prefix, "SIMD");
+  sprintf(prefix_lsa, "SIMD_ALIGNED");
+  sprintf(prefix_lsu, "SIMD_UNALIGNED");
+
+  fprintf(f, "         // Evaluate Boys function\n");
+  for(int l = 0; l < (2*lA+1); ++l) {
+    fprintf(f, "         GauXC::gauxc_boys_elements<%d>(NPTS_LOCAL, Tval, FmT + %d * NPTS_LOCAL);\n", l, l);
+    //fprintf(f, "         boys_elements(%d, NPTS_LOCAL, Tval, FmT + %d * NPTS_LOCAL);\n", l, l);
+  }
+  fprintf(f, "\n");
+  fprintf(f, "         // Evaluate VRR Buffer\n");
+  fprintf(f, "         for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += %s_LENGTH) {\n", prefix);
+
+  generate_part_1(f, lA, lA, root_node, variable, prefix, prefix_lsa, prefix_lsu);
+  
+  fprintf(f, "         }\n");
+  fprintf(f, "      }\n");
+  fprintf(f, "\n");
+
+  sprintf(prefix, "SIMD");
+  sprintf(prefix_lsa, "SIMD_ALIGNED");
+  sprintf(prefix_lsu, "SIMD_UNALIGNED");
+  
+  fprintf(f, "      for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += %s_LENGTH) {\n", prefix);
+
+  generate_diagonal_part_2(f, lA, type, prefix, prefix_lsa, prefix_lsu);
+  
+  fprintf(f, "      }\n");
+  fprintf(f, "   }\n\n");
+
+  fprintf(f, "   // cleanup code\n");
+  fprintf(f, "   for(; p_outer < npts; p_outer += NPTS_LOCAL) {\n");
+  fprintf(f, "      size_t npts_inner = MIN((size_t) NPTS_LOCAL, npts - p_outer);\n");
+  fprintf(f, "      double *_point_outer = (_points + p_outer);\n\n");
+  fprintf(f, "      double xA = shpair.rA.x;\n");
+  fprintf(f, "      double yA = shpair.rA.y;\n");
+  fprintf(f, "      double zA = shpair.rA.z;\n");
+  fprintf(f, "\n");
+  fprintf(f, "      for(int i = 0; i < %d * NPTS_LOCAL; i += SIMD_LENGTH) SIMD_ALIGNED_STORE((temp + i), SIMD_ZERO());\n", size - partial_size);
+  fprintf(f, "\n");
+  fprintf(f, "      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {\n");
+  fprintf(f, "         double RHO = shpair.prim_pairs[ij].gamma;\n");
+  if(lA > 0) {
+    fprintf(f, "         double RHO_INV = 1.0 / RHO;\n");
+  }
+  fprintf(f, "\n");
+  if(lA != 0) {
+    fprintf(f, "         constexpr double X_PA = 0.0;\n");
+    fprintf(f, "         constexpr double Y_PA = 0.0;\n");
+    fprintf(f, "         constexpr double Z_PA = 0.0;\n");
+    fprintf(f, "\n");
+  }
+  fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;\n");
+  fprintf(f, "\n");
+
+  sprintf(prefix, "SIMD");
+  sprintf(prefix_lsa, "SIMD_ALIGNED");
+  sprintf(prefix_lsu, "SIMD_UNALIGNED");
+  
+  fprintf(f, "         // Evaluate T Values\n");
+  fprintf(f, "         size_t npts_inner_upper = %s_LENGTH * (npts_inner / %s_LENGTH);\n", prefix, prefix);
+  fprintf(f, "         size_t p_inner = 0;\n");
+  fprintf(f, "         for(p_inner = 0; p_inner < npts_inner_upper; p_inner += %s_LENGTH) {\n", prefix);
+
+  generate_part_0(f, variable, prefix, prefix_lsa, prefix_lsu);
+  
+  fprintf(f, "         }\n\n");
+
+  sprintf(prefix, "SCALAR");
+  sprintf(prefix_lsa, "SCALAR");
+  sprintf(prefix_lsu, "SCALAR");  
+  
+  fprintf(f, "         for(; p_inner < npts_inner; p_inner += %s_LENGTH) {\n", prefix);
+  
+  generate_part_0(f, variable, prefix, prefix_lsa, prefix_lsu);
+
+  fprintf(f, "         }\n\n");
+  
+  fprintf(f, "         // Evaluate Boys function\n");
+  for(int l = 0; l < (2*lA+1); ++l) {
+    fprintf(f, "         GauXC::gauxc_boys_elements<%d>(npts_inner, Tval, FmT + %d * NPTS_LOCAL);\n", l, l);
+    //fprintf(f, "         boys_elements(%d, npts_inner, Tval, FmT + %d * NPTS_LOCAL);\n", l, l);
+  }
+  fprintf(f, "\n");
+
+  sprintf(prefix, "SIMD");
+  sprintf(prefix_lsa, "SIMD_ALIGNED");
+  sprintf(prefix_lsu, "SIMD_UNALIGNED");
+  
+  fprintf(f, "         // Evaluate VRR Buffer\n");
+  fprintf(f, "         p_inner = 0;\n");  
+  fprintf(f, "         for(p_inner = 0; p_inner < npts_inner_upper; p_inner += %s_LENGTH) {\n", prefix);
+
+  generate_part_1(f, lA, lA, root_node, variable, prefix, prefix_lsa, prefix_lsu);
+
+  fprintf(f, "         }\n\n");
+
+  sprintf(prefix, "SCALAR");
+  sprintf(prefix_lsa, "SCALAR");
+  sprintf(prefix_lsu, "SCALAR");
+  
+  fprintf(f, "         for(; p_inner < npts_inner; p_inner += %s_LENGTH) {\n", prefix);
+  
+  generate_part_1(f, lA, lA, root_node, variable, prefix, prefix_lsa, prefix_lsu);
+
+  fprintf(f, "         }\n");
+  fprintf(f, "      }\n");
+  fprintf(f, "\n");
+  
+  sprintf(prefix, "SIMD");
+  sprintf(prefix_lsa, "SIMD_ALIGNED");
+  sprintf(prefix_lsu, "SIMD_UNALIGNED");
+  
+  fprintf(f, "      size_t npts_inner_upper = %s_LENGTH * (npts_inner / %s_LENGTH);\n", prefix, prefix);
+  fprintf(f, "      size_t p_inner = 0;\n");
+  fprintf(f, "      for(p_inner = 0; p_inner < npts_inner_upper; p_inner += %s_LENGTH) {\n", prefix);
+
+  generate_diagonal_part_2(f, lA, type, prefix, prefix_lsa, prefix_lsu);
+
+  fprintf(f, "      }\n\n");
+  
+  sprintf(prefix, "SCALAR");
+  sprintf(prefix_lsa, "SCALAR");
+  sprintf(prefix_lsu, "SCALAR");
+  
+  fprintf(f, "      for(; p_inner < npts_inner; p_inner += %s_LENGTH) {\n", prefix);
+  
+  generate_diagonal_part_2(f, lA, type, prefix, prefix_lsa, prefix_lsu);
+
+  fprintf(f, "      }\n");
+  fprintf(f, "   }\n");
+  fprintf(f, "}\n");
+}
+
+void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node *root_node, int type) {
+  fprintf(f, "#include <math.h>\n");
+  fprintf(f, "#include \"../include/chebyshev_boys_computation.hpp\"\n");
+  fprintf(f, "#include \"integral_data_types.hpp\"\n");
+  fprintf(f, "#include \"config_obara_saika.hpp\"\n");
+  fprintf(f, "#include \"integral_%d_%d.hpp\"\n", lA, lB);
+  fprintf(f, "\n");
+  fprintf(f, "#define PI 3.14159265358979323846\n");
+  fprintf(f, "\n");
+  fprintf(f, "#define MIN(a,b)			\\\n"); 
+  fprintf(f, "  ({ __typeof__ (a) _a = (a);	        \\\n");
+  fprintf(f, "  __typeof__ (b) _b = (b);		\\\n");
+  fprintf(f, "  _a < _b ? _a : _b; })\n");
+  fprintf(f, "\n");
+  fprintf(f, "void integral_%d_%d(size_t npts,\n", lA, lB);
+  fprintf(f, "                  shell_pair shpair,\n");
+  fprintf(f, "                  double *_points,\n");
+  fprintf(f, "                  double *Xi,\n");
+  fprintf(f, "                  double *Xj,\n");
+  fprintf(f, "                  int ldX,\n");
+  fprintf(f, "                  double *Gi,\n");
+  fprintf(f, "                  double *Gj,\n");
+  fprintf(f, "                  int ldG, \n");
+  fprintf(f, "                  double *weights) {\n");	 
+
+  int partial_size = 0;
+  for(int i = 0; i < lA; ++i) {
+    partial_size += (i + 1) * (i + 2) / 2;
+  }
+
+  fprintf(f, "   __attribute__((__aligned__(64))) double buffer[%d * NPTS_LOCAL + %d * NPTS_LOCAL + NPTS_LOCAL];\n\n",  size - partial_size, 2 * lA + 1);
+  
+  fprintf(f, "   double *temp = (buffer + 0);\n");
+  fprintf(f, "   double *FmT = (buffer + %d * NPTS_LOCAL);\n", size - partial_size); 
+  fprintf(f, "   double *Tval = (buffer + %d * NPTS_LOCAL + %d * NPTS_LOCAL);\n\n", size - partial_size, 2 * lA + 1); 
+
+  char variable[1024];
+  char prefix[1024];
+  char prefix_lsa[1024];
+  char prefix_lsu[1024];
+
+  sprintf(variable, "P");
+
+  fprintf(f, "   size_t npts_upper = NPTS_LOCAL * (npts / NPTS_LOCAL);\n");
+  fprintf(f, "   size_t p_outer = 0;\n");
+  fprintf(f, "   for(p_outer = 0; p_outer < npts_upper; p_outer += NPTS_LOCAL) {\n");
+  fprintf(f, "      double *_point_outer = (_points + p_outer);\n\n");
+  if(lB != 0) {
+    fprintf(f, "      double X_AB = shpair.rAB.x;\n");
+    fprintf(f, "      double Y_AB = shpair.rAB.y;\n");
+    fprintf(f, "      double Z_AB = shpair.rAB.z;\n");
+    fprintf(f, "\n");
+  }
+  fprintf(f, "      for(int i = 0; i < %d * NPTS_LOCAL; i += SIMD_LENGTH) SIMD_ALIGNED_STORE((temp + i), SIMD_ZERO());\n", size - partial_size);
+  fprintf(f, "\n");
+  fprintf(f, "      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {\n");
+  fprintf(f, "         double RHO = shpair.prim_pairs[ij].gamma;\n");
+  if(lA + lB > 1) {
+    fprintf(f, "         double RHO_INV = 1.0 / RHO;\n");
+  }
+  if(lA != 0) {
+    fprintf(f, "         double X_PA = shpair.prim_pairs[ij].PA.x;\n");
+    fprintf(f, "         double Y_PA = shpair.prim_pairs[ij].PA.y;\n");
+    fprintf(f, "         double Z_PA = shpair.prim_pairs[ij].PA.z;\n");
+  }
+  fprintf(f, "\n");
+  fprintf(f, "         double xP = shpair.prim_pairs[ij].P.x;\n");
+  fprintf(f, "         double yP = shpair.prim_pairs[ij].P.y;\n");
+  fprintf(f, "         double zP = shpair.prim_pairs[ij].P.z;\n");
+  fprintf(f, "\n");
+  fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;\n");
+  fprintf(f, "\n");
+
+  sprintf(prefix, "SIMD");
+  sprintf(prefix_lsa, "SIMD_ALIGNED");
+  sprintf(prefix_lsu, "SIMD_UNALIGNED");
+  
+  fprintf(f, "         // Evaluate T Values\n");
+  fprintf(f, "         for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += %s_LENGTH) {\n", prefix);
+
+  generate_part_0(f, variable, prefix, prefix_lsa, prefix_lsu);
+
+  fprintf(f, "         }\n\n");
+  
+  fprintf(f, "         // Evaluate Boys function\n");
+  for(int l = 0; l < (lA+lB+1); ++l) {
+    fprintf(f, "         GauXC::gauxc_boys_elements<%d>(NPTS_LOCAL, Tval, FmT + %d * NPTS_LOCAL);\n",l,l);
+    //fprintf(f, "         boys_elements(%d, NPTS_LOCAL, Tval, FmT + %d * NPTS_LOCAL);\n",l,l);
+  }
+  fprintf(f, "\n");
+
+  sprintf(prefix, "SIMD");
+  sprintf(prefix_lsa, "SIMD_ALIGNED");
+  sprintf(prefix_lsu, "SIMD_UNALIGNED");
+  
+  fprintf(f, "         // Evaluate VRR Buffer\n");
+  fprintf(f, "         for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += %s_LENGTH) {\n", prefix);
+
+  generate_part_1(f, lA, lB, root_node, variable, prefix, prefix_lsa, prefix_lsu);
+  
+  fprintf(f, "         }\n");
+  fprintf(f, "      }\n");
+  fprintf(f, "\n");
+
+  sprintf(prefix, "SIMD");
+  sprintf(prefix_lsa, "SIMD_ALIGNED");
+  sprintf(prefix_lsu, "SIMD_UNALIGNED");
+  
+  fprintf(f, "      for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += %s_LENGTH) {\n", prefix);
+
+  generate_off_diagonal_part_2(f, lA, lB, type, prefix, prefix_lsa, prefix_lsu);
+
+  fprintf(f, "      }\n");
+  
+  fprintf(f, "   }\n\n");
+
+  fprintf(f, "   for(; p_outer < npts; p_outer += NPTS_LOCAL) {\n");
+  fprintf(f, "      size_t npts_inner = MIN((size_t) NPTS_LOCAL, npts - p_outer);\n");
+  fprintf(f, "      double *_point_outer = (_points + p_outer);\n\n");
+  if(lB != 0) {
+    fprintf(f, "      double X_AB = shpair.rAB.x;\n");
+    fprintf(f, "      double Y_AB = shpair.rAB.y;\n");
+    fprintf(f, "      double Z_AB = shpair.rAB.z;\n");
+    fprintf(f, "\n");
+  }
+  fprintf(f, "      for(int i = 0; i < %d * NPTS_LOCAL; i += SIMD_LENGTH) SIMD_ALIGNED_STORE((temp + i), SIMD_ZERO());\n", size - partial_size);
+  fprintf(f, "\n");
+  fprintf(f, "      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {\n");
+  fprintf(f, "         double RHO = shpair.prim_pairs[ij].gamma;\n");
+  if(lA + lB > 1) {
+    fprintf(f, "         double RHO_INV = 1.0 / RHO;\n");
+  }
+  if(lA != 0) {
+    fprintf(f, "         double X_PA = shpair.prim_pairs[ij].PA.x;\n");
+    fprintf(f, "         double Y_PA = shpair.prim_pairs[ij].PA.y;\n");
+    fprintf(f, "         double Z_PA = shpair.prim_pairs[ij].PA.z;\n");
+  }
+  fprintf(f, "\n");
+  fprintf(f, "         double xP = shpair.prim_pairs[ij].P.x;\n");
+  fprintf(f, "         double yP = shpair.prim_pairs[ij].P.y;\n");
+  fprintf(f, "         double zP = shpair.prim_pairs[ij].P.z;\n");
+  fprintf(f, "\n");
+  fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;\n");
+  fprintf(f, "\n");
+
+  sprintf(prefix, "SIMD");
+  sprintf(prefix_lsa, "SIMD_ALIGNED");
+  sprintf(prefix_lsu, "SIMD_UNALIGNED");
+  
+  fprintf(f, "         // Evaluate T Values\n");
+  fprintf(f, "         size_t npts_inner_upper = %s_LENGTH * (npts_inner / %s_LENGTH);\n", prefix, prefix);
+  fprintf(f, "         size_t p_inner = 0;\n");
+  fprintf(f, "         for(p_inner = 0; p_inner < npts_inner_upper; p_inner += %s_LENGTH) {\n", prefix);
+
+  generate_part_0(f, variable, prefix, prefix_lsa, prefix_lsu);
+
+  fprintf(f, "         }\n\n");
+
+  sprintf(prefix, "SCALAR");
+  sprintf(prefix_lsa, "SCALAR");
+  sprintf(prefix_lsu, "SCALAR");
+  
+  fprintf(f, "         for(; p_inner < npts_inner; p_inner += %s_LENGTH) {\n", prefix);
+
+  generate_part_0(f, variable, prefix, prefix_lsa, prefix_lsu);
+
+  fprintf(f, "         }\n\n");
+  
+  fprintf(f, "         // Evaluate Boys function\n");
+  for(int l = 0; l < (lA+lB+1); ++l) {
+    fprintf(f, "         GauXC::gauxc_boys_elements<%d>(npts_inner, Tval, FmT + %d * NPTS_LOCAL);\n",l,l);
+    //fprintf(f, "         boys_elements(%d, npts_inner, Tval, FmT + %d * NPTS_LOCAL);\n",l,l);
+  }
+  fprintf(f, "\n");
+
+  sprintf(prefix, "SIMD");
+  sprintf(prefix_lsa, "SIMD_ALIGNED");
+  sprintf(prefix_lsu, "SIMD_UNALIGNED");
+  
+  fprintf(f, "         // Evaluate VRR Buffer\n");
+  fprintf(f, "         p_inner = 0;\n");
+  fprintf(f, "         for(p_inner = 0; p_inner < npts_inner_upper; p_inner += %s_LENGTH) {\n", prefix);
+
+  generate_part_1(f, lA, lB, root_node, variable, prefix, prefix_lsa, prefix_lsu);
+  
+  fprintf(f, "         }\n\n");
+  
+  sprintf(prefix, "SCALAR");
+  sprintf(prefix_lsa, "SCALAR");
+  sprintf(prefix_lsu, "SCALAR");
+  fprintf(f, "         for(; p_inner < npts_inner; p_inner += %s_LENGTH) {\n", prefix);
+
+  generate_part_1(f, lA, lB, root_node, variable, prefix, prefix_lsa, prefix_lsu);
+  
+  fprintf(f, "         }\n");
+  fprintf(f, "      }\n");
+  fprintf(f, "\n");
+
+  sprintf(prefix, "SIMD");
+  sprintf(prefix_lsa, "SIMD_ALIGNED");
+  sprintf(prefix_lsu, "SIMD_UNALIGNED");
+
+  fprintf(f, "      size_t npts_inner_upper = %s_LENGTH * (npts_inner / %s_LENGTH);\n", prefix, prefix);
+  fprintf(f, "      size_t p_inner = 0;\n");
+  fprintf(f, "      for(p_inner = 0; p_inner < npts_inner_upper; p_inner += %s_LENGTH) {\n", prefix);
+
+  generate_off_diagonal_part_2(f, lA, lB, type, prefix, prefix_lsa, prefix_lsu);
+
+  fprintf(f, "      }\n\n");
+
+  sprintf(prefix, "SCALAR");
+  sprintf(prefix_lsa, "SCALAR");
+  sprintf(prefix_lsu, "SCALAR");
+  fprintf(f, "      for(; p_inner < npts_inner; p_inner += %s_LENGTH) {\n", prefix);
+
+  generate_off_diagonal_part_2(f, lA, lB, type, prefix, prefix_lsa, prefix_lsu);
+
+  fprintf(f, "      }\n");
   fprintf(f, "   }\n");
   fprintf(f, "}\n");
 }
@@ -737,23 +988,19 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
 void generate_diagonal_header_files(int lA) {
   char filename[512];
       
-  sprintf(filename, "integral_%d.h", lA);
+  sprintf(filename, "integral_%d.hpp", lA);
       
   FILE *f = fopen(filename, "w");
 
   fprintf(f, "#ifndef __MY_INTEGRAL_%d\n", lA);
   fprintf(f, "#define __MY_INTEGRAL_%d\n", lA);
   fprintf(f, "\n");
-  fprintf(f, "#include \"integral_%d.h\"\n", lA);
-  fprintf(f, "\n");
   fprintf(f, "void integral_%d(size_t npts,\n", lA);
   fprintf(f, "               shell_pair shpair,\n");
-  fprintf(f, "               point *points,\n");
+  fprintf(f, "               double *points,\n");
   fprintf(f, "               double *Xi,\n");
-  fprintf(f, "               int stX,\n");
   fprintf(f, "               int ldX,\n");	 
   fprintf(f, "               double *Gi,\n");
-  fprintf(f, "               int stG, \n");
   fprintf(f, "               int ldG, \n");
   fprintf(f, "               double *weights);\n");	   
   fprintf(f, "\n");
@@ -765,25 +1012,21 @@ void generate_diagonal_header_files(int lA) {
 void generate_off_diagonal_header_files(int lA, int lB) {
   char filename[512];
       
-  sprintf(filename, "integral_%d_%d.h", lA, lB);
+  sprintf(filename, "integral_%d_%d.hpp", lA, lB);
       
   FILE *f = fopen(filename, "w");
 
   fprintf(f, "#ifndef __MY_INTEGRAL_%d_%d\n", lA, lB);
   fprintf(f, "#define __MY_INTEGRAL_%d_%d\n", lA, lB);
   fprintf(f, "\n");
-  fprintf(f, "#include \"integral_%d_%d.h\"\n", lA, lB);
-  fprintf(f, "\n");
   fprintf(f, "void integral_%d_%d(size_t npts,\n", lA, lB);
   fprintf(f, "                  shell_pair shpair,\n");
-  fprintf(f, "                  point *points,\n");
+  fprintf(f, "                  double *points,\n");
   fprintf(f, "                  double *Xi,\n");
   fprintf(f, "                  double *Xj,\n");
-  fprintf(f, "                  int stX,\n");
   fprintf(f, "                  int ldX,\n");	 
   fprintf(f, "                  double *Gi,\n");
   fprintf(f, "                  double *Gj,\n");
-  fprintf(f, "                  int stG, \n");
   fprintf(f, "                  int ldG, \n");
   fprintf(f, "                  double *weights);\n");	   
   fprintf(f, "\n");
@@ -797,7 +1040,7 @@ void generate_main_files(int lA) {
 
   FILE *f;
   
-  sprintf(filename, "obara_saika_integrals.h");
+  sprintf(filename, "obara_saika_integrals.hpp");
       
   f = fopen(filename, "w");
 
@@ -808,14 +1051,12 @@ void generate_main_files(int lA) {
   fprintf(f, "                  int i,\n");
   fprintf(f, "                  int j,\n");
   fprintf(f, "                  shells *shell_list,\n");
-  fprintf(f, "                  point *points,\n");
+  fprintf(f, "                  double *points,\n");
   fprintf(f, "                  double *Xi,\n");
   fprintf(f, "                  double *Xj,\n");
-  fprintf(f, "                  int stX,\n");
   fprintf(f, "                  int ldX,\n");	 
   fprintf(f, "                  double *Gi,\n");
   fprintf(f, "                  double *Gj,\n");
-  fprintf(f, "                  int stG, \n");
   fprintf(f, "                  int ldG, \n");
   fprintf(f, "                  double *weights);\n");	   
   fprintf(f, "\n");
@@ -829,31 +1070,84 @@ void generate_main_files(int lA) {
 
   fprintf(f, "#include <stdio.h>\n");
   fprintf(f, "#include <stdlib.h>\n");
-  fprintf(f, "#include \"integral_data_types.h\"\n");
-  fprintf(f, "#include \"obara_saika_integrals.h\"\n");
+  fprintf(f, "#include \"integral_data_types.hpp\"\n");
+  fprintf(f, "#include \"obara_saika_integrals.hpp\"\n");
   for(int i = 0; i <= lA; ++i) {
-    fprintf(f, "#include \"integral_%d.h\"\n", i);
+    fprintf(f, "#include \"integral_%d.hpp\"\n", i);
   }
 
   for(int i = 0; i <= lA; ++i) {
     for(int j = 0; j <= i; ++j) {
-      fprintf(f, "#include \"integral_%d_%d.h\"\n", i, j);
+      fprintf(f, "#include \"integral_%d_%d.hpp\"\n", i, j);
     }
   }
+
+  fprintf(f, "void generate_shell_pair( const shells& A, const shells& B, shell_pair& AB) {\n");
+  fprintf(f, "   // L Values\n");
+  fprintf(f, "   AB.lA = A.L;\n");
+  fprintf(f, "   AB.lB = B.L;\n\n");
+
+  fprintf(f, "   AB.rA = A.origin;\n");
+  fprintf(f, "   AB.rB = B.origin;\n\n");
+
+  fprintf(f, "   const auto xA = A.origin.x;\n");
+  fprintf(f, "   const auto yA = A.origin.y;\n");
+  fprintf(f, "   const auto zA = A.origin.z;\n\n");
+
+  fprintf(f, "   const auto xB = B.origin.x;\n");
+  fprintf(f, "   const auto yB = B.origin.y;\n");
+  fprintf(f, "   const auto zB = B.origin.z;\n\n");
+
+  fprintf(f, "   AB.rAB.x = xA - xB;\n");
+  fprintf(f, "   AB.rAB.y = yA - yB;\n");
+  fprintf(f, "   AB.rAB.z = zA - zB;\n\n");
+
+  fprintf(f, "   const double dAB = AB.rAB.x*AB.rAB.x + AB.rAB.y*AB.rAB.y + AB.rAB.z*AB.rAB.z;\n\n");
+
+  fprintf(f, "   const int nprim_A = A.m;\n");
+  fprintf(f, "   const int nprim_B = B.m;\n");
+  fprintf(f, "   const int np = nprim_A * nprim_B;\n\n");
+
+  fprintf(f, "   AB.nprim_pair = np;\n");
+  fprintf(f, "   AB.prim_pairs = new prim_pair[np];\n");
+  fprintf(f, "   for(int i = 0, ij = 0; i < nprim_A; ++i       )\n");
+  fprintf(f, "   for(int j = 0        ; j < nprim_B; ++j, ++ij ) {\n");
+  fprintf(f, "      auto& pair = AB.prim_pairs[ij];\n");
+  fprintf(f, "      pair.coeff_prod = A.coeff[i].coeff * B.coeff[j].coeff;\n\n");
+
+  fprintf(f, "      const auto alpha_A = A.coeff[i].alpha;\n");
+  fprintf(f, "      const auto alpha_B = B.coeff[j].alpha;\n\n");
+
+  fprintf(f, "      pair.gamma = alpha_A + alpha_B;\n");
+  fprintf(f, "      const auto gamma_inv = 1. / pair.gamma;\n\n");
+
+  fprintf(f, "      pair.P.x = (alpha_A * xA + alpha_B * xB) * gamma_inv;\n");
+  fprintf(f, "      pair.P.y = (alpha_A * yA + alpha_B * yB) * gamma_inv;\n");
+  fprintf(f, "      pair.P.z = (alpha_A * zA + alpha_B * zB) * gamma_inv;\n\n");
+
+  fprintf(f, "      pair.PA.x = pair.P.x - xA;\n");
+  fprintf(f, "      pair.PA.y = pair.P.y - yA;\n");
+  fprintf(f, "      pair.PA.z = pair.P.z - zA;\n\n");
+
+  fprintf(f, "      pair.PB.x = pair.P.x - xB;\n");
+  fprintf(f, "      pair.PB.y = pair.P.y - yB;\n");
+  fprintf(f, "      pair.PB.z = pair.P.z - zB;\n\n");
+
+  fprintf(f, "      pair.K = 2 * M_PI * gamma_inv * std::exp( - alpha_A * alpha_B * dAB * gamma_inv );\n");
+  fprintf(f, "   }\n");
+  fprintf(f, "}\n");
   
   fprintf(f, "\n");
   fprintf(f, "void compute_integral_shell_pair(size_t npts,\n");
   fprintf(f, "                  int i,\n");
   fprintf(f, "                  int j,\n");
   fprintf(f, "                  shells *shell_list,\n");
-  fprintf(f, "                  point *points,\n");
+  fprintf(f, "                  double *points,\n");
   fprintf(f, "                  double *Xi,\n");
   fprintf(f, "                  double *Xj,\n");
-  fprintf(f, "                  int stX,\n");
   fprintf(f, "                  int ldX,\n");	 
   fprintf(f, "                  double *Gi,\n");
   fprintf(f, "                  double *Gj,\n");
-  fprintf(f, "                  int stG, \n");
   fprintf(f, "                  int ldG, \n");
   fprintf(f, "                  double *weights) {\n");
 
@@ -871,10 +1165,8 @@ void generate_main_files(int lA) {
   fprintf(f, "                    shpair,\n");
   fprintf(f, "                    points,\n");
   fprintf(f, "                    Xi,\n");
-  fprintf(f, "                    stX,\n");
   fprintf(f, "                    ldX,\n");
   fprintf(f, "                    Gi,\n");
-  fprintf(f, "                    stG, \n");
   fprintf(f, "                    ldG, \n");
   fprintf(f, "                    weights);\n");	   
   fprintf(f, "      } else ");
@@ -885,10 +1177,8 @@ void generate_main_files(int lA) {
     fprintf(f, "                   shpair,\n");
     fprintf(f, "                   points,\n");
     fprintf(f, "                   Xi,\n");
-    fprintf(f, "                   stX,\n");
     fprintf(f, "                   ldX,\n");
     fprintf(f, "                   Gi,\n");
-    fprintf(f, "                   stG, \n");
     fprintf(f, "                   ldG, \n");
     fprintf(f, "                   weights);\n");
     fprintf(f, "      } else ");
@@ -907,11 +1197,9 @@ void generate_main_files(int lA) {
   fprintf(f, "                      points,\n");
   fprintf(f, "                      Xi,\n");
   fprintf(f, "                      Xj,\n");
-  fprintf(f, "                      stX,\n");
   fprintf(f, "                      ldX,\n");
   fprintf(f, "                      Gi,\n");
   fprintf(f, "                      Gj,\n");
-  fprintf(f, "                      stG, \n");
   fprintf(f, "                      ldG, \n");
   fprintf(f, "                      weights);\n");	   
   fprintf(f, "      } else ");
@@ -924,11 +1212,9 @@ void generate_main_files(int lA) {
       fprintf(f, "                         points,\n");
       fprintf(f, "                         Xi,\n");
       fprintf(f, "                         Xj,\n");
-      fprintf(f, "                         stX,\n");
       fprintf(f, "                         ldX,\n");
       fprintf(f, "                         Gi,\n");
       fprintf(f, "                         Gj,\n");
-      fprintf(f, "                         stG, \n");
       fprintf(f, "                         ldG, \n");
       fprintf(f, "                         weights);\n");
       fprintf(f, "      } else if((lA == %d) && (lB == %d)) {\n", j, i);
@@ -937,11 +1223,9 @@ void generate_main_files(int lA) {
       fprintf(f, "                      points,\n");
       fprintf(f, "                      Xj,\n");
       fprintf(f, "                      Xi,\n");
-      fprintf(f, "                      stX,\n");
       fprintf(f, "                      ldX,\n");
       fprintf(f, "                      Gj,\n");
       fprintf(f, "                      Gi,\n");
-      fprintf(f, "                      stG, \n");
       fprintf(f, "                      ldG, \n");
       fprintf(f, "                      weights);\n");
       fprintf(f, "      } else ");
@@ -953,11 +1237,9 @@ void generate_main_files(int lA) {
     fprintf(f, "                     points,\n");
     fprintf(f, "                     Xi,\n");
     fprintf(f, "                     Xj,\n");
-    fprintf(f, "                     stX,\n");
     fprintf(f, "                     ldX,\n");
     fprintf(f, "                     Gi,\n");
     fprintf(f, "                     Gj,\n");
-    fprintf(f, "                     stG, \n");
     fprintf(f, "                     ldG, \n");
     fprintf(f, "                     weights);\n");
     fprintf(f, "      } else ");
@@ -1039,7 +1321,7 @@ int main(int argc, char **argv) {
       generate_off_diagonal_files(f, i, j, size, node_list, type);
 
       fclose(f);
-  
+      
       free(node_list);
     }
   }

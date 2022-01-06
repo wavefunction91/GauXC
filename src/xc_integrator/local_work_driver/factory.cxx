@@ -29,10 +29,14 @@ LocalWorkDriverFactory::ptr_return_t
 
 #ifdef GAUXC_ENABLE_CUDA
     using scheme1_default = CudaAoSScheme1<>;
+#ifdef GAUXC_ENABLE_MAGMA
     using scheme1_magma   = CudaAoSScheme1<AoSScheme1MAGMABase>;
+#endif
 #elif defined(GAUXC_ENABLE_HIP)
     using scheme1_default = HipAoSScheme1<>;
+#ifdef GAUXC_ENABLE_MAGMA
     using scheme1_magma   = HipAoSScheme1<AoSScheme1MAGMABase>;
+#endif
 #endif
 
 #ifdef GAUXC_ENABLE_DEVICE

@@ -1,0 +1,16 @@
+#ifndef __MY_INTEGRAL_2
+#define __MY_INTEGRAL_2
+
+__global__ void integral_2(size_t npts,
+                          shell_pair shpair,
+			  int np,
+			  prim_pair *prim_pairs,
+                          double *points,
+                          double *Xi,
+                          int ldX,
+                          double *Gi,
+                          int ldG, 
+                          double *weights, 
+                          double *boys_table);
+
+#endif

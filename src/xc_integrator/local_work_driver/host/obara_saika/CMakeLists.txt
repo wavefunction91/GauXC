@@ -20,14 +20,9 @@ set( GAUXC_OBARA_SAIKA_HOST_SRC
      src/integral_4_3.cxx
      src/integral_4_4.cxx
      src/obara_saika_integrals.cxx
-     src/boys_computation.cxx
-     src/chebyshev_boys_function.cxx
+     src/chebyshev_boys_computation.cxx
 )
 target_sources( gauxc PRIVATE ${GAUXC_OBARA_SAIKA_HOST_SRC} )
 target_include_directories( gauxc PRIVATE
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 )
-target_compile_definitions( gauxc PRIVATE "NPTS_LOCAL=64" )
-
-#find_package( Boost REQUIRED )
-#target_link_libraries( gauxc PRIVATE Boost::headers )

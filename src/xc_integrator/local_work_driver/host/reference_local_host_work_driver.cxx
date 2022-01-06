@@ -8,23 +8,15 @@
 
 #include <gauxc/basisset_map.hpp>
 #include "rys_integral.h"
-#include "obara_saika_integrals.h"
-#include "chebyshev_boys_function.hpp"
+#include "obara_saika_integrals.hpp"
+#include "chebyshev_boys_computation.hpp"
 #include <gauxc/util/real_solid_harmonics.hpp>
 #include "integrator_util/integral_bounds.hpp"
 
 namespace GauXC {
 
 ReferenceLocalHostWorkDriver::ReferenceLocalHostWorkDriver() {
-#if 0
-  int ncheb   = 7;
-  int maxM    = 16;
-  double maxT = 117;
-  int nseg    = ncheb * maxT;
-  gauxc_boys_init( ncheb, maxM, nseg, 1e-10, maxT );
-#else
   gauxc_boys_init();
-#endif
 }; 
 ReferenceLocalHostWorkDriver::~ReferenceLocalHostWorkDriver() noexcept {
   gauxc_boys_finalize();
@@ -476,7 +468,14 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
 
   // Cast points to Rys format (binary compatable)
   point* _points = reinterpret_cast<point*>(const_cast<double*>(points));
+  std::vector<double> _points_transposed(3 * npts);
 
+  for(int i = 0; i < npts; ++i) {
+    _points_transposed[i + 0 * npts] = _points[i].x;
+    _points_transposed[i + 1 * npts] = _points[i].y;
+    _points_transposed[i + 2 * npts] = _points[i].z;
+  }
+  
   // Set G to zero
   for( int j = 0; j < npts; ++j )
   for( int i = 0; i < nbe;  ++i ) {
@@ -581,9 +580,9 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
 
       }
 #else
-      compute_integral_shell_pair( npts, ish, jsh, rys_basis._shells.data(), _points,
-        X_cart_rm.data()+ioff_cart*npts, X_cart_rm.data()+joff_cart*npts, 1, npts,
-        G_cart_rm.data()+ioff_cart*npts, G_cart_rm.data()+joff_cart*npts, 1, npts,
+      compute_integral_shell_pair( npts, ish, jsh, rys_basis._shells.data(), _points_transposed.data(),
+        X_cart_rm.data()+ioff_cart*npts, X_cart_rm.data()+joff_cart*npts, npts,
+        G_cart_rm.data()+ioff_cart*npts, G_cart_rm.data()+joff_cart*npts, npts,
         const_cast<double*>(weights) );
 
 #endif
