@@ -1,6 +1,8 @@
 #include "host/reference/weights.hpp"
 #include "common/integrator_constants.hpp"
 
+#include <gauxc/molgrid/defaults.hpp>
+
 namespace GauXC {
 
 // Reference Becke weights impl
@@ -19,6 +21,35 @@ void reference_becke_weights_host(
   const size_t natoms = mol.natoms();
 
   const auto&  RAB    = meta.rab();
+
+  auto slater_64 = slater_radii_64();
+  auto clementi_67 = clementi_radii_67();
+
+  auto smap = slater_64;
+  smap.merge( clementi_67 );
+
+
+  std::vector<double> slater_radii;
+  for( auto& atom : mol ) {
+    auto r_it = smap.find(atom.Z);
+    if( r_it == smap.end() ) {
+      slater_radii.emplace_back(3.79835);
+    } else {
+      slater_radii.emplace_back(r_it->second.get());
+    }
+  }
+
+  std::vector<double> size_adj(natoms * natoms);
+  for( auto i = 0; i < natoms; ++i ) 
+  for( auto j = 0; j < natoms; ++j ) {
+    const auto si  = slater_radii[i];
+    const auto sj  = slater_radii[j];
+    const auto chi = std::sqrt(si/sj);
+    const auto u   = (chi-1.)/(chi+1.);
+    const auto a   = u / (u*u-1.);
+
+    size_adj[i + j*natoms] = a;
+  }
 
   #pragma omp parallel 
   {
@@ -49,7 +80,15 @@ void reference_becke_weights_host(
     std::fill(partitionScratch.begin(),partitionScratch.end(),1.);
     for( size_t iA = 0; iA < natoms; iA++ ) 
     for( size_t jA = 0; jA < iA;     jA++ ){
-      const double mu = (atomDist[iA] - atomDist[jA]) / RAB[jA + iA*natoms];
+
+      double mu  = (atomDist[iA] - atomDist[jA]) / RAB[jA + iA*natoms];
+
+#if 1
+      // Size Adjustment
+      const double a = size_adj[iA + jA*natoms];
+      mu = mu + a * ( 1. - mu*mu );
+#endif
+
       const double g = gBecke(mu);
 
       partitionScratch[iA] *= 0.5 * (1. - g);
