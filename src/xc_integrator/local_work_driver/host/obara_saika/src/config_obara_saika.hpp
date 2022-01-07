@@ -80,6 +80,7 @@
   
   #define SIMD_DUPLICATE(x) _mm256_broadcast_sd(x)
 
+#if 0 // Disable SSE
 // SSE SIMD Types
 #elif __SSE__ || __SSE2__ || __SSE3__
 
@@ -106,6 +107,7 @@
   #define SIMD_FNMA(x, y, z) _mm_fnmadd_pd(x, y, z)
   
   #define SIMD_DUPLICATE(x) _mm_loaddup_pd(x)
+#endif
 
 // Scalar SIMD Emulation
 #else

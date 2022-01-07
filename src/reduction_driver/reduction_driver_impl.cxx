@@ -3,8 +3,8 @@
 namespace GauXC::detail {
 
 
-ReductionDriverImpl::ReductionDriverImpl( GAUXC_MPI_CODE(MPI_Comm comm) ) :
-  GAUXC_MPI_CODE( comm_(comm) ) {}
+ReductionDriverImpl::ReductionDriverImpl( GAUXC_MPI_CODE(MPI_Comm comm) ) 
+  GAUXC_MPI_CODE( : comm_(comm) ) {}
 
 ReductionDriverImpl::~ReductionDriverImpl() noexcept = default;
 ReductionDriverImpl::ReductionDriverImpl(const ReductionDriverImpl& ) = default;
