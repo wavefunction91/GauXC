@@ -3,6 +3,7 @@
 #include <integratorxx/quadratures/lebedev_laikov.hpp>
 #include <integratorxx/quadratures/muraknowles.hpp>
 #include <integratorxx/quadratures/mhl.hpp>
+#include <integratorxx/quadratures/treutleraldrichs.hpp>
 #include <integratorxx/composite_quadratures/spherical_quadrature.hpp>
 #include <gauxc/exceptions.hpp>
 
@@ -44,10 +45,12 @@ void GridImpl::generate() {
 
   using mk_type  = IntegratorXX::MuraKnowles<double,double>;
   using mhl_type = IntegratorXX::MurrayHandyLaming<double,double>;
+  using ta_type  = IntegratorXX::TreutlerAldrichs<double,double>;
   using ll_type  = IntegratorXX::LebedevLaikov<double>;
 
   using mk_sphere_type  = IntegratorXX::SphericalQuadrature<mk_type, ll_type>;
   using mhl_sphere_type = IntegratorXX::SphericalQuadrature<mhl_type, ll_type>;
+  using ta_sphere_type  = IntegratorXX::SphericalQuadrature<ta_type, ll_type>;
 
   // Create Angular Quadrature
   ll_type ang_quad( n_ang_.get() );
@@ -77,6 +80,19 @@ void GridImpl::generate() {
       batcher_ = std::make_shared< batcher_type >( 
         max_batch_sz_.get(), 
         dynamic_cast<const mhl_sphere_type&>(*quad_)
+      );
+      break;
+
+    case RadialQuad::TreutlerAldrichs:
+
+      quad_ = std::make_shared<ta_sphere_type>(
+        ta_type( n_rad_.get(), r_scal_.get() ),
+        std::move( ang_quad )
+      );
+
+      batcher_ = std::make_shared< batcher_type >( 
+        max_batch_sz_.get(), 
+        dynamic_cast<const ta_sphere_type&>(*quad_)
       );
       break;
 

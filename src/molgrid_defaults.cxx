@@ -37,6 +37,48 @@ atomic_scal_factor_map get_default_scaling_factors( RadialQuad rq,
 
     }
 
+  } else if( rq == RadialQuad::TreutlerAldrichs ) {
+
+    smap = {
+      { AtomicNumber(1),  RadialScale(0.8) }, // H
+      { AtomicNumber(2),  RadialScale(0.9) }, // He
+      { AtomicNumber(3),  RadialScale(1.8) }, // Li
+      { AtomicNumber(4),  RadialScale(1.4) }, // Be
+      { AtomicNumber(5),  RadialScale(1.3) }, // B
+      { AtomicNumber(6),  RadialScale(1.1) }, // C
+      { AtomicNumber(7),  RadialScale(0.9) }, // N
+      { AtomicNumber(8),  RadialScale(0.9) }, // O
+      { AtomicNumber(9),  RadialScale(0.9) }, // F
+      { AtomicNumber(10), RadialScale(0.9) }, // Ne
+      { AtomicNumber(11), RadialScale(1.4) }, // Na
+      { AtomicNumber(12), RadialScale(1.3) }, // Mg
+      { AtomicNumber(13), RadialScale(1.3) }, // Al
+      { AtomicNumber(14), RadialScale(1.2) }, // Si
+      { AtomicNumber(15), RadialScale(1.1) }, // P
+      { AtomicNumber(16), RadialScale(1.0) }, // S
+      { AtomicNumber(17), RadialScale(1.0) }, // Cl
+      { AtomicNumber(18), RadialScale(1.0) }, // Ar
+      { AtomicNumber(19), RadialScale(1.5) }, // K
+      { AtomicNumber(20), RadialScale(1.4) }, // Ca
+      { AtomicNumber(21), RadialScale(1.3) }, // Sc
+      { AtomicNumber(22), RadialScale(1.2) }, // Ti
+      { AtomicNumber(23), RadialScale(1.2) }, // V
+      { AtomicNumber(24), RadialScale(1.2) }, // Cr
+      { AtomicNumber(25), RadialScale(1.2) }, // Mn
+      { AtomicNumber(26), RadialScale(1.2) }, // Fe
+      { AtomicNumber(27), RadialScale(1.2) }, // Co
+      { AtomicNumber(28), RadialScale(1.1) }, // Ni
+      { AtomicNumber(29), RadialScale(1.1) }, // Cu
+      { AtomicNumber(30), RadialScale(1.1) }, // Zn
+      { AtomicNumber(31), RadialScale(1.1) }, // Ga
+      { AtomicNumber(32), RadialScale(1.0) }, // Ge
+      { AtomicNumber(33), RadialScale(0.9) }, // As
+      { AtomicNumber(34), RadialScale(0.9) }, // Se
+      { AtomicNumber(35), RadialScale(0.9) }, // Br
+      { AtomicNumber(36), RadialScale(0.9) }  // Kr
+    };
+    
+
   } else { // Slater Radii + missing terms through
 
     auto slater_64 = slater_radii_64();

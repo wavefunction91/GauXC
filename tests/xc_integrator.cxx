@@ -65,6 +65,8 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, )
     integrator_kernel, lwd_kernel, reduction_kernel );
   auto integrator = integrator_factory.get_instance( func, lb );
 
+  auto N_EL = integrator.integrate_den( P );
+  std::cout << "N_EL = " << N_EL << ", " << std::endl;
 
   auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
   CHECK( EXC == Approx( EXC_ref ) );

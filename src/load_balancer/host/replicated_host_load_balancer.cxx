@@ -69,7 +69,7 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
 
       if( points.size() == 0 ) continue;
 
-#if 0
+#if 1
       // Microbatch Screening
       auto [shell_list, nbe] = micro_batch_screen( (*this->basis_), lo, up );
 
