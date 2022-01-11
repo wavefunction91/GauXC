@@ -13,6 +13,8 @@
 
 #include <integratorxx/quadratures/muraknowles.hpp>
 #include <integratorxx/quadratures/treutleraldrichs.hpp>
+#include <integratorxx/quadratures/lebedev_laikov.hpp>
+#include <integratorxx/composite_quadratures/pruned_spherical_quadrature.hpp>
 
 using namespace GauXC;
 using namespace ExchCXX;
@@ -80,27 +82,51 @@ int main(int argc, char** argv) {
     }
 
 
-#if 0
-    double r_start = 2.0;
-    double r_end   = 4.0;
-    size_t nstep   = 50;
-    double delta   = (r_end - r_start) / (nstep-1);
-    for( auto i = 0; i < nstep; ++i ) 
-    for( auto j = 0; j < nstep; ++j ) {
+#if 1
+    IntegratorXX::MuraKnowles<double,double> c_rad( 100, 7.0 );
+    IntegratorXX::MuraKnowles<double,double> h_rad( 100, 5.0 );
+    IntegratorXX::LebedevLaikov<double> ang(974);
+    IntegratorXX::LebedevLaikov<double> ang_m6(266);
+    //IntegratorXX::LebedevLaikov<double> ang(3470);
+    //IntegratorXX::LebedevLaikov<double> ang_m6(1454);
+    IntegratorXX::LebedevLaikov<double> ang_7(170);
 
-      const double Rc = r_start + i*delta;
-      const double Rh = r_start + j*delta;
-      Grid c_grid( RadialQuad::MuraKnowles, 
-                   RadialSize(100), AngularSize(1454), 
-                   RadialScale(Rc) );
+    using sph_type = IntegratorXX::SphericalQuadrature<
+      IntegratorXX::MuraKnowles<double,double>,
+      IntegratorXX::LebedevLaikov<double>
+    >;
 
-      Grid h_grid( RadialQuad::MuraKnowles, 
-                   RadialSize(100), AngularSize(1454), RadialScale(Rh) );
+    Grid c_unp_grid(std::make_shared<sph_type>( c_rad, ang ));
+    Grid h_unp_grid(std::make_shared<sph_type>( h_rad, ang ));
+
+    const size_t unp_npts = 
+      6 * c_unp_grid.batcher().quadrature().npts() +
+      6 * h_unp_grid.batcher().quadrature().npts();
+
+    IntegratorXX::RadialGridPartition 
+      rgp_c( c_rad, 0, ang_7, 26, ang_m6, 51, ang );
+    IntegratorXX::RadialGridPartition 
+      rgp_h( h_rad, 0, ang_7, 26, ang_m6, 51, ang );
+
+    using pruned_sph_type = IntegratorXX::PrunedSphericalQuadrature<
+      IntegratorXX::MuraKnowles<double,double>,
+      IntegratorXX::LebedevLaikov<double>
+    >;
+
+    Grid c_pru_grid(std::make_shared<pruned_sph_type>( c_rad, rgp_c ));
+    Grid h_pru_grid(std::make_shared<pruned_sph_type>( h_rad, rgp_h ));
+
+    const size_t pru_npts = 
+      6 * c_pru_grid.batcher().quadrature().npts() +
+      6 * h_pru_grid.batcher().quadrature().npts();
 
 
+    std::cout << "Unpruned " << unp_npts << std::endl;
+    // Unpruned Integration
+    {
       atomic_grid_map molmap = {
-        { AtomicNumber(1), h_grid },
-        { AtomicNumber(6), c_grid }
+        { AtomicNumber(1), h_unp_grid },
+        { AtomicNumber(6), c_unp_grid }
       };
       MolGrid mg(molmap);
 
@@ -110,8 +136,29 @@ int main(int argc, char** argv) {
 
       double N_EL = integrator.integrate_den( P );
       std::cout << std::scientific << std::setprecision(4);
-      std::cout << Rc << ", " << Rh << ", " << std::abs(N_EL - ref_ne) << std::endl;
+      const auto err = std::abs(N_EL-ref_ne);
+      std::cout << "NE = " << err << ", " << err/ref_ne << std::endl;
+    
+    }
 
+    std::cout << "Pruned " << pru_npts << std::endl;
+    // Pruned Integration
+    {
+      atomic_grid_map molmap = {
+        { AtomicNumber(1), h_pru_grid },
+        { AtomicNumber(6), c_pru_grid }
+      };
+      MolGrid mg(molmap);
+
+      auto lb = lb_factory.get_shared_instance( 
+        GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, mg, basis);
+      auto integrator = integrator_factory.get_instance( func, lb );
+
+      double N_EL = integrator.integrate_den( P );
+      std::cout << std::scientific << std::setprecision(4);
+      const auto err = std::abs(N_EL-ref_ne);
+      std::cout << "NE = " << err << ", " << err/ref_ne << std::endl;
+    
     }
 #else
 
