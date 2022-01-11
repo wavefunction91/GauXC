@@ -31,15 +31,15 @@ const Grid& MolGridImpl::get_grid( AtomicNumber Z ) const {
 Grid& MolGridImpl::get_grid( AtomicNumber Z ) {
   return molgrid_.at(Z);
 }
-RadialScale MolGridImpl::get_rscal_factor( AtomicNumber Z ) const {
-  return scal_factors_.at(Z);
-}
+//RadialScale MolGridImpl::get_rscal_factor( AtomicNumber Z ) const {
+//  return scal_factors_.at(Z);
+//}
 GridSize MolGridImpl::get_grid_size( AtomicNumber Z ) const {
   return grid_sizes_.at(Z);
 }
-RadialQuad MolGridImpl::get_radial_quad( AtomicNumber Z ) const {
-  return molgrid_.at(Z).radial_quad();
-}
+//RadialQuad MolGridImpl::get_radial_quad( AtomicNumber Z ) const {
+//  return molgrid_.at(Z).radial_quad();
+//}
 
 
 size_t MolGridImpl::max_nbatches() const {

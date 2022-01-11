@@ -40,6 +40,8 @@ public:
 
   Grid() = delete;
 
+  Grid( std::shared_ptr<quadrature_type> q );
+
   /**
    *  @brief Construct a Grid object
    *  
@@ -168,19 +170,19 @@ public:
 
   
   /// Return the number of radial points in the spherical quadrature
-  RadialSize  n_rad()        const noexcept;
+  //RadialSize  n_rad()        const noexcept;
 
   /// Return the number of angular points in the spherical quadrature
-  AngularSize n_ang()        const noexcept;
+  //AngularSize n_ang()        const noexcept;
 
   /// Return the max batch size for the spherical quadrature
-  BatchSize   max_batch_sz() const noexcept;
+  //BatchSize   max_batch_sz() const noexcept;
 
   /// Return radial scaling factor for the spherical quadrature
-  RadialScale rscal_factor() const noexcept; 
+  //RadialScale rscal_factor() const noexcept; 
 
   /// Return the radial quadrature specifier
-  RadialQuad  radial_quad()  const noexcept;
+  //RadialQuad  radial_quad()  const noexcept;
 
 }; // class Grid
 

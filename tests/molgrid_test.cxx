@@ -201,7 +201,7 @@ TEST_CASE("MolGrid", "[molgrid]") {
 
         Grid atom_grid( RadialQuad::MuraKnowles, gsz, alpha );
 
-        CHECK( mg.get_rscal_factor(atom.Z) == alpha );
+        //CHECK( mg.get_rscal_factor(atom.Z) == alpha );
         CHECK( mg.get_grid_size( atom. Z ) == gsz   );
 
         CHECK( atom_grid.batcher().quadrature().points() ==
@@ -225,7 +225,7 @@ TEST_CASE("MolGrid", "[molgrid]") {
 
         Grid atom_grid( RadialQuad::MuraKnowles, gsz, alpha );
 
-        CHECK( mg.get_rscal_factor(atom.Z) == alpha );
+        //CHECK( mg.get_rscal_factor(atom.Z) == alpha );
         CHECK( mg.get_grid_size( atom. Z ) == gsz   );
 
         CHECK( atom_grid.batcher().quadrature().points() ==
@@ -250,7 +250,7 @@ TEST_CASE("MolGrid", "[molgrid]") {
 
         Grid atom_grid( RadialQuad::MuraKnowles, gsz, alpha );
 
-        CHECK( mg.get_rscal_factor(atom.Z) == alpha );
+        //CHECK( mg.get_rscal_factor(atom.Z) == alpha );
         CHECK( mg.get_grid_size( atom. Z ) == gsz   );
 
         CHECK( atom_grid.batcher().quadrature().points() ==
@@ -275,7 +275,7 @@ TEST_CASE("MolGrid", "[molgrid]") {
 
         Grid atom_grid( RadialQuad::MuraKnowles, gsz, alpha );
 
-        CHECK( mg.get_rscal_factor(atom.Z) == alpha );
+        //CHECK( mg.get_rscal_factor(atom.Z) == alpha );
         CHECK( mg.get_grid_size( atom. Z ) == gsz   );
 
         CHECK( atom_grid.batcher().quadrature().points() ==
@@ -301,7 +301,7 @@ TEST_CASE("MolGrid", "[molgrid]") {
 
       Grid atom_grid( RadialQuad::MurrayHandyLaming, gsz, alpha );
 
-      CHECK( mg.get_rscal_factor(atom.Z) == alpha );
+      //CHECK( mg.get_rscal_factor(atom.Z) == alpha );
       CHECK( mg.get_grid_size( atom. Z ) == gsz   );
 
       CHECK( atom_grid.batcher().quadrature().points() ==
@@ -313,11 +313,13 @@ TEST_CASE("MolGrid", "[molgrid]") {
 
   }
 
+#if 0
   SECTION("Default") {
     MolGrid mg( AtomicGridSizeDefault::FineGrid, mol );
     for( const auto& atom: mol )
       CHECK( mg.get_radial_quad(atom.Z) == RadialQuad::MuraKnowles );
   }
+#endif
 
 }
 

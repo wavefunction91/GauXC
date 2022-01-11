@@ -10,11 +10,15 @@
 namespace GauXC {
 namespace detail {
 
-GridImpl::GridImpl( RadialQuad rq, RadialSize rs, AngularSize as, 
-  RadialScale rscal, BatchSize bs ) : 
-  n_rad_(rs), n_ang_(as), max_batch_sz_(bs), r_scal_(rscal), rquad_(rq)  {
+GridImpl::GridImpl( std::shared_ptr<quadrature_type> q, BatchSize bs ) : quad_(q) {
+  generate_batcher(bs);
+}
 
-  generate();
+GridImpl::GridImpl( RadialQuad rq, RadialSize rs, AngularSize as, 
+  RadialScale rscal, BatchSize bs )  {
+
+  generate_stock_quadrature(rq,rs,as,rscal);
+  generate_batcher(bs);
 
 }
 
@@ -33,14 +37,15 @@ GridImpl::~GridImpl() noexcept = default;
 const batcher_type& GridImpl::batcher() const { return *batcher_; }
       batcher_type& GridImpl::batcher()       { return *batcher_; }
 
-RadialSize  GridImpl::n_rad()        const noexcept { return n_rad_; }
-AngularSize GridImpl::n_ang()        const noexcept { return n_ang_; }
-BatchSize   GridImpl::max_batch_sz() const noexcept { return max_batch_sz_; }
-RadialScale GridImpl::rscal_factor() const noexcept { return r_scal_; }
-RadialQuad  GridImpl::radial_quad()  const noexcept { return rquad_; }
+//RadialSize  GridImpl::n_rad()        const noexcept { return n_rad_; }
+//AngularSize GridImpl::n_ang()        const noexcept { return n_ang_; }
+//BatchSize   GridImpl::max_batch_sz() const noexcept { return max_batch_sz_; }
+//RadialScale GridImpl::rscal_factor() const noexcept { return r_scal_; }
+//RadialQuad  GridImpl::radial_quad()  const noexcept { return rquad_; }
 
 
-void GridImpl::generate() { 
+void GridImpl::generate_stock_quadrature(RadialQuad rquad, RadialSize n_rad,
+  AngularSize n_ang, RadialScale r_scal) { 
 
 
   using mk_type  = IntegratorXX::MuraKnowles<double,double>;
@@ -53,46 +58,31 @@ void GridImpl::generate() {
   using ta_sphere_type  = IntegratorXX::SphericalQuadrature<ta_type, ll_type>;
 
   // Create Angular Quadrature
-  ll_type ang_quad( n_ang_.get() );
+  ll_type ang_quad( n_ang.get() );
 
-  switch( rquad_ ) {
+  switch( rquad ) {
 
     case RadialQuad::MuraKnowles:
 
       quad_ = std::make_shared<mk_sphere_type>(
-        mk_type( n_rad_.get(), r_scal_.get() ),
+        mk_type( n_rad.get(), r_scal.get() ),
         std::move( ang_quad )
-      );
-
-      batcher_ = std::make_shared< batcher_type >( 
-        max_batch_sz_.get(), 
-        dynamic_cast<const mk_sphere_type&>(*quad_)
       );
       break;
 
     case RadialQuad::MurrayHandyLaming:
 
       quad_ = std::make_shared<mhl_sphere_type>(
-        mhl_type( n_rad_.get(), r_scal_.get() ),
+        mhl_type( n_rad.get(), r_scal.get() ),
         std::move( ang_quad )
-      );
-
-      batcher_ = std::make_shared< batcher_type >( 
-        max_batch_sz_.get(), 
-        dynamic_cast<const mhl_sphere_type&>(*quad_)
       );
       break;
 
     case RadialQuad::TreutlerAldrichs:
 
       quad_ = std::make_shared<ta_sphere_type>(
-        ta_type( n_rad_.get(), r_scal_.get() ),
+        ta_type( n_rad.get(), r_scal.get() ),
         std::move( ang_quad )
-      );
-
-      batcher_ = std::make_shared< batcher_type >( 
-        max_batch_sz_.get(), 
-        dynamic_cast<const ta_sphere_type&>(*quad_)
       );
       break;
 
@@ -101,6 +91,14 @@ void GridImpl::generate() {
 
   }
   
+
+}
+
+void GridImpl::generate_batcher(BatchSize max_batch_sz) {
+
+  batcher_ = std::make_shared< batcher_type >( 
+    max_batch_sz.get(), quad_
+  );
 
 }
 
