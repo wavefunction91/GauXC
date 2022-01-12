@@ -14,7 +14,7 @@ target_sources( gauxc PRIVATE
 
 target_link_libraries( gauxc PUBLIC LAPACK::LAPACK )
 
-if( GAUXC_ENABLE_GAU2GRID )
+if( GAUXC_ENABLE_GAU2GRID AND TARGET gau2grid::gg )
   target_link_libraries( gauxc PUBLIC gau2grid::gg )
 endif()
 
