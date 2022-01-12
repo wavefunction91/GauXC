@@ -23,9 +23,9 @@ set( GAUXC_ENABLE_HDF5       @GAUXC_ENABLE_HDF5@      )
 
 if( GAUXC_ENABLE_HOST )
   find_dependency( LAPACK )
-  if( GAUXC_ENABLE_GAU2GRID )
-    find_dependency( gau2grid )
-  endif()
+  #if( GAUXC_ENABLE_GAU2GRID )
+  #  find_dependency( gau2grid )
+  #endif()
 endif()
 
 if( GAUXC_ENABLE_CUDA )
