@@ -15,6 +15,9 @@
 #include <integratorxx/quadratures/treutleraldrichs.hpp>
 #include <integratorxx/quadratures/lebedev_laikov.hpp>
 #include <integratorxx/composite_quadratures/pruned_spherical_quadrature.hpp>
+#include <gauxc/grid_factory.hpp>
+
+#include <chrono>
 
 using namespace GauXC;
 using namespace ExchCXX;
@@ -84,6 +87,8 @@ int main(int argc, char** argv) {
 
 #if 1
     IntegratorXX::MuraKnowles<double,double> c_rad( 100, 7.0 );
+    IntegratorXX::MuraKnowles<double,double> n_rad( 100, 7.0 );
+    IntegratorXX::MuraKnowles<double,double> o_rad( 100, 7.0 );
     IntegratorXX::MuraKnowles<double,double> h_rad( 100, 5.0 );
     IntegratorXX::LebedevLaikov<double> ang(974);
     IntegratorXX::LebedevLaikov<double> ang_m6(266);
@@ -91,20 +96,30 @@ int main(int argc, char** argv) {
     //IntegratorXX::LebedevLaikov<double> ang_m6(1454);
     IntegratorXX::LebedevLaikov<double> ang_7(170);
 
+#if 0
     using sph_type = IntegratorXX::SphericalQuadrature<
       IntegratorXX::MuraKnowles<double,double>,
       IntegratorXX::LebedevLaikov<double>
     >;
 
     Grid c_unp_grid(std::make_shared<sph_type>( c_rad, ang ));
+    Grid n_unp_grid(std::make_shared<sph_type>( n_rad, ang ));
+    Grid o_unp_grid(std::make_shared<sph_type>( o_rad, ang ));
     Grid h_unp_grid(std::make_shared<sph_type>( h_rad, ang ));
+#else
+    auto c_unp_grid = AtomicGridFactory::generate_unpruned_grid( c_rad, ang );
+    auto n_unp_grid = AtomicGridFactory::generate_unpruned_grid( n_rad, ang );
+    auto o_unp_grid = AtomicGridFactory::generate_unpruned_grid( o_rad, ang );
+    auto h_unp_grid = AtomicGridFactory::generate_unpruned_grid( h_rad, ang );
+#endif
 
-    const size_t unp_npts = 
-      6 * c_unp_grid.batcher().quadrature().npts() +
-      6 * h_unp_grid.batcher().quadrature().npts();
-
+#if 0
     IntegratorXX::RadialGridPartition 
       rgp_c( c_rad, 0, ang_7, 26, ang_m6, 51, ang );
+    IntegratorXX::RadialGridPartition 
+      rgp_n( n_rad, 0, ang_7, 26, ang_m6, 51, ang );
+    IntegratorXX::RadialGridPartition 
+      rgp_o( o_rad, 0, ang_7, 26, ang_m6, 51, ang );
     IntegratorXX::RadialGridPartition 
       rgp_h( h_rad, 0, ang_7, 26, ang_m6, 51, ang );
 
@@ -114,19 +129,25 @@ int main(int argc, char** argv) {
     >;
 
     Grid c_pru_grid(std::make_shared<pruned_sph_type>( c_rad, rgp_c ));
+    Grid n_pru_grid(std::make_shared<pruned_sph_type>( n_rad, rgp_c ));
+    Grid o_pru_grid(std::make_shared<pruned_sph_type>( o_rad, rgp_c ));
     Grid h_pru_grid(std::make_shared<pruned_sph_type>( h_rad, rgp_h ));
+#else
+    auto c_pru_grid = AtomicGridFactory::generate_pruned_grid( c_rad, ang, ang_m6, ang_7 );
+    auto n_pru_grid = AtomicGridFactory::generate_pruned_grid( n_rad, ang, ang_m6, ang_7 );
+    auto o_pru_grid = AtomicGridFactory::generate_pruned_grid( o_rad, ang, ang_m6, ang_7 );
+    auto h_pru_grid = AtomicGridFactory::generate_pruned_grid( h_rad, ang, ang_m6, ang_7 );
+#endif
 
-    const size_t pru_npts = 
-      6 * c_pru_grid.batcher().quadrature().npts() +
-      6 * h_pru_grid.batcher().quadrature().npts();
-
-
-    std::cout << "Unpruned " << unp_npts << std::endl;
+    std::cout << "Unpruned" << std::endl;
     // Unpruned Integration
     {
+      auto st = std::chrono::high_resolution_clock::now();
       atomic_grid_map molmap = {
         { AtomicNumber(1), h_unp_grid },
-        { AtomicNumber(6), c_unp_grid }
+        { AtomicNumber(6), c_unp_grid },
+        { AtomicNumber(7), n_unp_grid },
+        { AtomicNumber(8), o_unp_grid }
       };
       MolGrid mg(molmap);
 
@@ -135,18 +156,23 @@ int main(int argc, char** argv) {
       auto integrator = integrator_factory.get_instance( func, lb );
 
       double N_EL = integrator.integrate_den( P );
+      auto en = std::chrono::high_resolution_clock::now();
       std::cout << std::scientific << std::setprecision(4);
       const auto err = std::abs(N_EL-ref_ne);
       std::cout << "NE = " << err << ", " << err/ref_ne << std::endl;
+      std::cout << std::chrono::duration<double>(en-st).count() << std::endl;
     
     }
 
-    std::cout << "Pruned " << pru_npts << std::endl;
+    std::cout << "Pruned" << std::endl;
     // Pruned Integration
     {
+      auto st = std::chrono::high_resolution_clock::now();
       atomic_grid_map molmap = {
         { AtomicNumber(1), h_pru_grid },
-        { AtomicNumber(6), c_pru_grid }
+        { AtomicNumber(6), c_pru_grid },
+        { AtomicNumber(7), n_pru_grid },
+        { AtomicNumber(8), o_pru_grid }
       };
       MolGrid mg(molmap);
 
@@ -155,9 +181,11 @@ int main(int argc, char** argv) {
       auto integrator = integrator_factory.get_instance( func, lb );
 
       double N_EL = integrator.integrate_den( P );
+      auto en = std::chrono::high_resolution_clock::now();
       std::cout << std::scientific << std::setprecision(4);
       const auto err = std::abs(N_EL-ref_ne);
       std::cout << "NE = " << err << ", " << err/ref_ne << std::endl;
+      std::cout << std::chrono::duration<double>(en-st).count() << std::endl;
     
     }
 #else
