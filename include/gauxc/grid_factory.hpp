@@ -3,16 +3,44 @@
 #include <integratorxx/composite_quadratures/spherical_quadrature.hpp>
 #include <integratorxx/composite_quadratures/pruned_spherical_quadrature.hpp>
 
+#include <variant>
+
 namespace GauXC {
+
+struct UnprunedAtomicGridSpecification {
+  RadialQuad  radial_quad;
+  RadialSize  radial_size;
+  RadialScale radial_scale;
+
+  AngularSize angular_size;
+};
+
+struct PrunedAtomicGridSpecification {
+  RadialQuad  radial_quad;
+  RadialSize  radial_size;
+  RadialScale radial_scale;
+
+  AngularSize angular_size_hgh;
+  AngularSize angular_size_med;
+  AngularSize angular_size_low;
+};
+
+using atomic_grid_variant = 
+  std::variant<UnprunedAtomicGridSpecification,
+               PrunedAtomicGridSpecification>;
 
 struct AtomicGridFactory {
 
   template <typename RadialType, typename AngularType>
   using unpruned_sphere_type = typename
-    IntegratorXX::SphericalQuadrature< std::decay_t<RadialType>, std::decay_t<AngularType>>;
+    IntegratorXX::SphericalQuadrature< 
+      std::decay_t<RadialType>, std::decay_t<AngularType>
+    >;
   template <typename RadialType, typename AngularType>
   using pruned_sphere_type = typename
-    IntegratorXX::PrunedSphericalQuadrature< std::decay_t<RadialType>, std::decay_t<AngularType>>;
+    IntegratorXX::PrunedSphericalQuadrature< 
+      std::decay_t<RadialType>, std::decay_t<AngularType>
+    >;
 
   template <typename RadialType, typename AngularType>
   static Grid generate_unpruned_grid( RadialType&& rq, AngularType&& aq ) {
@@ -22,9 +50,6 @@ struct AtomicGridFactory {
       )
     );
   }
-
-  static Grid generate_unpruned_grid( RadialQuad, RadialSize, AngularSize, 
-                                      RadialScale );
 
   template <typename RadialType, typename RadialPartitionType>
   static Grid generate_pruned_grid( RadialType&& rq, RadialPartitionType&& rgp ) {
@@ -50,6 +75,21 @@ struct AtomicGridFactory {
     return generate_pruned_grid( std::forward<RadialType>(rq), std::move(rgp) );
 
   }
+
+
+
+
+  static Grid generate_unpruned_grid( RadialQuad, RadialSize, AngularSize, 
+                                      RadialScale );
+  static Grid generate_pruned_grid( RadialQuad, RadialSize, AngularSize, 
+    AngularSize, AngularSize, RadialScale );
+
+
+  static Grid generate_grid( UnprunedAtomicGridSpecification gs ); 
+  static Grid generate_grid( PrunedAtomicGridSpecification gs ); 
+
+  static Grid generate_grid( atomic_grid_variant gs );
+
 };
 
 }

@@ -54,7 +54,7 @@ int main(int argc, char** argv) {
     BasisSet<double> basis; 
     read_hdf5_record( basis, ref_file, "/BASIS" );
 
-    for( auto& sh : basis ){ sh.set_shell_tolerance( 1e-14 ); }
+    for( auto& sh : basis ){ sh.set_shell_tolerance( 1e-10 ); }
 
 
     // Setup load balancer factory
@@ -107,10 +107,30 @@ int main(int argc, char** argv) {
     Grid o_unp_grid(std::make_shared<sph_type>( o_rad, ang ));
     Grid h_unp_grid(std::make_shared<sph_type>( h_rad, ang ));
 #else
+#if 0
     auto c_unp_grid = AtomicGridFactory::generate_unpruned_grid( c_rad, ang );
     auto n_unp_grid = AtomicGridFactory::generate_unpruned_grid( n_rad, ang );
     auto o_unp_grid = AtomicGridFactory::generate_unpruned_grid( o_rad, ang );
     auto h_unp_grid = AtomicGridFactory::generate_unpruned_grid( h_rad, ang );
+#else
+    UnprunedAtomicGridSpecification cno_unp_spec {
+      RadialQuad::MuraKnowles,
+      RadialSize(100),
+      RadialScale(7.0),
+      AngularSize(974)
+    };
+
+    UnprunedAtomicGridSpecification h_unp_spec {
+      RadialQuad::MuraKnowles,
+      RadialSize(100),
+      RadialScale(5.0),
+      AngularSize(974)
+    };
+    auto c_unp_grid = AtomicGridFactory::generate_grid(cno_unp_spec);
+    auto n_unp_grid = AtomicGridFactory::generate_grid(cno_unp_spec);
+    auto o_unp_grid = AtomicGridFactory::generate_grid(cno_unp_spec);
+    auto h_unp_grid = AtomicGridFactory::generate_grid(h_unp_spec);
+#endif
 #endif
 
 #if 0
@@ -133,10 +153,37 @@ int main(int argc, char** argv) {
     Grid o_pru_grid(std::make_shared<pruned_sph_type>( o_rad, rgp_c ));
     Grid h_pru_grid(std::make_shared<pruned_sph_type>( h_rad, rgp_h ));
 #else
+#if 0
     auto c_pru_grid = AtomicGridFactory::generate_pruned_grid( c_rad, ang, ang_m6, ang_7 );
     auto n_pru_grid = AtomicGridFactory::generate_pruned_grid( n_rad, ang, ang_m6, ang_7 );
     auto o_pru_grid = AtomicGridFactory::generate_pruned_grid( o_rad, ang, ang_m6, ang_7 );
     auto h_pru_grid = AtomicGridFactory::generate_pruned_grid( h_rad, ang, ang_m6, ang_7 );
+#else
+    PrunedAtomicGridSpecification cno_pru_spec {
+      RadialQuad::MuraKnowles,
+      RadialSize(100),
+      RadialScale(7.0),
+      AngularSize(974),
+      AngularSize(266),
+      AngularSize(170)
+    };
+
+    PrunedAtomicGridSpecification h_pru_spec {
+      RadialQuad::MuraKnowles,
+      RadialSize(100),
+      RadialScale(5.0),
+      AngularSize(974),
+      AngularSize(266),
+      AngularSize(170)
+    };
+    auto c_pru_grid = AtomicGridFactory::generate_grid(cno_pru_spec);
+    auto n_pru_grid = AtomicGridFactory::generate_grid(cno_pru_spec);
+    auto o_pru_grid = AtomicGridFactory::generate_grid(cno_pru_spec);
+    auto h_pru_grid = AtomicGridFactory::generate_grid(h_pru_spec);
+
+    atomic_grid_variant h_var_spec = h_unp_spec;
+    auto h_var_grid = AtomicGridFactory::generate_grid(h_var_spec);
+#endif
 #endif
 
     std::cout << "Unpruned" << std::endl;
@@ -157,7 +204,7 @@ int main(int argc, char** argv) {
 
       double N_EL = integrator.integrate_den( P );
       auto en = std::chrono::high_resolution_clock::now();
-      std::cout << std::scientific << std::setprecision(4);
+      std::cout << std::scientific << std::setprecision(16);
       const auto err = std::abs(N_EL-ref_ne);
       std::cout << "NE = " << err << ", " << err/ref_ne << std::endl;
       std::cout << std::chrono::duration<double>(en-st).count() << std::endl;
@@ -182,7 +229,7 @@ int main(int argc, char** argv) {
 
       double N_EL = integrator.integrate_den( P );
       auto en = std::chrono::high_resolution_clock::now();
-      std::cout << std::scientific << std::setprecision(4);
+      std::cout << std::scientific << std::setprecision(16);
       const auto err = std::abs(N_EL-ref_ne);
       std::cout << "NE = " << err << ", " << err/ref_ne << std::endl;
       std::cout << std::chrono::duration<double>(en-st).count() << std::endl;
