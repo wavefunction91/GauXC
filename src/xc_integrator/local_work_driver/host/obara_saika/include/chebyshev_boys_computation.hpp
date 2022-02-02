@@ -13,8 +13,8 @@
 namespace GauXC {
   namespace XCPU {
     // create tables  
-    double *gauxc_boys_init();
-    void gauxc_boys_finalize(double *boys_table);
+    double *boys_init();
+    void boys_finalize(double *boys_table);
   }
 }
 

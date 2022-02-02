@@ -103,14 +103,14 @@ namespace GauXC {
       }
     }
 
-    double *gauxc_boys_init() {
+    double *boys_init() {
       double *boys_table = (double*) malloc(DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1) * sizeof(double));
       generate_boys_table(DEFAULT_NCHEB, DEFAULT_MAX_M, DEFAULT_MAX_T, DEFAULT_NSEGMENT, boys_table, DEFAULT_LD_TABLE);
 
       return boys_table;
     }
   
-    void gauxc_boys_finalize(double *boys_table) {
+    void boys_finalize(double *boys_table) {
       free(boys_table);
     }
   }
