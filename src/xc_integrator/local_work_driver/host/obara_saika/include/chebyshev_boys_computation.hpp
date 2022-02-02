@@ -1,3 +1,4 @@
+
 #ifndef _MY_CHEBYSHEV_BOYS_FUNCTION
 #define _MY_CHEBYSHEV_BOYS_FUNCTION
 
@@ -10,12 +11,10 @@
 #define DEFAULT_NSEGMENT ((DEFAULT_MAX_T * DEFAULT_NCHEB) / 2)
 #define DEFAULT_LD_TABLE (DEFAULT_NCHEB + 1)
 
-namespace GauXC {
-  namespace XCPU {
-    // create tables  
-    double *boys_init();
-    void boys_finalize(double *boys_table);
-  }
+namespace XCPU {
+  // create tables  
+  double *boys_init();
+  void boys_finalize(double *boys_table);
 }
 
 #endif

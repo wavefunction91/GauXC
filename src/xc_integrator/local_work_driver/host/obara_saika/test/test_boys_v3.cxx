@@ -15,7 +15,7 @@ int main(int argc, char **argv) {
   int runs = atoi(argv[1]);
   double TVAL = atof(argv[2]);
   
-  double *boys_table = GauXC::gauxc_boys_init();
+  double *boys_table = XCPU::boys_init();
 
   struct timeval t0, t1;
 
@@ -26,15 +26,15 @@ int main(int argc, char **argv) {
   long long sum0 = 0;
   for(int r = 0; r < runs; ++r) {
     gettimeofday(&t0, NULL);
-    GauXC::boys_element<0>(&TVAL, &t, &f0, boys_table);
-    GauXC::boys_element<1>(&TVAL, &t, &f1, boys_table);
-    GauXC::boys_element<2>(&TVAL, &t, &f2, boys_table);
-    GauXC::boys_element<3>(&TVAL, &t, &f3, boys_table);
-    GauXC::boys_element<4>(&TVAL, &t, &f4, boys_table);
-    GauXC::boys_element<5>(&TVAL, &t, &f5, boys_table);
-    GauXC::boys_element<6>(&TVAL, &t, &f6, boys_table);
-    GauXC::boys_element<7>(&TVAL, &t, &f7, boys_table);
-    GauXC::boys_element<8>(&TVAL, &t, &f8, boys_table);
+    XCPU::boys_element<0>(&TVAL, &t, &f0, boys_table);
+    XCPU::boys_element<1>(&TVAL, &t, &f1, boys_table);
+    XCPU::boys_element<2>(&TVAL, &t, &f2, boys_table);
+    XCPU::boys_element<3>(&TVAL, &t, &f3, boys_table);
+    XCPU::boys_element<4>(&TVAL, &t, &f4, boys_table);
+    XCPU::boys_element<5>(&TVAL, &t, &f5, boys_table);
+    XCPU::boys_element<6>(&TVAL, &t, &f6, boys_table);
+    XCPU::boys_element<7>(&TVAL, &t, &f7, boys_table);
+    XCPU::boys_element<8>(&TVAL, &t, &f8, boys_table);
     gettimeofday(&t1, NULL);
 
     sum0 += (t1.tv_sec-t0.tv_sec)*1000000LL + t1.tv_usec-t0.tv_usec;
@@ -44,7 +44,7 @@ int main(int argc, char **argv) {
   for(int r = 0; r < runs; ++r) {
     gettimeofday(&t0, NULL);
 
-    GauXC::boys_element<8>(&TVAL, &t, &g8, boys_table);
+    XCPU::boys_element<8>(&TVAL, &t, &g8, boys_table);
 
     g7 = (TVAL * g8 + t) * (2.0 / 15.0);
     g6 = (TVAL * g7 + t) * (2.0 / 13.0);
@@ -72,7 +72,7 @@ int main(int argc, char **argv) {
 
   printf("%lf\t%lf\n", sum0 / ((double) (1.0 * runs)), sum1 / ((double) (1.0 * runs)));
   
-  GauXC::gauxc_boys_finalize(boys_table);
+  XCPU::boys_finalize(boys_table);
   
   return 0;
 }
