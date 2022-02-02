@@ -16,10 +16,10 @@
 namespace GauXC {
 
 ReferenceLocalHostWorkDriver::ReferenceLocalHostWorkDriver() {
-  gauxc_boys_init();
+  XCPU::boys_init();
 }; 
 ReferenceLocalHostWorkDriver::~ReferenceLocalHostWorkDriver() noexcept {
-  gauxc_boys_finalize();
+  XCPU::boys_finalize();
 };
 
 // Partition weights
@@ -580,7 +580,7 @@ void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
 
       }
 #else
-      compute_integral_shell_pair( npts, ish, jsh, rys_basis._shells.data(), _points_transposed.data(),
+      XCPU::compute_integral_shell_pair( npts, ish, jsh, rys_basis._shells.data(), _points_transposed.data(),
         X_cart_rm.data()+ioff_cart*npts, X_cart_rm.data()+joff_cart*npts, npts,
         G_cart_rm.data()+ioff_cart*npts, G_cart_rm.data()+joff_cart*npts, npts,
         const_cast<double*>(weights) );

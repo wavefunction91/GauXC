@@ -11,6 +11,7 @@
   __typeof__ (b) _b = (b);		\
   _a < _b ? _a : _b; })
 
+namespace XCPU {
 void integral_4_1(size_t npts,
                   shell_pair shpair,
                   double *_points,
@@ -20,12 +21,14 @@ void integral_4_1(size_t npts,
                   double *Gi,
                   double *Gj,
                   int ldG, 
-                  double *weights) {
-   __attribute__((__aligned__(64))) double buffer[36 * NPTS_LOCAL + 9 * NPTS_LOCAL + NPTS_LOCAL];
+                  double *weights,
+                  double *boys_table) {
+   __attribute__((__aligned__(64))) double buffer[36 * NPTS_LOCAL + 3 * NPTS_LOCAL];
 
-   double *temp = (buffer + 0);
-   double *FmT = (buffer + 36 * NPTS_LOCAL);
-   double *Tval = (buffer + 36 * NPTS_LOCAL + 9 * NPTS_LOCAL);
+   double *temp       = (buffer + 0);
+   double *Tval       = (buffer + 36 * NPTS_LOCAL + 0 * NPTS_LOCAL);
+   double *Tval_inv_e = (buffer + 36 * NPTS_LOCAL + 1 * NPTS_LOCAL);
+   double *FmT        = (buffer + 36 * NPTS_LOCAL + 2 * NPTS_LOCAL);
 
    size_t npts_upper = NPTS_LOCAL * (npts / NPTS_LOCAL);
    size_t p_outer = 0;
@@ -69,12 +72,7 @@ void integral_4_1(size_t npts,
          }
 
          // Evaluate Boys function
-         GauXC::gauxc_boys_elements<0>(NPTS_LOCAL, Tval, FmT + 0 * NPTS_LOCAL);
-         GauXC::gauxc_boys_elements<1>(NPTS_LOCAL, Tval, FmT + 1 * NPTS_LOCAL);
-         GauXC::gauxc_boys_elements<2>(NPTS_LOCAL, Tval, FmT + 2 * NPTS_LOCAL);
-         GauXC::gauxc_boys_elements<3>(NPTS_LOCAL, Tval, FmT + 3 * NPTS_LOCAL);
-         GauXC::gauxc_boys_elements<4>(NPTS_LOCAL, Tval, FmT + 4 * NPTS_LOCAL);
-         GauXC::gauxc_boys_elements<5>(NPTS_LOCAL, Tval, FmT + 5 * NPTS_LOCAL);
+         boys_elements<5>(NPTS_LOCAL, Tval, Tval_inv_e, FmT, boys_table);
 
          // Evaluate VRR Buffer
          for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += SIMD_LENGTH) {
@@ -86,19 +84,23 @@ void integral_4_1(size_t npts,
             SIMD_TYPE Y_PC = SIMD_SUB(SIMD_DUPLICATE(&(yP)), yC);
             SIMD_TYPE Z_PC = SIMD_SUB(SIMD_DUPLICATE(&(zP)), zC);
 
-            SIMD_TYPE tx, ty, t00, t01, t02, t03, t04, t05, t10, t11, t12, t13, t14, t20, t21, t22, t23, t30, t31, t32, t40, t41, t50;
+            SIMD_TYPE tval, tval_inv_e, tx, ty, t00, t01, t02, t03, t04, t05, t10, t11, t12, t13, t14, t20, t21, t22, t23, t30, t31, t32, t40, t41, t50;
 
-            t00 = SIMD_ALIGNED_LOAD((FmT + p_inner + 0 * NPTS_LOCAL));
+            tval = SIMD_ALIGNED_LOAD((Tval + p_inner));
+            tval_inv_e = SIMD_ALIGNED_LOAD((Tval_inv_e + p_inner));
+
+            t05 = SIMD_ALIGNED_LOAD((FmT + p_inner));
+            t04 = SIMD_MUL(SIMD_ADD(SIMD_MUL(tval, t05), tval_inv_e), SIMD_SET1(0.22222222222222220989));
+            t03 = SIMD_MUL(SIMD_ADD(SIMD_MUL(tval, t04), tval_inv_e), SIMD_SET1(0.28571428571428569843));
+            t02 = SIMD_MUL(SIMD_ADD(SIMD_MUL(tval, t03), tval_inv_e), SIMD_SET1(0.40000000000000002220));
+            t01 = SIMD_MUL(SIMD_ADD(SIMD_MUL(tval, t02), tval_inv_e), SIMD_SET1(0.66666666666666662966));
+            t00 = SIMD_MUL(SIMD_ADD(SIMD_MUL(tval, t01), tval_inv_e), SIMD_SET1(2.00000000000000000000));
+
             t00 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t00);
-            t01 = SIMD_ALIGNED_LOAD((FmT + p_inner + 1 * NPTS_LOCAL));
             t01 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t01);
-            t02 = SIMD_ALIGNED_LOAD((FmT + p_inner + 2 * NPTS_LOCAL));
             t02 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t02);
-            t03 = SIMD_ALIGNED_LOAD((FmT + p_inner + 3 * NPTS_LOCAL));
             t03 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t03);
-            t04 = SIMD_ALIGNED_LOAD((FmT + p_inner + 4 * NPTS_LOCAL));
             t04 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t04);
-            t05 = SIMD_ALIGNED_LOAD((FmT + p_inner + 5 * NPTS_LOCAL));
             t05 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t05);
             t10 = SIMD_MUL(SIMD_DUPLICATE(&(X_PA)), t00);
             t10 = SIMD_FNMA(X_PC, t01, t10);
@@ -992,12 +994,7 @@ void integral_4_1(size_t npts,
          }
 
          // Evaluate Boys function
-         GauXC::gauxc_boys_elements<0>(npts_inner, Tval, FmT + 0 * NPTS_LOCAL);
-         GauXC::gauxc_boys_elements<1>(npts_inner, Tval, FmT + 1 * NPTS_LOCAL);
-         GauXC::gauxc_boys_elements<2>(npts_inner, Tval, FmT + 2 * NPTS_LOCAL);
-         GauXC::gauxc_boys_elements<3>(npts_inner, Tval, FmT + 3 * NPTS_LOCAL);
-         GauXC::gauxc_boys_elements<4>(npts_inner, Tval, FmT + 4 * NPTS_LOCAL);
-         GauXC::gauxc_boys_elements<5>(npts_inner, Tval, FmT + 5 * NPTS_LOCAL);
+         boys_elements<5>(NPTS_LOCAL, Tval, Tval_inv_e, FmT, boys_table);
 
          // Evaluate VRR Buffer
          p_inner = 0;
@@ -1010,19 +1007,23 @@ void integral_4_1(size_t npts,
             SIMD_TYPE Y_PC = SIMD_SUB(SIMD_DUPLICATE(&(yP)), yC);
             SIMD_TYPE Z_PC = SIMD_SUB(SIMD_DUPLICATE(&(zP)), zC);
 
-            SIMD_TYPE tx, ty, t00, t01, t02, t03, t04, t05, t10, t11, t12, t13, t14, t20, t21, t22, t23, t30, t31, t32, t40, t41, t50;
+            SIMD_TYPE tval, tval_inv_e, tx, ty, t00, t01, t02, t03, t04, t05, t10, t11, t12, t13, t14, t20, t21, t22, t23, t30, t31, t32, t40, t41, t50;
 
-            t00 = SIMD_ALIGNED_LOAD((FmT + p_inner + 0 * NPTS_LOCAL));
+            tval = SIMD_ALIGNED_LOAD((Tval + p_inner));
+            tval_inv_e = SIMD_ALIGNED_LOAD((Tval_inv_e + p_inner));
+
+            t05 = SIMD_ALIGNED_LOAD((FmT + p_inner));
+            t04 = SIMD_MUL(SIMD_ADD(SIMD_MUL(tval, t05), tval_inv_e), SIMD_SET1(0.22222222222222220989));
+            t03 = SIMD_MUL(SIMD_ADD(SIMD_MUL(tval, t04), tval_inv_e), SIMD_SET1(0.28571428571428569843));
+            t02 = SIMD_MUL(SIMD_ADD(SIMD_MUL(tval, t03), tval_inv_e), SIMD_SET1(0.40000000000000002220));
+            t01 = SIMD_MUL(SIMD_ADD(SIMD_MUL(tval, t02), tval_inv_e), SIMD_SET1(0.66666666666666662966));
+            t00 = SIMD_MUL(SIMD_ADD(SIMD_MUL(tval, t01), tval_inv_e), SIMD_SET1(2.00000000000000000000));
+
             t00 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t00);
-            t01 = SIMD_ALIGNED_LOAD((FmT + p_inner + 1 * NPTS_LOCAL));
             t01 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t01);
-            t02 = SIMD_ALIGNED_LOAD((FmT + p_inner + 2 * NPTS_LOCAL));
             t02 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t02);
-            t03 = SIMD_ALIGNED_LOAD((FmT + p_inner + 3 * NPTS_LOCAL));
             t03 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t03);
-            t04 = SIMD_ALIGNED_LOAD((FmT + p_inner + 4 * NPTS_LOCAL));
             t04 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t04);
-            t05 = SIMD_ALIGNED_LOAD((FmT + p_inner + 5 * NPTS_LOCAL));
             t05 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t05);
             t10 = SIMD_MUL(SIMD_DUPLICATE(&(X_PA)), t00);
             t10 = SIMD_FNMA(X_PC, t01, t10);
@@ -1643,19 +1644,23 @@ void integral_4_1(size_t npts,
             SCALAR_TYPE Y_PC = SCALAR_SUB(SCALAR_DUPLICATE(&(yP)), yC);
             SCALAR_TYPE Z_PC = SCALAR_SUB(SCALAR_DUPLICATE(&(zP)), zC);
 
-            SCALAR_TYPE tx, ty, t00, t01, t02, t03, t04, t05, t10, t11, t12, t13, t14, t20, t21, t22, t23, t30, t31, t32, t40, t41, t50;
+            SCALAR_TYPE tval, tval_inv_e, tx, ty, t00, t01, t02, t03, t04, t05, t10, t11, t12, t13, t14, t20, t21, t22, t23, t30, t31, t32, t40, t41, t50;
 
-            t00 = SCALAR_LOAD((FmT + p_inner + 0 * NPTS_LOCAL));
+            tval = SCALAR_LOAD((Tval + p_inner));
+            tval_inv_e = SCALAR_LOAD((Tval_inv_e + p_inner));
+
+            t05 = SCALAR_LOAD((FmT + p_inner));
+            t04 = SCALAR_MUL(SCALAR_ADD(SCALAR_MUL(tval, t05), tval_inv_e), SCALAR_SET1(0.22222222222222220989));
+            t03 = SCALAR_MUL(SCALAR_ADD(SCALAR_MUL(tval, t04), tval_inv_e), SCALAR_SET1(0.28571428571428569843));
+            t02 = SCALAR_MUL(SCALAR_ADD(SCALAR_MUL(tval, t03), tval_inv_e), SCALAR_SET1(0.40000000000000002220));
+            t01 = SCALAR_MUL(SCALAR_ADD(SCALAR_MUL(tval, t02), tval_inv_e), SCALAR_SET1(0.66666666666666662966));
+            t00 = SCALAR_MUL(SCALAR_ADD(SCALAR_MUL(tval, t01), tval_inv_e), SCALAR_SET1(2.00000000000000000000));
+
             t00 = SCALAR_MUL(SCALAR_DUPLICATE(&(eval)), t00);
-            t01 = SCALAR_LOAD((FmT + p_inner + 1 * NPTS_LOCAL));
             t01 = SCALAR_MUL(SCALAR_DUPLICATE(&(eval)), t01);
-            t02 = SCALAR_LOAD((FmT + p_inner + 2 * NPTS_LOCAL));
             t02 = SCALAR_MUL(SCALAR_DUPLICATE(&(eval)), t02);
-            t03 = SCALAR_LOAD((FmT + p_inner + 3 * NPTS_LOCAL));
             t03 = SCALAR_MUL(SCALAR_DUPLICATE(&(eval)), t03);
-            t04 = SCALAR_LOAD((FmT + p_inner + 4 * NPTS_LOCAL));
             t04 = SCALAR_MUL(SCALAR_DUPLICATE(&(eval)), t04);
-            t05 = SCALAR_LOAD((FmT + p_inner + 5 * NPTS_LOCAL));
             t05 = SCALAR_MUL(SCALAR_DUPLICATE(&(eval)), t05);
             t10 = SCALAR_MUL(SCALAR_DUPLICATE(&(X_PA)), t00);
             t10 = SCALAR_FNMA(X_PC, t01, t10);
@@ -2712,4 +2717,5 @@ void integral_4_1(size_t npts,
          }
       }
    }
+}
 }

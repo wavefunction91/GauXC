@@ -1,6 +1,7 @@
 #ifndef __MY_INTEGRAL_OBARA_SAIKA
 #define __MY_INTEGRAL_OBARA_SAIKA
 
+namespace XCPU {
 void compute_integral_shell_pair(size_t npts,
                   int i,
                   int j,
@@ -12,6 +13,8 @@ void compute_integral_shell_pair(size_t npts,
                   double *Gi,
                   double *Gj,
                   int ldG, 
-                  double *weights);
+                  double *weights, 
+                  double *boys_table);
+}
 
 #endif

@@ -22,6 +22,7 @@
 #include "integral_4_2.hpp"
 #include "integral_4_3.hpp"
 #include "integral_4_4.hpp"
+namespace XCPU {
 void generate_shell_pair( const shells& A, const shells& B, shell_pair& AB) {
    // L Values
    AB.lA = A.L;
@@ -88,7 +89,8 @@ void compute_integral_shell_pair(size_t npts,
                   double *Gi,
                   double *Gj,
                   int ldG, 
-                  double *weights) {
+                  double *weights, 
+                  double *boys_table) {
    shell_pair shpair;
    // Account for permutational symmetry in kernels
    if( shell_list[i].L >= shell_list[j].L )
@@ -107,7 +109,8 @@ void compute_integral_shell_pair(size_t npts,
                     ldX,
                     Gi,
                     ldG, 
-                    weights);
+                    weights, 
+                    boys_table);
       } else if(lA == 1) {
         integral_1(npts,
                    shpair,
@@ -116,7 +119,8 @@ void compute_integral_shell_pair(size_t npts,
                    ldX,
                    Gi,
                    ldG, 
-                   weights);
+                   weights, 
+                   boys_table);
       } else if(lA == 2) {
         integral_2(npts,
                    shpair,
@@ -125,7 +129,8 @@ void compute_integral_shell_pair(size_t npts,
                    ldX,
                    Gi,
                    ldG, 
-                   weights);
+                   weights, 
+                   boys_table);
       } else if(lA == 3) {
         integral_3(npts,
                    shpair,
@@ -134,7 +139,8 @@ void compute_integral_shell_pair(size_t npts,
                    ldX,
                    Gi,
                    ldG, 
-                   weights);
+                   weights, 
+                   boys_table);
       } else if(lA == 4) {
         integral_4(npts,
                    shpair,
@@ -143,7 +149,8 @@ void compute_integral_shell_pair(size_t npts,
                    ldX,
                    Gi,
                    ldG, 
-                   weights);
+                   weights, 
+                   boys_table);
       } else {
          printf("Type not defined!\n");
       }
@@ -161,7 +168,8 @@ void compute_integral_shell_pair(size_t npts,
                       Gi,
                       Gj,
                       ldG, 
-                      weights);
+                      weights, 
+                      boys_table);
       } else if((lA == 1) && (lB == 0)) {
             integral_1_0(npts,
                          shpair,
@@ -172,7 +180,8 @@ void compute_integral_shell_pair(size_t npts,
                          Gi,
                          Gj,
                          ldG, 
-                         weights);
+                         weights, 
+                         boys_table);
       } else if((lA == 0) && (lB == 1)) {
          integral_1_0(npts,
                       shpair,
@@ -183,7 +192,8 @@ void compute_integral_shell_pair(size_t npts,
                       Gj,
                       Gi,
                       ldG, 
-                      weights);
+                      weights, 
+                      boys_table);
       } else if((lA == 1) && (lB == 1)) {
         integral_1_1(npts,
                      shpair,
@@ -194,7 +204,8 @@ void compute_integral_shell_pair(size_t npts,
                      Gi,
                      Gj,
                      ldG, 
-                     weights);
+                     weights, 
+                     boys_table);
       } else if((lA == 2) && (lB == 0)) {
             integral_2_0(npts,
                          shpair,
@@ -205,7 +216,8 @@ void compute_integral_shell_pair(size_t npts,
                          Gi,
                          Gj,
                          ldG, 
-                         weights);
+                         weights, 
+                         boys_table);
       } else if((lA == 0) && (lB == 2)) {
          integral_2_0(npts,
                       shpair,
@@ -216,7 +228,8 @@ void compute_integral_shell_pair(size_t npts,
                       Gj,
                       Gi,
                       ldG, 
-                      weights);
+                      weights, 
+                      boys_table);
       } else if((lA == 2) && (lB == 1)) {
             integral_2_1(npts,
                          shpair,
@@ -227,7 +240,8 @@ void compute_integral_shell_pair(size_t npts,
                          Gi,
                          Gj,
                          ldG, 
-                         weights);
+                         weights, 
+                         boys_table);
       } else if((lA == 1) && (lB == 2)) {
          integral_2_1(npts,
                       shpair,
@@ -238,7 +252,8 @@ void compute_integral_shell_pair(size_t npts,
                       Gj,
                       Gi,
                       ldG, 
-                      weights);
+                      weights, 
+                      boys_table);
       } else if((lA == 2) && (lB == 2)) {
         integral_2_2(npts,
                      shpair,
@@ -249,7 +264,8 @@ void compute_integral_shell_pair(size_t npts,
                      Gi,
                      Gj,
                      ldG, 
-                     weights);
+                     weights, 
+                     boys_table);
       } else if((lA == 3) && (lB == 0)) {
             integral_3_0(npts,
                          shpair,
@@ -260,7 +276,8 @@ void compute_integral_shell_pair(size_t npts,
                          Gi,
                          Gj,
                          ldG, 
-                         weights);
+                         weights, 
+                         boys_table);
       } else if((lA == 0) && (lB == 3)) {
          integral_3_0(npts,
                       shpair,
@@ -271,7 +288,8 @@ void compute_integral_shell_pair(size_t npts,
                       Gj,
                       Gi,
                       ldG, 
-                      weights);
+                      weights, 
+                      boys_table);
       } else if((lA == 3) && (lB == 1)) {
             integral_3_1(npts,
                          shpair,
@@ -282,7 +300,8 @@ void compute_integral_shell_pair(size_t npts,
                          Gi,
                          Gj,
                          ldG, 
-                         weights);
+                         weights, 
+                         boys_table);
       } else if((lA == 1) && (lB == 3)) {
          integral_3_1(npts,
                       shpair,
@@ -293,7 +312,8 @@ void compute_integral_shell_pair(size_t npts,
                       Gj,
                       Gi,
                       ldG, 
-                      weights);
+                      weights, 
+                      boys_table);
       } else if((lA == 3) && (lB == 2)) {
             integral_3_2(npts,
                          shpair,
@@ -304,7 +324,8 @@ void compute_integral_shell_pair(size_t npts,
                          Gi,
                          Gj,
                          ldG, 
-                         weights);
+                         weights, 
+                         boys_table);
       } else if((lA == 2) && (lB == 3)) {
          integral_3_2(npts,
                       shpair,
@@ -315,7 +336,8 @@ void compute_integral_shell_pair(size_t npts,
                       Gj,
                       Gi,
                       ldG, 
-                      weights);
+                      weights, 
+                      boys_table);
       } else if((lA == 3) && (lB == 3)) {
         integral_3_3(npts,
                      shpair,
@@ -326,7 +348,8 @@ void compute_integral_shell_pair(size_t npts,
                      Gi,
                      Gj,
                      ldG, 
-                     weights);
+                     weights, 
+                     boys_table);
       } else if((lA == 4) && (lB == 0)) {
             integral_4_0(npts,
                          shpair,
@@ -337,7 +360,8 @@ void compute_integral_shell_pair(size_t npts,
                          Gi,
                          Gj,
                          ldG, 
-                         weights);
+                         weights, 
+                         boys_table);
       } else if((lA == 0) && (lB == 4)) {
          integral_4_0(npts,
                       shpair,
@@ -348,7 +372,8 @@ void compute_integral_shell_pair(size_t npts,
                       Gj,
                       Gi,
                       ldG, 
-                      weights);
+                      weights, 
+                      boys_table);
       } else if((lA == 4) && (lB == 1)) {
             integral_4_1(npts,
                          shpair,
@@ -359,7 +384,8 @@ void compute_integral_shell_pair(size_t npts,
                          Gi,
                          Gj,
                          ldG, 
-                         weights);
+                         weights, 
+                         boys_table);
       } else if((lA == 1) && (lB == 4)) {
          integral_4_1(npts,
                       shpair,
@@ -370,7 +396,8 @@ void compute_integral_shell_pair(size_t npts,
                       Gj,
                       Gi,
                       ldG, 
-                      weights);
+                      weights, 
+                      boys_table);
       } else if((lA == 4) && (lB == 2)) {
             integral_4_2(npts,
                          shpair,
@@ -381,7 +408,8 @@ void compute_integral_shell_pair(size_t npts,
                          Gi,
                          Gj,
                          ldG, 
-                         weights);
+                         weights, 
+                         boys_table);
       } else if((lA == 2) && (lB == 4)) {
          integral_4_2(npts,
                       shpair,
@@ -392,7 +420,8 @@ void compute_integral_shell_pair(size_t npts,
                       Gj,
                       Gi,
                       ldG, 
-                      weights);
+                      weights, 
+                      boys_table);
       } else if((lA == 4) && (lB == 3)) {
             integral_4_3(npts,
                          shpair,
@@ -403,7 +432,8 @@ void compute_integral_shell_pair(size_t npts,
                          Gi,
                          Gj,
                          ldG, 
-                         weights);
+                         weights, 
+                         boys_table);
       } else if((lA == 3) && (lB == 4)) {
          integral_4_3(npts,
                       shpair,
@@ -414,7 +444,8 @@ void compute_integral_shell_pair(size_t npts,
                       Gj,
                       Gi,
                       ldG, 
-                      weights);
+                      weights, 
+                      boys_table);
       } else if((lA == 4) && (lB == 4)) {
         integral_4_4(npts,
                      shpair,
@@ -425,10 +456,12 @@ void compute_integral_shell_pair(size_t npts,
                      Gi,
                      Gj,
                      ldG, 
-                     weights);
+                     weights, 
+                     boys_table);
       } else {
          printf("Type not defined!\n");
       }
    }
   delete shpair.prim_pairs;
+}
 }

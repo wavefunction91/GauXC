@@ -4,8 +4,6 @@
 #include "config_obara_saika.hpp"
 #include "integral_0.hpp"
 
-#include <stdio.h>
-
 #define PI 3.14159265358979323846
 
 #define MIN(a,b)			\
@@ -13,6 +11,7 @@
   __typeof__ (b) _b = (b);		\
   _a < _b ? _a : _b; })
 
+namespace XCPU {
 void integral_0(size_t npts,
                shell_pair shpair,
                double *_points,
@@ -20,12 +19,14 @@ void integral_0(size_t npts,
                int ldX,
                double *Gi,
                int ldG, 
-               double *weights) {
-   __attribute__((__aligned__(64))) double buffer[1 * NPTS_LOCAL + 1 * NPTS_LOCAL + NPTS_LOCAL];
+               double *weights,
+               double *boys_table) {
+   __attribute__((__aligned__(64))) double buffer[1 * NPTS_LOCAL + 3 * NPTS_LOCAL];
 
-   double *temp = (buffer + 0);
-   double *FmT = (buffer + 1 * NPTS_LOCAL);
-   double *Tval = (buffer + 1 * NPTS_LOCAL + 1 * NPTS_LOCAL);
+   double *temp       = (buffer + 0);
+   double *Tval       = (buffer + 1 * NPTS_LOCAL + 0 * NPTS_LOCAL);
+   double *Tval_inv_e = (buffer + 1 * NPTS_LOCAL + 1 * NPTS_LOCAL);
+   double *FmT        = (buffer + 1 * NPTS_LOCAL + 2 * NPTS_LOCAL);
 
    size_t npts_upper = NPTS_LOCAL * (npts / NPTS_LOCAL);
    size_t p_outer = 0;
@@ -59,15 +60,16 @@ void integral_0(size_t npts,
             X_PC = SIMD_MUL(SIMD_DUPLICATE(&(RHO)), X_PC);
             SIMD_ALIGNED_STORE((Tval + p_inner), X_PC);
          }
-	 
-         // Evaluate Boys function
-         GauXC::gauxc_boys_elements<0>(NPTS_LOCAL, Tval, FmT + 0 * NPTS_LOCAL);
 
-	 // Evaluate VRR Buffer
+         // Evaluate Boys function
+         boys_elements<0>(NPTS_LOCAL, Tval, Tval_inv_e, FmT, boys_table);
+
+         // Evaluate VRR Buffer
          for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += SIMD_LENGTH) {
             SIMD_TYPE tx, t00;
 
-            t00 = SIMD_ALIGNED_LOAD((FmT + p_inner + 0 * NPTS_LOCAL));
+            t00 = SIMD_ALIGNED_LOAD((FmT + p_inner));
+
             t00 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t00);
             tx = SIMD_ALIGNED_LOAD((temp + 0 * NPTS_LOCAL + p_inner));
             tx = SIMD_ADD(tx, t00);
@@ -144,14 +146,15 @@ void integral_0(size_t npts,
          }
 
          // Evaluate Boys function
-         GauXC::gauxc_boys_elements<0>(npts_inner, Tval, FmT + 0 * NPTS_LOCAL);
+         boys_elements<0>(NPTS_LOCAL, Tval, Tval_inv_e, FmT, boys_table);
 
          // Evaluate VRR Buffer
          p_inner = 0;
          for(p_inner = 0; p_inner < npts_inner_upper; p_inner += SIMD_LENGTH) {
             SIMD_TYPE tx, t00;
 
-            t00 = SIMD_ALIGNED_LOAD((FmT + p_inner + 0 * NPTS_LOCAL));
+            t00 = SIMD_ALIGNED_LOAD((FmT + p_inner));
+
             t00 = SIMD_MUL(SIMD_DUPLICATE(&(eval)), t00);
             tx = SIMD_ALIGNED_LOAD((temp + 0 * NPTS_LOCAL + p_inner));
             tx = SIMD_ADD(tx, t00);
@@ -161,7 +164,8 @@ void integral_0(size_t npts,
          for(; p_inner < npts_inner; p_inner += SCALAR_LENGTH) {
             SCALAR_TYPE tx, t00;
 
-            t00 = SCALAR_LOAD((FmT + p_inner + 0 * NPTS_LOCAL));
+            t00 = SCALAR_LOAD((FmT + p_inner));
+
             t00 = SCALAR_MUL(SCALAR_DUPLICATE(&(eval)), t00);
             tx = SCALAR_LOAD((temp + 0 * NPTS_LOCAL + p_inner));
             tx = SCALAR_ADD(tx, t00);
@@ -203,4 +207,5 @@ void integral_0(size_t npts,
          SCALAR_STORE((Gik + 0 * ldG), gik);
       }
    }
+}
 }
