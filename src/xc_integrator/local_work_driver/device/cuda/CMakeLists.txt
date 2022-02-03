@@ -17,6 +17,8 @@ target_sources(gauxc PRIVATE
   kernels/symmetrize_mat.cu
   kernels/increment_exc_grad.cu
 
+  kernels/cutlass_wrapper.cu
+
 )
 
 # Check if CMAKE_CUDA_ARCHITECTURES is set
