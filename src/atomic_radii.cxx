@@ -2,6 +2,21 @@
 
 namespace GauXC {
 
+double default_atomic_radius(AtomicNumber Z) {
+
+  // If the radius is in Slater-64, use it as the default
+  auto slater_64 = slater_radius_64(Z);
+  if( slater_64 > 0. ) return slater_64;
+
+  // Fill in gaps with Clementi-67 data
+  auto clementi_67 = clementi_radius_67(Z);
+  if( clementi_67 > 0. ) return clementi_67;
+
+  // Default to 2.01 Angstroms -> 3.79825 Bohr (???)
+  return 3.79825;
+  
+}
+
 long double pm_to_bohr( long double x ) {
   return x * 0.0188973000000929 / 1.00000205057;
 }
@@ -9,281 +24,290 @@ long double pm_to_bohr( long double x ) {
 /// Slater, J.C.
 /// J. Chem. Phys. 41, 3199, 1964
 /// https://doi.org/10.1063/1.1725697
-atomic_scal_factor_map slater_radii_64() {
+double slater_radius_64(AtomicNumber _Z) {
 
-  return atomic_scal_factor_map {
-    { AtomicNumber(1),  /* H  */ RadialScale(pm_to_bohr(25. )) }, 
-  //{ AtomicNumber(2),  /* He */ RadialScale(pm_to_bohr(120.)) }, 
-    { AtomicNumber(3),  /* Li */ RadialScale(pm_to_bohr(145.)) }, 
-    { AtomicNumber(4),  /* Be */ RadialScale(pm_to_bohr(105.)) }, 
-    { AtomicNumber(5),  /* B  */ RadialScale(pm_to_bohr(85. )) }, 
-    { AtomicNumber(6),  /* C  */ RadialScale(pm_to_bohr(70. )) }, 
-    { AtomicNumber(7),  /* N  */ RadialScale(pm_to_bohr(65. )) }, 
-    { AtomicNumber(8),  /* O  */ RadialScale(pm_to_bohr(60. )) }, 
-    { AtomicNumber(9),  /* F  */ RadialScale(pm_to_bohr(50. )) }, 
-  //{ AtomicNumber(10), /* Ne */ RadialScale(pm_to_bohr(160.)) }, 
-    { AtomicNumber(11), /* Na */ RadialScale(pm_to_bohr(180.)) }, 
-    { AtomicNumber(12), /* Mg */ RadialScale(pm_to_bohr(150.)) }, 
-    { AtomicNumber(13), /* Al */ RadialScale(pm_to_bohr(125.)) }, 
-    { AtomicNumber(14), /* Si */ RadialScale(pm_to_bohr(110.)) }, 
-    { AtomicNumber(15), /* P  */ RadialScale(pm_to_bohr(100.)) }, 
-    { AtomicNumber(16), /* S  */ RadialScale(pm_to_bohr(100.)) }, 
-    { AtomicNumber(17), /* Cl */ RadialScale(pm_to_bohr(100.)) }, 
-  //{ AtomicNumber(18), /* Ar */ RadialScale(pm_to_bohr(71. )) }, 
-    { AtomicNumber(19), /* K  */ RadialScale(pm_to_bohr(220.)) }, 
-    { AtomicNumber(20), /* Ca */ RadialScale(pm_to_bohr(180.)) }, 
-    { AtomicNumber(21), /* Sc */ RadialScale(pm_to_bohr(160.)) }, 
-    { AtomicNumber(22), /* Ti */ RadialScale(pm_to_bohr(140.)) }, 
-    { AtomicNumber(23), /* V  */ RadialScale(pm_to_bohr(135.)) }, 
-    { AtomicNumber(24), /* Cr */ RadialScale(pm_to_bohr(140.)) }, 
-    { AtomicNumber(25), /* Mn */ RadialScale(pm_to_bohr(140.)) }, 
-    { AtomicNumber(26), /* Fe */ RadialScale(pm_to_bohr(140.)) }, 
-    { AtomicNumber(27), /* Co */ RadialScale(pm_to_bohr(135.)) }, 
-    { AtomicNumber(28), /* Ni */ RadialScale(pm_to_bohr(135.)) }, 
-    { AtomicNumber(29), /* Cu */ RadialScale(pm_to_bohr(135.)) }, 
-    { AtomicNumber(30), /* Zn */ RadialScale(pm_to_bohr(135.)) }, 
-    { AtomicNumber(31), /* Ga */ RadialScale(pm_to_bohr(130.)) }, 
-    { AtomicNumber(32), /* Ge */ RadialScale(pm_to_bohr(125.)) }, 
-    { AtomicNumber(33), /* As */ RadialScale(pm_to_bohr(115.)) }, 
-    { AtomicNumber(34), /* Se */ RadialScale(pm_to_bohr(115.)) }, 
-    { AtomicNumber(35), /* Br */ RadialScale(pm_to_bohr(115.)) }, 
-                                                                  
-    { AtomicNumber(37), /* Rb */ RadialScale(pm_to_bohr(235.)) }, 
-    { AtomicNumber(38), /* Sr */ RadialScale(pm_to_bohr(200.)) }, 
-    { AtomicNumber(39), /* Y  */ RadialScale(pm_to_bohr(180.)) }, 
-    { AtomicNumber(40), /* Zr */ RadialScale(pm_to_bohr(155.)) }, 
-    { AtomicNumber(41), /* Nb */ RadialScale(pm_to_bohr(145.)) }, 
-    { AtomicNumber(42), /* Mo */ RadialScale(pm_to_bohr(145.)) }, 
-    { AtomicNumber(43), /* Tc */ RadialScale(pm_to_bohr(135.)) }, 
-    { AtomicNumber(44), /* Ru */ RadialScale(pm_to_bohr(130.)) }, 
-    { AtomicNumber(45), /* Rh */ RadialScale(pm_to_bohr(135.)) }, 
-    { AtomicNumber(46), /* Pd */ RadialScale(pm_to_bohr(140.)) }, 
-    { AtomicNumber(47), /* Ag */ RadialScale(pm_to_bohr(160.)) }, 
-    { AtomicNumber(48), /* Cd */ RadialScale(pm_to_bohr(155.)) }, 
-    { AtomicNumber(49), /* In */ RadialScale(pm_to_bohr(155.)) }, 
-    { AtomicNumber(50), /* Sn */ RadialScale(pm_to_bohr(145.)) }, 
-    { AtomicNumber(51), /* Sb */ RadialScale(pm_to_bohr(145.)) }, 
-    { AtomicNumber(52), /* Te */ RadialScale(pm_to_bohr(140.)) }, 
-    { AtomicNumber(53), /* I  */ RadialScale(pm_to_bohr(140.)) }, 
-                                                                  
-    { AtomicNumber(55), /* Cs */ RadialScale(pm_to_bohr(265.)) }, 
-    { AtomicNumber(56), /* Ba */ RadialScale(pm_to_bohr(215.)) }, 
-    { AtomicNumber(57), /* La */ RadialScale(pm_to_bohr(195.)) }, 
-    { AtomicNumber(58), /* Ce */ RadialScale(pm_to_bohr(185.)) }, 
-    { AtomicNumber(59), /* Pr */ RadialScale(pm_to_bohr(185.)) }, 
-    { AtomicNumber(60), /* Nd */ RadialScale(pm_to_bohr(185.)) }, 
-    { AtomicNumber(61), /* Pm */ RadialScale(pm_to_bohr(185.)) }, 
-    { AtomicNumber(62), /* Sm */ RadialScale(pm_to_bohr(185.)) }, 
-    { AtomicNumber(63), /* Eu */ RadialScale(pm_to_bohr(185.)) }, 
-    { AtomicNumber(64), /* Gd */ RadialScale(pm_to_bohr(180.)) }, 
-    { AtomicNumber(65), /* Tb */ RadialScale(pm_to_bohr(175.)) }, 
-    { AtomicNumber(66), /* Dy */ RadialScale(pm_to_bohr(175.)) }, 
-    { AtomicNumber(67), /* Ho */ RadialScale(pm_to_bohr(175.)) }, 
-    { AtomicNumber(68), /* Er */ RadialScale(pm_to_bohr(175.)) }, 
-    { AtomicNumber(69), /* Tm */ RadialScale(pm_to_bohr(175.)) }, 
-    { AtomicNumber(70), /* Yb */ RadialScale(pm_to_bohr(175.)) }, 
-    { AtomicNumber(71), /* Lu */ RadialScale(pm_to_bohr(175.)) }, 
-    { AtomicNumber(72), /* Hf */ RadialScale(pm_to_bohr(155.)) }, 
-    { AtomicNumber(73), /* Ta */ RadialScale(pm_to_bohr(145.)) }, 
-    { AtomicNumber(74), /* W  */ RadialScale(pm_to_bohr(135.)) }, 
-    { AtomicNumber(75), /* Re */ RadialScale(pm_to_bohr(135.)) }, 
-    { AtomicNumber(76), /* Os */ RadialScale(pm_to_bohr(130.)) }, 
-    { AtomicNumber(77), /* Ir */ RadialScale(pm_to_bohr(135.)) }, 
-    { AtomicNumber(78), /* Pt */ RadialScale(pm_to_bohr(135.)) }, 
-    { AtomicNumber(79), /* Au */ RadialScale(pm_to_bohr(135.)) }, 
-    { AtomicNumber(80), /* Hg */ RadialScale(pm_to_bohr(150.)) }, 
-    { AtomicNumber(81), /* Tl */ RadialScale(pm_to_bohr(190.)) }, 
-    { AtomicNumber(82), /* Pb */ RadialScale(pm_to_bohr(180.)) }, 
-    { AtomicNumber(83), /* Bi */ RadialScale(pm_to_bohr(160.)) }, 
-    { AtomicNumber(84), /* Po */ RadialScale(pm_to_bohr(190.)) }, 
-                                                                  
-    { AtomicNumber(88), /* Ra */ RadialScale(pm_to_bohr(215.)) }, 
-    { AtomicNumber(89), /* Ac */ RadialScale(pm_to_bohr(195.)) }, 
-    { AtomicNumber(90), /* Th */ RadialScale(pm_to_bohr(180.)) }, 
-    { AtomicNumber(91), /* Pa */ RadialScale(pm_to_bohr(180.)) }, 
-    { AtomicNumber(92), /* U  */ RadialScale(pm_to_bohr(175.)) }, 
-    { AtomicNumber(93), /* Np */ RadialScale(pm_to_bohr(175.)) }, 
-    { AtomicNumber(94), /* Pu */ RadialScale(pm_to_bohr(175.)) }, 
-    { AtomicNumber(95), /* Am */ RadialScale(pm_to_bohr(175.)) }, 
-  //{ AtomicNumber(96), /* Cm */ RadialScale(pm_to_bohr(176.)) }
-  };
+  auto Z = _Z.get();
+  switch(Z) {
+    case 1:  /* H  */ return pm_to_bohr(25. );
+  //case 2:  /* He */ return pm_to_bohr(120.);
+    case 3:  /* Li */ return pm_to_bohr(145.);
+    case 4:  /* Be */ return pm_to_bohr(105.);
+    case 5:  /* B  */ return pm_to_bohr(85. );
+    case 6:  /* C  */ return pm_to_bohr(70. );
+    case 7:  /* N  */ return pm_to_bohr(65. );
+    case 8:  /* O  */ return pm_to_bohr(60. );
+    case 9:  /* F  */ return pm_to_bohr(50. );
+  //case 10: /* Ne */ return pm_to_bohr(160.);
+    case 11: /* Na */ return pm_to_bohr(180.);
+    case 12: /* Mg */ return pm_to_bohr(150.);
+    case 13: /* Al */ return pm_to_bohr(125.);
+    case 14: /* Si */ return pm_to_bohr(110.);
+    case 15: /* P  */ return pm_to_bohr(100.);
+    case 16: /* S  */ return pm_to_bohr(100.);
+    case 17: /* Cl */ return pm_to_bohr(100.);
+  //case 18: /* Ar */ return pm_to_bohr(71. );
+    case 19: /* K  */ return pm_to_bohr(220.);
+    case 20: /* Ca */ return pm_to_bohr(180.);
+    case 21: /* Sc */ return pm_to_bohr(160.);
+    case 22: /* Ti */ return pm_to_bohr(140.);
+    case 23: /* V  */ return pm_to_bohr(135.);
+    case 24: /* Cr */ return pm_to_bohr(140.);
+    case 25: /* Mn */ return pm_to_bohr(140.);
+    case 26: /* Fe */ return pm_to_bohr(140.);
+    case 27: /* Co */ return pm_to_bohr(135.);
+    case 28: /* Ni */ return pm_to_bohr(135.);
+    case 29: /* Cu */ return pm_to_bohr(135.);
+    case 30: /* Zn */ return pm_to_bohr(135.);
+    case 31: /* Ga */ return pm_to_bohr(130.);
+    case 32: /* Ge */ return pm_to_bohr(125.);
+    case 33: /* As */ return pm_to_bohr(115.);
+    case 34: /* Se */ return pm_to_bohr(115.);
+    case 35: /* Br */ return pm_to_bohr(115.);
+                                              
+    case 37: /* Rb */ return pm_to_bohr(235.);
+    case 38: /* Sr */ return pm_to_bohr(200.);
+    case 39: /* Y  */ return pm_to_bohr(180.);
+    case 40: /* Zr */ return pm_to_bohr(155.);
+    case 41: /* Nb */ return pm_to_bohr(145.);
+    case 42: /* Mo */ return pm_to_bohr(145.);
+    case 43: /* Tc */ return pm_to_bohr(135.);
+    case 44: /* Ru */ return pm_to_bohr(130.);
+    case 45: /* Rh */ return pm_to_bohr(135.);
+    case 46: /* Pd */ return pm_to_bohr(140.);
+    case 47: /* Ag */ return pm_to_bohr(160.);
+    case 48: /* Cd */ return pm_to_bohr(155.);
+    case 49: /* In */ return pm_to_bohr(155.);
+    case 50: /* Sn */ return pm_to_bohr(145.);
+    case 51: /* Sb */ return pm_to_bohr(145.);
+    case 52: /* Te */ return pm_to_bohr(140.);
+    case 53: /* I  */ return pm_to_bohr(140.);
+                                              
+    case 55: /* Cs */ return pm_to_bohr(265.);
+    case 56: /* Ba */ return pm_to_bohr(215.);
+    case 57: /* La */ return pm_to_bohr(195.);
+    case 58: /* Ce */ return pm_to_bohr(185.);
+    case 59: /* Pr */ return pm_to_bohr(185.);
+    case 60: /* Nd */ return pm_to_bohr(185.);
+    case 61: /* Pm */ return pm_to_bohr(185.);
+    case 62: /* Sm */ return pm_to_bohr(185.);
+    case 63: /* Eu */ return pm_to_bohr(185.);
+    case 64: /* Gd */ return pm_to_bohr(180.);
+    case 65: /* Tb */ return pm_to_bohr(175.);
+    case 66: /* Dy */ return pm_to_bohr(175.);
+    case 67: /* Ho */ return pm_to_bohr(175.);
+    case 68: /* Er */ return pm_to_bohr(175.);
+    case 69: /* Tm */ return pm_to_bohr(175.);
+    case 70: /* Yb */ return pm_to_bohr(175.);
+    case 71: /* Lu */ return pm_to_bohr(175.);
+    case 72: /* Hf */ return pm_to_bohr(155.);
+    case 73: /* Ta */ return pm_to_bohr(145.);
+    case 74: /* W  */ return pm_to_bohr(135.);
+    case 75: /* Re */ return pm_to_bohr(135.);
+    case 76: /* Os */ return pm_to_bohr(130.);
+    case 77: /* Ir */ return pm_to_bohr(135.);
+    case 78: /* Pt */ return pm_to_bohr(135.);
+    case 79: /* Au */ return pm_to_bohr(135.);
+    case 80: /* Hg */ return pm_to_bohr(150.);
+    case 81: /* Tl */ return pm_to_bohr(190.);
+    case 82: /* Pb */ return pm_to_bohr(180.);
+    case 83: /* Bi */ return pm_to_bohr(160.);
+    case 84: /* Po */ return pm_to_bohr(190.);
+                                              
+    case 88: /* Ra */ return pm_to_bohr(215.);
+    case 89: /* Ac */ return pm_to_bohr(195.);
+    case 90: /* Th */ return pm_to_bohr(180.);
+    case 91: /* Pa */ return pm_to_bohr(180.);
+    case 92: /* U  */ return pm_to_bohr(175.);
+    case 93: /* Np */ return pm_to_bohr(175.);
+    case 94: /* Pu */ return pm_to_bohr(175.);
+    case 95: /* Am */ return pm_to_bohr(175.);
+  //case 96: /* Cm */ return pm_to_bohr(176.); }
+ 
+    default: return -1.;
+  }
 }
 
 /// Slater, J.C.
 /// Phys. Rev. 36, 57, 1930
 /// https://doi.org/10.1103/PhysRev.36.57
-atomic_scal_factor_map slater_radii_30() {
+double slater_radii_30(AtomicNumber _Z) {
 
-  return atomic_scal_factor_map {
-    { AtomicNumber(1),  /* H  */ RadialScale(pm_to_bohr(53. )) }, 
+  auto Z = _Z.get();
+  switch(Z) {
+    case 1:   /* H  */ return pm_to_bohr(53. ); 
 
-    { AtomicNumber(3),  /* Li */ RadialScale(pm_to_bohr(163.)) }, 
-    { AtomicNumber(4),  /* Be */ RadialScale(pm_to_bohr(109.)) }, 
-    { AtomicNumber(5),  /* B  */ RadialScale(pm_to_bohr(82. )) }, 
-    { AtomicNumber(6),  /* C  */ RadialScale(pm_to_bohr(65. )) }, 
-    { AtomicNumber(7),  /* N  */ RadialScale(pm_to_bohr(55. )) }, 
-    { AtomicNumber(8),  /* O  */ RadialScale(pm_to_bohr(47. )) }, 
-    { AtomicNumber(9),  /* F  */ RadialScale(pm_to_bohr(41. )) }, 
+    case 3:   /* Li */ return pm_to_bohr(163.); 
+    case 4:   /* Be */ return pm_to_bohr(109.); 
+    case 5:   /* B  */ return pm_to_bohr(82. ); 
+    case 6:   /* C  */ return pm_to_bohr(65. ); 
+    case 7:   /* N  */ return pm_to_bohr(55. ); 
+    case 8:   /* O  */ return pm_to_bohr(47. ); 
+    case 9:   /* F  */ return pm_to_bohr(41. ); 
 
-    { AtomicNumber(11), /* Na */ RadialScale(pm_to_bohr(217.)) }, 
-    { AtomicNumber(12), /* Mg */ RadialScale(pm_to_bohr(168.)) }, 
-    { AtomicNumber(13), /* Al */ RadialScale(pm_to_bohr(137.)) }, 
-    { AtomicNumber(14), /* Si */ RadialScale(pm_to_bohr(115.)) }, 
-    { AtomicNumber(15), /* P  */ RadialScale(pm_to_bohr(100.)) }, 
-    { AtomicNumber(16), /* S  */ RadialScale(pm_to_bohr(88. )) }, 
-    { AtomicNumber(17), /* Cl */ RadialScale(pm_to_bohr(78. )) }, 
+    case 11:  /* Na */ return pm_to_bohr(217.); 
+    case 12:  /* Mg */ return pm_to_bohr(168.); 
+    case 13:  /* Al */ return pm_to_bohr(137.); 
+    case 14:  /* Si */ return pm_to_bohr(115.); 
+    case 15:  /* P  */ return pm_to_bohr(100.); 
+    case 16:  /* S  */ return pm_to_bohr(88. ); 
+    case 17:  /* Cl */ return pm_to_bohr(78. ); 
                                                                   
-    { AtomicNumber(19), /* K  */ RadialScale(pm_to_bohr(332.)) }, 
-    { AtomicNumber(20), /* Ca */ RadialScale(pm_to_bohr(256.)) }, 
-    { AtomicNumber(21), /* Sc */ RadialScale(pm_to_bohr(243.)) }, 
-    { AtomicNumber(22), /* Ti */ RadialScale(pm_to_bohr(232.)) }, 
-    { AtomicNumber(23), /* V  */ RadialScale(pm_to_bohr(222.)) }, 
-    { AtomicNumber(24), /* Cr */ RadialScale(pm_to_bohr(212.)) }, 
-    { AtomicNumber(25), /* Mn */ RadialScale(pm_to_bohr(202.)) }, 
-    { AtomicNumber(26), /* Fe */ RadialScale(pm_to_bohr(195.)) }, 
-    { AtomicNumber(27), /* Co */ RadialScale(pm_to_bohr(187.)) }, 
-    { AtomicNumber(28), /* Ni */ RadialScale(pm_to_bohr(180.)) }, 
-    { AtomicNumber(29), /* Cu */ RadialScale(pm_to_bohr(173.)) }, 
-    { AtomicNumber(30), /* Zn */ RadialScale(pm_to_bohr(167.)) }, 
-    { AtomicNumber(31), /* Ga */ RadialScale(pm_to_bohr(146.)) }, 
-    { AtomicNumber(32), /* Ge */ RadialScale(pm_to_bohr(129.)) }, 
-    { AtomicNumber(33), /* As */ RadialScale(pm_to_bohr(116.)) }, 
-    { AtomicNumber(34), /* Se */ RadialScale(pm_to_bohr(105.)) }, 
-    { AtomicNumber(35), /* Br */ RadialScale(pm_to_bohr(96. )) }, 
+    case 19:  /* K  */ return pm_to_bohr(332.); 
+    case 20:  /* Ca */ return pm_to_bohr(256.); 
+    case 21:  /* Sc */ return pm_to_bohr(243.); 
+    case 22:  /* Ti */ return pm_to_bohr(232.); 
+    case 23:  /* V  */ return pm_to_bohr(222.); 
+    case 24:  /* Cr */ return pm_to_bohr(212.); 
+    case 25:  /* Mn */ return pm_to_bohr(202.); 
+    case 26:  /* Fe */ return pm_to_bohr(195.); 
+    case 27:  /* Co */ return pm_to_bohr(187.); 
+    case 28:  /* Ni */ return pm_to_bohr(180.); 
+    case 29:  /* Cu */ return pm_to_bohr(173.); 
+    case 30:  /* Zn */ return pm_to_bohr(167.); 
+    case 31:  /* Ga */ return pm_to_bohr(146.); 
+    case 32:  /* Ge */ return pm_to_bohr(129.); 
+    case 33:  /* As */ return pm_to_bohr(116.); 
+    case 34:  /* Se */ return pm_to_bohr(105.); 
+    case 35:  /* Br */ return pm_to_bohr(96. ); 
                                                                   
-    { AtomicNumber(37), /* Rb */ RadialScale(pm_to_bohr(386.)) }, 
-    { AtomicNumber(38), /* Sr */ RadialScale(pm_to_bohr(300.)) }, 
-    { AtomicNumber(39), /* Y  */ RadialScale(pm_to_bohr(284.)) }, 
-    { AtomicNumber(40), /* Zr */ RadialScale(pm_to_bohr(271.)) }, 
-    { AtomicNumber(41), /* Nb */ RadialScale(pm_to_bohr(260.)) }, 
-    { AtomicNumber(42), /* Mo */ RadialScale(pm_to_bohr(248.)) }, 
-    { AtomicNumber(43), /* Tc */ RadialScale(pm_to_bohr(236.)) }, 
-    { AtomicNumber(44), /* Ru */ RadialScale(pm_to_bohr(228.)) }, 
-    { AtomicNumber(45), /* Rh */ RadialScale(pm_to_bohr(218.)) }, 
-    { AtomicNumber(46), /* Pd */ RadialScale(pm_to_bohr(210.)) }, 
-    { AtomicNumber(47), /* Ag */ RadialScale(pm_to_bohr(202.)) }, 
-    { AtomicNumber(48), /* Cd */ RadialScale(pm_to_bohr(195.)) }, 
-    { AtomicNumber(49), /* In */ RadialScale(pm_to_bohr(171.)) }, 
-    { AtomicNumber(50), /* Sn */ RadialScale(pm_to_bohr(151.)) }, 
-    { AtomicNumber(51), /* Sb */ RadialScale(pm_to_bohr(135.)) }, 
-    { AtomicNumber(52), /* Te */ RadialScale(pm_to_bohr(122.)) }, 
-    { AtomicNumber(53), /* I  */ RadialScale(pm_to_bohr(112.)) }, 
+    case 37:  /* Rb */ return pm_to_bohr(386.); 
+    case 38:  /* Sr */ return pm_to_bohr(300.); 
+    case 39:  /* Y  */ return pm_to_bohr(284.); 
+    case 40:  /* Zr */ return pm_to_bohr(271.); 
+    case 41:  /* Nb */ return pm_to_bohr(260.); 
+    case 42:  /* Mo */ return pm_to_bohr(248.); 
+    case 43:  /* Tc */ return pm_to_bohr(236.); 
+    case 44:  /* Ru */ return pm_to_bohr(228.); 
+    case 45:  /* Rh */ return pm_to_bohr(218.); 
+    case 46:  /* Pd */ return pm_to_bohr(210.); 
+    case 47:  /* Ag */ return pm_to_bohr(202.); 
+    case 48:  /* Cd */ return pm_to_bohr(195.); 
+    case 49:  /* In */ return pm_to_bohr(171.); 
+    case 50:  /* Sn */ return pm_to_bohr(151.); 
+    case 51:  /* Sb */ return pm_to_bohr(135.); 
+    case 52:  /* Te */ return pm_to_bohr(122.); 
+    case 53:  /* I  */ return pm_to_bohr(112.); 
                                                                   
-    { AtomicNumber(55), /* Cs */ RadialScale(pm_to_bohr(425.)) }, 
-    { AtomicNumber(56), /* Ba */ RadialScale(pm_to_bohr(330.)) }, 
-    { AtomicNumber(57), /* La */ RadialScale(pm_to_bohr(312.)) }, 
+    case 55:  /* Cs */ return pm_to_bohr(425.); 
+    case 56:  /* Ba */ return pm_to_bohr(330.); 
+    case 57:  /* La */ return pm_to_bohr(312.); 
 
-    { AtomicNumber(73), /* Ta */ RadialScale(pm_to_bohr(286.)) }, 
-    { AtomicNumber(74), /* W  */ RadialScale(pm_to_bohr(273.)) }, 
-    { AtomicNumber(75), /* Re */ RadialScale(pm_to_bohr(260.)) }, 
-    { AtomicNumber(76), /* Os */ RadialScale(pm_to_bohr(251.)) }, 
-    { AtomicNumber(77), /* Ir */ RadialScale(pm_to_bohr(240.)) }, 
-    { AtomicNumber(78), /* Pt */ RadialScale(pm_to_bohr(231.)) }, 
-    { AtomicNumber(79), /* Au */ RadialScale(pm_to_bohr(222.)) }, 
-    { AtomicNumber(80), /* Hg */ RadialScale(pm_to_bohr(215.)) }, 
-    { AtomicNumber(81), /* Tl */ RadialScale(pm_to_bohr(188.)) }, 
-    { AtomicNumber(82), /* Pb */ RadialScale(pm_to_bohr(166.)) }, 
-    { AtomicNumber(83), /* Bi */ RadialScale(pm_to_bohr(148.)) }
-  };
+    case 73:  /* Ta */ return pm_to_bohr(286.); 
+    case 74:  /* W  */ return pm_to_bohr(273.); 
+    case 75:  /* Re */ return pm_to_bohr(260.); 
+    case 76:  /* Os */ return pm_to_bohr(251.); 
+    case 77:  /* Ir */ return pm_to_bohr(240.); 
+    case 78:  /* Pt */ return pm_to_bohr(231.); 
+    case 79:  /* Au */ return pm_to_bohr(222.); 
+    case 80:  /* Hg */ return pm_to_bohr(215.); 
+    case 81:  /* Tl */ return pm_to_bohr(188.); 
+    case 82:  /* Pb */ return pm_to_bohr(166.); 
+    case 83:  /* Bi */ return pm_to_bohr(148.);
+
+    default: return -1.;
+  }
 }
 
 /// Clementi, E., Raimondi, D.L., Reinhardt, W.P.
 /// J. Chem. Phys. 47, 1300, 1967
 /// https://doi.org/10.1063/1.1712084
-atomic_scal_factor_map clementi_radii_67() {
+double clementi_radius_67(AtomicNumber _Z) {
 
-  return atomic_scal_factor_map {
-    { AtomicNumber(2),  /* He */ RadialScale(pm_to_bohr(31. )) }, 
+  auto Z = _Z.get();
+  switch(Z) {
+    case 2:   /* He */ return pm_to_bohr(31. ); 
 
-    { AtomicNumber(3),  /* Li */ RadialScale(pm_to_bohr(167.)) }, 
-    { AtomicNumber(4),  /* Be */ RadialScale(pm_to_bohr(112.)) }, 
-    { AtomicNumber(5),  /* B  */ RadialScale(pm_to_bohr(87. )) }, 
-    { AtomicNumber(6),  /* C  */ RadialScale(pm_to_bohr(67. )) }, 
-    { AtomicNumber(7),  /* N  */ RadialScale(pm_to_bohr(56. )) }, 
-    { AtomicNumber(8),  /* O  */ RadialScale(pm_to_bohr(48. )) }, 
-    { AtomicNumber(9),  /* F  */ RadialScale(pm_to_bohr(42. )) }, 
-    { AtomicNumber(10), /* Ne */ RadialScale(pm_to_bohr(38. )) }, 
+    case 3:   /* Li */ return pm_to_bohr(167.); 
+    case 4:   /* Be */ return pm_to_bohr(112.); 
+    case 5:   /* B  */ return pm_to_bohr(87. ); 
+    case 6:   /* C  */ return pm_to_bohr(67. ); 
+    case 7:   /* N  */ return pm_to_bohr(56. ); 
+    case 8:   /* O  */ return pm_to_bohr(48. ); 
+    case 9:   /* F  */ return pm_to_bohr(42. ); 
+    case 10:  /* Ne */ return pm_to_bohr(38. ); 
 
-    { AtomicNumber(11), /* Na */ RadialScale(pm_to_bohr(190.)) }, 
-    { AtomicNumber(12), /* Mg */ RadialScale(pm_to_bohr(145.)) }, 
-    { AtomicNumber(13), /* Al */ RadialScale(pm_to_bohr(118.)) }, 
-    { AtomicNumber(14), /* Si */ RadialScale(pm_to_bohr(111.)) }, 
-    { AtomicNumber(15), /* P  */ RadialScale(pm_to_bohr(98. )) }, 
-    { AtomicNumber(16), /* S  */ RadialScale(pm_to_bohr(88. )) }, 
-    { AtomicNumber(17), /* Cl */ RadialScale(pm_to_bohr(79. )) }, 
-    { AtomicNumber(18), /* Ar */ RadialScale(pm_to_bohr(71. )) }, 
+    case 11:  /* Na */ return pm_to_bohr(190.); 
+    case 12:  /* Mg */ return pm_to_bohr(145.); 
+    case 13:  /* Al */ return pm_to_bohr(118.); 
+    case 14:  /* Si */ return pm_to_bohr(111.); 
+    case 15:  /* P  */ return pm_to_bohr(98. ); 
+    case 16:  /* S  */ return pm_to_bohr(88. ); 
+    case 17:  /* Cl */ return pm_to_bohr(79. ); 
+    case 18:  /* Ar */ return pm_to_bohr(71. ); 
                                                                   
-    { AtomicNumber(19), /* K  */ RadialScale(pm_to_bohr(243.)) }, 
-    { AtomicNumber(20), /* Ca */ RadialScale(pm_to_bohr(194.)) }, 
-    { AtomicNumber(21), /* Sc */ RadialScale(pm_to_bohr(184.)) }, 
-    { AtomicNumber(22), /* Ti */ RadialScale(pm_to_bohr(176.)) }, 
-    { AtomicNumber(23), /* V  */ RadialScale(pm_to_bohr(171.)) }, 
-    { AtomicNumber(24), /* Cr */ RadialScale(pm_to_bohr(166.)) }, 
-    { AtomicNumber(25), /* Mn */ RadialScale(pm_to_bohr(161.)) }, 
-    { AtomicNumber(26), /* Fe */ RadialScale(pm_to_bohr(156.)) }, 
-    { AtomicNumber(27), /* Co */ RadialScale(pm_to_bohr(152.)) }, 
-    { AtomicNumber(28), /* Ni */ RadialScale(pm_to_bohr(149.)) }, 
-    { AtomicNumber(29), /* Cu */ RadialScale(pm_to_bohr(145.)) }, 
-    { AtomicNumber(30), /* Zn */ RadialScale(pm_to_bohr(142.)) }, 
-    { AtomicNumber(31), /* Ga */ RadialScale(pm_to_bohr(136.)) }, 
-    { AtomicNumber(32), /* Ge */ RadialScale(pm_to_bohr(125.)) }, 
-    { AtomicNumber(33), /* As */ RadialScale(pm_to_bohr(114.)) }, 
-    { AtomicNumber(34), /* Se */ RadialScale(pm_to_bohr(103.)) }, 
-    { AtomicNumber(35), /* Br */ RadialScale(pm_to_bohr(94. )) }, 
-    { AtomicNumber(36), /* Kr */ RadialScale(pm_to_bohr(88. )) }, 
+    case 19:  /* K  */ return pm_to_bohr(243.); 
+    case 20:  /* Ca */ return pm_to_bohr(194.); 
+    case 21:  /* Sc */ return pm_to_bohr(184.); 
+    case 22:  /* Ti */ return pm_to_bohr(176.); 
+    case 23:  /* V  */ return pm_to_bohr(171.); 
+    case 24:  /* Cr */ return pm_to_bohr(166.); 
+    case 25:  /* Mn */ return pm_to_bohr(161.); 
+    case 26:  /* Fe */ return pm_to_bohr(156.); 
+    case 27:  /* Co */ return pm_to_bohr(152.); 
+    case 28:  /* Ni */ return pm_to_bohr(149.); 
+    case 29:  /* Cu */ return pm_to_bohr(145.); 
+    case 30:  /* Zn */ return pm_to_bohr(142.); 
+    case 31:  /* Ga */ return pm_to_bohr(136.); 
+    case 32:  /* Ge */ return pm_to_bohr(125.); 
+    case 33:  /* As */ return pm_to_bohr(114.); 
+    case 34:  /* Se */ return pm_to_bohr(103.); 
+    case 35:  /* Br */ return pm_to_bohr(94. ); 
+    case 36:  /* Kr */ return pm_to_bohr(88. ); 
                                                                   
-    { AtomicNumber(37), /* Rb */ RadialScale(pm_to_bohr(265.)) }, 
-    { AtomicNumber(38), /* Sr */ RadialScale(pm_to_bohr(219.)) }, 
-    { AtomicNumber(39), /* Y  */ RadialScale(pm_to_bohr(212.)) }, 
-    { AtomicNumber(40), /* Zr */ RadialScale(pm_to_bohr(206.)) }, 
-    { AtomicNumber(41), /* Nb */ RadialScale(pm_to_bohr(198.)) }, 
-    { AtomicNumber(42), /* Mo */ RadialScale(pm_to_bohr(190.)) }, 
-    { AtomicNumber(43), /* Tc */ RadialScale(pm_to_bohr(183.)) }, 
-    { AtomicNumber(44), /* Ru */ RadialScale(pm_to_bohr(178.)) }, 
-    { AtomicNumber(45), /* Rh */ RadialScale(pm_to_bohr(173.)) }, 
-    { AtomicNumber(46), /* Pd */ RadialScale(pm_to_bohr(169.)) }, 
-    { AtomicNumber(47), /* Ag */ RadialScale(pm_to_bohr(165.)) }, 
-    { AtomicNumber(48), /* Cd */ RadialScale(pm_to_bohr(161.)) }, 
-    { AtomicNumber(49), /* In */ RadialScale(pm_to_bohr(156.)) }, 
-    { AtomicNumber(50), /* Sn */ RadialScale(pm_to_bohr(145.)) }, 
-    { AtomicNumber(51), /* Sb */ RadialScale(pm_to_bohr(133.)) }, 
-    { AtomicNumber(52), /* Te */ RadialScale(pm_to_bohr(123.)) }, 
-    { AtomicNumber(53), /* I  */ RadialScale(pm_to_bohr(115.)) }, 
-    { AtomicNumber(54), /* Xe */ RadialScale(pm_to_bohr(108.)) }, 
+    case 37:  /* Rb */ return pm_to_bohr(265.); 
+    case 38:  /* Sr */ return pm_to_bohr(219.); 
+    case 39:  /* Y  */ return pm_to_bohr(212.); 
+    case 40:  /* Zr */ return pm_to_bohr(206.); 
+    case 41:  /* Nb */ return pm_to_bohr(198.); 
+    case 42:  /* Mo */ return pm_to_bohr(190.); 
+    case 43:  /* Tc */ return pm_to_bohr(183.); 
+    case 44:  /* Ru */ return pm_to_bohr(178.); 
+    case 45:  /* Rh */ return pm_to_bohr(173.); 
+    case 46:  /* Pd */ return pm_to_bohr(169.); 
+    case 47:  /* Ag */ return pm_to_bohr(165.); 
+    case 48:  /* Cd */ return pm_to_bohr(161.); 
+    case 49:  /* In */ return pm_to_bohr(156.); 
+    case 50:  /* Sn */ return pm_to_bohr(145.); 
+    case 51:  /* Sb */ return pm_to_bohr(133.); 
+    case 52:  /* Te */ return pm_to_bohr(123.); 
+    case 53:  /* I  */ return pm_to_bohr(115.); 
+    case 54:  /* Xe */ return pm_to_bohr(108.); 
                                                                   
-    { AtomicNumber(55), /* Cs */ RadialScale(pm_to_bohr(298.)) }, 
-    { AtomicNumber(56), /* Ba */ RadialScale(pm_to_bohr(253.)) }, 
-    { AtomicNumber(57), /* La */ RadialScale(pm_to_bohr(622.)) }, 
-    { AtomicNumber(58), /* Ce */ RadialScale(pm_to_bohr(505.)) }, 
-    { AtomicNumber(59), /* Pr */ RadialScale(pm_to_bohr(247.)) }, 
-    { AtomicNumber(60), /* Nd */ RadialScale(pm_to_bohr(206.)) }, 
-    { AtomicNumber(61), /* Pm */ RadialScale(pm_to_bohr(205.)) }, 
-    { AtomicNumber(62), /* Sm */ RadialScale(pm_to_bohr(238.)) }, 
-    { AtomicNumber(63), /* Eu */ RadialScale(pm_to_bohr(231.)) }, 
-    { AtomicNumber(64), /* Gd */ RadialScale(pm_to_bohr(233.)) }, 
-    { AtomicNumber(65), /* Tb */ RadialScale(pm_to_bohr(225.)) }, 
-    { AtomicNumber(66), /* Dy */ RadialScale(pm_to_bohr(228.)) }, 
-    { AtomicNumber(67), /* Ho */ RadialScale(pm_to_bohr(226.)) }, 
-    { AtomicNumber(68), /* Er */ RadialScale(pm_to_bohr(226.)) }, 
-    { AtomicNumber(69), /* Tm */ RadialScale(pm_to_bohr(222.)) }, 
-    { AtomicNumber(70), /* Yb */ RadialScale(pm_to_bohr(222.)) }, 
-    { AtomicNumber(71), /* Lu */ RadialScale(pm_to_bohr(217.)) }, 
-    { AtomicNumber(72), /* Hf */ RadialScale(pm_to_bohr(208.)) }, 
-    { AtomicNumber(73), /* Ta */ RadialScale(pm_to_bohr(200.)) }, 
-    { AtomicNumber(74), /* W  */ RadialScale(pm_to_bohr(193.)) }, 
-    { AtomicNumber(75), /* Re */ RadialScale(pm_to_bohr(188.)) }, 
-    { AtomicNumber(76), /* Os */ RadialScale(pm_to_bohr(185.)) }, 
-    { AtomicNumber(77), /* Ir */ RadialScale(pm_to_bohr(180.)) }, 
-    { AtomicNumber(78), /* Pt */ RadialScale(pm_to_bohr(177.)) }, 
-    { AtomicNumber(79), /* Au */ RadialScale(pm_to_bohr(174.)) }, 
-    { AtomicNumber(80), /* Hg */ RadialScale(pm_to_bohr(171.)) }, 
-    { AtomicNumber(81), /* Tl */ RadialScale(pm_to_bohr(156.)) }, 
-    { AtomicNumber(82), /* Pb */ RadialScale(pm_to_bohr(154.)) }, 
-    { AtomicNumber(83), /* Bi */ RadialScale(pm_to_bohr(143.)) },
-    { AtomicNumber(84), /* Po */ RadialScale(pm_to_bohr(135.)) }, 
-    { AtomicNumber(85), /* At */ RadialScale(pm_to_bohr(127.)) }, 
-    { AtomicNumber(86), /* Rn */ RadialScale(pm_to_bohr(120.)) }
-  };
+    case 55:  /* Cs */ return pm_to_bohr(298.); 
+    case 56:  /* Ba */ return pm_to_bohr(253.); 
+    case 57:  /* La */ return pm_to_bohr(622.); 
+    case 58:  /* Ce */ return pm_to_bohr(505.); 
+    case 59:  /* Pr */ return pm_to_bohr(247.); 
+    case 60:  /* Nd */ return pm_to_bohr(206.); 
+    case 61:  /* Pm */ return pm_to_bohr(205.); 
+    case 62:  /* Sm */ return pm_to_bohr(238.); 
+    case 63:  /* Eu */ return pm_to_bohr(231.); 
+    case 64:  /* Gd */ return pm_to_bohr(233.); 
+    case 65:  /* Tb */ return pm_to_bohr(225.); 
+    case 66:  /* Dy */ return pm_to_bohr(228.); 
+    case 67:  /* Ho */ return pm_to_bohr(226.); 
+    case 68:  /* Er */ return pm_to_bohr(226.); 
+    case 69:  /* Tm */ return pm_to_bohr(222.); 
+    case 70:  /* Yb */ return pm_to_bohr(222.); 
+    case 71:  /* Lu */ return pm_to_bohr(217.); 
+    case 72:  /* Hf */ return pm_to_bohr(208.); 
+    case 73:  /* Ta */ return pm_to_bohr(200.); 
+    case 74:  /* W  */ return pm_to_bohr(193.); 
+    case 75:  /* Re */ return pm_to_bohr(188.); 
+    case 76:  /* Os */ return pm_to_bohr(185.); 
+    case 77:  /* Ir */ return pm_to_bohr(180.); 
+    case 78:  /* Pt */ return pm_to_bohr(177.); 
+    case 79:  /* Au */ return pm_to_bohr(174.); 
+    case 80:  /* Hg */ return pm_to_bohr(171.); 
+    case 81:  /* Tl */ return pm_to_bohr(156.); 
+    case 82:  /* Pb */ return pm_to_bohr(154.); 
+    case 83:  /* Bi */ return pm_to_bohr(143.);
+    case 84:  /* Po */ return pm_to_bohr(135.); 
+    case 85:  /* At */ return pm_to_bohr(127.); 
+    case 86:  /* Rn */ return pm_to_bohr(120.);
+
+    default: return -1.;
+  }
 
 }
 

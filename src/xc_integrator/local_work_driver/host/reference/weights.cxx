@@ -22,6 +22,7 @@ void reference_becke_weights_host(
 
   const auto&  RAB    = meta.rab();
 
+#if 0
   auto slater_64 = slater_radii_64();
   auto clementi_67 = clementi_radii_67();
 
@@ -38,6 +39,13 @@ void reference_becke_weights_host(
       slater_radii.emplace_back(r_it->second.get());
     }
   }
+#else
+  std::vector<double> slater_radii;
+  for( auto& atom : mol ) {
+    slater_radii.emplace_back( default_atomic_radius(atom.Z) );
+  }
+#endif
+
 
   std::vector<double> size_adj(natoms * natoms);
   for( auto i = 0; i < natoms; ++i ) 
