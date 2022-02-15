@@ -183,7 +183,7 @@ int main(int argc, char** argv) {
 
   std::cout << nshells << std::endl;
 
-struct timeval start, end;
+  struct timeval start, end;
 
   gettimeofday(&start, NULL);
   int ioff_cart = 0;
