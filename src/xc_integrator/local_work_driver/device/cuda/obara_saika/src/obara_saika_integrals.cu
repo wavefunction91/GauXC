@@ -13,7 +13,7 @@
 #include "integral_2_2.hu"
 namespace XGPU {
 
-void generate_shell_pair( const shells& A, const shells& B, prim_pairs *prim_pair) {
+void generate_shell_pair( const shells& A, const shells& B, prim_pair *prim_pairs) {
    // L Values
    int lA = A.L;
    int lB = B.L;
