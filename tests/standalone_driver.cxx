@@ -308,8 +308,10 @@ int main(int argc, char** argv) {
     auto xc_int_end   = std::chrono::high_resolution_clock::now();
     double xc_int_dur = std::chrono::duration<double>( xc_int_end - xc_int_start ).count();
 
+#ifdef GAUXC_ENABLE_MPI
     util::MPITimer mpi_lb_timings( MPI_COMM_WORLD, lb->get_timings() );
     util::MPITimer mpi_xc_timings( MPI_COMM_WORLD, integrator.get_timings() );
+#endif
     if( !world_rank ) {
 
       std::cout << std::scientific << std::setprecision(5) << std::endl;

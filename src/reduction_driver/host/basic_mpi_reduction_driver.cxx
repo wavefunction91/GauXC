@@ -7,6 +7,7 @@
 
 namespace GauXC {
 
+#ifdef GAUXC_ENABLE_MPI
 MPI_Datatype get_mpi_datatype( std::type_index idx ) {
 
   static std::map<std::type_index, MPI_Datatype> map {
@@ -27,6 +28,7 @@ MPI_Op get_mpi_op( ReductionOp op ) {
   return map.at(op);
 
 }
+#endif
 
 size_t get_dtype_size( std::type_index idx ) {
 
