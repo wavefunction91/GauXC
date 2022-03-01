@@ -178,15 +178,9 @@ int main(int argc, char** argv) {
   for( int i = 0; i < nshells; ++i) {
     for( int j = 0; j <= i; ++j) {
       if( _shells[i].L >= _shells[j].L )
-<<<<<<< HEAD
-	generate_shell_pair(_shells[i], _shells[j], shpairs[offset]);
-      else
-	generate_shell_pair(_shells[j], _shells[i], shpairs[offset]);
-=======
 	XCPU::generate_shell_pair(_shells[i], _shells[j], shpairs[offset]);
       else
 	XCPU::generate_shell_pair(_shells[j], _shells[i], shpairs[offset]);
->>>>>>> 95003a054eaeb7ccfeabc7e81aaa0439f60d6524
 
       offset++;
     }

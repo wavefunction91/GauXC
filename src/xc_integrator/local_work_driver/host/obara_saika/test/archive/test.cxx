@@ -210,15 +210,6 @@ int main(int argc, char** argv) {
 					ngrid,
 					w.data(),
 					boys_table);
-<<<<<<< HEAD:src/xc_integrator/local_work_driver/host/obara_saika/test/test.cxx
-      
-=======
-<<<<<<< HEAD
-      
-=======
-	
->>>>>>> ed141ba35515de692caaaebf67e7ccea14888c2b
->>>>>>> 95003a054eaeb7ccfeabc7e81aaa0439f60d6524:src/xc_integrator/local_work_driver/host/obara_saika/test/archive/test.cxx
       joff_cart += ket_cart_size;
     }
 
