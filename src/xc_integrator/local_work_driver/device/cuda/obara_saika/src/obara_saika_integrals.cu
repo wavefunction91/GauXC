@@ -155,8 +155,8 @@ void compute_integral_shell_pair(size_t npts,
                                   boys_table);
       } else if((lA == 0) && (lB == 1)) {
          integral_1_0<<<320, 128, 128 * 3 * sizeof(double)>>>(npts,
-                                  rA,
                                   rB,
+                                  rA,
                                   nprim_pairs,
                                   prim_pairs,
                                   points,
@@ -200,8 +200,8 @@ void compute_integral_shell_pair(size_t npts,
                                   boys_table);
       } else if((lA == 0) && (lB == 2)) {
          integral_2_0<<<320, 128, 128 * 6 * sizeof(double)>>>(npts,
-                                  rA,
                                   rB,
+                                  rA,
                                   nprim_pairs,
                                   prim_pairs,
                                   points,
@@ -230,8 +230,8 @@ void compute_integral_shell_pair(size_t npts,
                                   boys_table);
       } else if((lA == 1) && (lB == 2)) {
          integral_2_1<<<320, 128, 128 * 16 * sizeof(double)>>>(npts,
-                                  rA,
                                   rB,
+                                  rA,
                                   nprim_pairs,
                                   prim_pairs,
                                   points,

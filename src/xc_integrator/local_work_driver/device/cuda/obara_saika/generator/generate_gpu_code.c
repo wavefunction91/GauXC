@@ -1026,8 +1026,8 @@ void generate_main_files(int lA) {
       fprintf(f, "                                  boys_table);\n");	 
       fprintf(f, "      } else if((lA == %d) && (lB == %d)) {\n", j, i);
       fprintf(f, "         integral_%d_%d<<<320, 128, 128 * %d * sizeof(double)>>>(npts,\n", i, j, size - partial_size);
-      fprintf(f, "                                  rA,\n");
       fprintf(f, "                                  rB,\n");
+      fprintf(f, "                                  rA,\n");
       fprintf(f, "                                  nprim_pairs,\n");
       fprintf(f, "                                  prim_pairs,\n");
       fprintf(f, "                                  points,\n");
