@@ -1160,13 +1160,7 @@ void generate_main_files(int lA) {
   fprintf(f, "      pair.PB.x = pair.P.x - xB;\n");
   fprintf(f, "      pair.PB.y = pair.P.y - yB;\n");
   fprintf(f, "      pair.PB.z = pair.P.z - zB;\n\n");
-<<<<<<< HEAD
-
-  fprintf(f, "      pair.K = 2 * M_PI * gamma_inv * std::exp( - alpha_A * alpha_B * dAB * gamma_inv ) * A.coeff[i].coeff * B.coeff[j].coeff;\n");
-=======
-  
   fprintf(f, "      pair.K_coeff_prod = 2 * M_PI * gamma_inv * std::exp( - alpha_A * alpha_B * dAB * gamma_inv ) * A.coeff[i].coeff * B.coeff[j].coeff;\n");
->>>>>>> 95003a054eaeb7ccfeabc7e81aaa0439f60d6524
   fprintf(f, "   }\n");
   fprintf(f, "}\n");
   
