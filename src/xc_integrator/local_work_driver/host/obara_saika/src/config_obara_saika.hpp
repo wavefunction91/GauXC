@@ -111,7 +111,7 @@ namespace XCPU {
 #define SCALAR_SET1(x) (x)
 
 #define SCALAR_LOAD(x) *(x)
-#define SCALAR_STORE(x, y) *(x) = y
+#define SCALAR_STORE(x, y) (*(x) = y)
 
 #define SCALAR_ADD(x, y) (x + y)
 #define SCALAR_SUB(x, y) (x - y)

@@ -1,18 +1,13 @@
 #include <libint2.hpp>
-#include <integral_data_types.hpp>
-#include <obara_saika_integrals.hpp>
-#include <chebyshev_boys_computation.hpp>
+#include <integral_data_types.h>
+#include <obara_saika_integrals.h>
 #include <vector>
 #include <iostream>
 #include <algorithm>
 #include <random>
-#include <sys/time.h>
-#include <float.h>
 
 int main(int argc, char** argv) {
   libint2::initialize();
-  
-  double *boys_table = XCPU::boys_init();
 
   // Benzene
   std::vector<libint2::Atom> atoms = {
@@ -56,9 +51,11 @@ int main(int argc, char** argv) {
     return std::array<double,3>{ dist_x(gen), dist_y(gen), dist_z(gen) };
   };
 
-  if( argc != 2 ) throw std::runtime_error("Must Specify NGrid");
+  if( argc != 4 ) throw std::runtime_error("Must Specify NGrid");
   
   const int ngrid = std::stoll( std::string(argv[1]) );
+  const int lA = std::stoll( std::string(argv[2]) );
+  const int lB = std::stoll( std::string(argv[3]) );
   
   std::vector< std::array<double,3> > grid_points( ngrid );
   std::generate( grid_points.begin(), grid_points.end(), gen_grid_point );
@@ -81,14 +78,25 @@ int main(int argc, char** argv) {
   // Generate a random F matrix
   std::vector<double> F( ngrid * nbf );
   std::generate( F.begin(), F.end(), [&](){ return dist_x(gen); } );
+
+  /*
+  for(int i = 0; i < ngrid * nbf; ++i) {
+    F[i] = 1.0;
+  }
+  */
   
   // Generate random grid weights
   std::vector<double> w( ngrid );
   std::generate( w.begin(), w.end(), [&](){ return dist_x(gen); } );
 
+  /*
+  for(int i = 0; i < ngrid; ++i) {
+    w[i] = 1.0;
+  }
+  */
+  
   // Compute A
   std::vector<double> A( nbf * nbf * ngrid );
-  memset(&A[0], 0, nbf * nbf * ngrid * sizeof(double));
   
   using row_major_mat = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
   using const_row_major_map = Eigen::Map< const row_major_mat >;
@@ -97,7 +105,6 @@ int main(int argc, char** argv) {
   using col_major_map = Eigen::Map< col_major_mat >;
 
   // correctness - libint implementation
-  
   for( int k = 0; k < ngrid; ++k ) {
     auto& engine = engines.at(k);
     const auto& engine_buf = engine.results();
@@ -111,10 +118,22 @@ int main(int argc, char** argv) {
       for( int i = 0; i < basis.size(); ++i) {
         auto bf_i = shell2bf[i];
         auto ni   = basis[i].size();
-
-	engine.compute( basis[i], basis[j] );
-	const_row_major_map buf_map( engine_buf[0], ni, nj );
-	A_k.block( bf_i, bf_j, ni, nj ) = buf_map;
+	
+	if((i == lA) && (j == lB)) {
+	  std::cout << basis[i].contr[0].l << " " << basis[j].contr[0].l << std::endl;
+	  
+	  engine.compute( basis[i], basis[j] );
+	
+	  const_row_major_map buf_map( engine_buf[0], ni, nj );
+	  A_k.block( bf_i, bf_j, ni, nj ) = buf_map;
+	} else if((i == lB) && (j == lA)) {
+	  std::cout << basis[i].contr[0].l << " " << basis[j].contr[0].l << std::endl;
+	  
+	  engine.compute( basis[i], basis[j] );
+	
+	  const_row_major_map buf_map( engine_buf[0], ni, nj );
+	  A_k.block( bf_i, bf_j, ni, nj ) = buf_map;
+	}
       }
     }
   }
@@ -136,19 +155,14 @@ int main(int argc, char** argv) {
 
   // correctness - own implementation
 
-  std::vector<point>  _points(ngrid);
-  std::vector<double> _points_transposed(3 * ngrid);
-  
+  std::vector< point > _points;
+
   _points.resize(ngrid); 
 
   for( int i = 0; i < ngrid; ++i ){
     _points[i].x = grid_points[i][0];
     _points[i].y = grid_points[i][1];
     _points[i].z = grid_points[i][2];
-
-    _points_transposed[i + 0 * ngrid] = grid_points[i][0];
-    _points_transposed[i + 1 * ngrid] = grid_points[i][1];
-    _points_transposed[i + 2 * ngrid] = grid_points[i][2];
   }
   
   std::vector< shells > _shells;
@@ -182,58 +196,48 @@ int main(int argc, char** argv) {
   double *Gi = G_own.data();
   double *Gj = G_own.data();
 
-  std::cout << nshells << std::endl;
-
-  struct timeval start, end;
-
-  gettimeofday(&start, NULL);
   int ioff_cart = 0;
   for( int i = 0; i < nshells; ++i) {
     shells bra_shell = _shells[i];
     int bra_cart_size = (bra_shell.L + 1) * (bra_shell.L + 2) / 2;
-
+      
     int joff_cart = 0;
     for( int j = 0; j <= i; ++j) {
       shells ket_shell = _shells[j];
       int ket_cart_size = (ket_shell.L + 1) * (ket_shell.L + 2) / 2;
 
-      XCPU::compute_integral_shell_pair(ngrid,
-					i,
-					j,
-					_shells.data(),
-					_points_transposed.data(),
-					(Xi + ioff_cart * ngrid),
-					(Xj + joff_cart * ngrid),
-					ngrid,
-					(Gi + ioff_cart * ngrid),
-					(Gj + joff_cart * ngrid),
-					ngrid,
-					w.data(),
-					boys_table);
-<<<<<<< HEAD
-      
-=======
-	
->>>>>>> ed141ba35515de692caaaebf67e7ccea14888c2b
+      if((i == lA) && (j == lB)) {
+	std::cout << bra_shell.L << " " << ket_shell.L << std::endl;
+	compute_integral_shell_pair(ngrid,
+				    i,
+				    j,
+				    _shells.data(),
+				    _points.data(),
+				    (Xi + ioff_cart * ngrid),
+				    (Xj + joff_cart * ngrid),
+				    1,
+				    ngrid, 
+				    (Gi + ioff_cart * ngrid),
+				    (Gj + joff_cart * ngrid),
+				    1,
+				    ngrid,
+				    w.data());
+      }
       joff_cart += ket_cart_size;
     }
-
-    ioff_cart += bra_cart_size;
+    ioff_cart += bra_cart_size;  
   }
 
-  gettimeofday(&end, NULL);
-  
   int correct = 1;
   
   for( int i = 0; i < nbf * ngrid; ++i) {
-    if((fabs(G_libint[i] - G_own[i]) > 1e-6) || std::isnan(G_own[i])) {
-      printf("%lf %lf\n", G_libint[i], G_own[i]);
+    if(fabs(G_libint[i] - G_own[i]) > 1e-6) {
+      printf("%lf - %lf = %lf\n", G_libint[i], G_own[i], G_libint[i] - G_own[i]);
       correct = 0;
     }
   }
 
-  std::cout << "Correctness: " << correct << "\tExecution: "<< 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) << std::endl;
+  std::cout << "Correctness: " << correct << std::endl;
   
   libint2::finalize();  // done with libint
-  XCPU::boys_finalize(boys_table);
 }

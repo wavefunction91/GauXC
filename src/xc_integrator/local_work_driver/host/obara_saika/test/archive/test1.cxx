@@ -172,6 +172,20 @@ int main(int argc, char** argv) {
     }
   }
 
+  shell_pair *shpairs = new shell_pair[nshells * (nshells + 1) / 2];
+  
+  int offset = 0;
+  for( int i = 0; i < nshells; ++i) {
+    for( int j = 0; j <= i; ++j) {
+      if( _shells[i].L >= _shells[j].L )
+	generate_shell_pair(_shells[i], _shells[j], shpairs[offset]);
+      else
+	generate_shell_pair(_shells[j], _shells[i], shpairs[offset]);
+
+      offset++;
+    }
+  }
+  
   std::vector<double> G_own( ngrid * nbf );
   for(int i = 0; i < ngrid * nbf; ++i) {
     G_own[i] = 0.0;
@@ -187,6 +201,7 @@ int main(int argc, char** argv) {
   struct timeval start, end;
 
   gettimeofday(&start, NULL);
+  offset = 0;
   int ioff_cart = 0;
   for( int i = 0; i < nshells; ++i) {
     shells bra_shell = _shells[i];
@@ -197,24 +212,22 @@ int main(int argc, char** argv) {
       shells ket_shell = _shells[j];
       int ket_cart_size = (ket_shell.L + 1) * (ket_shell.L + 2) / 2;
 
-      XCPU::compute_integral_shell_pair(ngrid,
-					i,
-					j,
-					_shells.data(),
-					_points_transposed.data(),
-					(Xi + ioff_cart * ngrid),
-					(Xj + joff_cart * ngrid),
-					ngrid,
-					(Gi + ioff_cart * ngrid),
-					(Gj + joff_cart * ngrid),
-					ngrid,
-					w.data(),
-					boys_table);
-<<<<<<< HEAD
+      XCPU::compute_integral_shell_pair_v0(ngrid,
+					   i == j,
+					   _shells[i].L,
+					   _shells[j].L,
+					   shparis[offset],
+					   _points_transposed.data(),
+					   (Xi + ioff_cart * ngrid),
+					   (Xj + joff_cart * ngrid),
+					   ngrid,
+					   (Gi + ioff_cart * ngrid),
+					   (Gj + joff_cart * ngrid),
+					   ngrid,
+					   w.data(),
+					   boys_table);
+      offset++;
       
-=======
-	
->>>>>>> ed141ba35515de692caaaebf67e7ccea14888c2b
       joff_cart += ket_cart_size;
     }
 
@@ -233,6 +246,16 @@ int main(int argc, char** argv) {
   }
 
   std::cout << "Correctness: " << correct << "\tExecution: "<< 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) << std::endl;
+  
+  offset = 0;
+  for( int i = 0; i < nshells; ++i) {
+    for( int j = 0; j <= i; ++j) {
+      delete shpairs[offset].prim_pairs;
+      offset++;
+    }
+  }
+
+  delete shpairs;
   
   libint2::finalize();  // done with libint
   XCPU::boys_finalize(boys_table);
