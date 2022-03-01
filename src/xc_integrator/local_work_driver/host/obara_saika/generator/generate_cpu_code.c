@@ -634,7 +634,8 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
     fprintf(f, "         constexpr double Z_PA = 0.0;\n");
     fprintf(f, "\n");
   }
-  fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;\n");
+  //fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;\n");
+  fprintf(f, "         double eval = shpair.prim_pairs[ij].K_coeff_prod;\n");
   fprintf(f, "\n");
   
   sprintf(prefix, "SIMD");
@@ -697,7 +698,8 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
     fprintf(f, "         constexpr double Z_PA = 0.0;\n");
     fprintf(f, "\n");
   }
-  fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;\n");
+  //fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;\n");
+  fprintf(f, "         double eval = shpair.prim_pairs[ij].K_coeff_prod;\n");
   fprintf(f, "\n");
 
   sprintf(prefix, "SIMD");
@@ -724,7 +726,7 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "         }\n\n");
   
   fprintf(f, "         // Evaluate Boys function\n");
-  fprintf(f, "         boys_elements<%d>(NPTS_LOCAL, Tval, Tval_inv_e, FmT, boys_table);\n", 2 * lA);
+  fprintf(f, "         boys_elements<%d>(npts_inner, Tval, Tval_inv_e, FmT, boys_table);\n", 2 * lA);
   fprintf(f, "\n");
 
   sprintf(prefix, "SIMD");
@@ -850,7 +852,8 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "         double yP = shpair.prim_pairs[ij].P.y;\n");
   fprintf(f, "         double zP = shpair.prim_pairs[ij].P.z;\n");
   fprintf(f, "\n");
-  fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;\n");
+  //fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;\n");
+  fprintf(f, "         double eval = shpair.prim_pairs[ij].K_coeff_prod;\n");
   fprintf(f, "\n");
 
   sprintf(prefix, "SIMD");
@@ -919,7 +922,8 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "         double yP = shpair.prim_pairs[ij].P.y;\n");
   fprintf(f, "         double zP = shpair.prim_pairs[ij].P.z;\n");
   fprintf(f, "\n");
-  fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;\n");
+  //fprintf(f, "         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;\n");
+  fprintf(f, "         double eval = shpair.prim_pairs[ij].K_coeff_prod;\n");
   fprintf(f, "\n");
 
   sprintf(prefix, "SIMD");
@@ -946,7 +950,7 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "         }\n\n");
   
   fprintf(f, "         // Evaluate Boys function\n");
-  fprintf(f, "         boys_elements<%d>(NPTS_LOCAL, Tval, Tval_inv_e, FmT, boys_table);\n", lA + lB);
+  fprintf(f, "         boys_elements<%d>(npts_inner, Tval, Tval_inv_e, FmT, boys_table);\n", lA + lB);
   fprintf(f, "\n");
 
   sprintf(prefix, "SIMD");
@@ -1135,7 +1139,7 @@ void generate_main_files(int lA) {
   fprintf(f, "   for(int i = 0, ij = 0; i < nprim_A; ++i       )\n");
   fprintf(f, "   for(int j = 0        ; j < nprim_B; ++j, ++ij ) {\n");
   fprintf(f, "      auto& pair = AB.prim_pairs[ij];\n");
-  fprintf(f, "      pair.coeff_prod = A.coeff[i].coeff * B.coeff[j].coeff;\n\n");
+  fprintf(f, "      //pair.coeff_prod = A.coeff[i].coeff * B.coeff[j].coeff;\n\n");
 
   fprintf(f, "      const auto alpha_A = A.coeff[i].alpha;\n");
   fprintf(f, "      const auto alpha_B = B.coeff[j].alpha;\n\n");
@@ -1155,7 +1159,7 @@ void generate_main_files(int lA) {
   fprintf(f, "      pair.PB.y = pair.P.y - yB;\n");
   fprintf(f, "      pair.PB.z = pair.P.z - zB;\n\n");
 
-  fprintf(f, "      pair.K = 2 * M_PI * gamma_inv * std::exp( - alpha_A * alpha_B * dAB * gamma_inv );\n");
+  fprintf(f, "      pair.K = 2 * M_PI * gamma_inv * std::exp( - alpha_A * alpha_B * dAB * gamma_inv ) * A.coeff[i].coeff * B.coeff[j].coeff;\n");
   fprintf(f, "   }\n");
   fprintf(f, "}\n");
   

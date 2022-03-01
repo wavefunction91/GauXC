@@ -88,6 +88,7 @@ int main(int argc, char** argv) {
 
   // Compute A
   std::vector<double> A( nbf * nbf * ngrid );
+  memset(&A[0], 0, nbf * nbf * ngrid * sizeof(double));
   
   using row_major_mat = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
   using const_row_major_map = Eigen::Map< const row_major_mat >;
@@ -209,7 +210,7 @@ int main(int argc, char** argv) {
 					ngrid,
 					w.data(),
 					boys_table);
-	
+      
       joff_cart += ket_cart_size;
     }
 
