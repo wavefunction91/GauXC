@@ -1070,10 +1070,12 @@ void generate_main_files(int lA) {
   fprintf(f, "#define __MY_INTEGRAL_OBARA_SAIKA\n");
   fprintf(f, "\n");
   fprintf(f, "namespace XCPU {\n");
+  fprintf(f, "void generate_shell_pair( const shells& A, const shells& B, shell_pair& AB);\n");
   fprintf(f, "void compute_integral_shell_pair(size_t npts,\n");
-  fprintf(f, "                  int i,\n");
-  fprintf(f, "                  int j,\n");
-  fprintf(f, "                  shells *shell_list,\n");
+  fprintf(f, "                  int is_diag,\n");
+  fprintf(f, "                  int lA,\n");
+  fprintf(f, "                  int lB,\n");
+  fprintf(f, "                  shell_pair &shpair,\n");
   fprintf(f, "                  double *points,\n");
   fprintf(f, "                  double *Xi,\n");
   fprintf(f, "                  double *Xj,\n");
@@ -1158,16 +1160,22 @@ void generate_main_files(int lA) {
   fprintf(f, "      pair.PB.x = pair.P.x - xB;\n");
   fprintf(f, "      pair.PB.y = pair.P.y - yB;\n");
   fprintf(f, "      pair.PB.z = pair.P.z - zB;\n\n");
+<<<<<<< HEAD
 
   fprintf(f, "      pair.K = 2 * M_PI * gamma_inv * std::exp( - alpha_A * alpha_B * dAB * gamma_inv ) * A.coeff[i].coeff * B.coeff[j].coeff;\n");
+=======
+  
+  fprintf(f, "      pair.K_coeff_prod = 2 * M_PI * gamma_inv * std::exp( - alpha_A * alpha_B * dAB * gamma_inv ) * A.coeff[i].coeff * B.coeff[j].coeff;\n");
+>>>>>>> 95003a054eaeb7ccfeabc7e81aaa0439f60d6524
   fprintf(f, "   }\n");
   fprintf(f, "}\n");
   
   fprintf(f, "\n");
   fprintf(f, "void compute_integral_shell_pair(size_t npts,\n");
-  fprintf(f, "                  int i,\n");
-  fprintf(f, "                  int j,\n");
-  fprintf(f, "                  shells *shell_list,\n");
+  fprintf(f, "                  int is_diag,\n");
+  fprintf(f, "                  int lA,\n");
+  fprintf(f, "                  int lB,\n");
+  fprintf(f, "                  shell_pair &shpair,\n");
   fprintf(f, "                  double *points,\n");
   fprintf(f, "                  double *Xi,\n");
   fprintf(f, "                  double *Xj,\n");
@@ -1177,16 +1185,7 @@ void generate_main_files(int lA) {
   fprintf(f, "                  int ldG, \n");
   fprintf(f, "                  double *weights, \n");
   fprintf(f, "                  double *boys_table) {\n");	   
-
-  fprintf(f, "   shell_pair shpair;\n");
-  fprintf(f, "   // Account for permutational symmetry in kernels\n");
-  fprintf(f, "   if( shell_list[i].L >= shell_list[j].L )\n");
-  fprintf(f, "     generate_shell_pair(shell_list[i], shell_list[j], shpair);\n");
-  fprintf(f, "   else\n");
-  fprintf(f, "     generate_shell_pair(shell_list[j], shell_list[i], shpair);\n\n");
-  fprintf(f, "   if (i == j) {\n");
-  fprintf(f, "      int lA = shell_list[i].L;\n");
-  fprintf(f, "\n");
+  fprintf(f, "   if (is_diag) {\n");
   fprintf(f, "      if(lA == %d) {\n", 0);
   fprintf(f, "         integral_%d(npts,\n", 0);
   fprintf(f, "                    shpair,\n");
@@ -1217,9 +1216,6 @@ void generate_main_files(int lA) {
   fprintf(f, "         printf(\"Type not defined!\\n\");\n");
   fprintf(f, "      }\n");  
   fprintf(f, "   } else {\n");
-  fprintf(f, "      int lA = shell_list[i].L;\n");
-  fprintf(f, "      int lB = shell_list[j].L;\n");
-  fprintf(f, "\n");
   fprintf(f, "      if((lA == %d) && (lB == %d)) {\n", 0, 0);
   fprintf(f, "         integral_%d_%d(npts,\n", 0, 0);
   fprintf(f, "                      shpair,\n");
@@ -1282,8 +1278,8 @@ void generate_main_files(int lA) {
   fprintf(f, "         printf(\"Type not defined!\\n\");\n");
   fprintf(f, "      }\n");
   fprintf(f, "   }\n");  
-  fprintf(f, "  delete shpair.prim_pairs;\n" );
   fprintf(f, "}\n");
+  
   fprintf(f, "}\n");
   
   fclose(f);  

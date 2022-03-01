@@ -6,12 +6,22 @@ CC = g++
 CONST_LIB = ../../../../../../include/
 LIBINT_ROOT = /home/dtpopovici/Executables/libint
 EIGEN_DIR   = /usr/include/eigen3
+<<<<<<< HEAD
+
+#CONST_LIB = ../../../../../../include/
+#LIBINT_ROOT = /global/homes/t/thom13/Executables/libint_gnu/
+#EIGEN_DIR   = /global/homes/t/thom13/Executables/Eigen/include/eigen3/
+=======
+>>>>>>> 95003a054eaeb7ccfeabc7e81aaa0439f60d6524
 
 #CONST_LIB = ../../../../../../include/
 #LIBINT_ROOT = /global/homes/t/thom13/Executables/libint_gnu/
 #EIGEN_DIR   = /global/homes/t/thom13/Executables/Eigen/include/eigen3/
 
-
 compile:
+<<<<<<< HEAD
 	$(CC) test.cxx  ../obara_saika.a $(LIBINT_ROOT)/lib/libint2.a -o test.x  -I$(CONST_LIB) -I$(LIBINT_ROOT)/include -I$(EIGEN_DIR) -I../include/ -std=c++1z
 	$(CC) test.cxx  ../obara_saika.a $(LIBINT_ROOT)/lib/libint2.a -o test_experimental.x  -I$(CONST_LIB) -I$(LIBINT_ROOT)/include -I$(EIGEN_DIR) -I../include/ -std=c++1z
+=======
+	$(CC) test_experimental.cxx  ../obara_saika.a $(LIBINT_ROOT)/lib/libint2.a -o test_experimental.x  -I$(CONST_LIB) -I$(LIBINT_ROOT)/include -I$(EIGEN_DIR) -I../include/ -std=c++1z
+>>>>>>> 95003a054eaeb7ccfeabc7e81aaa0439f60d6524

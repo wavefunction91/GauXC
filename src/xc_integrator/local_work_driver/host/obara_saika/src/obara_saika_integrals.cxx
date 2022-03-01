@@ -73,6 +73,7 @@ namespace XCPU {
 	pair.PB.x = pair.P.x - xB;
 	pair.PB.y = pair.P.y - yB;
 	pair.PB.z = pair.P.z - zB;
+<<<<<<< HEAD
 
 	pair.K_coeff_prod = 2 * M_PI * gamma_inv * std::exp( - alpha_A * alpha_B * dAB * gamma_inv ) * A.coeff[i].coeff * B.coeff[j].coeff;
       }
@@ -100,7 +101,28 @@ namespace XCPU {
 
     if (i == j) {
       int lA = shell_list[i].L;
+=======
+>>>>>>> 95003a054eaeb7ccfeabc7e81aaa0439f60d6524
 
+	pair.K_coeff_prod = 2 * M_PI * gamma_inv * std::exp( - alpha_A * alpha_B * dAB * gamma_inv ) * A.coeff[i].coeff * B.coeff[j].coeff;
+      }
+  }
+  
+  void compute_integral_shell_pair(size_t npts,
+				   int is_diag,
+				   int lA,
+				   int lB,
+				   shell_pair &shpair,
+				   double *points,
+				   double *Xi,
+				   double *Xj,
+				   int ldX,
+				   double *Gi,
+				   double *Gj,
+				   int ldG, 
+				   double *weights, 
+				   double *boys_table) {
+    if (is_diag) {
       if(lA == 0) {
 	integral_0(npts,
 		   shpair,
@@ -155,9 +177,12 @@ namespace XCPU {
 	printf("Type not defined!\n");
       }
     } else {
+<<<<<<< HEAD
       int lA = shell_list[i].L;
       int lB = shell_list[j].L;
 
+=======
+>>>>>>> 95003a054eaeb7ccfeabc7e81aaa0439f60d6524
       if((lA == 0) && (lB == 0)) {
 	integral_0_0(npts,
 		     shpair,
@@ -462,6 +487,7 @@ namespace XCPU {
 	printf("Type not defined!\n");
       }
     }
+<<<<<<< HEAD
     delete shpair.prim_pairs;
   }
 
@@ -838,5 +864,7 @@ namespace XCPU {
 	printf("Type not defined!\n");
       }
     }
+=======
+>>>>>>> 95003a054eaeb7ccfeabc7e81aaa0439f60d6524
   }  
 }

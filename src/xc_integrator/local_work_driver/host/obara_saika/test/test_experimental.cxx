@@ -178,9 +178,15 @@ int main(int argc, char** argv) {
   for( int i = 0; i < nshells; ++i) {
     for( int j = 0; j <= i; ++j) {
       if( _shells[i].L >= _shells[j].L )
+<<<<<<< HEAD
 	generate_shell_pair(_shells[i], _shells[j], shpairs[offset]);
       else
 	generate_shell_pair(_shells[j], _shells[i], shpairs[offset]);
+=======
+	XCPU::generate_shell_pair(_shells[i], _shells[j], shpairs[offset]);
+      else
+	XCPU::generate_shell_pair(_shells[j], _shells[i], shpairs[offset]);
+>>>>>>> 95003a054eaeb7ccfeabc7e81aaa0439f60d6524
 
       offset++;
     }
@@ -212,6 +218,7 @@ int main(int argc, char** argv) {
       shells ket_shell = _shells[j];
       int ket_cart_size = (ket_shell.L + 1) * (ket_shell.L + 2) / 2;
 
+<<<<<<< HEAD
       XCPU::compute_integral_shell_pair_v0(ngrid,
 					   i == j,
 					   _shells[i].L,
@@ -228,6 +235,23 @@ int main(int argc, char** argv) {
 					   boys_table);
       offset++;
       
+=======
+      XCPU::compute_integral_shell_pair(ngrid,
+					i == j,
+					_shells[i].L,
+					_shells[j].L,
+					shparis[offset],
+					_points_transposed.data(),
+					(Xi + ioff_cart * ngrid),
+					(Xj + joff_cart * ngrid),
+					ngrid,
+					(Gi + ioff_cart * ngrid),
+					(Gj + joff_cart * ngrid),
+					ngrid,
+					w.data(),
+					boys_table);
+      offset++;      
+>>>>>>> 95003a054eaeb7ccfeabc7e81aaa0439f60d6524
       joff_cart += ket_cart_size;
     }
 
