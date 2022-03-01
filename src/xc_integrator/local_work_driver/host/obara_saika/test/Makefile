@@ -11,7 +11,5 @@ EIGEN_DIR   = /usr/include/eigen3
 #LIBINT_ROOT = /global/homes/t/thom13/Executables/libint_gnu/
 #EIGEN_DIR   = /global/homes/t/thom13/Executables/Eigen/include/eigen3/
 
-
 compile:
-	$(CC) test.cxx  ../obara_saika.a $(LIBINT_ROOT)/lib/libint2.a -o test.x  -I$(CONST_LIB) -I$(LIBINT_ROOT)/include -I$(EIGEN_DIR) -I../include/ -std=c++1z
-	$(CC) test.cxx  ../obara_saika.a $(LIBINT_ROOT)/lib/libint2.a -o test_experimental.x  -I$(CONST_LIB) -I$(LIBINT_ROOT)/include -I$(EIGEN_DIR) -I../include/ -std=c++1z
+	$(CC) test_experimental.cxx  ../obara_saika.a $(LIBINT_ROOT)/lib/libint2.a -o test_experimental.x  -I$(CONST_LIB) -I$(LIBINT_ROOT)/include -I$(EIGEN_DIR) -I../include/ -std=c++1z

@@ -1070,20 +1070,8 @@ void generate_main_files(int lA) {
   fprintf(f, "#define __MY_INTEGRAL_OBARA_SAIKA\n");
   fprintf(f, "\n");
   fprintf(f, "namespace XCPU {\n");
+  fprintf(f, "void generate_shell_pair( const shells& A, const shells& B, shell_pair& AB);\n");
   fprintf(f, "void compute_integral_shell_pair(size_t npts,\n");
-  fprintf(f, "                  int i,\n");
-  fprintf(f, "                  int j,\n");
-  fprintf(f, "                  shells *shell_list,\n");
-  fprintf(f, "                  double *points,\n");
-  fprintf(f, "                  double *Xi,\n");
-  fprintf(f, "                  double *Xj,\n");
-  fprintf(f, "                  int ldX,\n");	 
-  fprintf(f, "                  double *Gi,\n");
-  fprintf(f, "                  double *Gj,\n");
-  fprintf(f, "                  int ldG, \n");
-  fprintf(f, "                  double *weights, \n");
-  fprintf(f, "                  double *boys_table);\n");
-  fprintf(f, "void compute_integral_shell_pair_v0(size_t npts,\n");
   fprintf(f, "                  int is_diag,\n");
   fprintf(f, "                  int lA,\n");
   fprintf(f, "                  int lB,\n");
@@ -1179,128 +1167,6 @@ void generate_main_files(int lA) {
   
   fprintf(f, "\n");
   fprintf(f, "void compute_integral_shell_pair(size_t npts,\n");
-  fprintf(f, "                  int i,\n");
-  fprintf(f, "                  int j,\n");
-  fprintf(f, "                  shells *shell_list,\n");
-  fprintf(f, "                  double *points,\n");
-  fprintf(f, "                  double *Xi,\n");
-  fprintf(f, "                  double *Xj,\n");
-  fprintf(f, "                  int ldX,\n");	 
-  fprintf(f, "                  double *Gi,\n");
-  fprintf(f, "                  double *Gj,\n");
-  fprintf(f, "                  int ldG, \n");
-  fprintf(f, "                  double *weights, \n");
-  fprintf(f, "                  double *boys_table) {\n");	   
-
-  fprintf(f, "   shell_pair shpair;\n");
-  fprintf(f, "   // Account for permutational symmetry in kernels\n");
-  fprintf(f, "   if( shell_list[i].L >= shell_list[j].L )\n");
-  fprintf(f, "     generate_shell_pair(shell_list[i], shell_list[j], shpair);\n");
-  fprintf(f, "   else\n");
-  fprintf(f, "     generate_shell_pair(shell_list[j], shell_list[i], shpair);\n\n");
-  fprintf(f, "   if (i == j) {\n");
-  fprintf(f, "      int lA = shell_list[i].L;\n");
-  fprintf(f, "\n");
-  fprintf(f, "      if(lA == %d) {\n", 0);
-  fprintf(f, "         integral_%d(npts,\n", 0);
-  fprintf(f, "                    shpair,\n");
-  fprintf(f, "                    points,\n");
-  fprintf(f, "                    Xi,\n");
-  fprintf(f, "                    ldX,\n");
-  fprintf(f, "                    Gi,\n");
-  fprintf(f, "                    ldG, \n");
-  fprintf(f, "                    weights, \n");
-  fprintf(f, "                    boys_table);\n");	   
-  fprintf(f, "      } else ");
-
-  for(int i = 1; i <= lA; ++i) {
-    fprintf(f, "if(lA == %d) {\n", i);
-    fprintf(f, "        integral_%d(npts,\n", i);
-    fprintf(f, "                   shpair,\n");
-    fprintf(f, "                   points,\n");
-    fprintf(f, "                   Xi,\n");
-    fprintf(f, "                   ldX,\n");
-    fprintf(f, "                   Gi,\n");
-    fprintf(f, "                   ldG, \n");
-    fprintf(f, "                   weights, \n");
-    fprintf(f, "                   boys_table);\n");	   
-    fprintf(f, "      } else ");
-  }
-
-  fprintf(f, "{\n");
-  fprintf(f, "         printf(\"Type not defined!\\n\");\n");
-  fprintf(f, "      }\n");  
-  fprintf(f, "   } else {\n");
-  fprintf(f, "      int lA = shell_list[i].L;\n");
-  fprintf(f, "      int lB = shell_list[j].L;\n");
-  fprintf(f, "\n");
-  fprintf(f, "      if((lA == %d) && (lB == %d)) {\n", 0, 0);
-  fprintf(f, "         integral_%d_%d(npts,\n", 0, 0);
-  fprintf(f, "                      shpair,\n");
-  fprintf(f, "                      points,\n");
-  fprintf(f, "                      Xi,\n");
-  fprintf(f, "                      Xj,\n");
-  fprintf(f, "                      ldX,\n");
-  fprintf(f, "                      Gi,\n");
-  fprintf(f, "                      Gj,\n");
-  fprintf(f, "                      ldG, \n");
-  fprintf(f, "                      weights, \n");
-  fprintf(f, "                      boys_table);\n");	   
-  fprintf(f, "      } else ");
-
-  for(int i = 1; i <= lA; ++i) {
-    for(int j = 0; j < i; ++j) {
-      fprintf(f, "if((lA == %d) && (lB == %d)) {\n", i, j);
-      fprintf(f, "            integral_%d_%d(npts,\n", i, j);
-      fprintf(f, "                         shpair,\n");
-      fprintf(f, "                         points,\n");
-      fprintf(f, "                         Xi,\n");
-      fprintf(f, "                         Xj,\n");
-      fprintf(f, "                         ldX,\n");
-      fprintf(f, "                         Gi,\n");
-      fprintf(f, "                         Gj,\n");
-      fprintf(f, "                         ldG, \n");
-      fprintf(f, "                         weights, \n");
-      fprintf(f, "                         boys_table);\n");	   
-      fprintf(f, "      } else if((lA == %d) && (lB == %d)) {\n", j, i);
-      fprintf(f, "         integral_%d_%d(npts,\n", i, j);
-      fprintf(f, "                      shpair,\n");
-      fprintf(f, "                      points,\n");
-      fprintf(f, "                      Xj,\n");
-      fprintf(f, "                      Xi,\n");
-      fprintf(f, "                      ldX,\n");
-      fprintf(f, "                      Gj,\n");
-      fprintf(f, "                      Gi,\n");
-      fprintf(f, "                      ldG, \n");
-      fprintf(f, "                      weights, \n");
-      fprintf(f, "                      boys_table);\n");	   
-      fprintf(f, "      } else ");
-    }
-
-    fprintf(f, "if((lA == %d) && (lB == %d)) {\n", i, i);
-    fprintf(f, "        integral_%d_%d(npts,\n", i, i);
-    fprintf(f, "                     shpair,\n");
-    fprintf(f, "                     points,\n");
-    fprintf(f, "                     Xi,\n");
-    fprintf(f, "                     Xj,\n");
-    fprintf(f, "                     ldX,\n");
-    fprintf(f, "                     Gi,\n");
-    fprintf(f, "                     Gj,\n");
-    fprintf(f, "                     ldG, \n");
-    fprintf(f, "                     weights, \n");
-    fprintf(f, "                     boys_table);\n");	   
-    fprintf(f, "      } else ");
-  }
-
-  fprintf(f, "{\n");
-  fprintf(f, "         printf(\"Type not defined!\\n\");\n");
-  fprintf(f, "      }\n");
-  fprintf(f, "   }\n");  
-  fprintf(f, "  delete shpair.prim_pairs;\n" );
-  fprintf(f, "}\n");
-
-  fprintf(f, "\n");
-  fprintf(f, "void compute_integral_shell_pair_v0(size_t npts,\n");
   fprintf(f, "                  int is_diag,\n");
   fprintf(f, "                  int lA,\n");
   fprintf(f, "                  int lB,\n");

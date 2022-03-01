@@ -4,13 +4,12 @@
 #include "integral_data_types.hpp"
 
 namespace XCPU {
-
   void generate_shell_pair( const shells& A, const shells& B, shell_pair& AB);
-  
   void compute_integral_shell_pair(size_t npts,
-				   int i,
-				   int j,
-				   shells *shell_list,
+				   int is_diag,
+				   int lA,
+				   int lB,
+				   shell_pair &shpair,
 				   double *points,
 				   double *Xi,
 				   double *Xj,
@@ -20,21 +19,6 @@ namespace XCPU {
 				   int ldG, 
 				   double *weights, 
 				   double *boys_table);
-
-  void compute_integral_shell_pair_v0(size_t npts,
-				      int is_diag,
-				      int lA,
-				      int lB,
-				      shell_pair &shpair,
-				      double *points,
-				      double *Xi,
-				      double *Xj,
-				      int ldX,
-				      double *Gi,
-				      double *Gj,
-				      int ldG, 
-				      double *weights, 
-				      double *boys_table);
 }
 
 #endif
