@@ -13,13 +13,10 @@
 #include "integral_2_2.hu"
 namespace XGPU {
 
-void generate_shell_pair( const shells& A, const shells& B, shell_pair& AB) {
+void generate_shell_pair( const shells& A, const shells& B, prim_pairs *prim_pair) {
    // L Values
-   AB.lA = A.L;
-   AB.lB = B.L;
-
-   AB.rA = A.origin;
-   AB.rB = B.origin;
+   int lA = A.L;
+   int lB = B.L;
 
    const auto xA = A.origin.x;
    const auto yA = A.origin.y;
@@ -29,17 +26,16 @@ void generate_shell_pair( const shells& A, const shells& B, shell_pair& AB) {
    const auto yB = B.origin.y;
    const auto zB = B.origin.z;
 
-   AB.rAB.x = xA - xB;
-   AB.rAB.y = yA - yB;
-   AB.rAB.z = zA - zB;
+   double rABx = xA - xB;
+   double rABy = yA - yB;
+   double rABz = zA - zB;
 
-   const double dAB = AB.rAB.x*AB.rAB.x + AB.rAB.y*AB.rAB.y + AB.rAB.z*AB.rAB.z;
+   const double dAB = rABx*rABx + rABy*rABy + rABz*rABz;
 
    const int nprim_A = A.m;
    const int nprim_B = B.m;
    const int np = nprim_A * nprim_B;
 
-   prim_pair *prim_pairs = new prim_pair[np];
    for(int i = 0, ij = 0; i < nprim_A; ++i       )
    for(int j = 0        ; j < nprim_B; ++j, ++ij ) {
       auto& pair = prim_pairs[ij];
@@ -47,11 +43,11 @@ void generate_shell_pair( const shells& A, const shells& B, shell_pair& AB) {
       const auto alpha_B = B.coeff[j].alpha;
 
       pair.gamma = alpha_A + alpha_B;
-      const auto gamma_inv = 1. / pair.gamma;
+      pair.gamma_inv = 1. / pair.gamma;
 
-      pair.P.x = (alpha_A * xA + alpha_B * xB) * gamma_inv;
-      pair.P.y = (alpha_A * yA + alpha_B * yB) * gamma_inv;
-      pair.P.z = (alpha_A * zA + alpha_B * zB) * gamma_inv;
+      pair.P.x = (alpha_A * xA + alpha_B * xB) * pair.gamma_inv;
+      pair.P.y = (alpha_A * yA + alpha_B * yB) * pair.gamma_inv;
+      pair.P.z = (alpha_A * zA + alpha_B * zB) * pair.gamma_inv;
 
       pair.PA.x = pair.P.x - xA;
       pair.PA.y = pair.P.y - yA;
@@ -61,11 +57,8 @@ void generate_shell_pair( const shells& A, const shells& B, shell_pair& AB) {
       pair.PB.y = pair.P.y - yB;
       pair.PB.z = pair.P.z - zB;
 
-      pair.K_coeff_prod = 2 * M_PI * A.coeff[i].coeff * B.coeff[j].coeff * gamma_inv * std::exp( - alpha_A * alpha_B * dAB * gamma_inv );
+      pair.K_coeff_prod = 2 * M_PI * A.coeff[i].coeff * B.coeff[j].coeff * pair.gamma_inv * std::exp( - alpha_A * alpha_B * dAB * pair.gamma_inv );
    }
-
-   AB.nprim_pair = np;
-   AB.prim_pairs = prim_pairs;
 
 }
 
@@ -75,9 +68,8 @@ void compute_integral_shell_pair(size_t npts,
                   int lB,
                   point rA,
                   point rB,
-                  point rAB,
-                  int nprim_pair,
-                  prim_pair *ppair,
+                  int nprim_pairs,
+                  prim_pair *prim_pairs,
                   double *points,
                   double *Xi,
                   double *Xj,
@@ -92,9 +84,8 @@ void compute_integral_shell_pair(size_t npts,
          integral_0<<<320, 128, 128 * 1 * sizeof(double)>>>(npts,
                                 rA,
                                 rB,
-                                rAB,
-                                nprim_pair,
-                                ppair,
+                                nprim_pairs,
+                                prim_pairs,
                                 points,
                                 Xi,
                                 ldX,
@@ -106,9 +97,8 @@ void compute_integral_shell_pair(size_t npts,
         integral_0<<<320, 128, 128 * 9 * sizeof(double)>>>(npts,
                                rA,
                                rB,
-                               rAB,
-                               nprim_pair,
-                               ppair,
+                               nprim_pairs,
+                               prim_pairs,
                                points,
                                Xi,
                                ldX,
@@ -120,9 +110,8 @@ void compute_integral_shell_pair(size_t npts,
         integral_0<<<320, 128, 128 * 31 * sizeof(double)>>>(npts,
                                rA,
                                rB,
-                               rAB,
-                               nprim_pair,
-                               ppair,
+                               nprim_pairs,
+                               prim_pairs,
                                points,
                                Xi,
                                ldX,
@@ -138,9 +127,8 @@ void compute_integral_shell_pair(size_t npts,
          integral_0_0<<<320, 128, 128 * 1 * sizeof(double)>>>(npts,
                                   rA,
                                   rB,
-                                  rAB,
-                                  nprim_pair,
-                                  ppair,
+                                  nprim_pairs,
+                                  prim_pairs,
                                   points,
                                   Xi,
                                   Xj,
@@ -154,9 +142,8 @@ void compute_integral_shell_pair(size_t npts,
          integral_1_0<<<320, 128, 128 * 3 * sizeof(double)>>>(npts,
                                   rA,
                                   rB,
-                                  rAB,
-                                  nprim_pair,
-                                  ppair,
+                                  nprim_pairs,
+                                  prim_pairs,
                                   points,
                                   Xi,
                                   Xj,
@@ -170,9 +157,8 @@ void compute_integral_shell_pair(size_t npts,
          integral_1_0<<<320, 128, 128 * 3 * sizeof(double)>>>(npts,
                                   rA,
                                   rB,
-                                  rAB,
-                                  nprim_pair,
-                                  ppair,
+                                  nprim_pairs,
+                                  prim_pairs,
                                   points,
                                   Xj,
                                   Xi,
@@ -186,9 +172,8 @@ void compute_integral_shell_pair(size_t npts,
         integral_1_1<<<320, 128, 128 * 9 * sizeof(double)>>>(npts,
                                  rA,
                                  rB,
-                                 rAB,
-                                 nprim_pair,
-                                 ppair,
+                                 nprim_pairs,
+                                 prim_pairs,
                                  points,
                                  Xi,
                                  Xj,
@@ -202,9 +187,8 @@ void compute_integral_shell_pair(size_t npts,
          integral_2_0<<<320, 128, 128 * 6 * sizeof(double)>>>(npts,
                                   rA,
                                   rB,
-                                  rAB,
-                                  nprim_pair,
-                                  ppair,
+                                  nprim_pairs,
+                                  prim_pairs,
                                   points,
                                   Xi,
                                   Xj,
@@ -218,9 +202,8 @@ void compute_integral_shell_pair(size_t npts,
          integral_2_0<<<320, 128, 128 * 6 * sizeof(double)>>>(npts,
                                   rA,
                                   rB,
-                                  rAB,
-                                  nprim_pair,
-                                  ppair,
+                                  nprim_pairs,
+                                  prim_pairs,
                                   points,
                                   Xj,
                                   Xi,
@@ -234,9 +217,8 @@ void compute_integral_shell_pair(size_t npts,
          integral_2_1<<<320, 128, 128 * 16 * sizeof(double)>>>(npts,
                                   rA,
                                   rB,
-                                  rAB,
-                                  nprim_pair,
-                                  ppair,
+                                  nprim_pairs,
+                                  prim_pairs,
                                   points,
                                   Xi,
                                   Xj,
@@ -250,9 +232,8 @@ void compute_integral_shell_pair(size_t npts,
          integral_2_1<<<320, 128, 128 * 16 * sizeof(double)>>>(npts,
                                   rA,
                                   rB,
-                                  rAB,
-                                  nprim_pair,
-                                  ppair,
+                                  nprim_pairs,
+                                  prim_pairs,
                                   points,
                                   Xj,
                                   Xi,
@@ -266,9 +247,8 @@ void compute_integral_shell_pair(size_t npts,
         integral_2_2<<<320, 128, 128 * 31 * sizeof(double)>>>(npts,
                                  rA,
                                  rB,
-                                 rAB,
-                                 nprim_pair,
-                                 ppair,
+                                 nprim_pairs,
+                                 prim_pairs,
                                  points,
                                  Xi,
                                  Xj,

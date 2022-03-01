@@ -15,9 +15,8 @@ namespace XGPU {
 __global__ void integral_2_0(size_t npts,
                              point rA,
                              point rB,
-                             point rAB,
-                             int nprim_pair,
-                             prim_pair *ppair,
+                             int nprim_pairs,
+                             prim_pair *prim_pairs,
                              double *_points,
                              double *Xi,
                              double *Xj,
@@ -35,18 +34,18 @@ __global__ void integral_2_0(size_t npts,
 
       for(int i = 0; i < 6; ++i) SCALAR_STORE((temp + i * blockDim.x + threadIdx.x), SCALAR_ZERO());
 
-      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {
-         double RHO = shpair.prim_pairs[ij].gamma;
-         double RHO_INV = 1.0 / RHO;
-         double X_PA = shpair.prim_pairs[ij].PA.x;
-         double Y_PA = shpair.prim_pairs[ij].PA.y;
-         double Z_PA = shpair.prim_pairs[ij].PA.z;
+      for(int ij = 0; ij < nprim_pairs; ++ij) {
+         double RHO = prim_pairs[ij].gamma;
+         double RHO_INV = prim_pairs[ij].gamma_inv;
+         double X_PA = prim_pairs[ij].PA.x;
+         double Y_PA = prim_pairs[ij].PA.y;
+         double Z_PA = prim_pairs[ij].PA.z;
 
-         double xP = shpair.prim_pairs[ij].P.x;
-         double yP = shpair.prim_pairs[ij].P.y;
-         double zP = shpair.prim_pairs[ij].P.z;
+         double xP = prim_pairs[ij].P.x;
+         double yP = prim_pairs[ij].P.y;
+         double zP = prim_pairs[ij].P.z;
 
-         double eval = shpair.prim_pairs[ij].K_coeff_prod;
+         double eval = prim_pairs[ij].K_coeff_prod;
 
          // Evaluate T Values
          SCALAR_TYPE xC = SCALAR_LOAD((_point_outer + p_inner + 0 * npts));

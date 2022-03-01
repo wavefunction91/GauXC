@@ -22,14 +22,9 @@ typedef struct {
   point PB;
 
   double gamma;
+  double gamma_inv;
+  
   double K_coeff_prod;
 } prim_pair;
-
-typedef struct {
-  int lA;
-  int lB;
-  point rA, rB;
-  point rAB;
-} shell_pair;
 
 #endif

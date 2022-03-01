@@ -561,9 +561,8 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "__global__ void integral_%d(size_t npts,\n", lA);
   fprintf(f, "                          point rA,\n");
   fprintf(f, "                          point rB,\n");
-  fprintf(f, "                          point rAB,\n");
-  fprintf(f, "                          int nprim_pair,\n");
-  fprintf(f, "                          prim_pair *ppair,\n");  
+  fprintf(f, "                          int nprim_pairs,\n");
+  fprintf(f, "                          prim_pair *prim_pairs,\n");  
   fprintf(f, "                          double *_points,\n");
   fprintf(f, "                          double *Xi,\n");
   fprintf(f, "                          int ldX,\n");
@@ -586,16 +585,16 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
   fprintf(f, "   for(size_t p_outer = blockIdx.x * blockDim.x; p_outer < npts; p_outer += gridDim.x * blockDim.x) {\n");
   fprintf(f, "      double *_point_outer = (_points + p_outer);\n\n");
   fprintf(f, "      size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer);\n\n");
-  fprintf(f, "      double xA = shpair.rA.x;\n");
-  fprintf(f, "      double yA = shpair.rA.y;\n");
-  fprintf(f, "      double zA = shpair.rA.z;\n");
+  fprintf(f, "      double xA = rA.x;\n");
+  fprintf(f, "      double yA = rA.y;\n");
+  fprintf(f, "      double zA = rA.z;\n");
   fprintf(f, "\n");
   fprintf(f, "      for(int i = 0; i < %d; ++i) SCALAR_STORE((temp + i * blockDim.x + threadIdx.x), SCALAR_ZERO());\n", size - partial_size);
   fprintf(f, "\n");
-  fprintf(f, "      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {\n");
-  fprintf(f, "         double RHO = shpair.prim_pairs[ij].gamma;\n");
+  fprintf(f, "      for(int ij = 0; ij < nprim_pairs; ++ij) {\n");
+  fprintf(f, "         double RHO = prim_pairs[ij].gamma;\n");
   if(lA > 0) {
-    fprintf(f, "         double RHO_INV = 1.0 / RHO;\n");
+    fprintf(f, "         double RHO_INV = prim_pairs[ij].gamma_inv;\n");
   }
   fprintf(f, "\n");
   if(lA != 0) {
@@ -604,7 +603,7 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
     fprintf(f, "         constexpr double Z_PA = 0.0;\n");
     fprintf(f, "\n");
   }
-  fprintf(f, "         double eval = shpair.prim_pairs[ij].K_coeff_prod;\n");
+  fprintf(f, "         double eval = prim_pairs[ij].K_coeff_prod;\n");
   fprintf(f, "\n");
   fprintf(f, "         // Evaluate T Values\n");
   
@@ -651,9 +650,8 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "__global__ void integral_%d_%d(size_t npts,\n", lA, lB);
   fprintf(f, "                             point rA,\n");
   fprintf(f, "                             point rB,\n");
-  fprintf(f, "                             point rAB,\n");
-  fprintf(f, "                             int nprim_pair,\n");
-  fprintf(f, "                             prim_pair *ppair,\n");
+  fprintf(f, "                             int nprim_pairs,\n");
+  fprintf(f, "                             prim_pair *prim_pairs,\n");
   fprintf(f, "                             double *_points,\n");
   fprintf(f, "                             double *Xi,\n");
   fprintf(f, "                             double *Xj,\n");
@@ -679,29 +677,29 @@ void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node 
   fprintf(f, "      double *_point_outer = (_points + p_outer);\n\n");
   fprintf(f, "      size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer);\n\n");
   if(lB != 0) {
-    fprintf(f, "      double X_AB = shpair.rAB.x;\n");
-    fprintf(f, "      double Y_AB = shpair.rAB.y;\n");
-    fprintf(f, "      double Z_AB = shpair.rAB.z;\n");
+    fprintf(f, "      double X_AB = rA.x - rB.x;\n");
+    fprintf(f, "      double Y_AB = rA.y - rB.y;\n");
+    fprintf(f, "      double Z_AB = rA.z - rB.z;\n");
     fprintf(f, "\n");
   }
   fprintf(f, "      for(int i = 0; i < %d; ++i) SCALAR_STORE((temp + i * blockDim.x + threadIdx.x), SCALAR_ZERO());\n", size - partial_size);
   fprintf(f, "\n");
-  fprintf(f, "      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {\n");
-  fprintf(f, "         double RHO = shpair.prim_pairs[ij].gamma;\n");
+  fprintf(f, "      for(int ij = 0; ij < nprim_pairs; ++ij) {\n");
+  fprintf(f, "         double RHO = prim_pairs[ij].gamma;\n");
   if(lA + lB > 1) {
-    fprintf(f, "         double RHO_INV = 1.0 / RHO;\n");
+    fprintf(f, "         double RHO_INV = prim_pairs[ij].gamma_inv;\n");
   }
   if(lA != 0) {
-    fprintf(f, "         double X_PA = shpair.prim_pairs[ij].PA.x;\n");
-    fprintf(f, "         double Y_PA = shpair.prim_pairs[ij].PA.y;\n");
-    fprintf(f, "         double Z_PA = shpair.prim_pairs[ij].PA.z;\n");
+    fprintf(f, "         double X_PA = prim_pairs[ij].PA.x;\n");
+    fprintf(f, "         double Y_PA = prim_pairs[ij].PA.y;\n");
+    fprintf(f, "         double Z_PA = prim_pairs[ij].PA.z;\n");
   }
   fprintf(f, "\n");
-  fprintf(f, "         double xP = shpair.prim_pairs[ij].P.x;\n");
-  fprintf(f, "         double yP = shpair.prim_pairs[ij].P.y;\n");
-  fprintf(f, "         double zP = shpair.prim_pairs[ij].P.z;\n");
+  fprintf(f, "         double xP = prim_pairs[ij].P.x;\n");
+  fprintf(f, "         double yP = prim_pairs[ij].P.y;\n");
+  fprintf(f, "         double zP = prim_pairs[ij].P.z;\n");
   fprintf(f, "\n");
-  fprintf(f, "         double eval = shpair.prim_pairs[ij].K_coeff_prod;\n");
+  fprintf(f, "         double eval = prim_pairs[ij].K_coeff_prod;\n");
   fprintf(f, "\n");
   fprintf(f, "         // Evaluate T Values\n");
 
@@ -744,9 +742,8 @@ void generate_diagonal_header_files(int lA) {
   fprintf(f, "__global__ void integral_%d(size_t npts,\n", lA);
   fprintf(f, "                          point rA,\n");
   fprintf(f, "                          point rB,\n");
-  fprintf(f, "                          point rAB,\n");
-  fprintf(f, "                          int nprim_pair,\n");
-  fprintf(f, "                          prim_pair *ppair,\n");
+  fprintf(f, "                          int nprim_pairs,\n");
+  fprintf(f, "                          prim_pair *prim_pairs,\n");
   fprintf(f, "                          double *points,\n");
   fprintf(f, "                          double *Xi,\n");
   fprintf(f, "                          int ldX,\n");	 
@@ -774,9 +771,8 @@ void generate_off_diagonal_header_files(int lA, int lB) {
   fprintf(f, "__global__ void integral_%d_%d(size_t npts,\n", lA, lB);
   fprintf(f, "                             point rA,\n");
   fprintf(f, "                             point rB,\n");
-  fprintf(f, "                             point rAB,\n");
-  fprintf(f, "                             int nprim_pair,\n");
-  fprintf(f, "                             prim_pair *ppair,\n");
+  fprintf(f, "                             int nprim_pairs,\n");
+  fprintf(f, "                             prim_pair *prim_pairs,\n");
   fprintf(f, "                             double *points,\n");
   fprintf(f, "                             double *Xi,\n");
   fprintf(f, "                             double *Xj,\n");
@@ -804,16 +800,15 @@ void generate_main_files(int lA) {
   fprintf(f, "#ifndef __MY_INTEGRAL_OBARA_SAIKA\n");
   fprintf(f, "#define __MY_INTEGRAL_OBARA_SAIKA\n");
   fprintf(f, "namespace XGPU {\n");
-  fprintf(f, "void generate_shell_pair( const shells& A, const shells& B, shell_pair& AB);\n");
+  fprintf(f, "void generate_shell_pair( const shells& A, const shells& B, prim_pair *prim_pairs);\n");
   fprintf(f, "void compute_integral_shell_pair(size_t npts,\n");
   fprintf(f, "                             int is_diag,\n");
   fprintf(f, "                             int lA,\n");
   fprintf(f, "                             int lB,\n");
   fprintf(f, "                             point rA,\n");
   fprintf(f, "                             point rB,\n");
-  fprintf(f, "                             point rAB,\n");
-  fprintf(f, "                             int nprim_pair,\n");
-  fprintf(f, "                             prim_pair *ppair,\n");
+  fprintf(f, "                             int nprim_pairs,\n");
+  fprintf(f, "                             prim_pair *prim_pairs,\n");
   fprintf(f, "                             double *points,\n");
   fprintf(f, "                             double *Xi,\n");
   fprintf(f, "                             double *Xj,\n");
@@ -846,13 +841,10 @@ void generate_main_files(int lA) {
     }
   }
   fprintf(f, "namespace XGPU {\n");
-  fprintf(f, "\nvoid generate_shell_pair( const shells& A, const shells& B, shell_pair& AB) {\n");
+  fprintf(f, "\nvoid generate_shell_pair( const shells& A, const shells& B, prim_pairs *prim_pair) {\n");
   fprintf(f, "   // L Values\n");
-  fprintf(f, "   AB.lA = A.L;\n");
-  fprintf(f, "   AB.lB = B.L;\n\n");
-
-  fprintf(f, "   AB.rA = A.origin;\n");
-  fprintf(f, "   AB.rB = B.origin;\n\n");
+  fprintf(f, "   int lA = A.L;\n");
+  fprintf(f, "   int lB = B.L;\n\n");
 
   fprintf(f, "   const auto xA = A.origin.x;\n");
   fprintf(f, "   const auto yA = A.origin.y;\n");
@@ -862,17 +854,16 @@ void generate_main_files(int lA) {
   fprintf(f, "   const auto yB = B.origin.y;\n");
   fprintf(f, "   const auto zB = B.origin.z;\n\n");
 
-  fprintf(f, "   AB.rAB.x = xA - xB;\n");
-  fprintf(f, "   AB.rAB.y = yA - yB;\n");
-  fprintf(f, "   AB.rAB.z = zA - zB;\n\n");
+  fprintf(f, "   double rABx = xA - xB;\n");
+  fprintf(f, "   double rABy = yA - yB;\n");
+  fprintf(f, "   double rABz = zA - zB;\n\n");
 
-  fprintf(f, "   const double dAB = AB.rAB.x*AB.rAB.x + AB.rAB.y*AB.rAB.y + AB.rAB.z*AB.rAB.z;\n\n");
+  fprintf(f, "   const double dAB = rABx*rABx + rABy*rABy + rABz*rABz;\n\n");
 
   fprintf(f, "   const int nprim_A = A.m;\n");
   fprintf(f, "   const int nprim_B = B.m;\n");
   fprintf(f, "   const int np = nprim_A * nprim_B;\n\n");
 
-  fprintf(f, "   prim_pair *prim_pairs = new prim_pair[np];\n");
   fprintf(f, "   for(int i = 0, ij = 0; i < nprim_A; ++i       )\n");
   fprintf(f, "   for(int j = 0        ; j < nprim_B; ++j, ++ij ) {\n");
   fprintf(f, "      auto& pair = prim_pairs[ij];\n");
@@ -880,11 +871,11 @@ void generate_main_files(int lA) {
   fprintf(f, "      const auto alpha_B = B.coeff[j].alpha;\n\n");
 
   fprintf(f, "      pair.gamma = alpha_A + alpha_B;\n");
-  fprintf(f, "      const auto gamma_inv = 1. / pair.gamma;\n\n");
+  fprintf(f, "      pair.gamma_inv = 1. / pair.gamma;\n\n");
 
-  fprintf(f, "      pair.P.x = (alpha_A * xA + alpha_B * xB) * gamma_inv;\n");
-  fprintf(f, "      pair.P.y = (alpha_A * yA + alpha_B * yB) * gamma_inv;\n");
-  fprintf(f, "      pair.P.z = (alpha_A * zA + alpha_B * zB) * gamma_inv;\n\n");
+  fprintf(f, "      pair.P.x = (alpha_A * xA + alpha_B * xB) * pair.gamma_inv;\n");
+  fprintf(f, "      pair.P.y = (alpha_A * yA + alpha_B * yB) * pair.gamma_inv;\n");
+  fprintf(f, "      pair.P.z = (alpha_A * zA + alpha_B * zB) * pair.gamma_inv;\n\n");
 
   fprintf(f, "      pair.PA.x = pair.P.x - xA;\n");
   fprintf(f, "      pair.PA.y = pair.P.y - yA;\n");
@@ -894,11 +885,8 @@ void generate_main_files(int lA) {
   fprintf(f, "      pair.PB.y = pair.P.y - yB;\n");
   fprintf(f, "      pair.PB.z = pair.P.z - zB;\n\n");
 
-  fprintf(f, "      pair.K_coeff_prod = 2 * M_PI * A.coeff[i].coeff * B.coeff[j].coeff * gamma_inv * std::exp( - alpha_A * alpha_B * dAB * gamma_inv );\n");
+  fprintf(f, "      pair.K_coeff_prod = 2 * M_PI * A.coeff[i].coeff * B.coeff[j].coeff * pair.gamma_inv * std::exp( - alpha_A * alpha_B * dAB * pair.gamma_inv );\n");
   fprintf(f, "   }\n\n");
-
-  fprintf(f, "   AB.nprim_pair = np;\n");
-  fprintf(f, "   AB.prim_pairs = prim_pairs;\n\n");
   fprintf(f, "}\n");
   
   fprintf(f, "\n");
@@ -908,9 +896,8 @@ void generate_main_files(int lA) {
   fprintf(f, "                  int lB,\n");
   fprintf(f, "                  point rA,\n");
   fprintf(f, "                  point rB,\n");
-  fprintf(f, "                  point rAB,\n");
-  fprintf(f, "                  int nprim_pair,\n");
-  fprintf(f, "                  prim_pair *ppair,\n");
+  fprintf(f, "                  int nprim_pairs,\n");
+  fprintf(f, "                  prim_pair *prim_pairs,\n");
   fprintf(f, "                  double *points,\n");
   fprintf(f, "                  double *Xi,\n");
   fprintf(f, "                  double *Xj,\n");
@@ -939,9 +926,8 @@ void generate_main_files(int lA) {
   fprintf(f, "         integral_%d<<<320, 128, 128 * %d * sizeof(double)>>>(npts,\n", 0, size - partial_size);
   fprintf(f, "                                rA,\n");
   fprintf(f, "                                rB,\n");
-  fprintf(f, "                                rAB,\n");
-  fprintf(f, "                                nprim_pair,\n");
-  fprintf(f, "                                ppair,\n");
+  fprintf(f, "                                nprim_pairs,\n");
+  fprintf(f, "                                prim_pairs,\n");
   fprintf(f, "                                points,\n");
   fprintf(f, "                                Xi,\n");
   fprintf(f, "                                ldX,\n");
@@ -967,9 +953,8 @@ void generate_main_files(int lA) {
     fprintf(f, "        integral_%d<<<320, 128, 128 * %d * sizeof(double)>>>(npts,\n", 0, size - partial_size);
     fprintf(f, "                               rA,\n");
     fprintf(f, "                               rB,\n");
-    fprintf(f, "                               rAB,\n");
-    fprintf(f, "                               nprim_pair,\n");
-    fprintf(f, "                               ppair,\n");
+    fprintf(f, "                               nprim_pairs,\n");
+    fprintf(f, "                               prim_pairs,\n");
     fprintf(f, "                               points,\n");
     fprintf(f, "                               Xi,\n");
     fprintf(f, "                               ldX,\n");
@@ -999,9 +984,8 @@ void generate_main_files(int lA) {
   fprintf(f, "         integral_%d_%d<<<320, 128, 128 * %d * sizeof(double)>>>(npts,\n", 0, 0, size - partial_size);
   fprintf(f, "                                  rA,\n");
   fprintf(f, "                                  rB,\n");
-  fprintf(f, "                                  rAB,\n");
-  fprintf(f, "                                  nprim_pair,\n");
-  fprintf(f, "                                  ppair,\n");
+  fprintf(f, "                                  nprim_pairs,\n");
+  fprintf(f, "                                  prim_pairs,\n");
   fprintf(f, "                                  points,\n");
   fprintf(f, "                                  Xi,\n");
   fprintf(f, "                                  Xj,\n");
@@ -1029,9 +1013,8 @@ void generate_main_files(int lA) {
       fprintf(f, "         integral_%d_%d<<<320, 128, 128 * %d * sizeof(double)>>>(npts,\n", i, j, size - partial_size);
       fprintf(f, "                                  rA,\n");
       fprintf(f, "                                  rB,\n");
-      fprintf(f, "                                  rAB,\n");
-      fprintf(f, "                                  nprim_pair,\n");
-      fprintf(f, "                                  ppair,\n");
+      fprintf(f, "                                  nprim_pairs,\n");
+      fprintf(f, "                                  prim_pairs,\n");
       fprintf(f, "                                  points,\n");
       fprintf(f, "                                  Xi,\n");
       fprintf(f, "                                  Xj,\n");
@@ -1045,9 +1028,8 @@ void generate_main_files(int lA) {
       fprintf(f, "         integral_%d_%d<<<320, 128, 128 * %d * sizeof(double)>>>(npts,\n", i, j, size - partial_size);
       fprintf(f, "                                  rA,\n");
       fprintf(f, "                                  rB,\n");
-      fprintf(f, "                                  rAB,\n");
-      fprintf(f, "                                  nprim_pair,\n");
-      fprintf(f, "                                  ppair,\n");
+      fprintf(f, "                                  nprim_pairs,\n");
+      fprintf(f, "                                  prim_pairs,\n");
       fprintf(f, "                                  points,\n");
       fprintf(f, "                                  Xj,\n");
       fprintf(f, "                                  Xi,\n");
@@ -1074,9 +1056,8 @@ void generate_main_files(int lA) {
     fprintf(f, "        integral_%d_%d<<<320, 128, 128 * %d * sizeof(double)>>>(npts,\n", i, i, size - partial_size);
     fprintf(f, "                                 rA,\n");
     fprintf(f, "                                 rB,\n");
-    fprintf(f, "                                 rAB,\n");
-    fprintf(f, "                                 nprim_pair,\n");
-    fprintf(f, "                                 ppair,\n");
+    fprintf(f, "                                 nprim_pairs,\n");
+    fprintf(f, "                                 prim_pairs,\n");
     fprintf(f, "                                 points,\n");
     fprintf(f, "                                 Xi,\n");
     fprintf(f, "                                 Xj,\n");
