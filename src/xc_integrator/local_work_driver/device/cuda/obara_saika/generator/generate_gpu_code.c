@@ -841,7 +841,7 @@ void generate_main_files(int lA) {
     }
   }
   fprintf(f, "namespace XGPU {\n");
-  fprintf(f, "\nvoid generate_shell_pair( const shells& A, const shells& B, prim_pairs *prim_pair) {\n");
+  fprintf(f, "\nvoid generate_shell_pair( const shells& A, const shells& B, prim_pair *prim_pairs) {\n");
   fprintf(f, "   // L Values\n");
   fprintf(f, "   int lA = A.L;\n");
   fprintf(f, "   int lB = B.L;\n\n");
