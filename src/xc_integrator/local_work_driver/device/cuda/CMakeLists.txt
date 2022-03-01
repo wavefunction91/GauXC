@@ -30,3 +30,5 @@ foreach( cuda_arch ${CMAKE_CUDA_ARCHITECTURES} )
     message(FATAL_ERROR "GauXC Requires CUDA CC 6.0+ For FP64 Atomics")
   endif()
 endforeach()
+
+add_subdirectory(obara_saika)

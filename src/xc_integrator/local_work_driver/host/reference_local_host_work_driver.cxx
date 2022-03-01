@@ -280,6 +280,7 @@ namespace GauXC {
 						     size_t nbe, const double* points, const double* weights, 
 						     const BasisSet<double>& basis, const BasisSetMap& basis_map, 
 						     const int32_t* shell_list, const double* X, size_t ldx, double* G, size_t ldg ) {
+                 #if 0
     
     // Cast points to Rys format (binary compatable)
     point* _points = reinterpret_cast<point*>(const_cast<double*>(points));
@@ -412,6 +413,7 @@ namespace GauXC {
 	ioff_cart += shell_cart_sz;
       }
     }
+    #endif
   }
 
 }
