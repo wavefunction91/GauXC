@@ -11,7 +11,7 @@
 
 int main(int argc, char** argv) {
   libint2::initialize();
-  
+
   double *boys_table = XCPU::boys_init();
 
   // Benzene
@@ -27,7 +27,7 @@ int main(int argc, char** argv) {
     libint2::Atom{ 1,  6.74844e+00,   5.25274e-01,   1.88028e-03},
     libint2::Atom{ 1,  4.38551e+00,   4.61832e+00,  -1.48721e-03},
     libint2::Atom{ 1, -3.41001e-01,   4.61857e+00,  -3.05569e-03},
-    libint2::Atom{ 1, -2.70437e+00,   5.25727e-01,  -1.09793e-03} 
+    libint2::Atom{ 1, -2.70437e+00,   5.25727e-01,  -1.09793e-03}
   };
 
   // Create cc-pVDZ BasisSet
@@ -36,18 +36,18 @@ int main(int argc, char** argv) {
   basis.set_pure(false); // Reset to Cartesian
   auto shell2bf = basis.shell2bf();
 
-  auto [min_x, max_x] = std::minmax_element( atoms.begin(), atoms.end(), 
+  auto [min_x, max_x] = std::minmax_element( atoms.begin(), atoms.end(),
     []( const auto& a, const auto& b) { return a.x < b.x; } );
-  auto [min_y, max_y] = std::minmax_element( atoms.begin(), atoms.end(), 
+  auto [min_y, max_y] = std::minmax_element( atoms.begin(), atoms.end(),
     []( const auto& a, const auto& b) { return a.y < b.y; } );
-  auto [min_z, max_z] = std::minmax_element( atoms.begin(), atoms.end(), 
+  auto [min_z, max_z] = std::minmax_element( atoms.begin(), atoms.end(),
     []( const auto& a, const auto& b) { return a.z < b.z; } );
 
   std::array<double,3> box_lo = { min_x->x, min_y->y, min_z->z };
   std::array<double,3> box_hi = { max_x->x, max_y->y, max_z->z };
 
   std::default_random_engine gen;
-  std::uniform_real_distribution<double> 
+  std::uniform_real_distribution<double>
     dist_x( box_lo[0], box_hi[0] ),
     dist_y( box_lo[1], box_hi[1] ),
     dist_z( box_lo[2], box_hi[2] );
@@ -57,9 +57,9 @@ int main(int argc, char** argv) {
   };
 
   if( argc != 2 ) throw std::runtime_error("Must Specify NGrid");
-  
+
   const int ngrid = std::stoll( std::string(argv[1]) );
-  
+
   std::vector< std::array<double,3> > grid_points( ngrid );
   std::generate( grid_points.begin(), grid_points.end(), gen_grid_point );
 
@@ -74,14 +74,14 @@ int main(int argc, char** argv) {
   for( const auto& g : grid_points ) {
     engines.emplace_back( libint2::Operator::nuclear, basis.max_nprim(),
 		          basis.max_l(), 0 );
-    std::vector< std::pair<double, std::array<double,3>> > q = { {-1., g} }; 
+    std::vector< std::pair<double, std::array<double,3>> > q = { {-1., g} };
     engines.back().set_params(q);
   }
 
   // Generate a random F matrix
   std::vector<double> F( ngrid * nbf );
   std::generate( F.begin(), F.end(), [&](){ return dist_x(gen); } );
-  
+
   // Generate random grid weights
   std::vector<double> w( ngrid );
   std::generate( w.begin(), w.end(), [&](){ return dist_x(gen); } );
@@ -89,15 +89,15 @@ int main(int argc, char** argv) {
   // Compute A
   std::vector<double> A( nbf * nbf * ngrid );
   memset(&A[0], 0, nbf * nbf * ngrid * sizeof(double));
-  
+
   using row_major_mat = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::RowMajor>;
   using const_row_major_map = Eigen::Map< const row_major_mat >;
-  
+
   using col_major_mat = Eigen::Matrix<double, Eigen::Dynamic, Eigen::Dynamic, Eigen::ColMajor>;
   using col_major_map = Eigen::Map< col_major_mat >;
 
   // correctness - libint implementation
-  
+
   for( int k = 0; k < ngrid; ++k ) {
     auto& engine = engines.at(k);
     const auto& engine_buf = engine.results();
@@ -107,7 +107,7 @@ int main(int argc, char** argv) {
     for( int j = 0; j < basis.size(); ++j) {
       auto bf_j = shell2bf[j];
       auto nj   = basis[j].size();
-      
+
       for( int i = 0; i < basis.size(); ++i) {
         auto bf_i = shell2bf[i];
         auto ni   = basis[i].size();
@@ -136,10 +136,10 @@ int main(int argc, char** argv) {
 
   // correctness - own implementation
 
-  std::vector<point>  _points(ngrid);
+  std::vector<XCPU::point>  _points(ngrid);
   std::vector<double> _points_transposed(3 * ngrid);
-  
-  _points.resize(ngrid); 
+
+  _points.resize(ngrid);
 
   for( int i = 0; i < ngrid; ++i ){
     _points[i].x = grid_points[i][0];
@@ -150,13 +150,13 @@ int main(int argc, char** argv) {
     _points_transposed[i + 1 * ngrid] = grid_points[i][1];
     _points_transposed[i + 2 * ngrid] = grid_points[i][2];
   }
-  
-  std::vector< shells > _shells;
-  
+
+  std::vector<XCPU::shells> _shells;
+
   int nshells = basis.size();
-  
+
   _shells.resize(nshells);
-  
+
   for( int i = 0; i < nshells; ++i ) {
     _shells[i].origin.x = basis[i].O[0];
     _shells[i].origin.y = basis[i].O[1];
@@ -164,8 +164,8 @@ int main(int argc, char** argv) {
 
     _shells[i].m = basis[i].alpha.size();
     _shells[i].L = basis[i].contr[0].l;
-    
-    _shells[i].coeff = new coefficients[_shells[i].m];
+
+    _shells[i].coeff = new XCPU::coefficients[_shells[i].m];
     for( int j = 0; j < _shells[i].m; ++j ) {
       _shells[i].coeff[j].alpha = basis[i].alpha[j];
       _shells[i].coeff[j].coeff = basis[i].contr[0].coeff[j];
@@ -179,20 +179,20 @@ int main(int argc, char** argv) {
     }
   }
 
-  prim_pair *prim_pairs = new prim_pair[total_prim_pairs];
-  
+  XCPU::prim_pair *prim_pairs = new XCPU::prim_pair[total_prim_pairs];
+
   int offset = 0;
   for( int i = 0; i < nshells; ++i) {
     for( int j = 0; j <= i; ++j) {
       if( _shells[i].L >= _shells[j].L )
-	XCPU::generate_shell_pair(_shells[i], _shells[j], (shpairs + offset));
+	XCPU::generate_shell_pair(_shells[i], _shells[j], (prim_pairs + offset));
       else
-	XCPU::generate_shell_pair(_shells[j], _shells[i], (shpairs + offset));
+	XCPU::generate_shell_pair(_shells[j], _shells[i], (prim_pairs + offset));
 
       offset += (_shells[i].m * _shells[j].m);
     }
   }
-  
+
   std::vector<double> G_own( ngrid * nbf );
   for(int i = 0; i < ngrid * nbf; ++i) {
     G_own[i] = 0.0;
@@ -203,20 +203,18 @@ int main(int argc, char** argv) {
   double *Gi = G_own.data();
   double *Gj = G_own.data();
 
-  std::cout << nshells << std::endl;
-
   struct timeval start, end;
 
   gettimeofday(&start, NULL);
   offset = 0;
   int ioff_cart = 0;
   for( int i = 0; i < nshells; ++i) {
-    shells bra_shell = _shells[i];
+    XCPU::shells bra_shell = _shells[i];
     int bra_cart_size = (bra_shell.L + 1) * (bra_shell.L + 2) / 2;
 
     int joff_cart = 0;
     for( int j = 0; j <= i; ++j) {
-      shells ket_shell = _shells[j];
+      XCPU::shells ket_shell = _shells[j];
       int ket_cart_size = (ket_shell.L + 1) * (ket_shell.L + 2) / 2;
 
       XCPU::compute_integral_shell_pair(i == j,
@@ -226,6 +224,7 @@ int main(int argc, char** argv) {
 					_shells[j].L,
 					_shells[i].origin,
 					_shells[j].origin,
+					(_shells[i].m * _shells[j].m),
 					(prim_pairs + offset),
 					(Xi + ioff_cart * ngrid),
 					(Xj + joff_cart * ngrid),
@@ -235,6 +234,7 @@ int main(int argc, char** argv) {
 					ngrid,
 					w.data(),
 					boys_table);
+
       offset += (_shells[i].m * _shells[j].m);
       joff_cart += ket_cart_size;
     }
@@ -243,9 +243,8 @@ int main(int argc, char** argv) {
   }
 
   gettimeofday(&end, NULL);
-  
+
   int correct = 1;
-  
   for( int i = 0; i < nbf * ngrid; ++i) {
     if((fabs(G_libint[i] - G_own[i]) > 1e-6) || std::isnan(G_own[i])) {
       printf("%lf %lf\n", G_libint[i], G_own[i]);
@@ -254,17 +253,9 @@ int main(int argc, char** argv) {
   }
 
   std::cout << "Correctness: " << correct << "\tExecution: "<< 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) << std::endl;
-  
-  offset = 0;
-  for( int i = 0; i < nshells; ++i) {
-    for( int j = 0; j <= i; ++j) {
-      delete shpairs[offset].prim_pairs;
-      offset++;
-    }
-  }
 
-  delete shpairs;
-  
+  delete prim_pairs;
+
   libint2::finalize();  // done with libint
   XCPU::boys_finalize(boys_table);
 }

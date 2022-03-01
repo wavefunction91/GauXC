@@ -1261,8 +1261,8 @@ void generate_main_files(int lA) {
       fprintf(f, "      } else if((lA == %d) && (lB == %d)) {\n", j, i);
       fprintf(f, "         integral_%d_%d(npts,\n", i, j);
       fprintf(f, "                      points,\n");
-      fprintf(f, "                      rA,\n");
       fprintf(f, "                      rB,\n");
+      fprintf(f, "                      rA,\n");
       fprintf(f, "                      nprim_pairs,\n");
       fprintf(f, "                      prim_pairs,\n");
       fprintf(f, "                      Xj,\n");

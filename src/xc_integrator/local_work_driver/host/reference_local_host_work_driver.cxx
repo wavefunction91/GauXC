@@ -301,17 +301,30 @@ namespace GauXC {
     // Copy the basis set 
     RysBasis rys_basis(basis);
 
-    size_t offset = 0;
-    std::vector<shell_pair> shpairs;
-    shpairs.resize(nshells * (nshells + 1) / 2);
-    for( size_t i = 0; i < nshells; ++i ) {
-      for( size_t j = 0; j <= i; ++j ) {
-	if( rys_basis._shells[i].L >= rys_basis._shells[j].L )
-	  XCPU::generate_shell_pair(rys_basis._shells[i], rys_basis._shells[j], shpairs[offset]);
-	else
-	  XCPU::generate_shell_pair(rys_basis._shells[j], rys_basis._shells[i], shpairs[offset]);
+    int total_prim_pairs = 0;
+    for( int i = 0; i < nshells; ++i) {
+      const ish = shell_list[i];
+      for( int j = 0; j <= i; ++j) {
+	const jsh = shell_list[j];
+	
+	total_prim_pairs += (basis.at(ish).m * basis.at(jsh).m);
+      }
+    }
 
-	offset++;
+    XCPU::prim_pair *prim_pairs = new XCPU::prim_pair[total_prim_pairs];
+
+    int offset = 0;
+    for( int i = 0; i < nshells; ++i) {
+      const ish = shell_list[i];
+      for( int j = 0; j <= i; ++j) {
+	const jsh = shell_list[j];
+	
+	if( basis.at(ish).L >= basis.at(jsh).L )
+	  XCPU::generate_shell_pair(basis.at(ish), basis.at(jsh), (prim_pairs + offset));
+	else
+	  XCPU::generate_shell_pair(basis.at(jsh), basis.at(ish), (prim_pairs + offset));
+
+	offset += (basis.at(ish).m * basis.at(jsh).m);
       }
     }
 
@@ -374,12 +387,15 @@ namespace GauXC {
 	const auto& ket       = basis.at(jsh);
 	const int ket_cart_sz = ket.cart_size();
 
-	XCPU::compute_integral_shell_pair( npts, ish == jsh, bra.L, ket.L, shpairs[offset], _points_transposed.data(),
+	XCPU::compute_integral_shell_pair( ish == jsh,
+					   npts, _points_transposed.data(),
+					   bra.L, ket.L, bra.origin, ket.origin,
+					   (bra.m * ket.m), (prim_pairs + offset),
 					   X_cart_rm.data()+ioff_cart*npts, X_cart_rm.data()+joff_cart*npts, npts,
 					   G_cart_rm.data()+ioff_cart*npts, G_cart_rm.data()+joff_cart*npts, npts,
 					   const_cast<double*>(weights), this -> boys_table );
 
-	offset++;
+	offset += (bra.m * ket.m);
 	joff_cart += ket_cart_sz;
       }
 	
