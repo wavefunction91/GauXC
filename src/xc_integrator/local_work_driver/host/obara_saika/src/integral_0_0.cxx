@@ -13,8 +13,11 @@
 
 namespace XCPU {
 void integral_0_0(size_t npts,
-                  shell_pair shpair,
                   double *_points,
+                  point rA,
+                  point rB,
+                  int nprim_pairs,
+                  prim_pair *prim_pairs,
                   double *Xi,
                   double *Xj,
                   int ldX,
@@ -37,14 +40,14 @@ void integral_0_0(size_t npts,
 
       for(int i = 0; i < 1 * NPTS_LOCAL; i += SIMD_LENGTH) SIMD_ALIGNED_STORE((temp + i), SIMD_ZERO());
 
-      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {
-         double RHO = shpair.prim_pairs[ij].gamma;
+      for(int ij = 0; ij < nprim_pairs; ++ij) {
+         double RHO = prim_pairs[ij].gamma;
 
-         double xP = shpair.prim_pairs[ij].P.x;
-         double yP = shpair.prim_pairs[ij].P.y;
-         double zP = shpair.prim_pairs[ij].P.z;
+         double xP = prim_pairs[ij].P.x;
+         double yP = prim_pairs[ij].P.y;
+         double zP = prim_pairs[ij].P.z;
 
-         double eval = shpair.prim_pairs[ij].K_coeff_prod;
+         double eval = prim_pairs[ij].K_coeff_prod;
 
          // Evaluate T Values
          for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += SIMD_LENGTH) {
@@ -115,14 +118,14 @@ void integral_0_0(size_t npts,
 
       for(int i = 0; i < 1 * NPTS_LOCAL; i += SIMD_LENGTH) SIMD_ALIGNED_STORE((temp + i), SIMD_ZERO());
 
-      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {
-         double RHO = shpair.prim_pairs[ij].gamma;
+      for(int ij = 0; ij < nprim_pairs; ++ij) {
+         double RHO = prim_pairs[ij].gamma;
 
-         double xP = shpair.prim_pairs[ij].P.x;
-         double yP = shpair.prim_pairs[ij].P.y;
-         double zP = shpair.prim_pairs[ij].P.z;
+         double xP = prim_pairs[ij].P.x;
+         double yP = prim_pairs[ij].P.y;
+         double zP = prim_pairs[ij].P.z;
 
-         double eval = shpair.prim_pairs[ij].K_coeff_prod;
+         double eval = prim_pairs[ij].K_coeff_prod;
 
          // Evaluate T Values
          size_t npts_inner_upper = SIMD_LENGTH * (npts_inner / SIMD_LENGTH);

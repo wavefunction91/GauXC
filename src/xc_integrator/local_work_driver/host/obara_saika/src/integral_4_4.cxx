@@ -13,8 +13,11 @@
 
 namespace XCPU {
 void integral_4_4(size_t npts,
-                  shell_pair shpair,
                   double *_points,
+                  point rA,
+                  point rB,
+                  int nprim_pairs,
+                  prim_pair *prim_pairs,
                   double *Xi,
                   double *Xj,
                   int ldX,
@@ -35,24 +38,24 @@ void integral_4_4(size_t npts,
    for(p_outer = 0; p_outer < npts_upper; p_outer += NPTS_LOCAL) {
       double *_point_outer = (_points + p_outer);
 
-      double X_AB = shpair.rAB.x;
-      double Y_AB = shpair.rAB.y;
-      double Z_AB = shpair.rAB.z;
+      double X_AB = rA.x - rB.x;
+      double Y_AB = rA.y - rB.y;
+      double Z_AB = rA.z - rB.z;
 
       for(int i = 0; i < 145 * NPTS_LOCAL; i += SIMD_LENGTH) SIMD_ALIGNED_STORE((temp + i), SIMD_ZERO());
 
-      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {
-         double RHO = shpair.prim_pairs[ij].gamma;
-         double RHO_INV = 1.0 / RHO;
-         double X_PA = shpair.prim_pairs[ij].PA.x;
-         double Y_PA = shpair.prim_pairs[ij].PA.y;
-         double Z_PA = shpair.prim_pairs[ij].PA.z;
+      for(int ij = 0; ij < nprim_pairs; ++ij) {
+         double RHO = prim_pairs[ij].gamma;
+         double RHO_INV = prim_pairs[ij].gamma_inv;
+         double X_PA = prim_pairs[ij].PA.x;
+         double Y_PA = prim_pairs[ij].PA.y;
+         double Z_PA = prim_pairs[ij].PA.z;
 
-         double xP = shpair.prim_pairs[ij].P.x;
-         double yP = shpair.prim_pairs[ij].P.y;
-         double zP = shpair.prim_pairs[ij].P.z;
+         double xP = prim_pairs[ij].P.x;
+         double yP = prim_pairs[ij].P.y;
+         double zP = prim_pairs[ij].P.z;
 
-         double eval = shpair.prim_pairs[ij].K_coeff_prod;
+         double eval = prim_pairs[ij].K_coeff_prod;
 
          // Evaluate T Values
          for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += SIMD_LENGTH) {
@@ -3032,24 +3035,24 @@ void integral_4_4(size_t npts,
       size_t npts_inner = MIN((size_t) NPTS_LOCAL, npts - p_outer);
       double *_point_outer = (_points + p_outer);
 
-      double X_AB = shpair.rAB.x;
-      double Y_AB = shpair.rAB.y;
-      double Z_AB = shpair.rAB.z;
+      double X_AB = rA.x - rB.x;
+      double Y_AB = rA.y - rB.y;
+      double Z_AB = rA.z - rB.z;
 
       for(int i = 0; i < 145 * NPTS_LOCAL; i += SIMD_LENGTH) SIMD_ALIGNED_STORE((temp + i), SIMD_ZERO());
 
-      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {
-         double RHO = shpair.prim_pairs[ij].gamma;
-         double RHO_INV = 1.0 / RHO;
-         double X_PA = shpair.prim_pairs[ij].PA.x;
-         double Y_PA = shpair.prim_pairs[ij].PA.y;
-         double Z_PA = shpair.prim_pairs[ij].PA.z;
+      for(int ij = 0; ij < nprim_pairs; ++ij) {
+         double RHO = prim_pairs[ij].gamma;
+         double RHO_INV = prim_pairs[ij].gamma_inv;
+         double X_PA = prim_pairs[ij].PA.x;
+         double Y_PA = prim_pairs[ij].PA.y;
+         double Z_PA = prim_pairs[ij].PA.z;
 
-         double xP = shpair.prim_pairs[ij].P.x;
-         double yP = shpair.prim_pairs[ij].P.y;
-         double zP = shpair.prim_pairs[ij].P.z;
+         double xP = prim_pairs[ij].P.x;
+         double yP = prim_pairs[ij].P.y;
+         double zP = prim_pairs[ij].P.z;
 
-         double eval = shpair.prim_pairs[ij].K_coeff_prod;
+         double eval = prim_pairs[ij].K_coeff_prod;
 
          // Evaluate T Values
          size_t npts_inner_upper = SIMD_LENGTH * (npts_inner / SIMD_LENGTH);
