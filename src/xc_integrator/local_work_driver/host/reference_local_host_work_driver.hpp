@@ -5,6 +5,8 @@ namespace GauXC {
 
 struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
 
+  double *boys_table;
+  
   using submat_map_t   = LocalHostWorkDriverPIMPL::submat_map_t;
   using task_container = LocalHostWorkDriverPIMPL::task_container;
   using tast_iterator  = LocalHostWorkDriverPIMPL::task_iterator;

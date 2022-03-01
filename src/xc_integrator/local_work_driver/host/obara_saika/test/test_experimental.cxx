@@ -226,8 +226,7 @@ int main(int argc, char** argv) {
 					ngrid,
 					w.data(),
 					boys_table);
-      offset++;
-      
+      offset++;      
       joff_cart += ket_cart_size;
     }
 
