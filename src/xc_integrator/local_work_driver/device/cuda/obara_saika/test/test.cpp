@@ -110,14 +110,10 @@ int main(int argc, char** argv) {
         auto bf_i = shell2bf[i];
         auto ni   = basis[i].size();
 
-	//	if( i == j) {
-	//  if(basis[i].contr[0].l == 1) {
 	engine.compute( basis[i], basis[j] );
 	  
 	const_row_major_map buf_map( engine_buf[0], ni, nj );
 	A_k.block( bf_i, bf_j, ni, nj ) = buf_map;
-	//}
-	//}
       }
     }
   }
@@ -219,8 +215,6 @@ struct timeval start, end;
       shells ket_shell = _shells[j];
       int ket_cart_size = (ket_shell.L + 1) * (ket_shell.L + 2) / 2;
 
-      //if(i == j) {
-      //if(_shells[i].L == 1) {
       compute_integral_shell_pair(ngrid,
 				  i,
 				  j,
@@ -234,9 +228,7 @@ struct timeval start, end;
 				  ngrid,
 				  dev_weights,
 				  dev_boys_table);
-      //}
-      //}
-  
+      
       joff_cart += ket_cart_size;
     }
 

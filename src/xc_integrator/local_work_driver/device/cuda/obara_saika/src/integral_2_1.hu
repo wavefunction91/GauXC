@@ -1,10 +1,13 @@
 #ifndef __MY_INTEGRAL_2_1
 #define __MY_INTEGRAL_2_1
 
+namespace XGPU {
 __global__ void integral_2_1(size_t npts,
-                             shell_pair shpair,
-			     int np,
-			     prim_pair *prim_pairs,
+                             point rA,
+                             point rB,
+                             point rAB,
+                             int nprim_pair,
+                             prim_pair *ppair,
                              double *points,
                              double *Xi,
                              double *Xj,
@@ -14,5 +17,5 @@ __global__ void integral_2_1(size_t npts,
                              int ldG, 
                              double *weights,
                              double *boys_table);
-
+}
 #endif

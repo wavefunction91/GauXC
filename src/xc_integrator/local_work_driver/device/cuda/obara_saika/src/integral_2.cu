@@ -11,10 +11,13 @@
   __typeof__ (b) _b = (b);		\
   _a < _b ? _a : _b; })
 
+namespace XGPU {
 __global__ void integral_2(size_t npts,
-                          shell_pair shpair,
-			  int np,
-			  prim_pair *prim_pairs,
+                          point rA,
+                          point rB,
+                          point rAB,
+                          int nprim_pair,
+                          prim_pair *ppair,
                           double *_points,
                           double *Xi,
                           int ldX,
@@ -22,12 +25,11 @@ __global__ void integral_2(size_t npts,
                           int ldG, 
                           double *weights,
                           double *boys_table) {
-  extern __shared__ double temp[];
-  
+   __shared__ double *temp;
    for(size_t p_outer = blockIdx.x * blockDim.x; p_outer < npts; p_outer += gridDim.x * blockDim.x) {
       double *_point_outer = (_points + p_outer);
 
-      size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer - 1);
+      size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer);
 
       double xA = shpair.rA.x;
       double yA = shpair.rA.y;
@@ -35,15 +37,15 @@ __global__ void integral_2(size_t npts,
 
       for(int i = 0; i < 31; ++i) SCALAR_STORE((temp + i * blockDim.x + threadIdx.x), SCALAR_ZERO());
 
-      for(int ij = 0; ij < np; ++ij) {
-         double RHO = prim_pairs[ij].gamma;
+      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {
+         double RHO = shpair.prim_pairs[ij].gamma;
          double RHO_INV = 1.0 / RHO;
 
          constexpr double X_PA = 0.0;
          constexpr double Y_PA = 0.0;
          constexpr double Z_PA = 0.0;
 
-         double eval = prim_pairs[ij].coeff_prod * prim_pairs[ij].K;
+         double eval = shpair.prim_pairs[ij].K_coeff_prod;
 
          // Evaluate T Values
          SCALAR_TYPE xC = SCALAR_LOAD((_point_outer + p_inner + 0 * npts));
@@ -54,22 +56,23 @@ __global__ void integral_2(size_t npts,
          SCALAR_TYPE Y_PC = SCALAR_SUB(yA, yC);
          SCALAR_TYPE Z_PC = SCALAR_SUB(zA, zC);
 
-         SCALAR_TYPE TVAL = SCALAR_MUL(X_PC, X_PC);
-         TVAL = SCALAR_FMA(Y_PC, Y_PC, TVAL);
-         TVAL = SCALAR_FMA(Z_PC, Z_PC, TVAL);
-         TVAL = SCALAR_MUL(RHO, TVAL);
+         X_PC = SCALAR_MUL(X_PC, X_PC);
+         X_PC = SCALAR_FMA(Y_PC, Y_PC, X_PC);
+         X_PC = SCALAR_FMA(Z_PC, Z_PC, X_PC);
+         SCALAR_TYPE TVAL = SCALAR_MUL(RHO, X_PC);
 
-         SCALAR_TYPE t00, t01, t02, t03, t04;
+         SCALAR_TYPE t00, t01, t02, t03, t04, TVAL_inv_e;
 
          // Evaluate Boys function
-         t00 = GauXC::gauxc_boys_element<0>(boys_table, TVAL);
-         t01 = GauXC::gauxc_boys_element<1>(boys_table, TVAL);
-         t02 = GauXC::gauxc_boys_element<2>(boys_table, TVAL);
-         t03 = GauXC::gauxc_boys_element<3>(boys_table, TVAL);
-         t04 = GauXC::gauxc_boys_element<4>(boys_table, TVAL);
+         boys_element<4>(&TVAL, &TVAL_inv_e, &t04, boys_table);
 
          // Evaluate VRR Buffer
          SCALAR_TYPE t10, t11, t12, t13, t20, t21, t22, t30, t31, t40, tx, ty;
+
+         t03 = SCALAR_MUL(SCALAR_ADD(SCALAR_MUL(TVAL, t04), TVAL_inv_e), SCALAR_SET1(0.28571428571428569843));
+         t02 = SCALAR_MUL(SCALAR_ADD(SCALAR_MUL(TVAL, t03), TVAL_inv_e), SCALAR_SET1(0.40000000000000002220));
+         t01 = SCALAR_MUL(SCALAR_ADD(SCALAR_MUL(TVAL, t02), TVAL_inv_e), SCALAR_SET1(0.66666666666666662966));
+         t00 = SCALAR_MUL(SCALAR_ADD(SCALAR_MUL(TVAL, t01), TVAL_inv_e), SCALAR_SET1(2.00000000000000000000));
 
          t00 = SCALAR_MUL(eval, t00);
          t01 = SCALAR_MUL(eval, t01);
@@ -428,330 +431,78 @@ __global__ void integral_2(size_t npts,
       double *Xik = (Xi + p_outer + p_inner);
       double *Gik = (Gi + p_outer + p_inner);
 
-      SCALAR_TYPE tx, wg, xik, gik;
-      tx  = SCALAR_LOAD((temp + 16 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 0 * ldX));
-      gik = SCALAR_LOAD((Gik + 0 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 0 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 17 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 0 * ldX));
-      gik = SCALAR_LOAD((Gik + 1 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 1 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 18 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 0 * ldX));
-      gik = SCALAR_LOAD((Gik + 2 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 2 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 19 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 0 * ldX));
-      gik = SCALAR_LOAD((Gik + 3 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 3 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 20 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 0 * ldX));
-      gik = SCALAR_LOAD((Gik + 4 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 4 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 21 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 0 * ldX));
-      gik = SCALAR_LOAD((Gik + 5 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 5 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 17 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 1 * ldX));
-      gik = SCALAR_LOAD((Gik + 0 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 0 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 19 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 1 * ldX));
-      gik = SCALAR_LOAD((Gik + 1 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 1 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 20 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 1 * ldX));
-      gik = SCALAR_LOAD((Gik + 2 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 2 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 22 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 1 * ldX));
-      gik = SCALAR_LOAD((Gik + 3 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 3 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 23 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 1 * ldX));
-      gik = SCALAR_LOAD((Gik + 4 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 4 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 24 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 1 * ldX));
-      gik = SCALAR_LOAD((Gik + 5 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 5 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 18 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 2 * ldX));
-      gik = SCALAR_LOAD((Gik + 0 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 0 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 20 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 2 * ldX));
-      gik = SCALAR_LOAD((Gik + 1 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 1 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 21 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 2 * ldX));
-      gik = SCALAR_LOAD((Gik + 2 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 2 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 23 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 2 * ldX));
-      gik = SCALAR_LOAD((Gik + 3 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 3 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 24 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 2 * ldX));
-      gik = SCALAR_LOAD((Gik + 4 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 4 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 25 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 2 * ldX));
-      gik = SCALAR_LOAD((Gik + 5 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 5 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 19 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 3 * ldX));
-      gik = SCALAR_LOAD((Gik + 0 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 0 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 22 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 3 * ldX));
-      gik = SCALAR_LOAD((Gik + 1 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 1 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 23 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 3 * ldX));
-      gik = SCALAR_LOAD((Gik + 2 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 2 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 26 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 3 * ldX));
-      gik = SCALAR_LOAD((Gik + 3 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 3 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 27 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 3 * ldX));
-      gik = SCALAR_LOAD((Gik + 4 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 4 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 28 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 3 * ldX));
-      gik = SCALAR_LOAD((Gik + 5 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 5 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 20 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 4 * ldX));
-      gik = SCALAR_LOAD((Gik + 0 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 0 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 23 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 4 * ldX));
-      gik = SCALAR_LOAD((Gik + 1 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 1 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 24 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 4 * ldX));
-      gik = SCALAR_LOAD((Gik + 2 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 2 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 27 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 4 * ldX));
-      gik = SCALAR_LOAD((Gik + 3 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 3 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 28 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 4 * ldX));
-      gik = SCALAR_LOAD((Gik + 4 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 4 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 29 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 4 * ldX));
-      gik = SCALAR_LOAD((Gik + 5 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 5 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 21 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 5 * ldX));
-      gik = SCALAR_LOAD((Gik + 0 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 0 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 24 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 5 * ldX));
-      gik = SCALAR_LOAD((Gik + 1 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 1 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 25 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 5 * ldX));
-      gik = SCALAR_LOAD((Gik + 2 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 2 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 28 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 5 * ldX));
-      gik = SCALAR_LOAD((Gik + 3 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 3 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 29 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 5 * ldX));
-      gik = SCALAR_LOAD((Gik + 4 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 4 * ldG), gik);
-      tx  = SCALAR_LOAD((temp + 30 * blockDim.x + threadIdx.x));
-      wg  = SCALAR_LOAD((weights + p_outer + p_inner));
-
-      xik = SCALAR_LOAD((Xik + 5 * ldX));
-      gik = SCALAR_LOAD((Gik + 5 * ldG));
-
-      tx = SCALAR_MUL(tx, wg);
-      gik = SCALAR_FMA(tx, xik, gik);
-      SCALAR_STORE((Gik + 5 * ldG), gik);
+      for(int c0 = 0; c0 <= 2; ++c0) {
+         for(int c1 = 0; c1 <= c0; ++c1) {
+            int m = 2 - c0;
+            int p = c1;
+
+            int idxB = (((2 - m) * (2 - m + 1)) >> 1) + p;
+
+            int mv, pv;
+
+            SCALAR_TYPE tx, wg, xik, gik;
+            mv = 2 + m; pv = 0 + p;
+            tx  = SCALAR_LOAD((temp + (16 + (((4 - mv) * (4 - mv + 1)) >> 1) + pv) * blockDim.x + threadIdx.x));
+            wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+            xik = SCALAR_LOAD((Xik + idxB * ldX));
+            gik = SCALAR_LOAD((Gik + 0 * ldG));
+
+            tx = SCALAR_MUL(tx, wg);
+            gik = SCALAR_FMA(tx, xik, gik);
+            SCALAR_STORE((Gik + 0 * ldG), gik);
+            mv = 1 + m; pv = 0 + p;
+            tx  = SCALAR_LOAD((temp + (16 + (((4 - mv) * (4 - mv + 1)) >> 1) + pv) * blockDim.x + threadIdx.x));
+            wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+            xik = SCALAR_LOAD((Xik + idxB * ldX));
+            gik = SCALAR_LOAD((Gik + 1 * ldG));
+
+            tx = SCALAR_MUL(tx, wg);
+            gik = SCALAR_FMA(tx, xik, gik);
+            SCALAR_STORE((Gik + 1 * ldG), gik);
+            mv = 1 + m; pv = 1 + p;
+            tx  = SCALAR_LOAD((temp + (16 + (((4 - mv) * (4 - mv + 1)) >> 1) + pv) * blockDim.x + threadIdx.x));
+            wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+            xik = SCALAR_LOAD((Xik + idxB * ldX));
+            gik = SCALAR_LOAD((Gik + 2 * ldG));
+
+            tx = SCALAR_MUL(tx, wg);
+            gik = SCALAR_FMA(tx, xik, gik);
+            SCALAR_STORE((Gik + 2 * ldG), gik);
+            mv = 0 + m; pv = 0 + p;
+            tx  = SCALAR_LOAD((temp + (16 + (((4 - mv) * (4 - mv + 1)) >> 1) + pv) * blockDim.x + threadIdx.x));
+            wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+            xik = SCALAR_LOAD((Xik + idxB * ldX));
+            gik = SCALAR_LOAD((Gik + 3 * ldG));
+
+            tx = SCALAR_MUL(tx, wg);
+            gik = SCALAR_FMA(tx, xik, gik);
+            SCALAR_STORE((Gik + 3 * ldG), gik);
+            mv = 0 + m; pv = 1 + p;
+            tx  = SCALAR_LOAD((temp + (16 + (((4 - mv) * (4 - mv + 1)) >> 1) + pv) * blockDim.x + threadIdx.x));
+            wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+            xik = SCALAR_LOAD((Xik + idxB * ldX));
+            gik = SCALAR_LOAD((Gik + 4 * ldG));
+
+            tx = SCALAR_MUL(tx, wg);
+            gik = SCALAR_FMA(tx, xik, gik);
+            SCALAR_STORE((Gik + 4 * ldG), gik);
+            mv = 0 + m; pv = 2 + p;
+            tx  = SCALAR_LOAD((temp + (16 + (((4 - mv) * (4 - mv + 1)) >> 1) + pv) * blockDim.x + threadIdx.x));
+            wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+            xik = SCALAR_LOAD((Xik + idxB * ldX));
+            gik = SCALAR_LOAD((Gik + 5 * ldG));
+
+            tx = SCALAR_MUL(tx, wg);
+            gik = SCALAR_FMA(tx, xik, gik);
+            SCALAR_STORE((Gik + 5 * ldG), gik);
+         }
+      }
    }
+}
 }

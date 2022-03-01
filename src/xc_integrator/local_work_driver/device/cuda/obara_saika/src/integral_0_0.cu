@@ -11,10 +11,13 @@
   __typeof__ (b) _b = (b);		\
   _a < _b ? _a : _b; })
 
+namespace XGPU {
 __global__ void integral_0_0(size_t npts,
-                  shell_pair shpair,
-			  int np,
-			  prim_pair *prim_pairs,
+                             point rA,
+                             point rB,
+                             point rAB,
+                             int nprim_pair,
+                             prim_pair *ppair,
                              double *_points,
                              double *Xi,
                              double *Xj,
@@ -24,22 +27,22 @@ __global__ void integral_0_0(size_t npts,
                              int ldG, 
                              double *weights, 
                              double *boys_table) {
-  extern __shared__ double temp[];
+   __shared__ double *temp;
    for(size_t p_outer = blockIdx.x * blockDim.x; p_outer < npts; p_outer += gridDim.x * blockDim.x) {
       double *_point_outer = (_points + p_outer);
 
-      size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer - 1);
+      size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer);
 
       for(int i = 0; i < 1; ++i) SCALAR_STORE((temp + i * blockDim.x + threadIdx.x), SCALAR_ZERO());
 
-      for(int ij = 0; ij < np; ++ij) {
-         double RHO = prim_pairs[ij].gamma;
-	 
-         double xP = prim_pairs[ij].P.x;
-         double yP = prim_pairs[ij].P.y;
-         double zP = prim_pairs[ij].P.z;
+      for(int ij = 0; ij < shpair.nprim_pair; ++ij) {
+         double RHO = shpair.prim_pairs[ij].gamma;
 
-         double eval = prim_pairs[ij].coeff_prod * prim_pairs[ij].K;
+         double xP = shpair.prim_pairs[ij].P.x;
+         double yP = shpair.prim_pairs[ij].P.y;
+         double zP = shpair.prim_pairs[ij].P.z;
+
+         double eval = shpair.prim_pairs[ij].K_coeff_prod;
 
          // Evaluate T Values
          SCALAR_TYPE xC = SCALAR_LOAD((_point_outer + p_inner + 0 * npts));
@@ -50,18 +53,19 @@ __global__ void integral_0_0(size_t npts,
          SCALAR_TYPE Y_PC = SCALAR_SUB(yP, yC);
          SCALAR_TYPE Z_PC = SCALAR_SUB(zP, zC);
 
-         SCALAR_TYPE TVAL = SCALAR_MUL(X_PC, X_PC);
-         TVAL = SCALAR_FMA(Y_PC, Y_PC, TVAL);
-         TVAL = SCALAR_FMA(Z_PC, Z_PC, TVAL);
-         TVAL = SCALAR_MUL(RHO, TVAL);
+         X_PC = SCALAR_MUL(X_PC, X_PC);
+         X_PC = SCALAR_FMA(Y_PC, Y_PC, X_PC);
+         X_PC = SCALAR_FMA(Z_PC, Z_PC, X_PC);
+         SCALAR_TYPE TVAL = SCALAR_MUL(RHO, X_PC);
 
-         SCALAR_TYPE t00;
+         SCALAR_TYPE t00, TVAL_inv_e;
 
          // Evaluate Boys function
-         t00 = GauXC::gauxc_boys_element<0>(boys_table, TVAL);
+         boys_element<0>(&TVAL, &TVAL_inv_e, &t00, boys_table);
 
          // Evaluate VRR Buffer
          SCALAR_TYPE tx;
+
 
          t00 = SCALAR_MUL(eval, t00);
          tx = SCALAR_LOAD((temp + 0 * blockDim.x + threadIdx.x));
@@ -96,4 +100,5 @@ __global__ void integral_0_0(size_t npts,
       SCALAR_STORE((Gik + 0 * ldG), tz);
       SCALAR_STORE((Gjk + 0 * ldG), tw);
    }
+}
 }
