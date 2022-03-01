@@ -21,9 +21,8 @@ typedef struct {
   point PA;
   point PB;
 
-  double K;
+  double K_coeff_prod;
   double gamma;
-  double coeff_prod;
 } prim_pair;
 
 typedef struct {

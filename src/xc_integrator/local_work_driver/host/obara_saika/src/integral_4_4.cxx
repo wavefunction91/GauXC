@@ -52,7 +52,7 @@ void integral_4_4(size_t npts,
          double yP = shpair.prim_pairs[ij].P.y;
          double zP = shpair.prim_pairs[ij].P.z;
 
-         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;
+         double eval = shpair.prim_pairs[ij].K_coeff_prod;
 
          // Evaluate T Values
          for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += SIMD_LENGTH) {
@@ -3049,7 +3049,7 @@ void integral_4_4(size_t npts,
          double yP = shpair.prim_pairs[ij].P.y;
          double zP = shpair.prim_pairs[ij].P.z;
 
-         double eval = shpair.prim_pairs[ij].coeff_prod * shpair.prim_pairs[ij].K;
+         double eval = shpair.prim_pairs[ij].K_coeff_prod;
 
          // Evaluate T Values
          size_t npts_inner_upper = SIMD_LENGTH * (npts_inner / SIMD_LENGTH);
@@ -3087,7 +3087,7 @@ void integral_4_4(size_t npts,
          }
 
          // Evaluate Boys function
-         boys_elements<8>(NPTS_LOCAL, Tval, Tval_inv_e, FmT, boys_table);
+         boys_elements<8>(npts_inner, Tval, Tval_inv_e, FmT, boys_table);
 
          // Evaluate VRR Buffer
          p_inner = 0;
