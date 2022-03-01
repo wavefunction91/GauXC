@@ -58,7 +58,7 @@ namespace XCPU {
   }
 
   template <int M>
-  inline void boys_elements(size_t npts, double* T, double *T_inv_e, double* eval, double *boys_table) {
+  inline void boys_elements(size_t npts, double* T, double *T_inv_e, double* eval, double *boys_table) {    
     for(size_t i = 0; i < npts; ++i) {
       if(T[i] < DEFAULT_MAX_T) {
 	if constexpr (M == 0) {
@@ -111,7 +111,7 @@ namespace XCPU {
 #define SCALAR_SET1(x) (x)
 
 #define SCALAR_LOAD(x) *(x)
-#define SCALAR_STORE(x, y) (*(x) = y)
+#define SCALAR_STORE(x, y) *(x) = y
 
 #define SCALAR_ADD(x, y) (x + y)
 #define SCALAR_SUB(x, y) (x - y)
