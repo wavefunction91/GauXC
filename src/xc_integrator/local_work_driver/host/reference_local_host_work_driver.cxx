@@ -8,7 +8,7 @@
 #include <stdexcept>
 
 #include <gauxc/basisset_map.hpp>
-#include "rys_integral.h"
+#include "integral_data_types.hpp"
 #include "obara_saika_integrals.hpp"
 #include "chebyshev_boys_computation.hpp"
 #include <gauxc/util/real_solid_harmonics.hpp>
@@ -18,11 +18,11 @@ namespace GauXC {
 
   ReferenceLocalHostWorkDriver::ReferenceLocalHostWorkDriver() {
     this -> boys_table = XCPU::boys_init();
-  };
+  }
   
   ReferenceLocalHostWorkDriver::~ReferenceLocalHostWorkDriver() noexcept {
     XCPU::boys_finalize(this -> boys_table);
-  };
+  }
 
   // Partition weights
   void ReferenceLocalHostWorkDriver::partition_weights( XCWeightAlg weight_alg, 
@@ -225,7 +225,7 @@ namespace GauXC {
   }
 
   struct RysBasis {
-    std::vector< shells > _shells;
+    std::vector< XCPU::shells > _shells;
     RysBasis( const BasisSet<double>& basis ) {
       size_t nshells = basis.size();
       _shells.resize(nshells);
@@ -237,7 +237,7 @@ namespace GauXC {
 	_shells[i].m = basis[i].nprim();
 	_shells[i].L = basis[i].l();
 
-	_shells[i].coeff = new coefficients[_shells[i].m];
+	_shells[i].coeff = new XCPU::coefficients[_shells[i].m];
 	for( int j = 0; j < _shells[i].m; ++j ) {
 	  _shells[i].coeff[j].alpha = basis[i].alpha()[j];
 	  _shells[i].coeff[j].coeff = basis[i].coeff()[j];
@@ -245,8 +245,8 @@ namespace GauXC {
       }
     }
 
-    shells& operator[](int i){ return _shells.at(i); }
-    const shells& operator[](int i) const { return _shells.at(i); }
+    XCPU::shells& operator[](int i){ return _shells.at(i); }
+    const XCPU::shells& operator[](int i) const { return _shells.at(i); }
 
     ~RysBasis() noexcept {
       for( auto& sh : _shells ) delete sh.coeff;
@@ -280,21 +280,20 @@ namespace GauXC {
 						     size_t nbe, const double* points, const double* weights, 
 						     const BasisSet<double>& basis, const BasisSetMap& basis_map, 
 						     const int32_t* shell_list, const double* X, size_t ldx, double* G, size_t ldg ) {
-                 #if 0
-    
+#if 0
     // Cast points to Rys format (binary compatable)
-    point* _points = reinterpret_cast<point*>(const_cast<double*>(points));
+    XCPU::point* _points = reinterpret_cast<XCPU::point*>(const_cast<double*>(points));
     std::vector<double> _points_transposed(3 * npts);
 
-    for(int i = 0; i < npts; ++i) {
+    for(size_t i = 0; i < npts; ++i) {
       _points_transposed[i + 0 * npts] = _points[i].x;
       _points_transposed[i + 1 * npts] = _points[i].y;
       _points_transposed[i + 2 * npts] = _points[i].z;
     }
   
     // Set G to zero
-    for( int j = 0; j < npts; ++j )
-      for( int i = 0; i < nbe;  ++i ) {
+    for( size_t j = 0; j < npts; ++j )
+      for( size_t i = 0; i < nbe;  ++i ) {
 	G[i + j*ldg] = 0.;
       }
 
@@ -302,29 +301,35 @@ namespace GauXC {
     RysBasis rys_basis(basis);
 
     int total_prim_pairs = 0;
-    for( int i = 0; i < nshells; ++i) {
-      const ish = shell_list[i];
-      for( int j = 0; j <= i; ++j) {
-	const jsh = shell_list[j];
+    for( size_t i = 0; i < nshells; ++i) {
+      const auto ish = shell_list[i];
+      const auto& bra = rys_basis[ish];
+      
+      for( size_t j = 0; j <= i; ++j) {
+	const auto jsh = shell_list[j];
+	const auto& ket = rys_basis[jsh];
 	
-	total_prim_pairs += (basis.at(ish).m * basis.at(jsh).m);
+	total_prim_pairs += (bra.m * ket.m);
       }
     }
 
     XCPU::prim_pair *prim_pairs = new XCPU::prim_pair[total_prim_pairs];
 
     int offset = 0;
-    for( int i = 0; i < nshells; ++i) {
-      const ish = shell_list[i];
-      for( int j = 0; j <= i; ++j) {
-	const jsh = shell_list[j];
+    for( size_t i = 0; i < nshells; ++i) {
+      const auto ish = shell_list[i];
+      const auto& bra = rys_basis[ish];
+      
+      for( size_t j = 0; j <= i; ++j) {
+	const auto jsh = shell_list[j];
+	const auto& ket = rys_basis[jsh];
 	
-	if( basis.at(ish).L >= basis.at(jsh).L )
-	  XCPU::generate_shell_pair(basis.at(ish), basis.at(jsh), (prim_pairs + offset));
+	if( bra.L >= ket.L )
+	  XCPU::generate_shell_pair(bra, ket, (prim_pairs + offset));
 	else
-	  XCPU::generate_shell_pair(basis.at(jsh), basis.at(ish), (prim_pairs + offset));
+	  XCPU::generate_shell_pair(ket, bra, (prim_pairs + offset));
 
-	offset += (basis.at(ish).m * basis.at(jsh).m);
+	offset += (bra.m * ket.m);
       }
     }
 
@@ -378,13 +383,13 @@ namespace GauXC {
     size_t ioff_cart = 0;
     for( int i = 0; i < nshells; ++i ) {
       const auto ish        = shell_list[i];
-      const auto& bra       = basis.at(ish);
+      const auto& bra       = rys_basis[ish];
       const int bra_cart_sz = bra.cart_size();
 
       size_t joff_cart = 0;
       for( int j = 0; j <= i; ++j ) {
 	const auto jsh        = shell_list[j];
-	const auto& ket       = basis.at(jsh);
+	const auto& ket       = rys_basis[jsh];
 	const int ket_cart_sz = ket.cart_size();
 
 	XCPU::compute_integral_shell_pair( ish == jsh,
@@ -429,7 +434,6 @@ namespace GauXC {
 	ioff_cart += shell_cart_sz;
       }
     }
-    #endif
+#endif
   }
-
 }

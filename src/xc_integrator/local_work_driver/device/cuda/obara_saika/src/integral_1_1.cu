@@ -1,6 +1,6 @@
 #include <math.h>
-#include "chebyshev_boys_computation.hpp"
-#include "integral_data_types.hpp"
+#include "../include/chebyshev_boys_computation.hpp"
+#include "../include/integral_data_types.hpp"
 #include "config_obara_saika.hpp"
 #include "integral_1_1.hu"
 

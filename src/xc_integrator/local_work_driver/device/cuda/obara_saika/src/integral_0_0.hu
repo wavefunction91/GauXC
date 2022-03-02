@@ -1,6 +1,7 @@
 #ifndef __MY_INTEGRAL_0_0
 #define __MY_INTEGRAL_0_0
 
+#include "../include/integral_data_types.hpp"
 namespace XGPU {
 __global__ void integral_0_0(size_t npts,
                              point rA,

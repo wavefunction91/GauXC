@@ -545,8 +545,8 @@ void generate_off_diagonal_part_2(FILE *f, int lA, int lB, int type) {
 
 void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, int type) {
   fprintf(f, "#include <math.h>\n");
-  fprintf(f, "#include \"chebyshev_boys_computation.hpp\"\n");
-  fprintf(f, "#include \"integral_data_types.hpp\"\n");
+  fprintf(f, "#include \"../include/chebyshev_boys_computation.hpp\"\n");
+  fprintf(f, "#include \"../include/integral_data_types.hpp\"\n");
   fprintf(f, "#include \"config_obara_saika.hpp\"\n");
   fprintf(f, "#include \"integral_%d.hu\"\n", lA);
   fprintf(f, "\n");
@@ -634,8 +634,8 @@ void generate_diagonal_files(FILE *f, int lA, int size, struct node *root_node, 
 
 void generate_off_diagonal_files(FILE *f, int lA, int lB, int size, struct node *root_node, int type) {
   fprintf(f, "#include <math.h>\n");
-  fprintf(f, "#include \"chebyshev_boys_computation.hpp\"\n");
-  fprintf(f, "#include \"integral_data_types.hpp\"\n");
+  fprintf(f, "#include \"../include/chebyshev_boys_computation.hpp\"\n");
+  fprintf(f, "#include \"../include/integral_data_types.hpp\"\n");
   fprintf(f, "#include \"config_obara_saika.hpp\"\n");
   fprintf(f, "#include \"integral_%d_%d.hu\"\n", lA, lB);
   fprintf(f, "\n");
@@ -738,6 +738,7 @@ void generate_diagonal_header_files(int lA) {
   fprintf(f, "#ifndef __MY_INTEGRAL_%d\n", lA);
   fprintf(f, "#define __MY_INTEGRAL_%d\n", lA);
   fprintf(f, "\n");
+  fprintf(f, "#include \"../include/integral_data_types.hpp\"\n");
   fprintf(f, "namespace XGPU {\n");
   fprintf(f, "__global__ void integral_%d(size_t npts,\n", lA);
   fprintf(f, "                          point rA,\n");
@@ -767,6 +768,7 @@ void generate_off_diagonal_header_files(int lA, int lB) {
   fprintf(f, "#ifndef __MY_INTEGRAL_%d_%d\n", lA, lB);
   fprintf(f, "#define __MY_INTEGRAL_%d_%d\n", lA, lB);
   fprintf(f, "\n");
+  fprintf(f, "#include \"../include/integral_data_types.hpp\"\n");
   fprintf(f, "namespace XGPU {\n");
   fprintf(f, "__global__ void integral_%d_%d(size_t npts,\n", lA, lB);
   fprintf(f, "                             point rA,\n");
@@ -829,8 +831,8 @@ void generate_main_files(int lA) {
 
   fprintf(f, "#include <stdio.h>\n");
   fprintf(f, "#include <stdlib.h>\n");
-  fprintf(f, "#include \"integral_data_types.hpp\"\n");
-  fprintf(f, "#include \"obara_saika_integrals.hpp\"\n");
+  fprintf(f, "#include \"../include/integral_data_types.hpp\"\n");
+  fprintf(f, "#include \"../include/obara_saika_integrals.hpp\"\n");
   for(int i = 0; i <= lA; ++i) {
     fprintf(f, "#include \"integral_%d.hu\"\n", i);
   }
