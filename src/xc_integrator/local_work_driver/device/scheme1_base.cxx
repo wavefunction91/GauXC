@@ -86,7 +86,7 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
 
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
-#if 0
+#if 1
   auto tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
 
@@ -116,6 +116,7 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
 }
 
 void AoSScheme1Base::eval_collocation_hessian( XCDeviceData* _data ) {
+#if 0
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -128,7 +129,7 @@ void AoSScheme1Base::eval_collocation_hessian( XCDeviceData* _data ) {
   eval_collocation_shell_to_task_hessian( max_l, 
     data->l_batched_shell_to_task.data(), aos_stack.device_tasks,
     data->device_backend_->queue() );
-
+#endif
 }
 
 
@@ -449,6 +450,7 @@ void AoSScheme1Base::symmetrize_vxc( XCDeviceData* _data) {
 
 
 void AoSScheme1Base::inc_exc_grad_lda( XCDeviceData* _data ) {
+#if 0
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
@@ -460,10 +462,11 @@ void AoSScheme1Base::inc_exc_grad_lda( XCDeviceData* _data ) {
     data->aos_stack.device_tasks,
     data->static_stack.exc_grad_device,
     data->device_backend_->queue() ); 
-
+#endif
 }
 
 void AoSScheme1Base::inc_exc_grad_gga( XCDeviceData* _data ) {
+#if 0
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
@@ -475,7 +478,7 @@ void AoSScheme1Base::inc_exc_grad_gga( XCDeviceData* _data ) {
     data->aos_stack.device_tasks,
     data->static_stack.exc_grad_device,
     data->device_backend_->queue() ); 
-
+#endif
 }
 
 }

@@ -26,7 +26,8 @@ void HipAoSScheme1<Base>::partition_weights( XCDeviceData* _data ) {
 
   // Compute distances from grid to atomic centers
   compute_grid_to_center_dist( data->total_npts_task_batch, data->global_dims.natoms,
-    static_stack.coords_device, base_stack.points_device, 
+    static_stack.coords_device, base_stack.points_x_device, 
+    base_stack.points_y_device, base_stack.points_z_device,
     scheme1_stack.dist_scratch_device, ldatoms, *device_backend->master_stream );
 
   // Modify weights
