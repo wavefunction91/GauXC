@@ -12,6 +12,9 @@ set( GAUXC_OBARA_SAIKA_CUDA_SRC
      src/chebyshev_boys_computation.cu
 )
 target_sources( gauxc PRIVATE ${GAUXC_OBARA_SAIKA_CUDA_SRC} )
-target_include_directories( gauxc PRIVATE
+target_include_directories( gauxc PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 )
+
+add_executable( cuda_obara_saika_test test/test_new.cpp )
+target_link_libraries( cuda_obara_saika_test PUBLIC gauxc )
