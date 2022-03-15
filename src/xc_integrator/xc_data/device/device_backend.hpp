@@ -2,6 +2,7 @@
 #include <tuple>
 #include <vector>
 #include <memory>
+#include <string>
 #include "device_queue.hpp"
 #include "device_blas_handle.hpp"
 #include <gauxc/gauxc_config.hpp>

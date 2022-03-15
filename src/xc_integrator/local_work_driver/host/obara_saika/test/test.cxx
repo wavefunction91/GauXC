@@ -1,36 +1,31 @@
 #include <libint2.hpp>
-#include <integral_data_types.h>
-#include <obara_saika_integrals.h>
-#include <chebyshev_boys_function.hpp>
+#include <integral_data_types.hpp>
+#include <obara_saika_integrals.hpp>
+#include <chebyshev_boys_computation.hpp>
 #include <vector>
 #include <iostream>
 #include <algorithm>
 #include <random>
+#include <sys/time.h>
+#include <float.h>
 
 int main(int argc, char** argv) {
   libint2::initialize();
-  #if 0
-  int ncheb   = 13;
-  int nseg    = 60;
-  int maxM    = 10;
-  double maxT = 117;
-  GauXC::gauxc_boys_init(ncheb, maxM, nseg, 1e-10, maxT);
-  #else
+  
   GauXC::gauxc_boys_init();
-  #endif
 
   // Benzene
   std::vector<libint2::Atom> atoms = {
-    libint2::Atom{ 6,  6.92768e-01,  -1.77656e+00,   1.40218e-03},
-    libint2::Atom{ 6,  3.35108e+00,  -1.77668e+00,   2.21098e-03},
-    libint2::Atom{ 6,  4.68035e+00,   5.25219e-01,   1.22454e-03},
-    libint2::Atom{ 6,  3.35121e+00,   2.82744e+00,  -7.02978e-04},
-    libint2::Atom{ 6,  6.93087e-01,   2.82756e+00,  -1.55902e-03},
-    libint2::Atom{ 6, -6.36278e-01,   5.25491e-01,  -4.68652e-04},
-    libint2::Atom{ 1, -3.41271e-01,  -3.56759e+00,   2.21287e-03},
-    libint2::Atom{ 1,  4.38492e+00,  -3.56783e+00,   3.73599e-03},
-    libint2::Atom{ 1,  6.74844e+00,   5.25274e-01,   1.88028e-03},
-    libint2::Atom{ 1,  4.38551e+00,   4.61832e+00,  -1.48721e-03},
+    //libint2::Atom{ 6,  6.92768e-01,  -1.77656e+00,   1.40218e-03},
+    //libint2::Atom{ 6,  3.35108e+00,  -1.77668e+00,   2.21098e-03},
+    //libint2::Atom{ 6,  4.68035e+00,   5.25219e-01,   1.22454e-03},
+    //libint2::Atom{ 6,  3.35121e+00,   2.82744e+00,  -7.02978e-04},
+    //libint2::Atom{ 6,  6.93087e-01,   2.82756e+00,  -1.55902e-03},
+    //libint2::Atom{ 6, -6.36278e-01,   5.25491e-01,  -4.68652e-04},
+    //libint2::Atom{ 1, -3.41271e-01,  -3.56759e+00,   2.21287e-03},
+    //libint2::Atom{ 1,  4.38492e+00,  -3.56783e+00,   3.73599e-03},
+    //libint2::Atom{ 1,  6.74844e+00,   5.25274e-01,   1.88028e-03},
+    //libint2::Atom{ 1,  4.38551e+00,   4.61832e+00,  -1.48721e-03},
     libint2::Atom{ 1, -3.41001e-01,   4.61857e+00,  -3.05569e-03},
     libint2::Atom{ 1, -2.70437e+00,   5.25727e-01,  -1.09793e-03} 
   };
@@ -116,12 +111,15 @@ int main(int argc, char** argv) {
         auto bf_i = shell2bf[i];
         auto ni   = basis[i].size();
 
-	//if(basis[i].contr[0].L >= basis[j].contr[0].L) {
-	engine.compute( basis[i], basis[j] );
-	  //}
+	if(i == j) {
+	  if(basis[i].contr[0].l == 1) {
+	    engine.compute( basis[i], basis[j] );
+	    const_row_major_map buf_map( engine_buf[0], ni, nj );
+	    A_k.block( bf_i, bf_j, ni, nj ) = buf_map;
 
-        const_row_major_map buf_map( engine_buf[0], ni, nj );
-        A_k.block( bf_i, bf_j, ni, nj ) = buf_map;
+	  }
+	}
+
       }
     }
   }
@@ -143,14 +141,19 @@ int main(int argc, char** argv) {
 
   // correctness - own implementation
 
-  std::vector< point > _points;
-
+  std::vector<point>  _points(ngrid);
+  std::vector<double> _points_transposed(3 * ngrid);
+  
   _points.resize(ngrid); 
 
   for( int i = 0; i < ngrid; ++i ){
     _points[i].x = grid_points[i][0];
     _points[i].y = grid_points[i][1];
     _points[i].z = grid_points[i][2];
+
+    _points_transposed[i + 0 * ngrid] = grid_points[i][0];
+    _points_transposed[i + 1 * ngrid] = grid_points[i][1];
+    _points_transposed[i + 2 * ngrid] = grid_points[i][2];
   }
   
   std::vector< shells > _shells;
@@ -186,47 +189,54 @@ int main(int argc, char** argv) {
 
   std::cout << nshells << std::endl;
 
+struct timeval start, end;
+
+  gettimeofday(&start, NULL);
   int ioff_cart = 0;
   for( int i = 0; i < nshells; ++i) {
     shells bra_shell = _shells[i];
     int bra_cart_size = (bra_shell.L + 1) * (bra_shell.L + 2) / 2;
-  
+
     int joff_cart = 0;
     for( int j = 0; j <= i; ++j) {
       shells ket_shell = _shells[j];
       int ket_cart_size = (ket_shell.L + 1) * (ket_shell.L + 2) / 2;
 
+      if(i == j) {
+	if(bra_shell.L == 1) {
       compute_integral_shell_pair(ngrid,
 				  i,
 				  j,
 				  _shells.data(),
-				  _points.data(),
+				  _points_transposed.data(),
 				  (Xi + ioff_cart * ngrid),
 				  (Xj + joff_cart * ngrid),
-				  1,
-				  ngrid, 
+				  ngrid,
 				  (Gi + ioff_cart * ngrid),
 				  (Gj + joff_cart * ngrid),
-				  1,
 				  ngrid,
 				  w.data());
-
+	}
+      }
+	
       joff_cart += ket_cart_size;
     }
-    
+
     ioff_cart += bra_cart_size;
   }
 
+  gettimeofday(&end, NULL);
+  
   int correct = 1;
   
   for( int i = 0; i < nbf * ngrid; ++i) {
-    if(fabs(G_libint[i] - G_own[i]) > 1e-6) {
+    if((fabs(G_libint[i] - G_own[i]) > 1e-6) || std::isnan(G_own[i])) {
       printf("%lf %lf\n", G_libint[i], G_own[i]);
       correct = 0;
     }
   }
 
-  std::cout << "Correctness: " << correct << std::endl;
+  std::cout << "Correctness: " << correct << "\tExecution: "<< 1000000 * (end.tv_sec - start.tv_sec) + (end.tv_usec - start.tv_usec) << std::endl;
   
   libint2::finalize();  // done with libint
   GauXC::gauxc_boys_finalize();

@@ -337,21 +337,6 @@ void AoSScheme1Base::eval_xmat( XCDeviceData* _data, bool do_grad ){
   //size_t nsingle = 0;
   for( size_t iT = 0; iT < ntasks; ++iT ) {
     auto& task = tasks[iT];
-    #if 0
-    if(task.ncut > 1)
-      gemm( data->device_backend_->blas_pool_handle(iT % n_blas_streams), 
-        DeviceBlasOp::NoTrans, DeviceBlasOp::NoTrans, 
-        task.npts, task.nbe, task.nbe, 1., task.bf, task.npts, task.nbe_scr, 
-        task.nbe, 0., task.zmat, task.npts );
-    else {
-      gemm( data->device_backend_->blas_pool_handle(iT % n_blas_streams), 
-        DeviceBlasOp::NoTrans, DeviceBlasOp::NoTrans,
-        task.npts, task.nbe, task.nbe, 1., task.bf, task.npts,
-        static_stack.dmat_device + task.ibf_begin*(nbf+1), nbf, 
-        0., task.zmat, task.npts );
-      nsingle++;
-    }
-    #else
       auto den_ptr = task.ncut > 1 ? task.nbe_scr : static_stack.dmat_device + task.ibf_begin*(nbf+1);
       int  ldden   = task.ncut > 1 ? task.nbe : nbf;
       auto handle = data->device_backend_->blas_pool_handle( iT % n_blas_streams );
@@ -361,7 +346,6 @@ void AoSScheme1Base::eval_xmat( XCDeviceData* _data, bool do_grad ){
         do_gemm( handle, task.npts, task.nbe, task.dbfy, den_ptr, ldden, task.xmat_y );
         do_gemm( handle, task.npts, task.nbe, task.dbfz, den_ptr, ldden, task.xmat_z );
       }
-    #endif
   }
 
   // Record completion of BLAS ops on master stream

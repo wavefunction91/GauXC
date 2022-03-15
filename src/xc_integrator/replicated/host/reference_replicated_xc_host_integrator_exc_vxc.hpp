@@ -246,7 +246,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   } // End OpenMP region
 
-  std::cout << "N_EL = " << *N_EL << std::endl;
+  std::cout << "N_EL = " << std::setprecision(12) << std::scientific << *N_EL << std::endl;
 
   // Symmetrize VXC
   for( int32_t j = 0;   j < nbf; ++j )
