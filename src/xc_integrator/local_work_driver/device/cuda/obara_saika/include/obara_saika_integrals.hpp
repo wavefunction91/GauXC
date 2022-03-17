@@ -1,6 +1,7 @@
 #ifndef __MY_INTEGRAL_OBARA_SAIKA
 #define __MY_INTEGRAL_OBARA_SAIKA
 namespace XGPU {
+  
 void generate_shell_pair( const shells& A, const shells& B, prim_pair *prim_pairs);
 void compute_integral_shell_pair(size_t npts,
                              int is_diag,
@@ -19,5 +20,6 @@ void compute_integral_shell_pair(size_t npts,
                              int ldG, 
                              double *weights,
                              double *boys_table);
+  
  }
 #endif
