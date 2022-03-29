@@ -1,7 +1,7 @@
 #ifndef __MY_INTEGRAL_1_1
 #define __MY_INTEGRAL_1_1
 
-#include "../include/integral_data_types.hpp"
+#include "../include/cpu/integral_data_types.hpp"
 namespace XCPU {
 void integral_1_1(size_t npts,
                   double *points,

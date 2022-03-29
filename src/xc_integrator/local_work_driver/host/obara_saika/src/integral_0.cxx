@@ -1,15 +1,10 @@
 #include <math.h>
-#include "../include/chebyshev_boys_computation.hpp"
-#include "../include/integral_data_types.hpp"
+#include "../include/cpu/chebyshev_boys_computation.hpp"
+#include "../include/cpu/integral_data_types.hpp"
 #include "config_obara_saika.hpp"
 #include "integral_0.hpp"
 
 #define PI 3.14159265358979323846
-
-#define MIN(a,b)			\
-  ({ __typeof__ (a) _a = (a);	        \
-  __typeof__ (b) _b = (b);		\
-  _a < _b ? _a : _b; })
 
 namespace XCPU {
 void integral_0(size_t npts,
@@ -99,7 +94,7 @@ void integral_0(size_t npts,
 
    // cleanup code
    for(; p_outer < npts; p_outer += NPTS_LOCAL) {
-      size_t npts_inner = MIN((size_t) NPTS_LOCAL, npts - p_outer);
+      size_t npts_inner = std::min((size_t) NPTS_LOCAL, npts - p_outer);
       double *_point_outer = (_points + p_outer);
 
       double xA = rA.x;

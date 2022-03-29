@@ -1,5 +1,4 @@
-#ifndef _MY_INTEGRAL_DATA_TYPES
-#define _MY_INTEGRAL_DATA_TYPES
+#pragma once
 #include <cmath>
 
 namespace XCPU {
@@ -29,5 +28,3 @@ namespace XCPU {
   } prim_pair;
 
 }
-
-#endif

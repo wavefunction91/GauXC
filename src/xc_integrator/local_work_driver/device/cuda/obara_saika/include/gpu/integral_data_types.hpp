@@ -1,5 +1,5 @@
-#ifndef _MY_INTEGRAL_DATA_TYPES
-#define _MY_INTEGRAL_DATA_TYPES
+#pragma once
+
 #include <cmath>
 
 namespace XGPU {
@@ -31,4 +31,3 @@ namespace XGPU {
 
 }
 
-#endif

@@ -1,6 +1,4 @@
-
-#ifndef _MY_CHEBYSHEV_BOYS_FUNCTION
-#define _MY_CHEBYSHEV_BOYS_FUNCTION
+#pragma once
 
 #include <iostream>
 
@@ -17,4 +15,3 @@ namespace XCPU {
   void boys_finalize(double *boys_table);
 }
 
-#endif

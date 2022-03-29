@@ -8,9 +8,9 @@
 #include <stdexcept>
 
 #include <gauxc/basisset_map.hpp>
-#include "integral_data_types.hpp"
-#include "obara_saika_integrals.hpp"
-#include "chebyshev_boys_computation.hpp"
+#include "cpu/integral_data_types.hpp"
+#include "cpu/obara_saika_integrals.hpp"
+#include "cpu/chebyshev_boys_computation.hpp"
 #include <gauxc/util/real_solid_harmonics.hpp>
 #include "integrator_util/integral_bounds.hpp"
 

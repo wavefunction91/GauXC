@@ -1,4 +1,4 @@
-#include "chebyshev_boys_computation.hpp"
+#include "gpu/chebyshev_boys_computation.hpp"
 #include <gauxc/util/constexpr_math.hpp>
 #include <iostream>
 #include <cmath>

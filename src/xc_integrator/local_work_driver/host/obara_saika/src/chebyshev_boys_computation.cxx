@@ -1,4 +1,5 @@
-#include "chebyshev_boys_computation.hpp"
+#include "cpu/chebyshev_boys_computation.hpp"
+
 #include <gauxc/util/constexpr_math.hpp>
 #include <iostream>
 #include <cmath>
@@ -8,10 +9,6 @@
 #include <memory>
 #include <vector>
 
-#define MIN(a,b)			\
-  ({ __typeof__ (a) _a = (a);	        \
-  __typeof__ (b) _b = (b);		\
-  _a < _b ? _a : _b; })
 
 namespace XCPU {
   double boys_reference(int m, double T) {

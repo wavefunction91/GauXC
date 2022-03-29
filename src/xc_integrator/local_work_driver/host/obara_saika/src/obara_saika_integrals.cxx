@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../include/integral_data_types.hpp"
-#include "../include/obara_saika_integrals.hpp"
+#include "../include/cpu/integral_data_types.hpp"
+#include "../include/cpu/obara_saika_integrals.hpp"
 #include "integral_0.hpp"
 #include "integral_1.hpp"
 #include "integral_2.hpp"

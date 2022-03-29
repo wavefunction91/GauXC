@@ -2,7 +2,6 @@
 
 #include <gauxc/util/constexpr_math.hpp>
 
-//#define X86_AVX
 #define NPTS_LOCAL 64
 
 #define DEFAULT_NCHEB  7

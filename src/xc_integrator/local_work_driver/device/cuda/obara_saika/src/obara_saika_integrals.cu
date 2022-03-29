@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include "../include/integral_data_types.hpp"
-#include "../include/obara_saika_integrals.hpp"
+#include "../include/gpu/integral_data_types.hpp"
+#include "../include/gpu/obara_saika_integrals.hpp"
 #include "integral_0.hu"
 #include "integral_1.hu"
 #include "integral_2.hu"
@@ -15,9 +15,6 @@ namespace XGPU {
 
 void generate_shell_pair( const shells& A, const shells& B, prim_pair *prim_pairs) {
    // L Values
-   int lA = A.L;
-   int lB = B.L;
-
    const auto xA = A.origin.x;
    const auto yA = A.origin.y;
    const auto zA = A.origin.z;
@@ -34,7 +31,6 @@ void generate_shell_pair( const shells& A, const shells& B, prim_pair *prim_pair
 
    const int nprim_A = A.m;
    const int nprim_B = B.m;
-   const int np = nprim_A * nprim_B;
 
    for(int i = 0, ij = 0; i < nprim_A; ++i       )
    for(int j = 0        ; j < nprim_B; ++j, ++ij ) {
@@ -62,23 +58,23 @@ void generate_shell_pair( const shells& A, const shells& B, prim_pair *prim_pair
 
 }
 
-void compute_integral_shell_pair(size_t npts,
-                  int is_diag,
-                  int lA,
-                  int lB,
-                  point rA,
-                  point rB,
-                  int nprim_pairs,
-                  prim_pair *prim_pairs,
-                  double *points,
-                  double *Xi,
-                  double *Xj,
-                  int ldX,
-                  double *Gi,
-                  double *Gj,
-                  int ldG, 
-                  double *weights,
-                  double *boys_table) {
+void compute_integral_shell_pair(int is_diag,
+				 size_t npts,
+				 double *points,
+				 int lA,
+				 int lB,
+				 point rA,
+				 point rB,
+				 int nprim_pairs,
+				 prim_pair *prim_pairs,
+				 double *Xi,
+				 double *Xj,
+				 int ldX,
+				 double *Gi,
+				 double *Gj,
+				 int ldG, 
+				 double *weights,
+				 double *boys_table) {
    if (is_diag) {
       if(lA == 0) {
          integral_0<<<320, 128, 128 * 1 * sizeof(double)>>>(npts,
