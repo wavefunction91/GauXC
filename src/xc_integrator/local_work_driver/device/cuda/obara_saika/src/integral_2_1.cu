@@ -13,11 +13,11 @@
 
 namespace XGPU {
 __global__ void integral_2_1(size_t npts,
+                             double *_points,
                              point rA,
                              point rB,
                              int nprim_pairs,
                              prim_pair *prim_pairs,
-                             double *_points,
                              double *Xi,
                              double *Xj,
                              int ldX,

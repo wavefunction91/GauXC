@@ -13,11 +13,11 @@
 
 namespace XGPU {
 __global__ void integral_1(size_t npts,
+                          double *points,
                           point rA,
                           point rB,
                           int nprim_pairs,
                           prim_pair *prim_pairs,
-                          double *_points,
                           double *Xi,
                           int ldX,
                           double *Gi,
@@ -26,7 +26,7 @@ __global__ void integral_1(size_t npts,
                           double *boys_table) {
    __shared__ double *temp;
    for(size_t p_outer = blockIdx.x * blockDim.x; p_outer < npts; p_outer += gridDim.x * blockDim.x) {
-      double *_point_outer = (_points + p_outer);
+      double *_point_outer = (points + p_outer);
 
       size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer);
 

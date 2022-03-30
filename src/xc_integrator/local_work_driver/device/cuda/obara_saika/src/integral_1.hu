@@ -1,14 +1,13 @@
-#ifndef __MY_INTEGRAL_1
-#define __MY_INTEGRAL_1
+#pragma once
 
 #include "../include/gpu/integral_data_types.hpp"
 namespace XGPU {
 __global__ void integral_1(size_t npts,
+                          double *points,
                           point rA,
                           point rB,
                           int nprim_pairs,
                           prim_pair *prim_pairs,
-                          double *points,
                           double *Xi,
                           int ldX,
                           double *Gi,
@@ -16,4 +15,3 @@ __global__ void integral_1(size_t npts,
                           double *weights, 
                           double *boys_table);
 }
-#endif
