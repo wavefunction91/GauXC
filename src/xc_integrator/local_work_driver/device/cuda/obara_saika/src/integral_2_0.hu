@@ -2,18 +2,16 @@
 
 #include "../include/gpu/integral_data_types.hpp"
 namespace XGPU {
-__global__ void integral_2_0(size_t npts,
-                             double *_points,
-                             point rA,
-                             point rB,
-                             int nprim_pairs,
-                             prim_pair *prim_pairs,
-                             double *Xi,
-                             double *Xj,
-                             int ldX,
-                             double *Gi,
-                             double *Gj,
-                             int ldG, 
-                             double *weights,
-                             double *boys_table);
+  void integral_2_0(size_t npts,
+		    double *_points,
+		    int nprim_pairs,
+		    prim_pair *prim_pairs,
+		    double *Xi,
+		    double *Xj,
+		    int ldX,
+		    double *Gi,
+		    double *Gj,
+		    int ldG, 
+		    double *weights,
+		    double *boys_table);
 }
