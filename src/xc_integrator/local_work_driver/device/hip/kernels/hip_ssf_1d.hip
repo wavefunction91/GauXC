@@ -25,7 +25,6 @@ __global__ void modify_weights_ssf_kernel_1d(
         double*                           weights_device
 ) {
 
-#if 1
   // Frisch partition functions
   auto gFrisch = [](double x) {
 
@@ -118,7 +117,6 @@ __global__ void modify_weights_ssf_kernel_1d(
     weights_device[ipt] *= parent_weight / sum;
   }
 
-#endif
 }
 
 void partition_weights_ssf_1d( int32_t npts, int32_t natoms, const double* RAB,

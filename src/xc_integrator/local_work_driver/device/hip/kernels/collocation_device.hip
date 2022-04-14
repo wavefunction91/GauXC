@@ -27,7 +27,7 @@ void eval_collocation_masked(
   device_queue queue
 ) {
 
-  hipStream_t stream = queue.queue_as<util::hip_stream>() ;
+  hipStream_t stream = queue.queue_as<util::hip_stream>();
 
   auto nmax_threads = util::hip_kernel_max_threads_per_block( 
     collocation_device_masked_kernel<T>
@@ -69,7 +69,7 @@ void eval_collocation_masked_combined(
   device_queue queue
 ) {
 
-  hipStream_t stream = queue.queue_as<util::hip_stream>() ;
+  hipStream_t stream = queue.queue_as<util::hip_stream>();
 
   auto nmax_threads = util::hip_kernel_max_threads_per_block( 
     collocation_device_masked_combined_kernel<T>
@@ -121,7 +121,7 @@ void eval_collocation_masked_deriv1(
   device_queue queue
 ) {
 
-  hipStream_t stream = queue.queue_as<util::hip_stream>() ;
+  hipStream_t stream = queue.queue_as<util::hip_stream>();
 
   auto nmax_threads = util::hip_kernel_max_threads_per_block( 
     collocation_device_masked_combined_kernel<T>
@@ -179,7 +179,7 @@ void eval_collocation_masked_combined_deriv1(
   device_queue queue
 ) {
 
-  hipStream_t stream = queue.queue_as<util::hip_stream>() ;
+  hipStream_t stream = queue.queue_as<util::hip_stream>();
 
   auto nmax_threads = util::hip_kernel_max_threads_per_block( 
     collocation_device_masked_combined_kernel_deriv1<T>
