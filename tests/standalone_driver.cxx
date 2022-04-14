@@ -8,6 +8,7 @@
 #include "ini_input.hpp"
 #include <gauxc/exceptions.hpp>
 #define EIGEN_DONT_VECTORIZE
+#define EIGEN_NO_CUDA
 #include <Eigen/Core>
 
 using namespace GauXC;
