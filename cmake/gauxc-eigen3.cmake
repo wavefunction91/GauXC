@@ -1,4 +1,4 @@
-find_package( Eigen3 CONFIG QUIET )
+find_package( Eigen3 CONFIG HINTS ${EIGEN3_ROOT_DIR} )
 if( NOT Eigen3_FOUND )
   
   message( STATUS "Could Not Find Eigen3... Building" )
