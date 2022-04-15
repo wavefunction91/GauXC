@@ -17,11 +17,11 @@
 namespace GauXC {
 
   ReferenceLocalHostWorkDriver::ReferenceLocalHostWorkDriver() {
-    this -> boys_table = XCPU::boys_init();
+    this->boys_table = XCPU::boys_init();
   }
   
   ReferenceLocalHostWorkDriver::~ReferenceLocalHostWorkDriver() noexcept {
-    XCPU::boys_finalize(this -> boys_table);
+    XCPU::boys_finalize(this->boys_table);
   }
 
   // Partition weights
@@ -29,17 +29,17 @@ namespace GauXC {
 							const Molecule& mol, const MolMeta& meta, task_iterator task_begin, 
 							task_iterator task_end ) {
     switch( weight_alg ) {
-    case XCWeightAlg::Becke:
-      reference_becke_weights_host( mol, meta, task_begin, task_end );
-      break;
-    case XCWeightAlg::SSF:
-      reference_ssf_weights_host( mol, meta, task_begin, task_end );
-      break;
-    case XCWeightAlg::LKO:
-      reference_lko_weights_host( mol, meta, task_begin, task_end );
-      break;
-    default:
-      GAUXC_GENERIC_EXCEPTION("Weight Alg Not Supported");
+      case XCWeightAlg::Becke:
+        reference_becke_weights_host( mol, meta, task_begin, task_end );
+        break;
+      case XCWeightAlg::SSF:
+        reference_ssf_weights_host( mol, meta, task_begin, task_end );
+        break;
+      case XCWeightAlg::LKO:
+        reference_lko_weights_host( mol, meta, task_begin, task_end );
+        break;
+      default:
+        GAUXC_GENERIC_EXCEPTION("Weight Alg Not Supported");
     }
   }
 
@@ -224,25 +224,58 @@ namespace GauXC {
 
   }
 
+  struct RysShellPair {
+    std::vector< XCPU::prim_pair > _prim_pairs;
+    RysShellPair( const XCPU::shells& bra, const XCPU::shells& ket ) :
+      _prim_pairs(bra.m*ket.m) {
+      if( bra.L >= ket.L ) XCPU::generate_shell_pair( bra, ket, _prim_pairs.data() );
+      else                 XCPU::generate_shell_pair( ket, bra, _prim_pairs.data() );
+    }
+  };
+
+  struct RysShellPairData {
+    size_t _nshells;
+    std::vector<RysShellPair> _shell_pairs;
+    RysShellPairData( int nshells, const XCPU::shells* shells ) {
+      _nshells = nshells;
+      _shell_pairs.reserve( nshells*(nshells+1)/2 );
+      // Pack into lower triangle
+      for( int i = 0; i < nshells; ++i ) 
+      for( int j = 0; j <= i;      ++j ) {
+        _shell_pairs.emplace_back( shells[i], shells[j] );
+      }
+    }
+
+    auto& at( size_t i, size_t j ) {
+      if( j <= i ) // Lower triangle
+        return _shell_pairs[i + ((2*_nshells - j) * j) / 2];
+      else return at(j,i);
+    }
+
+  };
+
   struct RysBasis {
     std::vector< XCPU::shells > _shells;
+    std::unique_ptr<RysShellPairData> _spdata;
     RysBasis( const BasisSet<double>& basis ) {
       size_t nshells = basis.size();
       _shells.resize(nshells);
       for( int i = 0; i < nshells; ++i ) {
-	_shells[i].origin.x = basis[i].O()[0];
-	_shells[i].origin.y = basis[i].O()[1];
-	_shells[i].origin.z = basis[i].O()[2];
+	      _shells[i].origin.x = basis[i].O()[0];
+	      _shells[i].origin.y = basis[i].O()[1];
+	      _shells[i].origin.z = basis[i].O()[2];
 
-	_shells[i].m = basis[i].nprim();
-	_shells[i].L = basis[i].l();
+	      _shells[i].m = basis[i].nprim();
+	      _shells[i].L = basis[i].l();
 
-	_shells[i].coeff = new XCPU::coefficients[_shells[i].m];
-	for( int j = 0; j < _shells[i].m; ++j ) {
-	  _shells[i].coeff[j].alpha = basis[i].alpha()[j];
-	  _shells[i].coeff[j].coeff = basis[i].coeff()[j];
-	}
+	      _shells[i].coeff = new XCPU::coefficients[_shells[i].m];
+	      for( int j = 0; j < _shells[i].m; ++j ) {
+	        _shells[i].coeff[j].alpha = basis[i].alpha()[j];
+	        _shells[i].coeff[j].coeff = basis[i].coeff()[j];
+	      }
       }
+
+      _spdata = std::make_unique<RysShellPairData>( nshells, _shells.data() );
     }
 
     XCPU::shells& operator[](int i){ return _shells.at(i); }
@@ -280,7 +313,6 @@ namespace GauXC {
 						     size_t nbe, const double* points, const double* weights, 
 						     const BasisSet<double>& basis, const BasisSetMap& basis_map, 
 						     const int32_t* shell_list, const double* X, size_t ldx, double* G, size_t ldg ) {
-#if 0
     // Cast points to Rys format (binary compatable)
     XCPU::point* _points = reinterpret_cast<XCPU::point*>(const_cast<double*>(points));
     std::vector<double> _points_transposed(3 * npts);
@@ -290,48 +322,18 @@ namespace GauXC {
       _points_transposed[i + 1 * npts] = _points[i].y;
       _points_transposed[i + 2 * npts] = _points[i].z;
     }
+
   
     // Set G to zero
     for( size_t j = 0; j < npts; ++j )
-      for( size_t i = 0; i < nbe;  ++i ) {
-	G[i + j*ldg] = 0.;
-      }
+    for( size_t i = 0; i < nbe;  ++i ) {
+	    G[i + j*ldg] = 0.;
+    }
 
-    // Copy the basis set 
+    // Copy the basis set and compute shell pair data
     RysBasis rys_basis(basis);
 
-    int total_prim_pairs = 0;
-    for( size_t i = 0; i < nshells; ++i) {
-      const auto ish = shell_list[i];
-      const auto& bra = rys_basis[ish];
-      
-      for( size_t j = 0; j <= i; ++j) {
-	const auto jsh = shell_list[j];
-	const auto& ket = rys_basis[jsh];
-	
-	total_prim_pairs += (bra.m * ket.m);
-      }
-    }
 
-    XCPU::prim_pair *prim_pairs = new XCPU::prim_pair[total_prim_pairs];
-
-    int offset = 0;
-    for( size_t i = 0; i < nshells; ++i) {
-      const auto ish = shell_list[i];
-      const auto& bra = rys_basis[ish];
-      
-      for( size_t j = 0; j <= i; ++j) {
-	const auto jsh = shell_list[j];
-	const auto& ket = rys_basis[jsh];
-	
-	if( bra.L >= ket.L )
-	  XCPU::generate_shell_pair(bra, ket, (prim_pairs + offset));
-	else
-	  XCPU::generate_shell_pair(ket, bra, (prim_pairs + offset));
-
-	offset += (bra.m * ket.m);
-      }
-    }
 
     // Spherical Harmonic Transformer
     util::SphericalHarmonicTransform sph_trans(5);
@@ -350,21 +352,21 @@ namespace GauXC {
       int ioff = 0;
       int ioff_cart = 0;
       for( int i = 0; i < nshells; ++i ) {
-	const auto ish = shell_list[i];
-	const auto& shell      = basis.at(ish);
-	const int shell_l       = shell.l();
-	const int shell_sz      = shell.size();
-	const int shell_cart_sz = shell.cart_size();
-
-	if( shell.pure() and shell_l > 0 ) {
-	  sph_trans.itform_bra_cm( shell_l, npts, X + ioff, ldx,
-				   X_cart.data() + ioff_cart, nbe_cart );
-	} else {
-	  blas::lacpy( 'A', shell_sz, npts, X + ioff, ldx,
-		       X_cart.data() + ioff_cart, nbe_cart );
-	}
-	ioff += shell_sz;
-	ioff_cart += shell_cart_sz;
+        const auto ish = shell_list[i];
+        const auto& shell      = basis.at(ish);
+        const int shell_l       = shell.l();
+        const int shell_sz      = shell.size();
+        const int shell_cart_sz = shell.cart_size();
+        
+        if( shell.pure() and shell_l > 0 ) {
+          sph_trans.itform_bra_cm( shell_l, npts, X + ioff, ldx,
+        			   X_cart.data() + ioff_cart, nbe_cart );
+        } else {
+          blas::lacpy( 'A', shell_sz, npts, X + ioff, ldx,
+        	       X_cart.data() + ioff_cart, nbe_cart );
+        }
+        ioff += shell_sz;
+        ioff_cart += shell_cart_sz;
       }
     }
 
@@ -375,65 +377,66 @@ namespace GauXC {
 
     std::vector<double> X_cart_rm( nbe_cart*npts,0. ), G_cart_rm( nbe_cart*npts,0. );
     for( auto i = 0; i < nbe_cart; ++i )
-      for( auto j = 0; j < npts;     ++j ) {
-	X_cart_rm[i*npts + j] = X_use[i + j*ldx_use];
-      }
+    for( auto j = 0; j < npts;     ++j ) {
+      X_cart_rm[i*npts + j] = X_use[i + j*ldx_use];
+    }
 
-    offset = 0;
     size_t ioff_cart = 0;
     for( int i = 0; i < nshells; ++i ) {
       const auto ish        = shell_list[i];
       const auto& bra       = rys_basis[ish];
-      const int bra_cart_sz = bra.cart_size();
+      const int bra_cart_sz = basis[ish].cart_size();
 
       size_t joff_cart = 0;
       for( int j = 0; j <= i; ++j ) {
-	const auto jsh        = shell_list[j];
-	const auto& ket       = rys_basis[jsh];
-	const int ket_cart_sz = ket.cart_size();
+        const auto jsh        = shell_list[j];
+        const auto& ket       = rys_basis[jsh];
+        const int ket_cart_sz = basis[jsh].cart_size();
 
-	XCPU::compute_integral_shell_pair( ish == jsh,
-					   npts, _points_transposed.data(),
-					   bra.L, ket.L, bra.origin, ket.origin,
-					   (bra.m * ket.m), (prim_pairs + offset),
-					   X_cart_rm.data()+ioff_cart*npts, X_cart_rm.data()+joff_cart*npts, npts,
-					   G_cart_rm.data()+ioff_cart*npts, G_cart_rm.data()+joff_cart*npts, npts,
-					   const_cast<double*>(weights), this -> boys_table );
-
-	offset += (bra.m * ket.m);
-	joff_cart += ket_cart_sz;
+        auto shp_prim_data = 
+          rys_basis._spdata->at(ish,jsh)._prim_pairs.data();
+        
+        XCPU::compute_integral_shell_pair( ish == jsh,
+        				   npts, _points_transposed.data(),
+        				   bra.L, ket.L, bra.origin, ket.origin,
+        				   (bra.m * ket.m), shp_prim_data,
+        				   X_cart_rm.data()+ioff_cart*npts, X_cart_rm.data()+joff_cart*npts, npts,
+        				   G_cart_rm.data()+ioff_cart*npts, G_cart_rm.data()+joff_cart*npts, npts,
+        				   const_cast<double*>(weights), this->boys_table );
+        
+        joff_cart += ket_cart_sz;
       }
 	
       ioff_cart += bra_cart_sz;
     }
    
     for( auto i = 0; i < nbe_cart; ++i )
-      for( auto j = 0; j < npts;     ++j ) {
-	G_use[i + j*ldx_use] = G_cart_rm[i*npts + j];
-      }
+    for( auto j = 0; j < npts;     ++j ) {
+	    G_use[i + j*ldx_use] = G_cart_rm[i*npts + j];
+    }
   
     // Transform G back to spherical
     if( any_pure ) {
       int ioff = 0;
       int ioff_cart = 0;
       for( int i = 0; i < nshells; ++i ) {
-	const auto ish = shell_list[i];
-	const auto& shell      = basis.at(ish);
-	const int shell_l       = shell.l();
-	const int shell_sz      = shell.size();
-	const int shell_cart_sz = shell.cart_size();
-
-	if( shell.pure() and shell_l > 0 ) {
-	  sph_trans.tform_bra_cm( shell_l, npts, G_cart.data() + ioff_cart, nbe_cart,
-				  G + ioff, ldg );
-	} else {
-	  blas::lacpy( 'A', shell_sz, npts, G_cart.data() + ioff_cart, nbe_cart,
-		       G + ioff, ldg );
-	}
-	ioff += shell_sz;
-	ioff_cart += shell_cart_sz;
+        const auto ish = shell_list[i];
+        const auto& shell      = basis.at(ish);
+        const int shell_l       = shell.l();
+        const int shell_sz      = shell.size();
+        const int shell_cart_sz = shell.cart_size();
+        
+        if( shell.pure() and shell_l > 0 ) {
+          sph_trans.tform_bra_cm( shell_l, npts, G_cart.data() + ioff_cart, nbe_cart,
+        			  G + ioff, ldg );
+        } else {
+          blas::lacpy( 'A', shell_sz, npts, G_cart.data() + ioff_cart, nbe_cart,
+        	       G + ioff, ldg );
+        }
+        ioff += shell_sz;
+        ioff_cart += shell_cart_sz;
       }
     }
-#endif
   }
+
 }
