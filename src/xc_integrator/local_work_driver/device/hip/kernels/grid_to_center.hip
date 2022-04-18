@@ -14,7 +14,7 @@ __global__ void compute_grid_to_center_dist(
   const double* points_y,
   const double* points_z,
         double* dist,
-        int32_t lddist
+        size_t lddist
 ) {
 
   const auto tid_x = threadIdx.x + blockIdx.x*blockDim.x;

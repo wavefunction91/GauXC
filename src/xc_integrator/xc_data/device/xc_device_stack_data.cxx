@@ -3,13 +3,21 @@
 
 namespace GauXC {
 
+namespace detail {
+  size_t memory_cap() {
+    if( getenv("GAUXC_DEVICE_MEMORY_CAP" ) ) {
+      return std::stoull( getenv("GAUXC_DEVICE_MEMORY_CAP") );
+    } else { return std::numeric_limits<size_t>::max(); }
+  }
+}
+
 XCDeviceStackData::XCDeviceStackData( std::unique_ptr<DeviceBackend>&& ptr ) :
   device_backend_(std::move(ptr)) { 
 
   // Allocate Device memory
   if( device_backend_ ) {
     auto avail = device_backend_->get_available_mem();
-    avail = std::min( avail, 34308357120ul );
+    avail = std::min( avail, detail::memory_cap() );
     std::tie( device_ptr, devmem_sz ) = 
       device_backend_->allocate_device_buffer(0.9 * avail);
     reset_allocations();
