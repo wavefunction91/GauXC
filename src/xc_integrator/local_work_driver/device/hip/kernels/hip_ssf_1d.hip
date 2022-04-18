@@ -5,6 +5,7 @@
 #include <gauxc/util/div_ceil.hpp>
 #include <numeric>
 #include <iostream>
+#include "exceptions/hip_exception.hpp"
 
 static constexpr auto eps_d = std::numeric_limits<double>::epsilon();
 

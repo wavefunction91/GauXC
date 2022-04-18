@@ -2,6 +2,7 @@
 #include <gauxc/util/div_ceil.hpp>
 #include "grid_to_center.hpp"
 #include "device_specific/hip_device_constants.hpp"
+#include "exceptions/hip_exception.hpp"
 
 namespace GauXC {
 

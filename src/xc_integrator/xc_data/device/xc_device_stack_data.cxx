@@ -9,6 +9,7 @@ XCDeviceStackData::XCDeviceStackData( std::unique_ptr<DeviceBackend>&& ptr ) :
   // Allocate Device memory
   if( device_backend_ ) {
     auto avail = device_backend_->get_available_mem();
+    avail = std::min( avail, 34308357120ul );
     std::tie( device_ptr, devmem_sz ) = 
       device_backend_->allocate_device_buffer(0.9 * avail);
     reset_allocations();
