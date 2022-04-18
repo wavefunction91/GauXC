@@ -54,6 +54,9 @@ static std::string hipblasGetErrorString(hipblasStatus_t error) {
 
         case HIPBLAS_STATUS_INVALID_ENUM:
             return "HIPBLAS_STATUS_INVALID_ENUM";
+
+        case HIPBLAS_STATUS_UNKNOWN:
+            return "HIPBLAS_STATUS_UNKNOWN";
     }
   
 
