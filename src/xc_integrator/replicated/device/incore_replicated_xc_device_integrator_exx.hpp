@@ -4,6 +4,7 @@
 #include <stdexcept>
 #include "device/xc_device_aos_data.hpp"
 #include <fstream>
+#include <gauxc/util/unused.hpp>
 
 namespace GauXC  {
 namespace detail {
@@ -14,6 +15,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
              int64_t ldp, value_type* K, int64_t ldk, 
              const IntegratorSettingsEXX& settings ) { 
   GAUXC_GENERIC_EXCEPTION("NYI" );                 
+  util::unused(n,m,P,ldp,K,ldk,settings);
 }
 
 }

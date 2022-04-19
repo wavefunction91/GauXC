@@ -41,6 +41,7 @@ inline constexpr double max_coulomb_00( double Kab, double gamma ) {
 
 inline constexpr double max_coulomb_20( double Kab, double Rab, double alpha, double beta, 
   double gamma ) {
+  (void)alpha;
   return Kab * ( gamma + Rab * integral_pow<2>(beta) ) / integral_pow<3>(gamma);
 }
 

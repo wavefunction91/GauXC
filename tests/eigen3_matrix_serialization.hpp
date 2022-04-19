@@ -7,6 +7,7 @@
 //  #undef __PGI
 //#endif
 #define EIGEN_DONT_VECTORIZE
+#define EIGEN_NO_CUDA
 #include <Eigen/Core>
 //#ifdef _GAUXC_COMP_IS_PGI
 //  #define __PGI

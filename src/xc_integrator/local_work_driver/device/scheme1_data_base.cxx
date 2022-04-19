@@ -186,7 +186,7 @@ void Scheme1DataBase::pack_and_send(
 
       // Setup Shell -> Task
       const auto itask = std::distance( task_begin, it );
-      for( auto i = 0; i < nshells; ++i ) {
+      for( auto i = 0ul; i < nshells; ++i ) {
         shell_to_task_idx[ shell_list.at(i) ].emplace_back(itask);
         shell_to_task_off[ shell_list.at(i) ].emplace_back(shell_offs[i]);
       }
@@ -211,7 +211,7 @@ void Scheme1DataBase::pack_and_send(
 
 
       std::vector<ShellToTaskDevice> host_shell_to_task(global_dims.nshells);
-      for( auto ish = 0; ish < global_dims.nshells; ++ish ) {
+      for( auto ish = 0ul; ish < global_dims.nshells; ++ish ) {
         const auto ntask = shell_to_task_idx[ish].size();
         auto& bck = host_shell_to_task[ish];
         bck.ntask = ntask;
@@ -246,7 +246,7 @@ void Scheme1DataBase::pack_and_send(
 
       {
       std::vector<ShellToTaskDevice> shell_to_task_sorted( global_dims.nshells );
-      for( auto i = 0; i < global_dims.nshells; ++i ) 
+      for( auto i = 0ul; i < global_dims.nshells; ++i ) 
         shell_to_task_sorted[i] = host_shell_to_task[shell_idx[i]];
       host_shell_to_task = std::move(shell_to_task_sorted);
       }
@@ -263,7 +263,7 @@ void Scheme1DataBase::pack_and_send(
       {
       auto* p = shell_to_task_stack.shell_to_task_device;
       auto* h = host_shell_to_task.data();
-      for( auto l = 0; l <= max_l; ++l ) {
+      for( auto l = 0ul; l <= max_l; ++l ) {
         auto nsh  = basis_map.nshells_with_l(l);
         auto pure = basis_map.l_purity(l);
         l_batched_shell_to_task[l].nshells_in_batch     = nsh;

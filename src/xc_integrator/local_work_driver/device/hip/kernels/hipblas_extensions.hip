@@ -1,10 +1,10 @@
 #include "hip/hip_runtime.h"
-#include "device/common/device_blas.hpp"
-#include "device_specific/hipblas_util.hpp"
 #include <gauxc/util/div_ceil.hpp>
 #include "exceptions/hipblas_exception.hpp"
 
 #include "device_specific/hip_device_constants.hpp"
+#include "device_specific/hipblas_util.hpp"
+#include "device/common/device_blas.hpp"
 
 namespace GauXC {
 
@@ -49,6 +49,7 @@ void dot( device_blas_handle generic_handle,
           double*        RES ) {
 
   hipblasHandle_t handle = generic_handle.blas_handle_as<util::hipblas_handle>();
+
   auto stat = hipblasDdot( handle, N, X, INCX, Y, INCY, RES );
   GAUXC_HIPBLAS_ERROR("HIPBLAS DDOT FAILED", stat );
 
@@ -63,6 +64,7 @@ void gdot( device_blas_handle generic_handle,
            int       INCY,
            T*        SCR,
            T*        RES ) {
+
 
   dot( generic_handle, N, X, INCX, Y, INCY, SCR );
   hipblasHandle_t handle = generic_handle.blas_handle_as<util::hipblas_handle>();
@@ -118,6 +120,7 @@ void hadamard_product( device_blas_handle generic_handle,
                        T*             B,
                        int            LDB ) {
 
+
   hipblasHandle_t handle = generic_handle.blas_handle_as<util::hipblas_handle>();
   auto stream = util::get_stream(handle);
   dim3 threads(hip::warp_size, hip::max_warps_per_thread_block);
@@ -146,6 +149,7 @@ void gemm( device_blas_handle generic_handle,
            int M, int N, int K, double ALPHA, 
            const double* A, int LDA, const double* B, int LDB,
            double BETA, double* C, int LDC ) {
+
 
   hipblasHandle_t handle = generic_handle.blas_handle_as<util::hipblas_handle>();
   auto stat = hipblasDgemm( handle, device_op_to_hipblas(TA), 

@@ -47,7 +47,7 @@ typename ReplicatedXCDeviceIntegratorFactory<ValueType>::ptr_return_t
 
 }
 
-template class ReplicatedXCDeviceIntegratorFactory<double>;
+template struct ReplicatedXCDeviceIntegratorFactory<double>;
 
 
 }
