@@ -86,7 +86,7 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
 
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
-#if 1
+#ifdef GAUXC_ENABLE_HIP
   auto tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
 
@@ -102,22 +102,20 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
     static_stack.shells_device, aos_stack.device_tasks, 
     data->device_backend_->queue() );
 #else
-
-  std::cout << "IN NEW COLLOCATION " << data->global_dims.nshells << std::endl;
   auto aos_stack     = data->aos_stack;
 
   auto max_l = data->l_batched_shell_to_task.size() - 1;
   eval_collocation_shell_to_task_gradient( max_l, 
     data->l_batched_shell_to_task.data(), aos_stack.device_tasks,
     data->device_backend_->queue() );
-
 #endif
   
 }
 
 void AoSScheme1Base::eval_collocation_hessian( XCDeviceData* _data ) {
-#if 0
-
+#ifdef GAUXC_ENABLE_HIP
+  GAUXC_GENERIC_EXCEPTION("Hessian NYI for HIP Backends");
+#else
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
@@ -434,7 +432,9 @@ void AoSScheme1Base::symmetrize_vxc( XCDeviceData* _data) {
 
 
 void AoSScheme1Base::inc_exc_grad_lda( XCDeviceData* _data ) {
-#if 0
+#ifdef GAUXC_ENABLE_HIP
+  GAUXC_GENERIC_EXCEPTION("LDA Grad NYI for HIP Backends");
+#else
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
@@ -450,7 +450,9 @@ void AoSScheme1Base::inc_exc_grad_lda( XCDeviceData* _data ) {
 }
 
 void AoSScheme1Base::inc_exc_grad_gga( XCDeviceData* _data ) {
-#if 0
+#ifdef GAUXC_ENABLE_HIP
+  GAUXC_GENERIC_EXCEPTION("GGA Grad NYI for HIP Backends");
+#else
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
