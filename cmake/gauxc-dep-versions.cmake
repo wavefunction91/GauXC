@@ -8,7 +8,7 @@ set( GAUXC_CUB_REPOSITORY https://github.com/NVIDIA/cub.git )
 set( GAUXC_CUB_REVISION   1.10.0 )
 
 set( GAUXC_EXCHCXX_REPOSITORY https://github.com/wavefunction91/ExchCXX.git )
-set( GAUXC_EXCHCXX_REVISION   b138ba0ee453e4ed49a3c8e2b171da953788555d )
+set( GAUXC_EXCHCXX_REVISION   14927be61fa0b97a9ede77a14b44fa1eb4b365a7 )
 
 set( GAUXC_GAU2GRID_REPOSITORY https://github.com/dgasmith/gau2grid.git )
 set( GAUXC_GAU2GRID_REVISION   v2.0.6 )
