@@ -393,8 +393,6 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   buffer_adaptor mem( ptr, sz );
 
   // Grid
-  //base_stack.points_device = 
-  //  mem.aligned_alloc<double>( 3 * total_npts_task_batch , csl);
   base_stack.points_x_device = mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
   base_stack.points_y_device = mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
   base_stack.points_z_device = mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
@@ -445,7 +443,7 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   return device_buffer_t{ mem.stack(), mem.nleft() };
 }
 
-void XCDeviceStackData::pack_and_send( integrator_term_tracker terms,
+void XCDeviceStackData::pack_and_send( integrator_term_tracker ,
   host_task_iterator task_begin, host_task_iterator task_end, const BasisSetMap& ) {
 
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");

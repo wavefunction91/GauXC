@@ -488,7 +488,7 @@ void AoSScheme1Base::symmetrize_exx_k( XCDeviceData* _data) {
 
 }
 
-void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data ) {
+void AoSScheme1Base::eval_exx_fmat( XCDeviceData* _data ) {
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -499,7 +499,8 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data ) {
 
 }
 
-void AoSScheme1Base::eval_exx_fmat( XCDeviceData* _data ) {
+
+void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data ) {
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
