@@ -1,5 +1,4 @@
 #include "integral_bounds.hpp"
-#include "rys_integral.h"
 #include <vector>
 #include <gauxc/util/geometry.hpp>
 #include <gauxc/util/constexpr_math.hpp>
@@ -8,31 +7,6 @@
 
 namespace GauXC {
 namespace util  {
-
-struct RysShell {
-  shells shell;
-  RysShell( int nprim, int l ) {
-    shell.m = nprim;
-    shell.L = l;
-
-    shell.coeff = new coefficients[nprim];
-  }
-
-  RysShell( const Shell<double>& sh ) :
-    RysShell( sh.nprim(), sh.l() ) {
-
-    for( auto i = 0; i < shell.m; ++i ) {
-      shell.coeff[i].coeff = sh.coeff()[i];
-      shell.coeff[i].alpha = sh.alpha()[i];
-    }
-
-  }
-
-  ~RysShell() noexcept {
-    if( shell.coeff ) delete shell.coeff;
-  }
-};
-
 
 
 inline constexpr double max_coulomb_00( double Kab, double gamma ) {
