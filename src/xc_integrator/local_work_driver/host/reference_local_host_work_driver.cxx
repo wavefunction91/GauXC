@@ -9,6 +9,7 @@
 
 #include <gauxc/basisset_map.hpp>
 #include <gauxc/shell_pair.hpp>
+#include <gauxc/util/unused.hpp>
 #include "cpu/integral_data_types.hpp"
 #include "cpu/obara_saika_integrals.hpp"
 #include "cpu/chebyshev_boys_computation.hpp"
@@ -254,6 +255,8 @@ namespace GauXC {
     const BasisSetMap& basis_map, const int32_t* shell_list, const double* X, 
     size_t ldx, double* G, size_t ldg ) {
 
+    util::unused(basis_map);
+
     // Cast points to Rys format (binary compatable)
     XCPU::point* _points = 
       reinterpret_cast<XCPU::point*>(const_cast<double*>(points));
@@ -290,7 +293,7 @@ namespace GauXC {
       // Transform X into cartesian
       int ioff = 0;
       int ioff_cart = 0;
-      for( int i = 0; i < nshells; ++i ) {
+      for( auto i = 0ul; i < nshells; ++i ) {
         const auto ish = shell_list[i];
         const auto& shell      = basis.at(ish);
         const int shell_l       = shell.l();
@@ -315,21 +318,21 @@ namespace GauXC {
     const auto ldg_use = any_pure ? nbe_cart : ldg;
 
     std::vector<double> X_cart_rm( nbe_cart*npts,0. ), G_cart_rm( nbe_cart*npts,0. );
-    for( auto i = 0; i < nbe_cart; ++i )
-    for( auto j = 0; j < npts;     ++j ) {
+    for( auto i = 0ul; i < nbe_cart; ++i )
+    for( auto j = 0ul; j < npts;     ++j ) {
       X_cart_rm[i*npts + j] = X_use[i + j*ldx_use];
     }
 
     {
     size_t ioff_cart = 0;
-    for( int i = 0; i < nshells; ++i ) {
+    for( auto i = 0ul; i < nshells; ++i ) {
       const auto ish        = shell_list[i];
       const auto& bra       = basis[ish];
       const int bra_cart_sz = bra.cart_size();
       XCPU::point bra_origin{bra.O()[0],bra.O()[1],bra.O()[2]};
 
       size_t joff_cart = 0;
-      for( int j = 0; j <= i; ++j ) {
+      for( auto j = 0ul; j <= i; ++j ) {
         const auto jsh        = shell_list[j];
         const auto& ket       = basis[jsh];
         const int ket_cart_sz = ket.cart_size();
@@ -354,16 +357,16 @@ namespace GauXC {
     }
     }
    
-    for( auto i = 0; i < nbe_cart; ++i )
-    for( auto j = 0; j < npts;     ++j ) {
-	    G_use[i + j*ldx_use] = G_cart_rm[i*npts + j];
+    for( auto i = 0ul; i < nbe_cart; ++i )
+    for( auto j = 0ul; j < npts;     ++j ) {
+	    G_use[i + j*ldg_use] = G_cart_rm[i*npts + j];
     }
   
     // Transform G back to spherical
     if( any_pure ) {
-      int ioff = 0;
-      int ioff_cart = 0;
-      for( int i = 0; i < nshells; ++i ) {
+      size_t ioff = 0;
+      size_t ioff_cart = 0;
+      for( auto i = 0ul; i < nshells; ++i ) {
         const auto ish = shell_list[i];
         const auto& shell      = basis.at(ish);
         const int shell_l       = shell.l();

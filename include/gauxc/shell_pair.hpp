@@ -10,6 +10,12 @@ namespace detail {
   };
 
   static constexpr size_t nprim_pair_max = 64ul;
+
+  template <typename Integral>
+  inline constexpr Integral packed_lt_index(Integral i, Integral j, Integral m) {
+    return i + ((2*m - j - 1)*j)/2;
+  }
+
 }
 
 template <typename F>
@@ -48,8 +54,8 @@ class ShellPair {
     const auto np_bra = bra.nprim();
     const auto np_ket = ket.nprim();
     nprim_pairs_ = 0;
-    for( size_t i = 0, ij = 0; i < np_bra; ++i       )
-    for( size_t j = 0;         j < np_ket; ++j, ++ij ) {
+    for( auto i = 0, ij = 0; i < np_bra; ++i       )
+    for( auto j = 0;         j < np_ket; ++j, ++ij ) {
       if( nprim_pairs_ >= detail::nprim_pair_max ) 
         GAUXC_GENERIC_EXCEPTION("Too Many Primitive Pairs");
 
@@ -116,14 +122,14 @@ public:
   // Retreive unique LT element
   inline auto& at( size_t i, size_t j ) {
     if( j <= i ) {
-      const auto idx = i + ((2*nshells_ - j - 1) * j) / 2;
+      const auto idx = detail::packed_lt_index(i,j,nshells_);
       return shell_pairs_[idx];
     } else return at(j,i);
   }
 
   inline const auto& at( size_t i, size_t j ) const {
     if( j <= i ) {
-      const auto idx = i + ((2*nshells_ - j - 1) * j) / 2;
+      const auto idx = detail::packed_lt_index(i,j,nshells_);
       return shell_pairs_[idx];
     } else return at(j,i);
   }

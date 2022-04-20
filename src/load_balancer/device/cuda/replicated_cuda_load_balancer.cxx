@@ -2,8 +2,12 @@
 #include <gauxc/util/div_ceil.hpp>
 #include "device_specific/cuda_util.hpp"
 
+
+#pragma GCC diagnostic ignored "-Wshadow"
+#pragma GCC diagnostic ignored "-Wdeprecated-copy"
 #include <thrust/host_vector.h>
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
+#pragma GCC diagnostic pop
 
 #include "cuda_collision_detection.hpp"
 
@@ -126,11 +130,11 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   util::cuda_copy(nspheres, data.shell_sizes_device, shell_sizes.data(), "ShellSize HtoD");
 
   // For batching of multiple atom screening
-  for (int atom_batch = 0; atom_batch < num_atom_batch; ++atom_batch) {
+  for (size_t atom_batch = 0; atom_batch < num_atom_batch; ++atom_batch) {
     //---------------------------------------------------------------------
     // production step 
     int32_t iCurrent  = atom_batch * atBatchSz;
-    for ( int atom_idx = 0; atom_idx < atBatchSz && atom_batch * atBatchSz + atom_idx < natoms; ++atom_idx ) {
+    for ( size_t atom_idx = 0; atom_idx < atBatchSz && atom_batch * atBatchSz + atom_idx < natoms; ++atom_idx ) {
 
       const auto atom = (*this->mol_)[atom_batch * atBatchSz + atom_idx];
       const std::array<double,3> center = { atom.x, atom.y, atom.z };
@@ -203,7 +207,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
     //---------------------------------------------------------------------
     // Assign batches to MPI ranks
     size_t idx = 0;
-    for ( int atom_idx = 0; atom_idx < atBatchSz && atom_batch * atBatchSz + atom_idx < natoms; ++atom_idx ) {
+    for ( size_t atom_idx = 0; atom_idx < atBatchSz && atom_batch * atBatchSz + atom_idx < natoms; ++atom_idx ) {
 
       const auto atom = (*this->mol_)[atom_batch * atBatchSz + atom_idx];
       const std::array<double,3> center = { atom.x, atom.y, atom.z };
