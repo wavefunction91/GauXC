@@ -320,6 +320,7 @@ namespace GauXC {
       X_cart_rm[i*npts + j] = X_use[i + j*ldx_use];
     }
 
+    {
     size_t ioff_cart = 0;
     for( int i = 0; i < nshells; ++i ) {
       const auto ish        = shell_list[i];
@@ -350,6 +351,7 @@ namespace GauXC {
       }
 	
       ioff_cart += bra_cart_sz * npts;
+    }
     }
    
     for( auto i = 0; i < nbe_cart; ++i )

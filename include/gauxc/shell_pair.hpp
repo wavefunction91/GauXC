@@ -1,12 +1,15 @@
 #pragma once
 #include <gauxc/shell.hpp>
 #include <gauxc/basisset.hpp>
+#include <gauxc/exceptions.hpp>
 
 namespace GauXC {
 namespace detail {
   struct cartesian_point {
     double x, y, z;
   };
+
+  static constexpr size_t nprim_pair_max = 64ul;
 }
 
 template <typename F>
@@ -26,10 +29,12 @@ class ShellPair {
   using shell_type = Shell<F>;
   using const_shell_ref = const shell_type&;
 
-  std::vector< PrimitivePair<F> > prim_pairs_;
+  //std::vector< PrimitivePair<F> > prim_pairs_;
+  std::array< PrimitivePair<F>, detail::nprim_pair_max > prim_pairs_;
+  size_t nprim_pairs_ = 0;
 
   void generate( const_shell_ref bra, const_shell_ref ket ) {
-    prim_pairs_.resize( bra.nprim() * ket.nprim() );
+    //prim_pairs_.resize( bra.nprim() * ket.nprim() );
 
     detail::cartesian_point A{ bra.O()[0], bra.O()[1], bra.O()[2] };
     detail::cartesian_point B{ ket.O()[0], ket.O()[1], ket.O()[2] };
@@ -42,8 +47,13 @@ class ShellPair {
 
     const auto np_bra = bra.nprim();
     const auto np_ket = ket.nprim();
+    nprim_pairs_ = 0;
     for( size_t i = 0, ij = 0; i < np_bra; ++i       )
     for( size_t j = 0;         j < np_ket; ++j, ++ij ) {
+      if( nprim_pairs_ >= detail::nprim_pair_max ) 
+        GAUXC_GENERIC_EXCEPTION("Too Many Primitive Pairs");
+
+      nprim_pairs_++;
       auto& pair = prim_pairs_[ij];
       const auto alpha_bra = bra.alpha()[i];
       const auto alpha_ket = ket.alpha()[j];
@@ -81,7 +91,7 @@ public:
   PrimitivePair<F>* prim_pairs() { return prim_pairs_.data(); }
   const PrimitivePair<F>* prim_pairs() const { return prim_pairs_.data(); }
 
-  size_t nprim_pairs() const { return prim_pairs_.size(); }
+  size_t nprim_pairs() const { return nprim_pairs_; }
 
 };
 
