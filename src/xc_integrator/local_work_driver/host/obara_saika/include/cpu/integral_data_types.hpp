@@ -1,5 +1,6 @@
 #pragma once
 #include <cmath>
+#include <gauxc/shell_pair.hpp>
 
 namespace XCPU {
 
@@ -17,6 +18,7 @@ namespace XCPU {
     int m, L;
   } shells;
 
+#if 0
   typedef struct {
     point P;
     point PA;
@@ -26,5 +28,8 @@ namespace XCPU {
     double gamma;
     double gamma_inv;
   } prim_pair;
+#else
+  using prim_pair = GauXC::PrimitivePair<double>;
+#endif
 
 }

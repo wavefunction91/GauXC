@@ -8,6 +8,7 @@
 #include <stdexcept>
 
 #include <gauxc/basisset_map.hpp>
+#include <gauxc/shell_pair.hpp>
 #include "cpu/integral_data_types.hpp"
 #include "cpu/obara_saika_integrals.hpp"
 #include "cpu/chebyshev_boys_computation.hpp"
@@ -221,6 +222,7 @@ namespace GauXC {
 
   }
 
+#if 0
   struct RysShellPair {
     std::vector< XCPU::prim_pair > _prim_pairs;
     RysShellPair( const XCPU::shells& bra, const XCPU::shells& ket ) :
@@ -282,6 +284,7 @@ namespace GauXC {
       for( auto& sh : _shells ) delete sh.coeff;
     }
   };
+#endif
 
   void ReferenceLocalHostWorkDriver::eval_exx_fmat( size_t npts, size_t nbf, 
 						    size_t nbe_bra, size_t nbe_ket, const submat_map_t& submat_map_bra,
@@ -307,11 +310,14 @@ namespace GauXC {
   }
 
   void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
-						     size_t nbe, const double* points, const double* weights, 
-						     const BasisSet<double>& basis, const BasisSetMap& basis_map, 
-						     const int32_t* shell_list, const double* X, size_t ldx, double* G, size_t ldg ) {
+    size_t nbe, const double* points, const double* weights, 
+    const BasisSet<double>& basis, const BasisSetMap& basis_map, 
+    const int32_t* shell_list, const double* X, size_t ldx, double* G, 
+    size_t ldg ) {
+
     // Cast points to Rys format (binary compatable)
-    XCPU::point* _points = reinterpret_cast<XCPU::point*>(const_cast<double*>(points));
+    XCPU::point* _points = 
+      reinterpret_cast<XCPU::point*>(const_cast<double*>(points));
     std::vector<double> _points_transposed(3 * npts);
 
     for(size_t i = 0; i < npts; ++i) {
@@ -327,8 +333,12 @@ namespace GauXC {
 	    G[i + j*ldg] = 0.;
     }
 
+#if 0
     // Copy the basis set and compute shell pair data
     RysBasis rys_basis(basis);
+#else
+    ShellPairCollection<double> sh_pairs(basis);
+#endif
 
 
     // Spherical Harmonic Transformer
@@ -337,7 +347,8 @@ namespace GauXC {
     const bool any_pure = std::any_of( shell_list, shell_list + nshells,
 				       [&](const auto& i){ return basis.at(i).pure(); } );
     
-    const size_t nbe_cart = basis.nbf_cart_subset( shell_list, shell_list + nshells );
+    const size_t nbe_cart = 
+      basis.nbf_cart_subset( shell_list, shell_list + nshells );
 
     std::vector<double> X_cart, G_cart;
     if( any_pure ){
@@ -380,22 +391,35 @@ namespace GauXC {
     size_t ioff_cart = 0;
     for( int i = 0; i < nshells; ++i ) {
       const auto ish        = shell_list[i];
+      #if 0
       const auto& bra       = rys_basis[ish];
       const int bra_cart_sz = basis[ish].cart_size();
+      #else
+      const auto& bra       = basis[ish];
+      const int bra_cart_sz = bra.cart_size();
+      XCPU::point bra_origin{bra.O()[0],bra.O()[1],bra.O()[2]};
+      #endif
 
       size_t joff_cart = 0;
       for( int j = 0; j <= i; ++j ) {
         const auto jsh        = shell_list[j];
+        #if 0
         const auto& ket       = rys_basis[jsh];
         const int ket_cart_sz = basis[jsh].cart_size();
+        #else
+        const auto& ket       = basis[jsh];
+        const int ket_cart_sz = ket.cart_size();
+        XCPU::point ket_origin{ket.O()[0],ket.O()[1],ket.O()[2]};
+        #endif
 
-        auto shp_prim_data = 
-          rys_basis._spdata->at(ish,jsh)._prim_pairs.data();
+        auto sh_pair = sh_pairs.at(ish,jsh);
+        auto prim_pair_data = sh_pair.prim_pairs();
+        auto nprim_pair     = sh_pair.nprim_pairs();
         
         XCPU::compute_integral_shell_pair( ish == jsh,
         				   npts, _points_transposed.data(),
-        				   bra.L, ket.L, bra.origin, ket.origin,
-        				   (bra.m * ket.m), shp_prim_data,
+        				   bra.l(), ket.l(), bra_origin, ket_origin,
+        				   nprim_pair, prim_pair_data,
         				   X_cart_rm.data()+ioff_cart*npts, X_cart_rm.data()+joff_cart*npts, npts,
         				   G_cart_rm.data()+ioff_cart*npts, G_cart_rm.data()+joff_cart*npts, npts,
         				   const_cast<double*>(weights), this->boys_table );
