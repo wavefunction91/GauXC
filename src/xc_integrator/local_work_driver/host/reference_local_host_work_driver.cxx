@@ -236,11 +236,7 @@ namespace GauXC {
     RysShellPairData( int nshells, const XCPU::shells* shells ) {
       _nshells = nshells;
       _shell_pairs.reserve( (nshells*(nshells+1))/2 );
-      // Pack into lower triangle
-      //for( int i = 0; i < nshells; ++i ) 
-      //for( int j = 0; j <= i;      ++j ) {
-      //  _shell_pairs.emplace_back( shells[i], shells[j] );
-      //}
+      // Pack into column-major lower triangle
       for(int j = 0; j < nshells; ++j)
       for(int i = j; i < nshells; ++i) {
         _shell_pairs.emplace_back( shells[i], shells[j] );
@@ -334,20 +330,6 @@ namespace GauXC {
     // Copy the basis set and compute shell pair data
     RysBasis rys_basis(basis);
 
-#if 0
-    for( auto i = 0; i < nshells; ++i )
-    for( auto j = 0; j <= i; ++j ) {
-      auto ish = shell_list[i];
-      auto jsh = shell_list[j];
-      auto& pp = rys_basis._spdata->at(ish,jsh)._prim_pairs;
-      std::cout << ish << ", " << jsh << std::endl;
-      for( auto p : pp ) {
-        std::cout << "  " << p.gamma << std::endl;
-      }
-    }
-    throw "";
-#endif
-
 
     // Spherical Harmonic Transformer
     util::SphericalHarmonicTransform sph_trans(5);
@@ -410,14 +392,6 @@ namespace GauXC {
         auto shp_prim_data = 
           rys_basis._spdata->at(ish,jsh)._prim_pairs.data();
         
-#if 1
-        //if((bra.L==2 and ket.L==0) or (bra.L==0 and ket.L==2)){
-        //std::cout << "Prim Pair Outside " << (bra.m*ket.m) << " " << rys_basis._spdata->at(ish,jsh)._prim_pairs.size() << std::endl;
-        //int _ij = 0;
-        //for(auto p : rys_basis._spdata->at(ish,jsh)._prim_pairs ) {
-        //  std::cout << "  " << (_ij++) << " " << p.gamma << std::endl;
-        //}
-        //}
         XCPU::compute_integral_shell_pair( ish == jsh,
         				   npts, _points_transposed.data(),
         				   bra.L, ket.L, bra.origin, ket.origin,
@@ -425,7 +399,6 @@ namespace GauXC {
         				   X_cart_rm.data()+ioff_cart*npts, X_cart_rm.data()+joff_cart*npts, npts,
         				   G_cart_rm.data()+ioff_cart*npts, G_cart_rm.data()+joff_cart*npts, npts,
         				   const_cast<double*>(weights), this->boys_table );
-#endif
         
         joff_cart += ket_cart_sz;
       }
