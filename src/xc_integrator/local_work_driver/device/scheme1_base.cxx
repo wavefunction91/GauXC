@@ -418,7 +418,6 @@ void AoSScheme1Base::symmetrize_vxc( XCDeviceData* _data) {
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   const auto nbf = data->global_dims.nbf;
@@ -465,6 +464,50 @@ void AoSScheme1Base::inc_exc_grad_gga( XCDeviceData* _data ) {
     data->static_stack.exc_grad_device,
     data->device_backend_->queue() ); 
 #endif
+}
+
+
+void AoSScheme1Base::inc_exx_k( XCDeviceData* _data ) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+  GAUXC_GENERIC_EXCEPTION("NYI");
+
+}
+
+void AoSScheme1Base::symmetrize_exx_k( XCDeviceData* _data) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  GAUXC_GENERIC_EXCEPTION("NYI");
+
+}
+
+void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data ) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  GAUXC_GENERIC_EXCEPTION("NYI");
+
+}
+
+void AoSScheme1Base::eval_exx_fmat( XCDeviceData* _data ) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  GAUXC_GENERIC_EXCEPTION("NYI");
+
 }
 
 }

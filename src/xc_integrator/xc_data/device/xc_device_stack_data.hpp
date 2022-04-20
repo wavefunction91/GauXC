@@ -40,6 +40,7 @@ struct XCDeviceStackData : public XCDeviceData {
     double* exc_device     = nullptr;  ///< EXC storage (1)
     double* nel_device     = nullptr;  ///< N_EL storage (1)
     double* vxc_device     = nullptr;  ///< VXC storage (nbf,nbf)
+    double* exx_k_device   = nullptr;  ///< EXX K storage (nbf,nbf)
     double* acc_scr_device = nullptr;  ///< Accumulaion scratch (1)
     double* exc_grad_device = nullptr; ///< EXC Gradient storage (3*natoms)
 
@@ -91,11 +92,13 @@ struct XCDeviceStackData : public XCDeviceData {
   void allocate_static_data_weights( int32_t natoms ) override final;
   void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) override final;
   void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) override final;
+  void allocate_static_data_exx( int32_t nbf, int32_t nshells ) override final;
   void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) override final;
   void send_static_data_density_basis( const double* P, int32_t ldp, 
     const BasisSet<double>& basis ) override final;
   void zero_exc_vxc_integrands() override final;
   void zero_exc_grad_integrands() override final;
+  void zero_exx_integrands() override final;
   void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
     double* VXC, int32_t ldvxc ) override final;
   void retrieve_exc_grad_integrands( double* EXC_GRAD, double* N_EL ) override final;
@@ -104,6 +107,7 @@ struct XCDeviceStackData : public XCDeviceData {
   double* vxc_device_data() override;
   double* exc_device_data() override;
   double* nel_device_data() override;
+  double* exx_k_device_data() override;
   device_queue queue() override;
 
 

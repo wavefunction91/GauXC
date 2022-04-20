@@ -61,13 +61,18 @@ public:
   void eval_zmat_lda_vxc( XCDeviceData* );
   void eval_zmat_gga_vxc( XCDeviceData* );
 
+  void eval_exx_fmat( XCDeviceData* );
+  void eval_exx_gmat( XCDeviceData* );
+
   void inc_exc( XCDeviceData* );
   void inc_nel( XCDeviceData* );
   void inc_vxc( XCDeviceData* );
   void inc_exc_grad_lda( XCDeviceData* );
   void inc_exc_grad_gga( XCDeviceData* );
+  void inc_exx_k( XCDeviceData* );
 
   void symmetrize_vxc( XCDeviceData* );
+  void symmetrize_exx_k( XCDeviceData* );
 
   std::unique_ptr<XCDeviceData> create_device_data();
 

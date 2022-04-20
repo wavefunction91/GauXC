@@ -20,11 +20,15 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   void inc_nel( XCDeviceData* ) override final;
   void inc_exc_grad_lda( XCDeviceData* ) override final;
   void inc_exc_grad_gga( XCDeviceData* ) override final;
+  void inc_exx_k( XCDeviceData* ) override final;
   void symmetrize_vxc( XCDeviceData* ) override final;
+  void symmetrize_exx_k( XCDeviceData* ) override final;
+  void eval_exx_gmat( XCDeviceData* ) override final;
 
 
   // Overridable APIs
   virtual void eval_xmat( XCDeviceData*, bool do_grad ) override;
+  virtual void eval_exx_fmat( XCDeviceData* ) override;
   virtual void inc_vxc( XCDeviceData* ) override;
 
   using Data = Scheme1DataBase;

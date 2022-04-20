@@ -21,6 +21,7 @@ struct integrator_term_tracker {
   bool weights                   = false;
   bool exc_vxc                   = false;
   bool exc_grad                  = false;
+  bool exx                       = false;
   integrator_xc_approx xc_approx = _UNDEFINED;
   inline void reset() {
     std::memset( this, 0, sizeof(integrator_term_tracker) );
@@ -45,6 +46,7 @@ struct XCDeviceData {
   virtual void allocate_static_data_weights( int32_t natoms ) = 0;
   virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) = 0;
+  virtual void allocate_static_data_exx( int32_t nbf, int32_t nshells) = 0;
 
   // Send persistent data from host to device
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
@@ -55,6 +57,9 @@ struct XCDeviceData {
 
   /// Zero out the EXC Gradient integrands in device memory
   virtual void zero_exc_grad_integrands() = 0;
+
+  /// Zero out the EXX integrands in device memory
+  virtual void zero_exx_integrands() = 0;
 
   /** Generate task batch to execute on device
    *
@@ -88,7 +93,7 @@ struct XCDeviceData {
   /** Retreive EXC Gradient integrands from device memory
    *
    *  @param[out] EXC_GRAD  Integrated XC Gradient (host) for XC task
-   *  @param[out] N_EL      Integrated # electrons (host) for XC queue (accuracy metric)
+   *  @param[out] N_EL      Integrated # electrons (host) for XC queue 
    */
   virtual void retrieve_exc_grad_integrands( double* EXC_GRAD, double* N_EL ) = 0;
 
@@ -99,6 +104,7 @@ struct XCDeviceData {
   virtual double* vxc_device_data() = 0;
   virtual double* exc_device_data() = 0;
   virtual double* nel_device_data() = 0;
+  virtual double* exx_k_device_data() = 0;
   virtual device_queue queue() = 0;
 
 

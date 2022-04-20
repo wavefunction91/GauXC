@@ -39,6 +39,8 @@ XCDeviceStackData::~XCDeviceStackData() noexcept {
 double* XCDeviceStackData::vxc_device_data() { return static_stack.vxc_device; }
 double* XCDeviceStackData::exc_device_data() { return static_stack.exc_device; }
 double* XCDeviceStackData::nel_device_data() { return static_stack.nel_device; }
+double* XCDeviceStackData::exx_k_device_data() { return static_stack.exx_k_device; }
+
 device_queue XCDeviceStackData::queue() { 
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
   return device_backend_->queue();
@@ -135,6 +137,31 @@ void XCDeviceStackData::allocate_static_data_exc_grad( int32_t nbf, int32_t nshe
 }
 
 
+void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells ) {
+
+  if( allocated_terms.exx ) 
+    GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXX");
+
+  // Save state
+  global_dims.nshells = nshells;
+  global_dims.nbf     = nbf; 
+
+  // Allocate static memory with proper alignment
+  buffer_adaptor mem( dynmem_ptr, dynmem_sz );
+
+  static_stack.shells_device     = mem.aligned_alloc<Shell<double>>( nshells , csl);
+
+  static_stack.exx_k_device = mem.aligned_alloc<double>( nbf * nbf , csl);
+  static_stack.dmat_device  = mem.aligned_alloc<double>( nbf * nbf , csl);
+
+  // Get current stack location
+  dynmem_ptr = mem.stack();
+  dynmem_sz  = mem.nleft(); 
+
+  allocated_terms.exx = true;
+}
+
+
 
 
 
@@ -212,6 +239,16 @@ void XCDeviceStackData::zero_exc_grad_integrands() {
   const auto natoms = global_dims.natoms;
   device_backend_->set_zero( 3*natoms, static_stack.exc_grad_device, "EXC Gradient Zero" );
   device_backend_->set_zero( 1,        static_stack.nel_device, "NEL Zero" );
+
+}
+
+
+void XCDeviceStackData::zero_exx_integrands() {
+
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
+
+  const auto nbf = global_dims.nbf;
+  device_backend_->set_zero( nbf*nbf, static_stack.exx_k_device, "K Zero" );
 
 }
 
