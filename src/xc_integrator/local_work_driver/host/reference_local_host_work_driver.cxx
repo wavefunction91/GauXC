@@ -222,70 +222,8 @@ namespace GauXC {
 
   }
 
-#if 0
-  struct RysShellPair {
-    std::vector< XCPU::prim_pair > _prim_pairs;
-    RysShellPair( const XCPU::shells& bra, const XCPU::shells& ket ) :
-      _prim_pairs(bra.m*ket.m) {
-      if( bra.L >= ket.L ) XCPU::generate_shell_pair( bra, ket, _prim_pairs.data() );
-      else                 XCPU::generate_shell_pair( ket, bra, _prim_pairs.data() );
-    }
-  };
 
-  struct RysShellPairData {
-    size_t _nshells;
-    std::vector<RysShellPair> _shell_pairs;
-    RysShellPairData( int nshells, const XCPU::shells* shells ) {
-      _nshells = nshells;
-      _shell_pairs.reserve( (nshells*(nshells+1))/2 );
-      // Pack into column-major lower triangle
-      for(int j = 0; j < nshells; ++j)
-      for(int i = j; i < nshells; ++i) {
-        _shell_pairs.emplace_back( shells[i], shells[j] );
-      }
-    }
-
-    auto& at( size_t i, size_t j ) {
-      if( j <= i ) // Lower triangle
-        return _shell_pairs.at(i + ((2*_nshells - j-1) * j) / 2);
-      else return at(j,i);
-    }
-
-  };
-
-  struct RysBasis {
-    std::vector< XCPU::shells > _shells;
-    std::unique_ptr<RysShellPairData> _spdata;
-    RysBasis( const BasisSet<double>& basis ) {
-      size_t nshells = basis.size();
-      _shells.resize(nshells);
-      for( int i = 0; i < nshells; ++i ) {
-	      _shells[i].origin.x = basis[i].O()[0];
-	      _shells[i].origin.y = basis[i].O()[1];
-	      _shells[i].origin.z = basis[i].O()[2];
-
-	      _shells[i].m = basis[i].nprim();
-	      _shells[i].L = basis[i].l();
-
-	      _shells[i].coeff = new XCPU::coefficients[_shells[i].m];
-	      for( int j = 0; j < _shells[i].m; ++j ) {
-	        _shells[i].coeff[j].alpha = basis[i].alpha()[j];
-	        _shells[i].coeff[j].coeff = basis[i].coeff()[j];
-	      }
-      }
-
-      _spdata = std::make_unique<RysShellPairData>( nshells, _shells.data() );
-    }
-
-    XCPU::shells& operator[](int i){ return _shells.at(i); }
-    const XCPU::shells& operator[](int i) const { return _shells.at(i); }
-
-    ~RysBasis() noexcept {
-      for( auto& sh : _shells ) delete sh.coeff;
-    }
-  };
-#endif
-
+  // Construct F = P * B (P non-square, TODO: should merge with XMAT)
   void ReferenceLocalHostWorkDriver::eval_exx_fmat( size_t npts, size_t nbf, 
 						    size_t nbe_bra, size_t nbe_ket, const submat_map_t& submat_map_bra,
 						    const submat_map_t& submat_map_ket, const double* P, size_t ldp,
@@ -309,6 +247,7 @@ namespace GauXC {
 
   }
 
+  // Construct G(mu,i) = w(i) * A(mu,nu,i) * F(nu, i)
   void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
     size_t nbe, const double* points, const double* weights, 
     const BasisSet<double>& basis, const BasisSetMap& basis_map, 
@@ -333,12 +272,8 @@ namespace GauXC {
 	    G[i + j*ldg] = 0.;
     }
 
-#if 0
-    // Copy the basis set and compute shell pair data
-    RysBasis rys_basis(basis);
-#else
+    // Construct Shell Pairs
     ShellPairCollection<double> sh_pairs(basis);
-#endif
 
 
     // Spherical Harmonic Transformer
@@ -391,26 +326,16 @@ namespace GauXC {
     size_t ioff_cart = 0;
     for( int i = 0; i < nshells; ++i ) {
       const auto ish        = shell_list[i];
-      #if 0
-      const auto& bra       = rys_basis[ish];
-      const int bra_cart_sz = basis[ish].cart_size();
-      #else
       const auto& bra       = basis[ish];
       const int bra_cart_sz = bra.cart_size();
       XCPU::point bra_origin{bra.O()[0],bra.O()[1],bra.O()[2]};
-      #endif
 
       size_t joff_cart = 0;
       for( int j = 0; j <= i; ++j ) {
         const auto jsh        = shell_list[j];
-        #if 0
-        const auto& ket       = rys_basis[jsh];
-        const int ket_cart_sz = basis[jsh].cart_size();
-        #else
         const auto& ket       = basis[jsh];
         const int ket_cart_sz = ket.cart_size();
         XCPU::point ket_origin{ket.O()[0],ket.O()[1],ket.O()[2]};
-        #endif
 
         auto sh_pair = sh_pairs.at(ish,jsh);
         auto prim_pair_data = sh_pair.prim_pairs();
@@ -420,14 +345,14 @@ namespace GauXC {
         				   npts, _points_transposed.data(),
         				   bra.l(), ket.l(), bra_origin, ket_origin,
         				   nprim_pair, prim_pair_data,
-        				   X_cart_rm.data()+ioff_cart*npts, X_cart_rm.data()+joff_cart*npts, npts,
-        				   G_cart_rm.data()+ioff_cart*npts, G_cart_rm.data()+joff_cart*npts, npts,
+        				   X_cart_rm.data()+ioff_cart, X_cart_rm.data()+joff_cart, npts,
+        				   G_cart_rm.data()+ioff_cart, G_cart_rm.data()+joff_cart, npts,
         				   const_cast<double*>(weights), this->boys_table );
         
-        joff_cart += ket_cart_sz;
+        joff_cart += ket_cart_sz * npts;
       }
 	
-      ioff_cart += bra_cart_sz;
+      ioff_cart += bra_cart_sz * npts;
     }
    
     for( auto i = 0; i < nbe_cart; ++i )
@@ -457,6 +382,7 @@ namespace GauXC {
         ioff_cart += shell_cart_sz;
       }
     }
-  }
+
+  } // GMAT
 
 }
