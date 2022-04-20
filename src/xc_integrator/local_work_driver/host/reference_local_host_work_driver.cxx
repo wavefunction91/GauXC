@@ -250,9 +250,9 @@ namespace GauXC {
   // Construct G(mu,i) = w(i) * A(mu,nu,i) * F(nu, i)
   void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
     size_t nbe, const double* points, const double* weights, 
-    const BasisSet<double>& basis, const BasisSetMap& basis_map, 
-    const int32_t* shell_list, const double* X, size_t ldx, double* G, 
-    size_t ldg ) {
+    const BasisSet<double>& basis, const ShellPairCollection<double>& shpairs,
+    const BasisSetMap& basis_map, const int32_t* shell_list, const double* X, 
+    size_t ldx, double* G, size_t ldg ) {
 
     // Cast points to Rys format (binary compatable)
     XCPU::point* _points = 
@@ -271,9 +271,6 @@ namespace GauXC {
     for( size_t i = 0; i < nbe;  ++i ) {
 	    G[i + j*ldg] = 0.;
     }
-
-    // Construct Shell Pairs
-    ShellPairCollection<double> sh_pairs(basis);
 
 
     // Spherical Harmonic Transformer
@@ -337,7 +334,7 @@ namespace GauXC {
         const int ket_cart_sz = ket.cart_size();
         XCPU::point ket_origin{ket.O()[0],ket.O()[1],ket.O()[2]};
 
-        auto sh_pair = sh_pairs.at(ish,jsh);
+        auto sh_pair = shpairs.at(ish,jsh);
         auto prim_pair_data = sh_pair.prim_pairs();
         auto nprim_pair     = sh_pair.nprim_pairs();
         

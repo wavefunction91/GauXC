@@ -111,6 +111,13 @@ public:
     } else return at(j,i);
   }
 
+  inline const auto& at( size_t i, size_t j ) const {
+    if( j <= i ) {
+      const auto idx = i + ((2*nshells_ - j - 1) * j) / 2;
+      return shell_pairs_[idx];
+    } else return at(j,i);
+  }
+
 };
 
 }

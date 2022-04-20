@@ -298,6 +298,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     V_max[i + j*nshells_bf] = util::max_coulomb( basis.at(i), basis.at(j) );
   }
 
+  // Precompure Shell Pairs
+  ShellPairCollection<double> shpairs(basis);
+
   // Absolute value of P
   std::vector<double> P_abs(nbf*nbf);
   for( auto i = 0; i < nbf*nbf; ++i ) P_abs[i] = std::abs(P[i]);
@@ -436,7 +439,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // mu/nu run over significant ek shells
     // i runs over all points
     lwd->eval_exx_gmat( npts, nshells_ek, nbe_ek, points, weights, 
-      basis, basis_map, ek_shell_list.data(), zmat, nbe_ek, gmat, nbe_ek );
+      basis, shpairs,basis_map, ek_shell_list.data(), zmat, nbe_ek, 
+      gmat, nbe_ek );
 
     // Increment K(mu,nu) += B(mu,i) * G(nu,i)
     // mu runs over bfn shell list
