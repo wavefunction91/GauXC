@@ -94,6 +94,7 @@ jobs:
       run: cmake --build ${{runner.workspace}}/build --target install
 
     - name: CMake Subproject Configure
+      if: ${{ matrix.build_type == 'Release' }}
       shell: bash
       run: cmake -H$GITHUB_WORKSPACE/tests/cmake/subproject 
                  -B${{runner.workspace}}/cmake_subproject_build 
@@ -102,11 +103,13 @@ jobs:
                  -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
 
     - name: CMake Subproject Build
+      if: ${{ matrix.build_type == 'Release' }}
       shell: bash
       run: cmake --build ${{runner.workspace}}/cmake_subproject_build -j2
 
 
     - name: CMake Discovery Configure
+      if: ${{ matrix.build_type == 'Release' }}
       shell: bash
       run: cmake -H$GITHUB_WORKSPACE/tests/cmake/discovery 
                  -B${{runner.workspace}}/cmake_discovery_build 
@@ -114,5 +117,6 @@ jobs:
                  -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
 
     - name: CMake Discovery Build
+      if: ${{ matrix.build_type == 'Release' }}
       shell: bash
       run: cmake --build ${{runner.workspace}}/cmake_discovery_build -j2
