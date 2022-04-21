@@ -26,12 +26,12 @@ void submat_set_combined_kernel( size_t        ntasks,
   auto& task = device_tasks[ batch_id ];
 
   if constexpr (skip_single_cut ) {
-    if( task.ncut == 1 ) return;
+    if( task.bfn_screening.ncut == 1 ) return;
   }
 
-  const auto* submat_cut_device = task.submat_cut;
-  const auto* submat_block_device = task.submat_block;
-  const auto  LDAS              = task.nbe;
+  const auto* submat_cut_device = task.bfn_screening.submat_cut;
+  const auto* submat_block_device = task.bfn_screening.submat_block;
+  const auto  LDAS              = task.bfn_screening.nbe;
         auto* ASmall_device     = task.nbe_scr;
 
   //if( LDAS == LDAB ) return;

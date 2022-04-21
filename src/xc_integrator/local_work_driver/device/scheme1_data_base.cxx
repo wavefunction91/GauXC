@@ -334,9 +334,9 @@ void Scheme1DataBase::add_extra_to_indirection(
     buffer_adaptor 
       shell_offs_mem( collocation_stack.shell_offs_device, total_nshells );
     for( auto& task : tasks ) {
-      const auto nshells = task.nshells;
-      task.shell_list   = shell_list_mem.aligned_alloc<size_t>( nshells , csl); 
-      task.shell_offs   = shell_offs_mem.aligned_alloc<size_t>( nshells , csl); 
+      const auto nshells = task.bfn_screening.nshells;
+      task.bfn_screening.shell_list = shell_list_mem.aligned_alloc<size_t>( nshells , csl); 
+      task.bfn_screening.shell_offs = shell_offs_mem.aligned_alloc<size_t>( nshells , csl); 
     }
   }
 

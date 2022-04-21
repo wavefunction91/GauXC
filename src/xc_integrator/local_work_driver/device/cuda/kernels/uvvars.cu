@@ -15,7 +15,7 @@ __global__ void eval_uvars_lda_kernel( size_t        ntasks,
   auto& task = tasks_device[ batch_idx ];
 
   const auto npts            = task.npts;
-  const auto nbf             = task.nbe;
+  const auto nbf             = task.bfn_screening.nbe;
 
   auto* den_eval_device   = task.den;
 
@@ -39,7 +39,7 @@ __global__ void eval_uvars_lda_kernel( size_t        ntasks,
 
   // Warp blocks are stored col major
   constexpr auto warp_size = cuda::warp_size;
-  constexpr auto max_warps_per_thread_block = cuda::max_warps_per_thread_block;
+  //constexpr auto max_warps_per_thread_block = cuda::max_warps_per_thread_block;
   den_reg = 2 * cuda::warp_reduce_sum<warp_size>( den_reg );
 
 
@@ -58,7 +58,7 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
                                        XCDeviceTask* tasks_device ) {
 
   constexpr auto warp_size = cuda::warp_size;
-  constexpr auto max_warps_per_thread_block = cuda::max_warps_per_thread_block;
+  //constexpr auto max_warps_per_thread_block = cuda::max_warps_per_thread_block;
 
   const int batch_idx = blockIdx.z;
   if( batch_idx >= ntasks ) return;
@@ -66,7 +66,7 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
   auto& task = tasks_device[ batch_idx ];
 
   const auto npts            = task.npts;
-  const auto nbf             = task.nbe;
+  const auto nbf             = task.bfn_screening.nbe;
 
   auto* den_eval_device   = task.den;
   auto* den_x_eval_device = task.ddenx;

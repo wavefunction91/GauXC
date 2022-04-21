@@ -13,7 +13,7 @@ template <typename ValueType>
 void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   eval_exx_( int64_t m, int64_t n, const value_type* P,
              int64_t ldp, value_type* K, int64_t ldk, 
-             const IntegratorSettingsEXX& settings ) { 
+             const IntegratorSettingsEXX& /*settings*/ ) { 
 
 
   const auto& basis = this->load_balancer_->basis();
@@ -60,14 +60,14 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 template <typename ValueType>
 void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   exx_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
-                       value_type* VXC, int64_t ldvxc,
+                       value_type* /*VXC*/, int64_t /*ldvxc*/,
                        host_task_iterator task_begin, host_task_iterator task_end,
                        XCDeviceData& device_data ) {
 
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
 
   // Setup Aliases
-  const auto& func  = *this->func_;
+  //const auto& func  = *this->func_;
   const auto& mol   = this->load_balancer_->molecule();
   const auto& meta  = this->load_balancer_->molmeta();
 

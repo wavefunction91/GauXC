@@ -22,7 +22,7 @@ void AoSScheme1Base::eval_zmat_lda_vxc( XCDeviceData* _data){
   const auto ntasks = tasks.size();
   size_t nbe_max = 0, npts_max = 0;
   for( auto& task : tasks ) {
-    nbe_max  = std::max( nbe_max, task.nbe );
+    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
     npts_max = std::max( npts_max, task.npts );
   }
 
@@ -43,7 +43,7 @@ void AoSScheme1Base::eval_zmat_gga_vxc( XCDeviceData* _data){
   const auto ntasks = tasks.size();
   size_t nbe_max = 0, npts_max = 0;
   for( auto& task : tasks ) {
-    nbe_max  = std::max( nbe_max, task.nbe );
+    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
     npts_max = std::max( npts_max, task.npts );
   }
 
@@ -68,7 +68,7 @@ void AoSScheme1Base::eval_collocation( XCDeviceData* _data ) {
   size_t npts_max = 0, nshells_max = 0;
   for( auto& task : tasks ) {
     npts_max    = std::max( npts_max, task.npts );
-    nshells_max = std::max( nshells_max, task.nshells );
+    nshells_max = std::max( nshells_max, task.bfn_screening.nshells );
   }
 
   auto static_stack  = data->static_stack;
@@ -93,7 +93,7 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
   size_t npts_max = 0, nshells_max = 0;
   for( auto& task : tasks ) {
     npts_max    = std::max( npts_max, task.npts );
-    nshells_max = std::max( nshells_max, task.nshells );
+    nshells_max = std::max( nshells_max, task.bfn_screening.nshells );
   }
 
   auto static_stack  = data->static_stack;
@@ -188,7 +188,7 @@ void AoSScheme1Base::eval_uvvar_lda( XCDeviceData* _data ){
   const auto ntasks = tasks.size();
   size_t nbe_max = 0, npts_max = 0;
   for( auto& task : tasks ) {
-    nbe_max  = std::max( nbe_max, task.nbe );
+    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
     npts_max = std::max( npts_max, task.npts );
   }
 
@@ -218,7 +218,7 @@ void AoSScheme1Base::eval_uvvar_gga( XCDeviceData* _data ){
   const auto ntasks = tasks.size();
   size_t nbe_max = 0, npts_max = 0;
   for( auto& task : tasks ) {
-    nbe_max  = std::max( nbe_max, task.nbe );
+    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
     npts_max = std::max( npts_max, task.npts );
   }
 
@@ -335,14 +335,14 @@ void AoSScheme1Base::eval_xmat( XCDeviceData* _data, bool do_grad ){
   //size_t nsingle = 0;
   for( size_t iT = 0; iT < ntasks; ++iT ) {
     auto& task = tasks[iT];
-      auto den_ptr = task.ncut > 1 ? task.nbe_scr : static_stack.dmat_device + task.ibf_begin*(nbf+1);
-      int  ldden   = task.ncut > 1 ? task.nbe : nbf;
+      auto den_ptr = task.bfn_screening.ncut > 1 ? task.nbe_scr : static_stack.dmat_device + task.bfn_screening.ibf_begin*(nbf+1);
+      int  ldden   = task.bfn_screening.ncut > 1 ? task.bfn_screening.nbe : nbf;
       auto handle = data->device_backend_->blas_pool_handle( iT % n_blas_streams );
-      do_gemm( handle, task.npts, task.nbe, task.bf, den_ptr, ldden, task.zmat );
+      do_gemm( handle, task.npts, task.bfn_screening.nbe, task.bf, den_ptr, ldden, task.zmat );
       if( do_grad ) {
-        do_gemm( handle, task.npts, task.nbe, task.dbfx, den_ptr, ldden, task.xmat_x );
-        do_gemm( handle, task.npts, task.nbe, task.dbfy, den_ptr, ldden, task.xmat_y );
-        do_gemm( handle, task.npts, task.nbe, task.dbfz, den_ptr, ldden, task.xmat_z );
+        do_gemm( handle, task.npts, task.bfn_screening.nbe, task.dbfx, den_ptr, ldden, task.xmat_x );
+        do_gemm( handle, task.npts, task.bfn_screening.nbe, task.dbfy, den_ptr, ldden, task.xmat_y );
+        do_gemm( handle, task.npts, task.bfn_screening.nbe, task.dbfz, den_ptr, ldden, task.xmat_z );
       }
   }
 
@@ -383,9 +383,9 @@ void AoSScheme1Base::inc_vxc( XCDeviceData* _data){
   for( size_t iT = 0; iT < ntasks; ++iT ) {
     auto& task = tasks[iT];
     syr2k( data->device_backend_->blas_pool_handle(iT % n_blas_streams), 
-      DeviceBlasUplo::Lower, DeviceBlasOp::Trans, task.nbe, task.npts, 1.,
+      DeviceBlasUplo::Lower, DeviceBlasOp::Trans, task.bfn_screening.nbe, task.npts, 1.,
       task.bf, task.npts, task.zmat, task.npts, 0., task.nbe_scr,
-      task.nbe );
+      task.bfn_screening.nbe );
   }
 
   // Record completion of BLAS ops on master stream

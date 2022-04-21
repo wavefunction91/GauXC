@@ -4,22 +4,26 @@ namespace GauXC {
 
 struct XCDeviceTask {
 
-  size_t nbe       = 0;
-  size_t npts      = 0;
-  size_t ncut      = 0;
-  size_t nblock    = 0;
-  size_t nshells   = 0;
-  size_t ibf_begin = 0;
+  size_t npts = 0;
 
-  //double* points         = nullptr;
+  struct screening_quantities {
+    size_t nbe             = 0;
+    size_t ncut            = 0;
+    size_t nblock          = 0;
+    size_t nshells         = 0;
+    size_t ibf_begin       = 0;
+    size_t* shell_list     = nullptr;
+    size_t* shell_offs     = nullptr;
+    int32_t* submat_cut    = nullptr;
+    int32_t* submat_block  = nullptr;
+  };
+
+  screening_quantities bfn_screening;
+
   double* points_x       = nullptr;
   double* points_y       = nullptr;
   double* points_z       = nullptr;
   double* weights        = nullptr;
-  size_t* shell_list     = nullptr;
-  size_t* shell_offs     = nullptr;
-  int32_t* submat_cut    = nullptr;
-  int32_t* submat_block  = nullptr;
 
   double*   nbe_scr = nullptr;
   double*   zmat    = nullptr;
