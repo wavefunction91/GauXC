@@ -203,12 +203,12 @@ void reference_lko_weights_host(
   std::vector<size_t> point_dist_idx( natoms );
 
   #pragma omp for schedule(dynamic)
-  for( auto iAtom = 0; iAtom < natoms; ++iAtom ) {
+  for( auto iAtom = 0ul; iAtom < natoms; ++iAtom ) {
 
     auto atom_begin = std::find_if( task_begin, task_end,
-      [&](const auto& t){ return t.iParent == iAtom; } );
+      [&](const auto& t){ return t.iParent == (int)iAtom; } );
     auto atom_end = std::find_if( task_begin, task_end,
-      [&](const auto& t){ return t.iParent == (iAtom+1); } );
+      [&](const auto& t){ return t.iParent == (int)(iAtom+1); } );
 
     auto* RAB_parent = RAB.data() + iAtom*natoms;
 
@@ -222,7 +222,7 @@ void reference_lko_weights_host(
     auto& weights = task_it->weights;
     const auto npts = points.size();
 
-  for( auto ipt = 0; ipt < npts; ++ipt ) {
+  for( auto ipt = 0ul; ipt < npts; ++ipt ) {
 
     auto& weight = weights[ipt];
     const auto point = points[ipt];
@@ -283,7 +283,7 @@ void reference_lko_weights_host(
 
     // Evaluate unnormalized partition functions 
     std::fill_n(partitionScratch.begin(),natoms_keep,0.);
-    for( int i = 0; i < natoms_keep; ++i ) {
+    for( auto i = 0ul; i < natoms_keep; ++i ) {
       auto idx_i = point_dist_idx[i];
       auto r_i = atomDist[i];
       if( r_i > (r_nearest + R_cutoff) ) { break; }
@@ -291,7 +291,7 @@ void reference_lko_weights_host(
 
       const auto* RAB_i_idx = RAB.data() + idx_i*natoms;
 
-    for( int j = 0; j < i; ++j ) {
+    for( auto j = 0ul; j < i; ++j ) {
       auto idx_j = point_dist_idx[j];
       auto r_j = atomDist[j];
       if( r_j > (r_i + R_cutoff) ) { break; }

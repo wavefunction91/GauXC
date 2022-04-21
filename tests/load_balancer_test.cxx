@@ -62,12 +62,12 @@ void check_lb_data( const std::vector<XCTask>& tasks, size_t pv ) {
     const auto& t  = tasks[i]; 
     const auto& rt = ref_tasks[i];
     CHECK( t.iParent == rt.iParent );
-    CHECK( t.shell_list == rt.shell_list );
-    CHECK( t.nbe == rt.nbe );
     CHECK( t.dist_nearest == Approx(rt.dist_nearest) );
     CHECK( t.npts == rt.npts );
     CHECK( t.points.size() == rt.npts );
     CHECK( t.weights.size() == rt.npts );
+    CHECK( t.bfn_screening.shell_list == rt.bfn_screening.shell_list );
+    CHECK( t.bfn_screening.nbe == rt.bfn_screening.nbe );
 
     /* 
     // Points / Weights not stored in reference data to 
@@ -174,7 +174,7 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
         CHECK( weights[j] == Approx( h_weights[j] ) );
       }
 
-      CHECK( tasks[i].shell_list == host_tasks[i].shell_list );
+      CHECK( tasks[i].bfn_screening.shell_list == host_tasks[i].bfn_screening.shell_list );
     }
   }
 #endif

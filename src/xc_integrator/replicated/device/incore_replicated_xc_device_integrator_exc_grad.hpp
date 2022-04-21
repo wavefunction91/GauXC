@@ -76,7 +76,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Sort tasks 
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
-    return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
+    return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
   };
   std::sort( task_begin, task_end, task_comparator );
 

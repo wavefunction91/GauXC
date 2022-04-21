@@ -82,8 +82,8 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
       task.npts       = points.size(); 
       task.points     = std::move( points );
       task.weights    = std::move( weights );
-      task.shell_list = std::move(shell_list);
-      task.nbe        = nbe;
+      task.bfn_screening.shell_list = std::move(shell_list);
+      task.bfn_screening.nbe        = nbe;
       task.dist_nearest = molmeta_->dist_nearest()[iCurrent];
 
       #pragma omp critical
@@ -162,7 +162,7 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
     else if( a.iParent > b.iParent ) return false;
 
     // Equal iParent: lex sort on shell list
-    else return a.shell_list < b.shell_list;
+    else return a.bfn_screening.shell_list < b.bfn_screening.shell_list;
 
   };
 

@@ -68,7 +68,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Sort tasks on size (XXX: maybe doesnt matter?)
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
-    return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
+    return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
   };
 
   auto& tasks = this->load_balancer_->get_tasks();
@@ -105,12 +105,12 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Get tasks constants
     const int32_t  npts    = task.points.size();
-    const int32_t  nbe     = task.nbe;
-    const int32_t  nshells = task.shell_list.size();
+    const int32_t  nbe     = task.bfn_screening.nbe;
+    const int32_t  nshells = task.bfn_screening.shell_list.size();
 
     const auto* points      = task.points.data()->data();
     const auto* weights     = task.weights.data();
-    const int32_t* shell_list = task.shell_list.data();
+    const int32_t* shell_list = task.bfn_screening.shell_list.data();
 
     // Allocate enough memory for batch
 
@@ -173,7 +173,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Get the submatrix map for batch
     auto [submat_map, foo] = 
-      gen_compressed_submat_map( basis_map, task.shell_list, nbf, nbf );
+      gen_compressed_submat_map( basis_map, task.bfn_screening.shell_list, nbf, nbf );
 
     // Evaluate Collocation Gradient (+ Hessian)
     if( func.is_gga() )

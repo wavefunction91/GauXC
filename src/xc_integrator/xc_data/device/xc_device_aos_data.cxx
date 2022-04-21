@@ -29,8 +29,8 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   const bool need_hess = is_gga and terms.exc_grad;
 
   const auto& points       = task.points;
-  const auto& submat_cut   = task.submat_map;
-  const auto& submat_block = task.submat_block;
+  const auto& submat_cut   = task.bfn_screening.submat_map;
+  const auto& submat_block = task.bfn_screening.submat_block;
   if( !submat_cut.size() or !submat_block.size() )
     GAUXC_GENERIC_EXCEPTION("Must Populate Submat Maps");
 
@@ -38,7 +38,7 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
 
   // Dimensions
   const size_t npts     = points.size();
-  const size_t nbe      = task.nbe;
+  const size_t nbe      = task.bfn_screening.nbe;
   const size_t ncut     = submat_cut.size();
   const size_t nblock   = submat_block.size();
 
@@ -113,15 +113,15 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
   for( auto it = task_begin; it != task_end; ++it ) {
 
     const auto& points      = it->points;
-    const auto& submat_cut = it->submat_map;
-    const auto& submat_block = it->submat_block;
+    const auto& submat_cut = it->bfn_screening.submat_map;
+    const auto& submat_block = it->bfn_screening.submat_block;
     if( !submat_cut.size() or !submat_block.size() )
       GAUXC_GENERIC_EXCEPTION("Must Populate Submat Maps");
 
     const size_t ncut     = submat_cut.size();
     const size_t nblock   = submat_block.size();
     const size_t npts     = points.size();
-    const auto nbe        = it->nbe;
+    const auto nbe        = it->bfn_screening.nbe;
 
     total_nbe_sq_task_batch   += nbe * nbe;
     total_nbe_npts_task_batch += nbe * npts;
@@ -221,8 +221,8 @@ void XCDeviceAoSData::pack_and_send(
 
     const auto  iAtom       = it->iParent;
     const auto& points      = it->points;
-    const auto& submat_cut = it->submat_map;
-    const auto& submat_block = it->submat_block;
+    const auto& submat_cut = it->bfn_screening.submat_map;
+    const auto& submat_block = it->bfn_screening.submat_block;
     if( !submat_cut.size() or !submat_block.size() )
       GAUXC_GENERIC_EXCEPTION("Must Populate Submat Maps");
     const auto dist_nearest = it->dist_nearest;
@@ -231,8 +231,8 @@ void XCDeviceAoSData::pack_and_send(
     const size_t ncut     = submat_cut.size();
     const size_t nblock   = submat_block.size();
     const size_t npts     = points.size();
-    const size_t nshells = it->shell_list.size();
-    const auto nbe        = it->nbe;
+    const size_t nshells = it->bfn_screening.shell_list.size();
+    const auto nbe        = it->bfn_screening.nbe;
 
 
     // Pack Shell indexing
@@ -251,7 +251,7 @@ void XCDeviceAoSData::pack_and_send(
     host_device_tasks.back().nshells      = nshells;
     host_device_tasks.back().dist_nearest = dist_nearest;
 
-    auto& shell_list = it->shell_list;
+    auto& shell_list = it->bfn_screening.shell_list;
     host_device_tasks.back().ibf_begin    = 
       basis_map.shell_to_first_ao(shell_list[0]);
 
@@ -405,8 +405,8 @@ void XCDeviceAoSData::populate_submat_maps(
 
   for( auto it = task_begin; it != task_end; ++it ) {
 
-    const auto& shell_list = it->shell_list;
-    std::tie( it->submat_map, it->submat_block ) = 
+    const auto& shell_list = it->bfn_screening.shell_list;
+    std::tie( it->bfn_screening.submat_map, it->bfn_screening.submat_block ) = 
       gen_compressed_submat_map( basis_map, shell_list, N, submat_chunk_size );
 
   }

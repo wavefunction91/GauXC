@@ -65,7 +65,7 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
   // Clear out unneeded data
   for( auto& task : tasks ) {
     task.points.clear();
-    task.shell_list.clear();
+    task.bfn_screening.shell_list.clear();
   }
   ref_data.tasks_mod = tasks;
 

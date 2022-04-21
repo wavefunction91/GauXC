@@ -63,8 +63,8 @@ size_t LoadBalancerImpl::max_nbe() const {
 
   return std::max_element( local_tasks_.cbegin(), local_tasks_.cend(),
     []( const auto& a, const auto& b ) {
-      return a.nbe < b.nbe;
-    })->nbe;
+      return a.bfn_screening.nbe < b.bfn_screening.nbe;
+    })->bfn_screening.nbe;
 
 }
 size_t LoadBalancerImpl::max_npts_x_nbe() const {
@@ -73,10 +73,10 @@ size_t LoadBalancerImpl::max_npts_x_nbe() const {
 
   auto it = std::max_element( local_tasks_.cbegin(), local_tasks_.cend(),
     []( const auto& a, const auto& b ) {
-      return a.nbe * a.points.size() < b.nbe * b.points.size();
+      return a.bfn_screening.nbe * a.points.size() < b.bfn_screening.nbe * b.points.size();
     });
 
-  return it->nbe * it->points.size();
+  return it->bfn_screening.nbe * it->points.size();
 
 }
 

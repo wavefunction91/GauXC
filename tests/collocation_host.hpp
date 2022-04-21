@@ -18,14 +18,14 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
     auto& task = tasks[i];
 
     auto& pts  = task.points;
-    auto& mask = task.shell_list;
+    auto& mask = task.bfn_screening.shell_list;
 
     // Only keep first MAX_NPTS_CHECK points to save on space
     if( task.points.size() > MAX_NPTS_CHECK )
       task.points.erase( task.points.begin() + MAX_NPTS_CHECK, task.points.end() );
 
     const auto npts = task.points.size();
-    const auto nbf  = task.nbe;
+    const auto nbf  = task.bfn_screening.nbe;
 
     std::vector<double> eval   ( nbf * npts ),
                         deval_x( nbf * npts ),

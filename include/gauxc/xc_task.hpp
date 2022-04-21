@@ -16,18 +16,26 @@ struct XCTask {
   int32_t                              iParent;
   std::vector< std::array<double,3> >  points;
   std::vector< double  >               weights;
-  std::vector< int32_t >               shell_list;
-  int32_t                              nbe;
   int32_t                              npts;
 
   double                               dist_nearest;
-  double                               max_weight;
+  double                               max_weight = std::numeric_limits<double>::infinity();
 
-  std::vector< std::array<int32_t,3> > submat_map;
-  std::vector< int32_t >               submat_block;
+  struct screening_data {
+    std::vector<int32_t>               shell_list;
+    std::vector<int32_t>               submat_block;
+    std::vector<std::array<int32_t,3>> submat_map;
+    int32_t                            nbe;
+
+    bool equiv_with( const screening_data& other ) const {
+      return shell_list == other.shell_list;
+    }
+  };
+
+  screening_data bfn_screening;
 
   void merge_with( const XCTask& other ) {
-    if( shell_list != other.shell_list or iParent != other.iParent )
+    if( !equiv_with(other) )
       GAUXC_GENERIC_EXCEPTION("Cannot Perform Requested Merge: Incompatible Tasks");
     points.insert( points.end(), other.points.begin(), other.points.end() );
     weights.insert( weights.end(), other.weights.begin(), other.weights.end() );
@@ -50,7 +58,7 @@ struct XCTask {
     auto points_it  = points.begin()  + old_sz;
     auto weights_it = weights.begin() + old_sz;
     for( auto it = begin; it != end; ++it ) {
-      if( shell_list != it->shell_list or iParent != it->iParent )
+      if( !equiv_with(*it) )
         GAUXC_GENERIC_EXCEPTION("Cannot Perform Requested Task Merge");
       points_it  = std::copy( it->points.begin(), it->points.end(), points_it );
       weights_it = std::copy( it->weights.begin(), it->weights.end(), weights_it );
@@ -62,18 +70,18 @@ struct XCTask {
 
   inline bool equiv_with( const XCTask& other ) const {
     return iParent == other.iParent and 
-           shell_list == other.shell_list;
+      bfn_screening.equiv_with(other.bfn_screening);
   }
 
   template <typename Archive>
   void serialize( Archive& ar ) {
-    ar( iParent, nbe, npts, dist_nearest, max_weight, 
-      shell_list, points, weights );  
+    ar( iParent, bfn_screening.nbe, npts, dist_nearest, max_weight, 
+      bfn_screening.shell_list, points, weights );  
   }
 
 
   inline size_t cost(size_t n_deriv, size_t natoms) const {
-    return (nbe * ( 1 + nbe + n_deriv ) + natoms * natoms) * npts;
+    return (bfn_screening.nbe * ( 1 + bfn_screening.nbe + n_deriv ) + natoms * natoms) * npts;
   }
 };
 

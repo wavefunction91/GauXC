@@ -269,7 +269,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Sort tasks on size (XXX: maybe doesnt matter?)
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
-    return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
+    return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
   };
 
   auto& tasks = this->load_balancer_->get_tasks();
@@ -355,7 +355,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const auto* weights     = task.weights.data();
 
     // Basis function shell list
-    auto shell_list_bfn_ = task.shell_list;
+    auto shell_list_bfn_ = task.bfn_screening.shell_list;
     int32_t* shell_list_bfn = shell_list_bfn_.data();
     size_t nshells_bfn = shell_list_bfn_.size();
     size_t nbe_bfn     = 

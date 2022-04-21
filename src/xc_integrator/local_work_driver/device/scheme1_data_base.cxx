@@ -47,7 +47,7 @@ size_t Scheme1DataBase::get_mem_req( integrator_term_tracker terms,
   }
 
   if( terms.exc_vxc or terms.exc_grad ) {
-    const auto& shell_list = task.shell_list;
+    const auto& shell_list = task.bfn_screening.shell_list;
     const size_t nshells  = shell_list.size();
 
     const size_t mem_shell_list = nshells * sizeof(size_t);
@@ -100,7 +100,7 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
   if( terms.exc_vxc or terms.exc_grad ) {
     total_nshells_task_batch  = 0; 
     for( auto it = task_begin; it != task_end; ++it ) {
-      const auto& shell_list  = it->shell_list;
+      const auto& shell_list  = it->bfn_screening.shell_list;
       const size_t nshells  = shell_list.size();
       total_nshells_task_batch  += nshells;
     }
@@ -174,7 +174,7 @@ void Scheme1DataBase::pack_and_send(
                                         shell_to_task_off( global_dims.nshells );
 
     for( auto it = task_begin; it != task_end; ++it ) {
-      const auto& shell_list  = it->shell_list;
+      const auto& shell_list  = it->bfn_screening.shell_list;
       const size_t nshells  = shell_list.size();
 
       // Compute offsets
