@@ -35,9 +35,11 @@ struct Scheme1DataBase : public XCDeviceAoSData {
     inline void reset(){ std::memset(this,0,sizeof(shell_to_task_data)); }
   };
 
-  size_t total_nshells_task_batch  = 0; ///< Sum of nshells for task batch
+  size_t total_nshells_bfn_task_batch  = 0; ///< Sum of nshells for task batch (bfn)
+  size_t total_nshells_cou_task_batch  = 0; ///< Sum of nshells for task batch (cou)
   scheme1_data       scheme1_stack;
   collocation_data   collocation_stack;
+  collocation_data   coulomb_stack;
   shell_to_task_data shell_to_task_stack;
   std::vector<AngularMomentumShellToTaskBatch> l_batched_shell_to_task;
 

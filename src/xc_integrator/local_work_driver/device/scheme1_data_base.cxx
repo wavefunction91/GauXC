@@ -46,18 +46,23 @@ size_t Scheme1DataBase::get_mem_req( integrator_term_tracker terms,
                  mem_iparent * sizeof(int32_t);
   }
 
-  if( terms.exc_vxc or terms.exc_grad ) {
-    const auto& shell_list = task.bfn_screening.shell_list;
-    const size_t nshells  = shell_list.size();
+  if( terms.exx or terms.exc_vxc or terms.exc_grad ) {
+    const auto& shell_list_bfn = task.bfn_screening.shell_list;
+    const size_t nshells_bfn  = shell_list_bfn.size();
+    const auto& shell_list_cou = task.cou_screening.shell_list;
+    const size_t nshells_cou  = shell_list_cou.size();
 
-    const size_t mem_shell_list = nshells * sizeof(size_t);
-    const size_t mem_shell_offs = nshells * sizeof(size_t);
+    const size_t mem_shell_list_bfn = nshells_bfn * sizeof(size_t);
+    const size_t mem_shell_offs_bfn = nshells_bfn * sizeof(size_t);
+    const size_t mem_shell_list_cou = terms.exx ? nshells_cou * sizeof(size_t) : 0;
+    const size_t mem_shell_offs_cou = terms.exx ? nshells_cou * sizeof(size_t) : 0;
 
     // Shell -> Task maps
-    const size_t mem_shell_to_task_idx  = nshells * sizeof(int32_t);
-    const size_t mem_shell_to_task_off  = nshells * sizeof(int32_t);
+    const size_t mem_shell_to_task_idx  = nshells_bfn * sizeof(int32_t);
+    const size_t mem_shell_to_task_off  = nshells_bfn * sizeof(int32_t);
 
-    base_size +=  mem_shell_list + mem_shell_offs +
+    base_size +=  mem_shell_list_bfn + mem_shell_offs_bfn +
+      mem_shell_list_cou + mem_shell_offs_cou +
       mem_shell_to_task_idx + mem_shell_to_task_off;
   }
 
@@ -97,23 +102,36 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
       mem.aligned_alloc<int32_t>( total_npts_task_batch, csl );
   }
 
-  if( terms.exc_vxc or terms.exc_grad ) {
-    total_nshells_task_batch  = 0; 
+  if( terms.exx or terms.exc_vxc or terms.exc_grad ) {
+    total_nshells_bfn_task_batch  = 0; 
+    total_nshells_cou_task_batch  = 0; 
     for( auto it = task_begin; it != task_end; ++it ) {
-      const auto& shell_list  = it->bfn_screening.shell_list;
-      const size_t nshells  = shell_list.size();
-      total_nshells_task_batch  += nshells;
+      const auto& shell_list_bfn  = it->bfn_screening.shell_list;
+      const size_t nshells_bfn  = shell_list_bfn.size();
+      total_nshells_bfn_task_batch  += nshells_bfn;
+
+      const auto& shell_list_cou  = it->cou_screening.shell_list;
+      const size_t nshells_cou  = shell_list_cou.size();
+      total_nshells_cou_task_batch  += nshells_cou;
     }
+
     collocation_stack.shell_list_device = 
-      mem.aligned_alloc<size_t>( total_nshells_task_batch , csl);
+      mem.aligned_alloc<size_t>( total_nshells_bfn_task_batch , csl);
     collocation_stack.shell_offs_device = 
-      mem.aligned_alloc<size_t>( total_nshells_task_batch , csl);
+      mem.aligned_alloc<size_t>( total_nshells_bfn_task_batch , csl);
+
+    if(terms.exx) {
+      coulomb_stack.shell_list_device = 
+        mem.aligned_alloc<size_t>( total_nshells_cou_task_batch , csl);
+      coulomb_stack.shell_offs_device = 
+        mem.aligned_alloc<size_t>( total_nshells_cou_task_batch , csl);
+    }
 
     // Shell -> Task buffers
     shell_to_task_stack.shell_to_task_idx_device = 
-      mem.aligned_alloc<int32_t>( total_nshells_task_batch, csl );
+      mem.aligned_alloc<int32_t>( total_nshells_bfn_task_batch, csl );
     shell_to_task_stack.shell_to_task_off_device = 
-      mem.aligned_alloc<int32_t>( total_nshells_task_batch, csl );
+      mem.aligned_alloc<int32_t>( total_nshells_bfn_task_batch, csl );
     shell_to_task_stack.shell_to_task_device =
       mem.aligned_alloc<ShellToTaskDevice>( global_dims.nshells, csl );
 
@@ -162,52 +180,83 @@ void Scheme1DataBase::pack_and_send(
       "send dist_nearest" );
   }
 
-  if( terms.exc_vxc or terms.exc_grad ) {
+  if( terms.exx or terms.exc_vxc or terms.exc_grad ) {
     // Contatenation utility
     auto concat_iterable = []( auto& a, const auto& b ) {
       a.insert( a.end(), b.begin(), b.end() );
     };
 
-    std::vector< size_t > shell_list_pack;
-    std::vector< size_t > shell_offs_pack;
+    std::vector< size_t > shell_list_bfn_pack;
+    std::vector< size_t > shell_offs_bfn_pack;
+    std::vector< size_t > shell_list_cou_pack;
+    std::vector< size_t > shell_offs_cou_pack;
+
     std::vector< std::vector<int32_t> > shell_to_task_idx( global_dims.nshells ),
                                         shell_to_task_off( global_dims.nshells );
 
     for( auto it = task_begin; it != task_end; ++it ) {
-      const auto& shell_list  = it->bfn_screening.shell_list;
-      const size_t nshells  = shell_list.size();
+      const auto& shell_list_bfn  = it->bfn_screening.shell_list;
+      const size_t nshells_bfn  = shell_list_bfn.size();
 
-      // Compute offsets
-      std::vector< size_t > shell_offs( nshells );
-      shell_offs.at(0) = 0;
-      for( auto i = 1ul; i < nshells; ++i )
-        shell_offs.at(i) = shell_offs.at(i-1) + 
-                             basis_map.shell_size( shell_list.at(i-1) );
+      // Compute offsets (bfn)
+      std::vector< size_t > shell_offs_bfn( nshells_bfn );
+      shell_offs_bfn.at(0) = 0;
+      for( auto i = 1ul; i < nshells_bfn; ++i )
+        shell_offs_bfn.at(i) = shell_offs_bfn.at(i-1) + 
+                             basis_map.shell_size( shell_list_bfn.at(i-1) );
+
+      concat_iterable( shell_list_bfn_pack, shell_list_bfn );
+      concat_iterable( shell_offs_bfn_pack, shell_offs_bfn );
+
+      if(terms.exx) {
+        const auto& shell_list_cou  = it->cou_screening.shell_list;
+        const size_t nshells_cou  = shell_list_cou.size();
+
+        // Compute offsets (cou)
+        std::vector< size_t > shell_offs_cou( nshells_cou );
+        shell_offs_cou.at(0) = 0;
+        for( auto i = 1ul; i < nshells_cou; ++i )
+          shell_offs_cou.at(i) = shell_offs_cou.at(i-1) + 
+                               basis_map.shell_size( shell_list_cou.at(i-1) );
+
+        concat_iterable( shell_list_cou_pack, shell_list_cou );
+        concat_iterable( shell_offs_cou_pack, shell_offs_cou );
+      }
+
 
       // Setup Shell -> Task
       const auto itask = std::distance( task_begin, it );
-      for( auto i = 0ul; i < nshells; ++i ) {
-        shell_to_task_idx[ shell_list.at(i) ].emplace_back(itask);
-        shell_to_task_off[ shell_list.at(i) ].emplace_back(shell_offs[i]);
+      for( auto i = 0ul; i < nshells_bfn; ++i ) {
+        shell_to_task_idx[ shell_list_bfn.at(i) ].emplace_back(itask);
+        shell_to_task_off[ shell_list_bfn.at(i) ].emplace_back(shell_offs_bfn[i]);
       }
 
-      concat_iterable( shell_list_pack, shell_list );
-      concat_iterable( shell_offs_pack, shell_offs );
     }
 
-    device_backend_->copy_async( shell_list_pack.size(), shell_list_pack.data(), 
-      collocation_stack.shell_list_device, "send_shell_list" );
-    device_backend_->copy_async( shell_offs_pack.size(), shell_offs_pack.data(), 
-      collocation_stack.shell_offs_device, "send_shell_offs" );
+    device_backend_->copy_async( shell_list_bfn_pack.size(), 
+      shell_list_bfn_pack.data(), collocation_stack.shell_list_device, 
+      "send_shell_list_bfn" );
+    device_backend_->copy_async( shell_offs_bfn_pack.size(), 
+      shell_offs_bfn_pack.data(), collocation_stack.shell_offs_device, 
+      "send_shell_offs_bfn" );
+
+    if( terms.exx ) {
+      device_backend_->copy_async( shell_list_cou_pack.size(), 
+        shell_list_cou_pack.data(), coulomb_stack.shell_list_device, 
+        "send_shell_list_cou" );
+      device_backend_->copy_async( shell_offs_cou_pack.size(), 
+        shell_offs_cou_pack.data(), coulomb_stack.shell_offs_device, 
+        "send_shell_offs_cou" );
+    }
 
     // Construct Shell -> Task
     std::vector<int32_t> concat_shell_to_task_idx, concat_shell_to_task_off;
     {
-      const size_t total_nshells = total_nshells_task_batch * sizeof(int32_t);
+      const size_t total_nshells_bfn = total_nshells_bfn_task_batch * sizeof(int32_t);
       buffer_adaptor 
-        shell_idx_mem( shell_to_task_stack.shell_to_task_idx_device, total_nshells );
-      buffer_adaptor 
-        shell_off_mem( shell_to_task_stack.shell_to_task_off_device, total_nshells );
+        shell_idx_mem( shell_to_task_stack.shell_to_task_idx_device, total_nshells_bfn );
+      buffer_adaptor                                                                  
+        shell_off_mem( shell_to_task_stack.shell_to_task_off_device, total_nshells_bfn );
 
 
       std::vector<ShellToTaskDevice> host_shell_to_task(global_dims.nshells);
@@ -284,12 +333,13 @@ void Scheme1DataBase::pack_and_send(
        
         //}
 
-        size_t total_ntask = std::accumulate( h, h + nsh, 0ul,
-          [](auto& a, auto& b){ return a + b.ntask; } );
         size_t max_ntask = std::max_element( h, h+nsh,
           [](auto& a, auto& b){ return a.ntask < b.ntask; } )->ntask;
-        std::cout << "L = " << l << " AVG = " << (total_ntask/nsh) << 
-          " MAX = " << max_ntask << ", " << max_npts << std::endl;
+
+        //size_t total_ntask = std::accumulate( h, h + nsh, 0ul,
+        //  [](auto& a, auto& b){ return a + b.ntask; } );
+        //std::cout << "L = " << l << " AVG = " << (total_ntask/nsh) << 
+        //  " MAX = " << max_ntask << ", " << max_npts << std::endl;
         //l_batched_shell_to_task[l].ntask_average = total_ntask / nsh;
         l_batched_shell_to_task[l].ntask_average = max_ntask;
         l_batched_shell_to_task[l].npts_average  = max_npts;
@@ -327,16 +377,32 @@ void Scheme1DataBase::add_extra_to_indirection(
     }
   }
 
-  if( terms.exc_vxc or terms.exc_grad ) {
-    const size_t total_nshells = total_nshells_task_batch * sizeof(size_t);
+  if( terms.exx or terms.exc_vxc or terms.exc_grad ) {
+    const size_t total_nshells_bfn = total_nshells_bfn_task_batch * sizeof(size_t);
+    const size_t total_nshells_cou = total_nshells_cou_task_batch * sizeof(size_t);
     buffer_adaptor 
-      shell_list_mem( collocation_stack.shell_list_device, total_nshells );
+      shell_list_bfn_mem( collocation_stack.shell_list_device, total_nshells_bfn );
     buffer_adaptor 
-      shell_offs_mem( collocation_stack.shell_offs_device, total_nshells );
+      shell_offs_bfn_mem( collocation_stack.shell_offs_device, total_nshells_bfn );
+    buffer_adaptor 
+      shell_list_cou_mem( coulomb_stack.shell_list_device, total_nshells_cou );
+    buffer_adaptor 
+      shell_offs_cou_mem( coulomb_stack.shell_offs_device, total_nshells_cou );
+
     for( auto& task : tasks ) {
-      const auto nshells = task.bfn_screening.nshells;
-      task.bfn_screening.shell_list = shell_list_mem.aligned_alloc<size_t>( nshells , csl); 
-      task.bfn_screening.shell_offs = shell_offs_mem.aligned_alloc<size_t>( nshells , csl); 
+      const auto nshells_bfn = task.bfn_screening.nshells;
+      const auto nshells_cou = task.cou_screening.nshells;
+      task.bfn_screening.shell_list = 
+        shell_list_bfn_mem.aligned_alloc<size_t>( nshells_bfn , csl); 
+      task.bfn_screening.shell_offs = 
+        shell_offs_bfn_mem.aligned_alloc<size_t>( nshells_bfn , csl); 
+
+      if( terms.exx ) {
+        task.cou_screening.shell_list = 
+          shell_list_cou_mem.aligned_alloc<size_t>( nshells_cou , csl); 
+        task.cou_screening.shell_offs = 
+          shell_offs_cou_mem.aligned_alloc<size_t>( nshells_cou , csl); 
+      }
     }
   }
 

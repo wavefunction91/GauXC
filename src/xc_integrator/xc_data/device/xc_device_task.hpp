@@ -19,6 +19,7 @@ struct XCDeviceTask {
   };
 
   screening_quantities bfn_screening;
+  screening_quantities cou_screening;
 
   double* points_x       = nullptr;
   double* points_y       = nullptr;
@@ -27,6 +28,8 @@ struct XCDeviceTask {
 
   double*   nbe_scr = nullptr;
   double*   zmat    = nullptr;
+  double*   fmat    = nullptr;
+  double*   gmat    = nullptr;
   double*   xmat_x  = nullptr;
   double*   xmat_y  = nullptr;
   double*   xmat_z  = nullptr;

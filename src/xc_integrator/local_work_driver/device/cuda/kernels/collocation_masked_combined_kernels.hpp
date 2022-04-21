@@ -27,7 +27,7 @@ void collocation_device_masked_combined_kernel(
     auto& task = device_tasks[ blockIdx.z ];
   
     const auto               nshells     = task.bfn_screening.nshells;
-    const auto               nbf         = task.bfn_screening.nbe;
+    //const auto               nbf         = task.bfn_screening.nbe;
     const auto               npts        = task.npts;
     //const auto* __restrict__ pts_device  = task.points;
     const auto* __restrict__ pts_x_device  = task.points_x;
@@ -111,7 +111,7 @@ void collocation_device_masked_combined_kernel_deriv1(
     auto& task = device_tasks[ blockIdx.z ];
   
     const auto               nshells     = task.bfn_screening.nshells;
-    const auto               nbf         = task.bfn_screening.nbe;
+    //const auto               nbf         = task.bfn_screening.nbe;
     const auto               npts        = task.npts;
     //const auto* __restrict__ pts_device  = task.points;
     const auto* __restrict__ pts_x_device  = task.points_x;
