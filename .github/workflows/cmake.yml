@@ -65,6 +65,9 @@ jobs:
            
     - name: Install MPICH
       run: sudo apt-get install mpich
+
+    - name: Install HDF5
+      run: sudo apt-get install libhdf5-dev hdf5-tools hdf5-helpers
     
     - name: Install NumPy
       run: sudo pip3 install numpy
