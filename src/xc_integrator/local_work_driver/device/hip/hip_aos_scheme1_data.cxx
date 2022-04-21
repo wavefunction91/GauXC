@@ -30,7 +30,8 @@ size_t HipAoSScheme1<Base>::Data::get_submat_chunk_size(int32_t LDA, int32_t dev
 
   constexpr int max_submat_blocks = 10;
   int l2_cache_size;
-  hipDeviceGetAttribute(&l2_cache_size, hipDeviceAttributeL2CacheSize, dev_id);
+  auto err = hipDeviceGetAttribute(&l2_cache_size, hipDeviceAttributeL2CacheSize, dev_id);
+  GAUXC_HIP_ERROR("hipDeviceGetAttribute Failed", err);
 
   int l2_block_size = (int) sqrt(0.75 * ((double) l2_cache_size / 8));
   int min_block_size = LDA / max_submat_blocks;

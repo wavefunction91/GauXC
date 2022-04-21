@@ -4,6 +4,7 @@
 #include "integrator_util/integrator_common.hpp"
 #include "host/util.hpp"
 #include <gauxc/util/misc.hpp>
+#include <gauxc/util/unused.hpp>
 
 #include <stdexcept>
 #include <fstream>
@@ -21,6 +22,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
              int64_t ldp, value_type* K, int64_t ldk, 
              const IntegratorSettingsEXX& settings ) { 
   GAUXC_GENERIC_EXCEPTION("NYI" );                 
+  util::unused(m,n,P,ldp,K,ldk,settings);
 }
 
 }

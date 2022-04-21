@@ -265,7 +265,7 @@ struct RysBasis {
   RysBasis( const BasisSet<double>& basis ) {
     size_t nshells = basis.size();
     _shells.resize(nshells);
-    for( int i = 0; i < nshells; ++i ) {
+    for( size_t i = 0; i < nshells; ++i ) {
       _shells[i].origin.x = basis[i].O()[0];
       _shells[i].origin.y = basis[i].O()[1];
       _shells[i].origin.z = basis[i].O()[2];

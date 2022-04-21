@@ -5,7 +5,7 @@
 #include <gauxc/util/div_ceil.hpp>
 #include <numeric>
 #include <iostream>
-#include "device_specific/hip_util.hpp"
+#include "exceptions/hip_exception.hpp"
 
 static constexpr auto eps_d = std::numeric_limits<double>::epsilon();
 
@@ -17,10 +17,10 @@ __global__ void modify_weights_ssf_kernel_1d(
         size_t                            npts,
         size_t                            natoms,
   const double*                           RAB,
-        int32_t                           ldRAB,
+        size_t                            ldRAB,
   const double*                           coords,
   const double*                           dist_scratch,
-        int32_t                           lddist,
+        size_t                            lddist,
   const int32_t*                          iparent_device,
   const double*                           dist_nearest_device,
         double*                           weights_device
@@ -117,7 +117,6 @@ __global__ void modify_weights_ssf_kernel_1d(
     }
     weights_device[ipt] *= parent_weight / sum;
   }
-
 
 }
 

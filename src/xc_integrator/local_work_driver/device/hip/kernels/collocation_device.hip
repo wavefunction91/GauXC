@@ -1,28 +1,29 @@
 #include "hip/hip_runtime.h"
 #include <gauxc/util/div_ceil.hpp>
+#include "device_specific/hip_util.hpp"
 #include "exceptions/hip_exception.hpp"
 #include <gauxc/xc_task.hpp>
 
+#include "device/common/collocation_device.hpp"
 #include "device/hip/kernels/collocation_masked_kernels.hpp"
 #include "device/hip/kernels/collocation_masked_combined_kernels.hpp"
+//#include "device/hip/kernels/collocation_shell_to_task_kernels.hpp"
 
 #include "device_specific/hip_device_constants.hpp"
-#include "device_specific/hip_util.hpp"
-#include "device/common/collocation_device.hpp"
 
 namespace GauXC {
 
  
 template <typename T>
 void eval_collocation_masked(
-  size_t          nshells,
-  size_t          nbf,
-  size_t          npts,
-  const Shell<T>* shells_device,
-  const size_t*   mask_device,
-  const size_t*   offs_device,
-  const T*        pts_device,
-  T*              eval_device,
+  size_t            nshells,
+  size_t            nbf,
+  size_t            npts,
+  const Shell<T>*   shells_device,
+  const size_t*     mask_device,
+  const size_t*     offs_device,
+  const T*          pts_device,
+  T*                eval_device,
   device_queue queue
 ) {
 
@@ -52,7 +53,7 @@ void eval_collocation_masked(
   const size_t*        offs_device,
   const double*        pts_device,
   double*              eval_device,
-  device_queue queue
+  device_queue    queue
 );
 
 
@@ -60,11 +61,11 @@ void eval_collocation_masked(
 
 template <typename T>
 void eval_collocation_masked_combined(
-  size_t        ntasks,
-  size_t        npts_max,
-  size_t        nshells_max,
-  Shell<T>*     shells_device,
-  XCDeviceTask* device_tasks,
+  size_t            ntasks,
+  size_t            npts_max,
+  size_t            nshells_max,
+  Shell<T>*         shells_device,
+  XCDeviceTask*     device_tasks,
   device_queue queue
 ) {
 
@@ -86,11 +87,11 @@ void eval_collocation_masked_combined(
 
 template
 void eval_collocation_masked_combined(
-  size_t                ntasks,
-  size_t                npts_max,
-  size_t                nshells_max,
-  Shell<double>*        shells_device,
-  XCDeviceTask* device_tasks,
+  size_t            ntasks,
+  size_t            npts_max,
+  size_t            nshells_max,
+  Shell<double>*    shells_device,
+  XCDeviceTask*     device_tasks,
   device_queue queue
 );
 
@@ -150,7 +151,7 @@ void eval_collocation_masked_deriv1(
   double*              deval_device_x,
   double*              deval_device_y,
   double*              deval_device_z,
-  device_queue queue
+  device_queue    queue
 );
 
 
@@ -202,17 +203,5 @@ void eval_collocation_masked_combined_deriv1(
   XCDeviceTask* device_tasks,
   device_queue queue
 );
-
-
-
-
-
-
-
-
-
-
-
-
 
 } // namespace GauXC

@@ -2,6 +2,7 @@
 #include <gauxc/util/div_ceil.hpp>
 #include "grid_to_center.hpp"
 #include "device_specific/hip_device_constants.hpp"
+#include "exceptions/hip_exception.hpp"
 
 namespace GauXC {
 
@@ -9,9 +10,11 @@ __global__ void compute_grid_to_center_dist(
         int32_t npts,
         int32_t natoms,
   const double* coords,
-  const double* points,
+  const double* points_x,
+  const double* points_y,
+  const double* points_z,
         double* dist,
-        int32_t lddist
+        size_t lddist
 ) {
 
   const auto tid_x = threadIdx.x + blockIdx.x*blockDim.x;
@@ -19,14 +22,15 @@ __global__ void compute_grid_to_center_dist(
 
   if( tid_x < natoms && tid_y < npts ) {
     const double3* coords_vec = (double3*) coords;
-    const double3* points_vec = (double3*) points;
-   
-    auto RA = coords_vec[tid_x];
-    auto ri = points_vec[tid_y];
+    const auto RA = coords_vec[tid_x];
 
-    const auto rx = RA.x - ri.x;
-    const auto ry = RA.y - ri.y;
-    const auto rz = RA.z - ri.z;
+    const double rix = points_x[tid_y];
+    const double riy = points_y[tid_y];
+    const double riz = points_z[tid_y];
+
+    const auto rx = RA.x - rix;
+    const auto ry = RA.y - riy;
+    const auto rz = RA.z - riz;
 
     dist[ tid_x + tid_y * lddist ] = std::sqrt(rx*rx + ry*ry + rz*rz);
   }
@@ -34,8 +38,8 @@ __global__ void compute_grid_to_center_dist(
 }
 
 void compute_grid_to_center_dist( int32_t npts, int32_t natoms,
-  const double* coords, const double* points,  double* dist,
-  int32_t lddist, hipStream_t stream ) {
+  const double* coords, const double* points_x,  const double* points_y, 
+  const double* points_z, double* dist, int32_t lddist, hipStream_t stream ) {
 
 
   dim3 threads( hip::warp_size, hip::max_warps_per_thread_block );
@@ -43,7 +47,7 @@ void compute_grid_to_center_dist( int32_t npts, int32_t natoms,
                util::div_ceil( npts, threads.y ) );
 
   hipLaunchKernelGGL( compute_grid_to_center_dist, blocks, threads, 0, stream,
-    npts, natoms, coords, points, dist, lddist );
+    npts, natoms, coords, points_x, points_y, points_z, dist, lddist );
 
 }
 
