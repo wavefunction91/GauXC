@@ -29,6 +29,7 @@ message( STATUS "Pulling GIT_REVISION   = ${GIT_REVISION}" )
 
 
 include( FetchContent )
+set( FETCHCONTENT_SOURCE_DIR_GAUXC ${CMAKE_CURRENT_LIST_DIR}/../../.. )
 FetchContent_Declare( gauxc
   GIT_REPOSITORY "${GITHUB_URL}/${GITHUB_REPOSITORY}"
   GIT_TAG        ${GIT_REVISION}

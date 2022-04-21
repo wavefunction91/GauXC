@@ -104,17 +104,17 @@ export(EXPORT gauxc-targets
       NAMESPACE gauxc::
       FILE "${PROJECT_BINARY_DIR}/gauxc-targets.cmake")
 
-# Install staic headers
+# Install static headers
 install( 
   DIRECTORY   ${PROJECT_SOURCE_DIR}/include
-  DESTINATION ${CMAKE_INSTALL_PREFIX}
+  DESTINATION .
   FILES_MATCHING PATTERN "*.hpp"
 )
 
 # Install generated headers
 install(
   FILES       ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/gauxc
+  DESTINATION include/gauxc
 )
   
    
