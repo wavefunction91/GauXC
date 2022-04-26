@@ -124,7 +124,7 @@ namespace XCPU {
 #define SCALAR_DUPLICATE(x) (*(x))
 
 // AVX-512 SIMD Types
-#if __AVX512F__ 
+#if __AVX512F__ && __has_include(<zmmintrin.h>)
 
   #include <zmmintrin.h>
   
