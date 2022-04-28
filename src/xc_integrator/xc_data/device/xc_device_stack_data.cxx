@@ -312,7 +312,7 @@ XCDeviceStackData::host_task_iterator XCDeviceStackData::generate_buffers(
   }
 
   // TODO: print this if verbose
-  //std::cout << "XCDeviceStackData will allocate for " << std::distance(task_begin, task_it) << " Tasks" << std::endl;
+  std::cout << "XCDeviceStackData will allocate for " << std::distance(task_begin, task_it) << " Tasks MEMLEFT = " << mem_left << std::endl;
 
   // Pack host data and send to device
   allocate_dynamic_stack( terms, task_begin, task_it,
@@ -449,7 +449,6 @@ void XCDeviceStackData::pack_and_send( integrator_term_tracker ,
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
 
   // Host data packing arrays
-  //std::vector< std::array<double,3> > points_pack;
   std::vector<double> points_x_pack, points_y_pack, points_z_pack;
   std::vector< double > weights_pack;
 
@@ -481,8 +480,6 @@ void XCDeviceStackData::pack_and_send( integrator_term_tracker ,
 
 
   // Send grid data
-  //device_backend_->copy_async( 3*points_pack.size(), points_pack.data()->data(),
-  //            base_stack.points_device, "send points buffer" );
   device_backend_->copy_async( points_x_pack.size(), points_x_pack.data(),
               base_stack.points_x_device, "send points_x buffer" );
   device_backend_->copy_async( points_y_pack.size(), points_y_pack.data(),

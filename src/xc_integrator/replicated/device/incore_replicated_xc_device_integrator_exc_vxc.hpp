@@ -278,6 +278,15 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   else if( func.is_gga() ) enabled_terms.xc_approx = integrator_xc_approx::GGA; 
   else GAUXC_GENERIC_EXCEPTION("XC Approx NYI");
 
+#if 0
+  std::vector<int32_t> full_shell_list(nshells);
+  std::iota(full_shell_list.begin(),full_shell_list.end(),0);
+  for( auto it = task_begin; it != task_end; ++it ) {
+    it->cou_screening.shell_list = full_shell_list;
+    it->cou_screening.nbe        = nbf;
+  }
+#endif
+
   auto task_it = task_begin;
   while( task_it != task_end ) {
 

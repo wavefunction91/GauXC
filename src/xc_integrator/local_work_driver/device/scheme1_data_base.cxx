@@ -16,6 +16,10 @@ Scheme1DataBase::Scheme1DataBase(std::unique_ptr<DeviceBackend>&& ptr ) :
 void Scheme1DataBase::reset_allocations() {
   base_type::reset_allocations();
   scheme1_stack.reset();
+  collocation_stack.reset();
+  coulomb_stack.reset();
+  shell_to_task_stack.reset();
+  l_batched_shell_to_task.clear();
 }
 
 size_t Scheme1DataBase::get_static_mem_requirement() {
@@ -391,13 +395,13 @@ void Scheme1DataBase::add_extra_to_indirection(
 
     for( auto& task : tasks ) {
       const auto nshells_bfn = task.bfn_screening.nshells;
-      const auto nshells_cou = task.cou_screening.nshells;
       task.bfn_screening.shell_list = 
         shell_list_bfn_mem.aligned_alloc<size_t>( nshells_bfn , csl); 
       task.bfn_screening.shell_offs = 
         shell_offs_bfn_mem.aligned_alloc<size_t>( nshells_bfn , csl); 
 
       if( terms.exx ) {
+        const auto nshells_cou = task.cou_screening.nshells;
         task.cou_screening.shell_list = 
           shell_list_cou_mem.aligned_alloc<size_t>( nshells_cou , csl); 
         task.cou_screening.shell_offs = 

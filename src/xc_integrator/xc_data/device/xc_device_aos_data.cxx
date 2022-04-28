@@ -22,10 +22,9 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   if( is_xc_calc and terms.xc_approx == _UNDEFINED ) 
     GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET FOR XC CALC");
 
-  //const bool is_lda = terms.xc_approx == LDA;
   const bool is_gga = terms.xc_approx == GGA;
 
-  const bool need_grad = is_gga or terms.exc_grad;
+  const bool need_grad = is_gga or  terms.exc_grad;
   const bool need_hess = is_gga and terms.exc_grad;
 
   const auto& points           = task.points;
@@ -46,9 +45,9 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   const size_t ncut_bfn     = submat_cut_bfn.size();
   const size_t nblock_bfn   = submat_block_bfn.size();
 
-  const size_t nbe_cou      = task.cou_screening.nbe;
-  const size_t ncut_cou     = submat_cut_cou.size();
-  const size_t nblock_cou   = submat_block_cou.size();
+  const size_t nbe_cou      = terms.exx ? task.cou_screening.nbe : 0;
+  const size_t ncut_cou     = terms.exx ? submat_cut_cou.size() : 0;
+  const size_t nblock_cou   = terms.exx ? submat_block_cou.size() : 0;
 
   // Collocation + derivatives
   const size_t mem_bf      = nbe_bfn * npts * sizeof(double);
@@ -154,9 +153,9 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
     const size_t nblock_bfn  = submat_block_bfn.size();
     const auto nbe_bfn       = it->bfn_screening.nbe;
 
-    const size_t ncut_cou    = submat_cut_cou.size();
-    const size_t nblock_cou  = submat_block_cou.size();
-    const auto nbe_cou       = it->cou_screening.nbe;
+    const size_t ncut_cou    = terms.exx ? submat_cut_cou.size() : 0;
+    const size_t nblock_cou  = terms.exx ? submat_block_cou.size() : 0;
+    const auto nbe_cou       = terms.exx ? it->cou_screening.nbe : 0;
 
     total_nbe_scr_task_batch      += std::max(nbe_bfn,nbe_cou) * nbe_bfn;
 
@@ -164,51 +163,53 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
     total_ncut_bfn_task_batch     += ncut_bfn;
     total_nblock_bfn_task_batch   += nblock_bfn;
 
-    total_nbe_cou_npts_task_batch += nbe_cou * npts;
-    total_ncut_cou_task_batch     += ncut_cou;
-    total_nblock_cou_task_batch   += nblock_cou;
+    if( terms.exx ) {
+      total_nbe_cou_npts_task_batch += nbe_cou * npts;
+      total_ncut_cou_task_batch     += ncut_cou;
+      total_nblock_cou_task_batch   += nblock_cou;
+    }
 
   }
 
   // Device task indirection
   const size_t ntask = std::distance( task_begin, task_end );
-  aos_stack.device_tasks = mem.aligned_alloc<XCDeviceTask>( ntask , csl);
+  aos_stack.device_tasks = mem.aligned_alloc<XCDeviceTask>( ntask, csl);
 
   // Collocation + derivatives 
-  aos_stack.bf_eval_device     = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch , csl);
+  aos_stack.bf_eval_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch, csl);
   if( need_grad ) {
-    aos_stack.dbf_x_eval_device  = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch , csl);
-    aos_stack.dbf_y_eval_device  = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch , csl);
-    aos_stack.dbf_z_eval_device  = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch , csl);
+    aos_stack.dbf_x_eval_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch, csl);
+    aos_stack.dbf_y_eval_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch, csl);
+    aos_stack.dbf_z_eval_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch, csl);
   }
 
   if( need_hess ) {
-    aos_stack.d2bf_xx_eval_device  = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch , csl);
-    aos_stack.d2bf_xy_eval_device  = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch , csl);
-    aos_stack.d2bf_xz_eval_device  = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch , csl);
-    aos_stack.d2bf_yy_eval_device  = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch , csl);
-    aos_stack.d2bf_yz_eval_device  = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch , csl);
-    aos_stack.d2bf_zz_eval_device  = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch , csl);
+    aos_stack.d2bf_xx_eval_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch, csl);
+    aos_stack.d2bf_xy_eval_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch, csl);
+    aos_stack.d2bf_xz_eval_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch, csl);
+    aos_stack.d2bf_yy_eval_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch, csl);
+    aos_stack.d2bf_yz_eval_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch, csl);
+    aos_stack.d2bf_zz_eval_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch, csl);
   }
 
   // VXC Z Matrix
   if( is_xc_calc ) {
-    aos_stack.zmat_vxc_lda_gga_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch , csl);
+    aos_stack.zmat_vxc_lda_gga_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch, csl);
   }
 
   // X Matrix Gradient (for GGA EXC Gradient)
   if( is_gga and terms.exc_grad ) {
-    aos_stack.xmat_dx_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch , csl);
-    aos_stack.xmat_dy_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch , csl);
-    aos_stack.xmat_dz_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch , csl);
+    aos_stack.xmat_dx_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch, csl);
+    aos_stack.xmat_dy_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch, csl);
+    aos_stack.xmat_dz_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch, csl);
   }
 
   // Scratch buffer
-  aos_stack.nbe_scr_device = mem.aligned_alloc<double>( total_nbe_scr_task_batch , csl);
+  aos_stack.nbe_scr_device = mem.aligned_alloc<double>( total_nbe_scr_task_batch, csl);
 
   // AoS buffers (Bfn)
-  aos_stack.submat_cut_bfn_device   = mem.aligned_alloc<int32_t>( 3 * total_ncut_bfn_task_batch , csl);
-  aos_stack.submat_block_bfn_device = mem.aligned_alloc<int32_t>( total_nblock_bfn_task_batch , csl);
+  aos_stack.submat_cut_bfn_device   = mem.aligned_alloc<int32_t>( 3 * total_ncut_bfn_task_batch, csl);
+  aos_stack.submat_block_bfn_device = mem.aligned_alloc<int32_t>( total_nblock_bfn_task_batch, csl);
 
   // EXX Specfic Terms
   if( terms.exx ) {
@@ -216,8 +217,8 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
     aos_stack.gmat_exx_device = mem.aligned_alloc<double>(total_nbe_cou_npts_task_batch, csl);
 
     // AoS buffers (Bfn)
-    aos_stack.submat_cut_cou_device   = mem.aligned_alloc<int32_t>( 3 * total_ncut_cou_task_batch , csl);
-    aos_stack.submat_block_cou_device = mem.aligned_alloc<int32_t>( total_nblock_cou_task_batch , csl);
+    aos_stack.submat_cut_cou_device   = mem.aligned_alloc<int32_t>( 3 * total_ncut_cou_task_batch, csl);
+    aos_stack.submat_block_cou_device = mem.aligned_alloc<int32_t>( total_nblock_cou_task_batch, csl);
   }
 
 
@@ -423,7 +424,6 @@ void XCDeviceAoSData::pack_and_send(
     const auto ncut_cou    = task.cou_screening.ncut;
     const auto nblock_cou  = task.cou_screening.nblock;
 
-    //task.points       = points_mem .aligned_alloc<double>(3*npts, csl);
     task.points_x     = points_x_mem.aligned_alloc<double>(npts, csl);
     task.points_y     = points_y_mem.aligned_alloc<double>(npts, csl);
     task.points_z     = points_z_mem.aligned_alloc<double>(npts, csl);
