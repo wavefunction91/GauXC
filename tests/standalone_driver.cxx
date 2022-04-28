@@ -273,6 +273,7 @@ int main(int argc, char** argv) {
     matrix_type VXC, K;
     double EXC;
 
+    std::cout << "Starting Integration" << std::endl;
     if( integrate_vxc ) {
       std::tie(EXC, VXC) = integrator.eval_exc_vxc( P );
       std::cout << std::scientific << std::setprecision(12);

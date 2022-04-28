@@ -28,7 +28,7 @@ int main(int argc, char* argv[]) {
   
   std::string data_file = argv[1];
 
-  const int ngrid = std::stoll( std::string(argv[1]) );
+  const int ngrid = std::stoll( std::string(argv[2]) );
   
   GauXC::Molecule mol;
   GauXC::read_hdf5_record(mol, data_file, "/MOLECULE");
@@ -309,7 +309,7 @@ int main(int argc, char* argv[]) {
   int correct = 1;
   
   for( int i = 0; i < nbf * ngrid; ++i) {
-    if((fabs(CPU_G_own[i] - GPU_G_own[i]) > 1e-2) || std::isnan(GPU_G_own[i]) || std::isnan(GPU_G_own[i])) {
+    if((fabs(CPU_G_own[i] - GPU_G_own[i]) > 1e-10) || std::isnan(GPU_G_own[i]) || std::isnan(GPU_G_own[i])) {
       correct = 0;
     }
   }

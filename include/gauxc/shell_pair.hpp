@@ -113,8 +113,8 @@ public:
 
     // Pack into column-major lower triangle
     shell_pairs_.reserve( (nshells_ * (nshells_+1))/2 );
-    for(int j = 0; j < nshells_; ++j)
-    for(int i = j; i < nshells_; ++i) {
+    for(auto j = 0ul; j < nshells_; ++j)
+    for(auto i = j; i < nshells_; ++i) {
       shell_pairs_.emplace_back( basis[i], basis[j] );
     }
   }
@@ -133,6 +133,11 @@ public:
       return shell_pairs_[idx];
     } else return at(j,i);
   }
+
+  inline size_t nshells() const { return nshells_; }
+  inline size_t npairs() const { return shell_pairs_.size(); }
+  inline auto* shell_pairs() { return shell_pairs_.data(); }
+  inline auto* shell_pairs() const { return shell_pairs_.data(); }
 
 };
 

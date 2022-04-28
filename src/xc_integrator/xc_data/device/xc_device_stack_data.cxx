@@ -149,7 +149,9 @@ void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells )
   // Allocate static memory with proper alignment
   buffer_adaptor mem( dynmem_ptr, dynmem_sz );
 
-  static_stack.shells_device     = mem.aligned_alloc<Shell<double>>( nshells , csl);
+  static_stack.shells_device = mem.aligned_alloc<Shell<double>>( nshells , csl);
+  static_stack.shell_pairs_device = 
+    mem.aligned_alloc<ShellPair<double>>((nshells*(nshells+1))/2, csl);
 
   static_stack.exx_k_device = mem.aligned_alloc<double>( nbf * nbf , csl);
   static_stack.dmat_device  = mem.aligned_alloc<double>( nbf * nbf , csl);
@@ -198,7 +200,7 @@ void XCDeviceStackData::send_static_data_weights( const Molecule& mol, const Mol
 void XCDeviceStackData::send_static_data_density_basis( const double* P, int32_t ldp,
   const BasisSet<double>& basis ) {
 
-  if( not (allocated_terms.exc_vxc or allocated_terms.exc_grad) ) 
+  if( not (allocated_terms.exx or allocated_terms.exc_vxc or allocated_terms.exc_grad) ) 
     GAUXC_GENERIC_EXCEPTION("Density/Basis Not Stack Allocated");
 
   const auto nbf    = global_dims.nbf;
@@ -216,6 +218,25 @@ void XCDeviceStackData::send_static_data_density_basis( const double* P, int32_t
   device_backend_->master_queue_synchronize(); 
 }
 
+
+void XCDeviceStackData::send_static_data_shell_pairs( 
+  const ShellPairCollection<double>& shell_pairs ) {
+
+  if( not allocated_terms.exx ) 
+    GAUXC_GENERIC_EXCEPTION("ShellPairs Not Stack Allocated");
+
+  const auto nshells = global_dims.nshells;
+  if( shell_pairs.nshells() != nshells )
+    GAUXC_GENERIC_EXCEPTION("Incompatible Basis for Stack Allocation");
+
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
+
+  // Copy shell pairs
+  device_backend_->copy_async( shell_pairs.npairs(), shell_pairs.shell_pairs(),
+    static_stack.shell_pairs_device, "ShellPairs H2D" );
+  
+  device_backend_->master_queue_synchronize(); 
+}
 
 
 
@@ -276,6 +297,16 @@ void XCDeviceStackData::retrieve_exc_grad_integrands( double* EXC_GRAD, double* 
   const auto natoms = global_dims.natoms;
   device_backend_->copy_async( 3*natoms, static_stack.exc_grad_device, EXC_GRAD,  "EXC Gradient D2H" );
   device_backend_->copy_async( 1,        static_stack.nel_device,      N_EL,      "NEL D2H" );
+
+}
+
+void XCDeviceStackData::retrieve_exx_integrands( double* K, int32_t ldk ) {
+
+  const auto nbf = global_dims.nbf;
+  if( ldk != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDK must bf NBF");
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
+  
+  device_backend_->copy_async( nbf*nbf, static_stack.exx_k_device, K,  "K D2H" );
 
 }
 

@@ -60,19 +60,30 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 template <typename ValueType>
 void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   exx_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
-                       value_type* /*VXC*/, int64_t /*ldvxc*/,
+                       value_type* K, int64_t ldk,
                        host_task_iterator task_begin, host_task_iterator task_end,
                        XCDeviceData& device_data ) {
 
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
 
   // Setup Aliases
-  //const auto& func  = *this->func_;
   const auto& mol   = this->load_balancer_->molecule();
   const auto& meta  = this->load_balancer_->molmeta();
 
-  // Get basis map
+  // TODO: This turns off EK screening 
+  const auto nbf     = basis.nbf();
+  const auto nshells = basis.nshells();
+  std::vector<int32_t> full_shell_list(nshells);
+  std::iota(full_shell_list.begin(),full_shell_list.end(),0);
+  for( auto it = task_begin; it != task_end; ++it ) {
+    it->cou_screening.shell_list = full_shell_list;
+    it->cou_screening.nbe        = nbf;
+  }
+
+
+  // Get basis map and shell pairs
   BasisSetMap basis_map(basis,mol);
+  ShellPairCollection shell_pairs(basis);
 
   // Populate submat maps
   device_data.populate_submat_maps( basis.nbf(), task_begin, task_end, basis_map );
@@ -130,11 +141,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
 
   // Do EXX integration in task batches
-  const auto nbf     = basis.nbf();
-  const auto nshells = basis.nshells();
   device_data.reset_allocations();
   device_data.allocate_static_data_exx( nbf, nshells );
   device_data.send_static_data_density_basis( P, ldp, basis );
+  device_data.send_static_data_shell_pairs( shell_pairs );
 
   // Zero integrands
   device_data.zero_exx_integrands();
@@ -143,8 +153,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   integrator_term_tracker enabled_terms;
   enabled_terms.exx = true;
 
-  GAUXC_GENERIC_EXCEPTION("Device EXX NYI");
-
+  //GAUXC_GENERIC_EXCEPTION("DIE DIE DIE");
   auto task_it = task_begin;
   while( task_it != task_end ) {
 
@@ -163,6 +172,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // i runs over all points
     lwd->eval_exx_fmat( &device_data );
 
+#if 0
     // Compute G(mu,i) = w(i) * A(mu,nu,i) * F(nu,i)
     // mu/nu run over significant ek shells
     // i runs over all points
@@ -173,11 +183,16 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // nu runs over ek shells
     // i runs over all points
     lwd->inc_exx_k( &device_data );
+#endif
 
   } // Loop over batches of batches 
 
+#if 0
   // Symmetrize K in device memory
   lwd->symmetrize_exx_k( &device_data );
+#endif
+
+  device_data.retrieve_exx_integrands( K, ldk );
 }
 
 }

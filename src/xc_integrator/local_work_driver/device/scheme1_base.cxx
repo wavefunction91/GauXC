@@ -9,7 +9,17 @@
 #include "device/common/symmetrize_mat.hpp"
 #include "device/common/increment_exc_grad.hpp"
 
+#include "gpu/chebyshev_boys_computation.hpp"
+
 namespace GauXC {
+
+AoSScheme1Base::AoSScheme1Base() {
+  dev_boys_table = XGPU::boys_init();
+}
+
+AoSScheme1Base::~AoSScheme1Base() noexcept {
+  XGPU::boys_finalize(dev_boys_table);
+}
 
 void AoSScheme1Base::eval_zmat_lda_vxc( XCDeviceData* _data){
 
@@ -495,7 +505,6 @@ void AoSScheme1Base::eval_exx_fmat( XCDeviceData* _data ) {
 
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
-  GAUXC_GENERIC_EXCEPTION("NYI");
 
 }
 
@@ -507,8 +516,34 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data ) {
 
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
-  GAUXC_GENERIC_EXCEPTION("NYI");
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
 
+  // XXX: Need to add screening capabilities, packing etc
+  const auto nbf = data->global_dims.nbf;
+  for( auto& t : tasks ) {
+    if( t.bfn_screening.nbe != nbf ) GAUXC_GENERIC_EXCEPTION("EXX + BFN Screening NYI");
+    if( t.cou_screening.nbe != nbf ) GAUXC_GENERIC_EXCEPTION("EXX + COU Screening NYI");
+  }
+
+  auto static_stack  = data->static_stack;
+
+  // Sync blas streams with master stream
+  data->device_backend_->sync_blas_pool_with_master();
+
+  // Launch GEMM in round-robin
+  const auto n_blas_streams = data->device_backend_->blas_pool_size();
+  for( size_t iT = 0; iT < ntasks; ++iT ) {
+    auto& task = tasks[iT];
+    auto handle = data->device_backend_->blas_pool_handle( iT % n_blas_streams );
+    auto npts = task.npts;
+    // XXX Needs to be modified to account for screening
+    gemm( handle, DeviceBlasOp::NoTrans, DeviceBlasOp::NoTrans, npts, nbf, nbf,
+      1., task.bf, npts, static_stack.dmat_device, nbf, 0., task.fmat, npts );
+  }
+
+  // Record completion of BLAS ops on master stream
+  data->device_backend_->sync_master_with_blas_pool();
 }
 
 }

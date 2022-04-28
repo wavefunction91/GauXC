@@ -481,7 +481,7 @@ void XCDeviceAoSData::pack_and_send(
       task.cou_screening.submat_cut   = submat_cut_cou_mem.aligned_alloc<int32_t>( 3*ncut_cou , csl);
       task.cou_screening.submat_block = submat_block_cou_mem.aligned_alloc<int32_t>(nblock_cou, csl);
       task.fmat = fmat_mem.aligned_alloc<double>(nbe_cou * npts, csl);
-      task.gmat = fmat_mem.aligned_alloc<double>(nbe_cou * npts, csl);
+      task.gmat = gmat_mem.aligned_alloc<double>(nbe_cou * npts, csl);
     }
 
   } // Loop over device tasks

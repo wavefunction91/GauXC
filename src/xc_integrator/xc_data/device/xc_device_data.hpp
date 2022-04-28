@@ -2,6 +2,7 @@
 #include <gauxc/xc_task.hpp>
 #include <vector>
 #include <gauxc/basisset_map.hpp>
+#include <gauxc/shell_pair.hpp>
 #include <gauxc/molmeta.hpp>
 //#include <gauxc/reduction_driver.hpp>
 #include <any>
@@ -46,11 +47,12 @@ struct XCDeviceData {
   virtual void allocate_static_data_weights( int32_t natoms ) = 0;
   virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) = 0;
-  virtual void allocate_static_data_exx( int32_t nbf, int32_t nshells) = 0;
+  virtual void allocate_static_data_exx( int32_t nbf, int32_t nshells ) = 0;
 
   // Send persistent data from host to device
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
   virtual void send_static_data_density_basis( const double* P, int32_t ldp, const BasisSet<double>& basis ) = 0;
+  virtual void send_static_data_shell_pairs( const ShellPairCollection<double>& ) = 0;
 
   /// Zero out the EXC / VXC integrands in device memory
   virtual void zero_exc_vxc_integrands() = 0;
@@ -96,6 +98,8 @@ struct XCDeviceData {
    *  @param[out] N_EL      Integrated # electrons (host) for XC queue 
    */
   virtual void retrieve_exc_grad_integrands( double* EXC_GRAD, double* N_EL ) = 0;
+
+  virtual void retrieve_exx_integrands( double* K, int32_t ldk ) = 0;
 
 
   virtual void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) = 0;

@@ -37,13 +37,18 @@ FWD_TO_PIMPL(eval_uvvar_gga)            // U/VVar GGA (density + grad, gamma)
 FWD_TO_PIMPL(eval_zmat_lda_vxc)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc)         // Eval Z Matrix GGA VXC
 
+FWD_TO_PIMPL(eval_exx_fmat)             // Eval EXX F Matrix
+FWD_TO_PIMPL(eval_exx_gmat)             // Eval EXX G Matrix
+
 FWD_TO_PIMPL(inc_exc)
 FWD_TO_PIMPL(inc_nel)
 FWD_TO_PIMPL(inc_vxc)                   // Increment VXC by Z 
+FWD_TO_PIMPL(inc_exx_k)     
 FWD_TO_PIMPL(inc_exc_grad_lda)
 FWD_TO_PIMPL(inc_exc_grad_gga)
 
 FWD_TO_PIMPL(symmetrize_vxc)
+FWD_TO_PIMPL(symmetrize_exx_k)
 
 // X     = P * B
 // dX/dx = P * dB/dx (do_grad)

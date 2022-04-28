@@ -32,6 +32,7 @@ struct XCDeviceStackData : public XCDeviceData {
 
   struct static_data {
     Shell<double>* shells_device = nullptr; ///< Array of static basis shells (nshells)
+    ShellPair<double>* shell_pairs_device = nullptr;
 
     double* dmat_device   = nullptr; ///< Static density matrix storage (nbf,nbf)
     double* rab_device    = nullptr; ///< Static RAB matrix storage (*,natoms)
@@ -96,12 +97,15 @@ struct XCDeviceStackData : public XCDeviceData {
   void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) override final;
   void send_static_data_density_basis( const double* P, int32_t ldp, 
     const BasisSet<double>& basis ) override final;
+  void send_static_data_shell_pairs( const ShellPairCollection<double>& ) 
+    override final;
   void zero_exc_vxc_integrands() override final;
   void zero_exc_grad_integrands() override final;
   void zero_exx_integrands() override final;
   void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
     double* VXC, int32_t ldvxc ) override final;
   void retrieve_exc_grad_integrands( double* EXC_GRAD, double* N_EL ) override final;
+  void retrieve_exx_integrands( double* K, int32_t ldk ) override final;
   void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) override final;
 
   double* vxc_device_data() override;

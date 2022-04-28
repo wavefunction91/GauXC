@@ -1,6 +1,6 @@
 #pragma once
-
 #include <cmath>
+#include <gauxc/shell_pair.hpp>
 
 namespace XGPU {
 
@@ -18,16 +18,19 @@ namespace XGPU {
     int m, L;
   } shells;
 
+#if 0
   typedef struct {
     point P;
     point PA;
     point PB;
 
+    double K_coeff_prod;
     double gamma;
     double gamma_inv;
-  
-    double K_coeff_prod;
   } prim_pair;
+#else
+  using prim_pair = GauXC::PrimitivePair<double>;
+#endif
 
 }
 

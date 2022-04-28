@@ -33,7 +33,10 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
 
   using Data = Scheme1DataBase;
 
-  virtual ~AoSScheme1Base() = default;
+  AoSScheme1Base();
+  virtual ~AoSScheme1Base() noexcept;
+
+  double* dev_boys_table = nullptr;
 };
 
 }

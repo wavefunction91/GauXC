@@ -20,6 +20,8 @@ T gau_rad_eval( int32_t l, int32_t nprim, const T* alpha, const T* coeff, T r ) 
 template <typename T>
 T gau_rad_cutoff( int32_t l, int32_t nprim, const T* alpha, const T* coeff, T tol ) {
 
+  if( tol <= 0.0 ) return std::numeric_limits<T>::infinity();
+
   const double log_tol = -std::log(tol);
   // Initial guess
   double r = 0;
