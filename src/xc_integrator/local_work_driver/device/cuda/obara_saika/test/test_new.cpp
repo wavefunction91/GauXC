@@ -250,7 +250,8 @@ int main(int argc, char* argv[]) {
   
     cudaMemcpy(dev_points_transposed, _points_transposed.data(), 3 * ngrid * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(dev_X, F.data(), ngrid * nbf * sizeof(double), cudaMemcpyHostToDevice);
-    cudaMemcpy(dev_G, GPU_G_own.data(), ngrid * nbf * sizeof(double), cudaMemcpyHostToDevice);
+    //cudaMemcpy(dev_G, GPU_G_own.data(), ngrid * nbf * sizeof(double), cudaMemcpyHostToDevice);
+    cudaMemset( dev_G, 0, ngrid*nbf*sizeof(double));
     cudaMemcpy(dev_weights, w.data(), ngrid * sizeof(double), cudaMemcpyHostToDevice);
 
     #if 0
@@ -292,7 +293,9 @@ int main(int argc, char* argv[]) {
         auto sp = dev_shell_pairs + GauXC::detail::packed_lt_index(i,j,nshells);
         XGPU::compute_integral_shell_pair(i == j,
         				  ngrid,
-        				  dev_points_transposed,
+        				  dev_points_transposed + 0*ngrid,
+        				  dev_points_transposed + 1*ngrid,
+        				  dev_points_transposed + 2*ngrid,
         				  bra_shell.l(), ket_shell.l(),
                   A, B,
         				  sp,

@@ -58,7 +58,9 @@ namespace XGPU {
 
   void compute_integral_shell_pair(int is_diag,
 				   size_t npts,
-				   double *points,
+				   double *points_x,
+				   double *points_y,
+				   double *points_z,
 				   int lA,
 				   int lB,
 				   point rA,
@@ -75,7 +77,9 @@ namespace XGPU {
     if (is_diag) {
       if(lA == 0) {
 	integral_0(npts,
-		   points,
+		   points_x,
+		   points_y,
+		   points_z,
        sp,
 		   Xi,
 		   ldX,
@@ -85,7 +89,9 @@ namespace XGPU {
 		   boys_table);
       } else if(lA == 1) {
         integral_1(npts,
-		   points,
+		   points_x,
+		   points_y,
+		   points_z,
        sp,
 		   Xi,
 		   ldX,
@@ -95,7 +101,9 @@ namespace XGPU {
 		   boys_table);
       } else if(lA == 2) {
         integral_2(npts,
-		   points,
+		   points_x,
+		   points_y,
+		   points_z,
        sp,
 		   Xi,
 		   ldX,
@@ -109,7 +117,9 @@ namespace XGPU {
     } else {
       if((lA == 0) && (lB == 0)) {
 	integral_0_0(npts,
-		     points,
+		   points_x,
+		   points_y,
+		   points_z,
          sp,
 		     Xi,
 		     Xj,
@@ -121,7 +131,9 @@ namespace XGPU {
 		     boys_table);
       } else if((lA == 1) && (lB == 0)) {
 	integral_1_0(npts,
-		     points,
+		   points_x,
+		   points_y,
+		   points_z,
          sp,
 		     Xi,
 		     Xj,
@@ -133,7 +145,9 @@ namespace XGPU {
 		     boys_table);
       } else if((lA == 0) && (lB == 1)) {
 	integral_1_0(npts,
-		     points,
+		   points_x,
+		   points_y,
+		   points_z,
          sp,
 		     Xj,
 		     Xi,
@@ -148,7 +162,9 @@ namespace XGPU {
 		     rA.y - rB.y,
 		     rA.z - rB.z,
 		     npts,
-		     points,
+		   points_x,
+		   points_y,
+		   points_z,
          sp,
 		     Xi,
 		     Xj,
@@ -160,7 +176,9 @@ namespace XGPU {
 		     boys_table);
       } else if((lA == 2) && (lB == 0)) {
 	integral_2_0(npts,
-		     points,
+		   points_x,
+		   points_y,
+		   points_z,
          sp,
 		     Xi,
 		     Xj,
@@ -172,7 +190,9 @@ namespace XGPU {
 		     boys_table);
       } else if((lA == 0) && (lB == 2)) {
 	integral_2_0(npts,
-		     points,
+		   points_x,
+		   points_y,
+		   points_z,
          sp,
 		     Xj,
 		     Xi,
@@ -187,7 +207,9 @@ namespace XGPU {
 		     rA.y - rB.y,
 		     rA.z - rB.z,
 		     npts,
-		     points,
+		   points_x,
+		   points_y,
+		   points_z,
          sp,
 		     Xi,
 		     Xj,
@@ -202,7 +224,9 @@ namespace XGPU {
 		     rB.y - rA.y,
 		     rB.z - rA.z,
 		     npts,
-		     points,
+		   points_x,
+		   points_y,
+		   points_z,
          sp,
 		     Xj,
 		     Xi,
@@ -217,7 +241,9 @@ namespace XGPU {
 		     rA.y - rB.y,
 		     rA.z - rB.z,
 		     npts,
-		     points,
+		   points_x,
+		   points_y,
+		   points_z,
          sp,
 		     Xi,
 		     Xj,

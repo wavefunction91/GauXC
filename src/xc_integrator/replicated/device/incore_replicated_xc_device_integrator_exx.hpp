@@ -172,18 +172,16 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // i runs over all points
     lwd->eval_exx_fmat( &device_data );
 
-#if 0
     // Compute G(mu,i) = w(i) * A(mu,nu,i) * F(nu,i)
     // mu/nu run over significant ek shells
     // i runs over all points
-    lwd->eval_exx_gmat( &device_data );
+    lwd->eval_exx_gmat( &device_data, basis_map );
 
     // Increment K(mu,nu) += B(mu,i) * G(nu,i)
     // mu runs over bfn shell list
     // nu runs over ek shells
     // i runs over all points
     lwd->inc_exx_k( &device_data );
-#endif
 
   } // Loop over batches of batches 
 

@@ -9,6 +9,8 @@
 #include "device/common/symmetrize_mat.hpp"
 #include "device/common/increment_exc_grad.hpp"
 
+#include "gpu/integral_data_types.hpp"
+#include "gpu/obara_saika_integrals.hpp"
 #include "gpu/chebyshev_boys_computation.hpp"
 
 namespace GauXC {
@@ -477,26 +479,6 @@ void AoSScheme1Base::inc_exc_grad_gga( XCDeviceData* _data ) {
 }
 
 
-void AoSScheme1Base::inc_exx_k( XCDeviceData* _data ) {
-
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
-
-  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
-  GAUXC_GENERIC_EXCEPTION("NYI");
-
-}
-
-void AoSScheme1Base::symmetrize_exx_k( XCDeviceData* _data ) {
-
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
-
-  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
-  GAUXC_GENERIC_EXCEPTION("NYI");
-
-}
-
 void AoSScheme1Base::eval_exx_fmat( XCDeviceData* _data ) {
 
   auto* data = dynamic_cast<Data*>(_data);
@@ -544,6 +526,8 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
   auto& tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
+  const size_t nshells = data->global_dims.nshells;
+  auto static_stack  = data->static_stack;
 
   // XXX: Need to add screening capabilities, packing etc
   const auto nbf = data->global_dims.nbf;
@@ -552,18 +536,104 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
     if( t.cou_screening.nbe != nbf ) GAUXC_GENERIC_EXCEPTION("EXX + COU Screening NYI");
   }
 
-  const size_t nshells = data->global_dims.nshells;
-  auto static_stack  = data->static_stack;
-  for( auto i = 0; i < nshells; ++i )
-  for( auto j = 0; j <= i;      ++j ) {
-    const auto idx_ij = detail::packed_lt_index(i,j, nshells);
-    auto* sp = static_stack.shell_pairs_device + idx_ij;
-
-    const auto bra_l = basis_map.shell_l(i);
-    const auto ket_l = basis_map.shell_l(j);
+  // XXX: Need to add support for non-cartesian functions
+  for( auto i = 0ul; i < nshells; ++i ) {
+    if( basis_map.shell_pure(i) )
+      GAUXC_GENERIC_EXCEPTION("GPU EXX + Spherical NYI");
   }
 
+  if( basis_map.max_l() > 2 ) {
+    GAUXC_GENERIC_EXCEPTION("GPU EXX + L>2 NYI");
+  }
+
+  // Zero out G
+  for( auto& task : tasks ) {
+    const size_t sz = task.npts*task.cou_screening.nbe;
+    data->device_backend_->set_zero( sz, task.gmat, "Zero G" );
+  }
+
+  auto& sp_data = data->shell_pair_soa;
+  for( auto i = 0, ij = 0; i < nshells; ++i )
+  for( auto j = 0; j <= i;      ++j, ++ij ) {
+    auto* sp = sp_data.shell_pair_dev_ptr[ij];
+    auto [bra_l, ket_l] = sp_data.shell_pair_ls[ij];
+    auto [A, B]         = sp_data.shell_pair_centers[ij];
+
+    auto i_off = basis_map.shell_to_first_ao(i);
+    auto j_off = basis_map.shell_to_first_ao(j);
+    for( auto& task : tasks ) {
+      XGPU::compute_integral_shell_pair( i == j,
+        task.npts,
+        task.points_x,
+        task.points_y,
+        task.points_z,
+        bra_l, ket_l,
+        A, B,
+        sp,
+        task.fmat + i_off*task.npts,
+        task.fmat + j_off*task.npts,
+        task.npts,
+        task.gmat + i_off*task.npts,
+        task.gmat + j_off*task.npts,
+        task.npts,
+        task.weights,
+        dev_boys_table );
+    }
+  }
+  cudaDeviceSynchronize();
+
 }
+
+
+
+void AoSScheme1Base::inc_exx_k( XCDeviceData* _data ) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+
+  // XXX: Need to add screening capabilities, packing etc
+  const auto nbf = data->global_dims.nbf;
+  for( auto& t : tasks ) {
+    if( t.bfn_screening.nbe != nbf ) GAUXC_GENERIC_EXCEPTION("EXX + BFN Screening NYI");
+    if( t.cou_screening.nbe != nbf ) GAUXC_GENERIC_EXCEPTION("EXX + COU Screening NYI");
+  }
+
+  auto static_stack  = data->static_stack;
+
+  // Sync blas streams with master stream
+  data->device_backend_->sync_blas_pool_with_master();
+
+  // Launch GEMM in round-robin
+  const auto n_blas_streams = data->device_backend_->blas_pool_size();
+  for( size_t iT = 0; iT < ntasks; ++iT ) {
+    auto& task = tasks[iT];
+    auto handle = data->device_backend_->blas_pool_handle( iT % n_blas_streams );
+    auto npts = task.npts;
+    // XXX Needs to be modified to account for screening
+    gemm( handle, DeviceBlasOp::Trans, DeviceBlasOp::NoTrans, nbf, nbf, npts,
+      1., task.bf, npts, task.gmat, npts, 1., static_stack.exx_k_device, nbf );
+  }
+
+  // Record completion of BLAS ops on master stream
+  data->device_backend_->sync_master_with_blas_pool();
+
+}
+
+void AoSScheme1Base::symmetrize_exx_k( XCDeviceData* _data ) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+  GAUXC_GENERIC_EXCEPTION("NYI");
+
+}
+
 
 
 

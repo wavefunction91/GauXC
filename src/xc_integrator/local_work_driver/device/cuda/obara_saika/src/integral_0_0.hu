@@ -3,7 +3,9 @@
 #include "../include/gpu/integral_data_types.hpp"
 namespace XGPU {
   void integral_0_0(size_t npts,
-		    double *points,	
+		    double *points_x,	
+		    double *points_y,	
+		    double *points_z,	
         shell_pair* sp,
 		    double *Xi,
 		    double *Xj,

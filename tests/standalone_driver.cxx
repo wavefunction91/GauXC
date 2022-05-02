@@ -273,7 +273,6 @@ int main(int argc, char** argv) {
     matrix_type VXC, K;
     double EXC;
 
-    std::cout << "Starting Integration" << std::endl;
     if( integrate_vxc ) {
       std::tie(EXC, VXC) = integrator.eval_exc_vxc( P );
       std::cout << std::scientific << std::setprecision(12);
@@ -297,8 +296,11 @@ int main(int argc, char** argv) {
       }
     }
 
-    if( integrate_exx ) K = integrator.eval_exx(P, sn_link_settings);
-    else                K = K_ref;
+    if( integrate_exx ) {
+      K = integrator.eval_exx(P, sn_link_settings);
+      matrix_type K_tmp = 0.5 * (K + K.transpose());
+      K = K_tmp;
+    } else                K = K_ref;
 
     //std::cout << (K).block(0,0,5,5) << std::endl << std::endl;
     //std::cout << (K_ref).block(0,0,5,5) << std::endl << std::endl;

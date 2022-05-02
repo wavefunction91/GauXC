@@ -4,9 +4,10 @@
 
 namespace XGPU {
 
-  typedef struct {
-    double x, y, z;
-  } point;
+  //typedef struct {
+  //  double x, y, z;
+  //} point;
+  using point = GauXC::detail::cartesian_point;
 
   typedef struct {
     double alpha, coeff;

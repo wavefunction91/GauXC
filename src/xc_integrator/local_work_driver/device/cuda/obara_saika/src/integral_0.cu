@@ -13,7 +13,9 @@
 
 namespace XGPU {
   __global__ void dev_integral_0(size_t npts,
-				 double *_points,
+				 double *_points_x,
+				 double *_points_y,
+				 double *_points_z,
          shell_pair* sp,
 				 double *Xi,
 				 int ldX,
@@ -26,7 +28,9 @@ namespace XGPU {
     const auto prim_pairs  = sp->prim_pairs();
     
     for(size_t p_outer = blockIdx.x * blockDim.x; p_outer < npts; p_outer += gridDim.x * blockDim.x) {
-      double *_point_outer = (_points + p_outer);
+      double *_point_outer_x = (_points_x + p_outer);
+      double *_point_outer_y = (_points_y + p_outer);
+      double *_point_outer_z = (_points_z + p_outer);
       
       size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer);
 
@@ -42,9 +46,9 @@ namespace XGPU {
 	double eval = prim_pairs[ij].K_coeff_prod;
 
 	// Evaluate T Values
-	SCALAR_TYPE xC = SCALAR_LOAD((_point_outer + p_inner + 0 * npts));
-	SCALAR_TYPE yC = SCALAR_LOAD((_point_outer + p_inner + 1 * npts));
-	SCALAR_TYPE zC = SCALAR_LOAD((_point_outer + p_inner + 2 * npts));
+	SCALAR_TYPE xC = SCALAR_LOAD((_point_outer_x + p_inner));
+	SCALAR_TYPE yC = SCALAR_LOAD((_point_outer_y + p_inner));
+	SCALAR_TYPE zC = SCALAR_LOAD((_point_outer_z + p_inner));
 
 	SCALAR_TYPE X_PC = SCALAR_SUB(xA, xC);
 	SCALAR_TYPE Y_PC = SCALAR_SUB(yA, yC);
@@ -88,7 +92,9 @@ namespace XGPU {
   }
 
   void integral_0(size_t npts,
-		  double *_points,	
+		  double *_points_x,	
+		  double *_points_y,	
+		  double *_points_z,	
       shell_pair* sp,
 		  double *Xi,
 		  int ldX,
@@ -97,7 +103,9 @@ namespace XGPU {
 		  double *weights,
 		  double *boys_table) {
     dev_integral_0<<<320, 128>>>(npts,
-				 _points,
+				 _points_x,
+				 _points_y,
+				 _points_z,
          sp,
 				 Xi,
 				 ldX,

@@ -16,7 +16,9 @@ namespace XGPU {
 				   double Y_AB,
 				   double Z_AB,
 				   size_t npts,
-				   double *_points,
+				   double *_points_x,
+				   double *_points_y,
+				   double *_points_z,
            shell_pair* sp,
 				   double *Xi,
 				   double *Xj,
@@ -30,7 +32,9 @@ namespace XGPU {
     const auto nprim_pairs = sp->nprim_pairs();
     const auto prim_pairs  = sp->prim_pairs();
     for(size_t p_outer = blockIdx.x * blockDim.x; p_outer < npts; p_outer += gridDim.x * blockDim.x) {
-      double *_point_outer = (_points + p_outer);
+      double *_point_outer_x = (_points_x + p_outer);
+      double *_point_outer_y = (_points_y + p_outer);
+      double *_point_outer_z = (_points_z + p_outer);
 
       size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer);
 
@@ -50,9 +54,9 @@ namespace XGPU {
 	double eval = prim_pairs[ij].K_coeff_prod;
 
 	// Evaluate T Values
-	SCALAR_TYPE xC = SCALAR_LOAD((_point_outer + p_inner + 0 * npts));
-	SCALAR_TYPE yC = SCALAR_LOAD((_point_outer + p_inner + 1 * npts));
-	SCALAR_TYPE zC = SCALAR_LOAD((_point_outer + p_inner + 2 * npts));
+	SCALAR_TYPE xC = SCALAR_LOAD((_point_outer_x + p_inner));
+	SCALAR_TYPE yC = SCALAR_LOAD((_point_outer_y + p_inner));
+	SCALAR_TYPE zC = SCALAR_LOAD((_point_outer_z + p_inner));
 
 	SCALAR_TYPE X_PC = SCALAR_SUB(xP, xC);
 	SCALAR_TYPE Y_PC = SCALAR_SUB(yP, yC);
@@ -1798,7 +1802,9 @@ namespace XGPU {
 		    double Y_AB,
 		    double Z_AB,
 		    size_t npts,
-		    double *points,
+		    double *points_x,
+		    double *points_y,
+		    double *points_z,
         shell_pair* sp,
 		    double *Xi,
 		    double *Xj,
@@ -1812,7 +1818,9 @@ namespace XGPU {
 				   Y_AB,
 				   Z_AB,
 				   npts,
-				   points,
+				   points_x,
+				   points_y,
+				   points_z,
            sp,
 				   Xi,
 				   Xj,
