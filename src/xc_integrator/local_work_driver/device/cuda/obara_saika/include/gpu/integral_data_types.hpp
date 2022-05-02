@@ -30,6 +30,7 @@ namespace XGPU {
   } prim_pair;
 #else
   using prim_pair = GauXC::PrimitivePair<double>;
+  using shell_pair = GauXC::ShellPair<double>;
 #endif
 
 }

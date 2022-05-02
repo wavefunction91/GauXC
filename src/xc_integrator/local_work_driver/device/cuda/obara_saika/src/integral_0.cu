@@ -14,8 +14,7 @@
 namespace XGPU {
   __global__ void dev_integral_0(size_t npts,
 				 double *_points,
-				 int nprim_pairs,
-				 prim_pair *prim_pairs,
+         shell_pair* sp,
 				 double *Xi,
 				 int ldX,
 				 double *Gi,
@@ -23,6 +22,8 @@ namespace XGPU {
 				 double *weights,
 				 double *boys_table) {
     __shared__ double temp[128 * 1];
+    const auto nprim_pairs = sp->nprim_pairs();
+    const auto prim_pairs  = sp->prim_pairs();
     
     for(size_t p_outer = blockIdx.x * blockDim.x; p_outer < npts; p_outer += gridDim.x * blockDim.x) {
       double *_point_outer = (_points + p_outer);
@@ -88,8 +89,7 @@ namespace XGPU {
 
   void integral_0(size_t npts,
 		  double *_points,	
-		  int nprim_pairs,
-		  prim_pair *prim_pairs,
+      shell_pair* sp,
 		  double *Xi,
 		  int ldX,
 		  double *Gi,
@@ -98,8 +98,7 @@ namespace XGPU {
 		  double *boys_table) {
     dev_integral_0<<<320, 128>>>(npts,
 				 _points,
-				 nprim_pairs,
-				 prim_pairs,
+         sp,
 				 Xi,
 				 ldX,
 				 Gi,

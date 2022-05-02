@@ -38,7 +38,7 @@ FWD_TO_PIMPL(eval_zmat_lda_vxc)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc)         // Eval Z Matrix GGA VXC
 
 FWD_TO_PIMPL(eval_exx_fmat)             // Eval EXX F Matrix
-FWD_TO_PIMPL(eval_exx_gmat)             // Eval EXX G Matrix
+//FWD_TO_PIMPL(eval_exx_gmat)             // Eval EXX G Matrix
 
 FWD_TO_PIMPL(inc_exc)
 FWD_TO_PIMPL(inc_nel)
@@ -55,6 +55,12 @@ FWD_TO_PIMPL(symmetrize_exx_k)
 void LocalDeviceWorkDriver::eval_xmat( XCDeviceData* device_data, bool do_grad ) {
   throw_if_invalid_pimpl(pimpl_);
   pimpl_->eval_xmat(device_data, do_grad);
+}
+
+void LocalDeviceWorkDriver::eval_exx_gmat( XCDeviceData* device_data, 
+  const BasisSetMap& basis_map) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_exx_gmat(device_data, basis_map);
 }
 
 void LocalDeviceWorkDriver::eval_kern_exc_vxc_lda( const functional_type& func,

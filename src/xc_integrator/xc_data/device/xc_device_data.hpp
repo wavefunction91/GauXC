@@ -52,7 +52,7 @@ struct XCDeviceData {
   // Send persistent data from host to device
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
   virtual void send_static_data_density_basis( const double* P, int32_t ldp, const BasisSet<double>& basis ) = 0;
-  virtual void send_static_data_shell_pairs( const ShellPairCollection<double>& ) = 0;
+  virtual void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) = 0;
 
   /// Zero out the EXC / VXC integrands in device memory
   virtual void zero_exc_vxc_integrands() = 0;

@@ -11,8 +11,7 @@ namespace detail {
 
   static constexpr size_t nprim_pair_max = 64ul;
 
-  template <typename Integral>
-  inline constexpr Integral packed_lt_index(Integral i, Integral j, Integral m) {
+  inline constexpr intmax_t packed_lt_index(intmax_t i, intmax_t j, intmax_t m) {
     return i + ((2*m - j - 1)*j)/2;
   }
 
@@ -35,12 +34,10 @@ class ShellPair {
   using shell_type = Shell<F>;
   using const_shell_ref = const shell_type&;
 
-  //std::vector< PrimitivePair<F> > prim_pairs_;
   std::array< PrimitivePair<F>, detail::nprim_pair_max > prim_pairs_;
   size_t nprim_pairs_ = 0;
 
   void generate( const_shell_ref bra, const_shell_ref ket ) {
-    //prim_pairs_.resize( bra.nprim() * ket.nprim() );
 
     detail::cartesian_point A{ bra.O()[0], bra.O()[1], bra.O()[2] };
     detail::cartesian_point B{ ket.O()[0], ket.O()[1], ket.O()[2] };
@@ -94,10 +91,10 @@ public:
     else                     generate(ket,bra);
   }
 
-  PrimitivePair<F>* prim_pairs() { return prim_pairs_.data(); }
-  const PrimitivePair<F>* prim_pairs() const { return prim_pairs_.data(); }
+  inline HOST_DEVICE_ACCESSIBLE PrimitivePair<F>* prim_pairs() { return detail::contiguous_data(prim_pairs_); }
+  inline HOST_DEVICE_ACCESSIBLE const PrimitivePair<F>* prim_pairs() const { return detail::contiguous_data(prim_pairs_); }
 
-  size_t nprim_pairs() const { return nprim_pairs_; }
+  inline HOST_DEVICE_ACCESSIBLE size_t nprim_pairs() const { return nprim_pairs_; }
 
 };
 

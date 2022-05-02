@@ -487,29 +487,17 @@ void AoSScheme1Base::inc_exx_k( XCDeviceData* _data ) {
 
 }
 
-void AoSScheme1Base::symmetrize_exx_k( XCDeviceData* _data) {
+void AoSScheme1Base::symmetrize_exx_k( XCDeviceData* _data ) {
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
-
   GAUXC_GENERIC_EXCEPTION("NYI");
 
 }
 
 void AoSScheme1Base::eval_exx_fmat( XCDeviceData* _data ) {
-
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
-
-  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
-
-
-}
-
-
-void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data ) {
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -545,5 +533,38 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data ) {
   // Record completion of BLAS ops on master stream
   data->device_backend_->sync_master_with_blas_pool();
 }
+
+void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data, 
+  const BasisSetMap& basis_map ) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+
+  // XXX: Need to add screening capabilities, packing etc
+  const auto nbf = data->global_dims.nbf;
+  for( auto& t : tasks ) {
+    if( t.bfn_screening.nbe != nbf ) GAUXC_GENERIC_EXCEPTION("EXX + BFN Screening NYI");
+    if( t.cou_screening.nbe != nbf ) GAUXC_GENERIC_EXCEPTION("EXX + COU Screening NYI");
+  }
+
+  const size_t nshells = data->global_dims.nshells;
+  auto static_stack  = data->static_stack;
+  for( auto i = 0; i < nshells; ++i )
+  for( auto j = 0; j <= i;      ++j ) {
+    const auto idx_ij = detail::packed_lt_index(i,j, nshells);
+    auto* sp = static_stack.shell_pairs_device + idx_ij;
+
+    const auto bra_l = basis_map.shell_l(i);
+    const auto ket_l = basis_map.shell_l(j);
+  }
+
+}
+
+
 
 }

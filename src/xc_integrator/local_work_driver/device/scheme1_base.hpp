@@ -23,7 +23,8 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   void inc_exx_k( XCDeviceData* ) override final;
   void symmetrize_vxc( XCDeviceData* ) override final;
   void symmetrize_exx_k( XCDeviceData* ) override final;
-  void eval_exx_gmat( XCDeviceData* ) override final;
+  //void eval_exx_gmat( XCDeviceData* ) override final;
+  void eval_exx_gmat( XCDeviceData*, const BasisSetMap& ) override final;
 
 
   // Overridable APIs

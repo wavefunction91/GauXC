@@ -220,6 +220,7 @@ void XCDeviceStackData::send_static_data_density_basis( const double* P, int32_t
 
 
 void XCDeviceStackData::send_static_data_shell_pairs( 
+  const BasisSet<double>& basis,
   const ShellPairCollection<double>& shell_pairs ) {
 
   if( not allocated_terms.exx ) 
@@ -234,6 +235,26 @@ void XCDeviceStackData::send_static_data_shell_pairs(
   // Copy shell pairs
   device_backend_->copy_async( shell_pairs.npairs(), shell_pairs.shell_pairs(),
     static_stack.shell_pairs_device, "ShellPairs H2D" );
+
+  // Create SoA
+  shell_pair_soa.reset();
+  using point = XCDeviceShellPairSoA::point;
+  for( auto i = 0; i < nshells; ++i )
+  for( auto j = 0; j <= i;      ++j ) {
+    auto idx = detail::packed_lt_index(i,j,nshells);
+    shell_pair_soa.shell_pair_dev_ptr.emplace_back(
+      static_stack.shell_pairs_device + idx
+    );
+    shell_pair_soa.shell_pair_ls.emplace_back(
+      basis[i].l(), basis[j].l()
+    );
+    auto& bra = basis[i];
+    auto& ket = basis[j];
+    shell_pair_soa.shell_pair_centers.emplace_back(
+      point{ bra.O()[0], bra.O()[1], bra.O()[2] },
+      point{ ket.O()[0], ket.O()[1], ket.O()[2] }
+    );
+  }
   
   device_backend_->master_queue_synchronize(); 
 }

@@ -1,6 +1,7 @@
 #pragma once
 
 #include "xc_device_data.hpp"
+#include "xc_device_shell_pair_soa.hpp"
 #include "device_backend.hpp"
 #include <cstring>
 
@@ -48,6 +49,7 @@ struct XCDeviceStackData : public XCDeviceData {
     inline void reset() { std::memset( this, 0, sizeof(static_data) ); }
   };
 
+  XCDeviceShellPairSoA shell_pair_soa;
   static_data static_stack;
 
 
@@ -97,7 +99,7 @@ struct XCDeviceStackData : public XCDeviceData {
   void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) override final;
   void send_static_data_density_basis( const double* P, int32_t ldp, 
     const BasisSet<double>& basis ) override final;
-  void send_static_data_shell_pairs( const ShellPairCollection<double>& ) 
+  void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) 
     override final;
   void zero_exc_vxc_integrands() override final;
   void zero_exc_grad_integrands() override final;

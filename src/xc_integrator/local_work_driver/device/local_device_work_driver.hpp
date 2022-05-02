@@ -4,6 +4,7 @@
 #include <memory>
 #include <gauxc/molmeta.hpp>
 #include <gauxc/basisset.hpp>
+#include <gauxc/basisset_map.hpp>
 #include <gauxc/xc_task.hpp>
 
 #include "device/xc_device_data.hpp"
@@ -62,7 +63,7 @@ public:
   void eval_zmat_gga_vxc( XCDeviceData* );
 
   void eval_exx_fmat( XCDeviceData* );
-  void eval_exx_gmat( XCDeviceData* );
+  void eval_exx_gmat( XCDeviceData*, const BasisSetMap& );
 
   void inc_exc( XCDeviceData* );
   void inc_nel( XCDeviceData* );

@@ -144,7 +144,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   device_data.reset_allocations();
   device_data.allocate_static_data_exx( nbf, nshells );
   device_data.send_static_data_density_basis( P, ldp, basis );
-  device_data.send_static_data_shell_pairs( shell_pairs );
+  device_data.send_static_data_shell_pairs( basis, shell_pairs );
 
   // Zero integrands
   device_data.zero_exx_integrands();

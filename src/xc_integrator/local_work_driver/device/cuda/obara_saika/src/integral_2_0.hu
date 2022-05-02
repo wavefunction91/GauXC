@@ -4,8 +4,7 @@
 namespace XGPU {
   void integral_2_0(size_t npts,
 		    double *_points,
-		    int nprim_pairs,
-		    prim_pair *prim_pairs,
+        shell_pair* sp,
 		    double *Xi,
 		    double *Xj,
 		    int ldX,

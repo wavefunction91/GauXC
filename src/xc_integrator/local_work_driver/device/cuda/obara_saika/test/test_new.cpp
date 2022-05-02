@@ -182,18 +182,18 @@ int main(int argc, char* argv[]) {
 
   {
     double *dev_boys_table = XGPU::boys_init(); 
-    
-    std::vector<XGPU::shells> _shells;
-    std::vector<double> _points_transposed(3 * ngrid);
 
-    _shells.resize(nshells);
-  
+    std::vector<double> _points_transposed(3 * ngrid);
     for( int i = 0; i < ngrid; ++i ){
       _points_transposed[i + 0 * ngrid] = grid_points[i][0];
       _points_transposed[i + 1 * ngrid] = grid_points[i][1];
       _points_transposed[i + 2 * ngrid] = grid_points[i][2];
     }
 
+    
+    #if 0
+    std::vector<XGPU::shells> _shells;
+    _shells.resize(nshells);
     for( int i = 0; i < nshells; ++i ) {
       _shells[i].origin.x = basis[i].O()[0];
       _shells[i].origin.y = basis[i].O()[1];
@@ -229,23 +229,35 @@ int main(int argc, char* argv[]) {
 	offset += (_shells[i].m * _shells[j].m);
       }
     }
+    #else
+    GauXC::ShellPairCollection shell_pairs(basis);
+    #endif
 
     double *dev_points_transposed, *dev_X, *dev_G, *dev_weights;
-    XGPU::prim_pair *dev_prim_pairs;
+    //XGPU::prim_pair *dev_prim_pairs;
+    XGPU::shell_pair* dev_shell_pairs;
   
     cudaMalloc((void**) &dev_points_transposed, 3 * ngrid * sizeof(double));
     cudaMalloc((void**) &dev_X, ngrid * nbf * sizeof(double));
     cudaMalloc((void**) &dev_G, ngrid * nbf * sizeof(double));
     cudaMalloc((void**) &dev_weights, ngrid * sizeof(double));
 
+    #if 0
     cudaMalloc((void**) &dev_prim_pairs, total_prim_pairs * sizeof(XGPU::prim_pair));
+    #else
+    cudaMalloc((void**) &dev_shell_pairs, shell_pairs.npairs() * sizeof(XGPU::shell_pair));
+    #endif
   
     cudaMemcpy(dev_points_transposed, _points_transposed.data(), 3 * ngrid * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(dev_X, F.data(), ngrid * nbf * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(dev_G, GPU_G_own.data(), ngrid * nbf * sizeof(double), cudaMemcpyHostToDevice);
     cudaMemcpy(dev_weights, w.data(), ngrid * sizeof(double), cudaMemcpyHostToDevice);
 
+    #if 0
     cudaMemcpy(dev_prim_pairs, prim_pairs, total_prim_pairs * sizeof(XGPU::prim_pair), cudaMemcpyHostToDevice);
+    #else
+    cudaMemcpy(dev_shell_pairs, shell_pairs.shell_pairs(), shell_pairs.npairs() * sizeof(XGPU::shell_pair), cudaMemcpyHostToDevice);
+    #endif
     
     double *Xi = dev_X;
     double *Xj = dev_X;
@@ -254,38 +266,48 @@ int main(int argc, char* argv[]) {
     double *Gj = dev_G;
 
     gettimeofday(&gpu_start, NULL);
-    offset = 0;
+    //offset = 0;
     int ioff_cart = 0;
     for( int i = 0; i < nshells; ++i) {
+      #if 0
       XGPU::shells bra_shell = _shells[i];
       int bra_cart_size = (bra_shell.L + 1) * (bra_shell.L + 2) / 2;
+      #else
+      auto& bra_shell = basis[i];
+      auto bra_cart_size = bra_shell.size();
+      #endif
 
       int joff_cart = 0;
       for( int j = 0; j <= i; ++j) {
-	XGPU::shells ket_shell = _shells[j];
-	int ket_cart_size = (ket_shell.L + 1) * (ket_shell.L + 2) / 2;
-
-	XGPU::compute_integral_shell_pair(i == j,
-					  ngrid,
-					  dev_points_transposed,
-					  _shells[i].L,
-					  _shells[j].L,
-					  _shells[i].origin,
-					  _shells[j].origin,
-					  (_shells[i].m * _shells[j].m),
-					  (dev_prim_pairs + offset),
-					  (Xi + ioff_cart * ngrid),
-					  (Xj + joff_cart * ngrid),
-					  ngrid,
-					  (Gi + ioff_cart * ngrid),
-					  (Gj + joff_cart * ngrid),
-					  ngrid,
-					  dev_weights,
-					  dev_boys_table);
-
-	offset += (_shells[i].m * _shells[j].m);
-      
-	joff_cart += ket_cart_size;
+        #if 0
+        XGPU::shells ket_shell = _shells[i];
+        int ket_cart_size = (ket_shell.L + 1) * (ket_shell.L + 2) / 2;
+        #else
+        auto& ket_shell = basis[j];
+        auto ket_cart_size = ket_shell.size();
+        #endif
+        
+        XGPU::point A{bra_shell.O()[0], bra_shell.O()[1], bra_shell.O()[2]};
+        XGPU::point B{ket_shell.O()[0], ket_shell.O()[1], ket_shell.O()[2]};
+        auto sp = dev_shell_pairs + GauXC::detail::packed_lt_index(i,j,nshells);
+        XGPU::compute_integral_shell_pair(i == j,
+        				  ngrid,
+        				  dev_points_transposed,
+        				  bra_shell.l(), ket_shell.l(),
+                  A, B,
+        				  sp,
+        				  (Xi + ioff_cart * ngrid),
+        				  (Xj + joff_cart * ngrid),
+        				  ngrid,
+        				  (Gi + ioff_cart * ngrid),
+        				  (Gj + joff_cart * ngrid),
+        				  ngrid,
+        				  dev_weights,
+        				  dev_boys_table);
+        
+        //offset += (_shells[i].m * _shells[j].m);
+            
+        joff_cart += ket_cart_size;
       }
 
       ioff_cart += bra_cart_size;
@@ -301,7 +323,7 @@ int main(int argc, char* argv[]) {
     cudaFree(dev_G);
     cudaFree(dev_points_transposed);
     cudaFree(dev_weights);
-    cudaFree(dev_prim_pairs);
+    cudaFree(dev_shell_pairs);
   
     XGPU::boys_finalize(dev_boys_table);
   }
