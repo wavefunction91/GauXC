@@ -552,6 +552,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
     data->device_backend_->set_zero( sz, task.gmat, "Zero G" );
   }
 
+  cudaDeviceSynchronize();
   auto& sp_data = data->shell_pair_soa;
   for( auto i = 0, ij = 0; i < nshells; ++i )
   for( auto j = 0; j <= i;      ++j, ++ij ) {
@@ -612,7 +613,9 @@ void AoSScheme1Base::inc_exx_k( XCDeviceData* _data ) {
   const auto n_blas_streams = data->device_backend_->blas_pool_size();
   for( size_t iT = 0; iT < ntasks; ++iT ) {
     auto& task = tasks[iT];
-    auto handle = data->device_backend_->blas_pool_handle( iT % n_blas_streams );
+    // TODO: This is because every GEMM is incrementing the same memory
+    //auto handle = data->device_backend_->blas_pool_handle( iT % n_blas_streams );
+    auto handle = data->device_backend_->blas_pool_handle( 0 );
     auto npts = task.npts;
     // XXX Needs to be modified to account for screening
     gemm( handle, DeviceBlasOp::Trans, DeviceBlasOp::NoTrans, nbf, nbf, npts,

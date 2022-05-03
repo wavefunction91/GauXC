@@ -245,11 +245,9 @@ void XCDeviceStackData::send_static_data_shell_pairs(
     shell_pair_soa.shell_pair_dev_ptr.emplace_back(
       static_stack.shell_pairs_device + idx
     );
-    shell_pair_soa.shell_pair_ls.emplace_back(
-      basis[i].l(), basis[j].l()
-    );
     auto& bra = basis[i];
     auto& ket = basis[j];
+    shell_pair_soa.shell_pair_ls.emplace_back( bra.l(), ket.l());
     shell_pair_soa.shell_pair_centers.emplace_back(
       point{ bra.O()[0], bra.O()[1], bra.O()[2] },
       point{ ket.O()[0], ket.O()[1], ket.O()[2] }
