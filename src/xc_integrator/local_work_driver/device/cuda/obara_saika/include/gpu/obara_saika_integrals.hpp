@@ -20,6 +20,7 @@ namespace XGPU {
 				   double *Gj,
 				   int ldG, 
 				   double *weights,
-				   double *boys_table);
+				   double *boys_table,
+           cudaStream_t stream);
   
 }

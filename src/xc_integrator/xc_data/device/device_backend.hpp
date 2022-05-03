@@ -29,6 +29,7 @@ public:
   virtual size_t            blas_pool_size() = 0;
 
   virtual device_queue       queue() = 0;
+  virtual device_queue       blas_pool_queue(int32_t) = 0;
   virtual device_blas_handle blas_pool_handle(int32_t) = 0;
   virtual device_blas_handle master_blas_handle() = 0;
 

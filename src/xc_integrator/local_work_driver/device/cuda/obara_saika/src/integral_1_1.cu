@@ -385,8 +385,9 @@ namespace XGPU {
 		    double *Gj,
 		    int ldG, 
 		    double *weights, 
-		    double *boys_table) {
-    dev_integral_1_1<<<320, 128>>>(X_AB,
+		  double *boys_table,
+      cudaStream_t stream) {
+    dev_integral_1_1<<<320, 128, 0, stream>>>(X_AB,
 				   Y_AB,
 				   Z_AB,
 				   npts,

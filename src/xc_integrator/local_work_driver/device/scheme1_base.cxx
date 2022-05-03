@@ -9,6 +9,8 @@
 #include "device/common/symmetrize_mat.hpp"
 #include "device/common/increment_exc_grad.hpp"
 
+#include "device_specific/cuda_util.hpp"
+
 #include "gpu/integral_data_types.hpp"
 #include "gpu/obara_saika_integrals.hpp"
 #include "gpu/chebyshev_boys_computation.hpp"
@@ -549,11 +551,16 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
   // Zero out G
   for( auto& task : tasks ) {
     const size_t sz = task.npts*task.cou_screening.nbe;
-    data->device_backend_->set_zero( sz, task.gmat, "Zero G" );
+    data->device_backend_->set_zero_async_master_queue( 
+      sz, task.gmat, "Zero G" );
   }
 
-  cudaDeviceSynchronize();
+  // Sync blas streams with master stream
+  data->device_backend_->sync_blas_pool_with_master();
+
+  // Launch Shell Pair Kernels in round-robin
   auto& sp_data = data->shell_pair_soa;
+  const auto n_streams = data->device_backend_->blas_pool_size();
   for( auto i = 0, ij = 0; i < nshells; ++i )
   for( auto j = 0; j <= i;      ++j, ++ij ) {
     auto* sp = sp_data.shell_pair_dev_ptr[ij];
@@ -562,7 +569,10 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
     auto i_off = basis_map.shell_to_first_ao(i);
     auto j_off = basis_map.shell_to_first_ao(j);
-    for( auto& task : tasks ) {
+    for( auto iT = 0ul; iT < ntasks; ++iT ) {
+      auto& task = tasks[iT];
+      cudaStream_t stream = 
+        data->device_backend_->blas_pool_queue(iT % n_streams).queue_as<util::cuda_stream>();
       XGPU::compute_integral_shell_pair( i == j,
         task.npts,
         task.points_x,
@@ -578,10 +588,12 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
         task.gmat + j_off*task.npts,
         task.npts,
         task.weights,
-        dev_boys_table );
+        dev_boys_table, stream ); 
     }
   }
-  cudaDeviceSynchronize();
+
+  // Record completion of BLAS ops on master stream
+  data->device_backend_->sync_master_with_blas_pool();
 
 }
 

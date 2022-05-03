@@ -73,7 +73,8 @@ namespace XGPU {
 				   double *Gj,
 				   int ldG, 
 				   double *weights,
-				   double *boys_table) {
+		  double *boys_table,
+      cudaStream_t stream) {
     if (is_diag) {
       if(lA == 0) {
 	integral_0(npts,
@@ -86,7 +87,8 @@ namespace XGPU {
 		   Gi,
 		   ldG, 
 		   weights, 
-		   boys_table);
+		   boys_table,
+       stream);
       } else if(lA == 1) {
         integral_1(npts,
 		   points_x,
@@ -98,7 +100,8 @@ namespace XGPU {
 		   Gi,
 		   ldG, 
 		   weights, 
-		   boys_table);
+		   boys_table,
+       stream);
       } else if(lA == 2) {
         integral_2(npts,
 		   points_x,
@@ -110,7 +113,8 @@ namespace XGPU {
 		   Gi,
 		   ldG, 
 		   weights, 
-		   boys_table);
+		   boys_table,
+       stream);
       } else {
 	printf("Type not defined!\n");
       }
@@ -128,7 +132,8 @@ namespace XGPU {
 		     Gj,
 		     ldG, 
 		     weights,
-		     boys_table);
+		   boys_table,
+       stream);
       } else if((lA == 1) && (lB == 0)) {
 	integral_1_0(npts,
 		   points_x,
@@ -142,7 +147,8 @@ namespace XGPU {
 		     Gj,
 		     ldG, 
 		     weights,
-		     boys_table);
+		   boys_table,
+       stream);
       } else if((lA == 0) && (lB == 1)) {
 	integral_1_0(npts,
 		   points_x,
@@ -156,7 +162,8 @@ namespace XGPU {
 		     Gi,
 		     ldG, 
 		     weights, 
-		     boys_table);
+		   boys_table,
+       stream);
       } else if((lA == 1) && (lB == 1)) {
         integral_1_1(rA.x - rB.x,
 		     rA.y - rB.y,
@@ -173,7 +180,8 @@ namespace XGPU {
 		     Gj,
 		     ldG, 
 		     weights,
-		     boys_table);
+		   boys_table,
+       stream);
       } else if((lA == 2) && (lB == 0)) {
 	integral_2_0(npts,
 		   points_x,
@@ -187,7 +195,8 @@ namespace XGPU {
 		     Gj,
 		     ldG, 
 		     weights,
-		     boys_table);
+		   boys_table,
+       stream);
       } else if((lA == 0) && (lB == 2)) {
 	integral_2_0(npts,
 		   points_x,
@@ -201,7 +210,8 @@ namespace XGPU {
 		     Gi,
 		     ldG, 
 		     weights, 
-		     boys_table);
+		   boys_table,
+       stream);
       } else if((lA == 2) && (lB == 1)) {
 	integral_2_1(rA.x - rB.x,
 		     rA.y - rB.y,
@@ -218,7 +228,8 @@ namespace XGPU {
 		     Gj,
 		     ldG, 
 		     weights,
-		     boys_table);
+		   boys_table,
+       stream);
       } else if((lA == 1) && (lB == 2)) {
 	integral_2_1(rB.x - rA.x,
 		     rB.y - rA.y,
@@ -235,7 +246,8 @@ namespace XGPU {
 		     Gi,
 		     ldG, 
 		     weights, 
-		     boys_table);
+		   boys_table,
+       stream);
       } else if((lA == 2) && (lB == 2)) {
         integral_2_2(rA.x - rB.x,
 		     rA.y - rB.y,
@@ -252,7 +264,8 @@ namespace XGPU {
 		     Gj,
 		     ldG, 
 		     weights,
-		     boys_table);
+		   boys_table,
+       stream);
       } else {
 	printf("Type not defined!\n");
       }

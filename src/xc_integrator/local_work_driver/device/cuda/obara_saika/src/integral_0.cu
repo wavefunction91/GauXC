@@ -101,8 +101,9 @@ namespace XGPU {
 		  double *Gi,
 		  int ldG, 
 		  double *weights,
-		  double *boys_table) {
-    dev_integral_0<<<320, 128>>>(npts,
+		  double *boys_table,
+      cudaStream_t stream) {
+    dev_integral_0<<<320, 128, 0, stream>>>(npts,
 				 _points_x,
 				 _points_y,
 				 _points_z,

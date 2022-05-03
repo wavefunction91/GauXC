@@ -18,6 +18,7 @@ struct CUDABackend : public DeviceBackend {
   size_t            blas_pool_size() override final;
 
   device_queue       queue() override final;
+  device_queue       blas_pool_queue(int32_t) override final;
   device_blas_handle blas_pool_handle(int32_t) override final;
   device_blas_handle master_blas_handle() override final;
 
@@ -36,7 +37,7 @@ struct CUDABackend : public DeviceBackend {
   std::shared_ptr<util::cuda_stream>   master_stream = nullptr;
   std::shared_ptr<util::cublas_handle> master_handle = nullptr;
 
-  std::vector<util::cuda_stream>                    blas_streams;
+  std::vector<std::shared_ptr<util::cuda_stream>>   blas_streams;
   std::vector<std::shared_ptr<util::cublas_handle>> blas_handles;
 };
 

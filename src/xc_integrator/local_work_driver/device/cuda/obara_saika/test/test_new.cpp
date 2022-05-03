@@ -306,7 +306,7 @@ int main(int argc, char* argv[]) {
         				  (Gj + joff_cart * ngrid),
         				  ngrid,
         				  dev_weights,
-        				  dev_boys_table);
+        				  dev_boys_table,0 );
         
         //offset += (_shells[i].m * _shells[j].m);
             
