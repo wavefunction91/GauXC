@@ -493,19 +493,11 @@ void AoSScheme1Base::eval_exx_fmat( XCDeviceData* _data ) {
   const auto nbf = data->global_dims.nbf;
   auto static_stack  = data->static_stack;
 
-#if 0
-  // XXX: Need to add screening capabilities, packing etc
-  for( auto& t : tasks ) {
-    if( t.bfn_screening.nbe != nbf ) GAUXC_GENERIC_EXCEPTION("EXX + BFN Screening NYI");
-    if( t.cou_screening.nbe != nbf ) GAUXC_GENERIC_EXCEPTION("EXX + COU Screening NYI");
-  }
-#else
   // Pack the density matrix into (bfn, cou) shape
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
   auto aos_stack     = data->aos_stack;
   asym_pack_submat( ntasks, aos_stack.device_tasks, static_stack.dmat_device,
     nbf, submat_block_size, data->device_backend_->queue() );
-#endif
 
   // Sync blas streams with master stream
   data->device_backend_->sync_blas_pool_with_master();
@@ -518,7 +510,6 @@ void AoSScheme1Base::eval_exx_fmat( XCDeviceData* _data ) {
     auto npts = task.npts;
     auto nbe_bfn = task.bfn_screening.nbe;
     auto nbe_cou = task.cou_screening.nbe;
-    // XXX Needs to be modified to account for screening
     gemm( handle, DeviceBlasOp::NoTrans, DeviceBlasOp::NoTrans, 
       npts, nbe_cou, nbe_bfn, 1., task.bf, npts, task.nbe_scr, nbe_bfn, 
       0., task.fmat, npts );
@@ -617,15 +608,6 @@ void AoSScheme1Base::inc_exx_k( XCDeviceData* _data ) {
 
   auto& tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
-
-#if 0
-  // XXX: Need to add screening capabilities, packing etc
-  const auto nbf = data->global_dims.nbf;
-  for( auto& t : tasks ) {
-    if( t.bfn_screening.nbe != nbf ) GAUXC_GENERIC_EXCEPTION("EXX + BFN Screening NYI");
-    if( t.cou_screening.nbe != nbf ) GAUXC_GENERIC_EXCEPTION("EXX + COU Screening NYI");
-  }
-#endif
 
   // Sync blas streams with master stream
   data->device_backend_->sync_blas_pool_with_master();
