@@ -349,8 +349,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
   // Precompute EK shell screening
-  auto task_ek_shells = exx_ek_screening( basis, basis_map, P_abs.data(), nbf,
-    V_max.data(), nshells_bf, eps_E, eps_K, lwd, tasks.begin(), tasks.end() );
+  exx_ek_screening( basis, basis_map, P_abs.data(), nbf, V_max.data(), 
+    nshells_bf, eps_E, eps_K, lwd, tasks.begin(), tasks.end() );
 
   #pragma omp parallel
   {
@@ -438,7 +438,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       throw std::runtime_error("DIE DIE DIE");
     }
 #else
-    auto ek_shell_list = task_ek_shells[iT];
+    auto ek_shell_list = task.cou_screening.shell_list;
     if( ek_shell_list.size() == 0 ) {
       continue;
     }

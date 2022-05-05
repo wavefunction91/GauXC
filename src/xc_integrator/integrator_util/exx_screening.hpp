@@ -8,7 +8,7 @@ namespace exx_detail {
   using host_task_iterator  = typename host_task_container::iterator;
 }
 
-std::vector<std::vector<int32_t>> exx_ek_screening( 
+void exx_ek_screening( 
   const BasisSet<double>& basis, const BasisSetMap& basis_map,
   const double* P_abs, size_t ldp, const double* V_shell_max, size_t ldv,
   double eps_E, double eps_K, LocalHostWorkDriver* lwd, 

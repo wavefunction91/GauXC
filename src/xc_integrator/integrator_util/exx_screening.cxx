@@ -12,7 +12,7 @@ ostream& operator<<( ostream& out, const vector<T>& v ) {
 
 namespace GauXC {
 
-std::vector<std::vector<int32_t>> exx_ek_screening( 
+void exx_ek_screening( 
   const BasisSet<double>& basis, const BasisSetMap& basis_map,
   const double* P_abs, size_t ldp, const double* V_shell_max, size_t ldv,
   double eps_E, double eps_K, LocalHostWorkDriver* lwd, 
@@ -141,12 +141,12 @@ std::vector<std::vector<int32_t>> exx_ek_screening(
     }
 
     // Append to list
-    ek_shell_task[i_task] = 
+    task_it->cou_screening.shell_list =
       std::vector<int32_t>(ek_shells.begin(), ek_shells.end());
+    task_it->cou_screening.nbe = 
+      basis.nbf_subset( ek_shells.begin(), ek_shells.end() );
 
   } // Loop over tasks
-
-  return ek_shell_task;
 }
 
 
