@@ -1,6 +1,7 @@
 
 #include "incore_replicated_xc_device_integrator.hpp"
 #include "device/local_device_work_driver.hpp"
+#include "host/reference_local_host_work_driver.hpp"
 #include <stdexcept>
 #include "device/xc_device_aos_data.hpp"
 #include <fstream>
@@ -137,6 +138,12 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   }
 
+
+  // Compute EXX screening modifications
+  ReferenceLocalHostWorkDriver host_lwd; 
+  for( auto task_it = task_begin; task_it != task_end; ++task_it ) {
+  
+  }
 
 
 

@@ -3,12 +3,22 @@
 #include "reference_replicated_xc_host_integrator.hpp"
 #include "integrator_util/integrator_common.hpp"
 #include "integrator_util/integral_bounds.hpp"
+#include "integrator_util/exx_screening.hpp"
 #include "host/local_host_work_driver.hpp"
 #include "host/blas.hpp"
 #include <stdexcept>
 #include <set>
 
 #include <gauxc/util/geometry.hpp>
+
+
+namespace std {
+template <typename T>
+ostream& operator<<( ostream& out, const vector<T>& v ) {
+  for( auto _v : v ) out << _v << " ";
+  return out;
+}
+}
 
 namespace GauXC  {
 namespace detail {
@@ -63,6 +73,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
 
+#if 0
 
 // MBFS(i) = sqrt(W[i]) * sum_mu B(mu,i)
 // return max_i MBFS(i)
@@ -236,7 +247,7 @@ auto compute_sn_LinK_ek_set( size_t nshells, const std::vector<int32_t>& shell_l
 }
 
 
-
+#endif
 
 
 
@@ -293,8 +304,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Compute V upper bounds per shell pair
   const size_t nshells_bf = basis.size();
   std::vector<double> V_max( nshells_bf * nshells_bf );
-  for( auto i = 0; i < nshells_bf; ++i )
-  for( auto j = 0; j < nshells_bf; ++j ) {
+  for( auto i = 0ul; i < nshells_bf; ++i )
+  for( auto j = 0ul; j < nshells_bf; ++j ) {
     V_max[i + j*nshells_bf] = util::max_coulomb( basis.at(i), basis.at(j) );
   }
 
@@ -335,6 +346,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
               << "  EPS_K         = " << eps_K << std::endl
               << std::endl;
   }
+
+
+  // Precompute EK shell screening
+  auto task_ek_shells = exx_ek_screening( basis, basis_map, P_abs.data(), nbf,
+    V_max.data(), nshells_bf, eps_E, eps_K, lwd, tasks.begin(), tasks.end() );
 
   #pragma omp parallel
   {
@@ -380,9 +396,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     lwd->eval_collocation( npts, nshells_bfn, nbe_bfn, points, basis, 
       shell_list_bfn, basis_eval );
 
+#if 0
     // Compute Max BF Sum
     auto max_bf_sum = 
       compute_max_bf_sum( npts, nbe_bfn, weights, basis_eval, nbe_bfn );
+    //std::cout << "+MAX BF SUM " << iT << max_bf_sum << std::endl;
 
     // Compute Approximate max F
     auto max_F_approx =
@@ -413,6 +431,22 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       std::tie( ek_submat_map, std::ignore ) =
         gen_compressed_submat_map( basis_map, ek_shell_list, nbf, nbf );
     }
+
+    if( ek_shell_list != task_ek_shells[iT] ) {
+      std::cout << ek_shell_list << std::endl;
+      std::cout << task_ek_shells[iT] << std::endl;
+      throw std::runtime_error("DIE DIE DIE");
+    }
+#else
+    auto ek_shell_list = task_ek_shells[iT];
+    if( ek_shell_list.size() == 0 ) {
+      continue;
+    }
+    std::vector< std::array<int32_t,3> > ek_submat_map;
+    std::tie( ek_submat_map, std::ignore ) =
+      gen_compressed_submat_map( basis_map, ek_shell_list, nbf, nbf );
+#endif
+
     const auto nbe_ek = basis.nbf_subset( ek_shell_list.begin(), ek_shell_list.end() );
     const auto nshells_ek = ek_shell_list.size();
 
