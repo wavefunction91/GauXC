@@ -1,6 +1,7 @@
 #pragma once
 #include "device/xc_device_aos_data.hpp"
 #include "device/common/shell_to_task.hpp"
+#include "device/common/shell_pair_to_task.hpp"
 
 namespace GauXC {
 
@@ -42,6 +43,7 @@ struct Scheme1DataBase : public XCDeviceAoSData {
   collocation_data   coulomb_stack;
   shell_to_task_data shell_to_task_stack;
   std::vector<AngularMomentumShellToTaskBatch> l_batched_shell_to_task;
+  std::vector<ShellPairToTaskHost> shell_pair_to_task;
 
   virtual ~Scheme1DataBase() noexcept;
   Scheme1DataBase(std::unique_ptr<DeviceBackend>&& ptr);

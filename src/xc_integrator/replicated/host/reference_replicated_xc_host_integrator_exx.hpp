@@ -169,8 +169,8 @@ auto compute_sn_LinK_E_set( size_t nshells, const std::vector<int32_t>& shell_li
   const double* V_max, size_t ldv, const double* max_F, double E_tol ) {
 
   std::set<int32_t> E_shells;
-  for( auto i = 0ul; i < nshells; ++i )
-  for( auto j = 0ul; j <= i;      ++j ) {
+  for( auto j = 0ul; j < nshells; ++j ) 
+  for( auto i = j;   i < nshells; ++i ) {
 
     const auto ish = shell_list[i];
     const auto jsh = shell_list[j];
@@ -196,8 +196,8 @@ auto compute_sn_LinK_K_set( size_t nshells, const std::vector<int32_t>& shell_li
   double K_tol ) {
 
   std::set<int32_t> K_shells;
-  for( auto i = 0ul; i < nshells; ++i )
-  for( auto j = 0ul; j <= i;      ++j ) {
+  for( auto j = 0ul; j < nshells; ++j ) 
+  for( auto i = j;   i < nshells; ++i ) {
 
     const auto ish = shell_list[i];
     const auto jsh = shell_list[j];
@@ -223,8 +223,8 @@ auto compute_sn_LinK_ek_set( size_t nshells, const std::vector<int32_t>& shell_l
   double E_tol, double K_tol ) {
 
   std::set<int32_t> ek_shells;
-  for( auto i = 0ul; i < nshells; ++i )
-  for( auto j = 0ul; j <= i;      ++j ) {
+  for( auto j = 0ul; j < nshells; ++j ) 
+  for( auto i = j;   i < nshells; ++i ) {
 
     const auto ish = shell_list[i];
     const auto jsh = shell_list[j];

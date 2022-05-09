@@ -15,6 +15,13 @@ namespace detail {
     return i + ((2*m - j - 1)*j)/2;
   }
 
+  inline auto from_packed_lt_index( intmax_t idx, intmax_t m ) {
+    for( intmax_t j = 0; j < m; ++j ) 
+    for( intmax_t i = j; i < m; ++i ) {
+      intmax_t __i = packed_lt_index(i,j,m);
+      if( __i == idx ) return std::make_pair(i,j);
+    }
+  }
 }
 
 template <typename F>

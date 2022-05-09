@@ -126,8 +126,8 @@ void exx_ek_screening(
 
     // Compute important shell set
     const double max_bf_sum = task_max_bf_sum[i_task];
-    for( auto i = 0ul; i < nshells; ++i )
-    for( auto j = 0ul; j <= i;      ++j ) {
+    for( auto j = 0ul; j < nshells; ++j )
+    for( auto i = j;   i < nshells; ++i ) {
       const auto V_ij = V_shell_max[i + j*ldv];
       const auto F_i  = max_F_shells[i];
       const auto F_j  = max_F_shells[j];

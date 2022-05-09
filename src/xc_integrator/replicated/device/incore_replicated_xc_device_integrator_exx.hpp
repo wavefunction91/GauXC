@@ -71,23 +71,15 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   const auto& mol   = this->load_balancer_->molecule();
   const auto& meta  = this->load_balancer_->molmeta();
 
-  // TODO: This turns off EK screening 
   const auto nbf     = basis.nbf();
   const auto nshells = basis.nshells();
-  std::vector<int32_t> full_shell_list(nshells);
-  std::iota(full_shell_list.begin(),full_shell_list.end(),0);
-  for( auto it = task_begin; it != task_end; ++it ) {
-    it->cou_screening.shell_list = full_shell_list;
-    it->cou_screening.nbe        = nbf;
-  }
 
 
   // Get basis map and shell pairs
   BasisSetMap basis_map(basis,mol);
   ShellPairCollection shell_pairs(basis);
 
-  // Populate submat maps
-  device_data.populate_submat_maps( basis.nbf(), task_begin, task_end, basis_map );
+
 
 
   // Sort tasks 
@@ -106,6 +98,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   integrator_term_tracker enabled_terms;
   enabled_terms.weights = true;
+  std::cout << enabled_terms << std::endl;
 
   this->timer_.time_op("XCIntegrator.Weights", [&]() { 
     const auto natoms = mol.natoms();
@@ -137,13 +130,27 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   });
 
   }
+  std::cout << "AFTER WEIGHTS" << std::endl;
 
-
+#if 1
+  // TODO: This turns off EK screening 
+  std::vector<int32_t> full_shell_list(nshells);
+  std::iota(full_shell_list.begin(),full_shell_list.end(),0);
+  for( auto it = task_begin; it != task_end; ++it ) {
+    it->cou_screening.shell_list = full_shell_list;
+    it->cou_screening.nbe        = nbf;
+  }
+#else
   // Compute EXX screening modifications
   ReferenceLocalHostWorkDriver host_lwd; 
   for( auto task_it = task_begin; task_it != task_end; ++task_it ) {
   
   }
+#endif
+
+  // Populate submat maps
+  device_data.populate_submat_maps( basis.nbf(), task_begin, task_end, basis_map );
+
 
 
 

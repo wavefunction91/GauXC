@@ -559,10 +559,11 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
   data->device_backend_->sync_blas_pool_with_master();
 
   // Launch Shell Pair Kernels in round-robin
-  auto& sp_data = data->shell_pair_soa;
   const auto n_streams = data->device_backend_->blas_pool_size();
-  for( auto i = 0, ij = 0; i < nshells; ++i )
-  for( auto j = 0; j <= i;      ++j, ++ij ) {
+#if 0
+  auto& sp_data = data->shell_pair_soa;
+  for( auto j = 0, ij = 0; j < nshells; ++j )
+  for( auto i = j;         i < nshells; ++i, ++ij ) {
     auto* sp = sp_data.shell_pair_dev_ptr[ij];
     auto [bra_l, ket_l] = sp_data.shell_pair_ls[ij];
     auto [A, B]         = sp_data.shell_pair_centers[ij];
@@ -573,6 +574,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       auto& task = tasks[iT];
       cudaStream_t stream = 
         data->device_backend_->blas_pool_queue(iT % n_streams).queue_as<util::cuda_stream>();
+
       XGPU::compute_integral_shell_pair( i == j,
         task.npts,
         task.points_x,
@@ -591,6 +593,43 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
         dev_boys_table, stream ); 
     }
   }
+#else
+  auto& sp_to_task = data->shell_pair_to_task;
+  size_t isptt = 0;
+  for( auto& sptt : sp_to_task ) {
+    size_t ntask_sp = sptt.task_idx.size();
+    auto ish = sptt.idx_bra;
+    auto jsh = sptt.idx_ket;
+    for( auto i = 0ul; i < ntask_sp; i++ ) {
+      const auto iT = sptt.task_idx[i];
+      const auto i_off = sptt.task_shell_off_row[i];
+      const auto j_off = sptt.task_shell_off_col[i];
+
+      const auto& task = tasks[iT];
+      cudaStream_t stream = 
+        data->device_backend_->blas_pool_queue(iT % n_streams)
+          .queue_as<util::cuda_stream>();
+
+      XGPU::compute_integral_shell_pair( ish == jsh,
+        task.npts,
+        task.points_x,
+        task.points_y,
+        task.points_z,
+        sptt.lA, sptt.lB,
+        sptt.rA, sptt.rB,
+        sptt.shell_pair_device,
+        task.fmat + i_off*task.npts,
+        task.fmat + j_off*task.npts,
+        task.npts,
+        task.gmat + i_off*task.npts,
+        task.gmat + j_off*task.npts,
+        task.npts,
+        task.weights,
+        dev_boys_table, stream ); 
+    
+    }
+  }
+#endif
 
   // Record completion of BLAS ops on master stream
   data->device_backend_->sync_master_with_blas_pool();

@@ -198,6 +198,23 @@ void Scheme1DataBase::pack_and_send(
     std::vector< std::vector<int32_t> > shell_to_task_idx( global_dims.nshells ),
                                         shell_to_task_off( global_dims.nshells );
 
+
+    // Shell Pair -> Task
+    shell_pair_to_task.clear();
+    const size_t nsp = (global_dims.nshells*(global_dims.nshells+1))/2;
+    shell_pair_to_task.resize(nsp);
+    for( auto i = 0; i < nsp; ++i ) {
+      auto& sptt = shell_pair_to_task[i];
+      sptt.shell_pair_device =
+        this->shell_pair_soa.shell_pair_dev_ptr[i];
+      std::tie(sptt.lA, sptt.lB) =
+        this->shell_pair_soa.shell_pair_ls[i];
+      std::tie(sptt.rA, sptt.rB) =
+        this->shell_pair_soa.shell_pair_centers[i];
+      std::tie(sptt.idx_bra, sptt.idx_ket) =
+        this->shell_pair_soa.shell_pair_shidx[i];
+    }
+
     for( auto it = task_begin; it != task_end; ++it ) {
       const auto& shell_list_bfn  = it->bfn_screening.shell_list;
       const size_t nshells_bfn  = shell_list_bfn.size();
@@ -212,6 +229,16 @@ void Scheme1DataBase::pack_and_send(
       concat_iterable( shell_list_bfn_pack, shell_list_bfn );
       concat_iterable( shell_offs_bfn_pack, shell_offs_bfn );
 
+
+
+      // Setup Shell -> Task
+      const auto itask = std::distance( task_begin, it );
+      for( auto i = 0ul; i < nshells_bfn; ++i ) {
+        shell_to_task_idx[ shell_list_bfn.at(i) ].emplace_back(itask);
+        shell_to_task_off[ shell_list_bfn.at(i) ].emplace_back(shell_offs_bfn[i]);
+      }
+
+
       if(terms.exx) {
         const auto& shell_list_cou  = it->cou_screening.shell_list;
         const size_t nshells_cou  = shell_list_cou.size();
@@ -225,15 +252,21 @@ void Scheme1DataBase::pack_and_send(
 
         concat_iterable( shell_list_cou_pack, shell_list_cou );
         concat_iterable( shell_offs_cou_pack, shell_offs_cou );
+
+        // Setup Shell Pair -> Task
+        for( auto j = 0ul; j < nshells_cou; ++j )
+        for( auto i = j;   i < nshells_cou; ++i ) {
+          const auto ish = shell_list_cou[i];
+          const auto jsh = shell_list_cou[j];
+          const auto idx = detail::packed_lt_index(ish,jsh, global_dims.nshells);
+
+          auto& sptt = shell_pair_to_task[idx];
+          sptt.task_idx.emplace_back(itask);
+          sptt.task_shell_off_row.emplace_back(shell_offs_cou[i]);
+          sptt.task_shell_off_col.emplace_back(shell_offs_cou[j]);
+        }
       }
 
-
-      // Setup Shell -> Task
-      const auto itask = std::distance( task_begin, it );
-      for( auto i = 0ul; i < nshells_bfn; ++i ) {
-        shell_to_task_idx[ shell_list_bfn.at(i) ].emplace_back(itask);
-        shell_to_task_off[ shell_list_bfn.at(i) ].emplace_back(shell_offs_bfn[i]);
-      }
 
     }
 

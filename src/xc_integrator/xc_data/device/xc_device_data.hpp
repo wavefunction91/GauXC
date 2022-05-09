@@ -29,6 +29,17 @@ struct integrator_term_tracker {
   }
 };
 
+inline 
+std::ostream& operator<<( std::ostream& out, const integrator_term_tracker& t ) {
+  out << std::boolalpha;
+  out << "Integrator Terms:" << std::endl;
+  out << "  WEIGHTS  " << t.weights << std::endl;
+  out << "  EXC_VXC  " << t.exc_vxc << std::endl;
+  out << "  EXC_GRAD " << t.exc_grad << std::endl;
+  out << "  EXX      " << t.exx << std::endl;
+  return out;
+}
+
 /** Base class for all XCDeviceData types
  *
  *  Exposes virtual API to manage device memory and batch XC
