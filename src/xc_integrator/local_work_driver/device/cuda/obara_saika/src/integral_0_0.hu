@@ -16,4 +16,10 @@ namespace XGPU {
 		    double *weights,
 		    double *boys_table,
         cudaStream_t stream);
+
+  void integral_0_0_batched(size_t ntask_sp,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream);
 }

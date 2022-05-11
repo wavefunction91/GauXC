@@ -271,4 +271,66 @@ namespace XGPU {
       }
     }
   }
+
+
+
+  void compute_integral_shell_pair_batched( int is_diag,
+    size_t ntask_sp,
+    int lA, int lB, 
+    double X_AB,
+		double Y_AB,
+		double Z_AB,
+    const GauXC::ShellPairToTaskDevice* sp2task,
+    GauXC::XCDeviceTask*                device_tasks,
+		double *boys_table,
+    cudaStream_t stream ) {
+
+    if( is_diag ) {
+      switch(lA) {
+        case 0:
+          integral_0_batched( ntask_sp, sp2task, device_tasks, boys_table, 
+            stream );
+          break;
+        case 1:
+          integral_1_batched( ntask_sp, sp2task, device_tasks, boys_table, 
+            stream );
+          break;
+        case 2:
+          integral_2_batched( ntask_sp, sp2task, device_tasks, boys_table, 
+            stream );
+          break;
+        default:
+          throw std::runtime_error("Diagonal EXX Kernel L > 2 NYI");
+      }
+    } else { // END diagonal code
+
+      bool swap = (lA < lB);
+      if( swap ) std::swap( lA, lB );
+
+      if( lA == 0 and lB == 0 )
+        integral_0_0_batched( ntask_sp, sp2task, device_tasks, boys_table,
+          stream );
+      else if( lA == 1 and lB == 0 )
+        integral_1_0_batched( swap, ntask_sp, sp2task, device_tasks, boys_table,
+          stream );
+      else if( lA == 1 and lB == 1 )
+        integral_1_1_batched( ntask_sp, X_AB, Y_AB, Z_AB, sp2task, device_tasks, 
+          boys_table, stream );
+      else if( lA == 2 and lB == 0 )
+        integral_2_0_batched( swap, ntask_sp, sp2task, device_tasks, boys_table,
+          stream );
+      else if( lA == 2 and lB == 1 )
+        integral_2_1_batched( swap, ntask_sp, X_AB, Y_AB, Z_AB, sp2task, 
+          device_tasks, boys_table, stream );
+      else if( lA == 2 and lB == 2 )
+        integral_2_2_batched( ntask_sp, X_AB, Y_AB, Z_AB, sp2task, device_tasks, 
+          boys_table, stream );
+      else {
+        throw std::runtime_error("EXX Kernels L > 2 NYI");
+      }
+
+    } // END Off-diagonal code
+
+
+  }
 }

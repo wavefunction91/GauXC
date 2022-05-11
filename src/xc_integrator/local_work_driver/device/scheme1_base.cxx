@@ -670,13 +670,14 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
     auto ish = sptt.idx_bra;
     auto jsh = sptt.idx_ket;
     //std::cout << "SH " << ish << " " << jsh << std::endl;
-    if( false ) {
+    if( true ) {
 
       cudaStream_t stream = 
         data->device_backend_->queue().queue_as<util::cuda_stream>();
       const auto X_AB = sptt.rA.x - sptt.rB.x;
       const auto Y_AB = sptt.rA.y - sptt.rB.y;
       const auto Z_AB = sptt.rA.z - sptt.rB.z;
+      #if 0
       if( ish == jsh ) {
         if( sptt.lA == 0 ) {
           XGPU::integral_0_batched( ntask_sp,
@@ -766,6 +767,12 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
             );
         }
       }
+      #else
+      XGPU::compute_integral_shell_pair_batched( ish == jsh, ntask_sp, 
+        sptt.lA, sptt.lB, X_AB, Y_AB, Z_AB,
+        data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+        data->aos_stack.device_tasks, dev_boys_table, stream );
+      #endif
 
     } else {
     for( auto i = 0ul; i < ntask_sp; i++ ) {

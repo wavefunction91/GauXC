@@ -1,19 +1,7 @@
 #include <math.h>
 #include "../include/gpu/chebyshev_boys_computation.hpp"
-#include "../include/gpu/integral_data_types.hpp"
 #include "config_obara_saika.hpp"
 #include "integral_2_2.hu"
-
-#include <gauxc/util/div_ceil.hpp>
-#include "device/xc_device_task.hpp"
-#include "../../../common/shell_pair_to_task.hpp"
-
-#define PI 3.14159265358979323846
-
-#define MIN(a,b)				\
-  ({ __typeof__ (a) _a = (a);			\
-    __typeof__ (b) _b = (b);			\
-    _a < _b ? _a : _b; })
 
 namespace XGPU {
   __inline__ __device__ void dev_integral_2_2_driver(double X_AB,

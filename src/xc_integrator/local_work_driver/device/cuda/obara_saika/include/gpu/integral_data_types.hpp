@@ -1,6 +1,9 @@
 #pragma once
 #include <cmath>
 #include <gauxc/shell_pair.hpp>
+#include <gauxc/util/div_ceil.hpp>
+#include "device/xc_device_task.hpp"
+#include "device/common/shell_pair_to_task.hpp"
 
 namespace XGPU {
 
