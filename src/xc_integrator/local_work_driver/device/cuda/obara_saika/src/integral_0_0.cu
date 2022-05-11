@@ -188,9 +188,6 @@ namespace XGPU {
 				   double *boys_table) {
 
     const int ntask = sp2task->ntask;
-    //if( threadIdx.x == 0 ) {
-    //  printf("GPUX: %d\n", ntask );
-    //}
     for( int i_task = blockIdx.y; i_task < ntask; i_task += gridDim.y ) {
     
       const auto iT = sp2task->task_idx_device[i_task];
@@ -199,9 +196,6 @@ namespace XGPU {
 
       const auto  i_off = sp2task->task_shell_off_row_device[i_task]*npts;
       const auto  j_off = sp2task->task_shell_off_col_device[i_task]*npts;
-      //if( threadIdx.x == 0 ) {
-      //  printf("GPU: %p %d %d %d %d\n", sp2task->shell_pair_device, iT, (int)npts, (int)(i_off/npts), (int)(j_off/npts) );
-      //}
 
       dev_integral_0_0_driver( 
         npts,

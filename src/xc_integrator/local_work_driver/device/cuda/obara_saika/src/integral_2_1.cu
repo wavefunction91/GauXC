@@ -12,7 +12,7 @@
     _a < _b ? _a : _b; })
 
 namespace XGPU {
-  __global__ void dev_integral_2_1(double X_AB,
+  __inline__ __device__ void dev_integral_2_1_driver(double X_AB,
 				   double Y_AB,
 				   double Z_AB,
 				   size_t npts,
@@ -644,6 +644,27 @@ namespace XGPU {
 	SCALAR_STORE((Gjk + 2 * ldG), tw);
       }
     }
+  }
+
+  __global__ void dev_integral_2_1(
+           double X_AB,
+				   double Y_AB,
+				   double Z_AB,
+           size_t npts,
+				   double *points_x,
+				   double *points_y,
+				   double *points_z,
+           shell_pair* sp,
+				   double *Xi,
+				   double *Xj,
+				   int ldX,
+				   double *Gi,
+				   double *Gj,
+				   int ldG, 
+				   double *weights, 
+				   double *boys_table) {
+    dev_integral_2_1_driver( X_AB, Y_AB, Z_AB, npts, points_x, points_y, 
+      points_z, sp, Xi, Xj, ldX, Gi, Gj, ldG, weights, boys_table );
   }
 
   void integral_2_1(double X_AB,
