@@ -17,6 +17,24 @@
 #include "gpu/chebyshev_boys_computation.hpp"
 
 namespace XGPU {
+
+  void integral_0_batched(size_t ntask_sp,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream); 
+
+  void integral_1_batched(size_t ntask_sp,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream); 
+  
+  void integral_2_batched(size_t ntask_sp,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream); 
   
   void integral_0_0_batched(size_t ntask_sp,
         const GauXC::ShellPairToTaskDevice* sp2task,
@@ -652,17 +670,27 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
     auto ish = sptt.idx_bra;
     auto jsh = sptt.idx_ket;
     //std::cout << "SH " << ish << " " << jsh << std::endl;
-    if( true && (ish != jsh) &&
+    if( true and 
       (
-       (sptt.lA == 0 and sptt.lB == 0) or
-       (sptt.lA == 1 and sptt.lB == 1) or
-       (sptt.lA == 2 and sptt.lB == 2) or
-       (sptt.lA == 1 and sptt.lB == 0) or
-       (sptt.lA == 0 and sptt.lB == 1) or
-       (sptt.lA == 2 and sptt.lB == 0) or
-       (sptt.lA == 0 and sptt.lB == 2) or 
-       (sptt.lA == 2 and sptt.lB == 1) or
-       (sptt.lA == 1 and sptt.lB == 2)
+        (
+          (ish != jsh) and (
+           (sptt.lA == 0 and sptt.lB == 0) or
+           (sptt.lA == 1 and sptt.lB == 1) or
+           (sptt.lA == 2 and sptt.lB == 2) or
+           (sptt.lA == 1 and sptt.lB == 0) or
+           (sptt.lA == 0 and sptt.lB == 1) or
+           (sptt.lA == 2 and sptt.lB == 0) or
+           (sptt.lA == 0 and sptt.lB == 2) or 
+           (sptt.lA == 2 and sptt.lB == 1) or
+           (sptt.lA == 1 and sptt.lB == 2)
+          )
+        ) or (
+          (ish == jsh) and (
+            (sptt.lA == 0) or 
+            (sptt.lA == 1) or  
+            (sptt.lA == 2)  
+          )
+        )
       )
     ) {
 
@@ -671,69 +699,94 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       const auto X_AB = sptt.rA.x - sptt.rB.x;
       const auto Y_AB = sptt.rA.y - sptt.rB.y;
       const auto Z_AB = sptt.rA.z - sptt.rB.z;
-      if( sptt.lA == 0 and sptt.lB == 0 ) {
-        XGPU::integral_0_0_batched( ntask_sp,
-          data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
-          data->aos_stack.device_tasks,
-          dev_boys_table, 
-          stream
-          );
-      } else if (sptt.lA == 1 and sptt.lB == 1) {
-        XGPU::integral_1_1_batched( ntask_sp, X_AB, Y_AB, Z_AB,
-          data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
-          data->aos_stack.device_tasks,
-          dev_boys_table, 
-          stream
-          );
-      } else if (sptt.lA == 2 and sptt.lB == 2) {
-        XGPU::integral_2_2_batched( ntask_sp, X_AB, Y_AB, Z_AB,
-          data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
-          data->aos_stack.device_tasks,
-          dev_boys_table, 
-          stream
-          );
-      } else if (sptt.lA == 1 and sptt.lB == 0) {
-        XGPU::integral_1_0_batched( false, ntask_sp,
-          data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
-          data->aos_stack.device_tasks,
-          dev_boys_table, 
-          stream
-          );
-      } else if (sptt.lA == 0 and sptt.lB == 1) {
-        XGPU::integral_1_0_batched( true, ntask_sp,
-          data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
-          data->aos_stack.device_tasks,
-          dev_boys_table, 
-          stream
-          );
-      } else if (sptt.lA == 2 and sptt.lB == 0) {
-        XGPU::integral_2_0_batched( false, ntask_sp,
-          data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
-          data->aos_stack.device_tasks,
-          dev_boys_table, 
-          stream
-          );
-      } else if (sptt.lA == 0 and sptt.lB == 2) {
-        XGPU::integral_2_0_batched( true, ntask_sp,
-          data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
-          data->aos_stack.device_tasks,
-          dev_boys_table, 
-          stream
-          );
-      } else if (sptt.lA == 2 and sptt.lB == 1) {
-        XGPU::integral_2_1_batched( false, ntask_sp, X_AB, Y_AB, Z_AB,
-          data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
-          data->aos_stack.device_tasks,
-          dev_boys_table, 
-          stream
-          );
-      } else if (sptt.lA == 1 and sptt.lB == 2) {
-        XGPU::integral_2_1_batched( true, ntask_sp, X_AB, Y_AB, Z_AB,
-          data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
-          data->aos_stack.device_tasks,
-          dev_boys_table, 
-          stream
-          );
+      if( ish == jsh ) {
+        if( sptt.lA == 0 ) {
+          XGPU::integral_0_batched( ntask_sp,
+            data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+            data->aos_stack.device_tasks,
+            dev_boys_table, 
+            stream
+            );
+        } else if( sptt.lA == 1 ) {
+          XGPU::integral_1_batched( ntask_sp,
+            data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+            data->aos_stack.device_tasks,
+            dev_boys_table, 
+            stream
+            );
+        } else if( sptt.lA == 2 ) {
+          XGPU::integral_2_batched( ntask_sp,
+            data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+            data->aos_stack.device_tasks,
+            dev_boys_table, 
+            stream
+            );
+        }
+      } else {
+        if( sptt.lA == 0 and sptt.lB == 0 ) {
+          XGPU::integral_0_0_batched( ntask_sp,
+            data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+            data->aos_stack.device_tasks,
+            dev_boys_table, 
+            stream
+            );
+        } else if (sptt.lA == 1 and sptt.lB == 1) {
+          XGPU::integral_1_1_batched( ntask_sp, X_AB, Y_AB, Z_AB,
+            data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+            data->aos_stack.device_tasks,
+            dev_boys_table, 
+            stream
+            );
+        } else if (sptt.lA == 2 and sptt.lB == 2) {
+          XGPU::integral_2_2_batched( ntask_sp, X_AB, Y_AB, Z_AB,
+            data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+            data->aos_stack.device_tasks,
+            dev_boys_table, 
+            stream
+            );
+        } else if (sptt.lA == 1 and sptt.lB == 0) {
+          XGPU::integral_1_0_batched( false, ntask_sp,
+            data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+            data->aos_stack.device_tasks,
+            dev_boys_table, 
+            stream
+            );
+        } else if (sptt.lA == 0 and sptt.lB == 1) {
+          XGPU::integral_1_0_batched( true, ntask_sp,
+            data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+            data->aos_stack.device_tasks,
+            dev_boys_table, 
+            stream
+            );
+        } else if (sptt.lA == 2 and sptt.lB == 0) {
+          XGPU::integral_2_0_batched( false, ntask_sp,
+            data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+            data->aos_stack.device_tasks,
+            dev_boys_table, 
+            stream
+            );
+        } else if (sptt.lA == 0 and sptt.lB == 2) {
+          XGPU::integral_2_0_batched( true, ntask_sp,
+            data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+            data->aos_stack.device_tasks,
+            dev_boys_table, 
+            stream
+            );
+        } else if (sptt.lA == 2 and sptt.lB == 1) {
+          XGPU::integral_2_1_batched( false, ntask_sp, X_AB, Y_AB, Z_AB,
+            data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+            data->aos_stack.device_tasks,
+            dev_boys_table, 
+            stream
+            );
+        } else if (sptt.lA == 1 and sptt.lB == 2) {
+          XGPU::integral_2_1_batched( true, ntask_sp, X_AB, Y_AB, Z_AB,
+            data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+            data->aos_stack.device_tasks,
+            dev_boys_table, 
+            stream
+            );
+        }
       }
 
     } else {

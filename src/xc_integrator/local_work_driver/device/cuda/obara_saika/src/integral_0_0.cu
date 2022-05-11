@@ -102,7 +102,7 @@ namespace XGPU {
 	const_value_w = SCALAR_MUL(const_value_v, const_value);
 	tx = SCALAR_LOAD((Xik + 0 * ldX));
 	ty = SCALAR_LOAD((Xjk + 0 * ldX));
-  #if 0
+  #if 1
 	tz = SCALAR_LOAD((Gik + 0 * ldG));
 	tw = SCALAR_LOAD((Gjk + 0 * ldG));
 	//t0 = SCALAR_LOAD((temp + 0 * blockDim.x + threadIdx.x));
