@@ -17,7 +17,7 @@ void Scheme1DataBase::reset_allocations() {
   base_type::reset_allocations();
   scheme1_stack.reset();
   collocation_stack.reset();
-  coulomb_stack.reset();
+  //coulomb_stack.reset();
   shell_to_task_stack.reset();
   shell_pair_to_task_stack.reset();
   l_batched_shell_to_task.clear();
@@ -61,8 +61,9 @@ size_t Scheme1DataBase::get_mem_req( integrator_term_tracker terms,
 
     const size_t mem_shell_list_bfn = nshells_bfn * sizeof(size_t);
     const size_t mem_shell_offs_bfn = nshells_bfn * sizeof(size_t);
-    const size_t mem_shell_list_cou = terms.exx ? nshells_cou * sizeof(size_t) : 0;
-    const size_t mem_shell_offs_cou = terms.exx ? nshells_cou * sizeof(size_t) : 0;
+
+    const size_t mem_shell_list_cou = /* terms.exx ? nshells_cou * sizeof(size_t) : */ 0;
+    const size_t mem_shell_offs_cou = /* terms.exx ? nshells_cou * sizeof(size_t) : */ 0;
 
     // Shell -> Task maps
     const size_t mem_shell_to_task_idx  = nshells_bfn * sizeof(int32_t);
@@ -118,7 +119,7 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
 
   if( terms.exx or terms.exc_vxc or terms.exc_grad ) {
     total_nshells_bfn_task_batch  = 0; 
-    total_nshells_cou_task_batch  = 0; 
+    //total_nshells_cou_task_batch  = 0; 
     total_nshells_cou_sqlt_task_batch  = 0; 
     for( auto it = task_begin; it != task_end; ++it ) {
       const auto& shell_list_bfn  = it->bfn_screening.shell_list;
@@ -128,7 +129,7 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
       const auto& shell_list_cou  = it->cou_screening.shell_list;
       const size_t nshells_cou  = shell_list_cou.size();
       const size_t nshells_cou_sqlt = (nshells_cou*(nshells_cou+1))/2;
-      total_nshells_cou_task_batch  += nshells_cou;
+      //total_nshells_cou_task_batch  += nshells_cou;
       total_nshells_cou_sqlt_task_batch  += nshells_cou_sqlt;
     }
 
@@ -146,10 +147,12 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
       mem.aligned_alloc<ShellToTaskDevice>( global_dims.nshells, csl );
 
     if(terms.exx) {
+    #if 0
       coulomb_stack.shell_list_device = 
         mem.aligned_alloc<size_t>( total_nshells_cou_task_batch , csl);
       coulomb_stack.shell_offs_device = 
         mem.aligned_alloc<size_t>( total_nshells_cou_task_batch , csl);
+    #endif
       
       // ShellPair -> Task buffers
       const size_t nsp = (global_dims.nshells*(global_dims.nshells+1))/2;
@@ -301,6 +304,7 @@ void Scheme1DataBase::pack_and_send(
       shell_offs_bfn_pack.data(), collocation_stack.shell_offs_device, 
       "send_shell_offs_bfn" );
 
+#if 0
     if( terms.exx ) {
       device_backend_->copy_async( shell_list_cou_pack.size(), 
         shell_list_cou_pack.data(), coulomb_stack.shell_list_device, 
@@ -309,6 +313,7 @@ void Scheme1DataBase::pack_and_send(
         shell_offs_cou_pack.data(), coulomb_stack.shell_offs_device, 
         "send_shell_offs_cou" );
     }
+#endif
 
     // Construct Shell -> Task
     std::vector<int32_t> concat_shell_to_task_idx, concat_shell_to_task_off;
@@ -497,15 +502,18 @@ void Scheme1DataBase::add_extra_to_indirection(
 
   if( terms.exx or terms.exc_vxc or terms.exc_grad ) {
     const size_t total_nshells_bfn = total_nshells_bfn_task_batch * sizeof(size_t);
-    const size_t total_nshells_cou = total_nshells_cou_task_batch * sizeof(size_t);
     buffer_adaptor 
       shell_list_bfn_mem( collocation_stack.shell_list_device, total_nshells_bfn );
     buffer_adaptor 
       shell_offs_bfn_mem( collocation_stack.shell_offs_device, total_nshells_bfn );
+
+    #if 0
+    const size_t total_nshells_cou = total_nshells_cou_task_batch * sizeof(size_t);
     buffer_adaptor 
       shell_list_cou_mem( coulomb_stack.shell_list_device, total_nshells_cou );
     buffer_adaptor 
       shell_offs_cou_mem( coulomb_stack.shell_offs_device, total_nshells_cou );
+    #endif
 
     for( auto& task : tasks ) {
       const auto nshells_bfn = task.bfn_screening.nshells;
@@ -514,6 +522,7 @@ void Scheme1DataBase::add_extra_to_indirection(
       task.bfn_screening.shell_offs = 
         shell_offs_bfn_mem.aligned_alloc<size_t>( nshells_bfn , csl); 
 
+      #if 0
       if( terms.exx ) {
         const auto nshells_cou = task.cou_screening.nshells;
         task.cou_screening.shell_list = 
@@ -521,6 +530,7 @@ void Scheme1DataBase::add_extra_to_indirection(
         task.cou_screening.shell_offs = 
           shell_offs_cou_mem.aligned_alloc<size_t>( nshells_cou , csl); 
       }
+      #endif
     }
   }
 

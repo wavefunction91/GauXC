@@ -567,7 +567,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
     auto ish = sptt.idx_bra;
     auto jsh = sptt.idx_ket;
     //std::cout << "SH " << ish << " " << jsh << std::endl;
-    if( false ) {
+    if( true ) {
 
       cudaStream_t stream = 
         data->device_backend_->queue().queue_as<util::cuda_stream>();
