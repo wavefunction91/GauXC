@@ -559,44 +559,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
   // Launch Shell Pair Kernels in round-robin
   const auto n_streams = data->device_backend_->blas_pool_size();
-#if 0
 
-  for( auto& t : tasks ) {
-    if( t.cou_screening.nbe != nbf ) GAUXC_GENERIC_EXCEPTION("EXX + COU Screening NYI");
-  }
-  auto& sp_data = data->shell_pair_soa;
-  for( auto j = 0, ij = 0; j < nshells; ++j )
-  for( auto i = j;         i < nshells; ++i, ++ij ) {
-    auto* sp = sp_data.shell_pair_dev_ptr[ij];
-    auto [bra_l, ket_l] = sp_data.shell_pair_ls[ij];
-    auto [A, B]         = sp_data.shell_pair_centers[ij];
-
-    auto i_off = basis_map.shell_to_first_ao(i);
-    auto j_off = basis_map.shell_to_first_ao(j);
-    for( auto iT = 0ul; iT < ntasks; ++iT ) {
-      auto& task = tasks[iT];
-      cudaStream_t stream = 
-        data->device_backend_->blas_pool_queue(iT % n_streams).queue_as<util::cuda_stream>();
-
-      XGPU::compute_integral_shell_pair( i == j,
-        task.npts,
-        task.points_x,
-        task.points_y,
-        task.points_z,
-        bra_l, ket_l,
-        A, B,
-        sp,
-        task.fmat + i_off*task.npts,
-        task.fmat + j_off*task.npts,
-        task.npts,
-        task.gmat + i_off*task.npts,
-        task.gmat + j_off*task.npts,
-        task.npts,
-        task.weights,
-        dev_boys_table, stream ); 
-    }
-  }
-#else
   auto& sp_to_task = data->shell_pair_to_task;
   size_t isptt = 0;
   for( auto& sptt : sp_to_task ) {
@@ -604,7 +567,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
     auto ish = sptt.idx_bra;
     auto jsh = sptt.idx_ket;
     //std::cout << "SH " << ish << " " << jsh << std::endl;
-    if( true ) {
+    if( false ) {
 
       cudaStream_t stream = 
         data->device_backend_->queue().queue_as<util::cuda_stream>();
@@ -617,69 +580,41 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
         data->aos_stack.device_tasks, dev_boys_table, stream );
 
     } else {
-    for( auto i = 0ul; i < ntask_sp; i++ ) {
-      const auto iT = sptt.task_idx[i];
-      const auto i_off = sptt.task_shell_off_row[i];
-      const auto j_off = sptt.task_shell_off_col[i];
-      //if( (sptt.lA == 0 and sptt.lB == 0 and (ish != jsh)) ) {
-      //  std::cout << "CPU: " << sptt.shell_pair_device << " "
-      //            << iT << " "
-      //            << tasks[iT].npts << " "
-      //            << i_off << " "
-      //            << j_off << std::endl;
-      //}
 
-      const auto& task = tasks[iT];
-      cudaStream_t stream = 
-        data->device_backend_->queue().queue_as<util::cuda_stream>();
-        //data->device_backend_->blas_pool_queue(iT % n_streams)
-        //  .queue_as<util::cuda_stream>();
+      for( auto i = 0ul; i < ntask_sp; i++ ) {
+        const auto iT = sptt.task_idx[i];
+        const auto i_off = sptt.task_shell_off_row[i];
+        const auto j_off = sptt.task_shell_off_col[i];
 
-      XGPU::compute_integral_shell_pair( ish == jsh,
-        task.npts,
-        task.points_x,
-        task.points_y,
-        task.points_z,
-        sptt.lA, sptt.lB,
-        sptt.rA, sptt.rB,
-        sptt.shell_pair_device,
-        task.fmat + i_off*task.npts,
-        task.fmat + j_off*task.npts,
-        task.npts,
-        task.gmat + i_off*task.npts,
-        task.gmat + j_off*task.npts,
-        task.npts,
-        task.weights,
-        dev_boys_table, stream ); 
-    
-    }
+        const auto& task = tasks[iT];
+        cudaStream_t stream = 
+          data->device_backend_->queue().queue_as<util::cuda_stream>();
+          //data->device_backend_->blas_pool_queue(iT % n_streams)
+          //  .queue_as<util::cuda_stream>();
+
+        XGPU::compute_integral_shell_pair( ish == jsh,
+          task.npts,
+          task.points_x,
+          task.points_y,
+          task.points_z,
+          sptt.lA, sptt.lB,
+          sptt.rA, sptt.rB,
+          sptt.shell_pair_device,
+          task.fmat + i_off*task.npts,
+          task.fmat + j_off*task.npts,
+          task.npts,
+          task.gmat + i_off*task.npts,
+          task.gmat + j_off*task.npts,
+          task.npts,
+          task.weights,
+          dev_boys_table, stream ); 
+      
+      }
+
     }
     isptt++;
   }
 
-#if 0
-  // Debug print
-  isptt = 0;
-  for( auto& sptt : sp_to_task ) {
-    size_t ntask_sp = sptt.task_idx.size();
-    auto ish = sptt.idx_bra;
-    auto jsh = sptt.idx_ket;
-    if((sptt.lA == 0 and sptt.lB == 0 and (ish != jsh))) {
-      XGPU::integral_0_0_batched( ntask_sp,
-        data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
-        data->aos_stack.device_tasks,
-        dev_boys_table, 
-        data->device_backend_->queue().queue_as<util::cuda_stream>()
-        );
-      cudaDeviceSynchronize();
-    }
-    isptt++;
-  }
-  #endif
-
-  //cudaDeviceSynchronize();
-  //std::cout << "HERE" << std::endl;
-#endif
 
   // Record completion of BLAS ops on master stream
   data->device_backend_->sync_master_with_blas_pool();
