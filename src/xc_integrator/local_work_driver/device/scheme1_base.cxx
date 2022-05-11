@@ -24,6 +24,25 @@ namespace XGPU {
 		    double *boys_table,
         cudaStream_t stream); 
 
+  void integral_1_1_batched(size_t ntask_sp,
+        double X_AB,
+				double Y_AB,
+				double Z_AB,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream);
+
+  void integral_2_2_batched(size_t ntask_sp,
+        double X_AB,
+				double Y_AB,
+				double Z_AB,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream);
+
+
   void integral_1_0_batched(bool swap, size_t ntask_sp,
         const GauXC::ShellPairToTaskDevice* sp2task,
         GauXC::XCDeviceTask*                device_tasks,
@@ -35,6 +54,15 @@ namespace XGPU {
         GauXC::XCDeviceTask*                device_tasks,
 		    double *boys_table,
         cudaStream_t stream); 
+
+  void integral_2_1_batched(bool swap, size_t ntask_sp,
+        double X_AB,
+				double Y_AB,
+				double Z_AB,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream);
 }
 
 namespace GauXC {
@@ -627,17 +655,38 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
     if( true && (ish != jsh) &&
       (
        (sptt.lA == 0 and sptt.lB == 0) or
+       (sptt.lA == 1 and sptt.lB == 1) or
+       (sptt.lA == 2 and sptt.lB == 2) or
        (sptt.lA == 1 and sptt.lB == 0) or
        (sptt.lA == 0 and sptt.lB == 1) or
        (sptt.lA == 2 and sptt.lB == 0) or
-       (sptt.lA == 0 and sptt.lB == 2)
+       (sptt.lA == 0 and sptt.lB == 2) or 
+       (sptt.lA == 2 and sptt.lB == 1) or
+       (sptt.lA == 1 and sptt.lB == 2)
       )
     ) {
 
       cudaStream_t stream = 
         data->device_backend_->queue().queue_as<util::cuda_stream>();
+      const auto X_AB = sptt.rA.x - sptt.rB.x;
+      const auto Y_AB = sptt.rA.y - sptt.rB.y;
+      const auto Z_AB = sptt.rA.z - sptt.rB.z;
       if( sptt.lA == 0 and sptt.lB == 0 ) {
         XGPU::integral_0_0_batched( ntask_sp,
+          data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+          data->aos_stack.device_tasks,
+          dev_boys_table, 
+          stream
+          );
+      } else if (sptt.lA == 1 and sptt.lB == 1) {
+        XGPU::integral_1_1_batched( ntask_sp, X_AB, Y_AB, Z_AB,
+          data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+          data->aos_stack.device_tasks,
+          dev_boys_table, 
+          stream
+          );
+      } else if (sptt.lA == 2 and sptt.lB == 2) {
+        XGPU::integral_2_2_batched( ntask_sp, X_AB, Y_AB, Z_AB,
           data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
           data->aos_stack.device_tasks,
           dev_boys_table, 
@@ -666,6 +715,20 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
           );
       } else if (sptt.lA == 0 and sptt.lB == 2) {
         XGPU::integral_2_0_batched( true, ntask_sp,
+          data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+          data->aos_stack.device_tasks,
+          dev_boys_table, 
+          stream
+          );
+      } else if (sptt.lA == 2 and sptt.lB == 1) {
+        XGPU::integral_2_1_batched( false, ntask_sp, X_AB, Y_AB, Z_AB,
+          data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+          data->aos_stack.device_tasks,
+          dev_boys_table, 
+          stream
+          );
+      } else if (sptt.lA == 1 and sptt.lB == 2) {
+        XGPU::integral_2_1_batched( true, ntask_sp, X_AB, Y_AB, Z_AB,
           data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
           data->aos_stack.device_tasks,
           dev_boys_table, 

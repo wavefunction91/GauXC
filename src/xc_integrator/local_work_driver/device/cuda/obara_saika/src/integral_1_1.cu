@@ -4,6 +4,10 @@
 #include "config_obara_saika.hpp"
 #include "integral_1_1.hu"
 
+#include <gauxc/util/div_ceil.hpp>
+#include "device/xc_device_task.hpp"
+#include "../../../common/shell_pair_to_task.hpp"
+
 #define PI 3.14159265358979323846
 
 #define MIN(a,b)			\
@@ -12,7 +16,7 @@
   _a < _b ? _a : _b; })
 
 namespace XGPU {
-  __global__ void dev_integral_1_1(double X_AB,
+  __inline__ __device__ void dev_integral_1_1_driver(double X_AB,
 				   double Y_AB,
 				   double Z_AB,
 				   size_t npts,
@@ -370,6 +374,27 @@ namespace XGPU {
     }
   }
 
+  __global__ void dev_integral_1_1(
+           double X_AB,
+				   double Y_AB,
+				   double Z_AB,
+           size_t npts,
+				   double *points_x,
+				   double *points_y,
+				   double *points_z,
+           shell_pair* sp,
+				   double *Xi,
+				   double *Xj,
+				   int ldX,
+				   double *Gi,
+				   double *Gj,
+				   int ldG, 
+				   double *weights, 
+				   double *boys_table) {
+    dev_integral_1_1_driver( X_AB, Y_AB, Z_AB, npts, points_x, points_y, 
+      points_z, sp, Xi, Xj, ldX, Gi, Gj, ldG, weights, boys_table );
+  }
+
   void integral_1_1(double X_AB,
 		    double Y_AB,
 		    double Z_AB,
@@ -403,5 +428,63 @@ namespace XGPU {
 				   ldG, 
 				   weights,
 				   boys_table);
+  }
+
+  __global__ void dev_integral_1_1_batched(
+           double X_AB,
+				   double Y_AB,
+				   double Z_AB,
+           const GauXC::ShellPairToTaskDevice* sp2task,
+           GauXC::XCDeviceTask*                device_tasks,
+				   double *boys_table) {
+
+    const int ntask = sp2task->ntask;
+    for( int i_task = blockIdx.y; i_task < ntask; i_task += gridDim.y ) {
+    
+      const auto iT = sp2task->task_idx_device[i_task];
+      const auto* task  = device_tasks + iT;
+      const auto  npts  = task->npts;
+
+      const auto  i_off = sp2task->task_shell_off_row_device[i_task]*npts;
+      const auto  j_off = sp2task->task_shell_off_col_device[i_task]*npts;
+
+
+      dev_integral_1_1_driver( 
+        X_AB, Y_AB, Z_AB,
+        npts,
+        task->points_x,
+        task->points_y,
+        task->points_z,
+        sp2task->shell_pair_device,
+        task->fmat + i_off,
+        task->fmat + j_off,
+        npts,
+        task->gmat + i_off,
+        task->gmat + j_off,
+        npts,
+        task->weights, boys_table );
+    }
+
+  }
+
+
+
+  void integral_1_1_batched(size_t ntask_sp,
+        double X_AB,
+				double Y_AB,
+				double Z_AB,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream) {
+
+    int nthreads = 128;
+    int nblocks_x = 160;
+    int nblocks_y = ntask_sp;
+    dim3 nblocks(nblocks_x, nblocks_y);
+
+    dev_integral_1_1_batched<<<nblocks,nthreads,0,stream>>>(
+      X_AB, Y_AB, Z_AB, sp2task, device_tasks, boys_table );
+
   }
 }
