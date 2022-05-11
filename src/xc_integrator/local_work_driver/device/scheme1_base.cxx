@@ -670,29 +670,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
     auto ish = sptt.idx_bra;
     auto jsh = sptt.idx_ket;
     //std::cout << "SH " << ish << " " << jsh << std::endl;
-    if( true and 
-      (
-        (
-          (ish != jsh) and (
-           (sptt.lA == 0 and sptt.lB == 0) or
-           (sptt.lA == 1 and sptt.lB == 1) or
-           (sptt.lA == 2 and sptt.lB == 2) or
-           (sptt.lA == 1 and sptt.lB == 0) or
-           (sptt.lA == 0 and sptt.lB == 1) or
-           (sptt.lA == 2 and sptt.lB == 0) or
-           (sptt.lA == 0 and sptt.lB == 2) or 
-           (sptt.lA == 2 and sptt.lB == 1) or
-           (sptt.lA == 1 and sptt.lB == 2)
-          )
-        ) or (
-          (ish == jsh) and (
-            (sptt.lA == 0) or 
-            (sptt.lA == 1) or  
-            (sptt.lA == 2)  
-          )
-        )
-      )
-    ) {
+    if( false ) {
 
       cudaStream_t stream = 
         data->device_backend_->queue().queue_as<util::cuda_stream>();
