@@ -19,11 +19,14 @@ void Scheme1DataBase::reset_allocations() {
   collocation_stack.reset();
   coulomb_stack.reset();
   shell_to_task_stack.reset();
+  shell_pair_to_task_stack.reset();
   l_batched_shell_to_task.clear();
 }
 
 size_t Scheme1DataBase::get_static_mem_requirement() {
-  return global_dims.nshells * sizeof(ShellToTaskDevice);
+  const size_t nsp = (global_dims.nshells*(global_dims.nshells+1))/2;
+  return global_dims.nshells * sizeof(ShellToTaskDevice) +
+    nsp * sizeof(ShellPairToTaskDevice);
 }
 
 
@@ -65,9 +68,16 @@ size_t Scheme1DataBase::get_mem_req( integrator_term_tracker terms,
     const size_t mem_shell_to_task_idx  = nshells_bfn * sizeof(int32_t);
     const size_t mem_shell_to_task_off  = nshells_bfn * sizeof(int32_t);
 
+    // ShellPair -> Task maps
+    const size_t nshells_cou_sqlt = (nshells_cou*(nshells_cou+1))/2;
+    const size_t mem_shell_pair_to_task_idx     = terms.exx ? nshells_cou_sqlt * sizeof(int32_t) : 0;
+    const size_t mem_shell_pair_to_task_row_off = terms.exx ? nshells_cou_sqlt * sizeof(int32_t) : 0;
+    const size_t mem_shell_pair_to_task_col_off = terms.exx ? nshells_cou_sqlt * sizeof(int32_t) : 0;
+
     base_size +=  mem_shell_list_bfn + mem_shell_offs_bfn +
       mem_shell_list_cou + mem_shell_offs_cou +
-      mem_shell_to_task_idx + mem_shell_to_task_off;
+      mem_shell_to_task_idx + mem_shell_to_task_off +
+      mem_shell_pair_to_task_idx + mem_shell_pair_to_task_row_off + mem_shell_pair_to_task_col_off;
   }
 
   return base_size;
@@ -109,6 +119,7 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
   if( terms.exx or terms.exc_vxc or terms.exc_grad ) {
     total_nshells_bfn_task_batch  = 0; 
     total_nshells_cou_task_batch  = 0; 
+    total_nshells_cou_sqlt_task_batch  = 0; 
     for( auto it = task_begin; it != task_end; ++it ) {
       const auto& shell_list_bfn  = it->bfn_screening.shell_list;
       const size_t nshells_bfn  = shell_list_bfn.size();
@@ -116,20 +127,15 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
 
       const auto& shell_list_cou  = it->cou_screening.shell_list;
       const size_t nshells_cou  = shell_list_cou.size();
+      const size_t nshells_cou_sqlt = (nshells_cou*(nshells_cou+1))/2;
       total_nshells_cou_task_batch  += nshells_cou;
+      total_nshells_cou_sqlt_task_batch  += nshells_cou_sqlt;
     }
 
     collocation_stack.shell_list_device = 
       mem.aligned_alloc<size_t>( total_nshells_bfn_task_batch , csl);
     collocation_stack.shell_offs_device = 
       mem.aligned_alloc<size_t>( total_nshells_bfn_task_batch , csl);
-
-    if(terms.exx) {
-      coulomb_stack.shell_list_device = 
-        mem.aligned_alloc<size_t>( total_nshells_cou_task_batch , csl);
-      coulomb_stack.shell_offs_device = 
-        mem.aligned_alloc<size_t>( total_nshells_cou_task_batch , csl);
-    }
 
     // Shell -> Task buffers
     shell_to_task_stack.shell_to_task_idx_device = 
@@ -138,6 +144,24 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
       mem.aligned_alloc<int32_t>( total_nshells_bfn_task_batch, csl );
     shell_to_task_stack.shell_to_task_device =
       mem.aligned_alloc<ShellToTaskDevice>( global_dims.nshells, csl );
+
+    if(terms.exx) {
+      coulomb_stack.shell_list_device = 
+        mem.aligned_alloc<size_t>( total_nshells_cou_task_batch , csl);
+      coulomb_stack.shell_offs_device = 
+        mem.aligned_alloc<size_t>( total_nshells_cou_task_batch , csl);
+      
+      // ShellPair -> Task buffers
+      const size_t nsp = (global_dims.nshells*(global_dims.nshells+1))/2;
+      shell_pair_to_task_stack.shell_pair_to_task_idx_device = 
+        mem.aligned_alloc<int32_t>( total_nshells_cou_sqlt_task_batch, csl );
+      shell_pair_to_task_stack.shell_pair_to_task_row_off_device = 
+        mem.aligned_alloc<int32_t>( total_nshells_cou_sqlt_task_batch, csl );
+      shell_pair_to_task_stack.shell_pair_to_task_col_off_device = 
+        mem.aligned_alloc<int32_t>( total_nshells_cou_sqlt_task_batch, csl );
+      shell_pair_to_task_stack.shell_pair_to_task_device =
+        mem.aligned_alloc<ShellPairToTaskDevice>( nsp, csl );
+    }
 
   }
 
@@ -386,6 +410,63 @@ void Scheme1DataBase::pack_and_send(
       }
       }
     } // Shell -> Task data
+
+
+
+
+
+    // Construct ShellPair -> Task
+    std::vector<int32_t> concat_shell_pair_to_task_idx, concat_shell_pair_to_task_off_row, concat_shell_pair_to_task_off_col;
+    if(terms.exx) {
+      const size_t total_nshells_cou_sqlt = total_nshells_cou_sqlt_task_batch * sizeof(int32_t);
+      buffer_adaptor 
+        shell_idx_mem( shell_pair_to_task_stack.shell_pair_to_task_idx_device, total_nshells_cou_sqlt );
+      buffer_adaptor                                                                            
+        shell_row_off_mem( shell_pair_to_task_stack.shell_pair_to_task_row_off_device, total_nshells_cou_sqlt );
+      buffer_adaptor                                                                            
+        shell_col_off_mem( shell_pair_to_task_stack.shell_pair_to_task_col_off_device, total_nshells_cou_sqlt );
+
+
+      std::vector<ShellPairToTaskDevice> host_shell_pair_to_task(nsp);
+      for( auto isp = 0ul; isp < nsp; ++isp ) {
+        auto& sptt = shell_pair_to_task[isp];
+        auto& bck = host_shell_pair_to_task[isp];
+
+        const auto ntask = sptt.task_idx.size();
+        bck.ntask = ntask;
+        bck.shell_pair_device = sptt.shell_pair_device;
+
+        bck.task_idx_device           = shell_idx_mem.aligned_alloc<int32_t>( ntask, csl );
+        bck.task_shell_off_row_device = shell_row_off_mem.aligned_alloc<int32_t>( ntask, csl );
+        bck.task_shell_off_col_device = shell_col_off_mem.aligned_alloc<int32_t>( ntask, csl );
+
+        // Pack data
+        concat_iterable( concat_shell_pair_to_task_idx,     sptt.task_idx           );
+        concat_iterable( concat_shell_pair_to_task_off_row, sptt.task_shell_off_row );
+        concat_iterable( concat_shell_pair_to_task_off_col, sptt.task_shell_off_col );
+      }
+
+      // Send Data
+      device_backend_->copy_async( concat_shell_pair_to_task_idx.size(),
+        concat_shell_pair_to_task_idx.data(), 
+        shell_pair_to_task_stack.shell_pair_to_task_idx_device, "shell_pair_to_task_idx_device" );
+
+      device_backend_->copy_async( concat_shell_pair_to_task_off_row.size(),
+        concat_shell_pair_to_task_off_row.data(), 
+        shell_pair_to_task_stack.shell_pair_to_task_row_off_device, "shell_pair_to_task_row_off_device" );
+
+      device_backend_->copy_async( concat_shell_pair_to_task_off_col.size(),
+        concat_shell_pair_to_task_off_col.data(), 
+        shell_pair_to_task_stack.shell_pair_to_task_col_off_device, "shell_pair_to_task_col_off_device" );
+
+      // Send shell to task maps
+      device_backend_->copy_async( nsp, 
+        host_shell_pair_to_task.data(), shell_pair_to_task_stack.shell_pair_to_task_device,
+        "shell_pair_to_task_device" );
+
+
+    } // ShellPair -> Task data
+    device_backend_->master_queue_synchronize(); 
   }
 
   device_backend_->master_queue_synchronize(); 

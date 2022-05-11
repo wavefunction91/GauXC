@@ -22,5 +22,4 @@ namespace XGPU {
 				   double *weights,
 				   double *boys_table,
            cudaStream_t stream);
-  
 }

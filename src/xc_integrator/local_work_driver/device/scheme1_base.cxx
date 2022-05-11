@@ -11,9 +11,20 @@
 
 #include "device_specific/cuda_util.hpp"
 
+#include "device/common/shell_pair_to_task.hpp"
 #include "gpu/integral_data_types.hpp"
 #include "gpu/obara_saika_integrals.hpp"
 #include "gpu/chebyshev_boys_computation.hpp"
+
+namespace XGPU {
+  
+  void integral_0_0_batched(size_t ntask_sp,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream); 
+
+}
 
 namespace GauXC {
 
@@ -534,9 +545,6 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
   // XXX: Need to add screening capabilities, packing etc
   const auto nbf = data->global_dims.nbf;
-  for( auto& t : tasks ) {
-    if( t.cou_screening.nbe != nbf ) GAUXC_GENERIC_EXCEPTION("EXX + COU Screening NYI");
-  }
 
   // XXX: Need to add support for non-cartesian functions
   for( auto i = 0ul; i < nshells; ++i ) {
@@ -561,6 +569,10 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
   // Launch Shell Pair Kernels in round-robin
   const auto n_streams = data->device_backend_->blas_pool_size();
 #if 0
+
+  for( auto& t : tasks ) {
+    if( t.cou_screening.nbe != nbf ) GAUXC_GENERIC_EXCEPTION("EXX + COU Screening NYI");
+  }
   auto& sp_data = data->shell_pair_soa;
   for( auto j = 0, ij = 0; j < nshells; ++j )
   for( auto i = j;         i < nshells; ++i, ++ij ) {
@@ -600,15 +612,33 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
     size_t ntask_sp = sptt.task_idx.size();
     auto ish = sptt.idx_bra;
     auto jsh = sptt.idx_ket;
+    //std::cout << "SH " << ish << " " << jsh << std::endl;
+    if( false && (sptt.lA == 0 and sptt.lB == 0 and (ish != jsh))) {
+      XGPU::integral_0_0_batched( ntask_sp,
+        data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+        data->aos_stack.device_tasks,
+        dev_boys_table, 
+        data->device_backend_->queue().queue_as<util::cuda_stream>()
+        );
+
+    } else {
     for( auto i = 0ul; i < ntask_sp; i++ ) {
       const auto iT = sptt.task_idx[i];
       const auto i_off = sptt.task_shell_off_row[i];
       const auto j_off = sptt.task_shell_off_col[i];
+      //if( (sptt.lA == 0 and sptt.lB == 0 and (ish != jsh)) ) {
+      //  std::cout << "CPU: " << sptt.shell_pair_device << " "
+      //            << iT << " "
+      //            << tasks[iT].npts << " "
+      //            << i_off << " "
+      //            << j_off << std::endl;
+      //}
 
       const auto& task = tasks[iT];
       cudaStream_t stream = 
-        data->device_backend_->blas_pool_queue(iT % n_streams)
-          .queue_as<util::cuda_stream>();
+        data->device_backend_->queue().queue_as<util::cuda_stream>();
+        //data->device_backend_->blas_pool_queue(iT % n_streams)
+        //  .queue_as<util::cuda_stream>();
 
       XGPU::compute_integral_shell_pair( ish == jsh,
         task.npts,
@@ -628,7 +658,32 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
         dev_boys_table, stream ); 
     
     }
+    }
+    isptt++;
   }
+
+#if 0
+  // Debug print
+  isptt = 0;
+  for( auto& sptt : sp_to_task ) {
+    size_t ntask_sp = sptt.task_idx.size();
+    auto ish = sptt.idx_bra;
+    auto jsh = sptt.idx_ket;
+    if((sptt.lA == 0 and sptt.lB == 0 and (ish != jsh))) {
+      XGPU::integral_0_0_batched( ntask_sp,
+        data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+        data->aos_stack.device_tasks,
+        dev_boys_table, 
+        data->device_backend_->queue().queue_as<util::cuda_stream>()
+        );
+      cudaDeviceSynchronize();
+    }
+    isptt++;
+  }
+  #endif
+
+  //cudaDeviceSynchronize();
+  //std::cout << "HERE" << std::endl;
 #endif
 
   // Record completion of BLAS ops on master stream

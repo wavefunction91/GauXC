@@ -23,4 +23,14 @@ struct ShellPairToTaskHost {
   }
 };
 
+struct ShellPairToTaskDevice {
+  using shell_pair = ShellPair<double>;
+  using point      = detail::cartesian_point;
+  int32_t* task_idx_device;
+  int32_t* task_shell_off_row_device;
+  int32_t* task_shell_off_col_device;
+  shell_pair* shell_pair_device;
+  int32_t ntask;
+};
+
 }

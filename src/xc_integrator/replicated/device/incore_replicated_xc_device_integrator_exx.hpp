@@ -7,6 +7,9 @@
 #include <fstream>
 #include <gauxc/util/unused.hpp>
 
+#include "integrator_util/exx_screening.hpp"
+#include "integrator_util/integral_bounds.hpp"
+
 namespace GauXC  {
 namespace detail {
 
@@ -98,7 +101,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   integrator_term_tracker enabled_terms;
   enabled_terms.weights = true;
-  std::cout << enabled_terms << std::endl;
 
   this->timer_.time_op("XCIntegrator.Weights", [&]() { 
     const auto natoms = mol.natoms();
@@ -130,9 +132,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   });
 
   }
-  std::cout << "AFTER WEIGHTS" << std::endl;
 
-#if 1
+#if 0
   // TODO: This turns off EK screening 
   std::vector<int32_t> full_shell_list(nshells);
   std::iota(full_shell_list.begin(),full_shell_list.end(),0);
@@ -142,15 +143,35 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   }
 #else
   // Compute EXX screening modifications
-  ReferenceLocalHostWorkDriver host_lwd; 
-  for( auto task_it = task_begin; task_it != task_end; ++task_it ) {
-  
-  }
+  this->timer_.time_op("XCIntegrator.EXX_Screening", [&]() { 
+    // Compute base screening quantities
+    const size_t nb2 = basis.nbf() * basis.nbf();
+    std::vector<double> P_abs(nb2);
+    for( auto i = 0; i < nb2; ++i ) P_abs[i] = std::abs(P[i]);
+
+    const size_t ns2 = nshells * nshells;
+    std::vector<double> V_max(ns2);
+    for( auto i = 0; i < nshells; ++i )
+    for( auto j = 0; j < nshells; ++j ) {
+      V_max[i + j*nshells] = 
+        util::max_coulomb( basis.at(i), basis.at(j) );
+    }
+    // Create LocalHostWorkDriver
+    LocalHostWorkDriver host_lwd(
+      std::make_unique<ReferenceLocalHostWorkDriver>()
+    );
+    exx_ek_screening( basis, basis_map, P_abs.data(), basis.nbf(),
+      V_max.data(), nshells, 1e-10, 1e-10, &host_lwd, task_begin,
+      task_end );
+
+    // Remove tasks with no coulomb shells
+    task_end = std::stable_partition( task_begin, task_end,
+      []( const auto& t ) { return t.cou_screening.shell_list.size() > 0; } );
+  });
 #endif
 
   // Populate submat maps
   device_data.populate_submat_maps( basis.nbf(), task_begin, task_end, basis_map );
-
 
 
 
