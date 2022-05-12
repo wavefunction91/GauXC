@@ -21,6 +21,7 @@ namespace detail {
       intmax_t __i = packed_lt_index(i,j,m);
       if( __i == idx ) return std::make_pair(i,j);
     }
+    abort();
   }
 }
 

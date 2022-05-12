@@ -31,6 +31,17 @@ struct ShellPairToTaskDevice {
   int32_t* task_shell_off_col_device;
   shell_pair* shell_pair_device;
   int32_t ntask;
+
+  double X_AB, Y_AB, Z_AB;
+};
+
+struct AngularMomentumShellPairToTaskBatch {
+  size_t ntask_average;
+  size_t npts_average;
+  size_t nshells_in_batch;
+  ShellPairToTaskDevice* shell_pair_to_task_device;
+
+  int lA, lB;
 };
 
 }

@@ -16,6 +16,23 @@
 #include "gpu/obara_saika_integrals.hpp"
 #include "gpu/chebyshev_boys_computation.hpp"
 
+namespace XGPU {
+  void integral_0_0_shell_batched(
+        size_t nsp,
+        size_t max_ntask,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream); 
+  void integral_1_1_shell_batched(
+        size_t nsp,
+        size_t max_ntask,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream); 
+}
+
 
 namespace GauXC {
 
@@ -561,6 +578,87 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
   const auto n_streams = data->device_backend_->blas_pool_size();
 
   auto& sp_to_task = data->shell_pair_to_task;
+  #if 1
+  bool do_batch = true;
+
+  if( do_batch ) { // start batched code
+
+    cudaStream_t stream = 
+      data->device_backend_->queue().queue_as<util::cuda_stream>();
+    size_t isptt = 0;
+    for( auto sptt : sp_to_task ) {
+      size_t ntask_sp = sptt.task_idx.size();
+      auto ish = sptt.idx_bra;
+      auto jsh = sptt.idx_ket;
+
+      const auto X_AB = sptt.rA.x - sptt.rB.x;
+      const auto Y_AB = sptt.rA.y - sptt.rB.y;
+      const auto Z_AB = sptt.rA.z - sptt.rB.z;
+      if( not( (ish != jsh) and (
+        (sptt.lA == 0 and sptt.lB == 0) or
+        (sptt.lA == 1 and sptt.lB == 1) 
+      ) 
+      ) )
+      XGPU::compute_integral_shell_pair_batched( ish == jsh, ntask_sp, 
+        sptt.lA, sptt.lB, X_AB, Y_AB, Z_AB,
+        data->shell_pair_to_task_stack.shell_pair_to_task_device + isptt,
+        data->aos_stack.device_tasks, dev_boys_table, stream );
+    
+      isptt++; // Increment counter
+    } // Loop over shell pair maps
+
+    XGPU::integral_0_0_shell_batched(
+      data->l_batched_shell_pair_to_task_off_diag[0].nshells_in_batch,
+      data->l_batched_shell_pair_to_task_off_diag[0].ntask_average,
+      data->l_batched_shell_pair_to_task_off_diag[0].shell_pair_to_task_device,
+      data->aos_stack.device_tasks, dev_boys_table, stream
+    );
+
+    XGPU::integral_1_1_shell_batched(
+      data->l_batched_shell_pair_to_task_off_diag[4].nshells_in_batch,
+      data->l_batched_shell_pair_to_task_off_diag[4].ntask_average,
+      data->l_batched_shell_pair_to_task_off_diag[4].shell_pair_to_task_device,
+      data->aos_stack.device_tasks, dev_boys_table, stream
+    );
+
+  } else { // end batched start unbatched
+
+    cudaStream_t stream = 
+      data->device_backend_->queue().queue_as<util::cuda_stream>();
+    for( auto& sptt : sp_to_task ) { 
+      size_t ntask_sp = sptt.task_idx.size();
+      auto ish = sptt.idx_bra;
+      auto jsh = sptt.idx_ket;
+      for( auto i = 0ul; i < ntask_sp; i++ ) {
+        const auto iT = sptt.task_idx[i];
+        const auto i_off = sptt.task_shell_off_row[i];
+        const auto j_off = sptt.task_shell_off_col[i];
+
+        const auto& task = tasks[iT];
+        //cudaStream_t stream = 
+          //data->device_backend_->blas_pool_queue(iT % n_streams)
+          //  .queue_as<util::cuda_stream>();
+
+        XGPU::compute_integral_shell_pair( ish == jsh,
+          task.npts,
+          task.points_x,
+          task.points_y,
+          task.points_z,
+          sptt.lA, sptt.lB,
+          sptt.rA, sptt.rB,
+          sptt.shell_pair_device,
+          task.fmat + i_off*task.npts,
+          task.fmat + j_off*task.npts,
+          task.npts,
+          task.gmat + i_off*task.npts,
+          task.gmat + j_off*task.npts,
+          task.npts,
+          task.weights,
+          dev_boys_table, stream ); 
+      } // Loop over tasks within a shell pair
+    } // Loop over shell pair maps
+  } // end unbatched
+  #else
   size_t isptt = 0;
   for( auto& sptt : sp_to_task ) {
     size_t ntask_sp = sptt.task_idx.size();
@@ -614,6 +712,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
     }
     isptt++;
   }
+  #endif
 
 
   // Record completion of BLAS ops on master stream

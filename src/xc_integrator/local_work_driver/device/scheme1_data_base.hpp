@@ -57,6 +57,9 @@ struct Scheme1DataBase : public XCDeviceAoSData {
   //collocation_data   coulomb_stack;
   shell_pair_to_task_data shell_pair_to_task_stack;
   std::vector<ShellPairToTaskHost> shell_pair_to_task;
+  std::vector<AngularMomentumShellPairToTaskBatch> 
+    l_batched_shell_pair_to_task_diag,
+    l_batched_shell_pair_to_task_off_diag;
 
   virtual ~Scheme1DataBase() noexcept;
   Scheme1DataBase(std::unique_ptr<DeviceBackend>&& ptr);

@@ -199,7 +199,7 @@ namespace XGPU {
 
 
   template <bool swap>
-  __global__ void dev_integral_1_0_batched(
+  __inline__ __device__ void dev_integral_1_0_batched_driver(
            const GauXC::ShellPairToTaskDevice* sp2task,
            GauXC::XCDeviceTask*                device_tasks,
 				   double *boys_table) {
@@ -238,6 +238,13 @@ namespace XGPU {
 
   }
 
+  template <bool swap>
+  __global__ void dev_integral_1_0_batched(
+           const GauXC::ShellPairToTaskDevice* sp2task,
+           GauXC::XCDeviceTask*                device_tasks,
+				   double *boys_table) {
+    dev_integral_1_0_batched_driver<swap>(sp2task,device_tasks,boys_table);
+  }
 
 
   void integral_1_0_batched(bool swap, size_t ntask_sp,
@@ -259,4 +266,38 @@ namespace XGPU {
         sp2task, device_tasks, boys_table );
 
   }
+
+  template <bool swap>
+  __global__ void dev_integral_1_0_shell_batched(
+           int nsp,
+           const GauXC::ShellPairToTaskDevice* sp2task,
+           GauXC::XCDeviceTask*                device_tasks,
+				   double *boys_table) {
+    for(int i = blockIdx.z; i < nsp; i+= gridDim.z ) {
+      dev_integral_1_0_batched_driver<swap>(sp2task+i,device_tasks,boys_table);
+    }
+  }
+
+  void integral_1_0_shell_batched(
+        bool swap,
+        size_t nsp,
+        size_t max_ntask,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream) {
+
+    int nthreads = 128;
+    int nblocks_x = 80;
+    int nblocks_y = max_ntask;
+    int nblocks_z = nsp;
+    dim3 nblocks(nblocks_x, nblocks_y, nblocks_z);
+    if(swap)
+      dev_integral_1_0_shell_batched<true><<<nblocks,nthreads,0,stream>>>(
+        nsp, sp2task, device_tasks, boys_table );
+    else
+      dev_integral_1_0_shell_batched<false><<<nblocks,nthreads,0,stream>>>(
+        nsp, sp2task, device_tasks, boys_table );
+  }
+
 }
