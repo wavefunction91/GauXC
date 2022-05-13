@@ -31,6 +31,15 @@ namespace XGPU {
         GauXC::XCDeviceTask*                device_tasks,
 		    double *boys_table,
         cudaStream_t stream); 
+
+  void integral_1_0_shell_batched(
+        bool swap,
+        size_t nsp,
+        size_t max_ntask,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream); 
 }
 
 
@@ -579,7 +588,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
   auto& sp_to_task = data->shell_pair_to_task;
   #if 1
-  bool do_batch = true;
+  bool do_batch = false;
 
   if( do_batch ) { // start batched code
 
@@ -596,6 +605,8 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       const auto Z_AB = sptt.rA.z - sptt.rB.z;
       if( not( (ish != jsh) and (
         (sptt.lA == 0 and sptt.lB == 0) or
+        (sptt.lA == 1 and sptt.lB == 0) or
+        (sptt.lA == 0 and sptt.lB == 1) or
         (sptt.lA == 1 and sptt.lB == 1) 
       ) 
       ) )
@@ -618,6 +629,20 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       data->l_batched_shell_pair_to_task_off_diag[4].nshells_in_batch,
       data->l_batched_shell_pair_to_task_off_diag[4].ntask_average,
       data->l_batched_shell_pair_to_task_off_diag[4].shell_pair_to_task_device,
+      data->aos_stack.device_tasks, dev_boys_table, stream
+    );
+
+    XGPU::integral_1_0_shell_batched( true,
+      data->l_batched_shell_pair_to_task_off_diag[1].nshells_in_batch,
+      data->l_batched_shell_pair_to_task_off_diag[1].ntask_average,
+      data->l_batched_shell_pair_to_task_off_diag[1].shell_pair_to_task_device,
+      data->aos_stack.device_tasks, dev_boys_table, stream
+    );
+
+    XGPU::integral_1_0_shell_batched( false,
+      data->l_batched_shell_pair_to_task_off_diag[3].nshells_in_batch,
+      data->l_batched_shell_pair_to_task_off_diag[3].ntask_average,
+      data->l_batched_shell_pair_to_task_off_diag[3].shell_pair_to_task_device,
       data->aos_stack.device_tasks, dev_boys_table, stream
     );
 

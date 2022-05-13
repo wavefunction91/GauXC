@@ -102,8 +102,7 @@ namespace XGPU {
 	SCALAR_STORE((Gik + 0 * ldG), tz);
 	SCALAR_STORE((Gjk + 0 * ldG), tw);
   #else
-  t0 = temp;
-	t0 = SCALAR_MUL(t0, const_value_w);
+	t0 = SCALAR_MUL(temp, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_MUL(tx, t0);
   atomicAdd(Gik, tz);

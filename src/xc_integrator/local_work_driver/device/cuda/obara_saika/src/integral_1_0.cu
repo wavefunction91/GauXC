@@ -112,6 +112,8 @@ namespace XGPU {
 	Z_ABp = 1.0; comb_p_k = 1.0;
 	const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
 	const_value_w = SCALAR_MUL(const_value_v, const_value);
+
+  #if 0
 	tx = SCALAR_LOAD((Xik + 0 * ldX));
 	ty = SCALAR_LOAD((Xjk + 0 * ldX));
 	tz = SCALAR_LOAD((Gik + 0 * ldG));
@@ -145,6 +147,29 @@ namespace XGPU {
 	tw = SCALAR_FMA(tx, t2, tw);
 	SCALAR_STORE((Gik + 2 * ldG), tz);
 	SCALAR_STORE((Gjk + 0 * ldG), tw);
+  #else
+	tx = SCALAR_LOAD((Xik + 0 * ldX));
+	ty = SCALAR_LOAD((Xjk + 0 * ldX));
+
+	t0 = SCALAR_MUL(temp_0, const_value_w);
+	tz = SCALAR_MUL(ty, t0);
+	tw = SCALAR_MUL(tx, t0);
+	atomicAdd((Gik + 0 * ldG), tz);
+                                   
+	tx = SCALAR_LOAD((Xik + 1 * ldX));
+	t1 = SCALAR_MUL(temp_1, const_value_w);
+	tz = SCALAR_MUL(ty, t1);
+	tw = SCALAR_FMA(tx, t1, tw);
+	atomicAdd((Gik + 1 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 2 * ldX));
+	t2 = SCALAR_MUL(temp_2, const_value_w);
+	tz = SCALAR_MUL(ty, t2);
+	tw = SCALAR_FMA(tx, t2, tw);
+	atomicAdd((Gik + 2 * ldG), tz);
+
+	atomicAdd((Gjk + 0 * ldG), tw);
+  #endif
       }
     }
   }
@@ -205,6 +230,7 @@ namespace XGPU {
 				   double *boys_table) {
 
     const int ntask = sp2task->ntask;
+    #pragma unroll 1
     for( int i_task = blockIdx.y; i_task < ntask; i_task += gridDim.y ) {
     
       const auto iT = sp2task->task_idx_device[i_task];

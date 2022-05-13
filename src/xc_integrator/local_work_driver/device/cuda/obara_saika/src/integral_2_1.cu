@@ -247,6 +247,7 @@ namespace XGPU {
 	SCALAR_TYPE const_value_w;
 	SCALAR_TYPE tx, ty, tz, tw, t0, t1, t2, t3, t4, t5;
 
+  #if 0
 	X_ABp = 1.0; comb_m_i = 1.0;
 	Y_ABp = 1.0; comb_n_j = 1.0;
 	Z_ABp = 1.0; comb_p_k = 1.0;
@@ -634,6 +635,302 @@ namespace XGPU {
 	tw = SCALAR_FMA(tx, t5, tw);
 	SCALAR_STORE((Gik + 5 * ldG), tz);
 	SCALAR_STORE((Gjk + 2 * ldG), tw);
+  #else
+	X_ABp = 1.0; comb_m_i = 1.0;
+	Y_ABp = 1.0; comb_n_j = 1.0;
+	Z_ABp = 1.0; comb_p_k = 1.0;
+	const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+	const_value_w = SCALAR_MUL(const_value_v, const_value);
+
+  /*** j = 0 ***/
+
+	tx = SCALAR_LOAD((Xik + 0 * ldX));
+	ty = SCALAR_LOAD((Xjk + 0 * ldX));
+	t0 = SCALAR_LOAD((temp + 6 * blockDim.x + threadIdx.x));
+	t0 = SCALAR_MUL(t0, const_value_w);
+	tz = SCALAR_MUL(ty, t0);
+	tw = SCALAR_MUL(tx, t0);
+	atomicAdd((Gik + 0 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 1 * ldX));
+	t1 = SCALAR_LOAD((temp + 7 * blockDim.x + threadIdx.x));
+	t1 = SCALAR_MUL(t1, const_value_w);
+	tz = SCALAR_MUL(ty, t1);
+	tw = SCALAR_FMA(tx, t1, tw);
+	atomicAdd((Gik + 1 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 2 * ldX));
+	t2 = SCALAR_LOAD((temp + 8 * blockDim.x + threadIdx.x));
+	t2 = SCALAR_MUL(t2, const_value_w);
+	tz = SCALAR_MUL(ty, t2);
+	tw = SCALAR_FMA(tx, t2, tw);
+	atomicAdd((Gik + 2 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 3 * ldX));
+	t3 = SCALAR_LOAD((temp + 9 * blockDim.x + threadIdx.x));
+	t3 = SCALAR_MUL(t3, const_value_w);
+	tz = SCALAR_MUL(ty, t3);
+	tw = SCALAR_FMA(tx, t3, tw);
+	atomicAdd((Gik + 3 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 4 * ldX));
+	t4 = SCALAR_LOAD((temp + 10 * blockDim.x + threadIdx.x));
+	t4 = SCALAR_MUL(t4, const_value_w);
+	tz = SCALAR_MUL(ty, t4);
+	tw = SCALAR_FMA(tx, t4, tw);
+	atomicAdd((Gik + 4 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 5 * ldX));
+	t5 = SCALAR_LOAD((temp + 11 * blockDim.x + threadIdx.x));
+	t5 = SCALAR_MUL(t5, const_value_w);
+	tz = SCALAR_MUL(ty, t5);
+	tw = SCALAR_FMA(tx, t5, tw);
+	atomicAdd((Gik + 5 * ldG), tz);
+
+	X_ABp = SCALAR_MUL(X_ABp, X_AB); comb_m_i = SCALAR_MUL(comb_m_i * 1, SCALAR_RECIPROCAL(1));
+	Y_ABp = 1.0; comb_n_j = 1.0;
+	Z_ABp = 1.0; comb_p_k = 1.0;
+	const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+	const_value_w = SCALAR_MUL(const_value_v, const_value);
+
+	tx = SCALAR_LOAD((Xik + 0 * ldX));
+	t0 = SCALAR_LOAD((temp + 0 * blockDim.x + threadIdx.x));
+	t0 = SCALAR_MUL(t0, const_value_w);
+	tz = SCALAR_MUL(ty, t0);
+	tw = SCALAR_FMA(tx, t0, tw);
+	atomicAdd((Gik + 0 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 1 * ldX));
+	t1 = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
+	t1 = SCALAR_MUL(t1, const_value_w);
+	tz = SCALAR_MUL(ty, t1);
+	tw = SCALAR_FMA(tx, t1, tw);
+	atomicAdd((Gik + 1 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 2 * ldX));
+	t2 = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
+	t2 = SCALAR_MUL(t2, const_value_w);
+	tz = SCALAR_MUL(ty, t2);
+	tw = SCALAR_FMA(tx, t2, tw);
+	atomicAdd((Gik + 2 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 3 * ldX));
+	t3 = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
+	t3 = SCALAR_MUL(t3, const_value_w);
+	tz = SCALAR_MUL(ty, t3);
+	tw = SCALAR_FMA(tx, t3, tw);
+	atomicAdd((Gik + 3 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 4 * ldX));
+	t4 = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
+	t4 = SCALAR_MUL(t4, const_value_w);
+	tz = SCALAR_MUL(ty, t4);
+	tw = SCALAR_FMA(tx, t4, tw);
+	atomicAdd((Gik + 4 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 5 * ldX));
+	t5 = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
+	t5 = SCALAR_MUL(t5, const_value_w);
+	tz = SCALAR_MUL(ty, t5);
+	tw = SCALAR_FMA(tx, t5, tw);
+	atomicAdd((Gik + 5 * ldG), tz);
+	atomicAdd((Gjk + 0 * ldG), tw);
+
+
+  /*** j = 1 ***/
+	X_ABp = 1.0; comb_m_i = 1.0;
+	Y_ABp = 1.0; comb_n_j = 1.0;
+	Z_ABp = 1.0; comb_p_k = 1.0;
+	const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+	const_value_w = SCALAR_MUL(const_value_v, const_value);
+	tx = SCALAR_LOAD((Xik + 0 * ldX));
+	ty = SCALAR_LOAD((Xjk + 1 * ldX));
+	t0 = SCALAR_LOAD((temp + 7 * blockDim.x + threadIdx.x));
+	t0 = SCALAR_MUL(t0, const_value_w);
+	tz = SCALAR_MUL(ty, t0);
+	tw = SCALAR_MUL(tx, t0);
+	atomicAdd((Gik + 0 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 1 * ldX));
+	t1 = SCALAR_LOAD((temp + 9 * blockDim.x + threadIdx.x));
+	t1 = SCALAR_MUL(t1, const_value_w);
+	tz = SCALAR_MUL(ty, t1);
+	tw = SCALAR_FMA(tx, t1, tw);
+	atomicAdd((Gik + 1 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 2 * ldX));
+	t2 = SCALAR_LOAD((temp + 10 * blockDim.x + threadIdx.x));
+	t2 = SCALAR_MUL(t2, const_value_w);
+	tz = SCALAR_MUL(ty, t2);
+	tw = SCALAR_FMA(tx, t2, tw);
+	atomicAdd((Gik + 2 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 3 * ldX));
+	t3 = SCALAR_LOAD((temp + 12 * blockDim.x + threadIdx.x));
+	t3 = SCALAR_MUL(t3, const_value_w);
+	tz = SCALAR_MUL(ty, t3);
+	tw = SCALAR_FMA(tx, t3, tw);
+	atomicAdd((Gik + 3 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 4 * ldX));
+	t4 = SCALAR_LOAD((temp + 13 * blockDim.x + threadIdx.x));
+	t4 = SCALAR_MUL(t4, const_value_w);
+	tz = SCALAR_MUL(ty, t4);
+	tw = SCALAR_FMA(tx, t4, tw);
+	atomicAdd((Gik + 4 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 5 * ldX));
+	t5 = SCALAR_LOAD((temp + 14 * blockDim.x + threadIdx.x));
+	t5 = SCALAR_MUL(t5, const_value_w);
+	tz = SCALAR_MUL(ty, t5);
+	tw = SCALAR_FMA(tx, t5, tw);
+	atomicAdd((Gik + 5 * ldG), tz);
+
+	Y_ABp = SCALAR_MUL(Y_ABp, Y_AB); comb_n_j = SCALAR_MUL(comb_n_j * 1, SCALAR_RECIPROCAL(1));
+	Z_ABp = 1.0; comb_p_k = 1.0;
+	const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+	const_value_w = SCALAR_MUL(const_value_v, const_value);
+
+	tx = SCALAR_LOAD((Xik + 0 * ldX));
+	t0 = SCALAR_LOAD((temp + 0 * blockDim.x + threadIdx.x));
+	t0 = SCALAR_MUL(t0, const_value_w);
+	tz = SCALAR_MUL(ty, t0);
+	tw = SCALAR_FMA(tx, t0, tw);
+	atomicAdd((Gik + 0 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 1 * ldX));
+	t1 = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
+	t1 = SCALAR_MUL(t1, const_value_w);
+	tz = SCALAR_MUL(ty, t1);
+	tw = SCALAR_FMA(tx, t1, tw);
+	atomicAdd((Gik + 1 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 2 * ldX));
+	t2 = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
+	t2 = SCALAR_MUL(t2, const_value_w);
+	tz = SCALAR_MUL(ty, t2);
+	tw = SCALAR_FMA(tx, t2, tw);
+	atomicAdd((Gik + 2 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 3 * ldX));
+	t3 = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
+	t3 = SCALAR_MUL(t3, const_value_w);
+	tz = SCALAR_MUL(ty, t3);
+	tw = SCALAR_FMA(tx, t3, tw);
+	atomicAdd((Gik + 3 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 4 * ldX));
+	t4 = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
+	t4 = SCALAR_MUL(t4, const_value_w);
+	tz = SCALAR_MUL(ty, t4);
+	tw = SCALAR_FMA(tx, t4, tw);
+	atomicAdd((Gik + 4 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 5 * ldX));
+	t5 = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
+	t5 = SCALAR_MUL(t5, const_value_w);
+	tz = SCALAR_MUL(ty, t5);
+	tw = SCALAR_FMA(tx, t5, tw);
+	atomicAdd((Gik + 5 * ldG), tz);
+	atomicAdd((Gjk + 1 * ldG), tw);
+
+  /*** j = 2 ***/
+	X_ABp = 1.0; comb_m_i = 1.0;
+	Y_ABp = 1.0; comb_n_j = 1.0;
+	Z_ABp = 1.0; comb_p_k = 1.0;
+	const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+	const_value_w = SCALAR_MUL(const_value_v, const_value);
+
+	tx = SCALAR_LOAD((Xik + 0 * ldX));
+	ty = SCALAR_LOAD((Xjk + 2 * ldX));
+	t0 = SCALAR_LOAD((temp + 8 * blockDim.x + threadIdx.x));
+	t0 = SCALAR_MUL(t0, const_value_w);
+	tz = SCALAR_MUL(ty, t0);
+	tw = SCALAR_MUL(tx, t0);
+	atomicAdd((Gik + 0 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 1 * ldX));
+	t1 = SCALAR_LOAD((temp + 10 * blockDim.x + threadIdx.x));
+	t1 = SCALAR_MUL(t1, const_value_w);
+	tz = SCALAR_MUL(ty, t1);
+	tw = SCALAR_FMA(tx, t1, tw);
+	atomicAdd((Gik + 1 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 2 * ldX));
+	t2 = SCALAR_LOAD((temp + 11 * blockDim.x + threadIdx.x));
+	t2 = SCALAR_MUL(t2, const_value_w);
+	tz = SCALAR_MUL(ty, t2);
+	tw = SCALAR_FMA(tx, t2, tw);
+	atomicAdd((Gik + 2 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 3 * ldX));
+	t3 = SCALAR_LOAD((temp + 13 * blockDim.x + threadIdx.x));
+	t3 = SCALAR_MUL(t3, const_value_w);
+	tz = SCALAR_MUL(ty, t3);
+	tw = SCALAR_FMA(tx, t3, tw);
+	atomicAdd((Gik + 3 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 4 * ldX));
+	t4 = SCALAR_LOAD((temp + 14 * blockDim.x + threadIdx.x));
+	t4 = SCALAR_MUL(t4, const_value_w);
+	tz = SCALAR_MUL(ty, t4);
+	tw = SCALAR_FMA(tx, t4, tw);
+	atomicAdd((Gik + 4 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 5 * ldX));
+	t5 = SCALAR_LOAD((temp + 15 * blockDim.x + threadIdx.x));
+	t5 = SCALAR_MUL(t5, const_value_w);
+	tz = SCALAR_MUL(ty, t5);
+	tw = SCALAR_FMA(tx, t5, tw);
+	atomicAdd((Gik + 5 * ldG), tz);
+
+	Z_ABp = SCALAR_MUL(Z_ABp, Z_AB); comb_p_k = SCALAR_MUL(comb_p_k * 1, SCALAR_RECIPROCAL(1));
+	const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+	const_value_w = SCALAR_MUL(const_value_v, const_value);
+
+	tx = SCALAR_LOAD((Xik + 0 * ldX));
+	t0 = SCALAR_LOAD((temp + 0 * blockDim.x + threadIdx.x));
+	t0 = SCALAR_MUL(t0, const_value_w);
+	tz = SCALAR_MUL(ty, t0);
+	tw = SCALAR_FMA(tx, t0, tw);
+	atomicAdd((Gik + 0 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 1 * ldX));
+	t1 = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
+	t1 = SCALAR_MUL(t1, const_value_w);
+	tz = SCALAR_MUL(ty, t1);
+	tw = SCALAR_FMA(tx, t1, tw);
+	atomicAdd((Gik + 1 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 2 * ldX));
+	t2 = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
+	t2 = SCALAR_MUL(t2, const_value_w);
+	tz = SCALAR_MUL(ty, t2);
+	tw = SCALAR_FMA(tx, t2, tw);
+	atomicAdd((Gik + 2 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 3 * ldX));
+	t3 = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
+	t3 = SCALAR_MUL(t3, const_value_w);
+	tz = SCALAR_MUL(ty, t3);
+	tw = SCALAR_FMA(tx, t3, tw);
+	atomicAdd((Gik + 3 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 4 * ldX));
+	t4 = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
+	t4 = SCALAR_MUL(t4, const_value_w);
+	tz = SCALAR_MUL(ty, t4);
+	tw = SCALAR_FMA(tx, t4, tw);
+	atomicAdd((Gik + 4 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 5 * ldX));
+	t5 = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
+	t5 = SCALAR_MUL(t5, const_value_w);
+	tz = SCALAR_MUL(ty, t5);
+	tw = SCALAR_FMA(tx, t5, tw);
+	atomicAdd((Gik + 5 * ldG), tz);
+	atomicAdd((Gjk + 2 * ldG), tw);
+  #endif
       }
     }
   }

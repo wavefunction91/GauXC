@@ -17,7 +17,8 @@ namespace XGPU {
 				   int ldG, 
 				   double *weights, 
 				   double *boys_table) {
-    __shared__ double temp[128 * 6];
+    //__shared__ double temp[128 * 6];
+    double temp_0, temp_1, temp_2, temp_3, temp_4, temp_5;
     const auto nprim_pairs = sp->nprim_pairs();
     const auto prim_pairs  = sp->prim_pairs();
     
@@ -28,7 +29,13 @@ namespace XGPU {
 
       size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer);
 
-      for(int i = 0; i < 6; ++i) SCALAR_STORE((temp + i * blockDim.x + threadIdx.x), SCALAR_ZERO());
+      //for(int i = 0; i < 6; ++i) SCALAR_STORE((temp + i * blockDim.x + threadIdx.x), SCALAR_ZERO());
+      temp_0 = SCALAR_ZERO();
+      temp_1 = SCALAR_ZERO();
+      temp_2 = SCALAR_ZERO();
+      temp_3 = SCALAR_ZERO();
+      temp_4 = SCALAR_ZERO();
+      temp_5 = SCALAR_ZERO();
 
       for(int ij = 0; ij < nprim_pairs; ++ij) {
 	double RHO = prim_pairs[ij].gamma;
@@ -81,19 +88,25 @@ namespace XGPU {
 	ty = SCALAR_SET1(0.5 * 1);
 	ty = SCALAR_MUL(ty, RHO_INV);
 	t20 = SCALAR_FMA(tx, ty, t20);
-	tx = SCALAR_LOAD((temp + 0 * blockDim.x + threadIdx.x));
+	//tx = SCALAR_LOAD((temp + 0 * blockDim.x + threadIdx.x));
+  tx = temp_0;
 	tx = SCALAR_ADD(tx, t20);
-	SCALAR_STORE((temp + 0 * blockDim.x + threadIdx.x), tx);
+	//SCALAR_STORE((temp + 0 * blockDim.x + threadIdx.x), tx);
+  temp_0 = tx;
 	t20 = SCALAR_MUL(Y_PA, t10);
 	t20 = SCALAR_FNMA(Y_PC, t11, t20);
-	tx = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
+	//tx = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
+  tx = temp_1;
 	tx = SCALAR_ADD(tx, t20);
-	SCALAR_STORE((temp + 1 * blockDim.x + threadIdx.x), tx);
+	//SCALAR_STORE((temp + 1 * blockDim.x + threadIdx.x), tx);
+  temp_1 = tx;
 	t20 = SCALAR_MUL(Z_PA, t10);
 	t20 = SCALAR_FNMA(Z_PC, t11, t20);
-	tx = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
+	//tx = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
+  tx = temp_2;
 	tx = SCALAR_ADD(tx, t20);
-	SCALAR_STORE((temp + 2 * blockDim.x + threadIdx.x), tx);
+	//SCALAR_STORE((temp + 2 * blockDim.x + threadIdx.x), tx);
+  temp_2 = tx;
 	t10 = SCALAR_MUL(Y_PA, t00);
 	t10 = SCALAR_FNMA(Y_PC, t01, t10);
 	t11 = SCALAR_MUL(Y_PA, t01);
@@ -104,14 +117,18 @@ namespace XGPU {
 	ty = SCALAR_SET1(0.5 * 1);
 	ty = SCALAR_MUL(ty, RHO_INV);
 	t20 = SCALAR_FMA(tx, ty, t20);
-	tx = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
+	//tx = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
+  tx = temp_3;
 	tx = SCALAR_ADD(tx, t20);
-	SCALAR_STORE((temp + 3 * blockDim.x + threadIdx.x), tx);
+	//SCALAR_STORE((temp + 3 * blockDim.x + threadIdx.x), tx);
+  temp_3 = tx;
 	t20 = SCALAR_MUL(Z_PA, t10);
 	t20 = SCALAR_FNMA(Z_PC, t11, t20);
-	tx = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
+	//tx = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
+  tx = temp_4;
 	tx = SCALAR_ADD(tx, t20);
-	SCALAR_STORE((temp + 4 * blockDim.x + threadIdx.x), tx);
+	//SCALAR_STORE((temp + 4 * blockDim.x + threadIdx.x), tx);
+  temp_4 = tx;
 	t10 = SCALAR_MUL(Z_PA, t00);
 	t10 = SCALAR_FNMA(Z_PC, t01, t10);
 	t11 = SCALAR_MUL(Z_PA, t01);
@@ -122,9 +139,11 @@ namespace XGPU {
 	ty = SCALAR_SET1(0.5 * 1);
 	ty = SCALAR_MUL(ty, RHO_INV);
 	t20 = SCALAR_FMA(tx, ty, t20);
-	tx = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
+	//tx = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
+  tx = temp_5;
 	tx = SCALAR_ADD(tx, t20);
-	SCALAR_STORE((temp + 5 * blockDim.x + threadIdx.x), tx);
+	//SCALAR_STORE((temp + 5 * blockDim.x + threadIdx.x), tx);
+  temp_5 = tx;
       }
 
       if(threadIdx.x < npts - p_outer) {
@@ -144,11 +163,13 @@ namespace XGPU {
 	Z_ABp = 1.0; comb_p_k = 1.0;
 	const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
 	const_value_w = SCALAR_MUL(const_value_v, const_value);
+  #if 0
 	tx = SCALAR_LOAD((Xik + 0 * ldX));
 	ty = SCALAR_LOAD((Xjk + 0 * ldX));
 	tz = SCALAR_LOAD((Gik + 0 * ldG));
 	tw = SCALAR_LOAD((Gjk + 0 * ldG));
-	t0 = SCALAR_LOAD((temp + 0 * blockDim.x + threadIdx.x));
+	//t0 = SCALAR_LOAD((temp + 0 * blockDim.x + threadIdx.x));
+	t0 = temp_0;
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_FMA(ty, t0, tz);
 	tw = SCALAR_FMA(tx, t0, tw);
@@ -158,7 +179,8 @@ namespace XGPU {
 	ty = SCALAR_LOAD((Xjk + 0 * ldX));
 	tz = SCALAR_LOAD((Gik + 1 * ldG));
 	tw = SCALAR_LOAD((Gjk + 0 * ldG));
-	t1 = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
+	//t1 = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
+	t1 = temp_1;
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_FMA(ty, t1, tz);
 	tw = SCALAR_FMA(tx, t1, tw);
@@ -168,7 +190,8 @@ namespace XGPU {
 	ty = SCALAR_LOAD((Xjk + 0 * ldX));
 	tz = SCALAR_LOAD((Gik + 2 * ldG));
 	tw = SCALAR_LOAD((Gjk + 0 * ldG));
-	t2 = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
+	//t2 = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
+	t2 = temp_2;
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_FMA(ty, t2, tz);
 	tw = SCALAR_FMA(tx, t2, tw);
@@ -178,7 +201,8 @@ namespace XGPU {
 	ty = SCALAR_LOAD((Xjk + 0 * ldX));
 	tz = SCALAR_LOAD((Gik + 3 * ldG));
 	tw = SCALAR_LOAD((Gjk + 0 * ldG));
-	t3 = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
+	//t3 = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
+	t3 = temp_3;
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_FMA(ty, t3, tz);
 	tw = SCALAR_FMA(tx, t3, tw);
@@ -188,7 +212,8 @@ namespace XGPU {
 	ty = SCALAR_LOAD((Xjk + 0 * ldX));
 	tz = SCALAR_LOAD((Gik + 4 * ldG));
 	tw = SCALAR_LOAD((Gjk + 0 * ldG));
-	t4 = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
+	//t4 = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
+	t4 = temp_4;
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_FMA(ty, t4, tz);
 	tw = SCALAR_FMA(tx, t4, tw);
@@ -198,12 +223,53 @@ namespace XGPU {
 	ty = SCALAR_LOAD((Xjk + 0 * ldX));
 	tz = SCALAR_LOAD((Gik + 5 * ldG));
 	tw = SCALAR_LOAD((Gjk + 0 * ldG));
-	t5 = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
+	//t5 = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
+	t5 = temp_5;
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_FMA(ty, t5, tz);
 	tw = SCALAR_FMA(tx, t5, tw);
 	SCALAR_STORE((Gik + 5 * ldG), tz);
 	SCALAR_STORE((Gjk + 0 * ldG), tw);
+  #else
+	tx = SCALAR_LOAD((Xik + 0 * ldX));
+	ty = SCALAR_LOAD((Xjk + 0 * ldX));
+	t0 = SCALAR_MUL(temp_0, const_value_w);
+	tz = SCALAR_MUL(ty, t0);
+	tw = SCALAR_MUL(tx, t0);
+	atomicAdd((Gik + 0 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 1 * ldX));
+	t1 = SCALAR_MUL(temp_1, const_value_w);
+	tz = SCALAR_MUL(ty, t1);
+	tw = SCALAR_FMA(tx, t1, tw);
+	atomicAdd((Gik + 1 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 2 * ldX));
+	t2 = SCALAR_MUL(temp_2, const_value_w);
+	tz = SCALAR_MUL(ty, t2);
+	tw = SCALAR_FMA(tx, t2, tw);
+	atomicAdd((Gik + 2 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 3 * ldX));
+	t3 = SCALAR_MUL(temp_3, const_value_w);
+	tz = SCALAR_MUL(ty, t3);
+	tw = SCALAR_FMA(tx, t3, tw);
+	atomicAdd((Gik + 3 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 4 * ldX));
+	t4 = SCALAR_MUL(temp_4, const_value_w);
+	tz = SCALAR_MUL(ty, t4);
+	tw = SCALAR_FMA(tx, t4, tw);
+	atomicAdd((Gik + 4 * ldG), tz);
+
+	tx = SCALAR_LOAD((Xik + 5 * ldX));
+	t5 = SCALAR_MUL(temp_5, const_value_w);
+	tz = SCALAR_MUL(ty, t5);
+	tw = SCALAR_FMA(tx, t5, tw);
+	atomicAdd((Gik + 5 * ldG), tz);
+
+	atomicAdd((Gjk + 0 * ldG), tw);
+  #endif
       }
     }
   }
