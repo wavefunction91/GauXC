@@ -588,7 +588,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
   auto& sp_to_task = data->shell_pair_to_task;
   #if 1
-  bool do_batch = false;
+  bool do_batch = true;
 
   if( do_batch ) { // start batched code
 
