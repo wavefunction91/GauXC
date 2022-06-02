@@ -227,19 +227,21 @@ void Scheme1DataBase::pack_and_send(
 
 
     // Shell Pair -> Task
-    shell_pair_to_task.clear();
-    const size_t nsp = (global_dims.nshells*(global_dims.nshells+1))/2;
-    shell_pair_to_task.resize(nsp);
-    for( auto i = 0ul; i < nsp; ++i ) {
-      auto& sptt = shell_pair_to_task[i];
-      sptt.shell_pair_device =
-        this->shell_pair_soa.shell_pair_dev_ptr[i];
-      std::tie(sptt.lA, sptt.lB) =
-        this->shell_pair_soa.shell_pair_ls[i];
-      std::tie(sptt.rA, sptt.rB) =
-        this->shell_pair_soa.shell_pair_centers[i];
-      std::tie(sptt.idx_bra, sptt.idx_ket) =
-        this->shell_pair_soa.shell_pair_shidx[i];
+    if( terms.exx ) {
+      shell_pair_to_task.clear();
+      const size_t nsp = (global_dims.nshells*(global_dims.nshells+1))/2;
+      shell_pair_to_task.resize(nsp);
+      for( auto i = 0ul; i < nsp; ++i ) {
+        auto& sptt = shell_pair_to_task[i];
+        sptt.shell_pair_device =
+          this->shell_pair_soa.shell_pair_dev_ptr[i];
+        std::tie(sptt.lA, sptt.lB) =
+          this->shell_pair_soa.shell_pair_ls[i];
+        std::tie(sptt.rA, sptt.rB) =
+          this->shell_pair_soa.shell_pair_centers[i];
+        std::tie(sptt.idx_bra, sptt.idx_ket) =
+          this->shell_pair_soa.shell_pair_shidx[i];
+      }
     }
 
     for( auto it = task_begin; it != task_end; ++it ) {
@@ -453,6 +455,7 @@ void Scheme1DataBase::pack_and_send(
       }
 #else
       // Sort Shell Pairs by diag + L pairs
+      const size_t nsp = (global_dims.nshells*(global_dims.nshells+1))/2;
       {
         std::vector<int> sp_idx(nsp);
 
