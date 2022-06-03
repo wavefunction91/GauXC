@@ -24,6 +24,7 @@ namespace XGPU {
         GauXC::XCDeviceTask*                device_tasks,
 		    double *boys_table,
         cudaStream_t stream); 
+
   void integral_1_1_shell_batched(
         size_t nsp,
         size_t max_ntask,
@@ -32,7 +33,34 @@ namespace XGPU {
 		    double *boys_table,
         cudaStream_t stream); 
 
+  void integral_2_2_shell_batched(
+        size_t nsp,
+        size_t max_ntask,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream); 
+
+
   void integral_1_0_shell_batched(
+        bool swap,
+        size_t nsp,
+        size_t max_ntask,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream); 
+
+  void integral_2_0_shell_batched(
+        bool swap,
+        size_t nsp,
+        size_t max_ntask,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream); 
+
+  void integral_2_1_shell_batched(
         bool swap,
         size_t nsp,
         size_t max_ntask,
@@ -605,9 +633,14 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       const auto Z_AB = sptt.rA.z - sptt.rB.z;
       if( not( (ish != jsh) and (
         (sptt.lA == 0 and sptt.lB == 0) or
+        (sptt.lA == 1 and sptt.lB == 1) or
+        (sptt.lA == 2 and sptt.lB == 2) or
         (sptt.lA == 1 and sptt.lB == 0) or
         (sptt.lA == 0 and sptt.lB == 1) or
-        (sptt.lA == 1 and sptt.lB == 1) 
+        (sptt.lA == 2 and sptt.lB == 0) or
+        (sptt.lA == 0 and sptt.lB == 2) or
+        (sptt.lA == 2 and sptt.lB == 1) or
+        (sptt.lA == 1 and sptt.lB == 2) 
       ) 
       ) )
       XGPU::compute_integral_shell_pair_batched( ish == jsh, ntask_sp, 
@@ -632,6 +665,13 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       data->aos_stack.device_tasks, dev_boys_table, stream
     );
 
+    XGPU::integral_2_2_shell_batched(
+      data->l_batched_shell_pair_to_task_off_diag[8].nshells_in_batch,
+      data->l_batched_shell_pair_to_task_off_diag[8].ntask_average,
+      data->l_batched_shell_pair_to_task_off_diag[8].shell_pair_to_task_device,
+      data->aos_stack.device_tasks, dev_boys_table, stream
+    );
+
     XGPU::integral_1_0_shell_batched( true,
       data->l_batched_shell_pair_to_task_off_diag[1].nshells_in_batch,
       data->l_batched_shell_pair_to_task_off_diag[1].ntask_average,
@@ -643,6 +683,34 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       data->l_batched_shell_pair_to_task_off_diag[3].nshells_in_batch,
       data->l_batched_shell_pair_to_task_off_diag[3].ntask_average,
       data->l_batched_shell_pair_to_task_off_diag[3].shell_pair_to_task_device,
+      data->aos_stack.device_tasks, dev_boys_table, stream
+    );
+
+    XGPU::integral_2_0_shell_batched( true,
+      data->l_batched_shell_pair_to_task_off_diag[2].nshells_in_batch,
+      data->l_batched_shell_pair_to_task_off_diag[2].ntask_average,
+      data->l_batched_shell_pair_to_task_off_diag[2].shell_pair_to_task_device,
+      data->aos_stack.device_tasks, dev_boys_table, stream
+    );
+
+    XGPU::integral_2_0_shell_batched( false,
+      data->l_batched_shell_pair_to_task_off_diag[6].nshells_in_batch,
+      data->l_batched_shell_pair_to_task_off_diag[6].ntask_average,
+      data->l_batched_shell_pair_to_task_off_diag[6].shell_pair_to_task_device,
+      data->aos_stack.device_tasks, dev_boys_table, stream
+    );
+
+    XGPU::integral_2_1_shell_batched( true,
+      data->l_batched_shell_pair_to_task_off_diag[5].nshells_in_batch,
+      data->l_batched_shell_pair_to_task_off_diag[5].ntask_average,
+      data->l_batched_shell_pair_to_task_off_diag[5].shell_pair_to_task_device,
+      data->aos_stack.device_tasks, dev_boys_table, stream
+    );
+
+    XGPU::integral_2_1_shell_batched( false,
+      data->l_batched_shell_pair_to_task_off_diag[7].nshells_in_batch,
+      data->l_batched_shell_pair_to_task_off_diag[7].ntask_average,
+      data->l_batched_shell_pair_to_task_off_diag[7].shell_pair_to_task_device,
       data->aos_stack.device_tasks, dev_boys_table, stream
     );
 

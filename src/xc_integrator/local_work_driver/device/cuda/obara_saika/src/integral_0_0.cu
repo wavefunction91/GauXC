@@ -5,109 +5,92 @@
 
 namespace XGPU {
   __inline__ __device__ void dev_integral_0_0_driver(size_t npts,
-				   double *points_x,
-				   double *points_y,
-				   double *points_z,
-           shell_pair* sp,
-				   double *Xi,
-				   double *Xj,
+				   const double *points_x,
+				   const double *points_y,
+				   const double *points_z,
+           const shell_pair* sp,
+				   const double *Xi,
+				   const double *Xj,
 				   int ldX,
 				   double *Gi,
 				   double *Gj,
 				   int ldG, 
-				   double *weights, 
-				   double *boys_table) {
-    //__shared__ double temp[128 * 1];
+				   const double *weights, 
+				   const double *boys_table) {
+
     double temp;
-    const auto nprim_pairs = sp->nprim_pairs();
-    const auto prim_pairs  = sp->prim_pairs();
+
+    // Load PrimPairs into shared mem
+    const int nprim_pairs = sp->nprim_pairs();
+    __shared__ GauXC::PrimitivePair<double> prim_pairs[GauXC::detail::nprim_pair_max];
+    if( threadIdx.x < 32 ) {
+      const auto pp = sp->prim_pairs();
+      for(int ij = threadIdx.x; ij < nprim_pairs; ij += 32) {
+        prim_pairs[ij] = pp[ij];
+      }
+    }
+    __syncthreads();
     
     for(size_t p_outer = blockIdx.x * blockDim.x; p_outer < npts; p_outer += gridDim.x * blockDim.x) {
-      double *_point_outer_x = (points_x + p_outer);
-      double *_point_outer_y = (points_y + p_outer);
-      double *_point_outer_z = (points_z + p_outer);
+      const double * __restrict__ _point_outer_x = (points_x + p_outer);
+      const double * __restrict__ _point_outer_y = (points_y + p_outer);
+      const double * __restrict__ _point_outer_z = (points_z + p_outer);
 
       size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer);
 
-      //for(int i = 0; i < 1; ++i) SCALAR_STORE((temp + i * blockDim.x + threadIdx.x), SCALAR_ZERO());
       temp = SCALAR_ZERO();
+	    const SCALAR_TYPE xC = SCALAR_LOAD((_point_outer_x + p_inner));
+	    const SCALAR_TYPE yC = SCALAR_LOAD((_point_outer_y + p_inner));
+	    const SCALAR_TYPE zC = SCALAR_LOAD((_point_outer_z + p_inner));
 
       for(int ij = 0; ij < nprim_pairs; ++ij) {
-	double RHO = prim_pairs[ij].gamma;
-
-	double xP = prim_pairs[ij].P.x;
-	double yP = prim_pairs[ij].P.y;
-	double zP = prim_pairs[ij].P.z;
-
-	double eval = prim_pairs[ij].K_coeff_prod;
-
-	// Evaluate T Values
-	SCALAR_TYPE xC = SCALAR_LOAD((_point_outer_x + p_inner));
-	SCALAR_TYPE yC = SCALAR_LOAD((_point_outer_y + p_inner));
-	SCALAR_TYPE zC = SCALAR_LOAD((_point_outer_z + p_inner));
-
-	SCALAR_TYPE X_PC = SCALAR_SUB(xP, xC);
-	SCALAR_TYPE Y_PC = SCALAR_SUB(yP, yC);
-	SCALAR_TYPE Z_PC = SCALAR_SUB(zP, zC);
-
-	SCALAR_TYPE TVAL = SCALAR_MUL(X_PC, X_PC);
-	TVAL = SCALAR_FMA(Y_PC, Y_PC, TVAL);
-	TVAL = SCALAR_FMA(Z_PC, Z_PC, TVAL);
-	TVAL = SCALAR_MUL(RHO, TVAL);
-
-	SCALAR_TYPE t00, TVAL_inv_e;
-
-	// Evaluate Boys function
-	boys_element<0>(&TVAL, &TVAL_inv_e, &t00, boys_table);
-
-	// Evaluate VRR Buffer
-	SCALAR_TYPE tx;
-
-
-	t00 = SCALAR_MUL(eval, t00);
-	//tx = SCALAR_LOAD((temp + 0 * blockDim.x + threadIdx.x));
-	tx = temp;
-	tx = SCALAR_ADD(tx, t00);
-	//SCALAR_STORE((temp + 0 * blockDim.x + threadIdx.x), tx);
-  temp = tx;
+        double RHO = prim_pairs[ij].gamma;
+      
+        double xP = prim_pairs[ij].P.x;
+        double yP = prim_pairs[ij].P.y;
+        double zP = prim_pairs[ij].P.z;
+      
+        double eval = prim_pairs[ij].K_coeff_prod;
+      
+        // Evaluate T Values
+        const SCALAR_TYPE X_PC = SCALAR_SUB(xP, xC);
+        const SCALAR_TYPE Y_PC = SCALAR_SUB(yP, yC);
+        const SCALAR_TYPE Z_PC = SCALAR_SUB(zP, zC);
+      
+        SCALAR_TYPE TVAL = SCALAR_MUL(X_PC, X_PC);
+        TVAL = SCALAR_FMA(Y_PC, Y_PC, TVAL);
+        TVAL = SCALAR_FMA(Z_PC, Z_PC, TVAL);
+        TVAL = SCALAR_MUL(RHO, TVAL);
+      
+        // Evaluate VRR Buffer
+        const SCALAR_TYPE t00 = boys_element_0(TVAL);
+        temp = SCALAR_FMA( eval, t00, temp );
       }
 
       if(threadIdx.x < npts - p_outer) {
-	double *Xik = (Xi + p_outer + p_inner);
-	double *Xjk = (Xj + p_outer + p_inner);
-	double *Gik = (Gi + p_outer + p_inner);
-	double *Gjk = (Gj + p_outer + p_inner);
-
-	SCALAR_TYPE const_value_v = SCALAR_LOAD((weights + p_outer + p_inner));
-
-	double const_value, X_ABp, Y_ABp, Z_ABp, comb_m_i, comb_n_j, comb_p_k;
-	SCALAR_TYPE const_value_w;
-	SCALAR_TYPE tx, ty, tz, tw, t0;
-
-	X_ABp = 1.0; comb_m_i = 1.0;
-	Y_ABp = 1.0; comb_n_j = 1.0;
-	Z_ABp = 1.0; comb_p_k = 1.0;
-	const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
-	const_value_w = SCALAR_MUL(const_value_v, const_value);
-	tx = SCALAR_LOAD((Xik + 0 * ldX));
-	ty = SCALAR_LOAD((Xjk + 0 * ldX));
-  #if 0
-	tz = SCALAR_LOAD((Gik + 0 * ldG));
-	tw = SCALAR_LOAD((Gjk + 0 * ldG));
-	//t0 = SCALAR_LOAD((temp + 0 * blockDim.x + threadIdx.x));
-  t0 = temp;
-	t0 = SCALAR_MUL(t0, const_value_w);
-	tz = SCALAR_FMA(ty, t0, tz);
-	tw = SCALAR_FMA(tx, t0, tw);
-	SCALAR_STORE((Gik + 0 * ldG), tz);
-	SCALAR_STORE((Gjk + 0 * ldG), tw);
-  #else
-	t0 = SCALAR_MUL(temp, const_value_w);
-	tz = SCALAR_MUL(ty, t0);
-	tw = SCALAR_MUL(tx, t0);
-  atomicAdd(Gik, tz);
-  atomicAdd(Gjk, tw);
-  #endif
+        const double * __restrict__ Xik = (Xi + p_outer + p_inner);
+        const double * __restrict__ Xjk = (Xj + p_outer + p_inner);
+        double * __restrict__ Gik = (Gi + p_outer + p_inner);
+        double * __restrict__ Gjk = (Gj + p_outer + p_inner);
+      
+        SCALAR_TYPE const_value_v = SCALAR_LOAD((weights + p_outer + p_inner));
+      
+        double const_value, X_ABp, Y_ABp, Z_ABp, comb_m_i, comb_n_j, comb_p_k;
+        SCALAR_TYPE const_value_w;
+        SCALAR_TYPE tx, ty, tz, tw, t0;
+      
+        X_ABp = 1.0; comb_m_i = 1.0;
+        Y_ABp = 1.0; comb_n_j = 1.0;
+        Z_ABp = 1.0; comb_p_k = 1.0;
+        const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+        const_value_w = SCALAR_MUL(const_value_v, const_value);
+        tx = SCALAR_LOAD(Xik);
+        ty = SCALAR_LOAD(Xjk);
+        t0 = SCALAR_MUL(temp, const_value_w);
+        tz = SCALAR_MUL(ty, t0);
+        tw = SCALAR_MUL(tx, t0);
+        atomicAdd(Gik, tz);
+        atomicAdd(Gjk, tw);
       }
     }
   }
@@ -222,6 +205,70 @@ namespace XGPU {
     dev_integral_0_0_batched<<<nblocks,nthreads,0,stream>>>(
       sp2task, device_tasks, boys_table );
 
+  }
+
+
+
+
+
+  __inline__ __device__ void dev_integral_0_0_soa_batched_driver(
+           int32_t                         ntask,
+           const int32_t*                  sp2task_idx_device,
+           const int32_t*                  sp2task_shell_off_row_device,
+           const int32_t*                  sp2task_shell_off_col_device,
+           const GauXC::ShellPair<double>* shell_pair_device,
+           const int32_t*                  task_npts,
+           const double**                  task_points_x,
+           const double**                  task_points_y,
+           const double**                  task_points_z,
+           const double**                  task_weights,
+           const double**                  task_fmat,
+           double**                        task_gmat,
+				   double *                        boys_table) {
+
+    for( int i_task = blockIdx.y; i_task < ntask; i_task += gridDim.y ) {
+    
+      const auto iT   = sp2task_idx_device[i_task];
+      const auto npts = task_npts[iT];
+
+      const auto  i_off = sp2task_shell_off_row_device[i_task] * npts;
+      const auto  j_off = sp2task_shell_off_col_device[i_task] * npts;
+
+      dev_integral_0_0_driver( 
+        npts,
+        task_points_x[iT],
+        task_points_y[iT],
+        task_points_z[iT],
+        shell_pair_device,
+        task_fmat[iT] + i_off,
+        task_fmat[iT] + j_off,
+        npts,
+        task_gmat[iT] + i_off,
+        task_gmat[iT] + j_off,
+        npts,
+        task_weights[iT], boys_table );
+    }
+
+  }
+
+  __global__ void dev_integral_0_0_soa_batched(
+           int32_t                         ntask,
+           const int32_t*                  sp2task_idx_device,
+           const int32_t*                  sp2task_shell_off_row_device,
+           const int32_t*                  sp2task_shell_off_col_device,
+           const GauXC::ShellPair<double>* shell_pair_device,
+           const int32_t*                  task_npts,
+           const double**                   task_points_x,
+           const double**                   task_points_y,
+           const double**                   task_points_z,
+           const double**                   task_weights,
+           const double**                   task_fmat,
+           double**                         task_gmat,
+				   double *boys_table) {
+    dev_integral_0_0_soa_batched_driver( ntask, sp2task_idx_device, 
+      sp2task_shell_off_row_device, sp2task_shell_off_col_device, shell_pair_device,
+      task_npts, task_points_x, task_points_y, task_points_z, task_weights,
+      task_fmat, task_gmat, boys_table );
   }
 
 

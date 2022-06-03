@@ -55,6 +55,77 @@ namespace XGPU {
       *(eval) = _val;
     }
   }
+
+  __device__ __inline__ double boys_element_0( double T ) {
+  #if 0
+    if( T < DEFAULT_MAX_T ) {
+      const double sqrt_t = std::sqrt(T);
+      const double inv_sqrt_t = 1.0 / sqrt_t;
+      return 0.88622692545275801364 * std::erf(sqrt_t) * inv_sqrt_t;
+    } else {
+      return 0.88622692545275801364 * rsqrt(T);
+    }
+  #else
+    if( T > 26.0 ) {
+      return 0.88622692545275801364 * rsqrt(T);
+    } else if( T < 13.0 ) {
+      const auto exp_t = exp( - T * 0.33333333333333333333 );
+
+      double b =  4.014103057876808e-23;
+      b = fma( T, b, -5.822235306869006e-21 );
+      b = fma( T, b,  4.093796011592500e-19 );
+      b = fma( T, b, -1.869382772172656e-17 );
+      b = fma( T, b,  6.338163538927402e-16 );
+      b = fma( T, b, -1.721896819094452e-14 );
+      b = fma( T, b,  3.984232174194261e-13 );
+      b = fma( T, b, -8.072677948936458e-12 );
+      b = fma( T, b,  1.489767929273334e-10 );
+      b = fma( T, b, -2.441928489146782e-09 );
+      b = fma( T, b,  3.780445468547986e-08 );
+      b = fma( T, b, -4.872128794416657e-07 );
+      b = fma( T, b,  6.455920003140367e-06 );
+      b = fma( T, b, -5.700739807688489e-05 );
+      b = fma( T, b,  7.054673174084430e-04 );
+      b = fma( T, b, -2.821869460954601e-03 );
+      b = fma( T, b,  4.444444443709288e-02 );
+      b = fma( T, b,  7.778049953252520e-13 );
+      b = fma( T, b,  9.999999999999863e-01 );
+      return b * exp_t;
+
+    } else {
+    #if 0
+      const double sqrt_t = std::sqrt(T);
+      const double inv_sqrt_t = 1.0 / sqrt_t;
+      return 0.88622692545275801364 * std::erf(sqrt_t) * inv_sqrt_t;
+    #else
+      const auto exp_t = exp( - T * 0.33333333333333333333 );
+
+      double b = 1.153599464241947e-26;
+      b = fma( T, b, -4.025061230220665e-24);
+      b = fma( T, b,  6.845330692919496e-22);
+      b = fma( T, b, -7.455104439417363e-20);
+      b = fma( T, b,  5.806227138295288e-18);
+      b = fma( T, b, -3.426510194853584e-16);
+      b = fma( T, b,  1.587043680665803e-14);
+      b = fma( T, b, -5.898342915599428e-13);
+      b = fma( T, b,  1.785040325720807e-11);
+      b = fma( T, b, -4.437916159483046e-10);
+      b = fma( T, b,  9.111870867088944e-09);
+      b = fma( T, b, -1.546337818112499e-07);
+      b = fma( T, b,  2.167268088592726e-06);
+      b = fma( T, b, -2.490299656562666e-05);
+      b = fma( T, b,  2.335812755969758e-04);
+      b = fma( T, b, -1.744532113923084e-03);
+      b = fma( T, b,  1.048354410615184e-02);
+      b = fma( T, b, -4.539934464926983e-02);
+      b = fma( T, b,  1.754968961724573e-01);
+      b = fma( T, b, -2.542050397037139e-01);
+      b = fma( T, b,  1.233675832421592e+00);
+      return b * exp_t;
+    #endif
+    }
+  #endif
+  }
 }
 
 #define SCALAR_TYPE double
