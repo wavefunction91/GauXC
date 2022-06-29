@@ -2,18 +2,12 @@
 #include <gauxc/util/div_ceil.hpp>
 #include "device_specific/cuda_util.hpp"
 
-//#include <thrust/host_vector.h>
-//#include <thrust/system/cuda/experimental/pinned_allocator.h>
-
 #include "cuda_collision_detection.hpp"
 
 using namespace GauXC::load_balancer::cuda;
 
 namespace GauXC {
 namespace detail {
-
-//template <typename T>
-//using pinned_vector = thrust::host_vector<T, thrust::cuda::experimental::pinned_allocator<T>>;
 
 template <typename T>
 struct pinned_allocator {
