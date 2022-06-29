@@ -78,6 +78,16 @@ inline T* cuda_malloc( size_t n ) {
   return ptr;
 }
 
+template <typename T>
+inline T* cuda_malloc_host( size_t n ) {
+
+  T* ptr;
+  auto stat = cudaMallocHost( (void**)&ptr, n * sizeof(T) );
+  GAUXC_CUDA_ERROR( "CUDA Malloc Host Failed", stat );
+
+  return ptr;
+}
+
 
 
 
@@ -96,6 +106,18 @@ inline void cuda_free( T*& ptr, Args&&... args ) {
   cuda_free(std::forward<Args>(args)...);
 }
 
+template <typename T>
+inline void cuda_free_host( T*& ptr ) {
+  auto stat = cudaFreeHost( (void*)ptr );
+  //GAUXC_CUDA_ERROR( "CUDA Free Host Failed", stat );
+  ptr = nullptr;
+}
+
+template <typename T, typename... Args>
+inline void cuda_free_host( T*& ptr, Args&&... args ) {
+  cuda_free_host(ptr);
+  cuda_free_host(std::forward<Args>(args)...);
+}
 
 
 
