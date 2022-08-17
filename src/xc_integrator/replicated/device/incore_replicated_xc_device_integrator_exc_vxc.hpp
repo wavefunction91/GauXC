@@ -51,7 +51,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     });
 
     this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
-      MPI_Barrier(this->load_balancer_->comm());
+      MPI_Barrier(this->load_balancer_->runtime().comm());
     });  
 
     // Reduce results in device memory
@@ -81,7 +81,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     });
 
     this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
-      MPI_Barrier(this->load_balancer_->comm());
+      MPI_Barrier(this->load_balancer_->runtime().comm());
     });  
 
     // Reduce Results in host mem

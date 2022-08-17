@@ -8,15 +8,13 @@ class ReductionDriverImpl {
 
 protected: 
 
-  GAUXC_MPI_CODE( MPI_Comm comm_; )
+  const RuntimeEnvironment& runtime_;
 
 public:
 
-  #ifdef GAUXC_ENABLE_MPI
   ReductionDriverImpl() = delete;
-  #endif
+  ReductionDriverImpl( const RuntimeEnvironment& rt);
 
-  ReductionDriverImpl( GAUXC_MPI_CODE(MPI_Comm comm) );
   virtual ~ReductionDriverImpl() noexcept;
   ReductionDriverImpl( const ReductionDriverImpl& );
 
@@ -25,10 +23,6 @@ public:
 
   virtual bool takes_host_memory() const = 0;
   virtual bool takes_device_memory() const = 0;
-
-#ifdef GAUXC_ENABLE_MPI
-  MPI_Comm comm() const;
-#endif
 
   virtual std::unique_ptr<ReductionDriverImpl> clone() = 0;
 };

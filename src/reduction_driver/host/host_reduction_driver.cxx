@@ -2,8 +2,8 @@
 
 namespace GauXC {
 
-HostReductionDriver::HostReductionDriver(GAUXC_MPI_CODE(MPI_Comm comm)) :
-  detail::ReductionDriverImpl(GAUXC_MPI_CODE(comm)) { }
+HostReductionDriver::HostReductionDriver(const RuntimeEnvironment& rt) :
+  detail::ReductionDriverImpl(rt) { }
 
 
 HostReductionDriver::~HostReductionDriver() noexcept = default;

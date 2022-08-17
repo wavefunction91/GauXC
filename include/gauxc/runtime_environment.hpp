@@ -22,7 +22,7 @@ protected:
 
 public:
 
-  RuntimeEnvironment(GAUXC_MPI_CODE(MPI_Comm comm));
+  explicit RuntimeEnvironment(GAUXC_MPI_CODE(MPI_Comm comm));
   virtual ~RuntimeEnvironment() noexcept;
 
   RuntimeEnvironment( const RuntimeEnvironment& ) = delete;

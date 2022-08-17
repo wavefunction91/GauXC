@@ -13,7 +13,7 @@
 namespace GauXC {
 
 std::shared_ptr<ReductionDriver> ReductionDriverFactory::get_shared_instance(
-  GAUXC_MPI_CODE(MPI_Comm comm,) std::string kernel_name ) {
+  const RuntimeEnvironment& rt, std::string kernel_name ) {
 
   std::transform(kernel_name.begin(), kernel_name.end(), 
     kernel_name.begin(), ::toupper );
@@ -23,11 +23,11 @@ std::shared_ptr<ReductionDriver> ReductionDriverFactory::get_shared_instance(
   if( kernel_name == "DEFAULT" ) kernel_name = "BASICMPI";
 
   if( kernel_name == "BASICMPI" )
-    ptr = std::make_unique<BasicMPIReductionDriver>(GAUXC_MPI_CODE(comm));
+    ptr = std::make_unique<BasicMPIReductionDriver>(rt);
 
   #ifdef GAUXC_ENABLE_NCCL
     if( kernel_name == "NCCL" )
-      ptr = std::make_unique<NCCLReductionDriver>(GAUXC_MPI_CODE(comm));
+      ptr = std::make_unique<NCCLReductionDriver>(rt);
   #endif
 
   if( !ptr ) GAUXC_GENERIC_EXCEPTION("Unknown Reduction Driver " + kernel_name);

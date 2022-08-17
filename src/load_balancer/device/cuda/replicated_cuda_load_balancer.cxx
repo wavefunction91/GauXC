@@ -65,16 +65,8 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   const int32_t n_deriv = 1;
   const size_t atBatchSz = 256;
 
-  int32_t world_rank;
-  int32_t world_size;
-
-#ifdef GAUXC_ENABLE_MPI
-  MPI_Comm_rank( comm_, &world_rank );
-  MPI_Comm_size( comm_, &world_size );
-#else
-  world_rank = 0;
-  world_size = 1;
-#endif
+  int32_t world_rank = runtime_.comm_rank();
+  int32_t world_size = runtime_.comm_size();
 
   std::vector< XCTask > local_work;
   std::vector<size_t> global_workload( world_size, 0 );   

@@ -46,7 +46,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     });
 
     this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
-      MPI_Barrier(this->load_balancer_->comm());
+      MPI_Barrier(this->load_balancer_->runtime().comm());
     });  
 
     this->timer_.time_op("XCIntegrator.Allreduce", [&](){

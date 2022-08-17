@@ -42,7 +42,7 @@ struct NCCLReductionDriver : public DeviceReductionDriver {
 
   std::shared_ptr<util::nccl_comm> nccl_comm_;
 
-  NCCLReductionDriver(GAUXC_MPI_CODE(MPI_Comm comm));
+  NCCLReductionDriver(const RuntimeEnvironment& rt);
   virtual ~NCCLReductionDriver() noexcept;
   NCCLReductionDriver(const NCCLReductionDriver& );
 

@@ -5,10 +5,7 @@
 #include <gauxc/basisset.hpp>
 #include <gauxc/xc_task.hpp>
 #include <gauxc/util/timer.hpp>
-
-#ifdef GAUXC_ENABLE_MPI
-#include <mpi.h>
-#endif
+#include <gauxc/runtime_environment.hpp>
 
 namespace GauXC {
 
@@ -50,12 +47,9 @@ public:
   const Molecule& molecule() const;
   const MolMeta&  molmeta()  const;
   const basis_type& basis()  const;
+  const RuntimeEnvironment& runtime() const;
   
   LoadBalancerState& state();
-
-#ifdef GAUXC_ENABLE_MPI
-  MPI_Comm comm() const;
-#endif
 
 };
 
@@ -69,11 +63,11 @@ public:
 
   LoadBalancerFactory( ExecutionSpace ex, std::string kernel_name );
 
-  LoadBalancer get_instance( GAUXC_MPI_CODE(MPI_Comm comm,) 
+  LoadBalancer get_instance( const RuntimeEnvironment& rt, 
     const Molecule& mol, const MolGrid& mg, const BasisSet<double>&,
     size_t pad_val = 1 );
   std::shared_ptr<LoadBalancer> get_shared_instance( 
-    GAUXC_MPI_CODE(MPI_Comm comm,) 
+    const RuntimeEnvironment& rt,
     const Molecule& mol, const MolGrid& mg, const BasisSet<double>&,
     size_t pad_val = 1 );
 

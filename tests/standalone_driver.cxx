@@ -186,8 +186,7 @@ int main(int argc, char** argv) {
     //LoadBalancerFactory lb_factory(ExecutionSpace::Device, "Default");
     //LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Replicated-FillIn");
     LoadBalancerFactory lb_factory( lb_exec_space, "Replicated");
-    auto lb = lb_factory.get_shared_instance( GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, 
-      mg, basis);
+    auto lb = lb_factory.get_shared_instance( host_runtime, mol, mg, basis);
 
     if(0){
       auto& tasks = lb->get_tasks();

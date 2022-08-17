@@ -43,7 +43,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   #ifdef GAUXC_ENABLE_MPI
   this->timer_.time_op("XCIntegrator.LocalWait", [&](){
-    MPI_Barrier( this->load_balancer_->comm() );
+    MPI_Barrier( this->load_balancer_->runtime().comm() );
   });
   #endif
 
@@ -322,7 +322,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   int world_rank = 0;
   #ifdef GAUXC_ENABLE_MPI
-  auto comm = this->load_balancer_->comm();
+  auto comm = this->load_balancer_->runtime().comm();
   MPI_Comm_rank( comm, &world_rank );
   #endif
   if( !world_rank ) {

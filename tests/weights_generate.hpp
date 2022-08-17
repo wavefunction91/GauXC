@@ -30,9 +30,10 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
                                 std::ofstream& out_file, size_t ntask_save = 15 ) {
 
 
+  RuntimeEnvironment rt(MPI_COMM_WORLD);
   MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
-  auto lb = lb_factory.get_instance(GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, mg, basis);
+  auto lb = lb_factory.get_instance(rt, mol, mg, basis);
   auto& tasks = lb.get_tasks();
 
   ref_weights_data   ref_data;
