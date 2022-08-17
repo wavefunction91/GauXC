@@ -45,6 +45,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
         tasks.end(), *device_data_ptr );
     });
 
+    this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
+      MPI_Barrier(this->load_balancer_->comm());
+    });  
+
     this->timer_.time_op("XCIntegrator.Allreduce", [&](){
       this->reduction_driver_->allreduce_inplace( EXC_GRAD, 3*natoms, 
         ReductionOp::Sum );

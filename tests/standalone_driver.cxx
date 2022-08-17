@@ -2,6 +2,7 @@
 #include <gauxc/xc_integrator/impl.hpp>
 #include <gauxc/xc_integrator/integrator_factory.hpp>
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/runtime_environment.hpp>
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
@@ -16,6 +17,7 @@ using namespace ExchCXX;
 
 int main(int argc, char** argv) {
 
+#if 0
 #ifdef GAUXC_ENABLE_MPI
   MPI_Init( NULL, NULL );
   int world_rank, world_size;
@@ -25,7 +27,17 @@ int main(int argc, char** argv) {
   int world_rank = 0;
   int world_size = 1;
 #endif
+#else
+#ifdef GAUXC_ENABLE_MPI
+  MPI_Init( NULL, NULL );
+#endif
+#endif
   {
+
+    // Set up runtimes
+    RuntimeEnvironment host_runtime(GAUXC_MPI_CODE(MPI_COMM_WORLD));
+    auto world_rank = host_runtime.comm_rank();
+    auto world_size = host_runtime.comm_size();
 
     std::vector< std::string > opts( argc );
     for( int i = 0; i < argc; ++i ) opts[i] = argv[i];
@@ -124,12 +136,17 @@ int main(int argc, char** argv) {
     if( input.containsData("EXX.TOL_K") )
       sn_link_settings.k_tol = input.getData<double>("EXX.TOL_K");
 
+
+
+
+
     // Read Molecule
     Molecule mol;
     read_hdf5_record( mol, ref_file, "/MOLECULE" );
     //std::cout << "Molecule" << std::endl;
     //for( auto x : mol ) {
-    //  std::cout << x.Z.get() << ", " << x.x << ", " << x.y << ", " << x.z << std::endl;
+    //  std::cout << x.Z.get() << ", " 
+    //    << x.x << ", " << x.y << ", " << x.z << std::endl;
     //}
 
     // Construct MolGrid / MolMeta
