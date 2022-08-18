@@ -42,7 +42,6 @@ struct Scheme1DataBase : public XCDeviceAoSData {
   std::vector<AngularMomentumShellToTaskBatch> l_batched_shell_to_task;
 
   virtual ~Scheme1DataBase() noexcept;
-  //Scheme1DataBase(std::unique_ptr<DeviceBackend>&& ptr);
   Scheme1DataBase(const DeviceRuntimeEnvironment& rt);
 
   // Final overrides

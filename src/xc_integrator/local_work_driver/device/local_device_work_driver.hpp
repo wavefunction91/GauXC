@@ -7,13 +7,9 @@
 #include <gauxc/xc_task.hpp>
 
 #include "device/xc_device_data.hpp"
+#include <gauxc/runtime_environment/fwd.hpp>
 
 namespace GauXC {
-
-// Fwd decl runtime
-class DeviceRuntimeEnvironment;
-
-
 namespace detail {
 
 struct LocalDeviceWorkDriverPIMPL;
