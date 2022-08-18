@@ -35,7 +35,8 @@ int main(int argc, char** argv) {
   {
 
     // Set up runtimes
-    RuntimeEnvironment host_runtime(GAUXC_MPI_CODE(MPI_COMM_WORLD));
+    //RuntimeEnvironment host_runtime(GAUXC_MPI_CODE(MPI_COMM_WORLD));
+    DeviceRuntimeEnvironment host_runtime( GAUXC_MPI_CODE(MPI_COMM_WORLD), 0.9 );
     auto world_rank = host_runtime.comm_rank();
     auto world_size = host_runtime.comm_size();
 

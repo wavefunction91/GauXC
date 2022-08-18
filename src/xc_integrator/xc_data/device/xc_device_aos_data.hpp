@@ -58,8 +58,10 @@ struct XCDeviceAoSData : public XCDeviceStackData {
 
 
   XCDeviceAoSData() = delete;
-  inline XCDeviceAoSData( std::unique_ptr<DeviceBackend>&& ptr ) :
-    XCDeviceStackData( std::move(ptr) ) { }
+  //inline XCDeviceAoSData( std::unique_ptr<DeviceBackend>&& ptr ) :
+  //  XCDeviceStackData( std::move(ptr) ) { }
+  inline XCDeviceAoSData( const DeviceRuntimeEnvironment& rt ) :
+    XCDeviceStackData( rt ) { }
 
   // Make it polymorphic
   virtual ~XCDeviceAoSData() noexcept = default;

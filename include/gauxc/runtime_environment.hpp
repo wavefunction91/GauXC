@@ -35,6 +35,8 @@ public:
 };
 
 #ifdef GAUXC_ENABLE_DEVICE
+
+class DeviceBackend;
 class DeviceRuntimeEnvironment : public RuntimeEnvironment {
 
 private:
@@ -47,14 +49,15 @@ public:
 
   DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_Comm comm,) void* mem, 
     size_t mem_sz);
-  DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_Comm));
+  DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_Comm), double fill_fraction);
 
   ~DeviceRuntimeEnvironment() noexcept;
   DeviceRuntimeEnvironment( const DeviceRuntimeEnvironment& ) = delete;
   DeviceRuntimeEnvironment( DeviceRuntimeEnvironment&& ) noexcept;
 
-  void* device_memory();
-  size_t device_memory_size();
+  void* device_memory() const ;
+  size_t device_memory_size() const ;
+  DeviceBackend* device_backend() const;
 
 };
 #endif

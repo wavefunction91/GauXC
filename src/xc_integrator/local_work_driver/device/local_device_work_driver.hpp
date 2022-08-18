@@ -9,6 +9,11 @@
 #include "device/xc_device_data.hpp"
 
 namespace GauXC {
+
+// Fwd decl runtime
+class DeviceRuntimeEnvironment;
+
+
 namespace detail {
 
 struct LocalDeviceWorkDriverPIMPL;
@@ -69,7 +74,7 @@ public:
 
   void symmetrize_vxc( XCDeviceData* );
 
-  std::unique_ptr<XCDeviceData> create_device_data();
+  std::unique_ptr<XCDeviceData> create_device_data(const DeviceRuntimeEnvironment&);
 
 private: 
 

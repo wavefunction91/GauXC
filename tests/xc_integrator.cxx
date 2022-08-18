@@ -101,7 +101,8 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
 void test_integrator(std::string reference_file, ExchCXX::Functional func) {
 
-  RuntimeEnvironment rt(MPI_COMM_WORLD);
+  //RuntimeEnvironment rt(MPI_COMM_WORLD);
+  DeviceRuntimeEnvironment rt(MPI_COMM_WORLD, 0.9);
 
 #ifdef GAUXC_ENABLE_HOST
   SECTION( "Host" ) {

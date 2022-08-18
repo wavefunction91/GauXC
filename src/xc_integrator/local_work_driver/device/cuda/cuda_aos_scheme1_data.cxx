@@ -8,9 +8,15 @@ namespace GauXC {
 template <typename Base>
 CudaAoSScheme1<Base>::Data::~Data() noexcept = default;
 
+#if 0
 template <typename Base>
 CudaAoSScheme1<Base>::Data::Data() :
   Base::Data( std::make_unique<CUDABackend>() ) { }
+#else
+template <typename Base>
+CudaAoSScheme1<Base>::Data::Data(const DeviceRuntimeEnvironment& rt) :
+  Base::Data( rt ) { }
+#endif
 
 template <typename Base>
 size_t CudaAoSScheme1<Base>::Data::get_ldatoms() {

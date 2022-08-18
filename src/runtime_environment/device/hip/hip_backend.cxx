@@ -103,4 +103,7 @@ void HIPBackend::copy_async_2d_( size_t M, size_t N, const void* A, size_t LDA,
   GAUXC_HIP_ERROR( "HIP 2D Memcpy Async Failed ["+msg+"]", stat );
 }
 
+std::unique_ptr<DeviceBackend> make_device_backend() {
+  return std::make_unique<HIPBackend>();
+}
 }
