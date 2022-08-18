@@ -34,9 +34,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Allocate Device memory
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
   auto& rt  = dynamic_cast<const DeviceRuntimeEnvironment&>(this->load_balancer_->runtime());
-  auto device_data_ptr = 
-    this->timer_.time_op("XCIntegrator.DeviceAlloc",
-      [&](){ return lwd->create_device_data(rt); });
+  auto device_data_ptr = lwd->create_device_data(rt);
 
 
   // Temporary electron count to judge integrator accuracy
@@ -126,122 +124,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   std::sort( task_begin, task_end, task_comparator );
 
 
-#if 0
-  // Allocate static data on the stack
-  const auto natoms  = mol.natoms();
-  const auto nbf     = basis.nbf();
-  const auto nshells = basis.nshells();
-  //device_data.allocate_static_data( natoms, nbf, nshells );
-  device_data.allocate_static_data_weights( natoms );
-  device_data.allocate_static_data_exc_vxc( nbf, nshells );
-
-  // Copy static data to device
-  //device_data.send_static_data( P, ldp, basis, mol, meta );
-  device_data.send_static_data_weights( mol, meta );
-  device_data.send_static_data_density_basis( P, ldp, basis );
-
-  // Zero integrands
-  device_data.zero_exc_vxc_integrands();
-
-  integrator_term_tracker enabled_terms;
-  enabled_terms.weights = true;
-  enabled_terms.exc_vxc = true;
-
+  // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
-
-  // Processes batches in groups that saturadate available device memory
-  auto task_it = task_begin;
-  while( task_it != task_end ) {
-
-    // Determine next task batch, send relevant data to device
-    auto task_batch_end = 
-      device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
-
-    /*** Process the batches ***/
-
-    // Apply partition weights
-    if( not lb_state.modified_weights_are_stored ) {
-      lwd->partition_weights( &device_data );
-      // Copy back to host data
-      device_data.copy_weights_to_tasks( task_it, task_batch_end );
-    }
-
-    task_it = task_batch_end; // Update iterator
-
-
-    // Evaluate collocation
-    if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
-    else                lwd->eval_collocation( &device_data );
-
-    // Evaluate X matrix
-    lwd->eval_xmat( &device_data );
-
-    // Evaluate U/V variables
-    if( func.is_gga() ) lwd->eval_uvvar_gga( &device_data );
-    else                lwd->eval_uvvar_lda( &device_data );
-
-    // Evaluate XC functional
-    if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );
-    else                lwd->eval_kern_exc_vxc_lda( func, &device_data );
-
-    // Do scalar EXC/N_EL integrations
-    lwd->inc_exc( &device_data );
-    lwd->inc_nel( &device_data );
-
-    // Evaluate Z matrix
-    if( func.is_gga() ) lwd->eval_zmat_gga_vxc( &device_data );
-    else                lwd->eval_zmat_gga_vxc( &device_data );
-
-    // Increment VXC (LT)
-    lwd->inc_vxc( &device_data );
-
-  } // Loop over batches of batches 
-
-  lb_state.modified_weights_are_stored = true;
-
-  // Symmetrize VXC in device memory
-  lwd->symmetrize_vxc( &device_data );
-#else
-
-
-  // TODO: Refactor this into separate function
-  auto& lb_state = this->load_balancer_->state();
-
-  // Modify weights if need be
   if( not lb_state.modified_weights_are_stored ) {
-
-  integrator_term_tracker enabled_terms;
-  enabled_terms.weights = true;
-
-  this->timer_.time_op("XCIntegrator.Weights", [&]() { 
-    const auto natoms = mol.natoms();
-    device_data.reset_allocations();
-    device_data.allocate_static_data_weights( natoms );
-    device_data.send_static_data_weights( mol, meta );
-
-    // Processes batches in groups that saturadate available device memory
-    auto task_it = task_begin;
-    while( task_it != task_end ) {
-      
-      // Determine next task batch, send relevant data to device (weights only)
-      auto task_batch_end = 
-        device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
-
-      // Apply partition weights 
-      lwd->partition_weights( &device_data );
-      
-      // Copy back to host data
-      device_data.copy_weights_to_tasks( task_it, task_batch_end );
-
-      // Update iterator
-      task_it = task_batch_end;
-
-    } // End loop over batches
-
-    // Signal that we don't need to do weights again
-    lb_state.modified_weights_are_stored = true;
-  });
-
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
   }
 
 #if 0
@@ -318,7 +204,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Symmetrize VXC in device memory
   lwd->symmetrize_vxc( &device_data );
-#endif
 
 }
 

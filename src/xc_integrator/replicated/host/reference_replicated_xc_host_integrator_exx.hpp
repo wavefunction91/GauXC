@@ -276,12 +276,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   std::sort( tasks.begin(), tasks.end(), task_comparator );
 
 
-  // Compute Partition Weights
+  // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
   if( not lb_state.modified_weights_are_stored ) {
-    lwd->partition_weights( XCWeightAlg::SSF, mol, meta, 
-      tasks.begin(), tasks.end() );
-    lb_state.modified_weights_are_stored = true;
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
   }
 
   // Zero out integrands

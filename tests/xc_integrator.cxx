@@ -2,6 +2,7 @@
 #include <gauxc/xc_integrator.hpp>
 #include <gauxc/xc_integrator/impl.hpp>
 #include <gauxc/xc_integrator/integrator_factory.hpp>
+#include <gauxc/molecular_weights.hpp>
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
@@ -54,28 +55,32 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
   MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
 
+  // Construct Load Balancer
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
   //LoadBalancerFactory lb_factory(ExecutionSpace::Host, "REPLICATED-FILLIN");
   auto lb = lb_factory.get_instance(rt, mol, mg, basis, quad_pad_value);
 
+  // Construct Weights Module
+  MolecularWeightsFactory mw_factory( ex, "Default", MolecularWeightsSettings{} );
+  auto mw = mw_factory.get_instance();
+
+  // Apply partition weights
+  mw.modify_weights(lb);
+
+  // Construct XC Functional
   functional_type func( ExchCXX::Backend::builtin, func_key, ExchCXX::Spin::Unpolarized );
 
+  // Construct XCIntegrator
   XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", 
     integrator_kernel, lwd_kernel, reduction_kernel );
   auto integrator = integrator_factory.get_instance( func, lb );
 
-
+  // Integrate EXC/VXC
   auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
-  CHECK( EXC == Approx( EXC_ref ) );
 
-  //std::cout << "VXC" << std::endl;
-  //std::cout << VXC << std::endl;
-  //std::cout << "VXC_ref" << std::endl;
-  //std::cout << VXC_ref << std::endl;
-  //std::cout << "DIFF" << std::endl;
-  //std::cout << (VXC-VXC_ref) << std::endl;
-
+  // Check EXC/VXC
   auto VXC_diff_nrm = ( VXC - VXC_ref ).norm();
+  CHECK( EXC == Approx( EXC_ref ) );
   CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 ); 
 
   // Check if the integrator propagates state correctly
