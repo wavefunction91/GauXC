@@ -2,6 +2,7 @@
 #include <gauxc/xc_integrator.hpp>
 #include <gauxc/xc_integrator/impl.hpp>
 #include <gauxc/xc_integrator/integrator_factory.hpp>
+#include <gauxc/molecular_weights.hpp>
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
@@ -9,7 +10,7 @@
 
 using namespace GauXC;
 
-void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, ) 
+void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   std::string reference_file, 
   ExchCXX::Functional func_key, 
   size_t quad_pad_value,
@@ -54,29 +55,32 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, )
 
   MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
 
+  // Construct Load Balancer
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
   //LoadBalancerFactory lb_factory(ExecutionSpace::Host, "REPLICATED-FILLIN");
-  auto lb = lb_factory.get_instance(GAUXC_MPI_CODE(comm,) mol, mg, basis, 
-    quad_pad_value);
+  auto lb = lb_factory.get_instance(rt, mol, mg, basis, quad_pad_value);
 
+  // Construct Weights Module
+  MolecularWeightsFactory mw_factory( ex, "Default", MolecularWeightsSettings{} );
+  auto mw = mw_factory.get_instance();
+
+  // Apply partition weights
+  mw.modify_weights(lb);
+
+  // Construct XC Functional
   functional_type func( ExchCXX::Backend::builtin, func_key, ExchCXX::Spin::Unpolarized );
 
+  // Construct XCIntegrator
   XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", 
     integrator_kernel, lwd_kernel, reduction_kernel );
   auto integrator = integrator_factory.get_instance( func, lb );
 
-
+  // Integrate EXC/VXC
   auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
-  CHECK( EXC == Approx( EXC_ref ) );
 
-  //std::cout << "VXC" << std::endl;
-  //std::cout << VXC << std::endl;
-  //std::cout << "VXC_ref" << std::endl;
-  //std::cout << VXC_ref << std::endl;
-  //std::cout << "DIFF" << std::endl;
-  //std::cout << (VXC-VXC_ref) << std::endl;
-
+  // Check EXC/VXC
   auto VXC_diff_nrm = ( VXC - VXC_ref ).norm();
+  CHECK( EXC == Approx( EXC_ref ) );
   CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 ); 
 
   // Check if the integrator propagates state correctly
@@ -102,13 +106,15 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, )
 
 void test_integrator(std::string reference_file, ExchCXX::Functional func) {
 
-#ifdef GAUXC_ENABLE_MPI
-  MPI_Comm comm = MPI_COMM_WORLD;
+#ifdef GAUXC_ENABLE_DEVICE
+  DeviceRuntimeEnvironment rt(MPI_COMM_WORLD, 0.9);
+#else
+  RuntimeEnvironment rt(MPI_COMM_WORLD);
 #endif
 
 #ifdef GAUXC_ENABLE_HOST
   SECTION( "Host" ) {
-    test_xc_integrator( ExecutionSpace::Host, GAUXC_MPI_CODE(comm,) reference_file, func,
+    test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
       1, true );
   }
 #endif
@@ -120,26 +126,26 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func) {
     check_grad = false;
     #endif
     SECTION( "Incore - MPI Reduction" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
+      test_xc_integrator( ExecutionSpace::Device, rt,
         reference_file, func, 32, check_grad, "Default" );
     }
 
     #ifdef GAUXC_ENABLE_MAGMA
     SECTION( "Incore - MPI Reduction - MAGMA" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
+      test_xc_integrator( ExecutionSpace::Device, rt,
         reference_file, func, 32, false, "Default", "Default", "Scheme1-MAGMA" );
     }
     #endif
 
     #ifdef GAUXC_ENABLE_NCCL
     SECTION( "Incore - NCCL Reduction" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,)
+      test_xc_integrator( ExecutionSpace::Device, rt,
         reference_file, func, 32, false, "Default", "NCCL" );
     }
     #endif
 
     SECTION( "ShellBatched" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
+      test_xc_integrator( ExecutionSpace::Device, rt, 
         reference_file, func, 32, false, "ShellBatched" );
     }
   }

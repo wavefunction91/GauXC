@@ -1,5 +1,6 @@
 #include "xc_device_stack_data.hpp"
 #include "buffer_adaptor.hpp"
+#include <gauxc/runtime_environment.hpp>
 
 namespace GauXC {
 
@@ -11,29 +12,19 @@ namespace detail {
   }
 }
 
-XCDeviceStackData::XCDeviceStackData( std::unique_ptr<DeviceBackend>&& ptr ) :
-  device_backend_(std::move(ptr)) { 
-
-  // Allocate Device memory
-  if( device_backend_ ) {
-    auto avail = device_backend_->get_available_mem();
-    avail = std::min( avail, detail::memory_cap() );
-    std::tie( device_ptr, devmem_sz ) = 
-      device_backend_->allocate_device_buffer(0.9 * avail);
-    reset_allocations();
+XCDeviceStackData::XCDeviceStackData(const DeviceRuntimeEnvironment& rt) :
+  runtime_(rt) { 
+    device_ptr = runtime_.device_memory();
+    devmem_sz  = runtime_.device_memory_size();
+    device_backend_ = runtime_.device_backend();
+    reset_allocations(); 
   }
 
-}
 
 
 
 
-
-XCDeviceStackData::~XCDeviceStackData() noexcept {
-  // Free memory if allocated
-  if( device_backend_ and devmem_sz and device_ptr )
-    device_backend_->free_device_buffer(device_ptr);
-}
+XCDeviceStackData::~XCDeviceStackData() noexcept = default;
 
 
 double* XCDeviceStackData::vxc_device_data() { return static_stack.vxc_device; }

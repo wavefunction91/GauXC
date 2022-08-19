@@ -38,9 +38,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Allocate Device memory
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
-  auto device_data_ptr = 
-    this->timer_.time_op("XCIntegrator.DeviceAlloc",
-      [=](){ return lwd->create_device_data(); });
+  auto& rt  = dynamic_cast<const DeviceRuntimeEnvironment&>(this->load_balancer_->runtime());
+  auto device_data_ptr = lwd->create_device_data(rt);
 
   // Compute local contributions to K and retrieve
   // data from device 
@@ -50,7 +49,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   });
 
   this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
-    MPI_Barrier(this->load_balancer_->comm());
+    MPI_Barrier(rt.comm());
   });  
 
   // Reduce Results in host mem
@@ -93,44 +92,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
 
 
-  // TODO: Refactor this into separate function
+  // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
-
-  // Modify weights if need be
   if( not lb_state.modified_weights_are_stored ) {
-
-  integrator_term_tracker enabled_terms;
-  enabled_terms.weights = true;
-
-  this->timer_.time_op("XCIntegrator.Weights", [&]() { 
-    const auto natoms = mol.natoms();
-    device_data.reset_allocations();
-    device_data.allocate_static_data_weights( natoms );
-    device_data.send_static_data_weights( mol, meta );
-
-    // Processes batches in groups that saturadate available device memory
-    auto task_it = task_begin;
-    while( task_it != task_end ) {
-      
-      // Determine next task batch, send relevant data to device (weights only)
-      auto task_batch_end = 
-        device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
-
-      // Apply partition weights 
-      lwd->partition_weights( &device_data );
-      
-      // Copy back to host data
-      device_data.copy_weights_to_tasks( task_it, task_batch_end );
-
-      // Update iterator
-      task_it = task_batch_end;
-
-    } // End loop over batches
-
-    // Signal that we don't need to do weights again
-    lb_state.modified_weights_are_stored = true;
-  });
-
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
   }
 
 #if 0

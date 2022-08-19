@@ -8,6 +8,7 @@
 #include <gauxc/xc_task.hpp>
 
 #include "device/xc_device_data.hpp"
+#include <gauxc/runtime_environment/fwd.hpp>
 
 namespace GauXC {
 namespace detail {
@@ -75,7 +76,7 @@ public:
   void symmetrize_vxc( XCDeviceData* );
   void symmetrize_exx_k( XCDeviceData* );
 
-  std::unique_ptr<XCDeviceData> create_device_data();
+  std::unique_ptr<XCDeviceData> create_device_data(const DeviceRuntimeEnvironment&);
 
 private: 
 

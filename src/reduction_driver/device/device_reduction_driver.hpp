@@ -11,7 +11,7 @@ struct DeviceReductionDriver : public detail::ReductionDriverImpl {
 
   virtual ~DeviceReductionDriver() noexcept;
 
-  DeviceReductionDriver(GAUXC_MPI_CODE(MPI_Comm comm));
+  DeviceReductionDriver(const RuntimeEnvironment& rt);
 
 };
 

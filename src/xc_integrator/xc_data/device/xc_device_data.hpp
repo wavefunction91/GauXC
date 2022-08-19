@@ -7,7 +7,7 @@
 //#include <gauxc/reduction_driver.hpp>
 #include <any>
 #include <cstring>
-#include "device_queue.hpp"
+#include "device/device_queue.hpp"
 
 namespace GauXC {
 

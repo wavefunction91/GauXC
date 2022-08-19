@@ -53,7 +53,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   #ifdef GAUXC_ENABLE_MPI
   this->timer_.time_op("XCIntegrator.LocalWait", [&](){
-    MPI_Barrier( this->load_balancer_->comm() );
+    MPI_Barrier( this->load_balancer_->runtime().comm() );
   });
   #endif
 
@@ -287,12 +287,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   std::sort( tasks.begin(), tasks.end(), task_comparator );
 
 
-  // Compute Partition Weights
+  // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
   if( not lb_state.modified_weights_are_stored ) {
-    lwd->partition_weights( XCWeightAlg::SSF, mol, meta, 
-      tasks.begin(), tasks.end() );
-    lb_state.modified_weights_are_stored = true;
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
   }
 
   // Zero out integrands
@@ -336,7 +334,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   int world_rank = 0;
   #ifdef GAUXC_ENABLE_MPI
-  auto comm = this->load_balancer_->comm();
+  auto comm = this->load_balancer_->runtime().comm();
   MPI_Comm_rank( comm, &world_rank );
   #endif
   if( !world_rank ) {

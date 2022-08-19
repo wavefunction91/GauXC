@@ -79,6 +79,8 @@ if( GAUXC_ENABLE_MPI )
   target_link_libraries( gauxc PUBLIC MPI::MPI_C MPI::MPI_CXX )
 endif()
 
+add_subdirectory( runtime_environment )
+add_subdirectory( molecular_weights )
 add_subdirectory( xc_integrator )
 add_subdirectory( load_balancer )
 add_subdirectory( reduction_driver )

@@ -5,8 +5,8 @@ namespace GauXC {
 
 Scheme1DataBase::~Scheme1DataBase() noexcept = default;
 
-Scheme1DataBase::Scheme1DataBase(std::unique_ptr<DeviceBackend>&& ptr ) : 
-  base_type(std::move(ptr)) {
+Scheme1DataBase::Scheme1DataBase(const DeviceRuntimeEnvironment& rt) : 
+  base_type(rt) {
 
   if( device_backend_ ) 
     device_backend_->create_blas_queue_pool(4);

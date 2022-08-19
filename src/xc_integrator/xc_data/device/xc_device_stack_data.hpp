@@ -2,8 +2,9 @@
 
 #include "xc_device_data.hpp"
 #include "xc_device_shell_pair_soa.hpp"
-#include "device_backend.hpp"
+#include "device/device_backend.hpp"
 #include <cstring>
+#include <gauxc/runtime_environment/fwd.hpp>
 
 namespace GauXC {
 
@@ -82,10 +83,11 @@ struct XCDeviceStackData : public XCDeviceData {
   base_stack_data base_stack;
 
   /// Device backend instance to handle device specific execution
-  std::unique_ptr<DeviceBackend> device_backend_ = nullptr;
+  const DeviceRuntimeEnvironment& runtime_;
+  DeviceBackend* device_backend_ = nullptr;
 
   XCDeviceStackData() = delete; // No default ctor, must have device backend
-  XCDeviceStackData( std::unique_ptr<DeviceBackend>&& ptr );
+  XCDeviceStackData( const DeviceRuntimeEnvironment& rt );
 
   virtual ~XCDeviceStackData() noexcept;
 

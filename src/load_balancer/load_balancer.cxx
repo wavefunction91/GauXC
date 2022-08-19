@@ -67,11 +67,9 @@ LoadBalancerState& LoadBalancer::state() {
   return pimpl_->state();
 }
 
-#ifdef GAUXC_ENABLE_MPI
-MPI_Comm LoadBalancer::comm() const {
+const RuntimeEnvironment& LoadBalancer::runtime() const {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-  return pimpl_->comm();
+  return pimpl_->runtime();
 }
-#endif
 
 }

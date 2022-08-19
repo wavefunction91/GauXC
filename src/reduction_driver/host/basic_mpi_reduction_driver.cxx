@@ -41,8 +41,8 @@ size_t get_dtype_size( std::type_index idx ) {
 }
 
 
-BasicMPIReductionDriver::BasicMPIReductionDriver(GAUXC_MPI_CODE(MPI_Comm comm)) :
-  HostReductionDriver(GAUXC_MPI_CODE(comm)) { }
+BasicMPIReductionDriver::BasicMPIReductionDriver(const RuntimeEnvironment& rt) :
+  HostReductionDriver(rt) { }
 
 
 BasicMPIReductionDriver::~BasicMPIReductionDriver() noexcept = default;
@@ -55,18 +55,13 @@ void BasicMPIReductionDriver::allreduce_typeerased( const void* src, void* dest,
   if( optional_args.has_value() )
     std::cout << "** Warning: Optional Args Are Not Used in BasiMPIReductionDriver::allreduce" << std::endl;
 
-#ifdef GAUXC_ENABLE_MPI
-  int world_size;
-  MPI_Comm_size( comm_, &world_size );
-#else
-  int world_size = 1;
-#endif
+  int world_size = runtime_.comm_size();
 
   if( world_size == 1 ) {
     std::memcpy( dest, src, size * get_dtype_size(idx)); 
   } else  {
     #ifdef GAUXC_ENABLE_MPI 
-    MPI_Allreduce( src, dest, size, get_mpi_datatype(idx), get_mpi_op(op), comm_ );
+    MPI_Allreduce( src, dest, size, get_mpi_datatype(idx), get_mpi_op(op), runtime_.comm() );
     #endif
   }
 
@@ -78,22 +73,17 @@ void BasicMPIReductionDriver::allreduce_inplace_typeerased( void* data, size_t s
   if( optional_args.has_value() )
     std::cout << "** Warning: Optional Args Are Not Used in BasiMPIReductionDriver::allreduce" << std::endl;
 
-#ifdef GAUXC_ENABLE_MPI
-  int world_size;
-  MPI_Comm_size( comm_, &world_size );
-#else
-  int world_size = 1;
-#endif
+  int world_size = runtime_.comm_size();
 
   if(world_size > 1) {
     #ifdef GAUXC_ENABLE_MPI
     // Test of communicator is an inter-communicator
     int inter_flag;
-    MPI_Comm_test_inter( comm_, &inter_flag );
+    MPI_Comm_test_inter( runtime_.comm(), &inter_flag );
 
     // Reduce in place
     if( not inter_flag ) {
-      MPI_Allreduce( MPI_IN_PLACE, data, size, get_mpi_datatype(idx), get_mpi_op(op), comm_ );
+      MPI_Allreduce( MPI_IN_PLACE, data, size, get_mpi_datatype(idx), get_mpi_op(op), runtime_.comm() );
 
     // Cannot reduce in place
     } else {

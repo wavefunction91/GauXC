@@ -62,7 +62,7 @@ struct Scheme1DataBase : public XCDeviceAoSData {
     l_batched_shell_pair_to_task_off_diag;
 
   virtual ~Scheme1DataBase() noexcept;
-  Scheme1DataBase(std::unique_ptr<DeviceBackend>&& ptr);
+  Scheme1DataBase(const DeviceRuntimeEnvironment& rt);
 
   // Final overrides
   void add_extra_to_indirection(integrator_term_tracker, 

@@ -76,9 +76,9 @@ void LocalDeviceWorkDriver::eval_kern_exc_vxc_gga( const functional_type& func,
 }
 
 
-std::unique_ptr<XCDeviceData> LocalDeviceWorkDriver::create_device_data() {
+std::unique_ptr<XCDeviceData> LocalDeviceWorkDriver::create_device_data(const DeviceRuntimeEnvironment& rt) {
   throw_if_invalid_pimpl(pimpl_);
-  return pimpl_->create_device_data();
+  return pimpl_->create_device_data(rt);
 }
 
 }

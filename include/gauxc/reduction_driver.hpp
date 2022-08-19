@@ -1,11 +1,9 @@
 #pragma once
 #include <memory>
 #include <gauxc/gauxc_config.hpp>
+#include <gauxc/runtime_environment.hpp>
 #include <typeindex>
 #include <any>
-#ifdef GAUXC_ENABLE_MPI
-#include <mpi.h>
-#endif
 
 namespace GauXC {
 
@@ -49,18 +47,14 @@ public:
   bool takes_host_memory() const;
   bool takes_device_memory() const;
 
-#ifdef GAUXC_ENABLE_MPI
-  MPI_Comm comm() const;
-#endif
-
 };
 
 
 struct ReductionDriverFactory {
   static ReductionDriver get_instance( 
-    GAUXC_MPI_CODE(MPI_Comm comm,) std::string kernel_name );
+    const RuntimeEnvironment& rt, std::string kernel_name );
   static std::shared_ptr<ReductionDriver> get_shared_instance( 
-    GAUXC_MPI_CODE(MPI_Comm comm,) std::string kernel_name );
+    const RuntimeEnvironment& rt, std::string kernel_name );
 };
 
 }

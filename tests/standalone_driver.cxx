@@ -2,6 +2,8 @@
 #include <gauxc/xc_integrator/impl.hpp>
 #include <gauxc/xc_integrator/integrator_factory.hpp>
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/runtime_environment.hpp>
+#include <gauxc/molecular_weights.hpp>
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
@@ -18,14 +20,17 @@ int main(int argc, char** argv) {
 
 #ifdef GAUXC_ENABLE_MPI
   MPI_Init( NULL, NULL );
-  int world_rank, world_size;
-  MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
-  MPI_Comm_size( MPI_COMM_WORLD, &world_size );
-#else
-  int world_rank = 0;
-  int world_size = 1;
 #endif
   {
+
+    // Set up runtimes
+    #ifdef GAUXC_ENABLE_DEVICE
+    DeviceRuntimeEnvironment rt( GAUXC_MPI_CODE(MPI_COMM_WORLD), 0.9 );
+    #else
+    RuntimeEnvironment rt(GAUXC_MPI_CODE(MPI_COMM_WORLD));
+    #endif
+    auto world_rank = rt.comm_rank();
+    auto world_size = rt.comm_size();
 
     std::vector< std::string > opts( argc );
     for( int i = 0; i < argc; ++i ) opts[i] = argv[i];
@@ -124,12 +129,17 @@ int main(int argc, char** argv) {
     if( input.containsData("EXX.TOL_K") )
       sn_link_settings.k_tol = input.getData<double>("EXX.TOL_K");
 
+
+
+
+
     // Read Molecule
     Molecule mol;
     read_hdf5_record( mol, ref_file, "/MOLECULE" );
     //std::cout << "Molecule" << std::endl;
     //for( auto x : mol ) {
-    //  std::cout << x.Z.get() << ", " << x.x << ", " << x.y << ", " << x.z << std::endl;
+    //  std::cout << x.Z.get() << ", " 
+    //    << x.x << ", " << x.y << ", " << x.z << std::endl;
     //}
 
     // Construct MolGrid / MolMeta
@@ -169,8 +179,7 @@ int main(int argc, char** argv) {
     //LoadBalancerFactory lb_factory(ExecutionSpace::Device, "Default");
     //LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Replicated-FillIn");
     LoadBalancerFactory lb_factory( lb_exec_space, "Replicated");
-    auto lb = lb_factory.get_shared_instance( GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, 
-      mg, basis);
+    auto lb = lb_factory.get_shared_instance( rt, mol, mg, basis);
 
     if(0){
       auto& tasks = lb->get_tasks();
@@ -183,6 +192,11 @@ int main(int argc, char** argv) {
       }
       std::cout << "TOTAL NPTS = " << total_npts << " , FIXED = " << total_npts_fixed << std::endl;
     }
+
+    // Apply molecular partition weights
+    MolecularWeightsFactory mw_factory( int_exec_space, "Default", MolecularWeightsSettings{} );
+    auto mw = mw_factory.get_instance();
+    mw.modify_weights(*lb);
 
     // Setup XC functional
     functional_type func( Backend::builtin, functional_map.value(func_spec), 
@@ -315,6 +329,7 @@ int main(int argc, char** argv) {
 #ifdef GAUXC_ENABLE_MPI
     util::MPITimer mpi_lb_timings( MPI_COMM_WORLD, lb->get_timings() );
     util::MPITimer mpi_xc_timings( MPI_COMM_WORLD, integrator.get_timings() );
+    util::MPITimer mpi_weight_timings( MPI_COMM_WORLD, mw.get_timings() );
 #endif
     if( !world_rank ) {
 
@@ -336,6 +351,26 @@ int main(int argc, char** argv) {
         #else
                   << std::setw(12) << dur.count() << " ms" << std::endl;
         #endif
+      }
+
+      std::cout << "MolecularWeights Timings" << std::endl;
+      for( const auto& [name, dur] : mw.get_timings().all_timings() ) {
+        #ifdef GAUXC_ENABLE_MPI
+        const auto avg     = mpi_weight_timings.get_avg_duration(name).count();
+        const auto min     = mpi_weight_timings.get_min_duration(name).count();
+        const auto max     = mpi_weight_timings.get_max_duration(name).count();
+        const auto std_dev = mpi_weight_timings.get_std_dev(name).count();
+        #endif
+        std::cout << "  " << std::setw(30) << name << ": " 
+        #ifdef GAUXC_ENABLE_MPI
+                  << "AVG = " << std::setw(12) << avg << " ms, " 
+                  << "MIN = " << std::setw(12) << min << " ms, " 
+                  << "MAX = " << std::setw(12) << max << " ms, " 
+                  << "STDDEV = " << std::setw(12) << std_dev << " ms" << std::endl;
+        #else
+                  << std::setw(12) << dur.count() << " ms" << std::endl;
+        #endif
+
       }
 
       std::cout << "Integrator Timings" << std::endl;

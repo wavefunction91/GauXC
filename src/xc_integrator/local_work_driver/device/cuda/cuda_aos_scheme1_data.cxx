@@ -9,8 +9,8 @@ template <typename Base>
 CudaAoSScheme1<Base>::Data::~Data() noexcept = default;
 
 template <typename Base>
-CudaAoSScheme1<Base>::Data::Data() :
-  Base::Data( std::make_unique<CUDABackend>() ) { }
+CudaAoSScheme1<Base>::Data::Data(const DeviceRuntimeEnvironment& rt) :
+  Base::Data( rt ) { }
 
 template <typename Base>
 size_t CudaAoSScheme1<Base>::Data::get_ldatoms() {

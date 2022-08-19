@@ -79,4 +79,9 @@ protected:
     std::string msg) = 0;
 };
 
+
+
+/// Generate the default device backend for this platform
+std::unique_ptr<DeviceBackend> make_device_backend();
+
 }
