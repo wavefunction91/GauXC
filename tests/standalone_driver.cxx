@@ -3,6 +3,7 @@
 #include <gauxc/xc_integrator/integrator_factory.hpp>
 #include <gauxc/util/div_ceil.hpp>
 #include <gauxc/runtime_environment.hpp>
+#include <gauxc/molecular_weights.hpp>
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
@@ -192,6 +193,11 @@ int main(int argc, char** argv) {
       std::cout << "TOTAL NPTS = " << total_npts << " , FIXED = " << total_npts_fixed << std::endl;
     }
 
+    // Apply molecular partition weights
+    MolecularWeightsFactory mw_factory( int_exec_space, "Default", MolecularWeightsSettings{} );
+    auto mw = mw_factory.get_instance();
+    mw.modify_weights(*lb);
+
     // Setup XC functional
     functional_type func( Backend::builtin, functional_map.value(func_spec), 
       Spin::Unpolarized );
@@ -320,6 +326,7 @@ int main(int argc, char** argv) {
 #ifdef GAUXC_ENABLE_MPI
     util::MPITimer mpi_lb_timings( MPI_COMM_WORLD, lb->get_timings() );
     util::MPITimer mpi_xc_timings( MPI_COMM_WORLD, integrator.get_timings() );
+    util::MPITimer mpi_weight_timings( MPI_COMM_WORLD, mw.get_timings() );
 #endif
     if( !world_rank ) {
 
@@ -341,6 +348,26 @@ int main(int argc, char** argv) {
         #else
                   << std::setw(12) << dur.count() << " ms" << std::endl;
         #endif
+      }
+
+      std::cout << "MolecularWeights Timings" << std::endl;
+      for( const auto& [name, dur] : mw.get_timings().all_timings() ) {
+        #ifdef GAUXC_ENABLE_MPI
+        const auto avg     = mpi_weight_timings.get_avg_duration(name).count();
+        const auto min     = mpi_weight_timings.get_min_duration(name).count();
+        const auto max     = mpi_weight_timings.get_max_duration(name).count();
+        const auto std_dev = mpi_weight_timings.get_std_dev(name).count();
+        #endif
+        std::cout << "  " << std::setw(30) << name << ": " 
+        #ifdef GAUXC_ENABLE_MPI
+                  << "AVG = " << std::setw(12) << avg << " ms, " 
+                  << "MIN = " << std::setw(12) << min << " ms, " 
+                  << "MAX = " << std::setw(12) << max << " ms, " 
+                  << "STDDEV = " << std::setw(12) << std_dev << " ms" << std::endl;
+        #else
+                  << std::setw(12) << dur.count() << " ms" << std::endl;
+        #endif
+
       }
 
       std::cout << "Integrator Timings" << std::endl;

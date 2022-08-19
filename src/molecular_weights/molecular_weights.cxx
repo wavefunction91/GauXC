@@ -15,7 +15,8 @@ MolecularWeights::MolecularWeights(pimpl_ptr_type&& ptr) :
 
 void MolecularWeights::modify_weights(load_balancer_reference lb) const {
   if(not pimpl_) GAUXC_PIMPL_NOT_INITIALIZED();
-  pimpl_->modify_weights(lb);
+  auto& timer = pimpl_->get_timer();
+  timer.time_op("MolecularWeights",[&](){ pimpl_->modify_weights(lb);});
 }
 
 const util::Timer& MolecularWeights::get_timings() const {

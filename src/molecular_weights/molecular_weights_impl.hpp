@@ -26,6 +26,9 @@ public:
     return timer_;
   };
 
+  inline util::Timer& get_timer() {
+    return timer_;
+  };
 };
 
 }
