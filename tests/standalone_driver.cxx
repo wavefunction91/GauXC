@@ -17,28 +17,19 @@ using namespace ExchCXX;
 
 int main(int argc, char** argv) {
 
-#if 0
 #ifdef GAUXC_ENABLE_MPI
   MPI_Init( NULL, NULL );
-  int world_rank, world_size;
-  MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
-  MPI_Comm_size( MPI_COMM_WORLD, &world_size );
-#else
-  int world_rank = 0;
-  int world_size = 1;
-#endif
-#else
-#ifdef GAUXC_ENABLE_MPI
-  MPI_Init( NULL, NULL );
-#endif
 #endif
   {
 
     // Set up runtimes
-    //RuntimeEnvironment host_runtime(GAUXC_MPI_CODE(MPI_COMM_WORLD));
-    DeviceRuntimeEnvironment host_runtime( GAUXC_MPI_CODE(MPI_COMM_WORLD), 0.9 );
-    auto world_rank = host_runtime.comm_rank();
-    auto world_size = host_runtime.comm_size();
+    #ifdef GAUXC_ENABLE_DEVICE
+    DeviceRuntimeEnvironment rt( GAUXC_MPI_CODE(MPI_COMM_WORLD), 0.9 );
+    #else
+    RuntimeEnvironment rt(GAUXC_MPI_CODE(MPI_COMM_WORLD));
+    #endif
+    auto world_rank = rt.comm_rank();
+    auto world_size = rt.comm_size();
 
     std::vector< std::string > opts( argc );
     for( int i = 0; i < argc; ++i ) opts[i] = argv[i];
@@ -187,7 +178,7 @@ int main(int argc, char** argv) {
     //LoadBalancerFactory lb_factory(ExecutionSpace::Device, "Default");
     //LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Replicated-FillIn");
     LoadBalancerFactory lb_factory( lb_exec_space, "Replicated");
-    auto lb = lb_factory.get_shared_instance( host_runtime, mol, mg, basis);
+    auto lb = lb_factory.get_shared_instance( rt, mol, mg, basis);
 
     if(0){
       auto& tasks = lb->get_tasks();
