@@ -53,7 +53,7 @@ struct ReplicatedXCDeviceIntegratorFactory {
 };
 
 
-extern template class ReplicatedXCDeviceIntegratorFactory<double>;
+extern template struct ReplicatedXCDeviceIntegratorFactory<double>;
 
 
 }

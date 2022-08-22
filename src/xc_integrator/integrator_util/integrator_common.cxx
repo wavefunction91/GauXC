@@ -66,7 +66,7 @@ std::tuple< std::vector< std::array<int32_t, 3> > , std::vector< int32_t > >
   submat_block_idx.push_back(0);
   const int end_point = LDA; 
 
-  int cut_index = 0;
+  size_t cut_index = 0;
   int cut_expand_index = 0;
   int small_index = 0;
   int delta;

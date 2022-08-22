@@ -1,8 +1,5 @@
 # Parallelism
-if( NOT GAUXC_ENABLE_HIP )
-  # This breaks for Cray HIP with is the target of GauXC ECP
-  find_package( OpenMP  REQUIRED )
-endif()
+find_package( OpenMP  REQUIRED )
 if( GAUXC_ENABLE_MPI )
   message( STATUS "GauXC Enabling MPI" )
   find_package( MPI REQUIRED )
@@ -73,7 +70,11 @@ target_link_libraries( gauxc PUBLIC
 )
 if( TARGET OpenMP::OpenMP_CXX )
   target_link_libraries( gauxc PUBLIC OpenMP::OpenMP_CXX )
+else()
+  find_package(Threads REQUIRED)
+  target_link_libraries( gauxc PUBLIC Threads::Threads )
 endif()
+
 
 if( GAUXC_ENABLE_MPI )
   target_link_libraries( gauxc PUBLIC MPI::MPI_C MPI::MPI_CXX )
@@ -104,17 +105,17 @@ export(EXPORT gauxc-targets
       NAMESPACE gauxc::
       FILE "${PROJECT_BINARY_DIR}/gauxc-targets.cmake")
 
-# Install staic headers
+# Install static headers
 install( 
   DIRECTORY   ${PROJECT_SOURCE_DIR}/include
-  DESTINATION ${CMAKE_INSTALL_PREFIX}
+  DESTINATION .
   FILES_MATCHING PATTERN "*.hpp"
 )
 
 # Install generated headers
 install(
   FILES       ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/gauxc
+  DESTINATION include/gauxc
 )
   
    

@@ -116,9 +116,13 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func) {
 
 #ifdef GAUXC_ENABLE_DEVICE
   SECTION( "Device" ) {
+    bool check_grad = true;
+    #ifdef GAUXC_ENABLE_HIP
+    check_grad = false;
+    #endif
     SECTION( "Incore - MPI Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
-        reference_file, func, 32, true, "Default" );
+        reference_file, func, 32, check_grad, "Default" );
     }
 
     #ifdef GAUXC_ENABLE_MAGMA

@@ -1,4 +1,4 @@
-find_package( LAPACK  REQUIRED )
+find_package( BLAS  REQUIRED )
 include( gauxc-gau2grid     )
 
 target_sources( gauxc PRIVATE 
@@ -12,7 +12,7 @@ target_sources( gauxc PRIVATE
   blas.cxx
 )
 
-target_link_libraries( gauxc PUBLIC LAPACK::LAPACK )
+target_link_libraries( gauxc PUBLIC BLAS::BLAS )
 
 if( GAUXC_ENABLE_GAU2GRID AND TARGET gau2grid::gg )
   target_link_libraries( gauxc PUBLIC gau2grid::gg )

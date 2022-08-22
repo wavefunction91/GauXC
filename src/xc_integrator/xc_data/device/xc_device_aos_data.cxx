@@ -99,7 +99,7 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
   auto [ ptr, sz ] = buf;
   buffer_adaptor mem( ptr, sz );
 
-  const size_t submat_chunk_size = this->get_submat_chunk_size(global_dims.nbf,0);
+  //const size_t submat_chunk_size = this->get_submat_chunk_size(global_dims.nbf,0);
 
 
   // Get dimensions
@@ -207,7 +207,7 @@ void XCDeviceAoSData::pack_and_send(
     a.insert( a.end(), b.begin(), b.end() );
   };
 
-  const size_t submat_chunk_size = this->get_submat_chunk_size(global_dims.nbf,0);
+  //const size_t submat_chunk_size = this->get_submat_chunk_size(global_dims.nbf,0);
 
   // Pack AoS data and construct indirections
   for( auto it = task_begin; it != task_end; ++it ) {

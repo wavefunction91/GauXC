@@ -39,10 +39,10 @@ __global__ void zmat_lda_vxc_kernel( size_t        ntasks,
 
 
 
-void zmat_lda_vxc( size_t           ntasks,
-                   int32_t          max_nbf,
-                   int32_t          max_npts,
-                   XCDeviceTask* tasks_device,
+void zmat_lda_vxc( size_t            ntasks,
+                   int32_t           max_nbf,
+                   int32_t           max_npts,
+                   XCDeviceTask*     tasks_device,
                    device_queue queue ) {
 
   hipStream_t stream = queue.queue_as<util::hip_stream>() ;
@@ -117,10 +117,10 @@ __global__ void zmat_gga_vxc_kernel( size_t        ntasks,
   }
 }
 
-void zmat_gga_vxc( size_t        ntasks,
-                   int32_t       max_nbf,
-                   int32_t       max_npts,
-                   XCDeviceTask* tasks_device,
+void zmat_gga_vxc( size_t            ntasks,
+                   int32_t           max_nbf,
+                   int32_t           max_npts,
+                   XCDeviceTask*     tasks_device,
                    device_queue queue ) {
 
   hipStream_t stream = queue.queue_as<util::hip_stream>() ;
