@@ -23,6 +23,7 @@ namespace GauXC {
   RadialScale default_mk_radial_scaling_factor( AtomicNumber );
   RadialScale default_mhl_radial_scaling_factor( AtomicNumber );
   RadialScale default_ta_radial_scaling_factor( AtomicNumber );
+  RadialScale defalt_radial_scaling_factor( RadialQuad, AtomicNumber );
 
   PrunedAtomicGridSpecification robust_psi4_pruning_scheme(
     UnprunedAtomicGridSpecification
@@ -33,8 +34,8 @@ namespace GauXC {
     static atomic_grid_spec_map create_grid_spec( RadialQuad, 
       AtomicGridSizeDefault, const Molecule& );
 
-    static atomid_grid_map generate_molgrid( RadialQuad, AtomicGridSizeDefault,
-      const Molecule& );
+    static atomic_grid_map generate_molgrid( RadialQuad, 
+      AtomicGridSizeDefault, const Molecule& );
 
   };
   

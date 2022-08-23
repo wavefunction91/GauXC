@@ -15,14 +15,18 @@ struct UnprunedAtomicGridSpecification {
   AngularSize angular_size;
 };
 
+struct PruningRegion {
+  size_t idx_st;
+  size_t idx_en;
+  AngularSize angular_size;
+};
+
 struct PrunedAtomicGridSpecification {
   RadialQuad  radial_quad;
   RadialSize  radial_size;
   RadialScale radial_scale;
 
-  AngularSize angular_size_hgh;
-  AngularSize angular_size_med;
-  AngularSize angular_size_low;
+  std::vector<PruningRegion> pruning_regions;
 };
 
 using atomic_grid_variant = 
@@ -52,8 +56,9 @@ struct AtomicGridFactory {
   }
 
   template <typename RadialType, typename RadialPartitionType>
-  static Grid generate_pruned_grid( RadialType&& rq, RadialPartitionType&& rgp ) {
-    using angular_type = typename RadialPartitionType::angular_type; 
+  static Grid generate_pruned_grid( RadialType&& rq, 
+    RadialPartitionType&& rgp ) {
+    using angular_type = typename std::decay_t<RadialPartitionType>::angular_type; 
     using sphere_type = pruned_sphere_type<RadialType,angular_type>;
     return Grid( std::make_shared<sphere_type>( 
       std::forward<RadialType>(rq), std::forward<RadialPartitionType>(rgp)
@@ -61,28 +66,11 @@ struct AtomicGridFactory {
     );
   }
 
-  template <typename RadialType, typename AngularType>
-  static Grid generate_pruned_grid( RadialType&& rq, AngularType&& ang_hgh,
-                                    AngularType&& ang_med, AngularType&& ang_low ) {
-
-    const size_t r4 = rq.npts()/4 + !!(rq.npts()%4);
-    IntegratorXX::RadialGridPartition 
-      rgp( rq, 0,      std::forward<AngularType>(ang_low),
-               r4+1,   std::forward<AngularType>(ang_med),
-               2*r4+1, std::forward<AngularType>(ang_hgh) );
-
-
-    return generate_pruned_grid( std::forward<RadialType>(rq), std::move(rgp) );
-
-  }
-
-
-
 
   static Grid generate_unpruned_grid( RadialQuad, RadialSize, AngularSize, 
                                       RadialScale );
-  static Grid generate_pruned_grid( RadialQuad, RadialSize, AngularSize, 
-    AngularSize, AngularSize, RadialScale );
+  static Grid generate_pruned_grid( RadialQuad, RadialSize, 
+    const std::vector<PruningRegion>&, RadialScale );
 
 
   static Grid generate_grid( UnprunedAtomicGridSpecification gs ); 

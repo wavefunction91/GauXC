@@ -16,6 +16,7 @@
 #include <integratorxx/quadratures/lebedev_laikov.hpp>
 #include <integratorxx/composite_quadratures/pruned_spherical_quadrature.hpp>
 #include <gauxc/grid_factory.hpp>
+#include <gauxc/molgrid/defaults.hpp>
 
 #include <chrono>
 
@@ -133,35 +134,41 @@ int main(int argc, char** argv) {
       auto en = std::chrono::high_resolution_clock::now();
       std::cout << std::scientific << std::setprecision(16);
       const auto err = std::abs(N_EL-ref_ne);
-      std::cout << "NE = " << err << ", " << err/ref_ne << std::endl;
+      std::cout << "NE = " << N_EL << ", " << err << ", " << err/ref_ne << std::endl;
       std::cout << std::chrono::duration<double>(en-st).count() << std::endl;
     
     }
 
-    PrunedAtomicGridSpecification cno_pru_spec {
-      RadialQuad::MuraKnowles,
-      RadialSize(100),
-      RadialScale(7.0),
-      AngularSize(974),
-      AngularSize(266),
-      AngularSize(170)
-    };
+   // Setup pruning
+   #if 0
+   std::vector<PruningRegion> pruning_regions = {
+     {0ul, 25ul,   AngularSize(170)},
+     {25ul, 50ul,  AngularSize(266)},
+     {50ul, 100ul, AngularSize(974)}
+   };
 
-    PrunedAtomicGridSpecification h_pru_spec {
-      RadialQuad::MuraKnowles,
-      RadialSize(100),
-      RadialScale(5.0),
-      AngularSize(974),
-      AngularSize(266),
-      AngularSize(170)
-    };
+   PrunedAtomicGridSpecification cno_pru_spec {
+     RadialQuad::MuraKnowles,
+     RadialSize(100),
+     RadialScale(7.0),
+     pruning_regions
+   };
+
+   PrunedAtomicGridSpecification h_pru_spec {
+     RadialQuad::MuraKnowles,
+     RadialSize(100),
+     RadialScale(5.0),
+     pruning_regions
+   };
+   #else
+   auto cno_pru_spec = robust_psi4_pruning_scheme( cno_unp_spec );
+   auto h_pru_spec   = robust_psi4_pruning_scheme( h_unp_spec   );
+   #endif
+
     auto c_pru_grid = AtomicGridFactory::generate_grid(cno_pru_spec);
     auto n_pru_grid = AtomicGridFactory::generate_grid(cno_pru_spec);
     auto o_pru_grid = AtomicGridFactory::generate_grid(cno_pru_spec);
     auto h_pru_grid = AtomicGridFactory::generate_grid(h_pru_spec);
-
-    atomic_grid_variant h_var_spec = h_unp_spec;
-    auto h_var_grid = AtomicGridFactory::generate_grid(h_var_spec);
 
     atomic_grid_map pru_molmap = {
       { AtomicNumber(1), h_pru_grid },
@@ -184,7 +191,7 @@ int main(int argc, char** argv) {
       auto en = std::chrono::high_resolution_clock::now();
       std::cout << std::scientific << std::setprecision(16);
       const auto err = std::abs(N_EL-ref_ne);
-      std::cout << "NE = " << err << ", " << err/ref_ne << std::endl;
+      std::cout << "NE = " << N_EL << ", " << err << ", " << err/ref_ne << std::endl;
       std::cout << std::chrono::duration<double>(en-st).count() << std::endl;
     
     }

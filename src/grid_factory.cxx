@@ -64,32 +64,54 @@ Grid AtomicGridFactory::generate_grid( UnprunedAtomicGridSpecification gs ) {
 /**** Pruned Grids ****/
 /**********************/
 
-Grid AtomicGridFactory::generate_pruned_grid( RadialQuad rq, RadialSize nrad, 
-  AngularSize nang_hgh, AngularSize nang_med, AngularSize nang_low, 
+template <typename RadialQuad, 
+  typename AngularQuad = IntegratorXX::LebedevLaikov<double>>
+auto make_pruned_grid(RadialSize nrad, 
+  const std::vector<PruningRegion>& pruning_regions,
+  RadialScale rscal ) {
+
+  RadialQuad rq(nrad.get(), rscal.get());
+  IntegratorXX::RadialGridPartition<AngularQuad> rgp;
+  for( auto& region : pruning_regions ) {
+    rgp.add_quad( rq, region.idx_st, 
+      AngularQuad(region.angular_size.get()) );
+  }
+  rgp.finalize(rq);
+
+  return std::make_tuple( rq, rgp );
+
+}
+
+Grid AtomicGridFactory::generate_pruned_grid( RadialQuad rq, 
+  RadialSize nrad, const std::vector<PruningRegion>& pruning_regions, 
   RadialScale rscal) {
 
   using mk_type  = IntegratorXX::MuraKnowles<double,double>;
   using mhl_type = IntegratorXX::MurrayHandyLaming<double,double>;
   using ta_type  = IntegratorXX::TreutlerAldrichs<double,double>;
-  using ll_type  = IntegratorXX::LebedevLaikov<double>;
-
-  ll_type ang_quad_hgh( nang_hgh.get() );
-  ll_type ang_quad_med( nang_med.get() );
-  ll_type ang_quad_low( nang_low.get() );
 
   switch( rq ) {
 
     case RadialQuad::MuraKnowles:
-      return generate_pruned_grid( mk_type(nrad.get(), rscal.get()),
-        std::move(ang_quad_hgh), std::move(ang_quad_med), std::move(ang_quad_low));
+    {
+      auto [rg, rgp] = 
+        make_pruned_grid<mk_type>( nrad, pruning_regions, rscal );
+      return generate_pruned_grid(std::move(rg), std::move(rgp));
+    }
 
     case RadialQuad::MurrayHandyLaming:
-      return generate_pruned_grid( mhl_type(nrad.get(), rscal.get()),
-        std::move(ang_quad_hgh), std::move(ang_quad_med), std::move(ang_quad_low));
+    {
+      auto [rg, rgp] = 
+        make_pruned_grid<mhl_type>( nrad, pruning_regions, rscal );
+      return generate_pruned_grid(std::move(rg), std::move(rgp));
+    }
 
     case RadialQuad::TreutlerAldrichs:
-      return generate_pruned_grid( ta_type(nrad.get(), rscal.get()),
-        std::move(ang_quad_hgh), std::move(ang_quad_med), std::move(ang_quad_low));
+    {
+      auto [rg, rgp] = 
+        make_pruned_grid<ta_type>( nrad, pruning_regions, rscal );
+      return generate_pruned_grid(std::move(rg), std::move(rgp));
+    }
 
     default:
       GAUXC_GENERIC_EXCEPTION("Unsupported Radial Quadrature");
@@ -101,8 +123,7 @@ Grid AtomicGridFactory::generate_pruned_grid( RadialQuad rq, RadialSize nrad,
 
 Grid AtomicGridFactory::generate_grid( PrunedAtomicGridSpecification gs ) {
   return generate_pruned_grid( gs.radial_quad, gs.radial_size, 
-    gs.angular_size_hgh, gs.angular_size_med, gs.angular_size_low,
-    gs.radial_scale );
+    gs.pruning_regions, gs.radial_scale );
 }
 
 }
