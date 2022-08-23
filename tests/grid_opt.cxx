@@ -16,7 +16,6 @@
 #include <integratorxx/quadratures/lebedev_laikov.hpp>
 #include <integratorxx/composite_quadratures/pruned_spherical_quadrature.hpp>
 #include <gauxc/grid_factory.hpp>
-#include <gauxc/molgrid/defaults.hpp>
 
 #include <chrono>
 

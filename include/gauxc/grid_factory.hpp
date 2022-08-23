@@ -29,6 +29,11 @@ struct PrunedAtomicGridSpecification {
   std::vector<PruningRegion> pruning_regions;
 };
 
+
+PrunedAtomicGridSpecification robust_psi4_pruning_scheme(
+  UnprunedAtomicGridSpecification
+);
+
 using atomic_grid_variant = 
   std::variant<UnprunedAtomicGridSpecification,
                PrunedAtomicGridSpecification>;

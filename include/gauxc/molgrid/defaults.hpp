@@ -25,10 +25,6 @@ namespace GauXC {
   RadialScale default_ta_radial_scaling_factor( AtomicNumber );
   RadialScale defalt_radial_scaling_factor( RadialQuad, AtomicNumber );
 
-  PrunedAtomicGridSpecification robust_psi4_pruning_scheme(
-    UnprunedAtomicGridSpecification
-  );
-
   struct MolGridFactory {
 
     static atomic_grid_spec_map create_grid_spec( RadialQuad, 

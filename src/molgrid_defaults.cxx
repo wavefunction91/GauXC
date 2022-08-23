@@ -85,37 +85,6 @@ RadialScale default_radial_scaling_factor(RadialQuad rq, AtomicNumber Z) {
     return default_mhl_radial_scaling_factor(Z);
 }
 
-PrunedAtomicGridSpecification robust_psi4_pruning_scheme(
-  UnprunedAtomicGridSpecification unp ) {
-
-  // Look up order
-  // XXX: THIS ONLY WORKS FOR LEBEDEV
-  using namespace IntegratorXX::detail::lebedev;
-  const auto asz = unp.angular_size.get();
-  const auto base_order = algebraic_order_by_npts(asz);
-  if( base_order < 0 ) GAUXC_GENERIC_EXCEPTION("Invalid Base Grid");
-
-  const auto med_order = 
-    next_algebraic_order(base_order > 6 ? base_order-6 : base_order);
-  const auto low_order = 7;
-
-  AngularSize med_sz(npts_by_algebraic_order(med_order));
-  AngularSize low_sz(npts_by_algebraic_order(low_order));
-
-  // Create Pruning Regions
-  const size_t rsz = unp.radial_size.get();
-  const size_t r_div_4 = rsz / 4ul;
-  std::vector<PruningRegion> pruning_regions = {
-    {  0ul,       r_div_4,   low_sz},
-    {  r_div_4, 2ul*r_div_4, med_sz},
-    {2ul*r_div_4,       rsz, unp.angular_size}
-  };
-
-  return PrunedAtomicGridSpecification{
-    unp.radial_quad, unp.radial_size, unp.radial_scale, pruning_regions
-  };
-  
-}
 
 
 
