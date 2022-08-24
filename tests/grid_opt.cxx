@@ -178,6 +178,7 @@ int main(int argc, char** argv) {
       { AtomicNumber(8), o_pru_grid }
     };
     #else
+    #if 0
     atomic_grid_map pru_molmap;
     for( auto& atom : mol ) {
       if(!pru_molmap.count(atom.Z)) {
@@ -189,6 +190,11 @@ int main(int argc, char** argv) {
         ));
       }
     }
+    #else
+    auto pru_molmap = MolGridFactory::create_default_gridmap(
+      mol, PruningScheme::Robust, RadialQuad::MuraKnowles,
+      RadialSize(100), AngularSize(974) );
+    #endif
     #endif
 
     std::cout << "Pruned" << std::endl;

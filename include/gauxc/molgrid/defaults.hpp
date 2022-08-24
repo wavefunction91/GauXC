@@ -43,13 +43,21 @@ namespace GauXC {
       );
     }
 
-#if 0
-    static atomic_grid_spec_map create_grid_spec( RadialQuad, 
-      AtomicGridSizeDefault, const Molecule& );
+    template <typename... Args>
+    inline static atomic_grid_map create_default_gridmap( 
+      const Molecule& mol, PruningScheme scheme, Args&&... args ) {
 
-    static atomic_grid_map generate_molgrid( RadialQuad, 
-      AtomicGridSizeDefault, const Molecule& );
-#endif
+      atomic_grid_map molmap;
+      for( const auto& atom : mol ) 
+      if( !molmap.count(atom.Z) ) {
+        molmap.emplace( atom.Z, AtomicGridFactory::generate_grid(
+          create_default_pruned_grid_spec(scheme, atom.Z, 
+            std::forward<Args>(args)...)
+        ));
+      }
+
+      return molmap;
+    }
 
   };
   
