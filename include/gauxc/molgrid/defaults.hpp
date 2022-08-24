@@ -44,19 +44,44 @@ namespace GauXC {
     }
 
     template <typename... Args>
-    inline static atomic_grid_map create_default_gridmap( 
+    inline static atomic_grid_spec_map create_default_grid_spec_map( 
       const Molecule& mol, PruningScheme scheme, Args&&... args ) {
 
-      atomic_grid_map molmap;
+      atomic_grid_spec_map molmap;
       for( const auto& atom : mol ) 
       if( !molmap.count(atom.Z) ) {
-        molmap.emplace( atom.Z, AtomicGridFactory::generate_grid(
+        molmap.emplace( atom.Z, 
           create_default_pruned_grid_spec(scheme, atom.Z, 
             std::forward<Args>(args)...)
-        ));
+        );
       }
 
       return molmap;
+    }
+
+    inline static atomic_grid_map create_gridmap(
+      const atomic_grid_spec_map& gs_map ) {
+
+      atomic_grid_map molmap;
+      for( const auto& [key, val] : gs_map ) {
+        molmap.emplace( key, AtomicGridFactory::generate_grid(val) );
+      }
+      return molmap;
+
+    }
+
+    template <typename... Args>
+    inline static atomic_grid_map create_default_gridmap( 
+      const Molecule& mol, PruningScheme scheme, Args&&... args ) {
+
+      return create_gridmap( create_default_grid_spec_map(mol, scheme, 
+        std::forward<Args>(args)...) );
+
+    }
+
+    template <typename... Args>
+    inline static MolGrid create_default_molgrid( Args&&... args ) {
+      return MolGrid( create_default_grid_map(std::forward<Args>(args)...) );
     }
 
   };

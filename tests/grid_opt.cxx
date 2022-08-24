@@ -91,7 +91,7 @@ int main(int argc, char** argv) {
     }
 
 
-#if 1
+#if 0
     UnprunedAtomicGridSpecification cno_unp_spec {
       RadialQuad::MuraKnowles,
       RadialSize(100),
@@ -117,7 +117,10 @@ int main(int argc, char** argv) {
       { AtomicNumber(8), o_unp_grid }
     };
 #else
-    auto unp_molmap = MolGridFactory
+    // Create Unpruned MolMap
+    auto unp_molmap = MolGridFactory::create_default_gridmap(
+      mol, PruningScheme::Unpruned, RadialQuad::MuraKnowles,
+      RadialSize(100), AngularSize(974) );
 #endif
 
     std::cout << "Unpruned" << std::endl;
@@ -139,63 +142,10 @@ int main(int argc, char** argv) {
     
     }
 
-   // Setup pruning
-   #if 0
-   #if 0
-   std::vector<PruningRegion> pruning_regions = {
-     {0ul, 25ul,   AngularSize(170)},
-     {25ul, 50ul,  AngularSize(266)},
-     {50ul, 100ul, AngularSize(974)}
-   };
-
-   PrunedAtomicGridSpecification cno_pru_spec {
-     RadialQuad::MuraKnowles,
-     RadialSize(100),
-     RadialScale(7.0),
-     pruning_regions
-   };
-
-   PrunedAtomicGridSpecification h_pru_spec {
-     RadialQuad::MuraKnowles,
-     RadialSize(100),
-     RadialScale(5.0),
-     pruning_regions
-   };
-   #else
-   auto cno_pru_spec = create_pruned_spec( PruningScheme::Robust, cno_unp_spec );
-   auto h_pru_spec   = create_pruned_spec( PruningScheme::Robust, h_unp_spec   );
-   #endif
-
-    auto c_pru_grid = AtomicGridFactory::generate_grid(cno_pru_spec);
-    auto n_pru_grid = AtomicGridFactory::generate_grid(cno_pru_spec);
-    auto o_pru_grid = AtomicGridFactory::generate_grid(cno_pru_spec);
-    auto h_pru_grid = AtomicGridFactory::generate_grid(h_pru_spec);
-
-    atomic_grid_map pru_molmap = {
-      { AtomicNumber(1), h_pru_grid },
-      { AtomicNumber(6), c_pru_grid },
-      { AtomicNumber(7), n_pru_grid },
-      { AtomicNumber(8), o_pru_grid }
-    };
-    #else
-    #if 0
-    atomic_grid_map pru_molmap;
-    for( auto& atom : mol ) {
-      if(!pru_molmap.count(atom.Z)) {
-        pru_molmap.emplace(atom.Z,AtomicGridFactory::generate_grid(
-          MolGridFactory::create_default_pruned_grid_spec(
-            PruningScheme::Robust, atom.Z, RadialQuad::MuraKnowles,
-            RadialSize(100), AngularSize(974)
-          )
-        ));
-      }
-    }
-    #else
+    // Create Pruned MolMap
     auto pru_molmap = MolGridFactory::create_default_gridmap(
       mol, PruningScheme::Robust, RadialQuad::MuraKnowles,
       RadialSize(100), AngularSize(974) );
-    #endif
-    #endif
 
     std::cout << "Pruned" << std::endl;
     // Pruned Integration
