@@ -90,81 +90,41 @@ int main(int argc, char** argv) {
       dset.read( P.data() );
     }
 
+    auto run_integration = [&](auto scheme){
 
-#if 0
-    UnprunedAtomicGridSpecification cno_unp_spec {
-      RadialQuad::MuraKnowles,
-      RadialSize(100),
-      RadialScale(7.0),
-      AngularSize(974)
+      auto rq = RadialQuad::MuraKnowles;
+      auto rs = RadialSize(100);
+      auto as = AngularSize(974);
+
+      #if 0
+      auto molmap = MolGridFactory::create_default_gridmap(
+        mol, scheme, rq, rs, as );
+      MolGrid mg(molmap);
+      #else
+      auto mg = MolGridFactory::create_default_molgrid(mol, scheme, rq, rs, as);
+      #endif
+
+      auto st = std::chrono::high_resolution_clock::now();
+
+      auto lb = lb_factory.get_shared_instance( 
+        GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, mg, basis);
+      auto integrator = integrator_factory.get_instance( func, lb );
+
+      double N_EL = integrator.integrate_den( P );
+      auto en = std::chrono::high_resolution_clock::now();
+      std::cout << std::scientific << std::setprecision(16);
+      const auto err = std::abs(N_EL-ref_ne);
+      std::cout << "NE = " << N_EL << ", " << err << ", " << err/ref_ne << std::endl;
+      std::cout << std::chrono::duration<double>(en-st).count() << std::endl;
     };
 
-    UnprunedAtomicGridSpecification h_unp_spec {
-      RadialQuad::MuraKnowles,
-      RadialSize(100),
-      RadialScale(5.0),
-      AngularSize(974)
-    };
-    auto c_unp_grid = AtomicGridFactory::generate_grid(cno_unp_spec);
-    auto n_unp_grid = AtomicGridFactory::generate_grid(cno_unp_spec);
-    auto o_unp_grid = AtomicGridFactory::generate_grid(cno_unp_spec);
-    auto h_unp_grid = AtomicGridFactory::generate_grid(h_unp_spec);
-
-    atomic_grid_map unp_molmap = {
-      { AtomicNumber(1), h_unp_grid },
-      { AtomicNumber(6), c_unp_grid },
-      { AtomicNumber(7), n_unp_grid },
-      { AtomicNumber(8), o_unp_grid }
-    };
-#else
-    // Create Unpruned MolMap
-    auto unp_molmap = MolGridFactory::create_default_gridmap(
-      mol, PruningScheme::Unpruned, RadialQuad::MuraKnowles,
-      RadialSize(100), AngularSize(974) );
-#endif
-
-    std::cout << "Unpruned" << std::endl;
     // Unpruned Integration
-    {
-      auto st = std::chrono::high_resolution_clock::now();
-      MolGrid mg(unp_molmap);
+    std::cout << "Unpruned" << std::endl;
+    run_integration(PruningScheme::Unpruned);
 
-      auto lb = lb_factory.get_shared_instance( 
-        GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, mg, basis);
-      auto integrator = integrator_factory.get_instance( func, lb );
-
-      double N_EL = integrator.integrate_den( P );
-      auto en = std::chrono::high_resolution_clock::now();
-      std::cout << std::scientific << std::setprecision(16);
-      const auto err = std::abs(N_EL-ref_ne);
-      std::cout << "NE = " << N_EL << ", " << err << ", " << err/ref_ne << std::endl;
-      std::cout << std::chrono::duration<double>(en-st).count() << std::endl;
-    
-    }
-
-    // Create Pruned MolMap
-    auto pru_molmap = MolGridFactory::create_default_gridmap(
-      mol, PruningScheme::Robust, RadialQuad::MuraKnowles,
-      RadialSize(100), AngularSize(974) );
-
-    std::cout << "Pruned" << std::endl;
     // Pruned Integration
-    {
-      auto st = std::chrono::high_resolution_clock::now();
-      MolGrid mg(pru_molmap);
-
-      auto lb = lb_factory.get_shared_instance( 
-        GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, mg, basis);
-      auto integrator = integrator_factory.get_instance( func, lb );
-
-      double N_EL = integrator.integrate_den( P );
-      auto en = std::chrono::high_resolution_clock::now();
-      std::cout << std::scientific << std::setprecision(16);
-      const auto err = std::abs(N_EL-ref_ne);
-      std::cout << "NE = " << N_EL << ", " << err << ", " << err/ref_ne << std::endl;
-      std::cout << std::chrono::duration<double>(en-st).count() << std::endl;
-    
-    }
+    std::cout << "Pruned" << std::endl;
+    run_integration(PruningScheme::Robust);
 
 
   }

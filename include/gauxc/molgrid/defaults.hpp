@@ -59,7 +59,7 @@ namespace GauXC {
       return molmap;
     }
 
-    inline static atomic_grid_map create_gridmap(
+    inline static atomic_grid_map generate_gridmap(
       const atomic_grid_spec_map& gs_map ) {
 
       atomic_grid_map molmap;
@@ -74,14 +74,14 @@ namespace GauXC {
     inline static atomic_grid_map create_default_gridmap( 
       const Molecule& mol, PruningScheme scheme, Args&&... args ) {
 
-      return create_gridmap( create_default_grid_spec_map(mol, scheme, 
+      return generate_gridmap( create_default_grid_spec_map(mol, scheme, 
         std::forward<Args>(args)...) );
 
     }
 
     template <typename... Args>
     inline static MolGrid create_default_molgrid( Args&&... args ) {
-      return MolGrid( create_default_grid_map(std::forward<Args>(args)...) );
+      return MolGrid( create_default_gridmap(std::forward<Args>(args)...) );
     }
 
   };
