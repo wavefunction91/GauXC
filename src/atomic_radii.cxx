@@ -12,8 +12,8 @@ double default_atomic_radius(AtomicNumber Z) {
   auto clementi_67 = clementi_radius_67(Z);
   if( clementi_67 > 0. ) return clementi_67;
 
-  // Default to 2.01 Angstroms -> 3.79825 Bohr (???)
-  return 3.79825;
+  // Default to 2.01 Angstroms -> 3.79835 Bohr (???)
+  return 3.79835;
   
 }
 

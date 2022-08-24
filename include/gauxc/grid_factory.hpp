@@ -19,6 +19,12 @@ struct PruningRegion {
   size_t idx_st;
   size_t idx_en;
   AngularSize angular_size;
+
+  bool operator==(const PruningRegion& other) const {
+    return other.idx_st == idx_st and 
+           other.idx_en == idx_en and
+           other.angular_size == angular_size;
+  }
 };
 
 struct PrunedAtomicGridSpecification {

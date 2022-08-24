@@ -23,7 +23,10 @@ namespace GauXC {
   RadialScale default_mk_radial_scaling_factor( AtomicNumber );
   RadialScale default_mhl_radial_scaling_factor( AtomicNumber );
   RadialScale default_ta_radial_scaling_factor( AtomicNumber );
-  RadialScale defalt_radial_scaling_factor( RadialQuad, AtomicNumber );
+  RadialScale default_radial_scaling_factor( RadialQuad, AtomicNumber );
+
+  std::tuple<RadialSize,AngularSize> 
+    default_grid_size(AtomicNumber, RadialQuad, AtomicGridSizeDefault); 
 
   struct MolGridFactory {
 

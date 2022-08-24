@@ -1,5 +1,6 @@
 #include "ut_common.hpp"
 #include <gauxc/load_balancer.hpp>
+#include <gauxc/molgrid/defaults.hpp>
 
 using namespace GauXC;
 
@@ -100,7 +101,9 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
 
-  MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
+  //MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
+  auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
+    RadialQuad::MuraKnowles, AtomicGridSizeDefault::UltraFineGrid);
 
   auto meta = std::make_shared<MolMeta>( mol );
 

@@ -6,7 +6,9 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
                                 std::ofstream& out_file, size_t ntask_save = 10 ) {
 
 
-  MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
+  //MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
+  auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
+    RadialQuad::MuraKnowles, AtomicGridSizeDefault::FineGrid);
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
   auto lb = lb_factory.get_instance(GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, mg, basis);
   auto& tasks = lb.get_tasks();

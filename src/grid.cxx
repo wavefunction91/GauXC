@@ -3,10 +3,8 @@
 
 namespace GauXC {
 
-constexpr BatchSize default_batch_sz = BatchSize(512);
-
-Grid::Grid( std::shared_ptr<quadrature_type> q ) :
-  pimpl_( std::make_shared<detail::GridImpl>(q,default_batch_sz) ) { }
+Grid::Grid( std::shared_ptr<quadrature_type> q, BatchSize bsz ) :
+  pimpl_( std::make_shared<detail::GridImpl>(q, bsz) ) { }
 
 Grid::Grid( const Grid& )     = default;
 Grid::Grid( Grid&& ) noexcept = default;

@@ -3,6 +3,8 @@
 #include <gauxc/xc_integrator/impl.hpp>
 #include <gauxc/xc_integrator/integrator_factory.hpp>
 
+#include <gauxc/molgrid/defaults.hpp>
+
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
 #include <Eigen/Core>
@@ -52,7 +54,9 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, )
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
 
-  MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
+  //MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
+  auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
+    RadialQuad::MuraKnowles, AtomicGridSizeDefault::UltraFineGrid);
 
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
   //LoadBalancerFactory lb_factory(ExecutionSpace::Host, "REPLICATED-FILLIN");

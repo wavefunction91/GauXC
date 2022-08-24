@@ -36,7 +36,7 @@ public:
 
   Grid() = delete;
 
-  Grid( std::shared_ptr<quadrature_type> q );
+  Grid( std::shared_ptr<quadrature_type> q, BatchSize bsz = BatchSize(512) );
 
   /// Copy a Grid object
   Grid( const Grid& );
