@@ -88,6 +88,52 @@ RadialScale default_radial_scaling_factor(RadialQuad rq, AtomicNumber Z) {
 
 
 
+std::tuple<RadialSize,AngularSize> 
+  default_grid_size(AtomicNumber Z, RadialQuad rq, AtomicGridSizeDefault s) {
+
+  switch(s) {
+
+    case AtomicGridSizeDefault::FineGrid:
+      return std::make_tuple( RadialSize(75), AngularSize(302) );
+
+    case AtomicGridSizeDefault::UltraFineGrid:
+      return std::make_tuple( RadialSize(99), AngularSize(590) );
+
+
+    case AtomicGridSizeDefault::SuperFineGrid:
+      if( Z.get() <= 2 ) {
+        return std::make_tuple( RadialSize(175), AngularSize(974) );
+      } else {
+        return std::make_tuple( RadialSize(250), AngularSize(974) );
+      }
+
+    default:
+      GAUXC_GENERIC_EXCEPTION("Not A Resognized Standard Grid");
+      abort();
+  }
+
+}
+
+
+
+UnprunedAtomicGridSpecification MolGridFactory::create_default_unpruned_grid_spec(
+  AtomicNumber Z, RadialQuad rq, RadialSize rsz, AngularSize asz
+) {
+  return UnprunedAtomicGridSpecification{
+    rq, rsz, default_radial_scaling_factor(rq,Z), asz
+  };
+}
+
+UnprunedAtomicGridSpecification MolGridFactory::create_default_unpruned_grid_spec(
+  AtomicNumber Z, RadialQuad rq, AtomicGridSizeDefault standard_grid
+) {
+  auto [rsz, asz] = default_grid_size(Z, rq, standard_grid);
+  return create_default_unpruned_grid_spec(Z, rq, rsz, asz);
+}
+
+
+
+
 
 #if 0
 

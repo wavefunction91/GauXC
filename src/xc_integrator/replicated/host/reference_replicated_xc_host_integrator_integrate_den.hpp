@@ -99,6 +99,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   {
 
   XCHostData<value_type> host_data; // Thread local host data
+  double N_EL_LOCAL = 0.;
 
   #pragma omp for schedule(dynamic)
   for( size_t iT = 0; iT < ntasks; ++iT ) {
@@ -150,15 +151,17 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Evaluate density on grid
     lwd->eval_uvvar_lda( npts, nbe, basis_eval, zmat, nbe, den_eval );
 
-    #pragma omp critical
-    {
-      // Scalar integrations
-      for( int32_t i = 0; i < npts; ++i ) {
-        *N_EL += weights[i] * den_eval[i];
-      }
+    // Scalar integrations
+    for( int32_t i = 0; i < npts; ++i ) {
+      N_EL_LOCAL += weights[i] * den_eval[i];
     }
 
   } // Loop over tasks 
+
+  #pragma omp critical
+  {
+    *N_EL += N_EL_LOCAL;
+  }
 
   } // End OpenMP region
 

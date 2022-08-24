@@ -33,6 +33,19 @@ struct PrunedAtomicGridSpecification {
 PrunedAtomicGridSpecification robust_psi4_pruning_scheme(
   UnprunedAtomicGridSpecification
 );
+PrunedAtomicGridSpecification treutler_pruning_scheme(
+  UnprunedAtomicGridSpecification
+);
+
+enum class PruningScheme {
+  Unpruned,
+  Robust,
+  Treutler
+};
+
+PrunedAtomicGridSpecification create_pruned_spec(
+  PruningScheme, UnprunedAtomicGridSpecification
+);
 
 using atomic_grid_variant = 
   std::variant<UnprunedAtomicGridSpecification,

@@ -16,6 +16,7 @@
 #include <integratorxx/quadratures/lebedev_laikov.hpp>
 #include <integratorxx/composite_quadratures/pruned_spherical_quadrature.hpp>
 #include <gauxc/grid_factory.hpp>
+#include <gauxc/molgrid/defaults.hpp>
 
 #include <chrono>
 
@@ -140,6 +141,7 @@ int main(int argc, char** argv) {
 
    // Setup pruning
    #if 0
+   #if 0
    std::vector<PruningRegion> pruning_regions = {
      {0ul, 25ul,   AngularSize(170)},
      {25ul, 50ul,  AngularSize(266)},
@@ -160,8 +162,8 @@ int main(int argc, char** argv) {
      pruning_regions
    };
    #else
-   auto cno_pru_spec = robust_psi4_pruning_scheme( cno_unp_spec );
-   auto h_pru_spec   = robust_psi4_pruning_scheme( h_unp_spec   );
+   auto cno_pru_spec = create_pruned_spec( PruningScheme::Robust, cno_unp_spec );
+   auto h_pru_spec   = create_pruned_spec( PruningScheme::Robust, h_unp_spec   );
    #endif
 
     auto c_pru_grid = AtomicGridFactory::generate_grid(cno_pru_spec);
@@ -175,6 +177,19 @@ int main(int argc, char** argv) {
       { AtomicNumber(7), n_pru_grid },
       { AtomicNumber(8), o_pru_grid }
     };
+    #else
+    atomic_grid_map pru_molmap;
+    for( auto& atom : mol ) {
+      if(!pru_molmap.count(atom.Z)) {
+        pru_molmap.emplace(atom.Z,AtomicGridFactory::generate_grid(
+          MolGridFactory::create_default_pruned_grid_spec(
+            PruningScheme::Robust, atom.Z, RadialQuad::MuraKnowles,
+            RadialSize(100), AngularSize(974)
+          )
+        ));
+      }
+    }
+    #endif
 
     std::cout << "Pruned" << std::endl;
     // Pruned Integration

@@ -152,17 +152,72 @@ PrunedAtomicGridSpecification robust_psi4_pruning_scheme(
 
   // Create Pruning Regions
   const size_t rsz = unp.radial_size.get();
-  const size_t r_div_4 = rsz / 4ul;
+  const size_t r_div_4 = rsz / 4ul + 1ul;
+  const size_t r_div_2 = rsz / 2ul + 1ul;
   std::vector<PruningRegion> pruning_regions = {
-    {  0ul,       r_div_4,   low_sz},
-    {  r_div_4, 2ul*r_div_4, med_sz},
-    {2ul*r_div_4,       rsz, unp.angular_size}
+    {0ul,     r_div_4, low_sz},
+    {r_div_4, r_div_2, med_sz},
+    {r_div_2,     rsz, unp.angular_size}
   };
 
   return PrunedAtomicGridSpecification{
     unp.radial_quad, unp.radial_size, unp.radial_scale, pruning_regions
   };
   
+}
+
+
+
+PrunedAtomicGridSpecification treutler_pruning_scheme(
+  UnprunedAtomicGridSpecification unp ) {
+
+  const size_t med_order = 11;
+  const size_t low_order = 7;
+
+  // Look up order
+  // XXX: THIS ONLY WORKS FOR LEBEDEV
+  using namespace IntegratorXX::detail::lebedev;
+  AngularSize med_sz(npts_by_algebraic_order(med_order));
+  AngularSize low_sz(npts_by_algebraic_order(low_order));
+
+  // Create Pruning Regions
+  const size_t rsz = unp.radial_size.get();
+  const size_t r_div_3 = rsz / 3ul + 1ul;
+  const size_t r_div_2 = rsz / 2ul + 1ul;
+  std::vector<PruningRegion> pruning_regions = {
+    {0ul,     r_div_3, low_sz},
+    {r_div_3, r_div_2, med_sz},
+    {r_div_2, rsz,     unp.angular_size}
+  };
+
+  return PrunedAtomicGridSpecification{
+    unp.radial_quad, unp.radial_size, unp.radial_scale, pruning_regions
+  };
+  
+}
+
+
+PrunedAtomicGridSpecification create_pruned_spec(
+  PruningScheme scheme, UnprunedAtomicGridSpecification unp
+) {
+
+  switch(scheme) {
+    case PruningScheme::Robust:
+      return robust_psi4_pruning_scheme(unp);
+    case PruningScheme::Treutler:
+      return treutler_pruning_scheme(unp);
+    
+    // Default to Unpruned Grid
+    case PruningScheme::Unpruned:
+    default:
+      std::vector<PruningRegion> pruning_regions = {
+        {0ul, (size_t)unp.radial_size.get(), unp.angular_size}
+      };
+      return PrunedAtomicGridSpecification{
+        unp.radial_quad, unp.radial_size, unp.radial_scale, pruning_regions
+      };
+  }
+
 }
 
 }

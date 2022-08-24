@@ -27,11 +27,29 @@ namespace GauXC {
 
   struct MolGridFactory {
 
+    static UnprunedAtomicGridSpecification create_default_unpruned_grid_spec(
+      AtomicNumber, RadialQuad, RadialSize, AngularSize
+    );
+
+    static UnprunedAtomicGridSpecification create_default_unpruned_grid_spec(
+      AtomicNumber, RadialQuad, AtomicGridSizeDefault
+    );
+
+    template <typename... Args>
+    inline static atomic_grid_variant 
+      create_default_pruned_grid_spec( PruningScheme scheme, Args&&... args ) {
+      return create_pruned_spec( scheme, 
+        create_default_unpruned_grid_spec(std::forward<Args>(args)...)
+      );
+    }
+
+#if 0
     static atomic_grid_spec_map create_grid_spec( RadialQuad, 
       AtomicGridSizeDefault, const Molecule& );
 
     static atomic_grid_map generate_molgrid( RadialQuad, 
       AtomicGridSizeDefault, const Molecule& );
+#endif
 
   };
   
