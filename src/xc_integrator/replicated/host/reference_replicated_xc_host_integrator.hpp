@@ -18,6 +18,9 @@ public:
 
 protected:
 
+  void integrate_den_( int64_t m, int64_t n, const value_type* P,
+                      int64_t ldp, value_type* N_EL ) override;
+
   void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp, value_type* VXC, int64_t ldvxc,
                       value_type* EXC ) override;
@@ -28,6 +31,9 @@ protected:
   void eval_exx_( int64_t m, int64_t n, const value_type* P,
                   int64_t ldp, value_type* K, int64_t ldk,
                   const IntegratorSettingsEXX& settings ) override;
+
+  void integrate_den_local_work_( const value_type* P, int64_t ldp, 
+                                   value_type *N_EL );
 
   void exc_vxc_local_work_( const value_type* P, int64_t ldp, value_type* VXC,
                             int64_t ldvxc, value_type* EXC, value_type *N_EL );

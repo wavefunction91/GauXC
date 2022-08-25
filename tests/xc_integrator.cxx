@@ -4,6 +4,8 @@
 #include <gauxc/xc_integrator/integrator_factory.hpp>
 #include <gauxc/molecular_weights.hpp>
 
+#include <gauxc/molgrid/defaults.hpp>
+
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
 #include <Eigen/Core>
@@ -53,7 +55,9 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
 
-  MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
+  //MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
+  auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
+    RadialQuad::MuraKnowles, AtomicGridSizeDefault::UltraFineGrid);
 
   // Construct Load Balancer
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
@@ -74,6 +78,14 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", 
     integrator_kernel, lwd_kernel, reduction_kernel );
   auto integrator = integrator_factory.get_instance( func, lb );
+
+  // Integrate Density
+  if( ex != ExecutionSpace::Device ) {
+    auto N_EL_ref = std::accumulate( mol.begin(), mol.end(), 0ul,
+      [](const auto& a, const auto &b) { return a + b.Z.get(); });
+    auto N_EL = integrator.integrate_den( P );
+    CHECK( N_EL == Approx(N_EL_ref).epsilon(1e-6) );
+  }
 
   // Integrate EXC/VXC
   auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );

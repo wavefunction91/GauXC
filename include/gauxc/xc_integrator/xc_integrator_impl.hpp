@@ -19,6 +19,7 @@ public:
 
 protected:
 
+  virtual value_type    integrate_den_( const MatrixType& P ) = 0;
   virtual exc_vxc_type  eval_exc_vxc_ ( const MatrixType& P ) = 0;
   virtual exc_grad_type eval_exc_grad_( const MatrixType& P ) = 0;
   virtual exx_type      eval_exx_     ( const MatrixType&     P, 
@@ -35,6 +36,14 @@ public:
   XCIntegratorImpl( XCIntegratorImpl&&      ) noexcept = default;
   virtual ~XCIntegratorImpl()                 noexcept = default;
 
+  /** Integrate Density (approx N_EL)
+   *
+   *  @param[in] P The density matrix
+   *  @returns Approx Tr[P*S]
+   */
+ value_type integrate_den( const MatrixType& P ) {
+   return integrate_den_(P);
+ }
 
   /** Integrate EXC / VXC (Mean field terms) for RKS
    * 

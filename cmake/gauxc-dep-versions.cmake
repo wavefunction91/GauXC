@@ -14,4 +14,4 @@ set( GAUXC_GAU2GRID_REPOSITORY https://github.com/dgasmith/gau2grid.git )
 set( GAUXC_GAU2GRID_REVISION   v2.0.6 )
 
 set( GAUXC_INTEGRATORXX_REPOSITORY https://github.com/wavefunction91/IntegratorXX.git )
-set( GAUXC_INTEGRATORXX_REVISION   02ca3b0884a0261d8125cc2ec8397dc3166f2147 )
+set( GAUXC_INTEGRATORXX_REVISION   8ac156ed3eb2006a9389e8103d1dd7af12579d77 )

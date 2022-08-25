@@ -4,6 +4,7 @@
 #include <gauxc/util/div_ceil.hpp>
 #include <gauxc/runtime_environment.hpp>
 #include <gauxc/molecular_weights.hpp>
+#include <gauxc/molgrid/defaults.hpp>
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
@@ -51,6 +52,7 @@ int main(int argc, char** argv) {
     std::string reduction_kernel   = "Default";
     double      basis_tol = 1e-10;
     std::string func_spec = "PBE0";
+    bool integrate_den      = false;
     bool integrate_vxc      = true;
     bool integrate_exx      = false;
     bool integrate_exc_grad = false;
@@ -72,6 +74,8 @@ int main(int argc, char** argv) {
       string_to_upper( func_spec );
     }
 
+    if( input.containsData("GAUXC.INTEGRATE_DEN" ) )
+      integrate_den = input.getData<bool>("GAUXC.INTEGRATE_DEN");
     if( input.containsData("GAUXC.INTEGRATE_VXC" ) )
       integrate_vxc = input.getData<bool>("GAUXC.INTEGRATE_VXC");
     if( input.containsData("GAUXC.INTEGRATE_EXX" ) )
@@ -97,15 +101,18 @@ int main(int argc, char** argv) {
     string_to_upper( lwd_kernel );
     string_to_upper( reduction_kernel );
 
+    #ifdef GAUXC_ENABLE_DEVICE
     std::map< std::string, ExecutionSpace > exec_space_map = {
       { "HOST",   ExecutionSpace::Host },
-      #ifdef GAUXC_ENABLE_DEVICE
       { "DEVICE", ExecutionSpace::Device }
-      #endif
     };
 
     auto lb_exec_space = exec_space_map.at(lb_exec_space_str);
     auto int_exec_space = exec_space_map.at(int_exec_space_str);
+    #else
+    auto lb_exec_space  = ExecutionSpace::Host;
+    auto int_exec_space = ExecutionSpace::Host;
+    #endif
 
     if( !world_rank ) {
       std::cout << "DRIVER SETTINGS: " << std::endl
@@ -149,7 +156,8 @@ int main(int argc, char** argv) {
       {"SUPERFINE", AtomicGridSizeDefault::SuperFineGrid}
     };
 
-    MolGrid mg( mg_map.at(grid_spec), mol);
+    auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
+      RadialQuad::MuraKnowles, mg_map.at(grid_spec));
 
     // Read BasisSet
     BasisSet<double> basis; 
@@ -212,6 +220,7 @@ int main(int argc, char** argv) {
     matrix_type P,VXC_ref,K_ref;
     double EXC_ref;
     std::vector<double> EXC_GRAD_ref(3*mol.size());
+    size_t N_EL_ref = MolMeta(mol).sum_atomic_charges();
     {
       HighFive::File file( ref_file, HighFive::File::ReadOnly );
       auto dset = file.getDataSet("/DENSITY");
@@ -285,7 +294,15 @@ int main(int argc, char** argv) {
     auto xc_int_start = std::chrono::high_resolution_clock::now();
 
     matrix_type VXC, K;
-    double EXC;
+    double EXC, N_EL;
+
+    if( integrate_den ) {
+      N_EL = integrator.integrate_den( P );
+      std::cout << std::scientific << std::setprecision(12);
+      std::cout << "N_EL = " << N_EL << std::endl;
+    } else {
+      N_EL = N_EL_ref;
+    }
 
     if( integrate_vxc ) {
       std::tie(EXC, VXC) = integrator.eval_exc_vxc( P );
@@ -395,6 +412,13 @@ int main(int argc, char** argv) {
       std::cout << std::scientific << std::setprecision(14);
 
       std::cout << "XC Int Duration  = " << xc_int_dur << " s" << std::endl;
+
+      if( integrate_den ) {
+      std::cout << "N_EL (ref)        = " << (double)N_EL_ref << std::endl;
+      std::cout << "N_EL (calc)       = " << N_EL     << std::endl;
+      std::cout << "N_EL Diff         = " << std::abs(N_EL_ref - N_EL) / N_EL_ref 
+                                         << std::endl;
+      }
 
       if( integrate_vxc ) {
       std::cout << "EXC (ref)        = " << EXC_ref << std::endl;

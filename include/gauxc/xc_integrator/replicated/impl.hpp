@@ -38,6 +38,18 @@ const LoadBalancer& ReplicatedXCIntegrator<MatrixType>::get_load_balancer_() con
 
 
 template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::value_type 
+  ReplicatedXCIntegrator<MatrixType>::integrate_den_( const MatrixType& P ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  value_type N_EL;
+  
+  pimpl_->integrate_den( P.rows(), P.cols(), P.data(), P.rows(), &N_EL );
+
+  return N_EL;
+}
+
+template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type 
   ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P ) {
 

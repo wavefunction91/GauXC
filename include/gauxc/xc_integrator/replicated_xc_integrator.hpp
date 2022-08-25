@@ -30,6 +30,7 @@ private:
   using pimpl_type = ReplicatedXCIntegratorImpl<value_type>;
   std::unique_ptr< pimpl_type > pimpl_;
 
+  value_type    integrate_den_( const MatrixType& ) override;
   exc_vxc_type  eval_exc_vxc_ ( const MatrixType& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType& ) override;
   exx_type      eval_exx_     ( const MatrixType&, const IntegratorSettingsEXX& ) override;

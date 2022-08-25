@@ -16,6 +16,14 @@ template <typename ValueType>
 ReplicatedXCIntegratorImpl<ValueType>::
   ~ReplicatedXCIntegratorImpl() noexcept = default;
 
+template <typename ValueType>
+void ReplicatedXCIntegratorImpl<ValueType>::
+  integrate_den( int64_t m, int64_t n, const value_type* P,
+                 int64_t ldp, value_type* N_EL ) {
+
+    integrate_den_(m,n,P,ldp,N_EL);
+
+}
 
 template <typename ValueType>
 void ReplicatedXCIntegratorImpl<ValueType>::
