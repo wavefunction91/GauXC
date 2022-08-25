@@ -15,6 +15,7 @@ include( gauxc-exchcxx      )
 add_library( gauxc STATIC 
   grid.cxx 
   grid_impl.cxx 
+  grid_factory.cxx
   molmeta.cxx 
   molgrid.cxx 
   molgrid_impl.cxx 

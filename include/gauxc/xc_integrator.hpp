@@ -44,6 +44,7 @@ public:
   XCIntegrator( const XCIntegrator& ) = delete;
   XCIntegrator( XCIntegrator&& ) noexcept;
 
+  value_type    integrate_den( const MatrixType& );
   exc_vxc_type  eval_exc_vxc ( const MatrixType& );
   exc_grad_type eval_exc_grad( const MatrixType& );
   exx_type      eval_exx     ( const MatrixType&, 

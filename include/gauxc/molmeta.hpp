@@ -9,6 +9,7 @@ class MolMeta {
   size_t              natoms_;
   std::vector<double> rab_;
   std::vector<double> dist_nearest_; 
+  size_t              sum_atomic_charges_;
 
   void compute_rab(const Molecule&);
   void compute_dist_nearest();
@@ -30,6 +31,8 @@ public:
 
   const auto& dist_nearest() const { return dist_nearest_; }
         auto& dist_nearest()       { return dist_nearest_; }
+
+  size_t sum_atomic_charges() const { return sum_atomic_charges_; }
 
   template <typename Archive>
   void serialize( Archive& ar ) {

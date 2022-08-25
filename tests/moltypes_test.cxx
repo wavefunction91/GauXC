@@ -3,6 +3,7 @@
 #include <gauxc/molecule.hpp>
 #include <gauxc/molmeta.hpp>
 #include <gauxc/external/hdf5.hpp>
+#include <filesystem>
 
 #include "standards.hpp"
 
@@ -145,6 +146,8 @@ TEST_CASE("HDF5-MOLECULE", "[moltypes]") {
   
   // Write file
   const std::string fname = GAUXC_REF_DATA_PATH "/test_mol.hdf5";
+  if( std::filesystem::exists(fname) ) std::filesystem::remove(fname);
+
   write_hdf5_record( mol, fname , "/MOL" );
 
   // Read File
@@ -154,6 +157,6 @@ TEST_CASE("HDF5-MOLECULE", "[moltypes]") {
   // Check that IO was correct
   CHECK( mol == mol_read );
 
-  std::remove( fname.c_str() ); // Delete the test file
+  std::filesystem::remove(fname); // Delete the test file
 
 }

@@ -1,5 +1,6 @@
 #pragma once
 #include <gauxc/molgrid.hpp>
+#include <gauxc/molgrid/defaults.hpp>
 #include <gauxc/load_balancer.hpp>
 
 
@@ -31,7 +32,9 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
 
 
   RuntimeEnvironment rt(MPI_COMM_WORLD);
-  MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
+  auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
+    RadialQuad::MuraKnowles, AtomicGridSizeDefault::FineGrid);
+
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
   auto lb = lb_factory.get_instance(rt, mol, mg, basis);
   auto& tasks = lb.get_tasks();

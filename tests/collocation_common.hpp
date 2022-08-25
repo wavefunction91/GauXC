@@ -4,6 +4,7 @@
 #include <gauxc/molgrid.hpp>
 #include <gauxc/basisset.hpp>
 #include <gauxc/load_balancer.hpp>
+#include <gauxc/molgrid/defaults.hpp>
 #include <fstream>
 #include <string>
 

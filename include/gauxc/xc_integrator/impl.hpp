@@ -17,6 +17,12 @@ XCIntegrator<MatrixType>::~XCIntegrator() noexcept = default;
 template <typename MatrixType>
 XCIntegrator<MatrixType>::XCIntegrator(XCIntegrator&&) noexcept = default;
 
+template <typename MatrixType>
+typename XCIntegrator<MatrixType>::value_type
+  XCIntegrator<MatrixType>::integrate_den( const MatrixType& P ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->integrate_den(P);
+};
 
 template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_vxc_type
