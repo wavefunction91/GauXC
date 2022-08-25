@@ -96,6 +96,7 @@ struct XCDeviceStackData : public XCDeviceData {
     host_task_iterator, host_task_iterator) override final;
   void allocate_static_data_weights( int32_t natoms ) override final;
   void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) override final;
+  void allocate_static_data_den( int32_t nbf, int32_t nshells ) override final;
   void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) override final;
   void allocate_static_data_exx( int32_t nbf, int32_t nshells ) override final;
   void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) override final;
@@ -103,12 +104,14 @@ struct XCDeviceStackData : public XCDeviceData {
     const BasisSet<double>& basis ) override final;
   void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) 
     override final;
+  void zero_den_integrands() override final;
   void zero_exc_vxc_integrands() override final;
   void zero_exc_grad_integrands() override final;
   void zero_exx_integrands() override final;
   void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
     double* VXC, int32_t ldvxc ) override final;
   void retrieve_exc_grad_integrands( double* EXC_GRAD, double* N_EL ) override final;
+  void retrieve_den_integrands( double* N_EL ) override final;
   void retrieve_exx_integrands( double* K, int32_t ldk ) override final;
   void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) override final;
 

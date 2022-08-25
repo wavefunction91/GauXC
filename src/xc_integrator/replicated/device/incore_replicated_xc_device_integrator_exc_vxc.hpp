@@ -74,7 +74,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     // Compute local contributions to EXC/VXC and retrieve
     // data from device 
-    this->timer_.time_op("XCIntegrator.LocalWork", [&](){
+    this->timer_.time_op("XCIntegrator.LocalWork_EXC_VXC", [&](){
       exc_vxc_local_work_( basis, P, ldp, VXC, ldvxc, EXC, 
         &N_EL, tasks.begin(), tasks.end(), *device_data_ptr);
     });
@@ -91,9 +91,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     });
 
   }
-
-  std::cout << std::scientific << std::setprecision(12);
-  std::cout << "NEL = " << N_EL << std::endl;
 }
 
 template <typename ValueType>
@@ -108,7 +105,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Setup Aliases
   const auto& func  = *this->func_;
   const auto& mol   = this->load_balancer_->molecule();
-  const auto& meta  = this->load_balancer_->molmeta();
 
   // Get basis map
   BasisSetMap basis_map(basis,mol);

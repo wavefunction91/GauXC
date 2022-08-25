@@ -80,12 +80,10 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   auto integrator = integrator_factory.get_instance( func, lb );
 
   // Integrate Density
-  if( ex != ExecutionSpace::Device ) {
-    auto N_EL_ref = std::accumulate( mol.begin(), mol.end(), 0ul,
-      [](const auto& a, const auto &b) { return a + b.Z.get(); });
-    auto N_EL = integrator.integrate_den( P );
-    CHECK( N_EL == Approx(N_EL_ref).epsilon(1e-6) );
-  }
+  auto N_EL_ref = std::accumulate( mol.begin(), mol.end(), 0ul,
+    [](const auto& a, const auto &b) { return a + b.Z.get(); });
+  auto N_EL = integrator.integrate_den( P );
+  CHECK( N_EL == Approx(N_EL_ref).epsilon(1e-6) );
 
   // Integrate EXC/VXC
   auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );

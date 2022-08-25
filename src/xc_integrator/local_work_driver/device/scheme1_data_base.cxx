@@ -53,7 +53,7 @@ size_t Scheme1DataBase::get_mem_req( integrator_term_tracker terms,
                  mem_iparent * sizeof(int32_t);
   }
 
-  if( terms.exx or terms.exc_vxc or terms.exc_grad ) {
+  if( terms.exx or terms.exc_vxc or terms.exc_grad or terms.den ) {
     const auto& shell_list_bfn = task.bfn_screening.shell_list;
     const size_t nshells_bfn  = shell_list_bfn.size();
     const auto& shell_list_cou = task.cou_screening.shell_list;
@@ -117,7 +117,7 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
       mem.aligned_alloc<int32_t>( total_npts_task_batch, csl );
   }
 
-  if( terms.exx or terms.exc_vxc or terms.exc_grad ) {
+  if( terms.exx or terms.exc_vxc or terms.exc_grad or terms.den ) {
     total_nshells_bfn_task_batch  = 0; 
     //total_nshells_cou_task_batch  = 0; 
     total_nshells_cou_sqlt_task_batch  = 0; 
@@ -211,7 +211,7 @@ void Scheme1DataBase::pack_and_send(
       "send dist_nearest" );
   }
 
-  if( terms.exx or terms.exc_vxc or terms.exc_grad ) {
+  if( terms.exx or terms.exc_vxc or terms.exc_grad or terms.den ) {
     // Contatenation utility
     auto concat_iterable = []( auto& a, const auto& b ) {
       a.insert( a.end(), b.begin(), b.end() );
@@ -675,7 +675,7 @@ void Scheme1DataBase::add_extra_to_indirection(
     }
   }
 
-  if( terms.exx or terms.exc_vxc or terms.exc_grad ) {
+  if( terms.exx or terms.exc_vxc or terms.exc_grad or terms.den ) {
     const size_t total_nshells_bfn = total_nshells_bfn_task_batch * sizeof(size_t);
     buffer_adaptor 
       shell_list_bfn_mem( collocation_stack.shell_list_device, total_nshells_bfn );

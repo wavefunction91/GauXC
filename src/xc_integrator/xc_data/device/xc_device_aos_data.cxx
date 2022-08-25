@@ -18,7 +18,7 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   
   // Everything in AoS is not required for current implementations of
   // the weights kernel
-  if( not (is_xc_calc or terms.exx) ) return base_size;
+  if( not (is_xc_calc or terms.exx or terms.den) ) return base_size;
   if( is_xc_calc and terms.xc_approx == _UNDEFINED ) 
     GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET FOR XC CALC");
 
@@ -55,7 +55,8 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   const size_t mem_bf_hess = need_hess ? 6*mem_bf : 0;
 
   // LDA/GGA Z Matrix 
-  const size_t mem_zmat_lda_gga = is_xc_calc ? nbe_bfn * npts * sizeof(double) : 0;
+  const size_t mem_zmat_lda_gga = (is_xc_calc or terms.den) ? 
+    nbe_bfn * npts * sizeof(double) : 0;
 
   // X Matrix graidnet (needed for GGA Gradients)
   const size_t mem_xmat_grad = 
@@ -107,7 +108,7 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
   // All data that currently resides in AoS is XC/EXX related and can be skipped
   // for weights
   const auto is_xc_calc = terms.exc_vxc or terms.exc_grad;
-  if( not (is_xc_calc or terms.exx) ) return buf; 
+  if( not (is_xc_calc or terms.exx or terms.den) ) return buf; 
 
   if( is_xc_calc and terms.xc_approx == _UNDEFINED ) 
     GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET FOR XC CALC");
@@ -193,7 +194,7 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
   }
 
   // VXC Z Matrix
-  if( is_xc_calc ) {
+  if( is_xc_calc or terms.den ) {
     aos_stack.zmat_vxc_lda_gga_device = mem.aligned_alloc<double>( total_nbe_bfn_npts_task_batch, csl);
   }
 
@@ -241,7 +242,7 @@ void XCDeviceAoSData::pack_and_send(
 
   // All data that currently resides in AoS is XC related and can be skipped
   // for weights
-  if( not (is_xc_calc or terms.exx) ) return; 
+  if( not (is_xc_calc or terms.exx or terms.den) ) return; 
 
   if( is_xc_calc and terms.xc_approx == _UNDEFINED ) 
     GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET FOR XC CALC");
@@ -434,7 +435,7 @@ void XCDeviceAoSData::pack_and_send(
 
     task.nbe_scr = nbe_mem .aligned_alloc<double>( std::max(nbe_bfn,nbe_cou) * nbe_bfn, csl);
 
-    if(is_xc_calc) {
+    if(is_xc_calc or terms.den) {
       task.zmat = zmat_mem.aligned_alloc<double>( nbe_bfn * npts, csl);
     }
 
@@ -460,8 +461,10 @@ void XCDeviceAoSData::pack_and_send(
       task.xmat_z = xmat_dz_mem.aligned_alloc<double>( nbe_bfn * npts, csl);
     }
 
+    if( is_xc_calc or terms.den) {
+      task.den  = den_mem.aligned_alloc<double>(npts, csl);
+    }
     if( is_xc_calc ) {
-      task.den    = den_mem.aligned_alloc<double>(npts, csl);
       if( need_grad ) {
         task.ddenx  = dden_x_mem.aligned_alloc<double>(npts, csl);
         task.ddeny  = dden_y_mem.aligned_alloc<double>(npts, csl);

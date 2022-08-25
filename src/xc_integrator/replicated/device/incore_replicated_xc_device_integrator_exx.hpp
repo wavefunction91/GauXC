@@ -71,7 +71,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Setup Aliases
   const auto& mol   = this->load_balancer_->molecule();
-  const auto& meta  = this->load_balancer_->molmeta();
 
   const auto nbf     = basis.nbf();
   const auto nshells = basis.nshells();
@@ -112,7 +111,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // Compute base screening quantities
     const size_t nb2 = basis.nbf() * basis.nbf();
     std::vector<double> P_abs(nb2);
-    for( auto i = 0; i < nb2; ++i ) P_abs[i] = std::abs(P[i]);
+    for( auto i = 0ul; i < nb2; ++i ) P_abs[i] = std::abs(P[i]);
 
     const size_t ns2 = nshells * nshells;
     std::vector<double> V_max(ns2);

@@ -20,6 +20,7 @@ enum integrator_xc_approx : uint32_t {
 
 struct integrator_term_tracker {
   bool weights                   = false;
+  bool den                       = false;
   bool exc_vxc                   = false;
   bool exc_grad                  = false;
   bool exx                       = false;
@@ -34,6 +35,7 @@ std::ostream& operator<<( std::ostream& out, const integrator_term_tracker& t ) 
   out << std::boolalpha;
   out << "Integrator Terms:" << std::endl;
   out << "  WEIGHTS  " << t.weights << std::endl;
+  out << "  DEN      " << t.den << std::endl;
   out << "  EXC_VXC  " << t.exc_vxc << std::endl;
   out << "  EXC_GRAD " << t.exc_grad << std::endl;
   out << "  EXX      " << t.exx << std::endl;
@@ -57,6 +59,7 @@ struct XCDeviceData {
   virtual void reset_allocations() = 0;
   virtual void allocate_static_data_weights( int32_t natoms ) = 0;
   virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) = 0;
+  virtual void allocate_static_data_den( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) = 0;
   virtual void allocate_static_data_exx( int32_t nbf, int32_t nshells ) = 0;
 
@@ -64,6 +67,9 @@ struct XCDeviceData {
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
   virtual void send_static_data_density_basis( const double* P, int32_t ldp, const BasisSet<double>& basis ) = 0;
   virtual void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) = 0;
+
+  /// Zero out the density integrands in device memory
+  virtual void zero_den_integrands() = 0;
 
   /// Zero out the EXC / VXC integrands in device memory
   virtual void zero_exc_vxc_integrands() = 0;
@@ -109,6 +115,13 @@ struct XCDeviceData {
    *  @param[out] N_EL      Integrated # electrons (host) for XC queue 
    */
   virtual void retrieve_exc_grad_integrands( double* EXC_GRAD, double* N_EL ) = 0;
+
+  /** Retreive Density integrands from device memory
+   *
+   *  @param[out] N_EL      Integrated # electrons (host) for XC queue 
+   */
+  virtual void retrieve_den_integrands( double* N_EL ) = 0;
+
 
   virtual void retrieve_exx_integrands( double* K, int32_t ldk ) = 0;
 

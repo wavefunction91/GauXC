@@ -40,7 +40,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     // Compute local contributions to N_EL and retrieve
     // data from device 
-    this->timer_.time_op("XCIntegrator.LocalWork_IntegrateDen", [&](){
+    this->timer_.time_op("XCIntegrator.LocalWork_Den", [&](){
       integrate_den_local_work_( basis, P, ldp, N_EL,
         tasks.begin(), tasks.end(), *device_data_ptr);
     });
@@ -63,7 +63,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                        int64_t ldp, value_type* N_EL,
                        host_task_iterator task_begin, host_task_iterator task_end,
                        XCDeviceData& device_data ) {
-#if 1
+#if 0
   GAUXC_GENERIC_EXCEPTION("NYI");
 #else
 
@@ -72,7 +72,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Setup Aliases
   const auto& mol   = this->load_balancer_->molecule();
-  const auto& meta  = this->load_balancer_->molmeta();
 
   // Get basis map
   BasisSetMap basis_map(basis,mol);
@@ -83,64 +82,30 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Sort tasks 
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
-    return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
+    return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
   };
   std::sort( task_begin, task_end, task_comparator );
 
 
-  // TODO: Refactor this into separate function
+  // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
-
-  // Modify weights if need be
   if( not lb_state.modified_weights_are_stored ) {
-
-  integrator_term_tracker enabled_terms;
-  enabled_terms.weights = true;
-
-  this->timer_.time_op("XCIntegrator.Weights", [&]() { 
-    const auto natoms = mol.natoms();
-    device_data.reset_allocations();
-    device_data.allocate_static_data_weights( natoms );
-    device_data.send_static_data_weights( mol, meta );
-
-    // Processes batches in groups that saturadate available device memory
-    auto task_it = task_begin;
-    while( task_it != task_end ) {
-      
-      // Determine next task batch, send relevant data to device (weights only)
-      auto task_batch_end = 
-        device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
-
-      // Apply partition weights 
-      lwd->partition_weights( &device_data );
-      
-      // Copy back to host data
-      device_data.copy_weights_to_tasks( task_it, task_batch_end );
-
-      // Update iterator
-      task_it = task_batch_end;
-
-    } // End loop over batches
-
-    // Signal that we don't need to do weights again
-    lb_state.modified_weights_are_stored = true;
-  });
-
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
   }
 
   // Do XC integration in task batches
   const auto nbf     = basis.nbf();
   const auto nshells = basis.nshells();
   device_data.reset_allocations();
-  device_data.allocate_static_data_integrate_den( nbf, nshells );
+  device_data.allocate_static_data_den( nbf, nshells );
   device_data.send_static_data_density_basis( P, ldp, basis );
 
   // Zero integrands
-  device_data.zero_integrate_den_integrands();
+  device_data.zero_den_integrands();
 
   // Processes batches in groups that saturadate available device memory
   integrator_term_tracker enabled_terms;
-  enabled_terms.integrate_den = true;
+  enabled_terms.den = true;
 
   auto task_it = task_begin;
   while( task_it != task_end ) {
@@ -157,6 +122,9 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // Evaluate X matrix
     lwd->eval_xmat( &device_data );
 
+    // Evaluate the density
+    lwd->eval_uvvar_lda( &device_data );
+
     // Do scalar N_EL integration
     lwd->inc_nel( &device_data );
 
@@ -164,7 +132,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Receive N_EL from device
   this->timer_.time_op("XCIntegrator.DeviceToHostCopy",[&](){
-    device_data.retrieve_integrate_den_integrands( N_EL );
+    device_data.retrieve_den_integrands( N_EL );
   });
 #endif
 }
