@@ -45,16 +45,11 @@ int main(int argc, char** argv) {
 
     // Require Ref file
     auto ref_file = input.getData<std::string>("GAUXC.REF_FILE");
-    //auto ref_ne   = input.getData<double>("GAUXC.REF_NE");
 
     // Read Molecule
     Molecule mol;
     read_hdf5_record( mol, ref_file, "/MOLECULE" );
-
-    double ref_ne = 0.0;
-    for( auto& atom : mol ) {
-      ref_ne += atom.Z.get();
-    }
+    double ref_ne = MolMeta(mol).sum_atomic_charges();
 
     // Read BasisSet
     BasisSet<double> basis; 

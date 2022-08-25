@@ -146,7 +146,6 @@ int main(int argc, char** argv) {
       {"SUPERFINE", AtomicGridSizeDefault::SuperFineGrid}
     };
 
-    //MolGrid mg( mg_map.at(grid_spec), mol);
     auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
       RadialQuad::MuraKnowles, mg_map.at(grid_spec));
 

@@ -47,6 +47,7 @@ void reference_becke_weights_host(
 #endif
 
 
+#if 0
   std::vector<double> size_adj(natoms * natoms);
   for( auto i = 0; i < natoms; ++i ) 
   for( auto j = 0; j < natoms; ++j ) {
@@ -58,6 +59,7 @@ void reference_becke_weights_host(
 
     size_adj[i + j*natoms] = a;
   }
+#endif
 
   #pragma omp parallel 
   {
@@ -91,7 +93,7 @@ void reference_becke_weights_host(
 
       double mu  = (atomDist[iA] - atomDist[jA]) / RAB[jA + iA*natoms];
 
-#if 1
+#if 0
       // Size Adjustment
       const double a = size_adj[iA + jA*natoms];
       mu = mu + a * ( 1. - mu*mu );
