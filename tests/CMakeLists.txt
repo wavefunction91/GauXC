@@ -57,24 +57,24 @@ target_include_directories( gauxc_test PRIVATE ${PROJECT_BINARY_DIR}/tests )
 target_include_directories( gauxc_test PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
 
-#add_executable( standalone_driver standalone_driver.cxx standards.cxx basis/parse_basis.cxx ini_input.cxx )
-#target_link_libraries( standalone_driver PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
-#target_include_directories( standalone_driver PRIVATE ${PROJECT_BINARY_DIR}/tests )
-#target_include_directories( standalone_driver PRIVATE ${PROJECT_SOURCE_DIR}/tests )
+add_executable( standalone_driver standalone_driver.cxx standards.cxx basis/parse_basis.cxx ini_input.cxx )
+target_link_libraries( standalone_driver PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
+target_include_directories( standalone_driver PRIVATE ${PROJECT_BINARY_DIR}/tests )
+target_include_directories( standalone_driver PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
 add_executable( grid_opt grid_opt.cxx standards.cxx basis/parse_basis.cxx ini_input.cxx )
 target_link_libraries( grid_opt PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
 target_include_directories( grid_opt PRIVATE ${PROJECT_BINARY_DIR}/tests )
 target_include_directories( grid_opt PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
-#add_executable( conv_cereal_to_hdf5 conv_cereal_to_hdf5.cxx standards.cxx basis/parse_basis.cxx )
-#target_link_libraries( conv_cereal_to_hdf5 PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
-#target_include_directories( conv_cereal_to_hdf5 PRIVATE ${PROJECT_BINARY_DIR}/tests )
-#target_include_directories( conv_cereal_to_hdf5 PRIVATE ${PROJECT_SOURCE_DIR}/tests )
+add_executable( conv_cereal_to_hdf5 conv_cereal_to_hdf5.cxx standards.cxx basis/parse_basis.cxx )
+target_link_libraries( conv_cereal_to_hdf5 PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
+target_include_directories( conv_cereal_to_hdf5 PRIVATE ${PROJECT_BINARY_DIR}/tests )
+target_include_directories( conv_cereal_to_hdf5 PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
-#add_test( NAME GAUXC_SERIAL_TEST COMMAND $<TARGET_FILE:gauxc_test> )
-#if( GAUXC_ENABLE_MPI )
-#  add_test( NAME GAUXC_MPI_TEST
-#            COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} $<TARGET_FILE:gauxc_test> ${MPIEXEC_POSTFLAGS}
-#  )
-#endif()
+add_test( NAME GAUXC_SERIAL_TEST COMMAND $<TARGET_FILE:gauxc_test> )
+if( GAUXC_ENABLE_MPI )
+  add_test( NAME GAUXC_MPI_TEST
+            COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} $<TARGET_FILE:gauxc_test> ${MPIEXEC_POSTFLAGS}
+  )
+endif()
