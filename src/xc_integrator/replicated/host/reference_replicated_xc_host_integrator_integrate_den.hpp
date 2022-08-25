@@ -56,10 +56,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   auto* lwd = dynamic_cast<LocalHostWorkDriver*>(this->local_work_driver_.get());
 
   // Setup Aliases
-  const auto& func  = *this->func_;
   const auto& basis = this->load_balancer_->basis();
   const auto& mol   = this->load_balancer_->molecule();
-  const auto& meta  = this->load_balancer_->molmeta();
 
   // Get basis map
   BasisSetMap basis_map(basis,mol);
@@ -68,7 +66,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Sort tasks on size (XXX: maybe doesnt matter?)
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
-    return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
+    return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
   };
 
   auto& tasks = this->load_balancer_->get_tasks();
@@ -78,16 +76,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Compute Partition Weights
   auto& lb_state = this->load_balancer_->state();
   if( not lb_state.modified_weights_are_stored ) {
-  #if 1
-    lwd->partition_weights( XCWeightAlg::SSF, mol, meta, 
-      tasks.begin(), tasks.end() );
-  #else
-    lwd->partition_weights( XCWeightAlg::Becke, mol, meta, 
-      tasks.begin(), tasks.end() );
-    //lwd->partition_weights( XCWeightAlg::LKO, mol, meta, 
-    //  tasks.begin(), tasks.end() );
-  #endif
-    lb_state.modified_weights_are_stored = true;
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
   }
   *N_EL = 0.;
 
@@ -110,12 +99,12 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Get tasks constants
     const int32_t  npts    = task.points.size();
-    const int32_t  nbe     = task.nbe;
-    const int32_t  nshells = task.shell_list.size();
+    const int32_t  nbe     = task.bfn_screening.nbe;
+    const int32_t  nshells = task.bfn_screening.shell_list.size();
 
     const auto* points      = task.points.data()->data();
     const auto* weights     = task.weights.data();
-    const int32_t* shell_list = task.shell_list.data();
+    const int32_t* shell_list = task.bfn_screening.shell_list.data();
 
     // Allocate enough memory for batch
 
@@ -136,7 +125,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Get the submatrix map for batch
     std::vector< std::array<int32_t, 3> > submat_map;
     std::tie(submat_map, std::ignore) =
-          gen_compressed_submat_map(basis_map, task.shell_list, nbf, nbf);
+          gen_compressed_submat_map(basis_map, task.bfn_screening.shell_list, nbf, nbf);
 
     // Evaluate Collocation (+ Grad)
     lwd->eval_collocation( npts, nshells, nbe, points, basis, shell_list, 

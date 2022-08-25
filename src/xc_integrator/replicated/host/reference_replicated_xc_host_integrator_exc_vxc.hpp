@@ -67,7 +67,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   const auto& func  = *this->func_;
   const auto& basis = this->load_balancer_->basis();
   const auto& mol   = this->load_balancer_->molecule();
-  const auto& meta  = this->load_balancer_->molmeta();
 
   // Get basis map
   BasisSetMap basis_map(basis,mol);

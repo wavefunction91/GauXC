@@ -270,7 +270,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Setup Aliases
   const auto& basis = this->load_balancer_->basis();
   const auto& mol   = this->load_balancer_->molecule();
-  const auto& meta  = this->load_balancer_->molmeta();
 
 
   // Get basis map
