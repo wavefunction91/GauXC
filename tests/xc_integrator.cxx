@@ -17,6 +17,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   ExchCXX::Functional func_key, 
   size_t quad_pad_value,
   bool check_grad,
+  bool check_integrate_den,
   std::string integrator_kernel = "Default",  
   std::string reduction_kernel  = "Default",
   std::string lwd_kernel        = "Default" ) {
@@ -80,10 +81,12 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   auto integrator = integrator_factory.get_instance( func, lb );
 
   // Integrate Density
-  auto N_EL_ref = std::accumulate( mol.begin(), mol.end(), 0ul,
-    [](const auto& a, const auto &b) { return a + b.Z.get(); });
-  auto N_EL = integrator.integrate_den( P );
-  CHECK( N_EL == Approx(N_EL_ref).epsilon(1e-6) );
+  if( check_integrate_den ) {
+    auto N_EL_ref = std::accumulate( mol.begin(), mol.end(), 0ul,
+      [](const auto& a, const auto &b) { return a + b.Z.get(); });
+    auto N_EL = integrator.integrate_den( P );
+    CHECK( N_EL == Approx(N_EL_ref).epsilon(1e-6) );
+  }
 
   // Integrate EXC/VXC
   auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
@@ -125,7 +128,7 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func) {
 #ifdef GAUXC_ENABLE_HOST
   SECTION( "Host" ) {
     test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
-      1, true );
+      1, true, true );
   }
 #endif
 
@@ -137,26 +140,27 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func) {
     #endif
     SECTION( "Incore - MPI Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
-        reference_file, func, 32, check_grad, "Default" );
+        reference_file, func, 32, check_grad, true, "Default" );
     }
 
     #ifdef GAUXC_ENABLE_MAGMA
     SECTION( "Incore - MPI Reduction - MAGMA" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
-        reference_file, func, 32, false, "Default", "Default", "Scheme1-MAGMA" );
+        reference_file, func, 32, false, true, "Default", "Default", 
+        "Scheme1-MAGMA" );
     }
     #endif
 
     #ifdef GAUXC_ENABLE_NCCL
     SECTION( "Incore - NCCL Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
-        reference_file, func, 32, false, "Default", "NCCL" );
+        reference_file, func, 32, false, false, "Default", "NCCL" );
     }
     #endif
 
     SECTION( "ShellBatched" ) {
       test_xc_integrator( ExecutionSpace::Device, rt, 
-        reference_file, func, 32, false, "ShellBatched" );
+        reference_file, func, 32, false, false, "ShellBatched" );
     }
   }
 #endif

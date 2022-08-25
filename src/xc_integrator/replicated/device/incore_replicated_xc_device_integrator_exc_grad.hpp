@@ -161,7 +161,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   double N_EL;
   device_data.retrieve_exc_grad_integrands( EXC_GRAD, &N_EL );
 
-  std::cout << N_EL << std::endl;
+  //std::cout << N_EL << std::endl;
 }
 
 
