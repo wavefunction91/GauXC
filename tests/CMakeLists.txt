@@ -46,6 +46,7 @@ add_executable( gauxc_test
   collocation.cxx
   weights.cxx
   standards.cxx 
+  runtime.cxx
   basis/parse_basis.cxx
 )
 target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )

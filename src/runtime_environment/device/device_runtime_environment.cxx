@@ -1,7 +1,34 @@
 #include "device_runtime_environment_impl.hpp"
 #include <gauxc/exceptions.hpp>
+#include <iostream>
 
 namespace GauXC {
+
+auto* device_runtime_pimpl_cast(detail::RuntimeEnvironmentImpl* ptr) {
+  auto dp = dynamic_cast<detail::DeviceRuntimeEnvironmentImpl*>(ptr);
+  if(!dp) GAUXC_GENERIC_EXCEPTION("Not A Device Implemention");
+  return dp;
+}
+
+
+namespace detail {
+
+DeviceRuntimeEnvironment as_device_runtime(const RuntimeEnvironment& rt) {
+  if( auto* p = dynamic_cast<const DeviceRuntimeEnvironment*>(&rt) ) {
+    // Instance is actually a DeviceRuntimeEnvironment
+    return DeviceRuntimeEnvironment(*p);
+  } else {
+    // Try a PIMPL cast
+    auto pimpl = device_runtime_pimpl_cast(rt.pimpl_.get());
+    (void)pimpl;
+    return DeviceRuntimeEnvironment(rt.pimpl_);
+  }
+}
+
+}
+
+DeviceRuntimeEnvironment::DeviceRuntimeEnvironment(pimpl_ptr_type ptr):
+  RuntimeEnvironment(ptr) {}
 
 DeviceRuntimeEnvironment::DeviceRuntimeEnvironment(
   GAUXC_MPI_CODE(MPI_Comm c,) void* p, size_t sz ) :
@@ -15,11 +42,11 @@ DeviceRuntimeEnvironment::DeviceRuntimeEnvironment(
 
 DeviceRuntimeEnvironment::~DeviceRuntimeEnvironment() noexcept = default;
 
-auto* device_runtime_pimpl_cast(detail::RuntimeEnvironmentImpl* ptr) {
-  auto dp = dynamic_cast<detail::DeviceRuntimeEnvironmentImpl*>(ptr);
-  if(!dp) GAUXC_GENERIC_EXCEPTION("Not A Device Implemention");
-  return dp;
-}
+DeviceRuntimeEnvironment::DeviceRuntimeEnvironment(
+  DeviceRuntimeEnvironment&& other) noexcept = default;
+
+DeviceRuntimeEnvironment::DeviceRuntimeEnvironment(
+  const DeviceRuntimeEnvironment& other) = default;
 
 void* DeviceRuntimeEnvironment::device_memory() const {
   return device_runtime_pimpl_cast(pimpl_.get())->device_memory();
@@ -30,6 +57,8 @@ size_t DeviceRuntimeEnvironment::device_memory_size() const {
 DeviceBackend* DeviceRuntimeEnvironment::device_backend() const {
   return device_runtime_pimpl_cast(pimpl_.get())->device_backend();
 }
-
+bool DeviceRuntimeEnvironment::owns_memory() const {
+  return device_runtime_pimpl_cast(pimpl_.get())->owns_memory();
+}
 
 }

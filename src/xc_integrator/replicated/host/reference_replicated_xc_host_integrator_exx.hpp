@@ -336,13 +336,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   auto comm = this->load_balancer_->runtime().comm();
   MPI_Comm_rank( comm, &world_rank );
   #endif
-  if( !world_rank ) {
-    std::cout << "sn-LinK Settings:" << std::endl
-              << "  SCREEN_EK     = " << std::boolalpha << screen_ek << std::endl
-              << "  EPS_E         = " << eps_E << std::endl
-              << "  EPS_K         = " << eps_K << std::endl
-              << std::endl;
-  }
+  //if( !world_rank ) {
+  //  std::cout << "sn-LinK Settings:" << std::endl
+  //            << "  SCREEN_EK     = " << std::boolalpha << screen_ek << std::endl
+  //            << "  EPS_E         = " << eps_E << std::endl
+  //            << "  EPS_K         = " << eps_K << std::endl
+  //            << std::endl;
+  //}
 
 
   // Precompute EK shell screening

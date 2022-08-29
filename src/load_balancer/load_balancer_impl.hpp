@@ -13,7 +13,7 @@ public:
 
 protected:
 
-  const RuntimeEnvironment&   runtime_;
+  RuntimeEnvironment          runtime_;
   std::shared_ptr<Molecule>   mol_;
   std::shared_ptr<MolGrid>    mg_;
   std::shared_ptr<basis_type> basis_;

@@ -11,7 +11,7 @@ void DeviceMolecularWeights::modify_weights( LoadBalancer& lb ) const {
 
   // Cast LWD to LocalDeviceWorkDriver
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
-  auto& rt  = dynamic_cast<const DeviceRuntimeEnvironment&>(lb.runtime());
+  auto rt   = detail::as_device_runtime(lb.runtime());
 
   // Create device data
   auto device_data_ptr = lwd->create_device_data(rt);

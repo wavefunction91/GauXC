@@ -51,6 +51,7 @@ public:
   
   LoadBalancerState& state();
 
+  bool operator==( const LoadBalancer& ) const;
 };
 
 

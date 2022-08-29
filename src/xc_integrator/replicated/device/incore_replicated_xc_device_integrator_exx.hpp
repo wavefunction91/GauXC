@@ -38,7 +38,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Allocate Device memory
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
-  auto& rt  = dynamic_cast<const DeviceRuntimeEnvironment&>(this->load_balancer_->runtime());
+  auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
   auto device_data_ptr = lwd->create_device_data(rt);
 
   // Compute local contributions to K and retrieve

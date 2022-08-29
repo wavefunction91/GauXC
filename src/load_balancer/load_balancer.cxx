@@ -72,4 +72,9 @@ const RuntimeEnvironment& LoadBalancer::runtime() const {
   return pimpl_->runtime();
 }
 
+
+bool LoadBalancer::operator==( const LoadBalancer& other ) const {
+  return (&other) == this;
+}
+
 }

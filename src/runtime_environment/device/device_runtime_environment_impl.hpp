@@ -54,6 +54,7 @@ public:
   inline void* device_memory() const { return device_memory_; }
   inline size_t device_memory_size() { return device_memory_size_; }
   inline size_t device_memory_size() const { return device_memory_size_; }
+  inline bool owns_memory() const { return i_own_this_memory_; }
 
 };
 
