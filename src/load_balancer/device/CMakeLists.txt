@@ -5,3 +5,7 @@ target_sources( gauxc PRIVATE
 if( GAUXC_ENABLE_CUDA )
   add_subdirectory( cuda )
 endif()
+
+if( GAUXC_ENABLE_HIP )
+  add_subdirectory( hip )
+endif()
