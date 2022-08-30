@@ -2,7 +2,7 @@
 #include <gauxc/util/div_ceil.hpp>
 #include <cub/device/device_scan.cuh>
 
-#include "cuda_collision_detection.hpp"
+#include "hip_collision_detection.hpp"
 #include "device_specific/cuda_device_constants.hpp"
 
 namespace GauXC         {
