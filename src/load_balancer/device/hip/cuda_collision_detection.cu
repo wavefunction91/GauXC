@@ -1,3 +1,4 @@
+#include "hip/hip_runtime.h"
 #include <gauxc/util/div_ceil.hpp>
 #include <cub/device/device_scan.cuh>
 
@@ -179,7 +180,7 @@ size_t compute_scratch( size_t ncubes, int32_t* counts_device ) {
     // Computes amount of memory that will be required to do the inclusive sum
     void     *d_temp_storage = NULL;
     size_t   temp_storage_bytes = 0;
-    cub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, counts_device, counts_device, ncubes);
+    hipcub::DeviceScan::InclusiveSum(d_temp_storage, temp_storage_bytes, counts_device, counts_device, ncubes);
 
     return temp_storage_bytes;
 }
@@ -195,7 +196,7 @@ void collision_detection( size_t        ncubes,
                                  void * temp_storage_device,
                                int32_t* collisions_device, 
                                int32_t* counts_device,
-                          cudaStream_t  stream) {
+                          hipStream_t  stream) {
 
     dim3 threads( max_threads_per_thread_block );
     dim3 blocks( util::div_ceil( ncubes, threads.x ) );
@@ -207,7 +208,7 @@ void collision_detection( size_t        ncubes,
     );
 
     // Run inclusive prefix sum
-    cub::DeviceScan::InclusiveSum(temp_storage_device, temp_storage_bytes, counts_device, counts_device, ncubes, stream);
+    hipcub::DeviceScan::InclusiveSum(temp_storage_device, temp_storage_bytes, counts_device, counts_device, ncubes, stream);
 
 }
 
@@ -219,7 +220,7 @@ void compute_position_list(size_t         ncubes,
                            const int32_t* counts_device,
                                  int32_t* position_list_device,
                                   size_t* nbe_list_device,
-                            cudaStream_t  stream) {
+                            hipStream_t  stream) {
     dim3 threads( warp_size, warp_size );
     dim3 blocks( util::div_ceil( ncubes, threads.x * threads.y ) );
 

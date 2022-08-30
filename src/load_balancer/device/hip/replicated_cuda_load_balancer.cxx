@@ -86,7 +86,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   const size_t LD_bit         = util::div_ceil(nspheres, 32);
 
   CollisionDetectionCudaData data;
-  cudaStream_t master_stream = 0;
+  hipStream_t master_stream = 0;
 
   std::vector< XCTask > temp_tasks;              temp_tasks.reserve( max_nbatches );
   std::vector<std::array<double,3>> low_points;  low_points.reserve( max_nbatches );

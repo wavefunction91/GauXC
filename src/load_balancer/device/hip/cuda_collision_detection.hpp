@@ -17,7 +17,7 @@ void collision_detection( size_t ncubes,
                                  void * temp_storage_device,
                                int32_t* collisions_device, 
                                int32_t* counts_device,
-                          cudaStream_t  stream);
+                          hipStream_t  stream);
 
 void compute_position_list(size_t ncubes,
                            size_t nspheres,
@@ -27,7 +27,7 @@ void compute_position_list(size_t ncubes,
                            const int32_t* counts_device,
                            int32_t* position_list_device,
                            size_t* nbe_list_device,
-                          cudaStream_t  stream);
+                          hipStream_t  stream);
 
 }
 }
