@@ -187,22 +187,22 @@ namespace XCPU {
   #define SIMD_LENGTH 1
   
   #define SIMD_ZERO() 0.0
-  #define SIMD_SET1(x) x
+  #define SIMD_SET1(x) SCALAR_SET1(x)
   
-  #define SIMD_ALIGNED_LOAD(x) *(x)
-  #define SIMD_UNALIGNED_LOAD(x) *(x)
+  #define SIMD_ALIGNED_LOAD(x) SCALAR_LOAD(x)
+  #define SIMD_UNALIGNED_LOAD(x) SCALAR_LOAD(x)
   
-  #define SIMD_ALIGNED_STORE(x, y) *(x) = y
-  #define SIMD_UNALIGNED_STORE(x, y) *(x) = y
+  #define SIMD_ALIGNED_STORE(x, y) SCALAR_STORE(x, y)
+  #define SIMD_UNALIGNED_STORE(x, y) SCALAR_STORE(x, y)
   
-  #define SIMD_ADD(x, y) x + y
-  #define SIMD_SUB(x, y) x - y
+  #define SIMD_ADD(x, y) SCALAR_ADD(x, y)
+  #define SIMD_SUB(x, y) SCALAR_SUB(x, y)
   
-  #define SIMD_MUL(x, y) x * y
-  #define SIMD_FMA(x, y, z) z + x * y 
-  #define SIMD_FNMA(x, y, z) z - x * y
+  #define SIMD_MUL(x, y) SCALAR_MUL(x, y)
+  #define SIMD_FMA(x, y, z) SCALAR_FMA(x, y, z)
+  #define SIMD_FNMA(x, y, z) SCALAR_FNMA(x, y, z)
   
-  #define SIMD_DUPLICATE(x) *(x)
+  #define SIMD_DUPLICATE(x) SCALAR_DUPLICATE(x)
 
 #endif
 
