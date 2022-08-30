@@ -135,7 +135,7 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
 
   }
 
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_ENABLE_DEVICE
   SECTION("Default Device") {
 
     size_t pv = 1;
