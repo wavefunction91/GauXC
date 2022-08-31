@@ -1,6 +1,6 @@
 #include "hip/hip_runtime.h"
 #include <gauxc/util/div_ceil.hpp>
-#include <cub/device/device_scan.cuh>
+#include <hipcub/hipcub.hpp>
 
 #include "hip_collision_detection.hpp"
 #include "device_specific/cuda_device_constants.hpp"
@@ -155,7 +155,6 @@ __global__ void bitvector_to_position_list(
         }
       }
 
-      __syncwarp();
       if (i < ncubes) {  // Once the data has been loaded, we exclude the threads not corresponding to a bitvector
         // We have loaded in BUFFER_SIZE_BITS elements to be processed by each warp
         for (int j_inner = 0; j_inner < buffer_size_bits && j_block * buffer_size_bits + j_inner < nspheres; j_inner++) {
@@ -168,7 +167,6 @@ __global__ void bitvector_to_position_list(
           }
         }
       }
-      __syncwarp();
     }
     if (i < ncubes) {
       nbe_list[i] = nbe;
