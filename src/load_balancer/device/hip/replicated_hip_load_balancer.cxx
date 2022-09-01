@@ -14,7 +14,7 @@ template <typename T>
 using pinned_vector = std::vector<T>;
 
 // Helper data struction to keep inputs to collision detection kernels organized
-struct CollisionDetectionCudaData {
+struct CollisionDetectionData {
     // Inputs
     double* low_points_device;
     double* high_points_device;
@@ -83,7 +83,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   const size_t max_nbatches   = mg_->max_nbatches() * atBatchSz;
   const size_t LD_bit         = util::div_ceil(nspheres, 32);
 
-  CollisionDetectionCudaData data;
+  CollisionDetectionData data;
   hipStream_t master_stream = 0;
 
   std::vector< XCTask > temp_tasks;              temp_tasks.reserve( max_nbatches );
