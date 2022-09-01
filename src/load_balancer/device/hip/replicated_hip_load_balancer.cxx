@@ -2,9 +2,6 @@
 #include <gauxc/util/div_ceil.hpp>
 #include "device_specific/hip_util.hpp"
 
-#include <thrust/host_vector.h>
-// #include <thrust/system/hip/experimental/pinned_allocator.h>
-
 #include "hip_collision_detection.hpp"
 
 using namespace GauXC::load_balancer::cuda;
@@ -12,8 +9,9 @@ using namespace GauXC::load_balancer::cuda;
 namespace GauXC {
 namespace detail {
 
+// TODO: Make this use a pinned allocator
 template <typename T>
-using pinned_vector = thrust::host_vector<T>;
+using pinned_vector = std::vector<T>;
 
 // Helper data struction to keep inputs to collision detection kernels organized
 struct CollisionDetectionCudaData {
@@ -192,7 +190,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
 
     util::hip_device_sync();
     // Copy results back to host
-    util::hip_copy(total_collisions, thrust::raw_pointer_cast(position_list.data()), data.position_list_device, "Position List DtoH");
+    util::hip_copy(total_collisions, position_list.data(), data.position_list_device, "Position List DtoH");
     util::hip_copy(ncubes, pos_list_idx.data(), data.counts_device, "Position List Idx DtoH");
     util::hip_copy(ncubes, nbe_vec.data(), data.nbe_list_device, "NBE counts DtoH");
     util::hip_free(data.position_list_device);
