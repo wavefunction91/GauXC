@@ -24,15 +24,7 @@ std::shared_ptr<LoadBalancer> LoadBalancerDeviceFactory::get_shared_instance(
   if( kernel_name == "DEFAULT" ) kernel_name = "REPLICATED";
 
   std::unique_ptr<detail::LoadBalancerImpl> ptr = nullptr;
-  #ifdef GAUXC_ENABLE_CUDA
-  if( kernel_name == "REPLICATED" ) {
-    ptr = std::make_unique<detail::DeviceReplicatedLoadBalancer>(
-      GAUXC_MPI_CODE(comm,) mol, mg, basis, pv
-    );
-  }
-  #endif
-  #ifdef GAUXC_ENABLE_HIP  // TODO: Replace both of these with a
-                           // GAUXC_ENABLE_DEVICE instead?
+  #ifdef GAUXC_ENABLE_DEVICE
   if( kernel_name == "REPLICATED" ) {
     ptr = std::make_unique<detail::DeviceReplicatedLoadBalancer>(
       GAUXC_MPI_CODE(comm,) mol, mg, basis, pv
