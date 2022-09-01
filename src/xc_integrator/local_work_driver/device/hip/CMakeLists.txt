@@ -7,6 +7,7 @@ target_sources(gauxc PRIVATE
   kernels/collocation_device.hip
   kernels/grid_to_center.hip
   kernels/hip_ssf_1d.hip
+  kernels/hip_ssh_2d.hip
   #cuda_aos_scheme1_weights.cu # cuda_ssf_2d w/ CudaAoSScheme1 constants
   kernels/pack_submat.hip
   kernels/hipblas_extensions.hip
