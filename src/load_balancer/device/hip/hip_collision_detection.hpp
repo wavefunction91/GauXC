@@ -2,7 +2,7 @@
 
 namespace GauXC      {
 namespace load_balancer {
-namespace cuda       {
+namespace hip       {
 
 size_t compute_scratch( size_t ncubes, int32_t* counts_device );
 

@@ -3,13 +3,13 @@
 #include <hipcub/hipcub.hpp>
 
 #include "hip_collision_detection.hpp"
-#include "device_specific/cuda_device_constants.hpp"
+#include "device_specific/hip_device_constants.hpp"
 
 namespace GauXC         {
 namespace load_balancer {
-namespace cuda          {
+namespace hip          {
 
-using namespace GauXC::cuda;
+using namespace GauXC::hip;
 
 __device__ __inline__ 
 int cube_sphere_intersect( 
@@ -109,7 +109,7 @@ __global__ void collision_detection_gpu(
 
 
 static constexpr int32_t buffer_size = 8;
-static constexpr int32_t element_size = 32;
+static constexpr int32_t element_size = 32; // number of bits 
 static constexpr int32_t buffer_size_bits = buffer_size * element_size;
 
 // This kernel converts the bitvector produced by the collision detection kernel above into a position list.
@@ -127,7 +127,7 @@ __global__ void bitvector_to_position_list(
           int32_t* position_list, 
            size_t* nbe_list
 ) {
-  __shared__ int32_t collisions_buffer[warp_size][warp_size][buffer_size];
+  __shared__ int32_t collisions_buffer[max_warps_per_thread_block][warp_size][buffer_size];
 
   // We are converting a large number of small bitvectors into position lists. For this reason, I am assigning a single thread to each bitvector
   // This avoids having to do popcounts and warp wide reductions, but hurts the memory access pattern
@@ -219,7 +219,7 @@ void compute_position_list(size_t         ncubes,
                                  int32_t* position_list_device,
                                   size_t* nbe_list_device,
                             hipStream_t  stream) {
-    dim3 threads( warp_size, warp_size );
+    dim3 threads( warp_size, max_warps_per_thread_block );
     dim3 blocks( util::div_ceil( ncubes, threads.x * threads.y ) );
 
     // convert from bitvector to position list

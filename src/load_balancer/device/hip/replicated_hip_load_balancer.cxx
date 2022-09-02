@@ -4,7 +4,7 @@
 
 #include "hip_collision_detection.hpp"
 
-using namespace GauXC::load_balancer::cuda;
+using namespace GauXC::load_balancer::hip;
 
 namespace GauXC {
 namespace detail {
