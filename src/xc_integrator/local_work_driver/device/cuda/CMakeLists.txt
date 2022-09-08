@@ -16,10 +16,23 @@ target_sources(gauxc PRIVATE
   kernels/cuda_inc_potential.cu
   kernels/symmetrize_mat.cu
   kernels/increment_exc_grad.cu
-
-  kernels/cutlass_wrapper.cu
-
 )
+
+if(GAUXC_ENABLE_CUTLASS)
+  if (DEFINED CUTLASS_INCLUDE_DIR) 
+    target_include_directories( gauxc PUBLIC ${CUTLASS_INCLUDE_DIR}/include )
+    target_include_directories( gauxc PUBLIC ${CUTLASS_INCLUDE_DIR}/tools/util/include )
+
+    target_sources( gauxc PRIVATE
+      scheme1_cutlass_base.cxx 
+      scheme1_cutlass_data_base.cxx   
+
+      kernels/cutlass_wrapper.cu
+    )
+  else()
+    message(FATAL_ERROR "CUTLASS_INCLUDE_DIR Must Be Set" )
+  endif()
+endif()
 
 # Check if CMAKE_CUDA_ARCHITECTURES is set
 if( NOT DEFINED CMAKE_CUDA_ARCHITECTURES )

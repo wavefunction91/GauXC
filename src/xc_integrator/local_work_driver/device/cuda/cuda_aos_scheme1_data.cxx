@@ -48,6 +48,9 @@ template struct CudaAoSScheme1<AoSScheme1Base>::Data;
 #ifdef GAUXC_ENABLE_MAGMA
 template struct CudaAoSScheme1<AoSScheme1MAGMABase>::Data;
 #endif
+#ifdef GAUXC_ENABLE_CUTLASS
+template struct CudaAoSScheme1<AoSScheme1CUTLASSBase>::Data;
+#endif
 
 
 }

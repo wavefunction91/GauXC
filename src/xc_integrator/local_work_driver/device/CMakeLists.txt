@@ -17,6 +17,7 @@ if( GAUXC_ENABLE_MAGMA )
 endif()
 
 if(GAUXC_ENABLE_CUDA)
+
   add_subdirectory( cuda )
 endif()
 

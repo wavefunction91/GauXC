@@ -1,8 +1,10 @@
 #pragma once
-#include "scheme1_base.hpp"
+#include "device/scheme1_base.hpp"
 
+#ifdef GAUXC_ENABLE_CUTLASS
 #include "cutlass/cutlass.h"
 #include "cutlass/gemm/gemm.h"
+#endif
 
 namespace GauXC {
 
@@ -28,8 +30,10 @@ struct AoSScheme1CUTLASSBase::Data : public AoSScheme1Base::Data {
     double** zmat_array_device = nullptr;
     double** bf_array_device   = nullptr;
 
+#ifdef GAUXC_ENABLE_CUTLASS
     cutlass::gemm::GemmCoord* problem_sizes_device = nullptr;
     cutlass::gemm::GemmCoord* syr2k_sizes_device = nullptr;
+#endif
     int64_t* ld64_dmat_array_device = nullptr;
     int64_t* ld64_vmat_array_device = nullptr;
     int64_t* ld64_zmat_array_device = nullptr;

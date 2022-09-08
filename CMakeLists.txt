@@ -40,6 +40,8 @@ cmake_dependent_option( GAUXC_ENABLE_MAGMA    "Enable MAGMA Linear Algebra" ON
   "GAUXC_ENABLE_CUDA OR GAUXC_ENABLE_HIP" OFF  )
 cmake_dependent_option( GAUXC_ENABLE_NCCL     "Enable NCCL Collectives    " OFF  
   "GAUXC_ENABLE_CUDA" OFF )
+cmake_dependent_option( GAUXC_ENABLE_CUTLASS  "Enable NCCL Collectives    " OFF  
+  "GAUXC_ENABLE_CUDA" OFF )
 
 
 if( NOT GAUXC_ENABLE_GAU2GRID )
