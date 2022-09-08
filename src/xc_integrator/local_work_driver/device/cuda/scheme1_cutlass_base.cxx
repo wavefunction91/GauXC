@@ -1,3 +1,5 @@
+#include <stdexcept>
+
 #include "scheme1_cutlass_base.hpp"
 #include "device/common/pack_submat.hpp"
 #include "device/common/inc_potential.hpp"
@@ -9,6 +11,19 @@
 #include "device/cuda/kernels/cutlass_wrapper.hpp"
 
 namespace GauXC {
+
+AoSScheme1CUTLASSBase::AoSScheme1CUTLASSBase() {
+  int major, minor, dev_id;
+  cudaGetDevice(&dev_id);
+  cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, dev_id);
+  cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, dev_id);
+
+  const int cc = major * 10 + minor;
+  if (cc != 80) {
+    throw std::runtime_error("Error CUTLASS Only Supports SM_80");
+  }
+}
+
 
 void AoSScheme1CUTLASSBase::eval_xmat( XCDeviceData* _data, bool do_grad ){
 
@@ -33,11 +48,13 @@ void AoSScheme1CUTLASSBase::eval_xmat( XCDeviceData* _data, bool do_grad ){
   auto cutlass_stack = data->cutlass_stack;
   cutlass_gemm(
     cutlass_stack.problem_sizes_device,
+    data->problem_sizes_host.data(),
     ntasks,
     cutlass_stack.bf_array_device, cutlass_stack.dmat_array_device,
     cutlass_stack.zmat_array_device, cutlass_stack.zmat_array_device,
     cutlass_stack.ld64_bf_array_device, cutlass_stack.ld64_dmat_array_device,
     cutlass_stack.ld64_zmat_array_device, cutlass_stack.ld64_zmat_array_device,
+    1.0, 0.0,
     data->device_backend_->queue()
   );
 }
@@ -55,11 +72,13 @@ void AoSScheme1CUTLASSBase::inc_vxc( XCDeviceData* _data){
   auto cutlass_stack = data->cutlass_stack;
   cutlass_syr2k(
     cutlass_stack.syr2k_sizes_device,
+    data->syr2k_sizes_host.data(),
     ntasks,
     cutlass_stack.bf_array_device, cutlass_stack.zmat_array_device,
     cutlass_stack.vmat_array_device, cutlass_stack.vmat_array_device,
     cutlass_stack.ld64_bf_array_device, cutlass_stack.ld64_zmat_array_device,
     cutlass_stack.ld64_vmat_array_device, cutlass_stack.ld64_vmat_array_device,
+    1.0, 0.0,
     data->device_backend_->queue()
   );
 

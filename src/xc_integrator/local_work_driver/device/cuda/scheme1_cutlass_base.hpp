@@ -15,6 +15,7 @@ struct AoSScheme1CUTLASSBase : public AoSScheme1Base {
 
   struct Data;
 
+  AoSScheme1CUTLASSBase();
   virtual ~AoSScheme1CUTLASSBase() = default;
 };
 
@@ -41,6 +42,11 @@ struct AoSScheme1CUTLASSBase::Data : public AoSScheme1Base::Data {
 
     inline void reset(){ std::memset(this,0,sizeof(cutlass_data)); }
   };
+
+#ifdef GAUXC_ENABLE_CUTLASS
+  std::vector<cutlass::gemm::GemmCoord> syr2k_sizes_host;
+  std::vector<cutlass::gemm::GemmCoord> problem_sizes_host;
+#endif
 
   cutlass_data cutlass_stack;
 

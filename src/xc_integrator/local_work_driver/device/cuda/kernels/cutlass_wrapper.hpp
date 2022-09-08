@@ -9,6 +9,7 @@ namespace GauXC {
 
 void cutlass_gemm(
   cutlass::gemm::GemmCoord* problem_sizes_device,
+  cutlass::gemm::GemmCoord* problem_sizes_host,
   const int problem_count,
   double ** ptr_A,
   double ** ptr_B,
@@ -18,11 +19,14 @@ void cutlass_gemm(
   int64_t* ldb,
   int64_t* ldc,
   int64_t* ldd,
+  const double alpha,
+  const double beta,
   device_queue queue
 );
 
 void cutlass_syr2k(
   cutlass::gemm::GemmCoord* problem_sizes_device,
+  cutlass::gemm::GemmCoord* problem_sizes_host,
   const int problem_count,
   double ** ptr_A,
   double ** ptr_B,
@@ -32,6 +36,8 @@ void cutlass_syr2k(
   int64_t* ldb,
   int64_t* ldc,
   int64_t* ldd,
+  const double alpha,
+  const double beta,
   device_queue queue
 );
 

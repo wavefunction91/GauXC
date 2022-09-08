@@ -1,12 +1,14 @@
-#include <iostream>
-#include <algorithm>
-
 #include "cutlass/cutlass.h"
 #include "cutlass/gemm/gemm.h"
 #include "cutlass/gemm/kernel/gemm_grouped.h"
 #include "cutlass/gemm/kernel/default_gemm_grouped.h"
 #include "cutlass/gemm/device/gemm_grouped.h"
 #include "cutlass/gemm/device/gemm_universal.h"
+
+#include "cutlass/gemm/kernel/rank_2k_grouped.h"
+#include "cutlass/gemm/kernel/default_rank_2k_grouped.h"
+#include "cutlass/gemm/device/rank_2k_grouped.h"
+#include "cutlass/gemm/device/rank_2k.h"
 
 #include "cutlass/util/device_memory.h"
 
@@ -16,58 +18,10 @@
 
 namespace GauXC {
 
-__global__ void symmetrize_batch_matrix_device( 
-  size_t num_matrices, 
-  double** As, 
-  int64_t *LDAs, 
-  cutlass::gemm::GemmCoord* problem_sizes_device
-) {
-  constexpr uint32_t block_size = cuda::warp_size;
-
-  __shared__ double buffer[block_size][block_size+1];  // Pad shared memory to resolve shared memory
-
-  for (int n = blockIdx.x; n < num_matrices; n += gridDim.x) {
-    const int64_t LDA  = LDAs[n];
-    const int32_t N     = problem_sizes_device[n].n();
-    double*       A    = As[n];
-
-    const size_t num_blocks = ((N + block_size - 1) / block_size);
-
-    for (int i = 0; i < num_blocks; i++) {
-      const int i_coord = i * block_size;
-      for (int j = i; j < num_blocks; j++) {
-        const int j_coord = j * block_size;
-
-        if (i_coord + threadIdx.y < N && j_coord + threadIdx.x < N) {
-          buffer[threadIdx.y][threadIdx.x] = A[(i_coord + threadIdx.y) * LDA + j_coord + threadIdx.x];
-        }
-        __syncthreads();
-
-        if (j_coord + threadIdx.y < N && i_coord + threadIdx.x < N) {
-          buffer[threadIdx.x][threadIdx.y] += A[(j_coord + threadIdx.y) * LDA + i_coord + threadIdx.x];
-        }
-        __syncthreads();
-
-        if (j_coord + threadIdx.y < N && i_coord + threadIdx.x < N) {
-          A[(j_coord + threadIdx.y) * LDA + i_coord + threadIdx.x] = buffer[threadIdx.x][threadIdx.y];
-        }
-        if (i_coord + threadIdx.y < N && j_coord + threadIdx.x < N) {
-          A[(i_coord + threadIdx.y) * LDA + j_coord + threadIdx.x] = buffer[threadIdx.y][threadIdx.x];
-        }
-      }
-      __syncthreads();
-    }
-  }
-}
-
-
-template<typename CutlassGemm>
-void cutlass_wrapper_launch(
+void cutlass_gemm(
   cutlass::gemm::GemmCoord* problem_sizes_device,
+  cutlass::gemm::GemmCoord* problem_sizes_host,
   const int problem_count,
-  const double alpha,
-  const double beta,
-  const int threadblock_count,
   double ** ptr_A,
   double ** ptr_B,
   double ** ptr_C,
@@ -76,14 +30,69 @@ void cutlass_wrapper_launch(
   int64_t* ldb,
   int64_t* ldc,
   int64_t* ldd,
-  cudaStream_t stream
+  const double alpha,
+  const double beta,
+  device_queue queue
 ) {
-  cutlass::Status status;
+  using ElementOutput = double;
+  using ElementAccumulator = double;
+  using ElementA = double; 
+  using ElementB = double; 
+  using ElementC = double; 
 
-  typename CutlassGemm::GemmKernel::Epilogue::OutputOp::Params epilogue_op(alpha, beta);
+  using LayoutA = cutlass::layout::ColumnMajor;
+  using LayoutB = cutlass::layout::ColumnMajor;
+  using LayoutC = cutlass::layout::ColumnMajor;
+
+  constexpr int kAlignmentA = 1;
+  constexpr int kAlignmentB = 1;
+  
+  constexpr cutlass::ComplexTransform kTransformA = cutlass::ComplexTransform::kNone;
+  constexpr cutlass::ComplexTransform kTransformB = cutlass::ComplexTransform::kNone;
+
+  using ThreadblockSwizzle = cutlass::gemm::threadblock::GemmIdentityThreadblockSwizzle<>;
+  using EpilogueOutputOp = cutlass::epilogue::thread::LinearCombination<
+    ElementC,  1,
+    ElementAccumulator,
+    ElementAccumulator>; 
+
+  using GroupScheduleMode = cutlass::gemm::kernel::GroupScheduleMode;
+
+  // Tunable Parameters
+  using ThreadblockShape = cutlass::gemm::GemmShape<64, 64, 16>;
+  using WarpShape = cutlass::gemm::GemmShape<32, 32, 16>;
+  using InstructionShape = cutlass::gemm::GemmShape<8, 8, 4>;
+  constexpr int kStages = 4;
+  constexpr GroupScheduleMode kGroupScheduleMode = GroupScheduleMode::kDeviceOnly;
+
+  // Arch specific
+  using OperatorClass = cutlass::arch::OpClassTensorOp;
+  using ArchTag = cutlass::arch::Sm80;
+
+  // Define CUTLASS GEMM Type
+  using GemmGroupKernel = typename cutlass::gemm::kernel::DefaultGemmGrouped<
+    ElementA, LayoutA, kTransformA, kAlignmentA,
+    ElementB, LayoutB, kTransformB, kAlignmentB,
+    ElementOutput, LayoutC, 
+    ElementAccumulator, 
+    OperatorClass,
+    ArchTag,
+    ThreadblockShape, WarpShape, InstructionShape,
+    EpilogueOutputOp,
+    ThreadblockSwizzle,
+    kStages,
+    kGroupScheduleMode>::GemmKernel;
+
+  using GemmGrouped = cutlass::gemm::device::GemmGrouped<GemmGroupKernel>; 
+
+  const int threadblock_count = GemmGrouped::sufficient(problem_sizes_host, problem_count);
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>();
+  cutlass::Status status;
+  typename GemmGrouped::EpilogueOutputOp::Params epilogue_op(alpha, beta);
 
   // Configure GEMM arguments
-  typename CutlassGemm::Arguments args(
+  typename GemmGrouped::Arguments args(
     problem_sizes_device,
     problem_count,
     threadblock_count,
@@ -95,122 +104,24 @@ void cutlass_wrapper_launch(
     lda,
     ldb,
     ldc,
-    ldd
+    ldd,
+    problem_sizes_host
   );
 
   // Initialize the GEMM object
-  CutlassGemm gemm;
+  GemmGrouped gemm;
 
-  status = gemm.initialize(args);
+  size_t workspace_size = gemm.get_workspace_size(args);
+  cutlass::DeviceAllocation<uint8_t> workspace(workspace_size);
 
-  if (status != cutlass::Status::kSuccess) {
-    std::cerr << "Failed to initialize CUTLASS Grouped GEMM kernel." << std::endl;
-    return;
-  }
-
-  // Run the grouped GEMM object
+  status = gemm.initialize(args, workspace.get());
   status = gemm.run(stream);
-
-  if (status != cutlass::Status::kSuccess) {
-    std::cerr << "Failed to run CUTLASS Grouped GEMM kernel." << std::endl;
-    return;
-  }
-}
-
-
-template<typename CutlassGemm>
-int getThreadBlockCount() {
-  int smem_size = int(sizeof(typename CutlassGemm::GemmKernel::SharedStorage));
-  cudaDeviceProp properties;
-
-  cudaGetDeviceProperties(&properties, 0);
-  int occupancy = std::min(2, int(properties.sharedMemPerMultiprocessor / smem_size));
-
-  return properties.multiProcessorCount * occupancy;
-}
-
-
-void cutlass_gemm(
-  cutlass::gemm::GemmCoord* problem_sizes_device,
-  const int problem_count,
-  double ** ptr_A,
-  double ** ptr_B,
-  double ** ptr_C,
-  double ** ptr_D,
-  int64_t* lda,
-  int64_t* ldb,
-  int64_t* ldc,
-  int64_t* ldd,
-  device_queue queue
-) {
-  using ElementOutput = double;
-  using ElementAccumulator = double;
-  using ElementA = double; 
-  using ElementB = double; 
-  using ElementC = double; 
-
-  static int const kAlignmentA = 1;
-  static int const kAlignmentB = 1;
-  
-  using ThreadblockShape = cutlass::gemm::GemmShape<64, 64, 16>;
-  using WarpShape = cutlass::gemm::GemmShape<32, 32, 16>;
-  using InstructionShape = cutlass::gemm::GemmShape<8, 8, 4>;
-  static int const kStages = 4;
-
-  using EpilogueOutputOp = cutlass::epilogue::thread::LinearCombination<
-    ElementC,  1,
-    ElementAccumulator,
-    ElementAccumulator>; 
-
-  using GemmKernel = typename cutlass::gemm::kernel::DefaultGemmGrouped<
-    ElementA, 
-    cutlass::layout::ColumnMajor, 
-    cutlass::ComplexTransform::kNone,
-    kAlignmentA,
-    ElementB,
-    cutlass::layout::ColumnMajor, 
-    cutlass::ComplexTransform::kNone,
-    kAlignmentB,
-    ElementOutput, cutlass::layout::ColumnMajor,
-    ElementAccumulator, 
-    cutlass::arch::OpClassTensorOp, 
-    cutlass::arch::Sm80,
-    ThreadblockShape,
-    WarpShape,
-    InstructionShape,
-    EpilogueOutputOp,
-    cutlass::gemm::threadblock::GemmBatchedIdentityThreadblockSwizzle, 
-    kStages>::GemmKernel;
-
-  using GemmGrouped = cutlass::gemm::device::GemmGrouped<GemmKernel>; 
-
-  const int threadblock_count = getThreadBlockCount<GemmGrouped>();
-
-  cudaStream_t stream = queue.queue_as<util::cuda_stream>();
-
-  const double alpha = 1.0;
-  const double beta  = 0.0;
-
-  cutlass_wrapper_launch<GemmGrouped>(
-    problem_sizes_device,
-    problem_count,
-    alpha, beta,
-    threadblock_count,
-    ptr_A,
-    ptr_B,
-    ptr_C,
-    ptr_D,
-    lda,
-    ldb,
-    ldc,
-    ldd,
-    stream
-  );
 }
 
 
 void cutlass_syr2k(
   cutlass::gemm::GemmCoord* problem_sizes_device,
+  cutlass::gemm::GemmCoord* problem_sizes_host,
   const int problem_count,
   double ** ptr_A,
   double ** ptr_B,
@@ -220,6 +131,8 @@ void cutlass_syr2k(
   int64_t* ldb,
   int64_t* ldc,
   int64_t* ldd,
+  const double alpha,
+  const double beta,
   device_queue queue
 ) {
   using ElementOutput = double;
@@ -228,50 +141,69 @@ void cutlass_syr2k(
   using ElementB = double; 
   using ElementC = double; 
 
-  static int const kAlignmentA = 1;
-  static int const kAlignmentB = 1;
-  
-  using ThreadblockShape = cutlass::gemm::GemmShape<64, 64, 16>;
-  using WarpShape = cutlass::gemm::GemmShape<32, 32, 16>;
-  using InstructionShape = cutlass::gemm::GemmShape<8, 8, 4>;
-  static int const kStages = 4;
+  using LayoutA = cutlass::layout::RowMajor;
+  using LayoutB = cutlass::layout::RowMajor;
+  using LayoutC = cutlass::layout::ColumnMajor;
 
+  constexpr int kAlignmentA = 1;
+  constexpr int kAlignmentB = 1;
+
+  constexpr cutlass::ComplexTransform kTransformA = cutlass::ComplexTransform::kNone;
+  constexpr cutlass::ComplexTransform kTransformB = cutlass::ComplexTransform::kNone;
+
+  using ThreadblockSwizzle = cutlass::gemm::threadblock::GemmIdentityThreadblockSwizzle<>;
   using EpilogueOutputOp = cutlass::epilogue::thread::LinearCombination<
     ElementC,  1,
     ElementAccumulator,
     ElementAccumulator>; 
 
-  using GemmKernel = typename cutlass::gemm::kernel::DefaultGemmGrouped<
-    ElementA, 
-    cutlass::layout::RowMajor, 
-    cutlass::ComplexTransform::kNone,
-    kAlignmentA,
-    ElementB,
-    cutlass::layout::ColumnMajor, 
-    cutlass::ComplexTransform::kNone,
-    kAlignmentB,
-    ElementOutput, cutlass::layout::ColumnMajor,
-    ElementAccumulator, 
-    cutlass::arch::OpClassTensorOp, 
-    cutlass::arch::Sm80,
-    ThreadblockShape,
-    WarpShape,
-    InstructionShape,
+  using GroupScheduleMode = cutlass::gemm::kernel::GroupScheduleMode;
+  
+   // Tunable Parameters
+  using ThreadblockShape = cutlass::gemm::GemmShape<64, 64, 16>;
+  using WarpShape = cutlass::gemm::GemmShape<32, 32, 16>;
+  using InstructionShape = cutlass::gemm::GemmShape<8, 8, 4>;
+  constexpr int kStages = 4;
+  constexpr GroupScheduleMode kGroupScheduleMode = GroupScheduleMode::kDeviceOnly;
+
+  // Arch specific
+  using OperatorClass = cutlass::arch::OpClassTensorOp;
+  using ArchTag = cutlass::arch::Sm80;
+
+  // Syr2k specific
+  constexpr cutlass::FillMode kFillModeC = cutlass::FillMode::kLower;
+  using Operator = cutlass::arch::OpMultiplyAdd;
+  constexpr cutlass::BlasMode kBlasMode = cutlass::BlasMode::kSymmetric;
+
+  // Define CUTLASS SYR2k Type
+  using SYR2KGroupkernel = typename cutlass::gemm::kernel::DefaultRank2KGrouped<
+    ElementA, LayoutA, kTransformA, kAlignmentA,
+    ElementB, LayoutB, kTransformB, kAlignmentB,
+    ElementOutput, LayoutC, kFillModeC,
+    ElementAccumulator,
+    OperatorClass,
+    ArchTag,
+    ThreadblockShape, WarpShape, InstructionShape,
     EpilogueOutputOp,
-    cutlass::gemm::threadblock::GemmBatchedIdentityThreadblockSwizzle, 
-    kStages>::GemmKernel;
+    ThreadblockSwizzle,
+    kStages,
+    Operator, kBlasMode,
+    kGroupScheduleMode>::Rank2Kkernel;
 
-  using GemmGrouped = cutlass::gemm::device::GemmGrouped<GemmKernel>; 
+  using Syr2kGrouped = cutlass::gemm::device::Rank2KGrouped<SYR2KGroupkernel>;
 
-  const int threadblock_count = getThreadBlockCount<GemmGrouped>();
+  const int threadblock_count = Syr2kGrouped::sufficient(problem_sizes_host, problem_count);
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
+  cutlass::Status status;
+  typename Syr2kGrouped::EpilogueOutputOp::Params epilogue_op(alpha, beta);
 
-  cutlass_wrapper_launch<GemmGrouped>(
+   typename Syr2kGrouped::Arguments args(
+    cutlass::gemm::GemmUniversalMode::kGemm,
     problem_sizes_device,
     problem_count,
-    1.0, 0.0,
     threadblock_count,
+    epilogue_op,
     ptr_A,
     ptr_B,
     ptr_C,
@@ -280,13 +212,15 @@ void cutlass_syr2k(
     ldb,
     ldc,
     ldd,
-    stream
-  );
+    problem_sizes_host
+  ); 
 
-  const size_t num_blocks = ((problem_count + cuda::warp_size - 1) / cuda::warp_size);
-  // Warp size must equal max_warps_per_thread_block must equal 32
-  dim3 threads(cuda::warp_size, cuda::max_warps_per_thread_block), blocks(num_blocks);
-  symmetrize_batch_matrix_device<<<blocks, threads, 0, stream>>>(problem_count, ptr_D, ldd, problem_sizes_device);
+  Syr2kGrouped gemm;
+  size_t workspace_size = gemm.get_workspace_size(args);
+  cutlass::DeviceAllocation<uint8_t> workspace(workspace_size);
+
+  status = gemm.initialize(args, workspace.get());
+  status = gemm.run(stream);
 }
 
 }

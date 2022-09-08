@@ -10,6 +10,8 @@ namespace GauXC {
 void AoSScheme1CUTLASSBase::Data::reset_allocations() {
   base_type::reset_allocations();
   cutlass_stack.reset();
+  syr2k_sizes_host.clear();
+  problem_sizes_host.clear();
 }
 
 size_t AoSScheme1CUTLASSBase::Data::get_static_mem_requirement() {
@@ -81,8 +83,8 @@ void AoSScheme1CUTLASSBase::Data::pack_and_send(
   const auto ntask = std::distance( task_begin, task_end );
   std::vector<double*> dmat_host( ntask ), zmat_host( ntask ), bf_host( ntask ),
                        vmat_host( ntask );
-  std::vector<cutlass::gemm::GemmCoord> problem_sizes( ntask );
-  std::vector<cutlass::gemm::GemmCoord> sym2k_sizes( ntask );
+  problem_sizes_host.resize(ntask);
+  syr2k_sizes_host.resize(ntask);
   std::vector<int64_t> ld64_dmat_host( ntask ), ld64_zmat_host( ntask ), 
                        ld64_vmat_host( ntask ), ld64_bf_host( ntask );
 
@@ -104,10 +106,10 @@ void AoSScheme1CUTLASSBase::Data::pack_and_send(
     }
 
     cutlass::gemm::GemmCoord problem(task.npts, task.nbe, task.nbe);
-    problem_sizes[i] = problem;
+    problem_sizes_host[i] = problem;
 
     cutlass::gemm::GemmCoord problem2(task.nbe, task.nbe, task.npts);
-    sym2k_sizes[i] = problem2;
+    syr2k_sizes_host[i] = problem2;
 
   }
 
@@ -121,9 +123,9 @@ void AoSScheme1CUTLASSBase::Data::pack_and_send(
   device_backend_->copy_async( ntask, bf_host.data(), 
     cutlass_stack.bf_array_device, "send bf array" );
 
-  device_backend_->copy_async( ntask, problem_sizes.data(), 
+  device_backend_->copy_async( ntask, problem_sizes_host.data(), 
     cutlass_stack.problem_sizes_device, "send problemsize array" );
-  device_backend_->copy_async( ntask, sym2k_sizes.data(), 
+  device_backend_->copy_async( ntask, syr2k_sizes_host.data(), 
     cutlass_stack.syr2k_sizes_device, "send problemsize array" );
   device_backend_->copy_async( ntask, ld64_dmat_host.data(), 
     cutlass_stack.ld64_dmat_array_device, "send ld dmat array" );
