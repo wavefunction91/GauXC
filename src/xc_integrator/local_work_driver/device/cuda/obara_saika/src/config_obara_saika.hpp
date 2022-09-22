@@ -10,7 +10,12 @@
 
 #define DEFAULT_NSEGMENT ((DEFAULT_MAX_T * DEFAULT_NCHEB) / 2)
 #define DEFAULT_LD_TABLE (DEFAULT_NCHEB + 1)
- 
+#define OPTIMIZE_ACCESS_0_0 						1
+#define OPTIMIZE_ACCESS_1_1 						0
+#define OPTIMIZE_ACCESS_1_0             0
+
+#define OPTIMIZE_ACCESS_DELOCALIZE_0_0 	1
+
 namespace XGPU {
   template <int M>
   __device__ inline void boys_element(double *T, double *T_inv_e, double *eval, double *boys_table) {
