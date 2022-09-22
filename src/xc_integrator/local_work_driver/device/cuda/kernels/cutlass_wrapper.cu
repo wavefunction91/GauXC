@@ -112,9 +112,9 @@ void cutlass_gemm(
   GemmGrouped gemm;
 
   size_t workspace_size = gemm.get_workspace_size(args);
-  cutlass::DeviceAllocation<uint8_t> workspace(workspace_size);
+  assert(workspace_size == 0);  
 
-  status = gemm.initialize(args, workspace.get());
+  status = gemm.initialize(args, nullptr);
   status = gemm.run(stream);
 }
 
@@ -217,9 +217,9 @@ void cutlass_syr2k(
 
   Syr2kGrouped gemm;
   size_t workspace_size = gemm.get_workspace_size(args);
-  cutlass::DeviceAllocation<uint8_t> workspace(workspace_size);
+  assert(workspace_size == 0);  
 
-  status = gemm.initialize(args, workspace.get());
+  status = gemm.initialize(args, nullptr);
   status = gemm.run(stream);
 }
 

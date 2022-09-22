@@ -15,7 +15,9 @@ void AoSScheme1CUTLASSBase::Data::reset_allocations() {
 }
 
 size_t AoSScheme1CUTLASSBase::Data::get_static_mem_requirement() {
-  return base_type::get_static_mem_requirement() + 8 * sizeof(int32_t); 
+  return base_type::get_static_mem_requirement() + 
+         4 * sizeof(int32_t) +
+         2 * sizeof(cutlass::gemm::GemmCoord); 
     // Extra elements in CUTLASS dimension arrays
 }
 
@@ -31,9 +33,9 @@ size_t AoSScheme1CUTLASSBase::Data::get_mem_req( integrator_term_tracker terms,
   // TODO Update this for cutlass
   return base_size + 
          4*sizeof(double*) + // batch device pointers
-         8*sizeof(int32_t) +
-         8*sizeof(int64_t);  // Dimensions + leading dimensions 
-                             // (extra handled by get_static_mem_requirement)
+         4*sizeof(int64_t) +
+         2*sizeof(cutlass::gemm::GemmCoord);  // Dimensions + leading dimensions 
+                                              // (extra handled by get_static_mem_requirement)
 
 
 }

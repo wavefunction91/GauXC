@@ -36,11 +36,11 @@ option( GAUXC_ENABLE_GAU2GRID "Enable Gau2Grid Collocation" ON  )
 option( GAUXC_ENABLE_HDF5     "Enable HDF5 Bindings"        ON  )
 
 include(CMakeDependentOption)
-cmake_dependent_option( GAUXC_ENABLE_MAGMA    "Enable MAGMA Linear Algebra" ON
+cmake_dependent_option( GAUXC_ENABLE_MAGMA    "Enable MAGMA Linear Algebra  " ON
   "GAUXC_ENABLE_CUDA OR GAUXC_ENABLE_HIP" OFF  )
-cmake_dependent_option( GAUXC_ENABLE_NCCL     "Enable NCCL Collectives    " OFF  
+cmake_dependent_option( GAUXC_ENABLE_NCCL     "Enable NCCL Collectives      " OFF  
   "GAUXC_ENABLE_CUDA" OFF )
-cmake_dependent_option( GAUXC_ENABLE_CUTLASS  "Enable NCCL Collectives    " OFF  
+cmake_dependent_option( GAUXC_ENABLE_CUTLASS  "Enable CUTLASS Linear Algebra" OFF  
   "GAUXC_ENABLE_CUDA" OFF )
 
 
