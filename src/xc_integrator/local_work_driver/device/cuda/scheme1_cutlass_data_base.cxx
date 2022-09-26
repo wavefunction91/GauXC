@@ -1,9 +1,6 @@
 #include "scheme1_cutlass_base.hpp"
 #include "buffer_adaptor.hpp"
 
-#include "cutlass/cutlass.h"
-#include "cutlass/gemm/gemm.h"
-
 namespace GauXC {
 
 

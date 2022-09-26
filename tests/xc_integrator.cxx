@@ -127,6 +127,14 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func) {
     }
     #endif
 
+    #ifdef GAUXC_ENABLE_CUTLASS
+    SECTION( "Incore - MPI Reduction - CUTLASS" ) {
+      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
+        reference_file, func, 32, false, "Default", "Default", "Scheme1-CUTLASS" );
+    }
+    #endif
+
+
     #ifdef GAUXC_ENABLE_NCCL
     SECTION( "Incore - NCCL Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,)
