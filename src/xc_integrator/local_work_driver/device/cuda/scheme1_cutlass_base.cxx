@@ -5,9 +5,6 @@
 #include "device/common/inc_potential.hpp"
 #include "device/common/device_blas.hpp"
 
-#include "cutlass/cutlass.h"
-#include "cutlass/gemm/gemm.h"
-
 #include "device/cuda/kernels/cutlass_wrapper.hpp"
 
 namespace GauXC {

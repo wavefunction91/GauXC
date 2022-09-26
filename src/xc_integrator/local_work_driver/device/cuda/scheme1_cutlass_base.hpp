@@ -1,10 +1,10 @@
 #pragma once
+#include <gauxc/gauxc_config.hpp>
+#ifdef GAUXC_ENABLE_CUTLASS
 #include "device/scheme1_base.hpp"
 
-#ifdef GAUXC_ENABLE_CUTLASS
-#include "cutlass/cutlass.h"
-#include "cutlass/gemm/gemm.h"
-#endif
+#include <cutlass/cutlass.h>
+#include <cutlass/gemm/gemm.h>
 
 namespace GauXC {
 
@@ -31,10 +31,10 @@ struct AoSScheme1CUTLASSBase::Data : public AoSScheme1Base::Data {
     double** zmat_array_device = nullptr;
     double** bf_array_device   = nullptr;
 
-#ifdef GAUXC_ENABLE_CUTLASS
+                           
     cutlass::gemm::GemmCoord* problem_sizes_device = nullptr;
     cutlass::gemm::GemmCoord* syr2k_sizes_device = nullptr;
-#endif
+      
     int64_t* ld64_dmat_array_device = nullptr;
     int64_t* ld64_vmat_array_device = nullptr;
     int64_t* ld64_zmat_array_device = nullptr;
@@ -43,10 +43,10 @@ struct AoSScheme1CUTLASSBase::Data : public AoSScheme1Base::Data {
     inline void reset(){ std::memset(this,0,sizeof(cutlass_data)); }
   };
 
-#ifdef GAUXC_ENABLE_CUTLASS
+                           
   std::vector<cutlass::gemm::GemmCoord> syr2k_sizes_host;
   std::vector<cutlass::gemm::GemmCoord> problem_sizes_host;
-#endif
+      
 
   cutlass_data cutlass_stack;
 
@@ -69,3 +69,4 @@ struct AoSScheme1CUTLASSBase::Data : public AoSScheme1Base::Data {
 };
 
 }
+#endif

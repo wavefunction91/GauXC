@@ -1,16 +1,16 @@
-#include "cutlass/cutlass.h"
-#include "cutlass/gemm/gemm.h"
-#include "cutlass/gemm/kernel/gemm_grouped.h"
-#include "cutlass/gemm/kernel/default_gemm_grouped.h"
-#include "cutlass/gemm/device/gemm_grouped.h"
-#include "cutlass/gemm/device/gemm_universal.h"
+#include <cutlass/cutlass.h>
+#include <cutlass/gemm/gemm.h>
+#include <cutlass/gemm/kernel/gemm_grouped.h>
+#include <cutlass/gemm/kernel/default_gemm_grouped.h>
+#include <cutlass/gemm/device/gemm_grouped.h>
+#include <cutlass/gemm/device/gemm_universal.h>
 
-#include "cutlass/gemm/kernel/rank_2k_grouped.h"
-#include "cutlass/gemm/kernel/default_rank_2k_grouped.h"
-#include "cutlass/gemm/device/rank_2k_grouped.h"
-#include "cutlass/gemm/device/rank_2k.h"
+#include <cutlass/gemm/kernel/rank_2k_grouped.h>
+#include <cutlass/gemm/kernel/default_rank_2k_grouped.h>
+#include <cutlass/gemm/device/rank_2k_grouped.h>
+#include <cutlass/gemm/device/rank_2k.h>
 
-#include "cutlass/util/device_memory.h"
+#include <cutlass/util/device_memory.h>
 
 #include "device_specific/cuda_device_constants.hpp"
 #include "device_specific/cuda_util.hpp"
