@@ -15,7 +15,6 @@ struct AoSScheme1CUTLASSBase : public AoSScheme1Base {
 
   struct Data;
 
-  AoSScheme1CUTLASSBase();
   virtual ~AoSScheme1CUTLASSBase() = default;
 };
 

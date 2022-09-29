@@ -9,19 +9,6 @@
 
 namespace GauXC {
 
-AoSScheme1CUTLASSBase::AoSScheme1CUTLASSBase() {
-  int major, minor, dev_id;
-  cudaGetDevice(&dev_id);
-  cudaDeviceGetAttribute(&major, cudaDevAttrComputeCapabilityMajor, dev_id);
-  cudaDeviceGetAttribute(&minor, cudaDevAttrComputeCapabilityMinor, dev_id);
-
-  const int cc = major * 10 + minor;
-  if (cc != 80) {
-    throw std::runtime_error("Error CUTLASS Only Supports SM_80");
-  }
-}
-
-
 void AoSScheme1CUTLASSBase::eval_xmat( XCDeviceData* _data, bool do_grad ){
 
   if( do_grad ) GAUXC_GENERIC_EXCEPTION("CUTLASS + X Gradient NYI");
