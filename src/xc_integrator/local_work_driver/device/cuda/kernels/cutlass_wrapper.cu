@@ -15,6 +15,7 @@
 #include "device_specific/cuda_device_constants.hpp"
 #include "device_specific/cuda_util.hpp"
 #include "device/device_queue.hpp"
+#include "exceptions/cutlass_exception.hpp"
 
 namespace GauXC {
 
@@ -34,6 +35,7 @@ void cutlass_gemm(
   const double beta,
   device_queue queue
 ) {
+  // Template parameters defining data types and layouts
   using ElementOutput = double;
   using ElementAccumulator = double;
   using ElementA = double; 
@@ -58,16 +60,16 @@ void cutlass_gemm(
 
   using GroupScheduleMode = cutlass::gemm::kernel::GroupScheduleMode;
 
-  // Tunable Parameters
-  using ThreadblockShape = cutlass::gemm::GemmShape<64, 64, 16>;
-  using WarpShape = cutlass::gemm::GemmShape<32, 32, 16>;
-  using InstructionShape = cutlass::gemm::GemmShape<8, 8, 4>;
-  constexpr int kStages = 4;
-  constexpr GroupScheduleMode kGroupScheduleMode = GroupScheduleMode::kDeviceOnly;
-
-  // Arch specific
-  using OperatorClass = cutlass::arch::OpClassTensorOp;
+  // Tunable and arch specific Parameters
+  // Perform scheduling on device
+  constexpr GroupScheduleMode kGroupScheduleMode = GroupScheduleMode::kDeviceOnly;  
   using ArchTag = cutlass::arch::Sm80;
+  using OperatorClass = cutlass::arch::OpClassTensorOp;
+
+  using ThreadblockShape = cutlass::gemm::GemmShape<64, 64, 16>;  // Size of  Gemm each thread block will perform
+  using WarpShape = cutlass::gemm::GemmShape<32, 32, 16>;  // Size of Gemm each warp will perform
+  using InstructionShape = cutlass::gemm::GemmShape<8, 8, 4>;  // Size of DMMA Tensor Core in Ampere
+  constexpr int kStages = 4;  // Number of shared memory stages
 
   // Define CUTLASS GEMM Type
   using GemmGroupKernel = typename cutlass::gemm::kernel::DefaultGemmGrouped<
@@ -88,7 +90,7 @@ void cutlass_gemm(
   const int threadblock_count = GemmGrouped::sufficient(problem_sizes_host, problem_count);
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
-  cutlass::Status status;
+  cutlass::Status status = cutlass::Status::kSuccess;
   typename GemmGrouped::EpilogueOutputOp::Params epilogue_op(alpha, beta);
 
   // Configure GEMM arguments
@@ -112,10 +114,15 @@ void cutlass_gemm(
   GemmGrouped gemm;
 
   size_t workspace_size = gemm.get_workspace_size(args);
-  assert(workspace_size == 0);  
+  if (workspace_size) {
+    GAUXC_GENERIC_EXCEPTION("CUTLASS Workspace Size Must Be Zero");
+  }
 
   status = gemm.initialize(args, nullptr);
+  GAUXC_CUTLASS_ERROR("CUTLASS Group Gemm Initialization Failed", status);
+
   status = gemm.run(stream);
+  GAUXC_CUTLASS_ERROR("CUTLASS Group Gemm Run Failed", status);
 }
 
 
@@ -135,6 +142,7 @@ void cutlass_syr2k(
   const double beta,
   device_queue queue
 ) {
+  // Template parameters defining data types and layouts
   using ElementOutput = double;
   using ElementAccumulator = double;
   using ElementA = double; 
@@ -159,16 +167,16 @@ void cutlass_syr2k(
 
   using GroupScheduleMode = cutlass::gemm::kernel::GroupScheduleMode;
   
-   // Tunable Parameters
-  using ThreadblockShape = cutlass::gemm::GemmShape<64, 64, 16>;
-  using WarpShape = cutlass::gemm::GemmShape<32, 32, 16>;
-  using InstructionShape = cutlass::gemm::GemmShape<8, 8, 4>;
-  constexpr int kStages = 4;
+  // Tunable and arch specific Parameters
+  // Perform scheduling on device
   constexpr GroupScheduleMode kGroupScheduleMode = GroupScheduleMode::kDeviceOnly;
-
-  // Arch specific
-  using OperatorClass = cutlass::arch::OpClassTensorOp;
   using ArchTag = cutlass::arch::Sm80;
+  using OperatorClass = cutlass::arch::OpClassTensorOp;
+
+  using ThreadblockShape = cutlass::gemm::GemmShape<64, 64, 16>;  // Size of  Gemm each thread block will perform
+  using WarpShape = cutlass::gemm::GemmShape<32, 32, 16>;  // Size of Gemm each warp will perform
+  using InstructionShape = cutlass::gemm::GemmShape<8, 8, 4>;  // Size of DMMA Tensor Core in Ampere
+  constexpr int kStages = 4;  // Number of shared memory stages
 
   // Syr2k specific
   constexpr cutlass::FillMode kFillModeC = cutlass::FillMode::kLower;
@@ -195,7 +203,7 @@ void cutlass_syr2k(
   const int threadblock_count = Syr2kGrouped::sufficient(problem_sizes_host, problem_count);
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
-  cutlass::Status status;
+  cutlass::Status status = cutlass::Status::kSuccess;
   typename Syr2kGrouped::EpilogueOutputOp::Params epilogue_op(alpha, beta);
 
    typename Syr2kGrouped::Arguments args(
@@ -217,10 +225,14 @@ void cutlass_syr2k(
 
   Syr2kGrouped gemm;
   size_t workspace_size = gemm.get_workspace_size(args);
-  assert(workspace_size == 0);  
+  if (workspace_size) {
+    GAUXC_GENERIC_EXCEPTION("CUTLASS Workspace Size Must Be Zero");
+  }
 
   status = gemm.initialize(args, nullptr);
+  GAUXC_CUTLASS_ERROR("CUTLASS Group Syr2k Initialization Failed", status);
   status = gemm.run(stream);
+  GAUXC_CUTLASS_ERROR("CUTLASS Group Syr2k Run Failed", status);
 }
 
 }
