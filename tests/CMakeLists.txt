@@ -49,6 +49,10 @@ add_executable( gauxc_test
   basis/parse_basis.cxx
 )
 target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
+if(GAUXC_ENABLE_CUTLASS)
+  include(gauxc-cutlass)
+  target_link_libraries(gauxc_test PUBLIC gauxc_cutlass)
+endif()
 
 
 set( GAUXC_REF_DATA_PATH "${PROJECT_SOURCE_DIR}/tests/ref_data" )

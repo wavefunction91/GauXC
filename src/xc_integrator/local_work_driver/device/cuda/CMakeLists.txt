@@ -16,7 +16,6 @@ target_sources(gauxc PRIVATE
   kernels/cuda_inc_potential.cu
   kernels/symmetrize_mat.cu
   kernels/increment_exc_grad.cu
-
 )
 
 # Check if CMAKE_CUDA_ARCHITECTURES is set
@@ -30,3 +29,14 @@ foreach( cuda_arch ${CMAKE_CUDA_ARCHITECTURES} )
     message(FATAL_ERROR "GauXC Requires CUDA CC 6.0+ For FP64 Atomics")
   endif()
 endforeach()
+
+if(GAUXC_ENABLE_CUTLASS)
+    include( gauxc-cutlass )
+    target_link_libraries( gauxc PRIVATE gauxc_cutlass )
+    target_sources( gauxc PRIVATE
+      scheme1_cutlass_base.cxx 
+      scheme1_cutlass_data_base.cxx   
+
+      kernels/cutlass_wrapper.cu
+    )
+endif()

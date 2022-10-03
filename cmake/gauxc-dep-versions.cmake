@@ -7,6 +7,9 @@ set( GAUXC_CEREAL_REVISION   v1.3.0 )
 set( GAUXC_CUB_REPOSITORY https://github.com/NVIDIA/cub.git )
 set( GAUXC_CUB_REVISION   1.10.0 )
 
+set( GAUXC_CUTLASS_REPOSITORY https://github.com/NVIDIA/cutlass.git )
+set( GAUXC_CUTLASS_REVISION v2.10.0 )
+
 set( GAUXC_EXCHCXX_REPOSITORY https://github.com/wavefunction91/ExchCXX.git )
 set( GAUXC_EXCHCXX_REVISION   14927be61fa0b97a9ede77a14b44fa1eb4b365a7 )
 
