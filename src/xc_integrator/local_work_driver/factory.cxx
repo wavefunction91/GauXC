@@ -34,6 +34,9 @@ LocalWorkDriverFactory::ptr_return_t
 #ifdef GAUXC_ENABLE_MAGMA
     using scheme1_magma   = CudaAoSScheme1<AoSScheme1MAGMABase>;
 #endif
+#ifdef GAUXC_ENABLE_CUTLASS
+    using scheme1_cutlass   = CudaAoSScheme1<AoSScheme1CUTLASSBase>;
+#endif
 #elif defined(GAUXC_ENABLE_HIP)
     using scheme1_default = HipAoSScheme1<>;
 #ifdef GAUXC_ENABLE_MAGMA
@@ -47,6 +50,10 @@ LocalWorkDriverFactory::ptr_return_t
 #ifdef GAUXC_ENABLE_MAGMA
     else if( name == "SCHEME1-MAGMA" )
       return std::make_unique<LocalDeviceWorkDriver>( std::make_unique<scheme1_magma>() );
+#endif
+#ifdef GAUXC_ENABLE_CUTLASS
+    else if( name == "SCHEME1-CUTLASS" )
+      return std::make_unique<LocalDeviceWorkDriver>( std::make_unique<scheme1_cutlass>() );
 #endif
     else
 #endif
