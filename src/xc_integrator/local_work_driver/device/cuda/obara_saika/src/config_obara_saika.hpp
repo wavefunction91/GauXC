@@ -10,11 +10,11 @@
 
 #define DEFAULT_NSEGMENT ((DEFAULT_MAX_T * DEFAULT_NCHEB) / 2)
 #define DEFAULT_LD_TABLE (DEFAULT_NCHEB + 1)
-#define OPTIMIZE_ACCESS_0_0 						1
+#define OPTIMIZE_ACCESS_0_0 						0
 #define OPTIMIZE_ACCESS_1_1 						0
 #define OPTIMIZE_ACCESS_1_0             0
 
-#define OPTIMIZE_ACCESS_DELOCALIZE_0_0 	1
+#define OPTIMIZE_ACCESS_DELOCALIZE_0_0 	0
 
 namespace XGPU {
   template <int M>
