@@ -255,8 +255,8 @@ void XCDeviceStackData::send_static_data_shell_pairs(
   // Create SoA
   shell_pair_soa.reset();
   using point = XCDeviceShellPairSoA::point;
-  for( auto j = 0; j < nshells; ++j )
-  for( auto i = j; i < nshells; ++i ) {
+  for( size_t j = 0; j < nshells; ++j )
+  for( size_t i = j; i < nshells; ++i ) {
     auto idx = detail::packed_lt_index(i,j,nshells);
     shell_pair_soa.shell_pair_dev_ptr.emplace_back(
       static_stack.shell_pairs_device + idx
@@ -417,6 +417,7 @@ size_t XCDeviceStackData::get_mem_req(
   const auto& points = task.points;
   const size_t npts  = points.size();
 
+#if !USE_REQT
   // Grid
   const auto mem_points = 3 * npts * sizeof(double);
   const auto mem_weights = npts * sizeof(double);
@@ -450,6 +451,25 @@ size_t XCDeviceStackData::get_mem_req(
     mem_req += mem_den + mem_den_grad + mem_gamma + mem_eps + mem_vrho + mem_vgamma;
    
   }
+#else
+  required_term_storage reqt(terms);
+  size_t mem_req = 
+    // Grid
+    reqt.grid_points_size (npts) * sizeof(double) + 
+    reqt.grid_weights_size(npts) * sizeof(double) +
+
+    // U Variables
+    reqt.grid_den_size(npts)      * sizeof(double) + 
+    reqt.grid_den_grad_size(npts) * sizeof(double) +
+
+    // V Variables
+    reqt.grid_gamma_size(npts)  * sizeof(double) +
+
+    // XC output
+    reqt.grid_eps_size(npts)    * sizeof(double) +
+    reqt.grid_vrho_size(npts)   * sizeof(double) +
+    reqt.grid_vgamma_size(npts) * sizeof(double) ;
+#endif
 
   return mem_req;
 }
@@ -476,6 +496,7 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   auto [ ptr, sz ] = buf;
   buffer_adaptor mem( ptr, sz );
 
+#if !USE_REQT
   // Grid
   base_stack.points_x_device = mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
   base_stack.points_y_device = mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
@@ -526,6 +547,52 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
       }
     }
   }
+#else
+
+  required_term_storage reqt(terms);
+  const size_t msz = total_npts_task_batch;
+  const size_t aln = 256;
+
+  // Grid Points
+  if( reqt.grid_points ) {
+    base_stack.points_x_device = mem.aligned_alloc<double>( msz, aln, csl);
+    base_stack.points_y_device = mem.aligned_alloc<double>( msz, aln, csl);
+    base_stack.points_z_device = mem.aligned_alloc<double>( msz, aln, csl);
+  }
+
+  // Grid Weights
+  if( reqt.grid_weights ) {
+    base_stack.weights_device = mem.aligned_alloc<double>(msz, csl);
+  }
+
+  // Grid function evaluations
+
+  if( reqt.grid_den ) { // Density 
+    base_stack.den_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+  }
+
+  if( reqt.grid_den_grad ) { // Density gradient
+    base_stack.den_x_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    base_stack.den_y_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    base_stack.den_z_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+  }
+
+  if( reqt.grid_gamma ) { // Gamma
+    base_stack.gamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+  }
+
+  if( reqt.grid_eps ) { // Energy density 
+    base_stack.eps_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+  }
+
+  if( reqt.grid_vrho ) { // Vrho
+    base_stack.vrho_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+  }
+
+  if( reqt.grid_vgamma ) { // Vgamma
+    base_stack.vgamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+  }
+#endif
 
   // Update dynmem data for derived impls
   return device_buffer_t{ mem.stack(), mem.nleft() };
@@ -566,6 +633,16 @@ void XCDeviceStackData::pack_and_send( integrator_term_tracker ,
     
   } // Loop over tasks
 
+  if( points_x_pack.size() != total_npts_task_batch )
+    GAUXC_GENERIC_EXCEPTION("Inconsisdent Points-X allocation");
+  if( points_y_pack.size() != total_npts_task_batch )
+    GAUXC_GENERIC_EXCEPTION("Inconsisdent Points-Y allocation");
+  if( points_z_pack.size() != total_npts_task_batch )
+    GAUXC_GENERIC_EXCEPTION("Inconsisdent Points-Z allocation");
+  if( weights_pack.size() != total_npts_task_batch )
+    GAUXC_GENERIC_EXCEPTION("Inconsisdent weights allocation");
+
+
 
   // Send grid data
   device_backend_->copy_async( points_x_pack.size(), points_x_pack.data(),
@@ -597,8 +674,8 @@ void XCDeviceStackData::copy_weights_to_tasks( host_task_iterator task_begin, ho
 
   // Copy weights into contiguous host data
   std::vector<double> weights_host(local_npts);
-  device_backend_->copy_async( local_npts, base_stack.weights_device, weights_host.data(),
-    "Weights D2H" );
+  device_backend_->copy_async( local_npts, base_stack.weights_device, 
+    weights_host.data(), "Weights D2H" );
   device_backend_->master_queue_synchronize(); 
 
   // Place into host memory 
