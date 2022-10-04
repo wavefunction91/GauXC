@@ -31,7 +31,6 @@ struct integrator_term_tracker {
 };
 
 #define PRDVL(pred,val) (pred) ? (val) : 0ul;
-#define USE_REQT 1
 
 struct required_term_storage {
   bool grid_points  = false;

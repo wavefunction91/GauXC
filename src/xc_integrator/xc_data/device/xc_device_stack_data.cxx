@@ -417,41 +417,6 @@ size_t XCDeviceStackData::get_mem_req(
   const auto& points = task.points;
   const size_t npts  = points.size();
 
-#if !USE_REQT
-  // Grid
-  const auto mem_points = 3 * npts * sizeof(double);
-  const auto mem_weights = npts * sizeof(double);
-
-  // All terms require grid
-  size_t mem_req = mem_points + mem_weights;
-
-  // XC/Density Specific terms
-  const bool need_xc = terms.exc_vxc or terms.exc_grad;
-  if( need_xc or terms.den ) {
-
-    if( terms.xc_approx == _UNDEFINED and need_xc ) 
-      GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET");
-    const bool is_lda = terms.xc_approx == LDA;
-    const bool is_gga = terms.xc_approx == GGA;
-  
-    const bool need_grad = is_gga or terms.exc_grad;
-
-    // U variables
-    const auto mem_den      = npts * sizeof(double);
-    const auto mem_den_grad = need_grad ? 3*mem_den : 0;
-
-    // V variables
-    const auto mem_gamma = (need_xc and !is_lda) ? npts * sizeof(double) : 0;
-
-    // XC output
-    const auto mem_eps    = need_xc ? npts * sizeof(double) : 0;
-    const auto mem_vrho   = need_xc ? npts * sizeof(double) : 0;
-    const auto mem_vgamma = (need_xc and !is_lda) ? npts * sizeof(double) : 0;
-
-    mem_req += mem_den + mem_den_grad + mem_gamma + mem_eps + mem_vrho + mem_vgamma;
-   
-  }
-#else
   required_term_storage reqt(terms);
   size_t mem_req = 
     // Grid
@@ -469,7 +434,6 @@ size_t XCDeviceStackData::get_mem_req(
     reqt.grid_eps_size(npts)    * sizeof(double) +
     reqt.grid_vrho_size(npts)   * sizeof(double) +
     reqt.grid_vgamma_size(npts) * sizeof(double) ;
-#endif
 
   return mem_req;
 }
@@ -496,58 +460,6 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   auto [ ptr, sz ] = buf;
   buffer_adaptor mem( ptr, sz );
 
-#if !USE_REQT
-  // Grid
-  base_stack.points_x_device = mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
-  base_stack.points_y_device = mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
-  base_stack.points_z_device = mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
-
-  base_stack.weights_device = 
-    mem.aligned_alloc<double>( total_npts_task_batch , csl);
-
-  // XC/Density Specific terms
-  const bool need_xc = terms.exc_vxc or terms.exc_grad;
-  if( need_xc or terms.den ) {
-
-    if( terms.xc_approx == _UNDEFINED and need_xc ) 
-      GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET");
-    const bool is_lda = terms.xc_approx == LDA;
-    const bool is_gga = terms.xc_approx == GGA;
-  
-    const bool need_grad = is_gga or terms.exc_grad;
-
-    // U Variables
-    base_stack.den_eval_device   = 
-      mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
-
-    if( need_grad ) {
-      base_stack.den_x_eval_device = 
-        mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
-      base_stack.den_y_eval_device = 
-        mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
-      base_stack.den_z_eval_device = 
-        mem.aligned_alloc<double>( total_npts_task_batch, 256, csl);
-    }
-
-    // V Variables
-    if( !is_lda and need_xc ) {
-      base_stack.gamma_eval_device = 
-        mem.aligned_alloc<double>( total_npts_task_batch, csl);
-    }
-
-    // XC output
-    if( need_xc ) {
-      base_stack.eps_eval_device    = 
-        mem.aligned_alloc<double>( total_npts_task_batch, csl);
-      base_stack.vrho_eval_device   = 
-        mem.aligned_alloc<double>( total_npts_task_batch, csl);
-      if( !is_lda ) {
-        base_stack.vgamma_eval_device = 
-          mem.aligned_alloc<double>( total_npts_task_batch, csl);
-      }
-    }
-  }
-#else
 
   required_term_storage reqt(terms);
   const size_t msz = total_npts_task_batch;
@@ -592,7 +504,6 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   if( reqt.grid_vgamma ) { // Vgamma
     base_stack.vgamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
   }
-#endif
 
   // Update dynmem data for derived impls
   return device_buffer_t{ mem.stack(), mem.nleft() };

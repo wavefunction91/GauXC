@@ -584,12 +584,12 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   auto& tasks = data->host_device_tasks;
-  const auto ntasks = tasks.size();
+  //const auto ntasks = tasks.size();
   const size_t nshells = data->global_dims.nshells;
-  auto static_stack  = data->static_stack;
+  //auto static_stack  = data->static_stack;
 
   // XXX: Need to add screening capabilities, packing etc
-  const auto nbf = data->global_dims.nbf;
+  //const auto nbf = data->global_dims.nbf;
 
   // XXX: Need to add support for non-cartesian functions
   for( auto i = 0ul; i < nshells; ++i ) {
@@ -612,7 +612,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
   data->device_backend_->sync_blas_pool_with_master();
 
   // Launch Shell Pair Kernels in round-robin
-  const auto n_streams = data->device_backend_->blas_pool_size();
+  //const auto n_streams = data->device_backend_->blas_pool_size();
 
   auto& sp_to_task = data->shell_pair_to_task;
   #if 1
