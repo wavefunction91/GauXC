@@ -1,6 +1,7 @@
 #pragma once
 #include "device/scheme1_base.hpp"
 #include "device/scheme1_magma_base.hpp"
+#include "device/cuda/scheme1_cutlass_base.hpp"
 
 namespace GauXC {
 
@@ -31,7 +32,9 @@ extern template struct CudaAoSScheme1<AoSScheme1Base>;
 #ifdef GAUXC_ENABLE_MAGMA
 extern template struct CudaAoSScheme1<AoSScheme1MAGMABase>;
 #endif
-
+#ifdef GAUXC_ENABLE_CUTLASS
+extern template struct CudaAoSScheme1<AoSScheme1CUTLASSBase>;
+#endif
 
 template <typename Base>
 struct CudaAoSScheme1<Base>::Data : public Base::Data {
@@ -49,6 +52,9 @@ struct CudaAoSScheme1<Base>::Data : public Base::Data {
 extern template struct CudaAoSScheme1<AoSScheme1Base>::Data;
 #ifdef GAUXC_ENABLE_MAGMA
 extern template struct CudaAoSScheme1<AoSScheme1MAGMABase>::Data;
+#endif
+#ifdef GAUXC_ENABLE_CUTLASS
+extern template struct CudaAoSScheme1<AoSScheme1CUTLASSBase>::Data;
 #endif
 
 }

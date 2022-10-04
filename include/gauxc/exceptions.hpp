@@ -23,6 +23,10 @@ class hipblas_exception;
 class magma_exception;
 #endif
 
+#ifdef GAUXC_ENABLE_CUTLASS
+class cutlass_exception;
+#endif
+
 class generic_gauxc_exception : public std::exception {
 
   std::string file_;
