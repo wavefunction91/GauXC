@@ -150,6 +150,20 @@ public:
     auto first_shell_w_l = std::find( shell_ls_.begin(), shell_ls_.end(), l );
     return shell_pure( std::distance( shell_ls_.begin(), first_shell_w_l ) );
   }
+
+  template <typename IntegralType, typename IntegralIterator>
+  std::vector<IntegralType> shell_offs( IntegralIterator begin, 
+                                        IntegralIterator end ) const {
+
+    const size_t nshells_list = std::distance(begin,end);
+    std::vector<IntegralType> shell_offs(nshells_list);
+    shell_offs.at(0) = 0;
+    for(auto i = 1ul; i < nshells_list; ++i) {
+      shell_offs.at(i) = shell_offs.at(i-1) + shell_size(*(begin+i-1));
+    }
+    return shell_offs;  
+
+  }
 }; // class BasisSetMap
 
 } // namespace GauXC

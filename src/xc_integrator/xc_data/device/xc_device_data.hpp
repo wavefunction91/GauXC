@@ -146,13 +146,10 @@ struct required_term_storage {
   }
 
   // Shell/Shell pairs lists + indirection
-  bool task_shell_list_bfn            = false;
-  bool task_shell_offs_bfn            = false;
-  bool shell_to_task_idx_bfn          = false;
-  bool shell_to_task_off_bfn          = false;
-  bool shell_pair_to_task_idx_cou     = false;
-  bool shell_pair_to_task_row_off_cou = false;
-  bool shell_pair_to_task_col_off_cou = false;
+  bool task_shell_list_bfn    = false;
+  bool task_shell_offs_bfn    = false;
+  bool shell_to_task_bfn      = false;
+  bool shell_pair_to_task_cou = false;
   
   inline size_t task_shell_list_bfn_size(size_t nshells) {
     return PRDVL(task_shell_list_bfn, nshells);
@@ -161,22 +158,22 @@ struct required_term_storage {
     return PRDVL(task_shell_offs_bfn, nshells);
   }
   inline size_t shell_to_task_idx_bfn_size(size_t nshells) {
-    return PRDVL(shell_to_task_idx_bfn, nshells);
+    return PRDVL(shell_to_task_bfn, nshells);
   }
   inline size_t shell_to_task_off_bfn_size(size_t nshells) {
-    return PRDVL(shell_to_task_off_bfn, nshells);
+    return PRDVL(shell_to_task_bfn, nshells);
   }
   inline size_t shell_pair_to_task_idx_cou_size(size_t nshells) {
     const size_t nslt = (nshells * (nshells+1)) / 2;
-    return PRDVL(shell_pair_to_task_idx_cou, nslt);
+    return PRDVL(shell_pair_to_task_cou, nslt);
   }
   inline size_t shell_pair_to_task_row_off_cou_size(size_t nshells) {
     const size_t nslt = (nshells * (nshells+1)) / 2;
-    return PRDVL(shell_pair_to_task_row_off_cou, nslt);
+    return PRDVL(shell_pair_to_task_cou, nslt);
   }
   inline size_t shell_pair_to_task_col_off_cou_size(size_t nshells) {
     const size_t nslt = (nshells * (nshells+1)) / 2;
-    return PRDVL(shell_pair_to_task_col_off_cou, nslt);
+    return PRDVL(shell_pair_to_task_cou, nslt);
   }
 
 
@@ -218,10 +215,9 @@ struct required_term_storage {
       task_submat_block_bfn = true;
       task_indirection      = true;
 
-      task_shell_list_bfn   = true;
-      task_shell_offs_bfn   = true;
-      shell_to_task_idx_bfn = true;
-      shell_to_task_off_bfn = true;
+      task_shell_list_bfn = true;
+      task_shell_offs_bfn = true;
+      shell_to_task_bfn   = true;
     }
 
     // Density integration
@@ -234,10 +230,9 @@ struct required_term_storage {
       task_submat_block_bfn = true;
       task_indirection      = true;
 
-      task_shell_list_bfn   = true;
-      task_shell_offs_bfn   = true;
-      shell_to_task_idx_bfn = true;
-      shell_to_task_off_bfn = true;
+      task_shell_list_bfn = true;
+      task_shell_offs_bfn = true;
+      shell_to_task_bfn   = true;
     }
 
     // EXX integration
@@ -252,13 +247,10 @@ struct required_term_storage {
       task_submat_block_cou = true;
       task_indirection      = true;
 
-      task_shell_list_bfn            = true;
-      task_shell_offs_bfn            = true;
-      shell_to_task_idx_bfn          = true;
-      shell_to_task_off_bfn          = true;
-      shell_pair_to_task_idx_cou     = true;
-      shell_pair_to_task_row_off_cou = true;
-      shell_pair_to_task_col_off_cou = true;
+      task_shell_list_bfn    = true;
+      task_shell_offs_bfn    = true;
+      shell_to_task_bfn      = true;
+      shell_pair_to_task_cou = true;
     }
 
   }
