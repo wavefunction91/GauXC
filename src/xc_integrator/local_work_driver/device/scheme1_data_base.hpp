@@ -79,6 +79,7 @@ struct Scheme1DataBase : public XCDeviceAoSData {
   virtual void pack_and_send( integrator_term_tracker terms,
     host_task_iterator begin, host_task_iterator end, 
     const BasisSetMap& basis_map ) override;
+
 };
 
 }
