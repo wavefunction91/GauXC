@@ -43,6 +43,7 @@ size_t Scheme1DataBase::get_mem_req( integrator_term_tracker terms,
   // All local memory is weights related
   size_t base_size = base_type::get_mem_req(terms, task);
 
+#if 0
   if( terms.weights ) {
     const auto ldatoms = get_ldatoms();
     const auto mem_dist_scr = ldatoms * task.npts;
@@ -80,7 +81,32 @@ size_t Scheme1DataBase::get_mem_req( integrator_term_tracker terms,
       mem_shell_to_task_idx + mem_shell_to_task_off +
       mem_shell_pair_to_task_idx + mem_shell_pair_to_task_row_off + mem_shell_pair_to_task_col_off;
   }
+#else
+  required_term_storage reqt(terms);
+  const auto ldatoms = get_ldatoms();
+  const auto npts = task.npts;
+  const auto& shell_list_bfn = task.bfn_screening.shell_list;
+  const auto& shell_list_cou = task.cou_screening.shell_list;
+  const size_t nshells_bfn  = shell_list_bfn.size();
+  const size_t nshells_cou  = shell_list_cou.size();
+  base_size += 
+    // Weights specific memory
+    reqt.grid_to_center_dist_scr_size(ldatoms, npts) * sizeof(double)  +
+    reqt.grid_to_center_dist_nearest_size(npts)      * sizeof(double)  +
+    reqt.grid_to_parent_center_size(npts)            * sizeof(int32_t) +
 
+    // Shell / Shell Pair lists + indirection
+    reqt.task_shell_list_bfn_size(nshells_bfn)            * sizeof(size_t)  +
+    reqt.task_shell_offs_bfn_size(nshells_bfn)            * sizeof(size_t)  +
+    reqt.shell_to_task_idx_bfn_size(nshells_bfn)          * sizeof(int32_t) +
+    reqt.shell_to_task_off_bfn_size(nshells_bfn)          * sizeof(int32_t) +
+    reqt.shell_pair_to_task_idx_cou_size(nshells_cou)     * sizeof(int32_t) +
+    reqt.shell_pair_to_task_row_off_cou_size(nshells_cou) * sizeof(int32_t) +
+    reqt.shell_pair_to_task_col_off_cou_size(nshells_cou) * sizeof(int32_t) ;
+
+#endif
+
+  std::cout << "MEM REQ: " << base_size << std::endl;
   return base_size;
 }
 
@@ -106,6 +132,7 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
   auto [ ptr, sz ] = buf;
   buffer_adaptor mem( ptr, sz );
 
+#if 0
   // Weights related memory
   if( terms.weights ) { 
     const auto ldatoms = get_ldatoms();
@@ -167,6 +194,86 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
     }
 
   }
+#else
+
+  required_term_storage reqt(terms);
+
+  // Weights related memory
+  if(reqt.grid_to_center_dist_scr) {
+    const auto ldatoms = get_ldatoms();
+    scheme1_stack.dist_scratch_device = mem.aligned_alloc<double>( 
+      ldatoms * total_npts_task_batch, alignof(double2), csl );
+  }
+  if(reqt.grid_to_center_dist_nearest) {
+    scheme1_stack.dist_nearest_device = 
+      mem.aligned_alloc<double>( total_npts_task_batch, csl );
+  }
+  if(reqt.grid_to_parent_center) {
+    scheme1_stack.iparent_device = 
+      mem.aligned_alloc<int32_t>( total_npts_task_batch, csl );
+  }
+
+  // Compute total dimensions for shell(pair) lists
+  total_nshells_bfn_task_batch       = 0; 
+  total_nshells_cou_sqlt_task_batch  = 0; 
+  for( auto it = task_begin; it != task_end; ++it ) {
+    const auto& shell_list_bfn  = it->bfn_screening.shell_list;
+    const size_t nshells_bfn  = shell_list_bfn.size();
+    total_nshells_bfn_task_batch  += nshells_bfn;
+
+    const auto& shell_list_cou  = it->cou_screening.shell_list;
+    const size_t nshells_cou  = shell_list_cou.size();
+    const size_t nshells_cou_sqlt = (nshells_cou*(nshells_cou+1))/2;
+    total_nshells_cou_sqlt_task_batch  += nshells_cou_sqlt;
+  }
+
+  // Shell lists and offs (bfn)
+  if(reqt.task_shell_list_bfn) {
+    collocation_stack.shell_list_device = 
+      mem.aligned_alloc<size_t>( total_nshells_bfn_task_batch , csl);
+  }
+  if(reqt.task_shell_offs_bfn) {
+    collocation_stack.shell_offs_device = 
+      mem.aligned_alloc<size_t>( total_nshells_bfn_task_batch , csl);
+  }
+
+  // Shell -> Task buffers
+  if(reqt.shell_to_task_idx_bfn) {
+    shell_to_task_stack.shell_to_task_idx_device = 
+      mem.aligned_alloc<int32_t>( total_nshells_bfn_task_batch, csl );
+  }
+  if(reqt.shell_to_task_off_bfn) {
+    shell_to_task_stack.shell_to_task_off_device = 
+      mem.aligned_alloc<int32_t>( total_nshells_bfn_task_batch, csl );
+  }
+  if(reqt.shell_to_task_idx_bfn or reqt.shell_to_task_off_bfn) {
+    shell_to_task_stack.shell_to_task_device =
+      mem.aligned_alloc<ShellToTaskDevice>( global_dims.nshells, csl );
+  }
+
+  // ShellPair -> Task buffer (cou)
+  if(reqt.shell_pair_to_task_idx_cou) {
+    shell_pair_to_task_stack.shell_pair_to_task_idx_device = 
+      mem.aligned_alloc<int32_t>( total_nshells_cou_sqlt_task_batch, csl );
+  }
+  if(reqt.shell_pair_to_task_row_off_cou) {
+    shell_pair_to_task_stack.shell_pair_to_task_row_off_device = 
+      mem.aligned_alloc<int32_t>( total_nshells_cou_sqlt_task_batch, csl );
+  }
+  if(reqt.shell_pair_to_task_col_off_cou) {
+    shell_pair_to_task_stack.shell_pair_to_task_col_off_device = 
+      mem.aligned_alloc<int32_t>( total_nshells_cou_sqlt_task_batch, csl );
+  }
+  if(reqt.shell_pair_to_task_idx_cou     or
+     reqt.shell_pair_to_task_row_off_cou or 
+     reqt.shell_pair_to_task_col_off_cou) {
+    const size_t nsp = (global_dims.nshells*(global_dims.nshells+1))/2;
+    shell_pair_to_task_stack.shell_pair_to_task_device =
+      mem.aligned_alloc<ShellPairToTaskDevice>( nsp, csl );
+  }
+
+
+#endif
 
   // Update dynmem data for derived impls
   return device_buffer_t{ mem.stack(), mem.nleft() };

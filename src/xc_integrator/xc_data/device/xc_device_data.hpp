@@ -130,11 +130,66 @@ struct required_term_storage {
     return PRDVL(task_indirection, 1ul);
   }
 
+  // Weights kernel scratch
+  bool grid_to_center_dist_scr     = false;
+  bool grid_to_center_dist_nearest = false;
+  bool grid_to_parent_center       = false;
+
+  inline size_t grid_to_center_dist_scr_size(size_t ldatom, size_t npts) {
+    return PRDVL(grid_to_center_dist_scr, ldatom * npts);
+  }
+  inline size_t grid_to_center_dist_nearest_size(size_t npts) {
+    return PRDVL(grid_to_center_dist_nearest, npts);
+  }
+  inline size_t grid_to_parent_center_size(size_t npts) {
+    return PRDVL(grid_to_parent_center, npts);
+  }
+
+  // Shell/Shell pairs lists + indirection
+  bool task_shell_list_bfn            = false;
+  bool task_shell_offs_bfn            = false;
+  bool shell_to_task_idx_bfn          = false;
+  bool shell_to_task_off_bfn          = false;
+  bool shell_pair_to_task_idx_cou     = false;
+  bool shell_pair_to_task_row_off_cou = false;
+  bool shell_pair_to_task_col_off_cou = false;
+  
+  inline size_t task_shell_list_bfn_size(size_t nshells) {
+    return PRDVL(task_shell_list_bfn, nshells);
+  }
+  inline size_t task_shell_offs_bfn_size(size_t nshells) {
+    return PRDVL(task_shell_offs_bfn, nshells);
+  }
+  inline size_t shell_to_task_idx_bfn_size(size_t nshells) {
+    return PRDVL(shell_to_task_idx_bfn, nshells);
+  }
+  inline size_t shell_to_task_off_bfn_size(size_t nshells) {
+    return PRDVL(shell_to_task_off_bfn, nshells);
+  }
+  inline size_t shell_pair_to_task_idx_cou_size(size_t nshells) {
+    const size_t nslt = (nshells * (nshells+1)) / 2;
+    return PRDVL(shell_pair_to_task_idx_cou, nslt);
+  }
+  inline size_t shell_pair_to_task_row_off_cou_size(size_t nshells) {
+    const size_t nslt = (nshells * (nshells+1)) / 2;
+    return PRDVL(shell_pair_to_task_row_off_cou, nslt);
+  }
+  inline size_t shell_pair_to_task_col_off_cou_size(size_t nshells) {
+    const size_t nslt = (nshells * (nshells+1)) / 2;
+    return PRDVL(shell_pair_to_task_col_off_cou, nslt);
+  }
+
 
   inline explicit required_term_storage(integrator_term_tracker tracker) {
     // Everything under the sun needs the grid
     grid_points  = true;
     grid_weights = true;
+
+    if(tracker.weights) {
+      grid_to_center_dist_scr     = true;
+      grid_to_center_dist_nearest = true; 
+      grid_to_parent_center       = true;
+    }
 
     // Allocated terms for XC aclculations
     const bool is_xc = tracker.exc_vxc or tracker.exc_grad;
@@ -162,6 +217,11 @@ struct required_term_storage {
       task_submat_cut_bfn   = true;
       task_submat_block_bfn = true;
       task_indirection      = true;
+
+      task_shell_list_bfn   = true;
+      task_shell_offs_bfn   = true;
+      shell_to_task_idx_bfn = true;
+      shell_to_task_off_bfn = true;
     }
 
     // Density integration
@@ -173,6 +233,11 @@ struct required_term_storage {
       task_submat_cut_bfn   = true;
       task_submat_block_bfn = true;
       task_indirection      = true;
+
+      task_shell_list_bfn   = true;
+      task_shell_offs_bfn   = true;
+      shell_to_task_idx_bfn = true;
+      shell_to_task_off_bfn = true;
     }
 
     // EXX integration
@@ -186,6 +251,14 @@ struct required_term_storage {
       task_submat_cut_cou   = true;
       task_submat_block_cou = true;
       task_indirection      = true;
+
+      task_shell_list_bfn            = true;
+      task_shell_offs_bfn            = true;
+      shell_to_task_idx_bfn          = true;
+      shell_to_task_off_bfn          = true;
+      shell_pair_to_task_idx_cou     = true;
+      shell_pair_to_task_row_off_cou = true;
+      shell_pair_to_task_col_off_cou = true;
     }
 
   }
