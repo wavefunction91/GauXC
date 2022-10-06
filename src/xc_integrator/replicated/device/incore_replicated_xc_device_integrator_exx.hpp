@@ -17,7 +17,7 @@ template <typename ValueType>
 void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   eval_exx_( int64_t m, int64_t n, const value_type* P,
              int64_t ldp, value_type* K, int64_t ldk, 
-             const IntegratorSettingsEXX& /*settings*/ ) { 
+             const IntegratorSettingsEXX& settings ) { 
 
 
   const auto& basis = this->load_balancer_->basis();
@@ -45,7 +45,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // data from device 
   this->timer_.time_op("XCIntegrator.LocalWork_EXX", [&](){
     exx_local_work_( basis, P, ldp, K, ldk, 
-      tasks.begin(), tasks.end(), *device_data_ptr);
+      tasks.begin(), tasks.end(), *device_data_ptr, settings);
   });
 
   this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
@@ -65,9 +65,14 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   exx_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                        value_type* K, int64_t ldk,
                        host_task_iterator task_begin, host_task_iterator task_end,
-                       XCDeviceData& device_data ) {
+                       XCDeviceData& device_data,
+                       const IntegratorSettingsEXX& settings ) {
 
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
+  IntegratorSettingsSNLinK sn_link_settings;
+  if( auto* tmp = dynamic_cast<const IntegratorSettingsSNLinK*>(&settings) ) {
+    sn_link_settings = *tmp;
+  }
 
   // Setup Aliases
   const auto& mol   = this->load_balancer_->molecule();
@@ -125,14 +130,114 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       std::make_unique<ReferenceLocalHostWorkDriver>()
     );
     exx_ek_screening( basis, basis_map, P_abs.data(), basis.nbf(),
-      V_max.data(), nshells, 1e-10, 1e-10, &host_lwd, task_begin,
-      task_end );
+      V_max.data(), nshells, sn_link_settings.energy_tol, 
+      sn_link_settings.k_tol, &host_lwd, task_begin, task_end );
 
     // Remove tasks with no coulomb shells
     task_end = std::stable_partition( task_begin, task_end,
       []( const auto& t ) { return t.cou_screening.shell_list.size() > 0; } );
   });
 #endif
+
+  // Lexicographic ordering of tasks
+  auto task_order = []( const auto& a, const auto& b ) {
+
+    // Sort by iParent first
+    if( a.iParent < b.iParent )      return true;
+    else if( a.iParent > b.iParent ) return false;
+
+    // Equal iParent: lex sort on bfn shell list
+    else if(a.bfn_screening.shell_list < b.bfn_screening.shell_list) return true;
+    else if(a.bfn_screening.shell_list > b.bfn_screening.shell_list) return false;
+    
+    // Equal iParent and bfn shell list: lex sort on cou shell list
+    else return a.cou_screening.shell_list < b.cou_screening.shell_list;
+
+  };
+
+  std::sort( task_begin, task_end, task_order ); 
+  auto task_equiv = []( const auto& a, const auto& b ) {
+    return a.equiv_with(b) and 
+      a.cou_screening.equiv_with(b.cou_screening);
+  };
+  std::vector<XCTask> local_work_unique(task_begin, task_end);
+  auto last_unique =
+    std::unique( local_work_unique.begin(),
+                 local_work_unique.end(),
+                 task_equiv );
+  local_work_unique.erase( last_unique, local_work_unique.end() );
+
+  // Merge tasks
+  for( auto&& t : local_work_unique ) {
+    t.points.clear();
+    t.weights.clear();
+    t.npts = 0;
+  }
+
+  auto cur_lw_begin = task_begin;
+  auto cur_uniq_it  = local_work_unique.begin();
+
+  for( auto lw_it = task_begin; lw_it != task_end; ++lw_it ) 
+  if( not task_equiv( *lw_it, *cur_uniq_it ) ) {
+
+    if( cur_uniq_it == local_work_unique.end() )
+      GAUXC_GENERIC_EXCEPTION("Messed up in unique");
+
+    cur_uniq_it->merge_with( cur_lw_begin, lw_it );
+
+    cur_lw_begin = lw_it;
+    cur_uniq_it++;
+
+  }
+
+  // Merge the last set of batches
+  for( ; cur_lw_begin != task_end; ++cur_lw_begin )
+    cur_uniq_it->merge_with( *cur_lw_begin );
+  cur_uniq_it++;
+
+  std::copy(local_work_unique.begin(), local_work_unique.end(),
+    task_begin);
+  task_end = task_begin + local_work_unique.size();
+  
+
+
+  size_t total_npts = std::accumulate( task_begin, task_end, 0ul,
+    [](const auto& a, const auto& b) { return a + b.npts; } );
+  std::cout << "TOTAL NPTS " << total_npts << std::endl;
+
+  size_t total_nbe_bfn = std::accumulate( task_begin, task_end, 0ul,
+    [](const auto& a, const auto& b) { return a + b.bfn_screening.nbe; } );
+  size_t total_nbe_cou = std::accumulate( task_begin, task_end, 0ul,
+    [](const auto& a, const auto& b) { return a + b.cou_screening.nbe; } );
+
+  size_t ntasks = std::distance(task_begin,task_end);
+  std::cout << "NTASKS " << ntasks << std::endl;
+  std::cout << "AVERAGE NBE_BFN " << total_nbe_bfn / double(ntasks) << std::endl;
+  std::cout << "AVERAGE NBE_COU " << total_nbe_cou / double(ntasks) << std::endl;
+
+  std::cout << "MIN NBE_BFN " <<
+    std::min_element(task_begin, task_end, 
+      [](const auto& a, const auto& b){ 
+        return a.bfn_screening.nbe < b.bfn_screening.nbe;
+      })->bfn_screening.nbe << std::endl;
+  std::cout << "MIN NBE_COU " <<
+    std::min_element(task_begin, task_end, 
+      [](const auto& a, const auto& b){ 
+        return a.cou_screening.nbe < b.cou_screening.nbe;
+      })->cou_screening.nbe << std::endl;
+
+  std::cout << "MAX NBE_BFN " <<
+    std::max_element(task_begin, task_end, 
+      [](const auto& a, const auto& b){ 
+        return a.bfn_screening.nbe < b.bfn_screening.nbe;
+      })->bfn_screening.nbe << std::endl;
+  std::cout << "MAX NBE_COU " <<
+    std::max_element(task_begin, task_end, 
+      [](const auto& a, const auto& b){ 
+        return a.cou_screening.nbe < b.cou_screening.nbe;
+      })->cou_screening.nbe << std::endl;
+
+  //return;
 
   // Populate submat maps
   device_data.populate_submat_maps( basis.nbf(), task_begin, task_end, basis_map );

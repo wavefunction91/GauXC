@@ -67,7 +67,8 @@ protected:
   void exx_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                         value_type* K, int64_t ldk,
                         host_task_iterator task_begin, host_task_iterator task_end,
-                        XCDeviceData& device_data );
+                        XCDeviceData& device_data, 
+                        const IntegratorSettingsEXX& settings);
 
 public:
 

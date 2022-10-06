@@ -106,7 +106,7 @@ size_t Scheme1DataBase::get_mem_req( integrator_term_tracker terms,
 
 #endif
 
-  std::cout << "MEM REQ: " << base_size << std::endl;
+  //std::cout << "MEM REQ: " << base_size << std::endl;
   return base_size;
 }
 
@@ -1076,6 +1076,7 @@ void Scheme1DataBase::pack_and_send(
     } // OFFDIAGONAL SP AM Scope
 
 
+#if 0
     std::cout << "DIAG SP Batches" << std::endl;
     for( auto& b : l_batched_shell_pair_to_task_diag ) {
       std::cout << b.lA << " " << b.lB << " " << b.nshells_in_batch << " " 
@@ -1087,6 +1088,7 @@ void Scheme1DataBase::pack_and_send(
       std::cout << b.lA << " " << b.lB << " " << b.nshells_in_batch << " " 
         << b.ntask_average << std::endl;
     }
+#endif
 
   } // Generate ShellPair -> Task (cou)
 #endif

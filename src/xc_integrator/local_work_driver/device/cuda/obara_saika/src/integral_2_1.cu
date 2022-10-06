@@ -1104,7 +1104,7 @@ namespace XGPU {
         cudaStream_t stream) {
 
     int nthreads = 128;
-    int nblocks_x = 80;
+    int nblocks_x = 1;
     int nblocks_y = max_ntask;
     int nblocks_z = nsp;
     dim3 nblocks(nblocks_x, nblocks_y, nblocks_z);
