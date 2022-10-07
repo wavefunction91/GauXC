@@ -249,11 +249,12 @@ namespace GauXC {
   }
 
   // Construct G(mu,i) = w(i) * A(mu,nu,i) * F(nu, i)
-  void ReferenceLocalHostWorkDriver:: eval_exx_gmat( size_t npts, size_t nshells,
-    size_t nbe, const double* points, const double* weights, 
-    const BasisSet<double>& basis, const ShellPairCollection<double>& shpairs,
-    const BasisSetMap& basis_map, const int32_t* shell_list, const double* X, 
-    size_t ldx, double* G, size_t ldg ) {
+  void ReferenceLocalHostWorkDriver::eval_exx_gmat( size_t npts, size_t nshells, 
+    size_t nshell_pairs, size_t nbe, const double* points, const double* weights, 
+    const BasisSet<double>& basis, const ShellPairCollection<double>& shpairs, 
+    const BasisSetMap& basis_map, const int32_t* shell_list, 
+    const std::pair<int32_t,int32_t>* shell_pair_list, 
+    const double* X, size_t ldx, double* G, size_t ldg ) {
 
     util::unused(basis_map);
 
@@ -317,26 +318,46 @@ namespace GauXC {
     const auto ldx_use = any_pure ? nbe_cart : ldx;
     const auto ldg_use = any_pure ? nbe_cart : ldg;
 
-    std::vector<double> X_cart_rm( nbe_cart*npts,0. ), G_cart_rm( nbe_cart*npts,0. );
+    std::vector<double> X_cart_rm( nbe_cart*npts,0. ), 
+                        G_cart_rm( nbe_cart*npts,0. );
     for( auto i = 0ul; i < nbe_cart; ++i )
     for( auto j = 0ul; j < npts;     ++j ) {
       X_cart_rm[i*npts + j] = X_use[i + j*ldx_use];
     }
 
+    auto need_sp = [&](auto i, auto j) {
+      std::pair<int32_t,int32_t> p{i,j};
+      auto it = std::find(shell_pair_list, shell_pair_list + nshell_pairs,p);
+      return it != (shell_pair_list+nshell_pairs);
+    };
+
+    std::vector<size_t> cou_cart_sizes(nshells);
+    cou_cart_sizes[0] = 0;
+    for(size_t i = 1; i < nshells; ++i) {
+      cou_cart_sizes[i] = cou_cart_sizes[i-1] +
+        basis.at(shell_list[i-1]).cart_size();
+    }
+
+    size_t ndo = 0;
     {
-    size_t ioff_cart = 0;
+    //size_t ioff_cart = 0;
     for( auto i = 0ul; i < nshells; ++i ) {
       const auto ish        = shell_list[i];
       const auto& bra       = basis[ish];
       const int bra_cart_sz = bra.cart_size();
+      const size_t ioff_cart = cou_cart_sizes[i] * npts;
       XCPU::point bra_origin{bra.O()[0],bra.O()[1],bra.O()[2]};
 
-      size_t joff_cart = 0;
+      //size_t joff_cart = 0;
       for( auto j = 0ul; j <= i; ++j ) {
+      //for( auto j = i; j < nshells; ++j ) {
         const auto jsh        = shell_list[j];
         const auto& ket       = basis[jsh];
         const int ket_cart_sz = ket.cart_size();
+        const size_t joff_cart = cou_cart_sizes[j] * npts;
         XCPU::point ket_origin{ket.O()[0],ket.O()[1],ket.O()[2]};
+        if(!need_sp(ish,jsh)) continue;
+        ++ndo;
 
         auto sh_pair = shpairs.at(ish,jsh);
         auto prim_pair_data = sh_pair.prim_pairs();
@@ -350,12 +371,13 @@ namespace GauXC {
         				   G_cart_rm.data()+ioff_cart, G_cart_rm.data()+joff_cart, npts,
         				   const_cast<double*>(weights), this->boys_table );
         
-        joff_cart += ket_cart_sz * npts;
+        //joff_cart += ket_cart_sz * npts;
       }
 	
-      ioff_cart += bra_cart_sz * npts;
+      //ioff_cart += bra_cart_sz * npts;
     }
     }
+    //std::cout << "NDO " << ndo << std::endl;
    
     for( auto i = 0ul; i < nbe_cart; ++i )
     for( auto j = 0ul; j < npts;     ++j ) {

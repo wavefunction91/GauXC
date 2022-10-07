@@ -186,11 +186,11 @@ void exx_ek_screening(
       ibf += sh_sz;
     }
 
+    auto task_it = task_begin + i_task;
     // Compute important shell set
     const double max_bf_sum = task_max_bf_sum[i_task];
-    size_t nsp = 0;
-    for( auto j = 0ul; j < nshells; ++j )
-    for( auto i = j;   i < nshells; ++i ) {
+    for( auto i = 0ul; i < nshells; ++i )
+    for( auto j = 0ul; j <= i;      ++j ) {
       const auto V_ij = V_shell_max[i + j*ldv];
       const auto F_i  = max_F_shells[i];
       const auto F_j  = max_F_shells[j];
@@ -205,7 +205,7 @@ void exx_ek_screening(
 
         task_ek_shells[i_block] |= (1u << i_local); 
         task_ek_shells[j_block] |= (1u << j_local); 
-        ++nsp;
+        task_it->cou_screening.shell_pair_list.emplace_back(i,j);
       }
     }
 
@@ -221,12 +221,12 @@ void exx_ek_screening(
     }
 
     // Append to list
-    auto task_it = task_begin + i_task;
     task_it->cou_screening.shell_list =
       std::vector<int32_t>(ek_shells.begin(), ek_shells.end());
     task_it->cou_screening.nbe = 
       basis.nbf_subset( ek_shells.begin(), ek_shells.end() );
     //size_t nspt = (nshells*(nshells+1))/2;
+    //size_t nsp   = task_it->cou_creening.shell_pair_list.size();
     //std::cout << "I_TASK " << i_task << " " << task_it->cou_screening.shell_list.size() << " " << nsp << " " << nspt << " " << nsp / double(nspt) << std::endl;
 
   } // Loop over tasks

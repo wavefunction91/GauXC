@@ -313,9 +313,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   std::vector<double> P_abs(nbf*nbf);
   for( auto i = 0; i < nbf*nbf; ++i ) P_abs[i] = std::abs(P[i]);
 
-  // Loop over tasks
-  const size_t ntasks = tasks.size();
-
   // Full shell list
   std::vector<int32_t> full_shell_list_( basis.nshells() );
   std::iota( full_shell_list_.begin(), full_shell_list_.end(), 0 );
@@ -349,6 +346,72 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   exx_ek_screening( basis, basis_map, P_abs.data(), nbf, V_max.data(), 
     nshells_bf, eps_E, eps_K, lwd, tasks.begin(), tasks.end() );
 
+#if 1
+  // Lexicographic ordering of tasks
+  auto task_order = []( const auto& a, const auto& b ) {
+
+    // Sort by iParent first
+    if( a.iParent < b.iParent )      return true;
+    else if( a.iParent > b.iParent ) return false;
+
+    // Equal iParent: lex sort on bfn shell list
+    else if(a.bfn_screening.shell_list < b.bfn_screening.shell_list) return true;
+    else if(a.bfn_screening.shell_list > b.bfn_screening.shell_list) return false;
+    
+    // Equal iParent and bfn shell list: lex sort on cou shell list
+    else return a.cou_screening.shell_list < b.cou_screening.shell_list;
+
+  };
+
+  std::sort( tasks.begin(), tasks.end(), task_order ); 
+  auto task_equiv = []( const auto& a, const auto& b ) {
+    return a.equiv_with(b) and 
+      a.cou_screening.equiv_with(b.cou_screening);
+  };
+  std::vector<XCTask> local_work_unique(tasks.begin(), tasks.end());
+  auto last_unique =
+    std::unique( local_work_unique.begin(),
+                 local_work_unique.end(),
+                 task_equiv );
+  local_work_unique.erase( last_unique, local_work_unique.end() );
+
+  // Merge tasks
+  for( auto&& t : local_work_unique ) {
+    t.points.clear();
+    t.weights.clear();
+    t.npts = 0;
+  }
+
+  auto cur_lw_begin = tasks.begin();
+  auto cur_uniq_it  = local_work_unique.begin();
+
+  for( auto lw_it = tasks.begin(); lw_it != tasks.end(); ++lw_it ) 
+  if( not task_equiv( *lw_it, *cur_uniq_it ) ) {
+
+    if( cur_uniq_it == local_work_unique.end() )
+      GAUXC_GENERIC_EXCEPTION("Messed up in unique");
+
+    cur_uniq_it->merge_with( cur_lw_begin, lw_it );
+
+    cur_lw_begin = lw_it;
+    cur_uniq_it++;
+
+  }
+
+  // Merge the last set of batches
+  for( ; cur_lw_begin != tasks.end(); ++cur_lw_begin )
+    cur_uniq_it->merge_with( *cur_lw_begin );
+  cur_uniq_it++;
+
+  //std::copy(local_work_unique.begin(), local_work_unique.end(),
+  //  tasks.begin());
+  //task_end = tasks.begin() + local_work_unique.size();
+  tasks = std::move(local_work_unique);
+#endif
+
+
+  // Loop over tasks
+  const size_t ntasks = tasks.size();
   #pragma omp parallel
   {
 
@@ -357,9 +420,18 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   #pragma omp for schedule(dynamic)
   for( size_t iT = 0; iT < ntasks; ++iT ) {
 
-    //std::cout << iT << "/" << ntasks << std::endl;
+    std::cout << iT << "/" << ntasks << std::endl;
     // Alias current task
     const auto& task = tasks[iT];
+
+    // Early exit
+    auto ek_shell_list = task.cou_screening.shell_list;
+    if( ek_shell_list.size() == 0 ) {
+      continue;
+    }
+    std::vector< std::array<int32_t,3> > ek_submat_map;
+    std::tie( ek_submat_map, std::ignore ) =
+      gen_compressed_submat_map( basis_map, ek_shell_list, nbf, nbf );
 
     // Get tasks constants
     const int32_t  npts    = task.points.size();
@@ -393,57 +465,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     lwd->eval_collocation( npts, nshells_bfn, nbe_bfn, points, basis, 
       shell_list_bfn, basis_eval );
 
-#if 0
-    // Compute Max BF Sum
-    auto max_bf_sum = 
-      compute_max_bf_sum( npts, nbe_bfn, weights, basis_eval, nbe_bfn );
-    //std::cout << "+MAX BF SUM " << iT << max_bf_sum << std::endl;
-
-    // Compute Approximate max F
-    auto max_F_approx =
-      compute_approx_f_max( npts, nshells_bf, nbf, nbe_bfn, basis_map,
-        weights, submat_map_bfn, basis_eval, nbe_bfn, P_abs.data(), nbf,
-        lwd, nbe_scr );
-
-    // Get shell pair screening for integrals
-    auto ek_shell_set = 
-      compute_sn_LinK_ek_set( nshells_bf, full_shell_list_,
-        V_max.data(), nshells_bf, max_F_approx.data(), max_bf_sum,
-        eps_E, eps_K );
-
-    // Bail on task if no shells are needed after ek screening
-    if( ek_shell_set.size() == 0 ) {
-      continue;
-    }
-
-
-    // Convert ek shell set -> vector
-    std::vector<int32_t> ek_shell_list;
-    std::vector< std::array<int32_t,3> > ek_submat_map;
-    if( ek_shell_list.size() == nshells_bf or !screen_ek ) {
-      ek_shell_list = full_shell_list_;
-      ek_submat_map = full_submat_map;
-    } else {
-      ek_shell_list = decltype(ek_shell_list)( ek_shell_set.begin(), ek_shell_set.end() );
-      std::tie( ek_submat_map, std::ignore ) =
-        gen_compressed_submat_map( basis_map, ek_shell_list, nbf, nbf );
-    }
-
-    if( ek_shell_list != task_ek_shells[iT] ) {
-      std::cout << ek_shell_list << std::endl;
-      std::cout << task_ek_shells[iT] << std::endl;
-      throw std::runtime_error("DIE DIE DIE");
-    }
-#else
-    auto ek_shell_list = task.cou_screening.shell_list;
-    if( ek_shell_list.size() == 0 ) {
-      continue;
-    }
-    std::vector< std::array<int32_t,3> > ek_submat_map;
-    std::tie( ek_submat_map, std::ignore ) =
-      gen_compressed_submat_map( basis_map, ek_shell_list, nbf, nbf );
-#endif
-
     const auto nbe_ek = basis.nbf_subset( ek_shell_list.begin(), ek_shell_list.end() );
     const auto nshells_ek = ek_shell_list.size();
 
@@ -469,8 +490,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Compute G(mu,i) = w(i) * A(mu,nu,i) * F(nu,i)
     // mu/nu run over significant ek shells
     // i runs over all points
-    lwd->eval_exx_gmat( npts, nshells_ek, nbe_ek, points, weights, 
-      basis, shpairs,basis_map, ek_shell_list.data(), zmat, nbe_ek, 
+    const size_t nshell_pairs = task.cou_screening.shell_pair_list.size();
+    const auto*  shell_pair_list = task.cou_screening.shell_pair_list.data();
+    lwd->eval_exx_gmat( npts, nshells_ek, nshell_pairs, nbe_ek, points, weights, 
+      basis, shpairs,basis_map, ek_shell_list.data(), shell_pair_list, zmat, nbe_ek, 
       gmat, nbe_ek );
 
     // Increment K(mu,nu) += B(mu,i) * G(nu,i)

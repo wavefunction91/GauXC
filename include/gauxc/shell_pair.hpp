@@ -129,14 +129,14 @@ public:
     if( j <= i ) {
       const auto idx = detail::packed_lt_index(i,j,nshells_);
       return shell_pairs_[idx];
-    } else return at(j,i);
+    } else GAUXC_GENERIC_EXCEPTION("Not LT Element");
   }
 
   inline const auto& at( size_t i, size_t j ) const {
     if( j <= i ) {
       const auto idx = detail::packed_lt_index(i,j,nshells_);
       return shell_pairs_[idx];
-    } else return at(j,i);
+    } else GAUXC_GENERIC_EXCEPTION("Not LT Element");
   }
 
   inline size_t nshells() const { return nshells_; }
