@@ -45,6 +45,7 @@ int main(int argc, char** argv) {
 
     // Optional Args
     std::string grid_spec = "ULTRAFINE";
+    std::string prune_spec = "UNPRUNED";
     std::string lb_exec_space_str = "Host";
     std::string int_exec_space_str = "Host";
     std::string integrator_kernel = "Default";
@@ -64,6 +65,11 @@ int main(int argc, char** argv) {
     if( input.containsData("GAUXC.GRID") ) {
       grid_spec = input.getData<std::string>("GAUXC.GRID");
       string_to_upper( grid_spec );
+    }
+
+    if( input.containsData("GAUXC.PRUNING_SCHEME") ) {
+      prune_spec = input.getData<std::string>("GAUXC.PRUNING_SCHEME");
+      string_to_upper( prune_spec );
     }
 
     if( input.containsData("GAUXC.BASIS_TOL") )
@@ -118,6 +124,7 @@ int main(int argc, char** argv) {
       std::cout << "DRIVER SETTINGS: " << std::endl
                 << "  REF_FILE          = " << ref_file << std::endl
                 << "  GRID              = " << grid_spec << std::endl
+                << "  PRUNING SCHEME    = " << prune_spec << std::endl
                 << "  BASIS_TOL         = " << basis_tol << std::endl
                 << "  FUNCTIONAL        = " << func_spec << std::endl
                 << "  LB_EXEC_SPACE     = " << lb_exec_space_str << std::endl
@@ -156,8 +163,15 @@ int main(int argc, char** argv) {
       {"SUPERFINE", AtomicGridSizeDefault::SuperFineGrid}
     };
 
-    auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
-      RadialQuad::MuraKnowles, mg_map.at(grid_spec));
+    std::map< std::string, PruningScheme > prune_map = {
+      {"UNPRUNED", PruningScheme::Unpruned},
+      {"ROBUST",   PruningScheme::Robust},
+      {"TREUTLER", PruningScheme::Treutler}
+    };
+
+    auto mg = MolGridFactory::create_default_molgrid(mol, 
+     prune_map.at(prune_spec), RadialQuad::MuraKnowles, 
+     mg_map.at(grid_spec));
 
     // Read BasisSet
     BasisSet<double> basis; 
