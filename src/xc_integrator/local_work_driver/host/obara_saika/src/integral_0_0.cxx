@@ -62,7 +62,8 @@ void integral_0_0(size_t npts,
          }
 
          // Evaluate Boys function
-         boys_elements<0>(NPTS_LOCAL, Tval, Tval_inv_e, FmT, boys_table);
+         //boys_elements<0>(NPTS_LOCAL, Tval, Tval_inv_e, FmT, boys_table);
+         boys_elements_0(NPTS_LOCAL,Tval,FmT); 
 
          // Evaluate VRR Buffer
          for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += SIMD_LENGTH) {
@@ -158,7 +159,8 @@ void integral_0_0(size_t npts,
          }
 
          // Evaluate Boys function
-         boys_elements<0>(npts_inner, Tval, Tval_inv_e, FmT, boys_table);
+         //boys_elements<0>(npts_inner, Tval, Tval_inv_e, FmT, boys_table);
+         boys_elements_0(NPTS_LOCAL,Tval,FmT); 
 
          // Evaluate VRR Buffer
          p_inner = 0;

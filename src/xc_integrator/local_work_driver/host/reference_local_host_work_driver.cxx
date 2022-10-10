@@ -325,21 +325,20 @@ namespace GauXC {
       X_cart_rm[i*npts + j] = X_use[i + j*ldx_use];
     }
 
-    auto need_sp = [&](auto i, auto j) {
-      std::pair<int32_t,int32_t> p{i,j};
-      auto it = std::find(shell_pair_list, shell_pair_list + nshell_pairs,p);
-      return it != (shell_pair_list+nshell_pairs);
-    };
 
+    std::map<size_t,size_t> cou_offsets_map;
     std::vector<size_t> cou_cart_sizes(nshells);
     cou_cart_sizes[0] = 0;
+    cou_offsets_map[shell_list[0]] = 0;
     for(size_t i = 1; i < nshells; ++i) {
       cou_cart_sizes[i] = cou_cart_sizes[i-1] +
         basis.at(shell_list[i-1]).cart_size();
+      cou_offsets_map[shell_list[i]] = cou_cart_sizes[i];
     }
 
     size_t ndo = 0;
     {
+#if 0
     //size_t ioff_cart = 0;
     for( auto i = 0ul; i < nshells; ++i ) {
       const auto ish        = shell_list[i];
@@ -376,8 +375,38 @@ namespace GauXC {
 	
       //ioff_cart += bra_cart_sz * npts;
     }
+#else
+    for( auto ij = 0ul; ij < nshell_pairs; ++ij ) {
+      auto [ish,jsh] = shell_pair_list[ij];
+      //std::cout << "SHP " << ij << " " << i << " " << j << " " << nshells << std::endl;
+
+     
+      // Bra
+      const auto& bra      = basis.at(ish);
+      const auto ioff_cart = cou_offsets_map.at(ish) * npts;
+      XCPU::point bra_origin{bra.O()[0],bra.O()[1],bra.O()[2]};
+
+      // Ket
+      const auto& ket      = basis.at(jsh);
+      const auto joff_cart = cou_offsets_map.at(jsh) * npts;
+      XCPU::point ket_origin{ket.O()[0],ket.O()[1],ket.O()[2]};
+
+      auto sh_pair = shpairs.at(ish,jsh);
+      auto prim_pair_data = sh_pair.prim_pairs();
+      auto nprim_pair     = sh_pair.nprim_pairs();
+      
+      ndo++;  
+      XCPU::compute_integral_shell_pair( ish == jsh,
+      				   npts, _points_transposed.data(),
+      				   bra.l(), ket.l(), bra_origin, ket_origin,
+      				   nprim_pair, prim_pair_data,
+      				   X_cart_rm.data()+ioff_cart, X_cart_rm.data()+joff_cart, npts,
+      				   G_cart_rm.data()+ioff_cart, G_cart_rm.data()+joff_cart, npts,
+      				   const_cast<double*>(weights), this->boys_table );
     }
-    //std::cout << "NDO " << ndo << std::endl;
+#endif
+    }
+    //std::cout << "NDO " << ndo << " " << ndo / double(nshells*(nshells+1)/2) << std::endl;
    
     for( auto i = 0ul; i < nbe_cart; ++i )
     for( auto j = 0ul; j < npts;     ++j ) {

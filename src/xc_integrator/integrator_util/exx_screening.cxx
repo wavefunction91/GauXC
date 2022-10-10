@@ -226,7 +226,7 @@ void exx_ek_screening(
     task_it->cou_screening.nbe = 
       basis.nbf_subset( ek_shells.begin(), ek_shells.end() );
     //size_t nspt = (nshells*(nshells+1))/2;
-    //size_t nsp   = task_it->cou_creening.shell_pair_list.size();
+    //size_t nsp   = task_it->cou_screening.shell_pair_list.size();
     //std::cout << "I_TASK " << i_task << " " << task_it->cou_screening.shell_list.size() << " " << nsp << " " << nspt << " " << nsp / double(nspt) << std::endl;
 
   } // Loop over tasks

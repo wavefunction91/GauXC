@@ -30,7 +30,8 @@ struct XCTask {
     int32_t                            nbe = 0;
 
     bool equiv_with( const screening_data& other ) const {
-      return shell_list == other.shell_list;
+      return shell_list == other.shell_list and 
+        shell_pair_list == other.shell_pair_list;
     }
   };
 

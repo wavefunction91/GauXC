@@ -346,6 +346,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   exx_ek_screening( basis, basis_map, P_abs.data(), nbf, V_max.data(), 
     nshells_bf, eps_E, eps_K, lwd, tasks.begin(), tasks.end() );
 
+  // Allow for merging of tasks with different iParent
+  for(auto& task : tasks) task.iParent = 0;
+
 #if 1
   // Lexicographic ordering of tasks
   auto task_order = []( const auto& a, const auto& b ) {
@@ -403,24 +406,27 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     cur_uniq_it->merge_with( *cur_lw_begin );
   cur_uniq_it++;
 
-  //std::copy(local_work_unique.begin(), local_work_unique.end(),
-  //  tasks.begin());
-  //task_end = tasks.begin() + local_work_unique.size();
   tasks = std::move(local_work_unique);
 #endif
+
+  std::sort(tasks.begin(),tasks.end(),
+    [](auto& a, auto& b){ return a.cou_screening.shell_pair_list.size() >
+      b.cou_screening.shell_pair_list.size(); });
 
 
   // Loop over tasks
   const size_t ntasks = tasks.size();
+  std::cout << "NTASKS = " << ntasks << std::endl;
   #pragma omp parallel
   {
 
   XCHostData<value_type> host_data; // Thread local host data
+  std::vector<double> K_local(nbf*nbf,0.0);
 
   #pragma omp for schedule(dynamic)
   for( size_t iT = 0; iT < ntasks; ++iT ) {
 
-    std::cout << iT << "/" << ntasks << std::endl;
+    //std::cout << iT << "/" << ntasks << std::endl;
     // Alias current task
     const auto& task = tasks[iT];
 
@@ -493,18 +499,26 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const size_t nshell_pairs = task.cou_screening.shell_pair_list.size();
     const auto*  shell_pair_list = task.cou_screening.shell_pair_list.data();
     lwd->eval_exx_gmat( npts, nshells_ek, nshell_pairs, nbe_ek, points, weights, 
-      basis, shpairs,basis_map, ek_shell_list.data(), shell_pair_list, zmat, nbe_ek, 
-      gmat, nbe_ek );
+      basis, shpairs,basis_map, ek_shell_list.data(), shell_pair_list, zmat, 
+      nbe_ek, gmat, nbe_ek );
 
     // Increment K(mu,nu) += B(mu,i) * G(nu,i)
     // mu runs over bfn shell list
     // nu runs over ek shells
     // i runs over all points
-    #pragma omp critical
+    //#pragma omp critical
     lwd->inc_exx_k( npts, nbf, nbe_bfn, nbe_ek, basis_eval, submat_map_bfn,
-      ek_submat_map, gmat, nbe_ek, K, ldk, nbe_scr );
+      ek_submat_map, gmat, nbe_ek, K_local.data(), nbf, nbe_scr );
 
   } // Loop over tasks 
+
+  #pragma omp critical
+  {
+  for(size_t i = 0; i < nbf; ++i ) 
+  for(size_t j = 0; j < nbf; ++j ) {
+    K[i+j*ldk] += K_local[i + j*nbf];
+  }
+  }
 
   } // End OpenMP region
 
