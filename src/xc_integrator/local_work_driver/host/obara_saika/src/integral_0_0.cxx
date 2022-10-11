@@ -43,6 +43,7 @@ void integral_0_0(size_t npts,
          double zP = prim_pairs[ij].P.z;
 
          double eval = prim_pairs[ij].K_coeff_prod;
+         if(std::abs(eval) < shpair_screen_tol) continue;
 
          // Evaluate T Values
          for(size_t p_inner = 0; p_inner < NPTS_LOCAL; p_inner += SIMD_LENGTH) {
@@ -122,6 +123,7 @@ void integral_0_0(size_t npts,
          double zP = prim_pairs[ij].P.z;
 
          double eval = prim_pairs[ij].K_coeff_prod;
+         if(std::abs(eval) < shpair_screen_tol) continue;
 
          // Evaluate T Values
          size_t npts_inner_upper = SIMD_LENGTH * (npts_inner / SIMD_LENGTH);

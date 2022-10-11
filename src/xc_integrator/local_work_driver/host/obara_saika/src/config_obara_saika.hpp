@@ -12,6 +12,9 @@
 #define DEFAULT_LD_TABLE (DEFAULT_NCHEB + 1)
 
 namespace XCPU {
+
+  constexpr double shpair_screen_tol = 1e-12;
+
   template <int M>
   inline void boys_element(double *T, double *T_inv_e, double *eval, double *boys_table) {
     if((*T) < DEFAULT_MAX_T) {

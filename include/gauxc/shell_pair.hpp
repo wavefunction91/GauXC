@@ -64,7 +64,6 @@ class ShellPair {
       if( nprim_pairs_ >= detail::nprim_pair_max ) 
         GAUXC_GENERIC_EXCEPTION("Too Many Primitive Pairs");
 
-      nprim_pairs_++;
       auto& pair = prim_pairs_[ij];
       const auto alpha_bra = bra.alpha()[i];
       const auto alpha_ket = ket.alpha()[j];
@@ -72,6 +71,11 @@ class ShellPair {
       const auto g    = alpha_bra + alpha_ket;
       const auto oo_g = 1 / g;
 
+      const auto Kab = 2 * M_PI * oo_g *
+        bra.coeff()[i] * ket.coeff()[j] *
+        std::exp( -alpha_bra * alpha_ket * dAB * oo_g );
+
+      nprim_pairs_++;
       pair.P.x = (alpha_bra * A.x + alpha_ket * B.x) * oo_g;
       pair.P.y = (alpha_bra * A.y + alpha_ket * B.y) * oo_g;
       pair.P.z = (alpha_bra * A.z + alpha_ket * B.z) * oo_g;
@@ -84,9 +88,7 @@ class ShellPair {
       pair.PB.y = pair.P.y - B.y;
       pair.PB.z = pair.P.z - B.z;
 
-      pair.K_coeff_prod = 2 * M_PI * oo_g *
-        bra.coeff()[i] * ket.coeff()[j] *
-        std::exp( -alpha_bra * alpha_ket * dAB * oo_g );
+      pair.K_coeff_prod = Kab;
       pair.gamma = g;
       pair.gamma_inv = oo_g;
     } // loop over prim pairs
