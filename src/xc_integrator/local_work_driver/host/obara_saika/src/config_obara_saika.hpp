@@ -35,7 +35,7 @@ namespace XCPU {
 	const double fact  = 2.0 / deltaT;
 	
 	double xt = (*T) * fact - ratio;
-#if 1
+
 	double _rec = 1.0;
 	double _val = boys_seg[0];
 	
@@ -43,23 +43,14 @@ namespace XCPU {
 	  _rec = _rec * xt;
 	  _val += _rec * boys_seg[i];
 	}
-#else
-    double _val = boys_seg[7];
-    _val = fma( xt, _val, boys_seg[6]);
-    _val = fma( xt, _val, boys_seg[5]);
-    _val = fma( xt, _val, boys_seg[4]);
-    _val = fma( xt, _val, boys_seg[3]);
-    _val = fma( xt, _val, boys_seg[2]);
-    _val = fma( xt, _val, boys_seg[1]);
-    _val = fma( xt, _val, boys_seg[0]);
-#endif
 
 	*(T_inv_e) = 0.5 * std::exp(-(*T));
 	*(eval) = _val;
       }
     } else {
       const double t_inv = 1./(*T);
-      double _val = GauXC::constants::sqrt_pi_ov_2<> * std::sqrt(t_inv);
+      //double _val = GauXC::constants::sqrt_pi_ov_2<> * std::sqrt(t_inv);
+      double _val = GauXC::constants::sqrt_pi_ov_2<> * GauXC::rsqrt(*T);
     
       for(int i = 1; i < M + 1; ++i) {
 	_val *= ((i - 0.5) * t_inv);
@@ -104,7 +95,8 @@ namespace XCPU {
 	}
       } else {
 	const double t_inv = 1./T[i];
-	double _val = GauXC::constants::sqrt_pi_ov_2<> * std::sqrt(t_inv);
+	//double _val = GauXC::constants::sqrt_pi_ov_2<> * std::sqrt(t_inv);
+    double _val = GauXC::constants::sqrt_pi_ov_2<> * GauXC::rsqrt(T[i]);
       
 	for(int j = 1; j < M + 1; ++j) {
 	  _val *= ((j - 0.5) * t_inv);
