@@ -88,7 +88,7 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
 
   auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
-    RadialQuad::MuraKnowles, AtomicGridSizeDefault::UltraFineGrid);
+    BatchSize(512), RadialQuad::MuraKnowles, AtomicGridSizeDefault::UltraFineGrid);
 
   auto meta = std::make_shared<MolMeta>( mol );
 

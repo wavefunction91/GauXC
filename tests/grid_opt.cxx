@@ -92,13 +92,14 @@ int main(int argc, char** argv) {
       auto rq = RadialQuad::MuraKnowles;
       auto rs = RadialSize(100);
       auto as = AngularSize(974);
+      auto bs = BatchSize(512);
 
       #if 0
       auto molmap = MolGridFactory::create_default_gridmap(
         mol, scheme, rq, rs, as );
       MolGrid mg(molmap);
       #else
-      auto mg = MolGridFactory::create_default_molgrid(mol, scheme, rq, rs, as);
+      auto mg = MolGridFactory::create_default_molgrid(mol, scheme, bs, rq, rs, as);
       #endif
 
       auto st = std::chrono::high_resolution_clock::now();

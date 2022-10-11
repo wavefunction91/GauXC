@@ -71,36 +71,36 @@ struct AtomicGridFactory {
     >;
 
   template <typename RadialType, typename AngularType>
-  static Grid generate_unpruned_grid( RadialType&& rq, AngularType&& aq ) {
+  static Grid generate_unpruned_grid( RadialType&& rq, AngularType&& aq, BatchSize bsz ) {
     using sphere_type = unpruned_sphere_type<RadialType,AngularType>;
     return Grid( std::make_shared<sphere_type>( 
       std::forward<RadialType>(rq), std::forward<AngularType>(aq) 
-      )
+      ), bsz
     );
   }
 
   template <typename RadialType, typename RadialPartitionType>
   static Grid generate_pruned_grid( RadialType&& rq, 
-    RadialPartitionType&& rgp ) {
+    RadialPartitionType&& rgp, BatchSize bsz ) {
     using angular_type = typename std::decay_t<RadialPartitionType>::angular_type; 
     using sphere_type = pruned_sphere_type<RadialType,angular_type>;
     return Grid( std::make_shared<sphere_type>( 
       std::forward<RadialType>(rq), std::forward<RadialPartitionType>(rgp)
-      )
+      ), bsz
     );
   }
 
 
   static Grid generate_unpruned_grid( RadialQuad, RadialSize, AngularSize, 
-                                      RadialScale );
+                                      RadialScale, BatchSize bsz );
   static Grid generate_pruned_grid( RadialQuad, RadialSize, 
-    const std::vector<PruningRegion>&, RadialScale );
+    const std::vector<PruningRegion>&, RadialScale, BatchSize bsz );
 
 
-  static Grid generate_grid( UnprunedAtomicGridSpecification gs ); 
-  static Grid generate_grid( PrunedAtomicGridSpecification gs ); 
+  static Grid generate_grid( UnprunedAtomicGridSpecification gs, BatchSize bsz ); 
+  static Grid generate_grid( PrunedAtomicGridSpecification gs, BatchSize bsz ); 
 
-  static Grid generate_grid( atomic_grid_variant gs );
+  static Grid generate_grid( atomic_grid_variant gs, BatchSize bsz );
 
 };
 

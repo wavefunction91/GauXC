@@ -170,8 +170,8 @@ int main(int argc, char** argv) {
     };
 
     auto mg = MolGridFactory::create_default_molgrid(mol, 
-     prune_map.at(prune_spec), RadialQuad::MuraKnowles, 
-     mg_map.at(grid_spec));
+     prune_map.at(prune_spec), BatchSize(4096), 
+     RadialQuad::MuraKnowles, mg_map.at(grid_spec));
 
     // Read BasisSet
     BasisSet<double> basis; 

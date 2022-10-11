@@ -8,7 +8,7 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
 
   RuntimeEnvironment rt(MPI_COMM_WORLD);
   auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
-    RadialQuad::MuraKnowles, AtomicGridSizeDefault::FineGrid);
+    BatchSize(512), RadialQuad::MuraKnowles, AtomicGridSizeDefault::FineGrid);
 
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
   auto lb = lb_factory.get_instance( rt, mol, mg, basis);

@@ -58,7 +58,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
   //MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
   auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
-    RadialQuad::MuraKnowles, AtomicGridSizeDefault::UltraFineGrid);
+    BatchSize(512), RadialQuad::MuraKnowles, AtomicGridSizeDefault::UltraFineGrid);
 
   // Construct Load Balancer
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");

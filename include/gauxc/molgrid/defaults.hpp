@@ -52,11 +52,11 @@ namespace GauXC {
     }
 
     inline static atomic_grid_map generate_gridmap(
-      const atomic_grid_spec_map& gs_map ) {
+      const atomic_grid_spec_map& gs_map, BatchSize bsz ) {
 
       atomic_grid_map molmap;
       for( const auto& [key, val] : gs_map ) {
-        molmap.emplace( key, AtomicGridFactory::generate_grid(val) );
+        molmap.emplace( key, AtomicGridFactory::generate_grid(val, bsz) );
       }
       return molmap;
 
@@ -64,10 +64,11 @@ namespace GauXC {
 
     template <typename... Args>
     inline static atomic_grid_map create_default_gridmap( 
-      const Molecule& mol, PruningScheme scheme, Args&&... args ) {
+      const Molecule& mol, PruningScheme scheme, BatchSize bsz,
+      Args&&... args ) {
 
       return generate_gridmap( create_default_grid_spec_map(mol, scheme, 
-        std::forward<Args>(args)...) );
+        std::forward<Args>(args)...), bsz );
 
     }
 
