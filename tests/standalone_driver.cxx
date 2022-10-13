@@ -51,6 +51,7 @@ int main(int argc, char** argv) {
     std::string integrator_kernel = "Default";
     std::string lwd_kernel         = "Default";
     std::string reduction_kernel   = "Default";
+    size_t      batch_size = 512;
     double      basis_tol = 1e-10;
     std::string func_spec = "PBE0";
     bool integrate_den      = false;
@@ -71,6 +72,9 @@ int main(int argc, char** argv) {
       prune_spec = input.getData<std::string>("GAUXC.PRUNING_SCHEME");
       string_to_upper( prune_spec );
     }
+
+    if( input.containsData("GAUXC.BATCH_SIZE") )
+      batch_size = input.getData<size_t>("GAUXC.BATCH_SIZE");
 
     if( input.containsData("GAUXC.BASIS_TOL") )
       basis_tol = input.getData<double>("GAUXC.BASIS_TOL");
@@ -124,7 +128,8 @@ int main(int argc, char** argv) {
       std::cout << "DRIVER SETTINGS: " << std::endl
                 << "  REF_FILE          = " << ref_file << std::endl
                 << "  GRID              = " << grid_spec << std::endl
-                << "  PRUNING SCHEME    = " << prune_spec << std::endl
+                << "  PRUNING_SCHEME    = " << prune_spec << std::endl
+                << "  BATCH_SIZE        = " << batch_size << std::endl
                 << "  BASIS_TOL         = " << basis_tol << std::endl
                 << "  FUNCTIONAL        = " << func_spec << std::endl
                 << "  LB_EXEC_SPACE     = " << lb_exec_space_str << std::endl
@@ -170,7 +175,7 @@ int main(int argc, char** argv) {
     };
 
     auto mg = MolGridFactory::create_default_molgrid(mol, 
-     prune_map.at(prune_spec), BatchSize(4096), 
+     prune_map.at(prune_spec), BatchSize(batch_size), 
      RadialQuad::MuraKnowles, mg_map.at(grid_spec));
 
     // Read BasisSet
