@@ -45,7 +45,8 @@ namespace XGPU {
       }
     } else {
       const double t_inv = 1./(*T);
-      double _val = GauXC::constants::sqrt_pi_ov_2<> * std::sqrt(t_inv);
+      //double _val = GauXC::constants::sqrt_pi_ov_2<> * std::sqrt(t_inv);
+      double _val = GauXC::constants::sqrt_pi_ov_2<> * rsqrt(*T);
     
       for(int i = 1; i < M + 1; ++i) {
 	_val *= ((i - 0.5) * t_inv);

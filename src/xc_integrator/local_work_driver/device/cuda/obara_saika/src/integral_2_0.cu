@@ -49,6 +49,7 @@ namespace XGPU {
 	double zP = prim_pairs[ij].P.z;
 
 	double eval = prim_pairs[ij].K_coeff_prod;
+    if(std::abs(eval) < 1e-12) continue;
 
 	// Evaluate T Values
 	SCALAR_TYPE xC = SCALAR_LOAD((_point_outer_x + p_inner));

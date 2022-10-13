@@ -894,6 +894,7 @@ void Scheme1DataBase::pack_and_send(
     
       // Setup ShellPair -> Task meta data (cou)
       const auto itask = std::distance( task_begin, it );
+#if 0
       for( auto j = 0ul; j < nshells_cou; ++j )
       for( auto i = j;   i < nshells_cou; ++i ) {
         const auto ish = shell_list_cou[i];
@@ -905,6 +906,23 @@ void Scheme1DataBase::pack_and_send(
         sptt.task_shell_off_row.emplace_back(shell_offs_cou[i]);
         sptt.task_shell_off_col.emplace_back(shell_offs_cou[j]);
       }
+#else
+      auto sp_st = it->cou_screening.shell_pair_list.begin();
+      auto sp_en = it->cou_screening.shell_pair_list.end();
+
+      std::map<int,int> sh_off;
+      for( auto i = 0ul; i < nshells_cou; ++i )
+        sh_off[shell_list_cou[i]] = shell_offs_cou[i];
+
+      for( auto [ish,jsh] : it->cou_screening.shell_pair_list ) {
+        const auto idx = detail::packed_lt_index(ish,jsh, global_dims.nshells);
+
+        auto& sptt = shell_pair_to_task[idx];
+        sptt.task_idx.emplace_back(itask);
+        sptt.task_shell_off_row.emplace_back(sh_off[ish]);
+        sptt.task_shell_off_col.emplace_back(sh_off[jsh]);
+      }
+#endif
     }
 
 

@@ -1,5 +1,6 @@
 if( GAUXC_ENABLE_HDF5 )
   include(FetchContent)
+  find_package(HDF5 REQUIRED)
   FetchContent_Declare( HighFive
     GIT_REPOSITORY https://github.com/BlueBrain/HighFive.git
   )

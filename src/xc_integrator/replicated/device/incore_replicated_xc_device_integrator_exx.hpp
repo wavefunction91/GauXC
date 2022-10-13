@@ -199,6 +199,9 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     task_begin);
   task_end = task_begin + local_work_unique.size();
   
+  std::sort(task_begin,task_end,
+    [](auto& a, auto& b){ return a.cou_screening.shell_pair_list.size() >
+      b.cou_screening.shell_pair_list.size(); });
 
 
   size_t total_npts = std::accumulate( task_begin, task_end, 0ul,
@@ -265,6 +268,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     task_it = 
       device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
 
+#if 1
     /*** Process the batches ***/
 
     // Evaluate collocation
@@ -286,6 +290,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // nu runs over ek shells
     // i runs over all points
     lwd->inc_exx_k( &device_data );
+#endif
 
   } // Loop over batches of batches 
 
