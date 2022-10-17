@@ -10,25 +10,14 @@ HostReplicatedLoadBalancer::~HostReplicatedLoadBalancer() noexcept = default;
 
 std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
 
-  const int32_t n_deriv = 1;
+  const int32_t n_deriv = 1; // Effects cost heuristic
 
-//  int32_t world_rank;
-//  int32_t world_size;
-
-//#ifdef GAUXC_ENABLE_MPI
-//  MPI_Comm_rank( comm_, &world_rank );
-//  MPI_Comm_size( comm_, &world_size );
-//#else
-//  world_rank = 0;
-//  world_size = 1;
-//#endif
   int32_t world_rank = runtime_.comm_rank();
   int32_t world_size = runtime_.comm_size();
 
   std::vector< XCTask > local_work;
   std::vector<size_t> global_workload( world_size, 0 );   
 
-  // Loop over Atoms
   const auto natoms = this->mol_->natoms();
   int32_t iCurrent  = 0;
   int32_t atBatchSz = 1;
@@ -37,28 +26,16 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
   std::vector< std::pair<size_t, XCTask> > temp_tasks;
   temp_tasks.reserve( max_nbatches );
 
- // // Preallocate
- // std::vector<std::array<double,3>> batch_box_lo, batch_box_up;
- // if( screen_on_device ) {
- //   temp_tasks.resize(atBatchSz   * max_nbatches);
- //   batch_box_lo.resize(atBatchSz * max_nbatches);
- //   batch_box_up.resize(atBatchSz * max_nbatches);
- // }
-
   // For batching of multiple atom screening
   size_t batch_idx_offset = 0;
 
+  // Loop over Atoms
   for( const auto& atom : *this->mol_ ) {
-
 
     const std::array<double,3> center = { atom.x, atom.y, atom.z };
 
     auto& batcher = mg_->get_grid(atom.Z).batcher();
     batcher.quadrature().recenter( center );
-
-
-
-
     const size_t nbatches = batcher.nbatches();
 
     #pragma omp parallel for
@@ -71,17 +48,11 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
 
       if( points.size() == 0 ) continue;
 
-#if 1
       // Microbatch Screening
       auto [shell_list, nbe] = micro_batch_screen( (*this->basis_), lo, up );
 
       // Course grain screening
       if( not shell_list.size() ) continue; 
-#else
-      std::vector<int> shell_list(this->basis_->size());
-      std::iota(shell_list.begin(),shell_list.end(),0);
-      size_t nbe = this->basis_->nbf();
-#endif
 
       // Copy task data
       XCTask task;
@@ -142,6 +113,7 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
           std::min_element( global_workload.begin(), global_workload.end() );
         int64_t min_rank = std::distance( global_workload.begin(), min_rank_it );
 
+        // Compute cost heuristic and increment total work
         global_workload[ min_rank ] += task.cost( n_deriv, natoms );
 
         if( world_rank == min_rank ) 
