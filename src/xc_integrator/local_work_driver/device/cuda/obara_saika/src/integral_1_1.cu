@@ -715,10 +715,11 @@ namespace XGPU {
 		    double *boys_table,
         cudaStream_t stream) {
 
+    size_t xy_max = (1ul << 16) - 1;
     int nthreads = 128;
     int nblocks_x = 1;
-    int nblocks_y = max_ntask;
-    int nblocks_z = nsp;
+    int nblocks_y = std::min(max_ntask, xy_max);
+    int nblocks_z = std::min(nsp,  xy_max);
     dim3 nblocks(nblocks_x, nblocks_y, nblocks_z);
     dev_integral_1_1_shell_batched<<<nblocks,nthreads,0,stream>>>(
       nsp, sp2task, device_tasks, boys_table );
