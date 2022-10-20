@@ -21,13 +21,17 @@ namespace XGPU {
     double temp_0, temp_1, temp_2;
     const auto nprim_pairs = sp->nprim_pairs();
     const auto prim_pairs  = sp->prim_pairs();
+
+
+    const int npts_int = (int) npts;
     
-    for(size_t p_outer = blockIdx.x * blockDim.x; p_outer < npts; p_outer += gridDim.x * blockDim.x) {
+    for(int p_outer = blockIdx.x * blockDim.x; p_outer < npts_int; p_outer += gridDim.x * blockDim.x) {
       double *_point_outer_x = (_points_x + p_outer);
       double *_point_outer_y = (_points_y + p_outer);
       double *_point_outer_z = (_points_z + p_outer);
 
-      size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer);
+      int p_inner = threadIdx.x;
+      if (threadIdx.x < npts_int - p_outer) {
 
       //for(int i = 0; i < 3; ++i) SCALAR_STORE((temp + i * blockDim.x + threadIdx.x), SCALAR_ZERO());
       temp_0 = SCALAR_ZERO();
@@ -96,7 +100,8 @@ namespace XGPU {
   temp_2 = tx;
       }
 
-      if(threadIdx.x < npts - p_outer) {
+  
+      if (abs(temp_0) > 1e-12 || abs(temp_1) > 1e-12 || abs(temp_2) > 1e-12) {
 	double *Xik = (Xi + p_outer + p_inner);
 	double *Xjk = (Xj + p_outer + p_inner);
 	double *Gik = (Gi + p_outer + p_inner);
@@ -171,6 +176,7 @@ namespace XGPU {
 
 	atomicAdd((Gjk + 0 * ldG), tw);
   #endif
+      }
       }
     }
   }
