@@ -24,6 +24,7 @@ namespace XGPU {
     const int nprim_pairs = sp->nprim_pairs();
     #if 1
     __shared__ GauXC::PrimitivePair<double> prim_pairs[GauXC::detail::nprim_pair_max];
+    __syncthreads();
     if( threadIdx.x < 32 ) {
       const auto pp = sp->prim_pairs();
       for(int ij = threadIdx.x; ij < nprim_pairs; ij += 32) {

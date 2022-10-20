@@ -326,6 +326,7 @@ namespace XGPU {
     else
       dev_integral_1_0_shell_batched<false><<<nblocks,nthreads,0,stream>>>(
         nsp, sp2task, device_tasks, boys_table );
+
   }
 
 }
