@@ -23,7 +23,14 @@ namespace XGPU {
     __shared__ double temp[128 * 31];
     const auto nprim_pairs = sp->nprim_pairs();
     const auto prim_pairs  = sp->prim_pairs();
+
+    __shared__ double outBuffer[128][6];
+
     for(size_t p_outer = blockIdx.x * blockDim.x; p_outer < npts; p_outer += gridDim.x * blockDim.x) {
+      for (int i = 0; i < 6; i++) {
+        outBuffer[threadIdx.x][i] = 0.0;
+      }
+
       double *_point_outer_x = (_points_x + p_outer);
       double *_point_outer_y = (_points_y + p_outer);
       double *_point_outer_z = (_points_z + p_outer);
@@ -1800,42 +1807,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_MUL(tx, t0);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 17 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 18 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 19 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 20 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 21 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
                                 
 	X_ABp = SCALAR_MUL(X_ABp, X_AB); comb_m_i = SCALAR_MUL(comb_m_i * 2, SCALAR_RECIPROCAL(1));
 	Y_ABp = 1.0; comb_n_j = 1.0;
@@ -1847,42 +1860,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_FMA(tx, t0, tw);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 7 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 8 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 9 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 10 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 11 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
                                 
 	X_ABp = SCALAR_MUL(X_ABp, X_AB); comb_m_i = SCALAR_MUL(comb_m_i * 1, SCALAR_RECIPROCAL(2));
 	Y_ABp = 1.0; comb_n_j = 1.0;
@@ -1894,42 +1913,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_FMA(tx, t0, tw);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
 	atomicAdd((Gjk + 0 * ldG), tw);
   
 
@@ -1945,42 +1970,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_MUL(tx, t0);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 19 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 20 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 22 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 23 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 24 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
                                 
 	Y_ABp = SCALAR_MUL(Y_ABp, Y_AB); comb_n_j = SCALAR_MUL(comb_n_j * 1, SCALAR_RECIPROCAL(1));
 	Z_ABp = 1.0; comb_p_k = 1.0;
@@ -1991,42 +2022,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_FMA(tx, t0, tw);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 7 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 8 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 9 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 10 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 11 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
                                 
 	X_ABp = SCALAR_MUL(X_ABp, X_AB); comb_m_i = SCALAR_MUL(comb_m_i * 1, SCALAR_RECIPROCAL(1));
 	Y_ABp = 1.0; comb_n_j = 1.0;
@@ -2038,42 +2075,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_FMA(tx, t0, tw);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 9 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 10 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 12 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 13 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 14 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
                                 
 	Y_ABp = SCALAR_MUL(Y_ABp, Y_AB); comb_n_j = SCALAR_MUL(comb_n_j * 1, SCALAR_RECIPROCAL(1));
 	Z_ABp = 1.0; comb_p_k = 1.0;
@@ -2084,42 +2127,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_FMA(tx, t0, tw);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
 	atomicAdd((Gjk + 1 * ldG), tw);
 
 
@@ -2136,42 +2185,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_MUL(tx, t0);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 20 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 21 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 23 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 24 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 25 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
                                 
 	Z_ABp = SCALAR_MUL(Z_ABp, Z_AB); comb_p_k = SCALAR_MUL(comb_p_k * 1, SCALAR_RECIPROCAL(1));
 	const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
@@ -2181,42 +2236,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_FMA(tx, t0, tw);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 7 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 8 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 9 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 10 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 11 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
                                 
 	X_ABp = SCALAR_MUL(X_ABp, X_AB); comb_m_i = SCALAR_MUL(comb_m_i * 1, SCALAR_RECIPROCAL(1));
 	Y_ABp = 1.0; comb_n_j = 1.0;
@@ -2228,42 +2289,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_FMA(tx, t0, tw);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 10 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 11 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 13 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 14 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 15 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
                                 
 	Z_ABp = SCALAR_MUL(Z_ABp, Z_AB); comb_p_k = SCALAR_MUL(comb_p_k * 1, SCALAR_RECIPROCAL(1));
 	const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
@@ -2273,42 +2340,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_FMA(tx, t0, tw);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
 	atomicAdd((Gjk + 2 * ldG), tw);
 
 
@@ -2326,42 +2399,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_MUL(tx, t0);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 22 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 23 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 26 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 27 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 28 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
                                 
 	Y_ABp = SCALAR_MUL(Y_ABp, Y_AB); comb_n_j = SCALAR_MUL(comb_n_j * 2, SCALAR_RECIPROCAL(1));
 	Z_ABp = 1.0; comb_p_k = 1.0;
@@ -2372,42 +2451,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_FMA(tx, t0, tw);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 9 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 10 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 12 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 13 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 14 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
                                 
 	Y_ABp = SCALAR_MUL(Y_ABp, Y_AB); comb_n_j = SCALAR_MUL(comb_n_j * 1, SCALAR_RECIPROCAL(2));
 	Z_ABp = 1.0; comb_p_k = 1.0;
@@ -2418,42 +2503,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_FMA(tx, t0, tw);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
 	atomicAdd((Gjk + 3 * ldG), tw);
 
 
@@ -2469,42 +2560,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_MUL(tx, t0);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 23 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 24 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 27 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 28 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 29 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
                                 
 	Z_ABp = SCALAR_MUL(Z_ABp, Z_AB); comb_p_k = SCALAR_MUL(comb_p_k * 1, SCALAR_RECIPROCAL(1));
 	const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
@@ -2514,42 +2611,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_FMA(tx, t0, tw);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 9 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 10 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 12 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 13 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 14 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
                                 
 	Y_ABp = SCALAR_MUL(Y_ABp, Y_AB); comb_n_j = SCALAR_MUL(comb_n_j * 1, SCALAR_RECIPROCAL(1));
 	Z_ABp = 1.0; comb_p_k = 1.0;
@@ -2560,42 +2663,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_FMA(tx, t0, tw);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 10 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 11 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 13 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 14 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 15 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
                                 
 	Z_ABp = SCALAR_MUL(Z_ABp, Z_AB); comb_p_k = SCALAR_MUL(comb_p_k * 1, SCALAR_RECIPROCAL(1));
 	const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
@@ -2605,42 +2714,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_FMA(tx, t0, tw);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
 	atomicAdd((Gjk + 4 * ldG), tw);
 
 
@@ -2657,42 +2772,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_MUL(tx, t0);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 24 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 25 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 28 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 29 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 30 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
                                 
 	Z_ABp = SCALAR_MUL(Z_ABp, Z_AB); comb_p_k = SCALAR_MUL(comb_p_k * 2, SCALAR_RECIPROCAL(1));
 	const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
@@ -2702,42 +2823,48 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_FMA(tx, t0, tw);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 10 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 11 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 13 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 14 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 15 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
                                 
 	Z_ABp = SCALAR_MUL(Z_ABp, Z_AB); comb_p_k = SCALAR_MUL(comb_p_k * 1, SCALAR_RECIPROCAL(2));
 	const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
@@ -2747,43 +2874,57 @@ namespace XGPU {
 	t0 = SCALAR_MUL(t0, const_value_w);
 	tz = SCALAR_MUL(ty, t0);
 	tw = SCALAR_FMA(tx, t0, tw);
-	atomicAdd((Gik + 0 * ldG), tz);
+	//atomicAdd((Gik + 0 * ldG), tz);
+	outBuffer[threadIdx.x][0] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 1 * ldX));
 	t1 = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
 	t1 = SCALAR_MUL(t1, const_value_w);
 	tz = SCALAR_MUL(ty, t1);
 	tw = SCALAR_FMA(tx, t1, tw);
-	atomicAdd((Gik + 1 * ldG), tz);
+	//atomicAdd((Gik + 1 * ldG), tz);
+	outBuffer[threadIdx.x][1] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 2 * ldX));
 	t2 = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
 	t2 = SCALAR_MUL(t2, const_value_w);
 	tz = SCALAR_MUL(ty, t2);
 	tw = SCALAR_FMA(tx, t2, tw);
-	atomicAdd((Gik + 2 * ldG), tz);
+	//atomicAdd((Gik + 2 * ldG), tz);
+	outBuffer[threadIdx.x][2] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 3 * ldX));
 	t3 = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
 	t3 = SCALAR_MUL(t3, const_value_w);
 	tz = SCALAR_MUL(ty, t3);
 	tw = SCALAR_FMA(tx, t3, tw);
-	atomicAdd((Gik + 3 * ldG), tz);
+	//atomicAdd((Gik + 3 * ldG), tz);
+	outBuffer[threadIdx.x][3] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 4 * ldX));
 	t4 = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
 	t4 = SCALAR_MUL(t4, const_value_w);
 	tz = SCALAR_MUL(ty, t4);
 	tw = SCALAR_FMA(tx, t4, tw);
-	atomicAdd((Gik + 4 * ldG), tz);
+	//atomicAdd((Gik + 4 * ldG), tz);
+	outBuffer[threadIdx.x][4] += tz;
                                 
 	tx = SCALAR_LOAD((Xik + 5 * ldX));
 	t5 = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
 	t5 = SCALAR_MUL(t5, const_value_w);
 	tz = SCALAR_MUL(ty, t5);
 	tw = SCALAR_FMA(tx, t5, tw);
-	atomicAdd((Gik + 5 * ldG), tz);
+	//atomicAdd((Gik + 5 * ldG), tz);
+	outBuffer[threadIdx.x][5] += tz;
 	atomicAdd((Gjk + 5 * ldG), tw);
+
+	atomicAdd((Gik + 0 * ldG), outBuffer[threadIdx.x][0]);
+	atomicAdd((Gik + 1 * ldG), outBuffer[threadIdx.x][1]);
+	atomicAdd((Gik + 2 * ldG), outBuffer[threadIdx.x][2]);
+	atomicAdd((Gik + 3 * ldG), outBuffer[threadIdx.x][3]);
+	atomicAdd((Gik + 4 * ldG), outBuffer[threadIdx.x][4]);
+	atomicAdd((Gik + 5 * ldG), outBuffer[threadIdx.x][5]);
+
   #endif
       }
     }
