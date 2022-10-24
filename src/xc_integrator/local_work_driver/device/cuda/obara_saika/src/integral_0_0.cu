@@ -35,14 +35,17 @@ namespace XGPU {
     #else
     const auto& prim_pairs = sp->prim_pairs();
     #endif
+
+    const int npts_int = (int) npts;
     
     #pragma unroll(1)
-    for(size_t p_outer = blockIdx.x * 128; p_outer < npts; p_outer += gridDim.x * 128) {
+    for(int p_outer = blockIdx.x * 128; p_outer < npts_int; p_outer += gridDim.x * 128) {
       const double * __restrict__ _point_outer_x = (points_x + p_outer);
       const double * __restrict__ _point_outer_y = (points_y + p_outer);
       const double * __restrict__ _point_outer_z = (points_z + p_outer);
 
-      size_t p_inner = (threadIdx.x < (npts - p_outer)) ? threadIdx.x : (npts - p_outer);
+      int p_inner = threadIdx.x;
+      if (threadIdx.x < npts_int - p_outer) {
 
       temp = SCALAR_ZERO();
 	    const SCALAR_TYPE xC = SCALAR_LOAD((_point_outer_x + p_inner));
@@ -73,8 +76,7 @@ namespace XGPU {
         const SCALAR_TYPE t00 = boys_element_0(TVAL);
         temp = SCALAR_FMA( eval, t00, temp );
       }
-
-      if(threadIdx.x < npts - p_outer) {
+      if (abs(temp) > 1e-12) {
         const double * __restrict__ Xik = (Xi + p_outer + p_inner);
         const double * __restrict__ Xjk = (Xj + p_outer + p_inner);
         double * __restrict__ Gik = (Gi + p_outer + p_inner);
@@ -98,6 +100,7 @@ namespace XGPU {
         tw = SCALAR_MUL(tx, t0);
         atomicAdd(Gik, tz);
         atomicAdd(Gjk, tw);
+      }
       }
     }
   }
@@ -279,7 +282,9 @@ namespace XGPU {
   }
 
 
-  __global__ void dev_integral_0_0_shell_batched(
+  __global__ void 
+  __launch_bounds__(128, 16)
+  dev_integral_0_0_shell_batched(
            int nsp,
            const GauXC::ShellPairToTaskDevice* sp2task,
            GauXC::XCDeviceTask*                device_tasks,
