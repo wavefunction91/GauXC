@@ -2,6 +2,7 @@ if( GAUXC_ENABLE_HDF5 )
   include(FetchContent)
   FetchContent_Declare( HighFive
     GIT_REPOSITORY https://github.com/BlueBrain/HighFive.git
+    GIT_TAG        805f0e13d09b47c4b01d40682621904aa3b31bb8
   )
   
   set(HIGHFIVE_USE_BOOST OFF CACHE BOOL "" )
