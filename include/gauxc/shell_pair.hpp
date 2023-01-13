@@ -75,7 +75,7 @@ class ShellPair {
         bra.coeff()[i] * ket.coeff()[j] *
         std::exp( -alpha_bra * alpha_ket * dAB * oo_g );
 
-      //if(std::abs(Kab) < 1e-12) continue;
+      if(std::abs(Kab) < 1e-12) continue;
 
       nprim_pairs_++;
       pair.P.x = (alpha_bra * A.x + alpha_ket * B.x) * oo_g;

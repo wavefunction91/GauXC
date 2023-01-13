@@ -31,9 +31,9 @@ int main(int argc, char** argv) {
   {
     // Set up runtimes
     #ifdef GAUXC_ENABLE_DEVICE
-    DeviceRuntimeEnvironment rt( GAUXC_MPI_CODE(MPI_COMM_WORLD), 0.9 );
+    auto rt = DeviceRuntimeEnvironment( GAUXC_MPI_CODE(MPI_COMM_WORLD), 0.9 );
     #else
-    RuntimeEnvironment rt(GAUXC_MPI_CODE(MPI_COMM_WORLD));
+    auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
     #endif
     auto world_rank = rt.comm_rank();
     auto world_size = rt.comm_size();

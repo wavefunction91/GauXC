@@ -7,7 +7,7 @@ using namespace GauXC;
 
 void gen_ref_lb_data( std::vector<XCTask>& tasks, size_t pv ) {
 
-  RuntimeEnvironment rt(MPI_COMM_WORLD);
+  auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
   int world_rank = rt.comm_rank();
   int world_size = rt.comm_size();
 
@@ -29,7 +29,7 @@ void gen_ref_lb_data( std::vector<XCTask>& tasks, size_t pv ) {
 
 void check_lb_data( const std::vector<XCTask>& tasks, size_t pv ) {
 
-  RuntimeEnvironment rt(MPI_COMM_WORLD);
+  auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
   int world_rank = rt.comm_rank();
   int world_size = rt.comm_size();
 
@@ -79,7 +79,7 @@ void check_lb_data( const std::vector<XCTask>& tasks, size_t pv ) {
 //#define GAUXC_GEN_TESTS
 TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
 
-  RuntimeEnvironment world(MPI_COMM_WORLD);
+  auto world = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
 
   Molecule mol           = make_benzene();
   BasisSet<double> basis = make_ccpvdz( mol, SphericalType(true) );

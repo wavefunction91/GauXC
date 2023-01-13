@@ -119,11 +119,15 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     for( auto i = 0ul; i < nb2; ++i ) P_abs[i] = std::abs(P[i]);
 
     const size_t ns2 = nshells * nshells;
-    std::vector<double> V_max(ns2);
+    std::vector<double> V_max(ns2, 0.0);
     for( auto i = 0; i < nshells; ++i )
-    for( auto j = 0; j < nshells; ++j ) {
-      V_max[i + j*nshells] = 
-        util::max_coulomb( basis.at(i), basis.at(j) );
+    for( auto j = 0; j <= i;      ++j ) {
+      // This might be a redundant check...
+      if( shell_pairs.at(i,j).nprim_pairs() ) { 
+        const auto mv = util::max_coulomb( basis.at(i), basis.at(j) );
+        V_max[i + j*nshells] = mv;
+        if( i != j ) V_max[j + i*nshells] = mv;
+      }
     }
     // Create LocalHostWorkDriver
     LocalHostWorkDriver host_lwd(

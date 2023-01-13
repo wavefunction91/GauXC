@@ -216,7 +216,8 @@ TEST_CASE("Grid Specification", "[molgrid]") {
   AtomicNumber Z(6);
   auto rq  = RadialQuad::MuraKnowles;
   auto gsz = AtomicGridSizeDefault::UltraFineGrid;
-  auto [rsz, asz] = default_grid_size(Z,rq,gsz);
+  RadialSize rsz; AngularSize asz; // Clang doesn't like lambda capture of structured bindings...
+  std::tie(rsz, asz) = default_grid_size(Z,rq,gsz);
   auto rscal = default_radial_scaling_factor(rq, Z);
 
   SECTION("Unpruned") {

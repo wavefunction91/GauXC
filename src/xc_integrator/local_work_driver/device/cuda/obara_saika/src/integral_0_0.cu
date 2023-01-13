@@ -60,7 +60,6 @@ namespace XGPU {
         double zP = prim_pairs[ij].P.z;
       
         double eval = prim_pairs[ij].K_coeff_prod;
-        if( std::abs(eval) < 1e-12 ) continue;
       
         // Evaluate T Values
         const SCALAR_TYPE X_PC = SCALAR_SUB(xP, xC);
@@ -168,6 +167,7 @@ namespace XGPU {
            GauXC::XCDeviceTask*                device_tasks,
 				   double *boys_table) {
 
+    //if (sp2task->shell_pair_device->nprim_pairs() == 0) return;
     const int ntask = sp2task->ntask;
     for( int i_task = blockIdx.y; i_task < ntask; i_task += gridDim.y ) {
     

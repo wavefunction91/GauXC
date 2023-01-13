@@ -31,7 +31,7 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
                                 std::ofstream& out_file, size_t ntask_save = 15 ) {
 
 
-  RuntimeEnvironment rt(MPI_COMM_WORLD);
+  auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
   auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
     BatchSize(512), RadialQuad::MuraKnowles, AtomicGridSizeDefault::FineGrid);
 

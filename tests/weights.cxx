@@ -14,7 +14,7 @@
 //#define GENERATE_TESTS
 TEST_CASE( "Benzene", "[weights]" ) {
 
-  RuntimeEnvironment rt(GAUXC_MPI_CODE(MPI_COMM_WORLD));
+  auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
 #ifdef GENERATE_TESTS
   if(rt.comm_size() > 1) return;
 #endif
