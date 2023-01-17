@@ -261,6 +261,8 @@ void XCDeviceStackData::send_static_data_shell_pairs(
     shell_pair_soa.shell_pair_dev_ptr.emplace_back(
       static_stack.shell_pairs_device + idx
     );
+
+    shell_pair_soa.shell_pair_nprim_pairs.push_back(shell_pairs.shell_pairs()[idx].nprim_pairs());
     auto& bra = basis[i];
     auto& ket = basis[j];
     shell_pair_soa.shell_pair_shidx.emplace_back(i,j);

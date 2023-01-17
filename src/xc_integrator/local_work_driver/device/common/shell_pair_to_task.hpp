@@ -44,4 +44,47 @@ struct AngularMomentumShellPairToTaskBatch {
   int lA, lB;
 };
 
+struct TaskToShellPairHost {
+  using shell_pair = ShellPair<double>;
+  using point      = detail::cartesian_point;
+  std::vector<int32_t> shell_pair_linear_idx;
+  std::vector<int32_t> task_shell_off_row;
+  std::vector<int32_t> task_shell_off_col;
+  int32_t nsp;
+  int32_t nsp_filled;
+
+  void clear() {
+    shell_pair_linear_idx.clear();
+    task_shell_off_row.clear();
+    task_shell_off_col.clear();
+  };
+};
+
+struct TaskToShellPairDevice {
+  using shell_pair = ShellPair<double>;
+
+  int32_t* shell_pair_linear_idx_device;
+  int32_t* task_shell_off_row_device;
+  int32_t* task_shell_off_col_device;
+
+  int32_t nsp;
+};
+
+struct AngularMomentumTaskToShellPairBatchHost {
+  std::vector<TaskToShellPairHost> task_to_shell_pair;
+
+  int lA, lB;
+
+  void clear() {
+    task_to_shell_pair.clear();
+  }
+};
+
+
+struct AngularMomentumTaskToShellPairBatch {
+  TaskToShellPairDevice* task_to_shell_pair_device;
+
+  int lA, lB;
+};
+
 }
