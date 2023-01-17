@@ -3,11 +3,13 @@
 #include "device_specific/cuda_util.hpp"
 
 
+#if 0
 #pragma GCC diagnostic ignored "-Wshadow"
 #pragma GCC diagnostic ignored "-Wdeprecated-copy"
 #include <thrust/host_vector.h>
 #include <thrust/system/cuda/experimental/pinned_allocator.h>
 #pragma GCC diagnostic pop
+#endif
 
 #include "cuda_collision_detection.hpp"
 
@@ -16,8 +18,13 @@ using namespace GauXC::load_balancer::cuda;
 namespace GauXC {
 namespace detail {
 
+#if 0
 template <typename T>
 using pinned_vector = thrust::host_vector<T, thrust::cuda::experimental::pinned_allocator<T>>;
+#else
+template <typename T>
+using pinned_vector = std::vector<T>;
+#endif
 
 // Helper data struction to keep inputs to collision detection kernels organized
 struct CollisionDetectionCudaData {
@@ -188,7 +195,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
 
     util::cuda_device_sync();
     // Copy results back to host
-    util::cuda_copy(total_collisions, thrust::raw_pointer_cast(position_list.data()), data.position_list_device, "Position List DtoH");
+    util::cuda_copy(total_collisions, position_list.data(), data.position_list_device, "Position List DtoH");
     util::cuda_copy(ncubes, pos_list_idx.data(), data.counts_device, "Position List Idx DtoH");
     util::cuda_copy(ncubes, nbe_vec.data(), data.nbe_list_device, "NBE counts DtoH");
     util::cuda_free(data.position_list_device);

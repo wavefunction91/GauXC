@@ -46,9 +46,11 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
         tasks.end(), *device_data_ptr );
     });
 
+    GAUXC_MPI_CODE(
     this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
       MPI_Barrier(this->load_balancer_->runtime().comm());
     });  
+    )
 
     this->timer_.time_op("XCIntegrator.Allreduce", [&](){
       this->reduction_driver_->allreduce_inplace( EXC_GRAD, 3*natoms, 
