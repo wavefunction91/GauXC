@@ -61,7 +61,7 @@ public:
 
   DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_Comm comm,) void* mem, 
     size_t mem_sz);
-  DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_Comm), double fill_fraction);
+  DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_Comm,) double fill_fraction);
 
   ~DeviceRuntimeEnvironment() noexcept;
   DeviceRuntimeEnvironment( const DeviceRuntimeEnvironment& );

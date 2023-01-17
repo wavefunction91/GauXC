@@ -37,7 +37,7 @@ DeviceRuntimeEnvironment::DeviceRuntimeEnvironment(
   ) {}
 
 DeviceRuntimeEnvironment::DeviceRuntimeEnvironment(
-  GAUXC_MPI_CODE(MPI_Comm c), double ff) :
+  GAUXC_MPI_CODE(MPI_Comm c,) double ff) :
   RuntimeEnvironment(detail::make_device_runtime(GAUXC_MPI_CODE(c,)ff)) {}
 
 DeviceRuntimeEnvironment::~DeviceRuntimeEnvironment() noexcept = default;

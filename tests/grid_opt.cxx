@@ -31,7 +31,7 @@ int main(int argc, char** argv) {
   {
     // Set up runtimes
     #ifdef GAUXC_ENABLE_DEVICE
-    auto rt = DeviceRuntimeEnvironment( GAUXC_MPI_CODE(MPI_COMM_WORLD), 0.9 );
+    auto rt = DeviceRuntimeEnvironment( GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.9 );
     #else
     auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
     #endif

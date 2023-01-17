@@ -55,14 +55,14 @@ TEST_CASE("Runtime", "[runtime]") {
       SECTION("Memory Wrapper") {
         void* p   = (void*)0x6666DEADBEEF6666;
         size_t sz = 40;
-        auto rt = DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD), p, sz);
+        auto rt = DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD,) p, sz);
         REQUIRE_FALSE( rt.owns_memory() );
         REQUIRE( rt.device_memory() == p );
         REQUIRE( rt.device_memory_size() == sz );
       }
 
       SECTION("Owns Memory") {
-        auto rt = DeviceRuntimeEnvironment( GAUXC_MPI_CODE(MPI_COMM_WORLD), 0.2 );
+        auto rt = DeviceRuntimeEnvironment( GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.2 );
 
         auto p = rt.device_memory();
         auto sz = rt.device_memory_size();
@@ -104,7 +104,7 @@ TEST_CASE("Runtime", "[runtime]") {
       }
 
       SECTION("as_device_runtime") {
-        auto d_rt = DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD), 0.2);
+        auto d_rt = DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.2);
         auto p  = d_rt.device_memory();
         auto sz = d_rt.device_memory_size();
         REQUIRE(d_rt.owns_memory());
@@ -131,7 +131,7 @@ TEST_CASE("Runtime", "[runtime]") {
 
 
       SECTION("Basic Checks") {
-        test_basic_check<DeviceRuntimeEnvironment>(GAUXC_MPI_CODE(MPI_COMM_WORLD),0.2);
+        test_basic_check<DeviceRuntimeEnvironment>(GAUXC_MPI_CODE(MPI_COMM_WORLD,)0.2);
       }
     }
     #endif
