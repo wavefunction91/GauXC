@@ -17,6 +17,64 @@
 #include "gpu/chebyshev_boys_computation.hpp"
 
 namespace XGPU {
+  void integral_0_task_batched(
+    size_t ntasks, size_t nsubtask,
+    size_t max_nsp,
+    GauXC::XCDeviceTask*                device_tasks,
+    const GauXC::TaskToShellPairDevice* task2sp,
+    const std::array<int32_t, 4>*  subtasks,
+    const int32_t* nprim_pairs_device,
+    shell_pair** sp_ptr_device,
+    double* sp_X_AB_device,
+    double* sp_Y_AB_device,
+    double* sp_Z_AB_device,
+    double *boys_table,
+    cudaStream_t stream);
+
+  void integral_1_task_batched(
+    size_t ntasks, size_t nsubtask,
+    size_t max_nsp,
+    GauXC::XCDeviceTask*                device_tasks,
+    const GauXC::TaskToShellPairDevice* task2sp,
+    const std::array<int32_t, 4>*  subtasks,
+    const int32_t* nprim_pairs_device,
+    shell_pair** sp_ptr_device,
+    double* sp_X_AB_device,
+    double* sp_Y_AB_device,
+    double* sp_Z_AB_device,
+    double *boys_table,
+    cudaStream_t stream);
+
+  void integral_2_task_batched(
+    size_t ntasks, size_t nsubtask,
+    size_t max_nsp,
+    GauXC::XCDeviceTask*                device_tasks,
+    const GauXC::TaskToShellPairDevice* task2sp,
+    const std::array<int32_t, 4>*  subtasks,
+    const int32_t* nprim_pairs_device,
+    shell_pair** sp_ptr_device,
+    double* sp_X_AB_device,
+    double* sp_Y_AB_device,
+    double* sp_Z_AB_device,
+    double *boys_table,
+    cudaStream_t stream);
+
+
+  void integral_0_0_task_batched(
+        size_t ntasks,
+        size_t nsubtasks,
+        size_t max_nsp,
+        GauXC::XCDeviceTask*                device_tasks,
+        const GauXC::TaskToShellPairDevice* task2sp,
+        const std::array<int32_t, 4>*  subtasks,
+        const int32_t* nprim_pairs_device,
+        shell_pair** sp_ptr_device,
+        double* sp_X_AB_device,
+        double* sp_Y_AB_device,
+        double* sp_Z_AB_device,
+        double *boys_table,
+        cudaStream_t stream);
+
   void integral_0_0_shell_batched(
         size_t nsp,
         size_t max_ntask,
@@ -24,6 +82,21 @@ namespace XGPU {
         GauXC::XCDeviceTask*                device_tasks,
 		    double *boys_table,
         cudaStream_t stream); 
+
+  void integral_1_1_task_batched(
+        size_t ntasks,
+        size_t nsubtasks,
+        size_t max_nsp,
+        GauXC::XCDeviceTask*                device_tasks,
+        const GauXC::TaskToShellPairDevice* task2sp,
+        const std::array<int32_t, 4>*  subtasks,
+        const int32_t* nprim_pairs_device,
+        shell_pair** sp_ptr_device,
+        double* sp_X_AB_device,
+        double* sp_Y_AB_device,
+        double* sp_Z_AB_device,
+        double *boys_table,
+        cudaStream_t stream);
 
   void integral_1_1_shell_batched(
         size_t nsp,
@@ -33,6 +106,21 @@ namespace XGPU {
 		    double *boys_table,
         cudaStream_t stream); 
 
+  void integral_2_2_task_batched(
+        size_t ntasks,
+        size_t nsubtasks,
+        size_t max_nsp,
+        GauXC::XCDeviceTask*                device_tasks,
+        const GauXC::TaskToShellPairDevice* task2sp,
+        const std::array<int32_t, 4>*  subtasks,
+        const int32_t* nprim_pairs_device,
+        shell_pair** sp_ptr_device,
+        double* sp_X_AB_device,
+        double* sp_Y_AB_device,
+        double* sp_Z_AB_device,
+        double *boys_table,
+        cudaStream_t stream);
+
   void integral_2_2_shell_batched(
         size_t nsp,
         size_t max_ntask,
@@ -40,7 +128,22 @@ namespace XGPU {
         GauXC::XCDeviceTask*                device_tasks,
 		    double *boys_table,
         cudaStream_t stream); 
-
+        
+  void integral_1_0_task_batched(
+        bool swap,
+        size_t ntasks,
+        size_t nsubtasks,
+        size_t max_nsp,
+        GauXC::XCDeviceTask*                device_tasks,
+        const GauXC::TaskToShellPairDevice* task2sp,
+        const std::array<int32_t, 4>*  subtasks,
+        const int32_t* nprim_pairs_device,
+        shell_pair** sp_ptr_device,
+        double* sp_X_AB_device,
+        double* sp_Y_AB_device,
+        double* sp_Z_AB_device,
+        double *boys_table,
+        cudaStream_t stream);
 
   void integral_1_0_shell_batched(
         bool swap,
@@ -51,6 +154,22 @@ namespace XGPU {
 		    double *boys_table,
         cudaStream_t stream); 
 
+  void integral_2_0_task_batched(
+        bool swap,
+        size_t ntasks,
+        size_t nsubtasks,
+        size_t max_nsp,
+        GauXC::XCDeviceTask*                device_tasks,
+        const GauXC::TaskToShellPairDevice* task2sp,
+        const std::array<int32_t, 4>*  subtasks,
+        const int32_t* nprim_pairs_device,
+        shell_pair** sp_ptr_device,
+        double* sp_X_AB_device,
+        double* sp_Y_AB_device,
+        double* sp_Z_AB_device,
+        double *boys_table,
+        cudaStream_t stream);
+
   void integral_2_0_shell_batched(
         bool swap,
         size_t nsp,
@@ -59,6 +178,22 @@ namespace XGPU {
         GauXC::XCDeviceTask*                device_tasks,
 		    double *boys_table,
         cudaStream_t stream); 
+
+  void integral_2_1_task_batched(
+        bool swap,
+        size_t ntasks,
+        size_t nsubtasks,
+        size_t max_nsp,
+        GauXC::XCDeviceTask*                device_tasks,
+        const GauXC::TaskToShellPairDevice* task2sp,
+        const std::array<int32_t, 4>*  subtasks,
+        const int32_t* nprim_pairs_device,
+        shell_pair** sp_ptr_device,
+        double* sp_X_AB_device,
+        double* sp_Y_AB_device,
+        double* sp_Z_AB_device,
+        double *boys_table,
+        cudaStream_t stream);
 
   void integral_2_1_shell_batched(
         bool swap,
@@ -622,6 +757,46 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
     cudaStream_t stream = 
       data->device_backend_->queue().queue_as<util::cuda_stream>();
+#define USE_TASK_MAP 1
+
+#if USE_TASK_MAP
+    XGPU::integral_0_task_batched(
+      tasks.size(), data->subtask.size(), 0,
+      data->aos_stack.device_tasks,
+      data->l_batch_diag_task_to_shell_pair_device[0].task_to_shell_pair_device,
+      data->task_to_shell_pair_stack.subtask_device,
+      data->task_to_shell_pair_stack.nprim_pairs_device,
+      data->task_to_shell_pair_stack.sp_ptr_device,
+      data->task_to_shell_pair_stack.sp_X_AB_device,
+      data->task_to_shell_pair_stack.sp_Y_AB_device,
+      data->task_to_shell_pair_stack.sp_Z_AB_device,
+      dev_boys_table, stream
+    );
+    XGPU::integral_1_task_batched(
+      tasks.size(), data->subtask.size(), 0,
+      data->aos_stack.device_tasks,
+      data->l_batch_diag_task_to_shell_pair_device[1].task_to_shell_pair_device,
+      data->task_to_shell_pair_stack.subtask_device,
+      data->task_to_shell_pair_stack.nprim_pairs_device,
+      data->task_to_shell_pair_stack.sp_ptr_device,
+      data->task_to_shell_pair_stack.sp_X_AB_device,
+      data->task_to_shell_pair_stack.sp_Y_AB_device,
+      data->task_to_shell_pair_stack.sp_Z_AB_device,
+      dev_boys_table, stream
+    );
+    XGPU::integral_2_task_batched(
+      tasks.size(), data->subtask.size(), 0,
+      data->aos_stack.device_tasks,
+      data->l_batch_diag_task_to_shell_pair_device[2].task_to_shell_pair_device,
+      data->task_to_shell_pair_stack.subtask_device,
+      data->task_to_shell_pair_stack.nprim_pairs_device,
+      data->task_to_shell_pair_stack.sp_ptr_device,
+      data->task_to_shell_pair_stack.sp_X_AB_device,
+      data->task_to_shell_pair_stack.sp_Y_AB_device,
+      data->task_to_shell_pair_stack.sp_Z_AB_device,
+      dev_boys_table, stream
+    );
+#else
     size_t isptt = 0;
     for( auto sptt : sp_to_task ) {
       size_t ntask_sp = sptt.task_idx.size();
@@ -651,68 +826,205 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       isptt++; // Increment counter
     } // Loop over shell pair maps
 
+#endif
+
+#if USE_TASK_MAP
+    XGPU::integral_0_0_task_batched(
+      tasks.size(), data->subtask.size(), 0,
+      data->aos_stack.device_tasks,
+      data->l_batch_task_to_shell_pair_device[0].task_to_shell_pair_device,
+      data->task_to_shell_pair_stack.subtask_device,
+      data->task_to_shell_pair_stack.nprim_pairs_device,
+      data->task_to_shell_pair_stack.sp_ptr_device,
+      data->task_to_shell_pair_stack.sp_X_AB_device,
+      data->task_to_shell_pair_stack.sp_Y_AB_device,
+      data->task_to_shell_pair_stack.sp_Z_AB_device,
+      dev_boys_table, stream
+    );
+#else
     XGPU::integral_0_0_shell_batched(
       data->l_batched_shell_pair_to_task_off_diag[0].nshells_in_batch,
       data->l_batched_shell_pair_to_task_off_diag[0].ntask_average,
       data->l_batched_shell_pair_to_task_off_diag[0].shell_pair_to_task_device,
       data->aos_stack.device_tasks, dev_boys_table, stream
     );
+#endif
 
+#if USE_TASK_MAP
+    XGPU::integral_1_1_task_batched(
+      tasks.size(), data->subtask.size(), 0,
+      data->aos_stack.device_tasks,
+      data->l_batch_task_to_shell_pair_device[4].task_to_shell_pair_device,
+      data->task_to_shell_pair_stack.subtask_device,
+      data->task_to_shell_pair_stack.nprim_pairs_device,
+      data->task_to_shell_pair_stack.sp_ptr_device,
+      data->task_to_shell_pair_stack.sp_X_AB_device,
+      data->task_to_shell_pair_stack.sp_Y_AB_device,
+      data->task_to_shell_pair_stack.sp_Z_AB_device,
+      dev_boys_table, stream
+    );
+#else
     XGPU::integral_1_1_shell_batched(
       data->l_batched_shell_pair_to_task_off_diag[4].nshells_in_batch,
       data->l_batched_shell_pair_to_task_off_diag[4].ntask_average,
       data->l_batched_shell_pair_to_task_off_diag[4].shell_pair_to_task_device,
       data->aos_stack.device_tasks, dev_boys_table, stream
     );
+#endif
 
+#if USE_TASK_MAP
+    XGPU::integral_2_2_task_batched(
+      tasks.size(), data->subtask.size(), 0,
+      data->aos_stack.device_tasks,
+      data->l_batch_task_to_shell_pair_device[8].task_to_shell_pair_device,
+      data->task_to_shell_pair_stack.subtask_device,
+      data->task_to_shell_pair_stack.nprim_pairs_device,
+      data->task_to_shell_pair_stack.sp_ptr_device,
+      data->task_to_shell_pair_stack.sp_X_AB_device,
+      data->task_to_shell_pair_stack.sp_Y_AB_device,
+      data->task_to_shell_pair_stack.sp_Z_AB_device,
+      dev_boys_table, stream
+    );
+#else
     XGPU::integral_2_2_shell_batched(
       data->l_batched_shell_pair_to_task_off_diag[8].nshells_in_batch,
       data->l_batched_shell_pair_to_task_off_diag[8].ntask_average,
       data->l_batched_shell_pair_to_task_off_diag[8].shell_pair_to_task_device,
       data->aos_stack.device_tasks, dev_boys_table, stream
     );
+#endif
 
+#if USE_TASK_MAP
+    XGPU::integral_1_0_task_batched( true,
+      tasks.size(), data->subtask.size(), 0,
+      data->aos_stack.device_tasks,
+      data->l_batch_task_to_shell_pair_device[1].task_to_shell_pair_device,
+      data->task_to_shell_pair_stack.subtask_device,
+      data->task_to_shell_pair_stack.nprim_pairs_device,
+      data->task_to_shell_pair_stack.sp_ptr_device,
+      data->task_to_shell_pair_stack.sp_X_AB_device,
+      data->task_to_shell_pair_stack.sp_Y_AB_device,
+      data->task_to_shell_pair_stack.sp_Z_AB_device,
+      dev_boys_table, stream
+    );
+#else
     XGPU::integral_1_0_shell_batched( true,
       data->l_batched_shell_pair_to_task_off_diag[1].nshells_in_batch,
       data->l_batched_shell_pair_to_task_off_diag[1].ntask_average,
       data->l_batched_shell_pair_to_task_off_diag[1].shell_pair_to_task_device,
       data->aos_stack.device_tasks, dev_boys_table, stream
     );
+#endif
 
+#if USE_TASK_MAP
+    XGPU::integral_1_0_task_batched( false,
+      tasks.size(), data->subtask.size(), 0,
+      data->aos_stack.device_tasks,
+      data->l_batch_task_to_shell_pair_device[3].task_to_shell_pair_device,
+      data->task_to_shell_pair_stack.subtask_device,
+      data->task_to_shell_pair_stack.nprim_pairs_device,
+      data->task_to_shell_pair_stack.sp_ptr_device,
+      data->task_to_shell_pair_stack.sp_X_AB_device,
+      data->task_to_shell_pair_stack.sp_Y_AB_device,
+      data->task_to_shell_pair_stack.sp_Z_AB_device,
+      dev_boys_table, stream
+    );
+#else
     XGPU::integral_1_0_shell_batched( false,
       data->l_batched_shell_pair_to_task_off_diag[3].nshells_in_batch,
       data->l_batched_shell_pair_to_task_off_diag[3].ntask_average,
       data->l_batched_shell_pair_to_task_off_diag[3].shell_pair_to_task_device,
       data->aos_stack.device_tasks, dev_boys_table, stream
     );
+#endif
 
+#if USE_TASK_MAP
+    XGPU::integral_2_0_task_batched( true,
+      tasks.size(), data->subtask.size(), 0,
+      data->aos_stack.device_tasks,
+      data->l_batch_task_to_shell_pair_device[2].task_to_shell_pair_device,
+      data->task_to_shell_pair_stack.subtask_device,
+      data->task_to_shell_pair_stack.nprim_pairs_device,
+      data->task_to_shell_pair_stack.sp_ptr_device,
+      data->task_to_shell_pair_stack.sp_X_AB_device,
+      data->task_to_shell_pair_stack.sp_Y_AB_device,
+      data->task_to_shell_pair_stack.sp_Z_AB_device,
+      dev_boys_table, stream
+    );
+#else
     XGPU::integral_2_0_shell_batched( true,
       data->l_batched_shell_pair_to_task_off_diag[2].nshells_in_batch,
       data->l_batched_shell_pair_to_task_off_diag[2].ntask_average,
       data->l_batched_shell_pair_to_task_off_diag[2].shell_pair_to_task_device,
       data->aos_stack.device_tasks, dev_boys_table, stream
     );
+#endif 
 
+#if USE_TASK_MAP
+    XGPU::integral_2_0_task_batched( false,
+      tasks.size(), data->subtask.size(), 0,
+      data->aos_stack.device_tasks,
+      data->l_batch_task_to_shell_pair_device[6].task_to_shell_pair_device,
+      data->task_to_shell_pair_stack.subtask_device,
+      data->task_to_shell_pair_stack.nprim_pairs_device,
+      data->task_to_shell_pair_stack.sp_ptr_device,
+      data->task_to_shell_pair_stack.sp_X_AB_device,
+      data->task_to_shell_pair_stack.sp_Y_AB_device,
+      data->task_to_shell_pair_stack.sp_Z_AB_device,
+      dev_boys_table, stream
+    );
+#else
     XGPU::integral_2_0_shell_batched( false,
       data->l_batched_shell_pair_to_task_off_diag[6].nshells_in_batch,
       data->l_batched_shell_pair_to_task_off_diag[6].ntask_average,
       data->l_batched_shell_pair_to_task_off_diag[6].shell_pair_to_task_device,
       data->aos_stack.device_tasks, dev_boys_table, stream
     );
+#endif 
 
+#if USE_TASK_MAP
+    XGPU::integral_2_1_task_batched( true,
+      tasks.size(), data->subtask.size(), 0,
+      data->aos_stack.device_tasks,
+      data->l_batch_task_to_shell_pair_device[5].task_to_shell_pair_device,
+      data->task_to_shell_pair_stack.subtask_device,
+      data->task_to_shell_pair_stack.nprim_pairs_device,
+      data->task_to_shell_pair_stack.sp_ptr_device,
+      data->task_to_shell_pair_stack.sp_X_AB_device,
+      data->task_to_shell_pair_stack.sp_Y_AB_device,
+      data->task_to_shell_pair_stack.sp_Z_AB_device,
+      dev_boys_table, stream
+    );
+#else
     XGPU::integral_2_1_shell_batched( true,
       data->l_batched_shell_pair_to_task_off_diag[5].nshells_in_batch,
       data->l_batched_shell_pair_to_task_off_diag[5].ntask_average,
       data->l_batched_shell_pair_to_task_off_diag[5].shell_pair_to_task_device,
       data->aos_stack.device_tasks, dev_boys_table, stream
     );
+#endif
 
+#if USE_TASK_MAP
+    XGPU::integral_2_1_task_batched( false,
+      tasks.size(), data->subtask.size(), 0,
+      data->aos_stack.device_tasks,
+      data->l_batch_task_to_shell_pair_device[7].task_to_shell_pair_device,
+      data->task_to_shell_pair_stack.subtask_device,
+      data->task_to_shell_pair_stack.nprim_pairs_device,
+      data->task_to_shell_pair_stack.sp_ptr_device,
+      data->task_to_shell_pair_stack.sp_X_AB_device,
+      data->task_to_shell_pair_stack.sp_Y_AB_device,
+      data->task_to_shell_pair_stack.sp_Z_AB_device,
+      dev_boys_table, stream
+    );
+#else
     XGPU::integral_2_1_shell_batched( false,
       data->l_batched_shell_pair_to_task_off_diag[7].nshells_in_batch,
       data->l_batched_shell_pair_to_task_off_diag[7].ntask_average,
       data->l_batched_shell_pair_to_task_off_diag[7].shell_pair_to_task_device,
       data->aos_stack.device_tasks, dev_boys_table, stream
     );
+#endif
 
   } else { // end batched start unbatched
 
