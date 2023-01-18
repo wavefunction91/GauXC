@@ -115,6 +115,12 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 #else
   // Compute EXX screening modifications
   this->timer_.time_op("XCIntegrator.EXX_Screening", [&]() { 
+
+    // Reset the coulomb screening data
+    for( auto it = task_begin; it != task_end; ++it) {
+      it->cou_screening = XCTask::screening_data();
+    }
+
     // Compute base screening quantities
     const size_t nb2 = basis.nbf() * basis.nbf();
     std::vector<double> P_abs(nb2);
