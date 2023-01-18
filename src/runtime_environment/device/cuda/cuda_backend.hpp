@@ -30,6 +30,8 @@ struct CUDABackend : public DeviceBackend {
   void copy_async_2d_( size_t M, size_t N, const void* A, size_t LDA,
     void* B, size_t LDB, std::string msg ) override final;
 
+  void check_error_(std::string msg) override final;
+
   CUDABackend();
   ~CUDABackend() noexcept;
 

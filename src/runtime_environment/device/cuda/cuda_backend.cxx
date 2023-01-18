@@ -118,6 +118,9 @@ void CUDABackend::copy_async_2d_( size_t M, size_t N, const void* A, size_t LDA,
   GAUXC_CUDA_ERROR( "CUDA 2D Memcpy Async Failed ["+msg+"]", stat );
 }
 
+void CUDABackend::check_error_(std::string msg) {
+  GAUXC_CUDA_ERROR("CUDA Failed ["+msg+"]", cudaGetLastError());
+}
 
 
 std::unique_ptr<DeviceBackend> make_device_backend() {
