@@ -12,6 +12,8 @@ struct Scheme1DataBase : public XCDeviceAoSData {
   using base_type::device_buffer_t;
   using shell_pair = ShellPair<double>;
 
+  static constexpr int points_per_subtask = 256;
+
   struct scheme1_data {
     double*  dist_scratch_device = nullptr;
     double*  dist_nearest_device = nullptr;
@@ -50,11 +52,14 @@ struct Scheme1DataBase : public XCDeviceAoSData {
   struct task_to_shell_pair_data {
     TaskToShellPairDevice* task_to_shell_pair_device;
 
+    // Each task has their own copy
     int32_t* task_shell_linear_idx_device = nullptr;
     int32_t* task_shell_off_row_device = nullptr;
     int32_t* task_shell_off_col_device = nullptr;
 
     std::array<int32_t, 4>* subtask_device = nullptr;
+
+    // Reused for all tasks. Indexed by linear idx
     int32_t* nprim_pairs_device = nullptr;
     shell_pair** sp_ptr_device = nullptr;
     double* sp_X_AB_device = nullptr;

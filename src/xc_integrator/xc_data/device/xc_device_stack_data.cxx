@@ -153,7 +153,7 @@ void XCDeviceStackData::allocate_static_data_exc_grad( int32_t nbf, int32_t nshe
 }
 
 
-void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells ) {
+void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells, int32_t max_l ) {
 
   if( allocated_terms.exx ) 
     GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXX");
@@ -161,6 +161,7 @@ void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells )
   // Save state
   global_dims.nshells = nshells;
   global_dims.nbf     = nbf; 
+  global_dims.max_l   = max_l; 
 
   // Allocate static memory with proper alignment
   buffer_adaptor mem( dynmem_ptr, dynmem_sz );

@@ -36,9 +36,19 @@ void Scheme1DataBase::reset_allocations() {
 }
 
 size_t Scheme1DataBase::get_static_mem_requirement() {
+  size_t size = 0;
+
   const size_t nsp = (global_dims.nshells*(global_dims.nshells+1))/2;
-  return global_dims.nshells * sizeof(ShellToTaskDevice) +
-    nsp * sizeof(ShellPairToTaskDevice);
+  size += 
+    // Shell Pair map
+    global_dims.nshells * sizeof(ShellToTaskDevice) +
+    nsp * sizeof(ShellPairToTaskDevice) +
+    // Task Map
+    nsp * sizeof(int32_t) +      // nprim_pairs
+    nsp * sizeof(shell_pair*) +  // shell_pair pointer
+    nsp * 3 * sizeof(double);    // X_AB, Y_AB, Z_AB
+
+  return size;
 }
 
 
@@ -101,6 +111,11 @@ size_t Scheme1DataBase::get_mem_req( integrator_term_tracker terms,
   const auto& shell_list_cou = task.cou_screening.shell_list;
   const size_t nshells_bfn  = shell_list_bfn.size();
   const size_t nshells_cou  = shell_list_cou.size();
+
+  const int max_l = global_dims.max_l;
+  const size_t n_sp_types = (max_l+1) * (max_l+1); 
+  const size_t n_sp_types_with_diag = n_sp_types + (max_l+1); 
+
   base_size += 
     // Weights specific memory
     reqt.grid_to_center_dist_scr_size(ldatoms, npts) * sizeof(double)  +
@@ -114,13 +129,19 @@ size_t Scheme1DataBase::get_mem_req( integrator_term_tracker terms,
     reqt.shell_to_task_off_bfn_size(nshells_bfn)          * sizeof(int32_t) +
     reqt.shell_pair_to_task_idx_cou_size(nshells_cou)     * sizeof(int32_t) +
     reqt.shell_pair_to_task_row_off_cou_size(nshells_cou) * sizeof(int32_t) +
-    reqt.shell_pair_to_task_col_off_cou_size(nshells_cou) * sizeof(int32_t) ;
+    reqt.shell_pair_to_task_col_off_cou_size(nshells_cou) * sizeof(int32_t) +
+
+    // Task to shell pair map
+    reqt.task_to_shell_pair_cou_size() * n_sp_types_with_diag * sizeof(TaskToShellPairDevice) +
+    reqt.task_to_shell_pair_col_off_cou_size(nshells_cou) * sizeof(int32_t) +
+    reqt.task_to_shell_pair_row_off_cou_size(nshells_cou) * sizeof(int32_t) +
+    reqt.task_to_shell_pair_idx_cou_size(nshells_cou) * sizeof(int32_t) + 
+    reqt.task_to_shell_pair_cou_subtask_size(npts, 256) * sizeof(std::array<int32_t, 4>);
 
 #endif
 
   //std::cout << "MEM REQ: " << base_size << std::endl;
-  // TODO just overallocating for task->shell-pair for now
-  return base_size * 4;
+  return base_size;
 }
 
 
@@ -229,6 +250,7 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
   // Compute total dimensions for shell(pair) lists
   total_nshells_bfn_task_batch       = 0; 
   total_nshells_cou_sqlt_task_batch  = 0; 
+  size_t num_subtasks = 0;
   for( auto it = task_begin; it != task_end; ++it ) {
     const auto& shell_list_bfn  = it->bfn_screening.shell_list;
     const size_t nshells_bfn  = shell_list_bfn.size();
@@ -238,6 +260,8 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
     const size_t nshells_cou  = shell_list_cou.size();
     const size_t nshells_cou_sqlt = (nshells_cou*(nshells_cou+1))/2;
     total_nshells_cou_sqlt_task_batch  += nshells_cou_sqlt;
+
+    num_subtasks += util::div_ceil(it->npts, points_per_subtask);
   }
 
   // Shell lists and offs (bfn)
@@ -273,12 +297,10 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
     shell_pair_to_task_stack.shell_pair_to_task_device =
       mem.aligned_alloc<ShellPairToTaskDevice>( nsp, csl );
 
-
-
     const size_t ntasks = std::distance(task_begin, task_end);
-    const int max_l = 2;
-    const size_t n_sp_types = (max_l+1) * (max_l+1);  // TODO compute using maxl
-    const size_t n_sp_types_with_diag = n_sp_types + (max_l+1);  // TODO compute using maxl
+    const int max_l = global_dims.max_l;
+    const size_t n_sp_types = (max_l+1) * (max_l+1); 
+    const size_t n_sp_types_with_diag = n_sp_types + (max_l+1); 
     task_to_shell_pair_stack.task_to_shell_pair_device = 
       mem.aligned_alloc<TaskToShellPairDevice>( ntasks * n_sp_types_with_diag, csl );
 
@@ -289,9 +311,8 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
     task_to_shell_pair_stack.task_shell_off_col_device = 
       mem.aligned_alloc<int32_t>( total_nshells_cou_sqlt_task_batch, csl);
 
-    // TODO Find a better way to allocate this
     task_to_shell_pair_stack.subtask_device = 
-      mem.aligned_alloc<std::array<int32_t, 4>>( ntasks * 16, 16, csl );
+      mem.aligned_alloc<std::array<int32_t, 4>>( num_subtasks, 16, csl );
 
     task_to_shell_pair_stack.nprim_pairs_device = 
       mem.aligned_alloc<int32_t>( nsp, 16, csl );
@@ -1268,9 +1289,8 @@ void Scheme1DataBase::pack_and_send(
       const auto itask = std::distance( task_begin, it );
 
       // Construct the subtasks
-      constexpr int kSubtaskSize = 256;
-      for (int subtask_i = 0; subtask_i < it->npts; subtask_i += kSubtaskSize) {
-        subtask.push_back({itask, subtask_i, std::min(it->npts, subtask_i+kSubtaskSize), 0});
+      for (int subtask_i = 0; subtask_i < it->npts; subtask_i += points_per_subtask) {
+        subtask.push_back({itask, subtask_i, std::min(it->npts, subtask_i+points_per_subtask), 0});
       }
 
       // Setup ShellPair offset data
