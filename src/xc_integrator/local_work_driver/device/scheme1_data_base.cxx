@@ -1527,7 +1527,7 @@ void Scheme1DataBase::pack_and_send(
   auto snd_st = hrt_t::now();
   device_backend_->master_queue_synchronize(); 
   auto snd_en = hrt_t::now();
-  std::cout << "SND_WAIT = " << dur_t(snd_en-snd_st).count();
+  std::cout << "SND_WAIT = " << dur_t(snd_en-snd_st).count() << std::endl;
 }
 
 

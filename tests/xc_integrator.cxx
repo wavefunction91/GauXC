@@ -18,6 +18,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   size_t quad_pad_value,
   bool check_grad,
   bool check_integrate_den,
+  bool check_k,
   std::string integrator_kernel = "Default",  
   std::string reduction_kernel  = "Default",
   std::string lwd_kernel        = "Default" ) {
@@ -26,9 +27,10 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   using matrix_type = Eigen::MatrixXd;
   Molecule mol;
   BasisSet<double> basis;
-  matrix_type P, VXC_ref;
+  matrix_type P, VXC_ref, K_ref;
   double EXC_ref;
   std::vector<double> EXC_GRAD_ref;
+  bool has_k = false, has_exc_grad = false;
   {
     read_hdf5_record( mol,   reference_file, "/MOLECULE" );
     read_hdf5_record( basis, reference_file, "/BASIS"    );
@@ -46,10 +48,19 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     dset = file.getDataSet("/EXC");
     dset.read( &EXC_ref );
 
-    EXC_GRAD_ref.resize( 3*mol.size() );
-    dset = file.getDataSet("/EXC_GRAD");
-    dset.read( EXC_GRAD_ref.data() );
+    has_exc_grad = file.exist("/EXC_GRAD");
+    if( has_exc_grad ) {
+      EXC_GRAD_ref.resize( 3*mol.size() );
+      dset = file.getDataSet("/EXC_GRAD");
+      dset.read( EXC_GRAD_ref.data() );
+    }
     
+    has_k = file.exist("/K");
+    if(has_k) {
+        K_ref = matrix_type(dims[0], dims[1]);
+        dset = file.getDataSet("/K");
+        dset.read( K_ref.data() );
+    }
   }
 
 
@@ -106,13 +117,19 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
 
   // Check EXC Grad
-  if( check_grad ) {
+  if( check_grad and has_exc_grad ) {
     auto EXC_GRAD = integrator.eval_exc_grad( P );
     using map_type = Eigen::Map<Eigen::MatrixXd>;
     map_type EXC_GRAD_ref_map( EXC_GRAD_ref.data(), mol.size(), 3 );
     map_type EXC_GRAD_map( EXC_GRAD.data(), mol.size(), 3 );
     auto EXC_GRAD_diff_nrm = (EXC_GRAD_ref_map - EXC_GRAD_map).norm();
     CHECK( EXC_GRAD_diff_nrm / std::sqrt(3.0*mol.size()) < 1e-10 );
+  }
+
+  // Check K
+  if( has_k and check_k ) {
+    auto K = integrator.eval_exx( P );
+    CHECK( (K - K_ref).norm() / basis.nbf() < 1e-7 );
   }
 
 }
@@ -128,25 +145,27 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func) {
 #ifdef GAUXC_ENABLE_HOST
   SECTION( "Host" ) {
     test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
-      1, true, true );
+      1, true, true, true );
   }
 #endif
 
 #ifdef GAUXC_ENABLE_DEVICE
   SECTION( "Device" ) {
     bool check_grad = true;
+    bool check_k    = true;
     #ifdef GAUXC_ENABLE_HIP
     check_grad = false;
+    check_k    = false;
     #endif
     SECTION( "Incore - MPI Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
-        reference_file, func, 32, check_grad, true, "Default" );
+        reference_file, func, 32, check_grad, true, check_grad, "Default" );
     }
 
     #ifdef GAUXC_ENABLE_MAGMA
     SECTION( "Incore - MPI Reduction - MAGMA" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
-        reference_file, func, 32, false, true, "Default", "Default", 
+        reference_file, func, 32, false, true, false, "Default", "Default", 
         "Scheme1-MAGMA" );
     }
     #endif
@@ -154,7 +173,7 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func) {
     #ifdef GAUXC_ENABLE_CUTLASS
     SECTION( "Incore - MPI Reduction - CUTLASS" ) {
       test_xc_integrator( ExecutionSpace::Device, rt, 
-        reference_file, func, 32, false, "Default", "Default", "Scheme1-CUTLASS" );
+        reference_file, func, 32, false, true, false, "Default", "Default", "Scheme1-CUTLASS" );
     }
     #endif
 
@@ -162,13 +181,13 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func) {
     #ifdef GAUXC_ENABLE_NCCL
     SECTION( "Incore - NCCL Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
-        reference_file, func, 32, false, false, "Default", "NCCL" );
+        reference_file, func, 32, false, false, false, "Default", "NCCL" );
     }
     #endif
 
     SECTION( "ShellBatched" ) {
       test_xc_integrator( ExecutionSpace::Device, rt, 
-        reference_file, func, 32, false, false, "ShellBatched" );
+        reference_file, func, 32, false, false, false, "ShellBatched" );
     }
   }
 #endif
@@ -189,4 +208,8 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_pbe0_cc-pvdz_ufg_ssf.hdf5", ExchCXX::Functional::PBE0 );
   }
 
+  // sn-LinK Test
+  SECTION( "Benzene / PBE0 / 6-31G(d)" ) {
+    test_integrator(GAUXC_REF_DATA_PATH "/benzene_631gd_pbe0_ufg.hdf5", ExchCXX::Functional::PBE0 );
+  }
 }
