@@ -19,7 +19,7 @@
 namespace XGPU {
   void integral_0_task_batched(
     size_t ntasks, size_t nsubtask,
-    size_t max_nsp,
+    int max_primpairs, size_t max_nsp,
     GauXC::XCDeviceTask*                device_tasks,
     const GauXC::TaskToShellPairDevice* task2sp,
     const std::array<int32_t, 4>*  subtasks,
@@ -33,7 +33,7 @@ namespace XGPU {
 
   void integral_1_task_batched(
     size_t ntasks, size_t nsubtask,
-    size_t max_nsp,
+    int max_primpairs, size_t max_nsp,
     GauXC::XCDeviceTask*                device_tasks,
     const GauXC::TaskToShellPairDevice* task2sp,
     const std::array<int32_t, 4>*  subtasks,
@@ -47,7 +47,7 @@ namespace XGPU {
 
   void integral_2_task_batched(
     size_t ntasks, size_t nsubtask,
-    size_t max_nsp,
+    int max_primpairs, size_t max_nsp,
     GauXC::XCDeviceTask*                device_tasks,
     const GauXC::TaskToShellPairDevice* task2sp,
     const std::array<int32_t, 4>*  subtasks,
@@ -63,7 +63,7 @@ namespace XGPU {
   void integral_0_0_task_batched(
         size_t ntasks,
         size_t nsubtasks,
-        size_t max_nsp,
+        int max_primpairs, size_t max_nsp,
         GauXC::XCDeviceTask*                device_tasks,
         const GauXC::TaskToShellPairDevice* task2sp,
         const std::array<int32_t, 4>*  subtasks,
@@ -86,7 +86,7 @@ namespace XGPU {
   void integral_1_1_task_batched(
         size_t ntasks,
         size_t nsubtasks,
-        size_t max_nsp,
+        int max_primpairs, size_t max_nsp,
         GauXC::XCDeviceTask*                device_tasks,
         const GauXC::TaskToShellPairDevice* task2sp,
         const std::array<int32_t, 4>*  subtasks,
@@ -109,7 +109,7 @@ namespace XGPU {
   void integral_2_2_task_batched(
         size_t ntasks,
         size_t nsubtasks,
-        size_t max_nsp,
+        int max_primpairs, size_t max_nsp,
         GauXC::XCDeviceTask*                device_tasks,
         const GauXC::TaskToShellPairDevice* task2sp,
         const std::array<int32_t, 4>*  subtasks,
@@ -133,7 +133,7 @@ namespace XGPU {
         bool swap,
         size_t ntasks,
         size_t nsubtasks,
-        size_t max_nsp,
+        int max_primpairs, size_t max_nsp,
         GauXC::XCDeviceTask*                device_tasks,
         const GauXC::TaskToShellPairDevice* task2sp,
         const std::array<int32_t, 4>*  subtasks,
@@ -158,7 +158,7 @@ namespace XGPU {
         bool swap,
         size_t ntasks,
         size_t nsubtasks,
-        size_t max_nsp,
+        int max_primpairs, size_t max_nsp,
         GauXC::XCDeviceTask*                device_tasks,
         const GauXC::TaskToShellPairDevice* task2sp,
         const std::array<int32_t, 4>*  subtasks,
@@ -183,7 +183,7 @@ namespace XGPU {
         bool swap,
         size_t ntasks,
         size_t nsubtasks,
-        size_t max_nsp,
+        int max_primpairs, size_t max_nsp,
         GauXC::XCDeviceTask*                device_tasks,
         const GauXC::TaskToShellPairDevice* task2sp,
         const std::array<int32_t, 4>*  subtasks,
@@ -761,7 +761,8 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
 #if USE_TASK_MAP
     XGPU::integral_0_task_batched(
-      tasks.size(), data->subtask.size(), 0,
+      tasks.size(), data->subtask.size(),
+      data->l_batch_diag_task_to_shell_pair_device[0].max_prim_pairs, 0,
       data->aos_stack.device_tasks,
       data->l_batch_diag_task_to_shell_pair_device[0].task_to_shell_pair_device,
       data->task_to_shell_pair_stack.subtask_device,
@@ -774,7 +775,8 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
     );
     data->device_backend_->check_error("integral_0_task_batched");
     XGPU::integral_1_task_batched(
-      tasks.size(), data->subtask.size(), 0,
+      tasks.size(), data->subtask.size(),
+      data->l_batch_diag_task_to_shell_pair_device[1].max_prim_pairs, 0,
       data->aos_stack.device_tasks,
       data->l_batch_diag_task_to_shell_pair_device[1].task_to_shell_pair_device,
       data->task_to_shell_pair_stack.subtask_device,
@@ -787,7 +789,8 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
     );
     data->device_backend_->check_error("integral_1_task_batched");
     XGPU::integral_2_task_batched(
-      tasks.size(), data->subtask.size(), 0,
+      tasks.size(), data->subtask.size(),
+      data->l_batch_diag_task_to_shell_pair_device[2].max_prim_pairs, 0,
       data->aos_stack.device_tasks,
       data->l_batch_diag_task_to_shell_pair_device[2].task_to_shell_pair_device,
       data->task_to_shell_pair_stack.subtask_device,
@@ -833,7 +836,8 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
 #if USE_TASK_MAP
     XGPU::integral_0_0_task_batched(
-      tasks.size(), data->subtask.size(), 0,
+      tasks.size(), data->subtask.size(),
+      data->l_batch_task_to_shell_pair_device[0].max_prim_pairs, 0,
       data->aos_stack.device_tasks,
       data->l_batch_task_to_shell_pair_device[0].task_to_shell_pair_device,
       data->task_to_shell_pair_stack.subtask_device,
@@ -856,7 +860,8 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
 #if USE_TASK_MAP
     XGPU::integral_1_1_task_batched(
-      tasks.size(), data->subtask.size(), 0,
+      tasks.size(), data->subtask.size(),
+      data->l_batch_task_to_shell_pair_device[4].max_prim_pairs, 0,
       data->aos_stack.device_tasks,
       data->l_batch_task_to_shell_pair_device[4].task_to_shell_pair_device,
       data->task_to_shell_pair_stack.subtask_device,
@@ -879,7 +884,8 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
 #if USE_TASK_MAP
     XGPU::integral_2_2_task_batched(
-      tasks.size(), data->subtask.size(), 0,
+      tasks.size(), data->subtask.size(),
+      data->l_batch_task_to_shell_pair_device[8].max_prim_pairs, 0,
       data->aos_stack.device_tasks,
       data->l_batch_task_to_shell_pair_device[8].task_to_shell_pair_device,
       data->task_to_shell_pair_stack.subtask_device,
@@ -902,7 +908,8 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
 #if USE_TASK_MAP
     XGPU::integral_1_0_task_batched( true,
-      tasks.size(), data->subtask.size(), 0,
+      tasks.size(), data->subtask.size(),
+      data->l_batch_task_to_shell_pair_device[1].max_prim_pairs, 0,
       data->aos_stack.device_tasks,
       data->l_batch_task_to_shell_pair_device[1].task_to_shell_pair_device,
       data->task_to_shell_pair_stack.subtask_device,
@@ -925,7 +932,8 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
 #if USE_TASK_MAP
     XGPU::integral_1_0_task_batched( false,
-      tasks.size(), data->subtask.size(), 0,
+      tasks.size(), data->subtask.size(),
+      data->l_batch_task_to_shell_pair_device[3].max_prim_pairs, 0,
       data->aos_stack.device_tasks,
       data->l_batch_task_to_shell_pair_device[3].task_to_shell_pair_device,
       data->task_to_shell_pair_stack.subtask_device,
@@ -948,7 +956,8 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
 #if USE_TASK_MAP
     XGPU::integral_2_0_task_batched( true,
-      tasks.size(), data->subtask.size(), 0,
+      tasks.size(), data->subtask.size(),
+      data->l_batch_task_to_shell_pair_device[2].max_prim_pairs, 0,
       data->aos_stack.device_tasks,
       data->l_batch_task_to_shell_pair_device[2].task_to_shell_pair_device,
       data->task_to_shell_pair_stack.subtask_device,
@@ -971,7 +980,8 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
 #if USE_TASK_MAP
     XGPU::integral_2_0_task_batched( false,
-      tasks.size(), data->subtask.size(), 0,
+      tasks.size(), data->subtask.size(),
+      data->l_batch_task_to_shell_pair_device[6].max_prim_pairs, 0,
       data->aos_stack.device_tasks,
       data->l_batch_task_to_shell_pair_device[6].task_to_shell_pair_device,
       data->task_to_shell_pair_stack.subtask_device,
@@ -994,7 +1004,8 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
 #if USE_TASK_MAP
     XGPU::integral_2_1_task_batched( true,
-      tasks.size(), data->subtask.size(), 0,
+      tasks.size(), data->subtask.size(),
+      data->l_batch_task_to_shell_pair_device[5].max_prim_pairs, 0,
       data->aos_stack.device_tasks,
       data->l_batch_task_to_shell_pair_device[5].task_to_shell_pair_device,
       data->task_to_shell_pair_stack.subtask_device,
@@ -1017,7 +1028,8 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
 #if USE_TASK_MAP
     XGPU::integral_2_1_task_batched( false,
-      tasks.size(), data->subtask.size(), 0,
+      tasks.size(), data->subtask.size(),
+      data->l_batch_task_to_shell_pair_device[7].max_prim_pairs, 0,
       data->aos_stack.device_tasks,
       data->l_batch_task_to_shell_pair_device[7].task_to_shell_pair_device,
       data->task_to_shell_pair_stack.subtask_device,

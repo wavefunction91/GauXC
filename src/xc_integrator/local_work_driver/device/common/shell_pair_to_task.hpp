@@ -74,6 +74,7 @@ struct AngularMomentumTaskToShellPairBatchHost {
   std::vector<TaskToShellPairHost> task_to_shell_pair;
 
   int lA, lB;
+  int max_prim_pairs;
 
   void clear() {
     task_to_shell_pair.clear();
@@ -84,6 +85,7 @@ struct AngularMomentumTaskToShellPairBatchHost {
 struct AngularMomentumTaskToShellPairBatch {
   TaskToShellPairDevice* task_to_shell_pair_device;
 
+  int max_prim_pairs;
   int lA, lB;
 };
 

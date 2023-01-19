@@ -4792,7 +4792,7 @@ dev_integral_2_2_task_batched(
 
   void integral_2_2_task_batched(
     size_t ntasks, size_t nsubtask,
-    size_t max_nsp,
+    int max_primpairs, size_t max_nsp,
     GauXC::XCDeviceTask*                device_tasks,
     const GauXC::TaskToShellPairDevice* task2sp,
     const std::array<int32_t, 4>*  subtasks,

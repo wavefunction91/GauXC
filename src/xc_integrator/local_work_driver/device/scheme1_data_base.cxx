@@ -1248,6 +1248,7 @@ void Scheme1DataBase::pack_and_send(
         batch.task_to_shell_pair.resize(ntasks);
         batch.lA = l_i;
         batch.lB = l_j;
+        batch.max_prim_pairs = 0;
       }
 
       // Diag terms
@@ -1257,6 +1258,7 @@ void Scheme1DataBase::pack_and_send(
         batch.task_to_shell_pair.resize(ntasks);
         batch.lA = l_i;
         batch.lB = l_i;
+        batch.max_prim_pairs = 0;
       }
 
       // Generate shell pair device buffer
@@ -1317,11 +1319,21 @@ void Scheme1DataBase::pack_and_send(
           auto& ttsp = l_batch_task_to_shell_pair[type_index].task_to_shell_pair[itask];
           ttsp.nsp++;
           task_map_aggregate_length++;
+
+          l_batch_task_to_shell_pair[type_index].max_prim_pairs = std::max(
+            l_batch_task_to_shell_pair[type_index].max_prim_pairs,
+            nprim_pairs_host[idx]);
+
         } else {
           const int type_index = lA;
           auto& ttsp = l_batch_diag_task_to_shell_pair[type_index].task_to_shell_pair[itask];
           ttsp.nsp++;
           task_map_aggregate_length++;
+
+          l_batch_diag_task_to_shell_pair[type_index].max_prim_pairs = std::max(
+            l_batch_diag_task_to_shell_pair[type_index].max_prim_pairs,
+            nprim_pairs_host[idx]);
+
         }
       }
 
@@ -1498,6 +1510,7 @@ void Scheme1DataBase::pack_and_send(
       map.task_to_shell_pair_device = task_to_shell_pair_stack.task_to_shell_pair_device + l_ij * ntasks;
       map.lA = l_i;
       map.lB = l_j;
+      map.max_prim_pairs = l_batch_task_to_shell_pair[l_ij].max_prim_pairs;
     }
 
     l_batch_diag_task_to_shell_pair_device.clear();
@@ -1508,6 +1521,7 @@ void Scheme1DataBase::pack_and_send(
       map.task_to_shell_pair_device = task_to_shell_pair_stack.task_to_shell_pair_device + offset;
       map.lA = l_i;
       map.lB = l_i;
+      map.max_prim_pairs = l_batch_diag_task_to_shell_pair[l_i].max_prim_pairs;
     }
     }
 

@@ -3,7 +3,12 @@
 #include "config_obara_saika.hpp"
 #include "integral_0_0.hu"
 
+#include "device_specific/cuda_device_constants.hpp"
+
 namespace XGPU {
+
+using namespace GauXC;
+
   __inline__ __device__ void dev_integral_0_0_driver(size_t npts, 
 				   const double *points_x,
 				   const double *points_y,
@@ -318,18 +323,13 @@ namespace XGPU {
 
   }
    
-#define K00_WARPSIZE 32
-#define K00_NUMWARPS 8
-#define K00_NUMTHREADS (K00_WARPSIZE * K00_NUMWARPS)
-#define K00_USESHARED 1
-#define K00_MAX_PRIMPAIRS 32
-
+template<bool use_shared, int max_primpairs, int points_per_subtask>
 __inline__ __device__ void dev_integral_0_0_task(
   const int i,
   const int npts,
   const int nprim_pairs,
   // Point data
-  double4 (&s_task_data)[K00_NUMTHREADS],
+  double4 (&s_task_data)[points_per_subtask],
   // Shell Pair Data
   const shell_pair* sp,
   // Output Data
@@ -342,30 +342,32 @@ __inline__ __device__ void dev_integral_0_0_task(
   // Other
   const double *boys_table) {
 
+  static constexpr int num_warps = points_per_subtask / cuda::warp_size;
+
+  const int laneId = threadIdx.x % cuda::warp_size;
+  const int warpId = threadIdx.x / cuda::warp_size;
 
   const auto& prim_pairs = sp->prim_pairs();
+  __shared__ GauXC::PrimitivePair<double> s_prim_pairs[num_warps * max_primpairs];
 
-  const int laneId = threadIdx.x % K00_WARPSIZE;
 
-#if K00_USESHARED
-  // Load Primpairs to shared
-  __shared__ GauXC::PrimitivePair<double> s_prim_pairs[K00_NUMWARPS][K00_MAX_PRIMPAIRS];
+  if constexpr (use_shared) {
+      // Load Primpairs to shared
+      const int32_t* src = (int32_t*) &(prim_pairs[0]);
+      int32_t* dst = (int32_t*) &(s_prim_pairs[warpId * max_primpairs]);
+      const int num_transfers = nprim_pairs * sizeof(GauXC::PrimitivePair<double>) / sizeof(int32_t);
 
-  const int warpId = (threadIdx.x / K00_WARPSIZE);
-  const int32_t* src = (int32_t*) &(prim_pairs[0]);
-  int32_t* dst = (int32_t*) &(s_prim_pairs[warpId][0]);
-
-  for (int i = laneId; i < nprim_pairs * sizeof(GauXC::PrimitivePair<double>) / sizeof(int32_t); i+=K00_WARPSIZE) {
-    dst[i] = src[i]; 
+      for (int i = laneId; i < num_transfers; i += cuda::warp_size) {
+        dst[i] = src[i]; 
+      }
+      __syncwarp();
   }
-  __syncwarp();
-#endif
 
   // Loop over points in shared in batches of 32
-  for (int i = 0; i < K00_NUMTHREADS / K00_WARPSIZE; i++) {
+  for (int i = 0; i <  num_warps; i++) {
     double temp = SCALAR_ZERO();
 
-    const int pointIndex = i * K00_WARPSIZE + laneId;
+    const int pointIndex = i * cuda::warp_size + laneId;
 
     if (pointIndex < npts) {
 
@@ -375,20 +377,16 @@ __inline__ __device__ void dev_integral_0_0_task(
       const double weight = s_task_data[pointIndex].w;
 
       for (int ij = 0; ij < nprim_pairs; ij++) {
-#if K00_USESHARED
-        double RHO = s_prim_pairs[warpId][ij].gamma;
-        double xP = s_prim_pairs[warpId][ij].P.x;
-        double yP = s_prim_pairs[warpId][ij].P.y;
-        double zP = s_prim_pairs[warpId][ij].P.z;
-        double eval = s_prim_pairs[warpId][ij].K_coeff_prod;
-#else
-        double RHO = prim_pairs[ij].gamma;
-        double xP = prim_pairs[ij].P.x;
-        double yP = prim_pairs[ij].P.y;
-        double zP = prim_pairs[ij].P.z;
-        double eval = prim_pairs[ij].K_coeff_prod;
-#endif
-      
+        const GauXC::PrimitivePair<double>* prim_pairs_use = nullptr; 
+        if constexpr (use_shared) prim_pairs_use = &(s_prim_pairs[warpId * max_primpairs]);
+        else                      prim_pairs_use = &(prim_pairs[0]);
+
+        double RHO = prim_pairs_use[ij].gamma;
+        double xP = prim_pairs_use[ij].P.x;
+        double yP = prim_pairs_use[ij].P.y;
+        double zP = prim_pairs_use[ij].P.z;
+        double eval = prim_pairs_use[ij].K_coeff_prod;
+     
         // Evaluate T Values
         const SCALAR_TYPE X_PC = SCALAR_SUB(xP, point_x);
         const SCALAR_TYPE Y_PC = SCALAR_SUB(yP, point_y);
@@ -435,11 +433,9 @@ __inline__ __device__ void dev_integral_0_0_task(
   __syncwarp();
 }
 
-
-
-
+template<bool use_shared, int max_primpairs, int points_per_subtask>
 __global__ void 
-__launch_bounds__(K00_NUMTHREADS, 1)
+__launch_bounds__(points_per_subtask, 1)
 dev_integral_0_0_task_batched(
   int ntask, int nsubtask,
   GauXC::XCDeviceTask*                device_tasks,
@@ -449,9 +445,11 @@ dev_integral_0_0_task_batched(
   shell_pair** sp_ptr_device,
   double *boys_table) {
 
-  __shared__ double4 s_task_data[K00_NUMTHREADS];
+  static constexpr int num_warps = points_per_subtask / cuda::warp_size;
 
-  const int warpId = threadIdx.x / K00_WARPSIZE;
+  __shared__ double4 s_task_data[points_per_subtask];
+
+  const int warpId = threadIdx.x / cuda::warp_size;
   
   const int i_subtask = blockIdx.x;
   const int i_task = subtasks[i_subtask].x;
@@ -470,7 +468,6 @@ dev_integral_0_0_task_batched(
 
   const auto nsp = task2sp[i_task].nsp;
 
-
   const int npts_block = (point_count + blockDim.x - 1) / blockDim.x;
 
   for (int i_block = 0; i_block < npts_block; i_block++) {
@@ -488,7 +485,7 @@ dev_integral_0_0_task_batched(
     s_task_data[threadIdx.x].w = weight;
     __syncthreads();
 
-    for (int j = K00_NUMWARPS*blockIdx.y+warpId; j < nsp; j+=K00_NUMWARPS*gridDim.y) {
+    for (int j = num_warps*blockIdx.y+warpId; j < nsp; j+=num_warps*gridDim.y) {
       const auto i_off = task2sp[i_task].task_shell_off_row_device[j];
       const auto j_off = task2sp[i_task].task_shell_off_col_device[j];
 
@@ -496,7 +493,7 @@ dev_integral_0_0_task_batched(
       const auto* sp = sp_ptr_device[index];
       const auto nprim_pairs = nprim_pairs_device[index];
 
-      dev_integral_0_0_task(
+      dev_integral_0_0_task<use_shared, max_primpairs, points_per_subtask>(
         i, point_count, nprim_pairs,
         s_task_data,
         sp,
@@ -514,7 +511,7 @@ dev_integral_0_0_task_batched(
 
   void integral_0_0_task_batched(
     size_t ntasks, size_t nsubtask,
-    size_t max_nsp,
+    int max_primpairs, size_t max_nsp,
     GauXC::XCDeviceTask*                device_tasks,
     const GauXC::TaskToShellPairDevice* task2sp,
     const std::array<int32_t, 4>*  subtasks,
@@ -527,18 +524,34 @@ dev_integral_0_0_task_batched(
     cudaStream_t stream) {
 
     size_t xy_max = (1ul << 16) - 1;
-    int nthreads = K00_NUMTHREADS;
+    int nthreads = cuda::obara_saika::points_per_subtask;
+
     int nblocks_x = nsubtask;
     int nblocks_y = 8; //std::min(max_nsp,  xy_max);
     int nblocks_z = 1;
     dim3 nblocks(nblocks_x, nblocks_y, nblocks_z);
 
-    dev_integral_0_0_task_batched<<<nblocks, nthreads, 0, stream>>>(
-      ntasks, nsubtask,
-      device_tasks, task2sp, 
-      (int4*) subtasks, nprim_pairs_device, sp_ptr_device,
-      boys_table );
-
+    if (max_primpairs <= cuda::obara_saika::max_primpairs) {
+      dev_integral_0_0_task_batched<
+        cuda::obara_saika::k00_use_shared, 
+        cuda::obara_saika::max_primpairs, 
+        cuda::obara_saika::points_per_subtask
+      ><<<nblocks, nthreads, 0, stream>>>(
+        ntasks, nsubtask,
+        device_tasks, task2sp, 
+        (int4*) subtasks, nprim_pairs_device, sp_ptr_device,
+        boys_table );
+    } else {
+      dev_integral_0_0_task_batched<
+        false, 
+        cuda::obara_saika::max_primpairs, 
+        cuda::obara_saika::points_per_subtask
+      ><<<nblocks, nthreads, 0, stream>>>(
+        ntasks, nsubtask,
+        device_tasks, task2sp, 
+        (int4*) subtasks, nprim_pairs_device, sp_ptr_device,
+        boys_table );
+    }
   }
 
 }
