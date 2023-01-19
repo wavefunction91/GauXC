@@ -7,8 +7,8 @@ list(APPEND CMAKE_MODULE_PATH ${GauXC_CMAKE_DIR}/linalg-cmake-modules )
 include(CMakeFindDependencyMacro)
 
 # Always Required Dependencies
+find_dependency( ExchCXX )
 find_dependency( IntegratorXX )
-find_dependency( ExchCXX      )
 find_dependency( OpenMP       )
 
 
@@ -18,12 +18,13 @@ set( GAUXC_ENABLE_MAGMA      @GAUXC_ENABLE_MAGMA@     )
 set( GAUXC_ENABLE_NCCL       @GAUXC_ENABLE_NCCL@      )
 set( GAUXC_ENABLE_CUTLASS    @GAUXC_ENABLE_CUTLASS@   )
 set( GAUXC_ENABLE_MPI        @GAUXC_ENABLE_MPI@       )
+set( GAUXC_ENABLE_OPENMP     @GAUXC_ENABLE_OPENMP@    )
 set( GAUXC_ENABLE_GAU2GRID   @GAUXC_ENABLE_GAU2GRID@  )
 set( GAUXC_ENABLE_HDF5       @GAUXC_ENABLE_HDF5@      )
 
 
 if( GAUXC_ENABLE_HOST )
-  find_dependency( LAPACK )
+  find_dependency( BLAS )
   #if( GAUXC_ENABLE_GAU2GRID )
   #  find_dependency( gau2grid )
   #endif()
@@ -38,6 +39,10 @@ if( GAUXC_ENABLE_CUDA )
   if( GAUXC_ENABLE_NCCL )
     find_dependency( NCCL )
   endif()
+endif()
+
+if( GAUXC_ENABLE_MPI )
+  find_dependency( MPI )
 endif()
 
 if( GAUXC_ENABLE_MPI )

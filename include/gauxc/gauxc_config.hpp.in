@@ -9,6 +9,7 @@
 #cmakedefine GAUXC_ENABLE_CUTLASS
 #cmakedefine GAUXC_ENABLE_GAU2GRID
 #cmakedefine GAUXC_ENABLE_HDF5
+#cmakedefine GAUXC_ENABLE_FAST_RSQRT
 
 #cmakedefine GAUXC_ENABLE_DEVICE
 

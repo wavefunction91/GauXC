@@ -1,7 +1,9 @@
 #include <gauxc/xc_integrator/local_work_driver.hpp>
 #include "host/reference_local_host_work_driver.hpp"
+#ifdef GAUXC_ENABLE_DEVICE
 #include "device/cuda/cuda_aos_scheme1.hpp"
 #include "device/hip/hip_aos_scheme1.hpp"
+#endif
 
 namespace GauXC {
 

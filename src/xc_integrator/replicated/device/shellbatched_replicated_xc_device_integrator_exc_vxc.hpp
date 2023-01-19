@@ -42,9 +42,10 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
   // Allocate Device memory
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
+  auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
   auto device_data_ptr = 
     this->timer_.time_op("XCIntegrator.DeviceAlloc",
-      [=](){ return lwd->create_device_data(); });
+      [&](){ return lwd->create_device_data(rt); });
 
   // Generate incore integrator instance, transfer ownership of LWD
   incore_integrator_type incore_integrator( this->func_, this->load_balancer_,
@@ -193,7 +194,7 @@ typename ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::incore_device_task
 
 
   auto nbe_comparator = []( const auto& task_a, const auto& task_b ) {
-    return task_a.nbe < task_b.nbe;
+    return task_a.bfn_screening.nbe < task_b.bfn_screening.nbe;
   };
 
   // Find task with largest NBE
@@ -201,7 +202,7 @@ typename ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::incore_device_task
     return std::max_element( task_begin, task_end, nbe_comparator );
   } );
 
-  const auto max_shell_list = max_task->shell_list; // copy for reset
+  const auto max_shell_list = max_task->bfn_screening.shell_list; // copy for reset
 
 
   // Init union shell list to max shell list outside of loop
@@ -262,7 +263,7 @@ typename ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::incore_device_task
     auto local_task_end = 
     this->timer_.time_op_accumulate("XCIntegrator.TaskIntersection", [&]() {
       return std::partition( search_st, search_en, [&](const auto& t) {
-        return util::integral_list_intersect( max_shell_list, t.shell_list,
+        return util::integral_list_intersect( max_shell_list, t.bfn_screening.shell_list,
                                         overlap_threshold );
       } );
     } );
@@ -272,8 +273,8 @@ typename ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::incore_device_task
     // Take union of shell list for all overlapping tasks
     this->timer_.time_op_accumulate("XCIntegrator.ShellListUnion",[&]() {
       for( auto task_it = search_st; task_it != local_task_end; ++task_it ) {
-        local_union_shell_set.insert( task_it->shell_list.begin(), 
-                                      task_it->shell_list.end() );
+        local_union_shell_set.insert( task_it->bfn_screening.shell_list.begin(), 
+                                      task_it->bfn_screening.shell_list.end() );
       }
     } );
 
@@ -312,7 +313,7 @@ typename ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::incore_device_task
   // Try to add additional tasks given current union list
   local_task_end = this->timer_.time_op_accumulate("XCIntegrator.SubtaskGeneration", [&]() {
     return std::partition( local_task_end, task_end, [&]( const auto& t ) {
-      return util::list_subset( union_shell_list, t.shell_list );
+      return util::list_subset( union_shell_list, t.bfn_screening.shell_list );
     } );
   } );
 
@@ -374,7 +375,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   this->timer_.time_op_accumulate("XCIntegrator.RecalcShellList",[&]() {
     for( auto _it = task_begin; _it != task_end; ++_it ) {
       auto union_list_idx = 0;
-      auto& cur_shell_list = _it->shell_list;
+      auto& cur_shell_list = _it->bfn_screening.shell_list;
       for( auto j = 0ul; j < cur_shell_list.size(); ++j ) {
         while( union_shell_list[union_list_idx] != cur_shell_list[j] )
           union_list_idx++;
@@ -422,8 +423,8 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   // Reset shell_list to be wrt full basis
   this->timer_.time_op_accumulate("XCIntegrator.ResetShellList",[&]() {
     for( auto _it = task_begin; _it != task_end; ++_it ) 
-    for( auto j = 0ul; j < _it->shell_list.size();  ++j  ) {
-      _it->shell_list[j] = union_shell_list[_it->shell_list[j]];
+    for( auto j = 0ul; j < _it->bfn_screening.shell_list.size();  ++j  ) {
+      _it->bfn_screening.shell_list[j] = union_shell_list[_it->bfn_screening.shell_list[j]];
     }
   });
 

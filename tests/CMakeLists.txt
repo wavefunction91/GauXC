@@ -7,7 +7,7 @@ if( NOT Catch2_FOUND )
   FetchContent_Declare(
     catch2
     GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG        v2.13.2
+    GIT_TAG        v2.13.10
   )
   
   set(CATCH_BUILD_TESTING OFF CACHE BOOL "Build SelfTest project" FORCE)
@@ -46,6 +46,7 @@ add_executable( gauxc_test
   collocation.cxx
   weights.cxx
   standards.cxx 
+  runtime.cxx
   basis/parse_basis.cxx
 )
 target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
@@ -65,6 +66,11 @@ add_executable( standalone_driver standalone_driver.cxx standards.cxx basis/pars
 target_link_libraries( standalone_driver PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
 target_include_directories( standalone_driver PRIVATE ${PROJECT_BINARY_DIR}/tests )
 target_include_directories( standalone_driver PRIVATE ${PROJECT_SOURCE_DIR}/tests )
+
+add_executable( grid_opt grid_opt.cxx standards.cxx basis/parse_basis.cxx ini_input.cxx )
+target_link_libraries( grid_opt PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
+target_include_directories( grid_opt PRIVATE ${PROJECT_BINARY_DIR}/tests )
+target_include_directories( grid_opt PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
 add_executable( conv_cereal_to_hdf5 conv_cereal_to_hdf5.cxx standards.cxx basis/parse_basis.cxx )
 target_link_libraries( conv_cereal_to_hdf5 PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )

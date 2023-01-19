@@ -6,9 +6,12 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
                                 std::ofstream& out_file, size_t ntask_save = 10 ) {
 
 
-  MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
+  auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
+  auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
+    BatchSize(512), RadialQuad::MuraKnowles, AtomicGridSizeDefault::FineGrid);
+
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
-  auto lb = lb_factory.get_instance(GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, mg, basis);
+  auto lb = lb_factory.get_instance( rt, mol, mg, basis);
   auto& tasks = lb.get_tasks();
 
 
@@ -18,14 +21,14 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
     auto& task = tasks[i];
 
     auto& pts  = task.points;
-    auto& mask = task.shell_list;
+    auto& mask = task.bfn_screening.shell_list;
 
     // Only keep first MAX_NPTS_CHECK points to save on space
     if( task.points.size() > MAX_NPTS_CHECK )
       task.points.erase( task.points.begin() + MAX_NPTS_CHECK, task.points.end() );
 
     const auto npts = task.points.size();
-    const auto nbf  = task.nbe;
+    const auto nbf  = task.bfn_screening.nbe;
 
     std::vector<double> eval   ( nbf * npts ),
                         deval_x( nbf * npts ),

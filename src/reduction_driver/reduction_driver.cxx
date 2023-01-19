@@ -37,12 +37,6 @@ bool ReductionDriver::takes_device_memory() const {
 }
 
 
-#ifdef GAUXC_ENABLE_MPI
-MPI_Comm ReductionDriver::comm() const {
-  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-  return pimpl_->comm();
-}
-#endif
 
 
 }

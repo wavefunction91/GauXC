@@ -1,6 +1,7 @@
 #pragma once
 #include "device/xc_device_aos_data.hpp"
 #include "device/common/shell_to_task.hpp"
+#include "device/common/shell_pair_to_task.hpp"
 
 namespace GauXC {
 
@@ -35,14 +36,33 @@ struct Scheme1DataBase : public XCDeviceAoSData {
     inline void reset(){ std::memset(this,0,sizeof(shell_to_task_data)); }
   };
 
-  size_t total_nshells_task_batch  = 0; ///< Sum of nshells for task batch
+  struct shell_pair_to_task_data {
+    ShellPairToTaskDevice* shell_pair_to_task_device;
+
+    int32_t* shell_pair_to_task_idx_device = nullptr;
+    int32_t* shell_pair_to_task_row_off_device = nullptr;
+    int32_t* shell_pair_to_task_col_off_device = nullptr;
+
+    inline void reset(){ std::memset(this,0,sizeof(shell_pair_to_task_data)); }
+  };
+
+  size_t total_nshells_bfn_task_batch  = 0; ///< Sum of nshells for task batch (bfn)
   scheme1_data       scheme1_stack;
   collocation_data   collocation_stack;
   shell_to_task_data shell_to_task_stack;
   std::vector<AngularMomentumShellToTaskBatch> l_batched_shell_to_task;
 
+  //size_t total_nshells_cou_task_batch  = 0; ///< Sum of nshells for task batch (cou)
+  size_t total_nshells_cou_sqlt_task_batch  = 0; ///< Sum of nshells for task batch (cou)
+  //collocation_data   coulomb_stack;
+  shell_pair_to_task_data shell_pair_to_task_stack;
+  std::vector<ShellPairToTaskHost> shell_pair_to_task;
+  std::vector<AngularMomentumShellPairToTaskBatch> 
+    l_batched_shell_pair_to_task_diag,
+    l_batched_shell_pair_to_task_off_diag;
+
   virtual ~Scheme1DataBase() noexcept;
-  Scheme1DataBase(std::unique_ptr<DeviceBackend>&& ptr);
+  Scheme1DataBase(const DeviceRuntimeEnvironment& rt);
 
   // Final overrides
   void add_extra_to_indirection(integrator_term_tracker, 
@@ -59,6 +79,7 @@ struct Scheme1DataBase : public XCDeviceAoSData {
   virtual void pack_and_send( integrator_term_tracker terms,
     host_task_iterator begin, host_task_iterator end, 
     const BasisSetMap& basis_map ) override;
+
 };
 
 }

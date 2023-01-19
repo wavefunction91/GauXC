@@ -4,9 +4,11 @@
 #include <memory>
 #include <gauxc/molmeta.hpp>
 #include <gauxc/basisset.hpp>
+#include <gauxc/basisset_map.hpp>
 #include <gauxc/xc_task.hpp>
 
 #include "device/xc_device_data.hpp"
+#include <gauxc/runtime_environment/fwd.hpp>
 
 namespace GauXC {
 namespace detail {
@@ -61,15 +63,20 @@ public:
   void eval_zmat_lda_vxc( XCDeviceData* );
   void eval_zmat_gga_vxc( XCDeviceData* );
 
+  void eval_exx_fmat( XCDeviceData* );
+  void eval_exx_gmat( XCDeviceData*, const BasisSetMap& );
+
   void inc_exc( XCDeviceData* );
   void inc_nel( XCDeviceData* );
   void inc_vxc( XCDeviceData* );
   void inc_exc_grad_lda( XCDeviceData* );
   void inc_exc_grad_gga( XCDeviceData* );
+  void inc_exx_k( XCDeviceData* );
 
   void symmetrize_vxc( XCDeviceData* );
+  void symmetrize_exx_k( XCDeviceData* );
 
-  std::unique_ptr<XCDeviceData> create_device_data();
+  std::unique_ptr<XCDeviceData> create_device_data(const DeviceRuntimeEnvironment&);
 
 private: 
 

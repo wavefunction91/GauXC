@@ -25,7 +25,7 @@ template <size_t N, typename T>
 bool cube_sphere_intersect( const T* lo, const T* up, const T* center, T rad ) {
 
   T dist = rad * rad;
-  for( int i = 0; i < N; ++i ) {
+  for( size_t i = 0; i < N; ++i ) {
     T r = 0.;
     if( center[i] < lo[i] )      r = lo[i] - center[i];
     else if( center[i] > up[i] ) r = center[i] - up[i];

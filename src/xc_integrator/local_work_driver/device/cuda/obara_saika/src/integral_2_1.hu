@@ -1,18 +1,31 @@
-#ifndef __MY_INTEGRAL_2_1
-#define __MY_INTEGRAL_2_1
+#pragma once
 
-__global__ void integral_2_1(size_t npts,
-                             shell_pair shpair,
-			     int np,
-			     prim_pair *prim_pairs,
-                             double *points,
-                             double *Xi,
-                             double *Xj,
-                             int ldX,
-                             double *Gi,
-                             double *Gj,
-                             int ldG, 
-                             double *weights,
-                             double *boys_table);
+#include "../include/gpu/integral_data_types.hpp"
+namespace XGPU {
+  void integral_2_1(double X_AB,
+		    double Y_AB,
+		    double Z_AB,
+		    size_t npts,
+		    double *_points_x,
+		    double *_points_y,
+		    double *_points_z,
+        shell_pair* sp,
+		    double *Xi,
+		    double *Xj,
+		    int ldX,
+		    double *Gi,
+		    double *Gj,
+		    int ldG, 
+		    double *weights,
+		    double *boys_table,
+        cudaStream_t stream);
 
-#endif
+  void integral_2_1_batched(bool swap, size_t ntask_sp,
+        double X_AB,
+				double Y_AB,
+				double Z_AB,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream); 
+}

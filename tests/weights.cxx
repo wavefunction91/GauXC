@@ -14,12 +14,9 @@
 //#define GENERATE_TESTS
 TEST_CASE( "Benzene", "[weights]" ) {
 
+  auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
 #ifdef GENERATE_TESTS
-#ifdef GAUXC_ENABLE_MPI
-  int world_size;
-  MPI_Comm_size( MPI_COMM_WORLD, &world_size );
-  if( world_size > 1 ) return;
-#endif
+  if(rt.comm_size() > 1) return;
 #endif
 
   Molecule mol = make_benzene();
@@ -50,7 +47,6 @@ TEST_CASE( "Benzene", "[weights]" ) {
 #endif
   }
 #endif
-
 #endif
 }
 

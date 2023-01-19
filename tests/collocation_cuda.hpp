@@ -25,16 +25,16 @@ auto populate_device_cuda( const BasisSet<double>& basis,
     /// XXX: THIS DOES NOT POPULATE A VALID TASK, ONLY WHAT's REQUIRED FOR THIS
     //  TEST
     auto& task = tasks.emplace_back();
-    task.nbe     = nbf;
     task.npts    = npts;
-    task.nshells = mask.size();
+    task.bfn_screening.nbe     = nbf;
+    task.bfn_screening.nshells = mask.size();
+    task.bfn_screening.shell_offs = util::cuda_malloc<size_t>( mask.size() );
+    task.bfn_screening.shell_list = util::cuda_malloc<size_t>( mask.size() );
 
     //task.points     = util::cuda_malloc<double>( 3 * npts );
     task.points_x     = util::cuda_malloc<double>( npts );
     task.points_y     = util::cuda_malloc<double>( npts );
     task.points_z     = util::cuda_malloc<double>( npts );
-    task.shell_offs = util::cuda_malloc<size_t>( mask.size() );
-    task.shell_list = util::cuda_malloc<size_t>( mask.size() );
     task.bf         = util::cuda_malloc<double>( nbf * npts );
     if(pop_grad) {
       task.dbfx = util::cuda_malloc<double>( nbf * npts );
@@ -55,8 +55,8 @@ auto populate_device_cuda( const BasisSet<double>& basis,
     auto* pts_x_device = task.points_x;
     auto* pts_y_device = task.points_y;
     auto* pts_z_device = task.points_z;
-    auto* offs_device = task.shell_offs;
-    auto* mask_device = task.shell_list;
+    auto* offs_device = task.bfn_screening.shell_offs;
+    auto* mask_device = task.bfn_screening.shell_list;
 
 
     //util::cuda_copy( 3*npts, pts_device, pts.data()->data() );
@@ -93,10 +93,10 @@ void cuda_check_collocation( const std::vector<XCDeviceTask>& tasks,
   for( int i = 0; i < tasks.size(); i++ ) {
 
     auto* ref_eval = ref_data[i].eval.data();
-    std::vector<double> eval (tasks[i].nbe * tasks[i].npts);
+    std::vector<double> eval (tasks[i].bfn_screening.nbe * tasks[i].npts);
     util::cuda_copy( eval.size(), eval.data(), tasks[i].bf );
 
-    check_collocation_transpose( tasks[i].npts, tasks[i].nbe, ref_eval, 
+    check_collocation_transpose( tasks[i].npts, tasks[i].bfn_screening.nbe, ref_eval, 
       eval.data(), "IT = " + std::to_string(i) + " BF EVAL" );
 
     if( check_grad ) {
@@ -104,16 +104,16 @@ void cuda_check_collocation( const std::vector<XCDeviceTask>& tasks,
       auto* ref_deval_y = ref_data[i].deval_y.data();
       auto* ref_deval_z = ref_data[i].deval_z.data();
 
-      std::vector<double> deval_x (tasks[i].nbe * tasks[i].npts);
-      std::vector<double> deval_y (tasks[i].nbe * tasks[i].npts);
-      std::vector<double> deval_z (tasks[i].nbe * tasks[i].npts);
+      std::vector<double> deval_x (tasks[i].bfn_screening.nbe * tasks[i].npts);
+      std::vector<double> deval_y (tasks[i].bfn_screening.nbe * tasks[i].npts);
+      std::vector<double> deval_z (tasks[i].bfn_screening.nbe * tasks[i].npts);
 
       util::cuda_copy( eval.size(), deval_x.data(), tasks[i].dbfx );
       util::cuda_copy( eval.size(), deval_y.data(), tasks[i].dbfy );
       util::cuda_copy( eval.size(), deval_z.data(), tasks[i].dbfz );
 
       auto npts = tasks[i].npts;
-      auto nbe  = tasks[i].nbe;
+      auto nbe  = tasks[i].bfn_screening.nbe;
       check_collocation_transpose( npts, nbe, ref_deval_x, deval_x.data(), "IT = " + std::to_string(i) + " BFX EVAL" );
       check_collocation_transpose( npts, nbe, ref_deval_y, deval_y.data(), "IT = " + std::to_string(i) + " BFY EVAL" );
       check_collocation_transpose( npts, nbe, ref_deval_z, deval_z.data(), "IT = " + std::to_string(i) + " BFZ EVAL" );
@@ -127,12 +127,12 @@ void cuda_check_collocation( const std::vector<XCDeviceTask>& tasks,
       auto* ref_d2eval_yz = ref_data[i].d2eval_yz.data();
       auto* ref_d2eval_zz = ref_data[i].d2eval_zz.data();
 
-      std::vector<double> d2eval_xx (tasks[i].nbe * tasks[i].npts);
-      std::vector<double> d2eval_xy (tasks[i].nbe * tasks[i].npts);
-      std::vector<double> d2eval_xz (tasks[i].nbe * tasks[i].npts);
-      std::vector<double> d2eval_yy (tasks[i].nbe * tasks[i].npts);
-      std::vector<double> d2eval_yz (tasks[i].nbe * tasks[i].npts);
-      std::vector<double> d2eval_zz (tasks[i].nbe * tasks[i].npts);
+      std::vector<double> d2eval_xx (tasks[i].bfn_screening.nbe * tasks[i].npts);
+      std::vector<double> d2eval_xy (tasks[i].bfn_screening.nbe * tasks[i].npts);
+      std::vector<double> d2eval_xz (tasks[i].bfn_screening.nbe * tasks[i].npts);
+      std::vector<double> d2eval_yy (tasks[i].bfn_screening.nbe * tasks[i].npts);
+      std::vector<double> d2eval_yz (tasks[i].bfn_screening.nbe * tasks[i].npts);
+      std::vector<double> d2eval_zz (tasks[i].bfn_screening.nbe * tasks[i].npts);
 
       util::cuda_copy( eval.size(), d2eval_xx.data(), tasks[i].d2bfxx );
       util::cuda_copy( eval.size(), d2eval_xy.data(), tasks[i].d2bfxy );
@@ -142,7 +142,7 @@ void cuda_check_collocation( const std::vector<XCDeviceTask>& tasks,
       util::cuda_copy( eval.size(), d2eval_zz.data(), tasks[i].d2bfzz );
 
       auto npts = tasks[i].npts;
-      auto nbe  = tasks[i].nbe;
+      auto nbe  = tasks[i].bfn_screening.nbe;
       check_collocation_transpose( npts, nbe, ref_d2eval_xx, d2eval_xx.data(), "IT = " + std::to_string(i) + " BFXX EVAL" );
       check_collocation_transpose( npts, nbe, ref_d2eval_xy, d2eval_xy.data(), "IT = " + std::to_string(i) + " BFXY EVAL" );
       check_collocation_transpose( npts, nbe, ref_d2eval_xz, d2eval_xz.data(), "IT = " + std::to_string(i) + " BFXZ EVAL" );
@@ -184,8 +184,8 @@ void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::
 
   const auto nshells_max = std::max_element( tasks.begin(), tasks.end(),
     []( const auto& a, const auto& b ) {
-      return a.nshells < b.nshells;
-    })->nshells;
+      return a.bfn_screening.nshells < b.bfn_screening.nshells;
+    })->bfn_screening.nshells;
 
   const auto npts_max = std::max_element( tasks.begin(), tasks.end(),
     []( const auto& a, const auto& b ) {
@@ -208,7 +208,7 @@ void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::
 
 
   for( auto& t : tasks ) {
-    util::cuda_free( t.points_x, t.points_y, t.points_z, t.shell_offs, t.shell_list, t.bf );
+    util::cuda_free( t.points_x, t.points_y, t.points_z, t.bfn_screening.shell_offs, t.bfn_screening.shell_list, t.bf );
     if(grad) util::cuda_free( t.dbfx, t.dbfy, t.dbfz );
   }
   util::cuda_free( tasks_device, shells_device );
@@ -365,7 +365,7 @@ void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,  const 
 
       
   for( auto& t : tasks ) {
-    util::cuda_free( t.points_x, t.points_y, t.points_z, t.shell_offs, t.shell_list, t.bf );
+    util::cuda_free( t.points_x, t.points_y, t.points_z, t.bfn_screening.shell_offs, t.bfn_screening.shell_list, t.bf );
     if(grad) util::cuda_free( t.dbfx, t.dbfy, t.dbfz );
     if(hess) util::cuda_free( t.d2bfxx, t.d2bfxy, t.d2bfxz, t.d2bfyy, t.d2bfyz, t.d2bfzz );
   }

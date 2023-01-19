@@ -1,3 +1,4 @@
+#pragma once
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
 #include <gauxc/shell.hpp>

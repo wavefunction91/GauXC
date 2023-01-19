@@ -9,10 +9,13 @@ namespace GauXC {
 /// Base type for XCDeviceData instances that address task batches as AoS
 struct XCDeviceAoSData : public XCDeviceStackData {
 
-  size_t total_nbe_sq_task_batch   = 0; ///< Sum of nbe*nbe for task batch
-  size_t total_nbe_npts_task_batch = 0; ///< Sum of npts*nbe for task batch
-  size_t total_ncut_task_batch     = 0; ///< Sum of ncut for task batch
-  size_t total_nblock_task_batch   = 0; ///< Sum of nblock for task batch
+  size_t total_nbe_scr_task_batch      = 0; ///< Sum of max(nbe,...) * nbe_bfn for task batch
+  size_t total_nbe_bfn_npts_task_batch = 0; ///< Sum of npts*nbe_bfn for task batch
+  size_t total_ncut_bfn_task_batch     = 0; ///< Sum of ncut_bfn for task batch
+  size_t total_nblock_bfn_task_batch   = 0; ///< Sum of nblock_bfn for task batch
+  size_t total_nbe_cou_npts_task_batch = 0; ///< Sum of npts*nbe_cou for task batch
+  size_t total_ncut_cou_task_batch     = 0; ///< Sum of ncut_cou for task batch
+  size_t total_nblock_cou_task_batch   = 0; ///< Sum of nblock_cou for task batch
 
   // Collocation buffers
   struct aos_stack_data {
@@ -38,14 +41,22 @@ struct XCDeviceAoSData : public XCDeviceStackData {
     double* xmat_dy_device = nullptr;
     double* xmat_dz_device = nullptr;
 
+    // EXX Intermediates
+    double* fmat_exx_device = nullptr;
+    double* gmat_exx_device = nullptr;
+
     // Scratch buffer
     double* nbe_scr_device = nullptr; ///< nbe*nbe scratch allocated for task batch
 
     // AoS Buffers
-    int32_t* submat_cut_device   = nullptr;
-      ///< Contiguous batch local submatrix cuts for task batch
-    int32_t* submat_block_device = nullptr;
-      ///< Contiguous batch local submatrix blocking factors for task batch
+    int32_t* submat_cut_bfn_device   = nullptr;
+      ///< Contiguous batch local submatrix cuts for task batch (bfn)
+    int32_t* submat_block_bfn_device = nullptr;
+      ///< Contiguous batch local submatrix blocking factors for task batch (bfn)
+    int32_t* submat_cut_cou_device   = nullptr;
+      ///< Contiguous batch local submatrix cuts for task batch (cou)
+    int32_t* submat_block_cou_device = nullptr;
+      ///< Contiguous batch local submatrix blocking factors for task batch (cou)
 
     // Indirection
     XCDeviceTask* device_tasks = nullptr; ///< Task indirection in device memory
@@ -58,8 +69,8 @@ struct XCDeviceAoSData : public XCDeviceStackData {
 
 
   XCDeviceAoSData() = delete;
-  inline XCDeviceAoSData( std::unique_ptr<DeviceBackend>&& ptr ) :
-    XCDeviceStackData( std::move(ptr) ) { }
+  inline XCDeviceAoSData( const DeviceRuntimeEnvironment& rt ) :
+    XCDeviceStackData( rt ) { }
 
   // Make it polymorphic
   virtual ~XCDeviceAoSData() noexcept = default;

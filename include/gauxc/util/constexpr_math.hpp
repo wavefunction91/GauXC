@@ -2,6 +2,8 @@
 #include <cstdint>
 #include <stdlib.h>
 #include <type_traits>
+#include <cmath>
+#include <gauxc/gauxc_config.hpp>
 
 namespace GauXC {
 
@@ -36,6 +38,8 @@ inline constexpr T sqrt_pi_ov_2 = 0.88622692545275801364;
 }
 
 inline double rsqrt( double x ) {
+#ifdef GAUXC_ENABLE_FAST_RSQRT
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
   double y = x;
   double x2 = y * 0.5;
   int64_t i = *(int64_t*)&y;
@@ -44,6 +48,11 @@ inline double rsqrt( double x ) {
   y = y * (1.5 - (x2 * y * y));
   y = y * (1.5 - (x2 * y * y));
   return y;
+#pragma GCC diagnostic pop
+#else
+  x = 1.0 / x;
+  return std::sqrt(x);
+#endif
 }
 
 }

@@ -58,7 +58,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   const auto& func  = *this->func_;
   const auto& basis = this->load_balancer_->basis();
   const auto& mol   = this->load_balancer_->molecule();
-  const auto& meta  = this->load_balancer_->molmeta();
 
   // Get basis map
   BasisSetMap basis_map(basis,mol);
@@ -68,22 +67,18 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Sort tasks on size (XXX: maybe doesnt matter?)
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
-    return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
+    return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
   };
 
   auto& tasks = this->load_balancer_->get_tasks();
   std::sort( tasks.begin(), tasks.end(), task_comparator );
 
 
-  // Compute Partition Weights
+  // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
   if( not lb_state.modified_weights_are_stored ) {
-    lwd->partition_weights( XCWeightAlg::SSF, mol, meta, 
-      tasks.begin(), tasks.end() );
-    lb_state.modified_weights_are_stored = true;
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
   }
-
-  // TODO: Get max weight / task + screen
 
   // Zero out integrands
   for( auto i = 0; i < 3*natoms; ++i ) {
@@ -105,12 +100,12 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Get tasks constants
     const int32_t  npts    = task.points.size();
-    const int32_t  nbe     = task.nbe;
-    const int32_t  nshells = task.shell_list.size();
+    const int32_t  nbe     = task.bfn_screening.nbe;
+    const int32_t  nshells = task.bfn_screening.shell_list.size();
 
     const auto* points      = task.points.data()->data();
     const auto* weights     = task.weights.data();
-    const int32_t* shell_list = task.shell_list.data();
+    const int32_t* shell_list = task.bfn_screening.shell_list.data();
 
     // Allocate enough memory for batch
 
@@ -173,7 +168,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Get the submatrix map for batch
     auto [submat_map, foo] = 
-      gen_compressed_submat_map( basis_map, task.shell_list, nbf, nbf );
+      gen_compressed_submat_map( basis_map, task.bfn_screening.shell_list, nbf, nbf );
 
     // Evaluate Collocation Gradient (+ Hessian)
     if( func.is_gga() )

@@ -21,7 +21,7 @@ struct HipAoSScheme1 : public Base {
   // API Overrides
   void partition_weights( XCDeviceData* ) override final;
 
-  std::unique_ptr<XCDeviceData> create_device_data() override final;
+  std::unique_ptr<XCDeviceData> create_device_data(const DeviceRuntimeEnvironment&) override final;
 
   struct Data;
 

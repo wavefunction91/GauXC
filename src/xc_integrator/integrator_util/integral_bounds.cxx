@@ -1,53 +1,24 @@
 #include "integral_bounds.hpp"
-#include "rys_integral.h"
 #include <vector>
 #include <gauxc/util/geometry.hpp>
 #include <gauxc/util/constexpr_math.hpp>
 #include <gauxc/exceptions.hpp>
+#include <gauxc/shell_pair.hpp>
 
 
 namespace GauXC {
 namespace util  {
 
-struct RysShell {
-  shells shell;
-  RysShell( int nprim, int l ) {
-    shell.m = nprim;
-    shell.L = l;
 
-    shell.coeff = new coefficients[nprim];
-  }
-
-  RysShell( const Shell<double>& sh ) :
-    RysShell( sh.nprim(), sh.l() ) {
-
-    for( auto i = 0; i < shell.m; ++i ) {
-      shell.coeff[i].coeff = sh.coeff()[i];
-      shell.coeff[i].alpha = sh.alpha()[i];
-    }
-
-  }
-
-  ~RysShell() noexcept {
-    if( shell.coeff ) delete shell.coeff;
-  }
-};
-
-
-
-inline constexpr double max_coulomb_00( double Kab, double gamma ) {
-  return Kab / gamma;
-}
-
-inline constexpr double max_coulomb_20( double Kab, double Rab, double alpha, double beta, 
+inline constexpr double max_coulomb_20( double Rab, double alpha, double beta, 
   double gamma ) {
   (void)alpha;
-  return Kab * ( gamma + Rab * integral_pow<2>(beta) ) / integral_pow<3>(gamma);
+  return 1.0 * ( gamma + Rab * integral_pow<2>(beta) ) / integral_pow<2>(gamma);
 }
 
-inline constexpr double max_coulomb_22( double Kab, double Rab, double alpha, double beta, 
+inline constexpr double max_coulomb_22( double Rab, double alpha, double beta, 
   double gamma ) {
-  return Kab / integral_pow<5>(gamma) * 
+  return 1.0 / integral_pow<4>(gamma) * 
     ( Rab * integral_pow<3>(alpha) +
       alpha * beta * (4. - Rab*beta ) +
       integral_pow<2>(beta) * (2.  + Rab * beta ) +
@@ -55,18 +26,18 @@ inline constexpr double max_coulomb_22( double Kab, double Rab, double alpha, do
     );
 }
 
-inline constexpr double max_coulomb_40( double Kab, double Rab, double alpha, double beta, 
+inline constexpr double max_coulomb_40( double Rab, double alpha, double beta, 
   double gamma ) {
-  return Kab / integral_pow<5>(gamma) *
+  return 1.0 / integral_pow<4>(gamma) *
   (
     2.*gamma*gamma +
     4.*beta*beta * gamma * Rab +
     beta*beta* integral_pow<2>(alpha - gamma) * Rab*Rab
   );
 }
-inline constexpr double max_coulomb_42( double Kab, double Rab, double alpha, double beta, 
+inline constexpr double max_coulomb_42( double Rab, double alpha, double beta, 
   double gamma ) {
-  return -Kab / integral_pow<7>(gamma) *
+  return -1.0 / integral_pow<6>(gamma) *
   (
     -6.   * integral_pow<3>(gamma) +
     -2.   * (3.*alpha - 2.*gamma) * gamma*gamma * (gamma - 3.*beta) * Rab +
@@ -75,9 +46,9 @@ inline constexpr double max_coulomb_42( double Kab, double Rab, double alpha, do
   );
 }
 
-inline constexpr double max_coulomb_44( double Kab, double Rab, double alpha, double beta, 
+inline constexpr double max_coulomb_44( double Rab, double alpha, double beta, 
   double gamma ) {
-  return Kab / integral_pow<9>(gamma) *
+  return 1.0 / integral_pow<8>(gamma) *
   (
     24. * integral_pow<4>(gamma) +
     24. * (2.*alpha - gamma) * integral_pow<3>(gamma) * (gamma - 2.*beta) * Rab +
@@ -91,19 +62,18 @@ inline constexpr double max_coulomb_44( double Kab, double Rab, double alpha, do
 }
 
 
-inline double max_coulomb( int l_a, int l_b, double Kab, double Rab, double alpha, 
+inline double max_coulomb( int l_a, int l_b, double Rab, double alpha, 
   double beta, double gamma ) {
 
-  constexpr double pi2 = 2. * M_PI;
-  if( l_a == 0 and l_b == 0 ) return pi2 * max_coulomb_00( Kab, gamma );
-  if( l_a == 2 and l_b == 2 ) return pi2 * max_coulomb_22( Kab, Rab, alpha, beta, gamma );
-  if( l_a == 2 and l_b == 0 ) return pi2 * max_coulomb_20( Kab, Rab, alpha, beta, gamma );
-  if( l_a == 0 and l_b == 2 ) return pi2 * max_coulomb_20( Kab, Rab, beta, alpha, gamma );
-  if( l_a == 4 and l_b == 4 ) return pi2 * max_coulomb_44( Kab, Rab, alpha, beta, gamma );
-  if( l_a == 4 and l_b == 0 ) return pi2 * max_coulomb_40( Kab, Rab, alpha, beta, gamma );
-  if( l_a == 0 and l_b == 4 ) return pi2 * max_coulomb_40( Kab, Rab, beta, alpha, gamma );
-  if( l_a == 4 and l_b == 2 ) return pi2 * max_coulomb_42( Kab, Rab, alpha, beta, gamma );
-  if( l_a == 2 and l_b == 4 ) return pi2 * max_coulomb_42( Kab, Rab, beta, alpha, gamma );
+  if( l_a == 0 and l_b == 0 ) return 1.0;
+  if( l_a == 2 and l_b == 2 ) return max_coulomb_22( Rab, alpha, beta, gamma );
+  if( l_a == 2 and l_b == 0 ) return max_coulomb_20( Rab, alpha, beta, gamma );
+  if( l_a == 0 and l_b == 2 ) return max_coulomb_20( Rab, beta, alpha, gamma );
+  if( l_a == 4 and l_b == 4 ) return max_coulomb_44( Rab, alpha, beta, gamma );
+  if( l_a == 4 and l_b == 0 ) return max_coulomb_40( Rab, alpha, beta, gamma );
+  if( l_a == 0 and l_b == 4 ) return max_coulomb_40( Rab, beta, alpha, gamma );
+  if( l_a == 4 and l_b == 2 ) return max_coulomb_42( Rab, alpha, beta, gamma );
+  if( l_a == 2 and l_b == 4 ) return max_coulomb_42( Rab, beta, alpha, gamma );
 
   const int l_a_p = l_a + (l_a % 2);
   const int l_b_p = l_b + (l_b % 2);
@@ -115,45 +85,45 @@ inline double max_coulomb( int l_a, int l_b, double Kab, double Rab, double alph
 
   double V_pm = std::numeric_limits<double>::infinity();
   if( l_a_p == 0 and l_b_m == 0 ) 
-    V_pm = max_coulomb_00( Kab, gamma );
+    V_pm = 1.0;
   else if( l_a_p == 2 and l_b_m == 0 ) 
-    V_pm = max_coulomb_20( Kab, Rab, alpha, beta, gamma );
+    V_pm = max_coulomb_20( Rab, alpha, beta, gamma );
   else if( l_a_p == 0 and l_b_m == 2 ) 
-    V_pm = max_coulomb_20( Kab, Rab, beta, alpha, gamma );
+    V_pm = max_coulomb_20( Rab, beta, alpha, gamma );
   else if( l_a_p == 2 and l_b_m == 2 )
-    V_pm = max_coulomb_22( Kab, Rab, alpha, beta, gamma );
+    V_pm = max_coulomb_22( Rab, alpha, beta, gamma );
   else if( l_a_p == 4 and l_b_m == 0 ) 
-    V_pm = max_coulomb_40( Kab, Rab, alpha, beta, gamma );
+    V_pm = max_coulomb_40( Rab, alpha, beta, gamma );
   else if( l_a_p == 0 and l_b_m == 4 ) 
-    V_pm = max_coulomb_40( Kab, Rab, beta, alpha, gamma );
+    V_pm = max_coulomb_40( Rab, beta, alpha, gamma );
   else if( l_a_p == 4 and l_b_m == 2 ) 
-    V_pm = max_coulomb_42( Kab, Rab, alpha, beta, gamma );
+    V_pm = max_coulomb_42( Rab, alpha, beta, gamma );
   else if( l_a_p == 2 and l_b_m == 4 ) 
-    V_pm = max_coulomb_42( Kab, Rab, beta, alpha, gamma );
+    V_pm = max_coulomb_42( Rab, beta, alpha, gamma );
   else if( l_a_p == 4 and l_b_m == 4 )
-    V_pm = max_coulomb_44( Kab, Rab, alpha, beta, gamma );
+    V_pm = max_coulomb_44( Rab, alpha, beta, gamma );
 
   double V_mp = std::numeric_limits<double>::infinity();
   if( l_a_m == 0 and l_b_p == 0 ) 
-    V_mp = max_coulomb_00( Kab, gamma );
+    V_mp = 1.0;
   else if( l_a_m == 2 and l_b_p == 0 ) 
-    V_mp = max_coulomb_20( Kab, Rab, alpha, beta, gamma );
+    V_mp = max_coulomb_20( Rab, alpha, beta, gamma );
   else if( l_a_m == 0 and l_b_p == 2 ) 
-    V_mp = max_coulomb_20( Kab, Rab, beta, alpha, gamma );
+    V_mp = max_coulomb_20( Rab, beta, alpha, gamma );
   else if( l_a_m == 2 and l_b_p == 2 )
-    V_mp = max_coulomb_22( Kab, Rab, alpha, beta, gamma );
+    V_mp = max_coulomb_22( Rab, alpha, beta, gamma );
   else if( l_a_m == 4 and l_b_p == 0 ) 
-    V_mp = max_coulomb_40( Kab, Rab, alpha, beta, gamma );
+    V_mp = max_coulomb_40( Rab, alpha, beta, gamma );
   else if( l_a_m == 0 and l_b_p == 4 ) 
-    V_mp = max_coulomb_40( Kab, Rab, beta, alpha, gamma );
+    V_mp = max_coulomb_40( Rab, beta, alpha, gamma );
   else if( l_a_m == 4 and l_b_p == 2 ) 
-    V_mp = max_coulomb_42( Kab, Rab, alpha, beta, gamma );
+    V_mp = max_coulomb_42( Rab, alpha, beta, gamma );
   else if( l_a_m == 2 and l_b_p == 4 ) 
-    V_mp = max_coulomb_42( Kab, Rab, beta, alpha, gamma );
+    V_mp = max_coulomb_42( Rab, beta, alpha, gamma );
   else if( l_a_m == 4 and l_b_p == 4 )
-    V_mp = max_coulomb_44( Kab, Rab, alpha, beta, gamma );
+    V_mp = max_coulomb_44( Rab, alpha, beta, gamma );
 
-  return pi2 * std::sqrt(V_pm * V_mp);
+  return std::sqrt(V_pm * V_mp);
 }
 
 
@@ -162,7 +132,7 @@ T max_coulomb( const Shell<T>& bra, const Shell<T>& ket) {
 
   const auto A = bra.O();
   const auto B = ket.O();
-  const auto RAB = geometry::euclidean_dist( A, B );
+  const auto RAB = std::pow(geometry::euclidean_dist( A, B ),2);
 
   double max_val = 0.;
   for( auto i = 0; i < bra.nprim(); ++i )
@@ -175,9 +145,9 @@ T max_coulomb( const Shell<T>& bra, const Shell<T>& ket) {
 
     const auto c_a = bra.coeff()[i];
     const auto c_b = ket.coeff()[j];
-    const auto c = std::abs( c_a * c_b );
+    const auto c = 2 * M_PI * Kab * std::abs( c_a * c_b / gamma );
 
-    max_val += c * max_coulomb( bra.l(), ket.l(), Kab, RAB, alpha, beta, gamma );
+    max_val += c * max_coulomb( bra.l(), ket.l(), RAB, alpha, beta, gamma );
   }
 
   return max_val;

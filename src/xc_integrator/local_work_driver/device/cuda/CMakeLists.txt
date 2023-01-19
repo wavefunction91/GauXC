@@ -30,6 +30,7 @@ foreach( cuda_arch ${CMAKE_CUDA_ARCHITECTURES} )
   endif()
 endforeach()
 
+add_subdirectory(obara_saika)
 if(GAUXC_ENABLE_CUTLASS)
     include( gauxc-cutlass )
     target_link_libraries( gauxc PRIVATE gauxc_cutlass )

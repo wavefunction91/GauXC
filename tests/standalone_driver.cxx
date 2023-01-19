@@ -2,6 +2,9 @@
 #include <gauxc/xc_integrator/impl.hpp>
 #include <gauxc/xc_integrator/integrator_factory.hpp>
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/runtime_environment.hpp>
+#include <gauxc/molecular_weights.hpp>
+#include <gauxc/molgrid/defaults.hpp>
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
@@ -18,14 +21,17 @@ int main(int argc, char** argv) {
 
 #ifdef GAUXC_ENABLE_MPI
   MPI_Init( NULL, NULL );
-  int world_rank, world_size;
-  MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
-  MPI_Comm_size( MPI_COMM_WORLD, &world_size );
-#else
-  int world_rank = 0;
-  int world_size = 1;
 #endif
   {
+
+    // Set up runtimes
+    #ifdef GAUXC_ENABLE_DEVICE
+    auto rt = DeviceRuntimeEnvironment( GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.9 );
+    #else
+    auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
+    #endif
+    auto world_rank = rt.comm_rank();
+    auto world_size = rt.comm_size();
 
     std::vector< std::string > opts( argc );
     for( int i = 0; i < argc; ++i ) opts[i] = argv[i];
@@ -39,13 +45,16 @@ int main(int argc, char** argv) {
 
     // Optional Args
     std::string grid_spec = "ULTRAFINE";
+    std::string prune_spec = "UNPRUNED";
     std::string lb_exec_space_str = "Host";
     std::string int_exec_space_str = "Host";
     std::string integrator_kernel = "Default";
     std::string lwd_kernel         = "Default";
     std::string reduction_kernel   = "Default";
+    size_t      batch_size = 512;
     double      basis_tol = 1e-10;
     std::string func_spec = "PBE0";
+    bool integrate_den      = false;
     bool integrate_vxc      = true;
     bool integrate_exx      = false;
     bool integrate_exc_grad = false;
@@ -59,6 +68,14 @@ int main(int argc, char** argv) {
       string_to_upper( grid_spec );
     }
 
+    if( input.containsData("GAUXC.PRUNING_SCHEME") ) {
+      prune_spec = input.getData<std::string>("GAUXC.PRUNING_SCHEME");
+      string_to_upper( prune_spec );
+    }
+
+    if( input.containsData("GAUXC.BATCH_SIZE") )
+      batch_size = input.getData<size_t>("GAUXC.BATCH_SIZE");
+
     if( input.containsData("GAUXC.BASIS_TOL") )
       basis_tol = input.getData<double>("GAUXC.BASIS_TOL");
 
@@ -67,6 +84,8 @@ int main(int argc, char** argv) {
       string_to_upper( func_spec );
     }
 
+    if( input.containsData("GAUXC.INTEGRATE_DEN" ) )
+      integrate_den = input.getData<bool>("GAUXC.INTEGRATE_DEN");
     if( input.containsData("GAUXC.INTEGRATE_VXC" ) )
       integrate_vxc = input.getData<bool>("GAUXC.INTEGRATE_VXC");
     if( input.containsData("GAUXC.INTEGRATE_EXX" ) )
@@ -92,20 +111,25 @@ int main(int argc, char** argv) {
     string_to_upper( lwd_kernel );
     string_to_upper( reduction_kernel );
 
+    #ifdef GAUXC_ENABLE_DEVICE
     std::map< std::string, ExecutionSpace > exec_space_map = {
       { "HOST",   ExecutionSpace::Host },
-      #ifdef GAUXC_ENABLE_DEVICE
       { "DEVICE", ExecutionSpace::Device }
-      #endif
     };
 
     auto lb_exec_space = exec_space_map.at(lb_exec_space_str);
     auto int_exec_space = exec_space_map.at(int_exec_space_str);
+    #else
+    auto lb_exec_space  = ExecutionSpace::Host;
+    auto int_exec_space = ExecutionSpace::Host;
+    #endif
 
     if( !world_rank ) {
       std::cout << "DRIVER SETTINGS: " << std::endl
                 << "  REF_FILE          = " << ref_file << std::endl
                 << "  GRID              = " << grid_spec << std::endl
+                << "  PRUNING_SCHEME    = " << prune_spec << std::endl
+                << "  BATCH_SIZE        = " << batch_size << std::endl
                 << "  BASIS_TOL         = " << basis_tol << std::endl
                 << "  FUNCTIONAL        = " << func_spec << std::endl
                 << "  LB_EXEC_SPACE     = " << lb_exec_space_str << std::endl
@@ -124,12 +148,17 @@ int main(int argc, char** argv) {
     if( input.containsData("EXX.TOL_K") )
       sn_link_settings.k_tol = input.getData<double>("EXX.TOL_K");
 
+
+
+
+
     // Read Molecule
     Molecule mol;
     read_hdf5_record( mol, ref_file, "/MOLECULE" );
     //std::cout << "Molecule" << std::endl;
     //for( auto x : mol ) {
-    //  std::cout << x.Z.get() << ", " << x.x << ", " << x.y << ", " << x.z << std::endl;
+    //  std::cout << x.Z.get() << ", " 
+    //    << x.x << ", " << x.y << ", " << x.z << std::endl;
     //}
 
     // Construct MolGrid / MolMeta
@@ -139,7 +168,15 @@ int main(int argc, char** argv) {
       {"SUPERFINE", AtomicGridSizeDefault::SuperFineGrid}
     };
 
-    MolGrid mg( mg_map.at(grid_spec), mol);
+    std::map< std::string, PruningScheme > prune_map = {
+      {"UNPRUNED", PruningScheme::Unpruned},
+      {"ROBUST",   PruningScheme::Robust},
+      {"TREUTLER", PruningScheme::Treutler}
+    };
+
+    auto mg = MolGridFactory::create_default_molgrid(mol, 
+     prune_map.at(prune_spec), BatchSize(batch_size), 
+     RadialQuad::MuraKnowles, mg_map.at(grid_spec));
 
     // Read BasisSet
     BasisSet<double> basis; 
@@ -169,8 +206,7 @@ int main(int argc, char** argv) {
     //LoadBalancerFactory lb_factory(ExecutionSpace::Device, "Default");
     //LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Replicated-FillIn");
     LoadBalancerFactory lb_factory( lb_exec_space, "Replicated");
-    auto lb = lb_factory.get_shared_instance( GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, 
-      mg, basis);
+    auto lb = lb_factory.get_shared_instance( rt, mol, mg, basis);
 
     if(0){
       auto& tasks = lb->get_tasks();
@@ -183,6 +219,11 @@ int main(int argc, char** argv) {
       }
       std::cout << "TOTAL NPTS = " << total_npts << " , FIXED = " << total_npts_fixed << std::endl;
     }
+
+    // Apply molecular partition weights
+    MolecularWeightsFactory mw_factory( int_exec_space, "Default", MolecularWeightsSettings{} );
+    auto mw = mw_factory.get_instance();
+    mw.modify_weights(*lb);
 
     // Setup XC functional
     functional_type func( Backend::builtin, functional_map.value(func_spec), 
@@ -198,6 +239,7 @@ int main(int argc, char** argv) {
     matrix_type P,VXC_ref,K_ref;
     double EXC_ref;
     std::vector<double> EXC_GRAD_ref(3*mol.size());
+    size_t N_EL_ref = MolMeta(mol).sum_atomic_charges();
     {
       HighFive::File file( ref_file, HighFive::File::ReadOnly );
       auto dset = file.getDataSet("/DENSITY");
@@ -271,7 +313,15 @@ int main(int argc, char** argv) {
     auto xc_int_start = std::chrono::high_resolution_clock::now();
 
     matrix_type VXC, K;
-    double EXC;
+    double EXC, N_EL;
+
+    if( integrate_den ) {
+      N_EL = integrator.integrate_den( P );
+      std::cout << std::scientific << std::setprecision(12);
+      std::cout << "N_EL = " << N_EL << std::endl;
+    } else {
+      N_EL = N_EL_ref;
+    }
 
     if( integrate_vxc ) {
       std::tie(EXC, VXC) = integrator.eval_exc_vxc( P );
@@ -296,8 +346,11 @@ int main(int argc, char** argv) {
       }
     }
 
-    if( integrate_exx ) K = integrator.eval_exx(P, sn_link_settings);
-    else                K = K_ref;
+    if( integrate_exx ) {
+      K = integrator.eval_exx(P, sn_link_settings);
+      matrix_type K_tmp = 0.5 * (K + K.transpose());
+      K = K_tmp;
+    } else                K = K_ref;
 
     //std::cout << (K).block(0,0,5,5) << std::endl << std::endl;
     //std::cout << (K_ref).block(0,0,5,5) << std::endl << std::endl;
@@ -312,6 +365,7 @@ int main(int argc, char** argv) {
 #ifdef GAUXC_ENABLE_MPI
     util::MPITimer mpi_lb_timings( MPI_COMM_WORLD, lb->get_timings() );
     util::MPITimer mpi_xc_timings( MPI_COMM_WORLD, integrator.get_timings() );
+    util::MPITimer mpi_weight_timings( MPI_COMM_WORLD, mw.get_timings() );
 #endif
     if( !world_rank ) {
 
@@ -333,6 +387,26 @@ int main(int argc, char** argv) {
         #else
                   << std::setw(12) << dur.count() << " ms" << std::endl;
         #endif
+      }
+
+      std::cout << "MolecularWeights Timings" << std::endl;
+      for( const auto& [name, dur] : mw.get_timings().all_timings() ) {
+        #ifdef GAUXC_ENABLE_MPI
+        const auto avg     = mpi_weight_timings.get_avg_duration(name).count();
+        const auto min     = mpi_weight_timings.get_min_duration(name).count();
+        const auto max     = mpi_weight_timings.get_max_duration(name).count();
+        const auto std_dev = mpi_weight_timings.get_std_dev(name).count();
+        #endif
+        std::cout << "  " << std::setw(30) << name << ": " 
+        #ifdef GAUXC_ENABLE_MPI
+                  << "AVG = " << std::setw(12) << avg << " ms, " 
+                  << "MIN = " << std::setw(12) << min << " ms, " 
+                  << "MAX = " << std::setw(12) << max << " ms, " 
+                  << "STDDEV = " << std::setw(12) << std_dev << " ms" << std::endl;
+        #else
+                  << std::setw(12) << dur.count() << " ms" << std::endl;
+        #endif
+
       }
 
       std::cout << "Integrator Timings" << std::endl;
@@ -357,6 +431,13 @@ int main(int argc, char** argv) {
       std::cout << std::scientific << std::setprecision(14);
 
       std::cout << "XC Int Duration  = " << xc_int_dur << " s" << std::endl;
+
+      if( integrate_den ) {
+      std::cout << "N_EL (ref)        = " << (double)N_EL_ref << std::endl;
+      std::cout << "N_EL (calc)       = " << N_EL     << std::endl;
+      std::cout << "N_EL Diff         = " << std::abs(N_EL_ref - N_EL) / N_EL_ref 
+                                         << std::endl;
+      }
 
       if( integrate_vxc ) {
       std::cout << "EXC (ref)        = " << EXC_ref << std::endl;

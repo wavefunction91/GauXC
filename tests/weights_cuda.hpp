@@ -27,9 +27,6 @@ void test_cuda_weights( std::ifstream& in_file ) {
   std::vector< int32_t >              iparent;
 
   for( auto& task : ref_data.tasks_unm ) {
-    //points.insert( points.end(),
-    //               task.points.begin(),
-    //               task.points.end() );
     for( auto pt : task.points ) {
       points_x.emplace_back(pt[0]);
       points_y.emplace_back(pt[1]);

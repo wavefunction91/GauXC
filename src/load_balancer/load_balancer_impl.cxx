@@ -2,22 +2,22 @@
 
 namespace GauXC::detail {
 
-LoadBalancerImpl::LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm comm,) const Molecule& mol, 
+LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
   const MolGrid& mg, const basis_type& basis, std::shared_ptr<MolMeta> molmeta, size_t pv ) :
-  GAUXC_MPI_CODE(comm_(comm),) 
+  runtime_(rt), 
   mol_( std::make_shared<Molecule>(mol) ),
   mg_( std::make_shared<MolGrid>(mg)  ),
   basis_( std::make_shared<basis_type>(basis) ),
   molmeta_( molmeta ),
   pad_value_(pv) { }
 
-LoadBalancerImpl::LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm comm,) const Molecule& mol, 
+LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
   const MolGrid& mg, const basis_type& basis, const MolMeta& molmeta, size_t pv ) :
-  LoadBalancerImpl( GAUXC_MPI_CODE(comm,) mol, mg, basis, std::make_shared<MolMeta>(molmeta), pv ) { }
+  LoadBalancerImpl( rt, mol, mg, basis, std::make_shared<MolMeta>(molmeta), pv ) { }
 
-LoadBalancerImpl::LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm comm,) const Molecule& mol, 
+LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
   const MolGrid& mg, const basis_type& basis, size_t pv ) :
-  LoadBalancerImpl( GAUXC_MPI_CODE(comm,) mol, mg, basis, std::make_shared<MolMeta>(mol), pv ) { }
+  LoadBalancerImpl( rt, mol, mg, basis, std::make_shared<MolMeta>(mol), pv ) { }
 
 
 LoadBalancerImpl::LoadBalancerImpl( const LoadBalancerImpl& ) = default;
@@ -31,13 +31,15 @@ const std::vector<XCTask>& LoadBalancerImpl::get_tasks() const {
 }
 
 std::vector<XCTask>& LoadBalancerImpl::get_tasks() {
-  auto create_tasks_st = std::chrono::high_resolution_clock::now();
 
-  if( not local_tasks_.size() ) local_tasks_ = create_local_tasks_();
+  if( not local_tasks_.size() ) {
+    auto create_tasks_st = std::chrono::high_resolution_clock::now();
+    local_tasks_ = create_local_tasks_();
+    auto create_tasks_en = std::chrono::high_resolution_clock::now();
+    std::chrono::duration<double> create_tasks_dr = create_tasks_en - create_tasks_st; 
+    timer_.add_timing("LoadBalancer.CreateTasks", create_tasks_dr);
+  }
 
-  auto create_tasks_en = std::chrono::high_resolution_clock::now();
-  std::chrono::duration<double> create_tasks_dr = create_tasks_en - create_tasks_st; 
-  timer_.add_timing("LoadBalancer.CreateTasks", create_tasks_dr);
 
   return local_tasks_;
 }
@@ -63,8 +65,8 @@ size_t LoadBalancerImpl::max_nbe() const {
 
   return std::max_element( local_tasks_.cbegin(), local_tasks_.cend(),
     []( const auto& a, const auto& b ) {
-      return a.nbe < b.nbe;
-    })->nbe;
+      return a.bfn_screening.nbe < b.bfn_screening.nbe;
+    })->bfn_screening.nbe;
 
 }
 size_t LoadBalancerImpl::max_npts_x_nbe() const {
@@ -73,10 +75,10 @@ size_t LoadBalancerImpl::max_npts_x_nbe() const {
 
   auto it = std::max_element( local_tasks_.cbegin(), local_tasks_.cend(),
     []( const auto& a, const auto& b ) {
-      return a.nbe * a.points.size() < b.nbe * b.points.size();
+      return a.bfn_screening.nbe * a.points.size() < b.bfn_screening.nbe * b.points.size();
     });
 
-  return it->nbe * it->points.size();
+  return it->bfn_screening.nbe * it->points.size();
 
 }
 
@@ -98,14 +100,12 @@ const LoadBalancerImpl::basis_type& LoadBalancerImpl::basis() const {
   return *basis_;
 }
 
+const RuntimeEnvironment& LoadBalancerImpl::runtime() const {
+  return runtime_;
+}
+
 LoadBalancerState& LoadBalancerImpl::state() {
   return state_;
 }
-
-#ifdef GAUXC_ENABLE_MPI
-MPI_Comm LoadBalancerImpl::comm() const {
-  return comm_;
-}
-#endif
 
 }

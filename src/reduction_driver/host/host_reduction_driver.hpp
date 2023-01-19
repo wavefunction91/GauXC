@@ -11,7 +11,7 @@ struct HostReductionDriver : public detail::ReductionDriverImpl {
 
   virtual ~HostReductionDriver() noexcept;
 
-  HostReductionDriver(GAUXC_MPI_CODE(MPI_Comm comm));
+  HostReductionDriver(const RuntimeEnvironment& rt);
 
 };
 

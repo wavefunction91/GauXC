@@ -5,7 +5,7 @@ namespace GauXC {
 
 struct BasicMPIReductionDriver : public HostReductionDriver {
 
-  BasicMPIReductionDriver(GAUXC_MPI_CODE(MPI_Comm comm));
+  BasicMPIReductionDriver(const RuntimeEnvironment& rt);
   virtual ~BasicMPIReductionDriver() noexcept;
   BasicMPIReductionDriver(const BasicMPIReductionDriver& );
 

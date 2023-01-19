@@ -22,7 +22,7 @@ struct CudaAoSScheme1 : public Base {
   // API Overrides
   void partition_weights( XCDeviceData* ) override final;
 
-  std::unique_ptr<XCDeviceData> create_device_data() override final;
+  std::unique_ptr<XCDeviceData> create_device_data(const DeviceRuntimeEnvironment&) override final;
 
   struct Data;
 
@@ -40,7 +40,8 @@ template <typename Base>
 struct CudaAoSScheme1<Base>::Data : public Base::Data {
 
   virtual ~Data() noexcept;
-  Data();
+  Data() = delete;
+  Data(const DeviceRuntimeEnvironment& rt);
 
   // Final overrides
   size_t get_submat_chunk_size(int32_t,int32_t) override final;

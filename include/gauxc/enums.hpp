@@ -8,8 +8,9 @@ namespace GauXC {
  *  Generally mapped to equivalent enums in IntegratorXX
  */
 enum class RadialQuad {
-  MuraKnowles,      ///< Mura-Knowles radial quadrature
-  MurrayHandyLaming ///< Murray-Handy-Laming radial quadrature
+  MuraKnowles,       ///< Mura-Knowles radial quadrature
+  MurrayHandyLaming, ///< Murray-Handy-Laming radial quadrature
+  TreutlerAldrichs   ///< Treutler-Aldrichs radial quadrature
 };
 
 /**

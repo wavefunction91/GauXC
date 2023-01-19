@@ -1,4 +1,4 @@
-#include "chebyshev_boys_computation.hpp"
+#include "gpu/chebyshev_boys_computation.hpp"
 #include <gauxc/util/constexpr_math.hpp>
 #include <iostream>
 #include <cmath>
@@ -13,8 +13,7 @@
   __typeof__ (b) _b = (b);		\
   _a < _b ? _a : _b; })
 
-namespace GauXC {
-
+namespace XGPU {
   double boys_reference(int m, double T) {
     double denom = m + 0.5;
     double term  = std::exp(-T) / (2 * denom);
@@ -103,9 +102,8 @@ namespace GauXC {
     }
   }
   
-  double* gauxc_boys_init() {
-    double *tmp = (double*) malloc(DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1) * sizeof(double));
-    
+  double* boys_init() {
+    double *tmp = (double*) malloc(DEFAULT_LD_TABLE * DEFAULT_NSEGMENT * (DEFAULT_MAX_M + 1) * sizeof(double));    
     generate_boys_table(DEFAULT_NCHEB, DEFAULT_MAX_M, DEFAULT_MAX_T, DEFAULT_NSEGMENT, tmp, DEFAULT_LD_TABLE);
 
     double *dev_tmp;
@@ -118,8 +116,7 @@ namespace GauXC {
     return dev_tmp;
   }
   
-  void gauxc_boys_finalize(double *tmp) {
+  void boys_finalize(double *tmp) {
     cudaFree(tmp);
   }
-  
 }

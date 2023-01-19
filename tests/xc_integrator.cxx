@@ -2,6 +2,9 @@
 #include <gauxc/xc_integrator.hpp>
 #include <gauxc/xc_integrator/impl.hpp>
 #include <gauxc/xc_integrator/integrator_factory.hpp>
+#include <gauxc/molecular_weights.hpp>
+
+#include <gauxc/molgrid/defaults.hpp>
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
@@ -9,11 +12,13 @@
 
 using namespace GauXC;
 
-void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, ) 
+void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   std::string reference_file, 
   ExchCXX::Functional func_key, 
   size_t quad_pad_value,
   bool check_grad,
+  bool check_integrate_den,
+  bool check_k,
   std::string integrator_kernel = "Default",  
   std::string reduction_kernel  = "Default",
   std::string lwd_kernel        = "Default" ) {
@@ -22,9 +27,10 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, )
   using matrix_type = Eigen::MatrixXd;
   Molecule mol;
   BasisSet<double> basis;
-  matrix_type P, VXC_ref;
+  matrix_type P, VXC_ref, K_ref;
   double EXC_ref;
   std::vector<double> EXC_GRAD_ref;
+  bool has_k = false, has_exc_grad = false;
   {
     read_hdf5_record( mol,   reference_file, "/MOLECULE" );
     read_hdf5_record( basis, reference_file, "/BASIS"    );
@@ -42,41 +48,63 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, )
     dset = file.getDataSet("/EXC");
     dset.read( &EXC_ref );
 
-    EXC_GRAD_ref.resize( 3*mol.size() );
-    dset = file.getDataSet("/EXC_GRAD");
-    dset.read( EXC_GRAD_ref.data() );
+    has_exc_grad = file.exist("/EXC_GRAD");
+    if( has_exc_grad ) {
+      EXC_GRAD_ref.resize( 3*mol.size() );
+      dset = file.getDataSet("/EXC_GRAD");
+      dset.read( EXC_GRAD_ref.data() );
+    }
     
+    has_k = file.exist("/K");
+    if(has_k) {
+        K_ref = matrix_type(dims[0], dims[1]);
+        dset = file.getDataSet("/K");
+        dset.read( K_ref.data() );
+    }
   }
 
 
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
 
-  MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
+  //MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
+  auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
+    BatchSize(512), RadialQuad::MuraKnowles, AtomicGridSizeDefault::UltraFineGrid);
 
+  // Construct Load Balancer
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
   //LoadBalancerFactory lb_factory(ExecutionSpace::Host, "REPLICATED-FILLIN");
-  auto lb = lb_factory.get_instance(GAUXC_MPI_CODE(comm,) mol, mg, basis, 
-    quad_pad_value);
+  auto lb = lb_factory.get_instance(rt, mol, mg, basis, quad_pad_value);
 
+  // Construct Weights Module
+  MolecularWeightsFactory mw_factory( ex, "Default", MolecularWeightsSettings{} );
+  auto mw = mw_factory.get_instance();
+
+  // Apply partition weights
+  mw.modify_weights(lb);
+
+  // Construct XC Functional
   functional_type func( ExchCXX::Backend::builtin, func_key, ExchCXX::Spin::Unpolarized );
 
+  // Construct XCIntegrator
   XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", 
     integrator_kernel, lwd_kernel, reduction_kernel );
   auto integrator = integrator_factory.get_instance( func, lb );
 
+  // Integrate Density
+  if( check_integrate_den ) {
+    auto N_EL_ref = std::accumulate( mol.begin(), mol.end(), 0ul,
+      [](const auto& a, const auto &b) { return a + b.Z.get(); });
+    auto N_EL = integrator.integrate_den( P );
+    CHECK( N_EL == Approx(N_EL_ref).epsilon(1e-6) );
+  }
 
+  // Integrate EXC/VXC
   auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
-  CHECK( EXC == Approx( EXC_ref ) );
 
-  //std::cout << "VXC" << std::endl;
-  //std::cout << VXC << std::endl;
-  //std::cout << "VXC_ref" << std::endl;
-  //std::cout << VXC_ref << std::endl;
-  //std::cout << "DIFF" << std::endl;
-  //std::cout << (VXC-VXC_ref) << std::endl;
-
+  // Check EXC/VXC
   auto VXC_diff_nrm = ( VXC - VXC_ref ).norm();
+  CHECK( EXC == Approx( EXC_ref ) );
   CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 ); 
 
   // Check if the integrator propagates state correctly
@@ -89,7 +117,7 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, )
 
 
   // Check EXC Grad
-  if( check_grad ) {
+  if( check_grad and has_exc_grad ) {
     auto EXC_GRAD = integrator.eval_exc_grad( P );
     using map_type = Eigen::Map<Eigen::MatrixXd>;
     map_type EXC_GRAD_ref_map( EXC_GRAD_ref.data(), mol.size(), 3 );
@@ -98,57 +126,68 @@ void test_xc_integrator( ExecutionSpace ex, GAUXC_MPI_CODE( MPI_Comm comm, )
     CHECK( EXC_GRAD_diff_nrm / std::sqrt(3.0*mol.size()) < 1e-10 );
   }
 
+  // Check K
+  if( has_k and check_k ) {
+    auto K = integrator.eval_exx( P );
+    CHECK( (K - K_ref).norm() / basis.nbf() < 1e-7 );
+  }
+
 }
 
 void test_integrator(std::string reference_file, ExchCXX::Functional func) {
 
-#ifdef GAUXC_ENABLE_MPI
-  MPI_Comm comm = MPI_COMM_WORLD;
+#ifdef GAUXC_ENABLE_DEVICE
+  auto rt = DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.9);
+#else
+  auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
 #endif
 
 #ifdef GAUXC_ENABLE_HOST
   SECTION( "Host" ) {
-    test_xc_integrator( ExecutionSpace::Host, GAUXC_MPI_CODE(comm,) reference_file, func,
-      1, true );
+    test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
+      1, true, true, true );
   }
 #endif
 
 #ifdef GAUXC_ENABLE_DEVICE
   SECTION( "Device" ) {
     bool check_grad = true;
+    bool check_k    = true;
     #ifdef GAUXC_ENABLE_HIP
     check_grad = false;
+    check_k    = false;
     #endif
     SECTION( "Incore - MPI Reduction" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
-        reference_file, func, 32, check_grad, "Default" );
+      test_xc_integrator( ExecutionSpace::Device, rt,
+        reference_file, func, 32, check_grad, true, check_grad, "Default" );
     }
 
     #ifdef GAUXC_ENABLE_MAGMA
     SECTION( "Incore - MPI Reduction - MAGMA" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
-        reference_file, func, 32, false, "Default", "Default", "Scheme1-MAGMA" );
+      test_xc_integrator( ExecutionSpace::Device, rt,
+        reference_file, func, 32, false, true, false, "Default", "Default", 
+        "Scheme1-MAGMA" );
     }
     #endif
 
     #ifdef GAUXC_ENABLE_CUTLASS
     SECTION( "Incore - MPI Reduction - CUTLASS" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
-        reference_file, func, 32, false, "Default", "Default", "Scheme1-CUTLASS" );
+      test_xc_integrator( ExecutionSpace::Device, rt, 
+        reference_file, func, 32, false, true, false, "Default", "Default", "Scheme1-CUTLASS" );
     }
     #endif
 
 
     #ifdef GAUXC_ENABLE_NCCL
     SECTION( "Incore - NCCL Reduction" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,)
-        reference_file, func, 32, false, "Default", "NCCL" );
+      test_xc_integrator( ExecutionSpace::Device, rt,
+        reference_file, func, 32, false, false, false, "Default", "NCCL" );
     }
     #endif
 
     SECTION( "ShellBatched" ) {
-      test_xc_integrator( ExecutionSpace::Device, GAUXC_MPI_CODE(comm,) 
-        reference_file, func, 32, false, "ShellBatched" );
+      test_xc_integrator( ExecutionSpace::Device, rt, 
+        reference_file, func, 32, false, false, false, "ShellBatched" );
     }
   }
 #endif
@@ -169,4 +208,8 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_pbe0_cc-pvdz_ufg_ssf.hdf5", ExchCXX::Functional::PBE0 );
   }
 
+  // sn-LinK Test
+  SECTION( "Benzene / PBE0 / 6-31G(d)" ) {
+    test_integrator(GAUXC_REF_DATA_PATH "/benzene_631gd_pbe0_ufg.hdf5", ExchCXX::Functional::PBE0 );
+  }
 }

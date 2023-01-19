@@ -95,19 +95,19 @@ void AoSScheme1CUTLASSBase::Data::pack_and_send(
     auto& task = host_device_tasks[i];
     zmat_host[i] = task.zmat;    ld64_zmat_host[i] = task.npts;
     bf_host[i]   = task.bf;      ld64_bf_host[i]   = task.npts;
-    vmat_host[i] = task.nbe_scr; ld64_vmat_host[i] = task.nbe;
-    if( task.ncut > 1 ) {
+    vmat_host[i] = task.nbe_scr; ld64_vmat_host[i] = task.bfn_screening.nbe;
+    if( task.bfn_screening.ncut > 1 ) {
       dmat_host[i]    = task.nbe_scr;
-      ld64_dmat_host[i] = task.nbe;
+      ld64_dmat_host[i] = task.bfn_screening.nbe;
     } else {
-      dmat_host[i]    = static_dmat + task.ibf_begin*(nbf+1);
+      dmat_host[i]    = static_dmat + task.bfn_screening.ibf_begin*(nbf+1);
       ld64_dmat_host[i] = nbf;
     }
 
-    cutlass::gemm::GemmCoord problem(task.npts, task.nbe, task.nbe);
+    cutlass::gemm::GemmCoord problem(task.npts, task.bfn_screening.nbe, task.bfn_screening.nbe);
     problem_sizes_host[i] = problem;
 
-    cutlass::gemm::GemmCoord problem2(task.nbe, task.nbe, task.npts);
+    cutlass::gemm::GemmCoord problem2(task.bfn_screening.nbe, task.bfn_screening.nbe, task.npts);
     syr2k_sizes_host[i] = problem2;
 
   }

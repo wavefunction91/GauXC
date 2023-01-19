@@ -2,8 +2,8 @@
 
 namespace GauXC {
 
-DeviceReductionDriver::DeviceReductionDriver(GAUXC_MPI_CODE(MPI_Comm comm)) :
-  detail::ReductionDriverImpl(GAUXC_MPI_CODE(comm)) { }
+DeviceReductionDriver::DeviceReductionDriver(const RuntimeEnvironment& rt) :
+  detail::ReductionDriverImpl(rt) { }
 
 
 DeviceReductionDriver::~DeviceReductionDriver() noexcept = default;

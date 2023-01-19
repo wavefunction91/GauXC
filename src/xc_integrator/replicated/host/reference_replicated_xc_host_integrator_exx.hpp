@@ -3,12 +3,22 @@
 #include "reference_replicated_xc_host_integrator.hpp"
 #include "integrator_util/integrator_common.hpp"
 #include "integrator_util/integral_bounds.hpp"
+#include "integrator_util/exx_screening.hpp"
 #include "host/local_host_work_driver.hpp"
 #include "host/blas.hpp"
 #include <stdexcept>
 #include <set>
 
 #include <gauxc/util/geometry.hpp>
+
+
+namespace std {
+template <typename T>
+ostream& operator<<( ostream& out, const vector<T>& v ) {
+  for( auto _v : v ) out << _v << " ";
+  return out;
+}
+}
 
 namespace GauXC  {
 namespace detail {
@@ -43,7 +53,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   #ifdef GAUXC_ENABLE_MPI
   this->timer_.time_op("XCIntegrator.LocalWait", [&](){
-    MPI_Barrier( this->load_balancer_->comm() );
+    MPI_Barrier( this->load_balancer_->runtime().comm() );
   });
   #endif
 
@@ -63,6 +73,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
 
+#if 0
 
 // MBFS(i) = sqrt(W[i]) * sum_mu B(mu,i)
 // return max_i MBFS(i)
@@ -158,8 +169,8 @@ auto compute_sn_LinK_E_set( size_t nshells, const std::vector<int32_t>& shell_li
   const double* V_max, size_t ldv, const double* max_F, double E_tol ) {
 
   std::set<int32_t> E_shells;
-  for( auto i = 0ul; i < nshells; ++i )
-  for( auto j = 0ul; j <= i;      ++j ) {
+  for( auto j = 0ul; j < nshells; ++j ) 
+  for( auto i = j;   i < nshells; ++i ) {
 
     const auto ish = shell_list[i];
     const auto jsh = shell_list[j];
@@ -185,8 +196,8 @@ auto compute_sn_LinK_K_set( size_t nshells, const std::vector<int32_t>& shell_li
   double K_tol ) {
 
   std::set<int32_t> K_shells;
-  for( auto i = 0ul; i < nshells; ++i )
-  for( auto j = 0ul; j <= i;      ++j ) {
+  for( auto j = 0ul; j < nshells; ++j ) 
+  for( auto i = j;   i < nshells; ++i ) {
 
     const auto ish = shell_list[i];
     const auto jsh = shell_list[j];
@@ -212,8 +223,8 @@ auto compute_sn_LinK_ek_set( size_t nshells, const std::vector<int32_t>& shell_l
   double E_tol, double K_tol ) {
 
   std::set<int32_t> ek_shells;
-  for( auto i = 0ul; i < nshells; ++i )
-  for( auto j = 0ul; j <= i;      ++j ) {
+  for( auto j = 0ul; j < nshells; ++j ) 
+  for( auto i = j;   i < nshells; ++i ) {
 
     const auto ish = shell_list[i];
     const auto jsh = shell_list[j];
@@ -236,7 +247,7 @@ auto compute_sn_LinK_ek_set( size_t nshells, const std::vector<int32_t>& shell_l
 }
 
 
-
+#endif
 
 
 
@@ -259,7 +270,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Setup Aliases
   const auto& basis = this->load_balancer_->basis();
   const auto& mol   = this->load_balancer_->molecule();
-  const auto& meta  = this->load_balancer_->molmeta();
 
 
   // Get basis map
@@ -269,19 +279,17 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Sort tasks on size (XXX: maybe doesnt matter?)
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
-    return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
+    return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
   };
 
   auto& tasks = this->load_balancer_->get_tasks();
   std::sort( tasks.begin(), tasks.end(), task_comparator );
 
 
-  // Compute Partition Weights
+  // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
   if( not lb_state.modified_weights_are_stored ) {
-    lwd->partition_weights( XCWeightAlg::SSF, mol, meta, 
-      tasks.begin(), tasks.end() );
-    lb_state.modified_weights_are_stored = true;
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
   }
 
   // Zero out integrands
@@ -289,21 +297,26 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   for( auto i = 0; i < nbf; ++i ) 
     K[i + j*ldk] = 0.;
 
+
+  // Precompure Shell Pairs
+  ShellPairCollection<double> shpairs(basis);
    
   // Compute V upper bounds per shell pair
   const size_t nshells_bf = basis.size();
   std::vector<double> V_max( nshells_bf * nshells_bf );
   for( auto i = 0; i < nshells_bf; ++i )
-  for( auto j = 0; j < nshells_bf; ++j ) {
-    V_max[i + j*nshells_bf] = util::max_coulomb( basis.at(i), basis.at(j) );
+  for( auto j = 0; j <= i;      ++j ) {
+    // This might be a redundant check...
+    if( shpairs.at(i,j).nprim_pairs() ) { 
+      const auto mv = util::max_coulomb( basis.at(i), basis.at(j) );
+      V_max[i + j*nshells_bf] = mv;
+      if( i != j ) V_max[j + i*nshells_bf] = mv;
+    }
   }
 
   // Absolute value of P
   std::vector<double> P_abs(nbf*nbf);
   for( auto i = 0; i < nbf*nbf; ++i ) P_abs[i] = std::abs(P[i]);
-
-  // Loop over tasks
-  const size_t ntasks = tasks.size();
 
   // Full shell list
   std::vector<int32_t> full_shell_list_( basis.nshells() );
@@ -322,21 +335,101 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   int world_rank = 0;
   #ifdef GAUXC_ENABLE_MPI
-  auto comm = this->load_balancer_->comm();
+  auto comm = this->load_balancer_->runtime().comm();
   MPI_Comm_rank( comm, &world_rank );
   #endif
-  if( !world_rank ) {
-    std::cout << "sn-LinK Settings:" << std::endl
-              << "  SCREEN_EK     = " << std::boolalpha << screen_ek << std::endl
-              << "  EPS_E         = " << eps_E << std::endl
-              << "  EPS_K         = " << eps_K << std::endl
-              << std::endl;
+  //if( !world_rank ) {
+  //  std::cout << "sn-LinK Settings:" << std::endl
+  //            << "  SCREEN_EK     = " << std::boolalpha << screen_ek << std::endl
+  //            << "  EPS_E         = " << eps_E << std::endl
+  //            << "  EPS_K         = " << eps_K << std::endl
+  //            << std::endl;
+  //}
+
+  // Reset the coulomb screening data
+  for(auto& task : tasks) task.cou_screening = XCTask::screening_data();
+
+  // Precompute EK shell screening
+  exx_ek_screening( basis, basis_map, P_abs.data(), nbf, V_max.data(), 
+    nshells_bf, eps_E, eps_K, lwd, tasks.begin(), tasks.end() );
+
+  // Allow for merging of tasks with different iParent
+  for(auto& task : tasks) task.iParent = 0;
+
+#if 1
+  // Lexicographic ordering of tasks
+  auto task_order = []( const auto& a, const auto& b ) {
+
+    // Sort by iParent first
+    if( a.iParent < b.iParent )      return true;
+    else if( a.iParent > b.iParent ) return false;
+
+    // Equal iParent: lex sort on bfn shell list
+    else if(a.bfn_screening.shell_list < b.bfn_screening.shell_list) return true;
+    else if(a.bfn_screening.shell_list > b.bfn_screening.shell_list) return false;
+    
+    // Equal iParent and bfn shell list: lex sort on cou shell list
+    else return a.cou_screening.shell_list < b.cou_screening.shell_list;
+
+  };
+
+  std::sort( tasks.begin(), tasks.end(), task_order ); 
+  auto task_equiv = []( const auto& a, const auto& b ) {
+    return a.equiv_with(b) and 
+      a.cou_screening.equiv_with(b.cou_screening);
+  };
+  std::vector<XCTask> local_work_unique(tasks.begin(), tasks.end());
+  auto last_unique =
+    std::unique( local_work_unique.begin(),
+                 local_work_unique.end(),
+                 task_equiv );
+  local_work_unique.erase( last_unique, local_work_unique.end() );
+
+  // Merge tasks
+  for( auto&& t : local_work_unique ) {
+    t.points.clear();
+    t.weights.clear();
+    t.npts = 0;
   }
 
+  auto cur_lw_begin = tasks.begin();
+  auto cur_uniq_it  = local_work_unique.begin();
+
+  for( auto lw_it = tasks.begin(); lw_it != tasks.end(); ++lw_it ) 
+  if( not task_equiv( *lw_it, *cur_uniq_it ) ) {
+
+    if( cur_uniq_it == local_work_unique.end() )
+      GAUXC_GENERIC_EXCEPTION("Messed up in unique");
+
+    cur_uniq_it->merge_with( cur_lw_begin, lw_it );
+
+    cur_lw_begin = lw_it;
+    cur_uniq_it++;
+
+  }
+
+  // Merge the last set of batches
+  for( ; cur_lw_begin != tasks.end(); ++cur_lw_begin )
+    cur_uniq_it->merge_with( *cur_lw_begin );
+  cur_uniq_it++;
+
+  tasks = std::move(local_work_unique);
+#endif
+
+  std::sort(tasks.begin(),tasks.end(),
+    [](auto& a, auto& b){ return a.cou_screening.shell_pair_list.size() >
+      b.cou_screening.shell_pair_list.size(); });
+
+
+  // Loop over tasks
+  const size_t ntasks = tasks.size();
+  std::cout << "NTASKS = " << ntasks << std::endl;
+  std::cout << "NTASKS NNZ = " << std::count_if(tasks.begin(),tasks.end(),[](const auto& t){ return t.cou_screening.shell_pair_list.size(); }) << std::endl;
   #pragma omp parallel
   {
 
   XCHostData<value_type> host_data; // Thread local host data
+  std::vector<double> K_local(nbf*nbf,0.0);
 
   #pragma omp for schedule(dynamic)
   for( size_t iT = 0; iT < ntasks; ++iT ) {
@@ -345,6 +438,15 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Alias current task
     const auto& task = tasks[iT];
 
+    // Early exit
+    auto ek_shell_list = task.cou_screening.shell_list;
+    if( ek_shell_list.size() == 0 ) {
+      continue;
+    }
+    std::vector< std::array<int32_t,3> > ek_submat_map;
+    std::tie( ek_submat_map, std::ignore ) =
+      gen_compressed_submat_map( basis_map, ek_shell_list, nbf, nbf );
+
     // Get tasks constants
     const int32_t  npts    = task.points.size();
 
@@ -352,7 +454,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const auto* weights     = task.weights.data();
 
     // Basis function shell list
-    auto shell_list_bfn_ = task.shell_list;
+    auto shell_list_bfn_ = task.bfn_screening.shell_list;
     int32_t* shell_list_bfn = shell_list_bfn_.data();
     size_t nshells_bfn = shell_list_bfn_.size();
     size_t nbe_bfn     = 
@@ -377,39 +479,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     lwd->eval_collocation( npts, nshells_bfn, nbe_bfn, points, basis, 
       shell_list_bfn, basis_eval );
 
-    // Compute Max BF Sum
-    auto max_bf_sum = 
-      compute_max_bf_sum( npts, nbe_bfn, weights, basis_eval, nbe_bfn );
-
-    // Compute Approximate max F
-    auto max_F_approx =
-      compute_approx_f_max( npts, nshells_bf, nbf, nbe_bfn, basis_map,
-        weights, submat_map_bfn, basis_eval, nbe_bfn, P_abs.data(), nbf,
-        lwd, nbe_scr );
-
-    // Get shell pair screening for integrals
-    auto ek_shell_set = 
-      compute_sn_LinK_ek_set( nshells_bf, full_shell_list_,
-        V_max.data(), nshells_bf, max_F_approx.data(), max_bf_sum,
-        eps_E, eps_K );
-
-    // Bail on task if no shells are needed after ek screening
-    if( ek_shell_set.size() == 0 ) {
-      continue;
-    }
-
-
-    // Convert ek shell set -> vector
-    std::vector<int32_t> ek_shell_list;
-    std::vector< std::array<int32_t,3> > ek_submat_map;
-    if( ek_shell_list.size() == nshells_bf or !screen_ek ) {
-      ek_shell_list = full_shell_list_;
-      ek_submat_map = full_submat_map;
-    } else {
-      ek_shell_list = decltype(ek_shell_list)( ek_shell_set.begin(), ek_shell_set.end() );
-      std::tie( ek_submat_map, std::ignore ) =
-        gen_compressed_submat_map( basis_map, ek_shell_list, nbf, nbf );
-    }
     const auto nbe_ek = basis.nbf_subset( ek_shell_list.begin(), ek_shell_list.end() );
     const auto nshells_ek = ek_shell_list.size();
 
@@ -435,18 +504,29 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Compute G(mu,i) = w(i) * A(mu,nu,i) * F(nu,i)
     // mu/nu run over significant ek shells
     // i runs over all points
-    lwd->eval_exx_gmat( npts, nshells_ek, nbe_ek, points, weights, 
-      basis, basis_map, ek_shell_list.data(), zmat, nbe_ek, gmat, nbe_ek );
+    const size_t nshell_pairs = task.cou_screening.shell_pair_list.size();
+    const auto*  shell_pair_list = task.cou_screening.shell_pair_list.data();
+    lwd->eval_exx_gmat( npts, nshells_ek, nshell_pairs, nbe_ek, points, weights, 
+      basis, shpairs,basis_map, ek_shell_list.data(), shell_pair_list, zmat, 
+      nbe_ek, gmat, nbe_ek );
 
     // Increment K(mu,nu) += B(mu,i) * G(nu,i)
     // mu runs over bfn shell list
     // nu runs over ek shells
     // i runs over all points
-    #pragma omp critical
+    //#pragma omp critical
     lwd->inc_exx_k( npts, nbf, nbe_bfn, nbe_ek, basis_eval, submat_map_bfn,
-      ek_submat_map, gmat, nbe_ek, K, ldk, nbe_scr );
+      ek_submat_map, gmat, nbe_ek, K_local.data(), nbf, nbe_scr );
 
   } // Loop over tasks 
+
+  #pragma omp critical
+  {
+  for(size_t i = 0; i < nbf; ++i ) 
+  for(size_t j = 0; j < nbf; ++j ) {
+    K[i+j*ldk] += K_local[i + j*nbf];
+  }
+  }
 
   } // End OpenMP region
 
