@@ -424,6 +424,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Loop over tasks
   const size_t ntasks = tasks.size();
   std::cout << "NTASKS = " << ntasks << std::endl;
+  std::cout << "NTASKS NNZ = " << std::count_if(tasks.begin(),tasks.end(),[](const auto& t){ return t.cou_screening.shell_pair_list.size(); }) << std::endl;
   #pragma omp parallel
   {
 
