@@ -468,7 +468,8 @@ dev_integral_0_0_task_batched(
 
   const auto nsp = task2sp[i_task].nsp;
 
-  const int npts_block = (point_count + blockDim.x - 1) / blockDim.x;
+  // NOTE: util::div_ceil converts to 64bit int
+  const int npts_block = util::div_ceil(point_count, blockDim.x);
 
   for (int i_block = 0; i_block < npts_block; i_block++) {
     const int i = point_start + i_block * blockDim.x;
