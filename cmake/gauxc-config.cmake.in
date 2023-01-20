@@ -45,8 +45,8 @@ if( GAUXC_ENABLE_MPI )
   find_dependency( MPI )
 endif()
 
-if( GAUXC_ENABLE_MPI )
-  find_dependency( MPI )
+if( GAUXC_ENABLE_OpenMP )
+  find_dependency( OpenMP )
 endif()
 
 if( GAUXC_ENABLE_HDF5 )
