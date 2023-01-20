@@ -63,16 +63,8 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   const int32_t n_deriv = 1;
   const size_t atBatchSz = 256;
 
-  int32_t world_rank;
-  int32_t world_size;
-
-#ifdef GAUXC_ENABLE_MPI
-  MPI_Comm_rank( comm_, &world_rank );
-  MPI_Comm_size( comm_, &world_size );
-#else
-  world_rank = 0;
-  world_size = 1;
-#endif
+  int32_t world_rank = runtime_.comm_rank();
+  int32_t world_size = runtime_.comm_size();
 
   std::vector< XCTask > local_work;
   std::vector<size_t> global_workload( world_size, 0 );   
@@ -213,7 +205,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
       for( size_t ibatch = 0; ibatch < nbatches; ++ibatch ) {
         auto [ npts, pts_b, pts_en, w_b, w_en ] = (batcher.begin() + ibatch).range();
         XCTask task = std::move( temp_tasks.at( idx ) );
-        task.nbe  = nbe_vec[idx];
+        task.bfn_screening.nbe  = nbe_vec[idx];
 
         // Update npts with (possibly) padded value
         size_t npts_padded = util::div_ceil(npts, pad_value_) * pad_value_;
@@ -230,7 +222,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
           auto shell_list = std::move( copy_shell_list(idx, pos_list_idx, position_list) );
           // Course grain screening
           if( shell_list.size() ) {
-            task.shell_list = shell_list;
+            task.bfn_screening.shell_list = shell_list;
 
             // Get local copy of points weights
             std::vector<std::array<double,3>> points(pts_b, pts_en);
@@ -267,7 +259,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
     else if( a.iParent > b.iParent ) return false;
 
     // Equal iParent: lex sort on shell list
-    else return a.shell_list < b.shell_list;
+    else return a.bfn_screening.shell_list < b.bfn_screening.shell_list;
 
   };
 

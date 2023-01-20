@@ -37,7 +37,8 @@ template <typename Base>
 struct HipAoSScheme1<Base>::Data : public Base::Data {
 
   virtual ~Data() noexcept;
-  Data();
+  Data() = delete;
+  Data(const DeviceRuntimeEnvironment& rt);
 
   // Final overrides
   size_t get_submat_chunk_size(int32_t,int32_t) override final;

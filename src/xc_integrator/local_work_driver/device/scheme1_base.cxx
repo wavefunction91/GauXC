@@ -9,13 +9,18 @@
 #include "device/common/symmetrize_mat.hpp"
 #include "device/common/increment_exc_grad.hpp"
 
-#include "device_specific/cuda_util.hpp"
 
 #include "device/common/shell_pair_to_task.hpp"
+#ifdef GAUXC_ENABLE_CUDA
+#include "device_specific/cuda_util.hpp"
 #include "gpu/integral_data_types.hpp"
 #include "gpu/obara_saika_integrals.hpp"
 #include "gpu/chebyshev_boys_computation.hpp"
 
+#define GAUXC_ENABLE_EXX
+#endif
+
+#ifdef GAUXC_ENABLE_EXX
 namespace XGPU {
   void integral_0_0_shell_batched(
         size_t nsp,
@@ -69,16 +74,21 @@ namespace XGPU {
 		    double *boys_table,
         cudaStream_t stream); 
 }
+#endif
 
 
 namespace GauXC {
 
 AoSScheme1Base::AoSScheme1Base() {
+#ifdef GAUXC_ENABLE_EXX
   dev_boys_table = XGPU::boys_init();
+#endif
 }
 
 AoSScheme1Base::~AoSScheme1Base() noexcept {
+#ifdef GAUXC_ENABLE_EXX
   XGPU::boys_finalize(dev_boys_table);
+#endif
 }
 
 void AoSScheme1Base::eval_zmat_lda_vxc( XCDeviceData* _data){
@@ -538,7 +548,9 @@ void AoSScheme1Base::inc_exc_grad_gga( XCDeviceData* _data ) {
 
 
 void AoSScheme1Base::eval_exx_fmat( XCDeviceData* _data ) {
-
+#ifndef GAUXC_ENABLE_EXX
+  GAUXC_GENERIC_EXCEPTION("EXX F-Matrix NYI for non-CUDA Backends");
+#else
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
@@ -573,10 +585,14 @@ void AoSScheme1Base::eval_exx_fmat( XCDeviceData* _data ) {
 
   // Record completion of BLAS ops on master stream
   data->device_backend_->sync_master_with_blas_pool();
+#endif
 }
 
 void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data, 
   const BasisSetMap& basis_map ) {
+#ifndef GAUXC_ENABLE_EXX
+  GAUXC_GENERIC_EXCEPTION("EXX G-Matrix NYI for non-CUDA Backends");
+#else
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -810,13 +826,15 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
 
   // Record completion of BLAS ops on master stream
   data->device_backend_->sync_master_with_blas_pool();
-
+#endif
 }
 
 
 
 void AoSScheme1Base::inc_exx_k( XCDeviceData* _data ) {
-
+#ifndef GAUXC_ENABLE_EXX
+  GAUXC_GENERIC_EXCEPTION("EXX + non-CUDA NYI");
+#else
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
@@ -853,7 +871,7 @@ void AoSScheme1Base::inc_exx_k( XCDeviceData* _data ) {
   asym_task_inc_potential( ntasks, aos_stack.device_tasks, 
     static_stack.exx_k_device, nbf, submat_block_size, 
     data->device_backend_->queue() );
-
+#endif
 }
 
 void AoSScheme1Base::symmetrize_exx_k( XCDeviceData* _data ) {

@@ -88,18 +88,18 @@ void AoSScheme1MAGMABase::Data::pack_and_send(
     auto& task = host_device_tasks[i];
     zmat_host[i] = task.zmat;    ld_zmat_host[i] = task.npts;
     bf_host[i]   = task.bf;      ld_bf_host[i]   = task.npts;
-    vmat_host[i] = task.nbe_scr; ld_vmat_host[i] = task.nbe;
-    if( task.ncut > 1 ) {
+    vmat_host[i] = task.nbe_scr; ld_vmat_host[i] = task.bfn_screening.nbe;
+    if( task.bfn_screening.ncut > 1 ) {
       dmat_host[i]    = task.nbe_scr;
-      ld_dmat_host[i] = task.nbe;
+      ld_dmat_host[i] = task.bfn_screening.nbe;
     } else {
-      dmat_host[i]    = static_dmat + task.ibf_begin*(nbf+1);
+      dmat_host[i]    = static_dmat + task.bfn_screening.ibf_begin*(nbf+1);
       ld_dmat_host[i] = nbf;
     }
 
     m_host[i] = task.npts;
-    n_host[i] = task.nbe;
-    k_host[i] = task.nbe;
+    n_host[i] = task.bfn_screening.nbe;
+    k_host[i] = task.bfn_screening.nbe;
   }
 
   // Send to device
