@@ -4,6 +4,7 @@
 #include "integral_0_0.hu"
 
 #include "device_specific/cuda_device_constants.hpp"
+#include "../../cuda_aos_scheme1.hpp"
 
 namespace XGPU {
 
@@ -323,7 +324,7 @@ using namespace GauXC;
 
   }
    
-template<bool use_shared, int max_primpairs, int points_per_subtask>
+template<int primpair_shared_limit, int points_per_subtask>
 __inline__ __device__ void dev_integral_0_0_task(
   const int i,
   const int npts,
@@ -342,19 +343,21 @@ __inline__ __device__ void dev_integral_0_0_task(
   // Other
   const double *boys_table) {
 
+  static constexpr bool use_shared = (primpair_shared_limit > 0);
   static constexpr int num_warps = points_per_subtask / cuda::warp_size;
+  // Cannot declare shared memory array with length 0
+  static constexpr int prim_buffer_size = (use_shared) ? num_warps * primpair_shared_limit : 1;
 
   const int laneId = threadIdx.x % cuda::warp_size;
   const int warpId = threadIdx.x / cuda::warp_size;
 
   const auto& prim_pairs = sp->prim_pairs();
-  __shared__ GauXC::PrimitivePair<double> s_prim_pairs[num_warps * max_primpairs];
-
+  __shared__ GauXC::PrimitivePair<double> s_prim_pairs[prim_buffer_size];
 
   if constexpr (use_shared) {
       // Load Primpairs to shared
       const int32_t* src = (int32_t*) &(prim_pairs[0]);
-      int32_t* dst = (int32_t*) &(s_prim_pairs[warpId * max_primpairs]);
+      int32_t* dst = (int32_t*) &(s_prim_pairs[warpId * primpair_shared_limit]);
       const int num_transfers = nprim_pairs * sizeof(GauXC::PrimitivePair<double>) / sizeof(int32_t);
 
       for (int i = laneId; i < num_transfers; i += cuda::warp_size) {
@@ -378,7 +381,7 @@ __inline__ __device__ void dev_integral_0_0_task(
 
       for (int ij = 0; ij < nprim_pairs; ij++) {
         const GauXC::PrimitivePair<double>* prim_pairs_use = nullptr; 
-        if constexpr (use_shared) prim_pairs_use = &(s_prim_pairs[warpId * max_primpairs]);
+        if constexpr (use_shared) prim_pairs_use = &(s_prim_pairs[warpId * primpair_shared_limit]);
         else                      prim_pairs_use = &(prim_pairs[0]);
 
         double RHO = prim_pairs_use[ij].gamma;
@@ -433,7 +436,7 @@ __inline__ __device__ void dev_integral_0_0_task(
   __syncwarp();
 }
 
-template<bool use_shared, int max_primpairs, int points_per_subtask>
+template<int primpair_shared_limit, int points_per_subtask>
 __global__ void 
 __launch_bounds__(points_per_subtask, 1)
 dev_integral_0_0_task_batched(
@@ -494,7 +497,7 @@ dev_integral_0_0_task_batched(
       const auto* sp = sp_ptr_device[index];
       const auto nprim_pairs = nprim_pairs_device[index];
 
-      dev_integral_0_0_task<use_shared, max_primpairs, points_per_subtask>(
+      dev_integral_0_0_task<primpair_shared_limit, points_per_subtask>(
         i, point_count, nprim_pairs,
         s_task_data,
         sp,
@@ -510,9 +513,39 @@ dev_integral_0_0_task_batched(
   }
 }
 
+template<typename... Args>
+void dev_integral_0_0_dispatcher(dim3 nblock, dim3 nthreads, int max_primpair, cudaStream_t stream, 
+  Args&&... args) {
+
+  constexpr auto points_per_subtask = 
+    alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask;
+
+  // Invoke different version of the kernel based on the maximum number of primpair for this 
+  // AM. The kernel with the smallest primpair buffer should perform best as it leaves the
+  // most space for L1 cache. The largest buffer size is capped by the 48KB static shared
+  // memory limit; using dynamic shared memory would allow us to go higher. If the max
+  // number of primpairs exceeds the largest buffer, it will not use a shared memory buffer
+  // by setting primpair_limit to zero.
+  if (constexpr int primpair_limit = 16; max_primpair <= primpair_limit) {
+    dev_integral_0_0_task_batched<
+      primpair_limit, points_per_subtask
+    ><<<nblock, nthreads, 0, stream>>>( std::forward<Args>(args)...);
+
+  } else if (constexpr int primpair_limit = 32; max_primpair <= primpair_limit) {
+    dev_integral_0_0_task_batched<
+      primpair_limit, points_per_subtask
+    ><<<nblock, nthreads, 0, stream>>>( std::forward<Args>(args)...);
+
+  } else {
+    dev_integral_0_0_task_batched<
+      0, points_per_subtask
+    ><<<nblock, nthreads, 0, stream>>>( std::forward<Args>(args)...);
+  }
+}
+
   void integral_0_0_task_batched(
     size_t ntasks, size_t nsubtask,
-    int max_primpairs, size_t max_nsp,
+    int max_primpair, size_t max_nsp,
     GauXC::XCDeviceTask*                device_tasks,
     const GauXC::TaskToShellPairDevice* task2sp,
     const std::array<int32_t, 4>*  subtasks,
@@ -524,35 +557,18 @@ dev_integral_0_0_task_batched(
     double *boys_table,
     cudaStream_t stream) {
 
-    size_t xy_max = (1ul << 16) - 1;
-    int nthreads = cuda::obara_saika::points_per_subtask;
-
     int nblocks_x = nsubtask;
-    int nblocks_y = 8; //std::min(max_nsp,  xy_max);
+    int nblocks_y = 8; 
     int nblocks_z = 1;
     dim3 nblocks(nblocks_x, nblocks_y, nblocks_z);
+    dim3 nthreads(alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask);
 
-    if (max_primpairs <= cuda::obara_saika::max_primpairs) {
-      dev_integral_0_0_task_batched<
-        cuda::obara_saika::k00_use_shared, 
-        cuda::obara_saika::max_primpairs, 
-        cuda::obara_saika::points_per_subtask
-      ><<<nblocks, nthreads, 0, stream>>>(
-        ntasks, nsubtask,
-        device_tasks, task2sp, 
-        (int4*) subtasks, nprim_pairs_device, sp_ptr_device,
-        boys_table );
-    } else {
-      dev_integral_0_0_task_batched<
-        false, 
-        cuda::obara_saika::max_primpairs, 
-        cuda::obara_saika::points_per_subtask
-      ><<<nblocks, nthreads, 0, stream>>>(
-        ntasks, nsubtask,
-        device_tasks, task2sp, 
-        (int4*) subtasks, nprim_pairs_device, sp_ptr_device,
-        boys_table );
-    }
+    dev_integral_0_0_dispatcher(
+      nblocks, nthreads, max_primpair, stream, 
+      ntasks, nsubtask,
+      device_tasks, task2sp, 
+      (int4*) subtasks, nprim_pairs_device, sp_ptr_device,
+      boys_table );
   }
 
 }
