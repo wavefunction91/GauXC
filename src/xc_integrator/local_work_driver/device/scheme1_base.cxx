@@ -773,7 +773,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       data->task_to_shell_pair_stack.sp_Z_AB_device,
       dev_boys_table, stream
     );
-    data->device_backend_->check_error("integral_0_task_batched");
+    data->device_backend_->check_error("integral_0_task_batched" __FILE__ ": " + std::to_string(__LINE__));
     XGPU::integral_1_task_batched(
       tasks.size(), data->subtask.size(),
       data->l_batch_diag_task_to_shell_pair_device[1].max_prim_pairs, 0,
@@ -787,7 +787,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       data->task_to_shell_pair_stack.sp_Z_AB_device,
       dev_boys_table, stream
     );
-    data->device_backend_->check_error("integral_1_task_batched");
+    data->device_backend_->check_error("integral_1_task_batched" __FILE__ ": " + std::to_string(__LINE__));
     XGPU::integral_2_task_batched(
       tasks.size(), data->subtask.size(),
       data->l_batch_diag_task_to_shell_pair_device[2].max_prim_pairs, 0,
@@ -801,7 +801,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       data->task_to_shell_pair_stack.sp_Z_AB_device,
       dev_boys_table, stream
     );
-    data->device_backend_->check_error("integral_2_task_batched");
+    data->device_backend_->check_error("integral_2_task_batched" __FILE__ ": " + std::to_string(__LINE__));
 #else
     size_t isptt = 0;
     for( auto sptt : sp_to_task ) {
@@ -848,7 +848,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       data->task_to_shell_pair_stack.sp_Z_AB_device,
       dev_boys_table, stream
     );
-    data->device_backend_->check_error("integral_0_0_task_batched");
+    data->device_backend_->check_error("integral_0_0_task_batched" __FILE__ ": " + std::to_string(__LINE__));
 #else
     XGPU::integral_0_0_shell_batched(
       data->l_batched_shell_pair_to_task_off_diag[0].nshells_in_batch,
@@ -872,7 +872,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       data->task_to_shell_pair_stack.sp_Z_AB_device,
       dev_boys_table, stream
     );
-    data->device_backend_->check_error("integral_1_1_task_batched");
+    data->device_backend_->check_error("integral_1_1_task_batched" __FILE__ ": " + std::to_string(__LINE__));
 #else
     XGPU::integral_1_1_shell_batched(
       data->l_batched_shell_pair_to_task_off_diag[4].nshells_in_batch,
@@ -896,7 +896,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       data->task_to_shell_pair_stack.sp_Z_AB_device,
       dev_boys_table, stream
     );
-    data->device_backend_->check_error("integral_2_2_task_batched");
+    data->device_backend_->check_error("integral_2_2_task_batched" __FILE__ ": " + std::to_string(__LINE__));
 #else
     XGPU::integral_2_2_shell_batched(
       data->l_batched_shell_pair_to_task_off_diag[8].nshells_in_batch,
@@ -920,7 +920,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       data->task_to_shell_pair_stack.sp_Z_AB_device,
       dev_boys_table, stream
     );
-    data->device_backend_->check_error("integral_1_0_task_batched");
+    data->device_backend_->check_error("integral_1_0_task_batched" __FILE__ ": " + std::to_string(__LINE__));
 #else
     XGPU::integral_1_0_shell_batched( true,
       data->l_batched_shell_pair_to_task_off_diag[1].nshells_in_batch,
@@ -944,7 +944,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       data->task_to_shell_pair_stack.sp_Z_AB_device,
       dev_boys_table, stream
     );
-    data->device_backend_->check_error("integral_1_0_task_batched");
+    data->device_backend_->check_error("integral_1_0_task_batched" __FILE__ ": " + std::to_string(__LINE__));
 #else
     XGPU::integral_1_0_shell_batched( false,
       data->l_batched_shell_pair_to_task_off_diag[3].nshells_in_batch,
@@ -968,7 +968,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       data->task_to_shell_pair_stack.sp_Z_AB_device,
       dev_boys_table, stream
     );
-    data->device_backend_->check_error("integral_2_0_task_batched");
+    data->device_backend_->check_error("integral_2_0_task_batched" __FILE__ ": " + std::to_string(__LINE__));
 #else
     XGPU::integral_2_0_shell_batched( true,
       data->l_batched_shell_pair_to_task_off_diag[2].nshells_in_batch,
@@ -992,7 +992,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       data->task_to_shell_pair_stack.sp_Z_AB_device,
       dev_boys_table, stream
     );
-    data->device_backend_->check_error("integral_2_0_task_batched");
+    data->device_backend_->check_error("integral_2_0_task_batched" __FILE__ ": " + std::to_string(__LINE__));
 #else
     XGPU::integral_2_0_shell_batched( false,
       data->l_batched_shell_pair_to_task_off_diag[6].nshells_in_batch,
@@ -1016,7 +1016,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       data->task_to_shell_pair_stack.sp_Z_AB_device,
       dev_boys_table, stream
     );
-    data->device_backend_->check_error("integral_2_1_task_batched");
+    data->device_backend_->check_error("integral_2_1_task_batched" __FILE__ ": " + std::to_string(__LINE__));
 #else
     XGPU::integral_2_1_shell_batched( true,
       data->l_batched_shell_pair_to_task_off_diag[5].nshells_in_batch,
@@ -1040,7 +1040,7 @@ void AoSScheme1Base::eval_exx_gmat( XCDeviceData* _data,
       data->task_to_shell_pair_stack.sp_Z_AB_device,
       dev_boys_table, stream
     );
-    data->device_backend_->check_error("integral_2_1_task_batched");
+    data->device_backend_->check_error("integral_2_1_task_batched" __FILE__ ": " + std::to_string(__LINE__));
 #else
     XGPU::integral_2_1_shell_batched( false,
       data->l_batched_shell_pair_to_task_off_diag[7].nshells_in_batch,
