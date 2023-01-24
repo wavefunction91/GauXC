@@ -35,6 +35,7 @@ option( GAUXC_ENABLE_OPENMP   "Enable OpenMP Compilation"   ON  )
 option( GAUXC_ENABLE_TESTS    "Enable Unit Tests"           ON  )
 option( GAUXC_ENABLE_GAU2GRID "Enable Gau2Grid Collocation" ON  )
 option( GAUXC_ENABLE_HDF5     "Enable HDF5 Bindings"        ON  )
+option( GAUXC_ENABLE_FAST_RSQRT "Enable Fast RSQRT"         OFF )
 
 include(CMakeDependentOption)
 cmake_dependent_option( GAUXC_ENABLE_MAGMA    

@@ -24,15 +24,16 @@ size_t AoSScheme1CUTLASSBase::Data::get_mem_req( integrator_term_tracker terms,
   
   size_t base_size = base_type::get_mem_req(terms, task);
 
-  // All CUTLASS memory is related to exc/vxc +
-  if( not terms.exc_vxc ) return base_size;
-
-  // TODO Update this for cutlass
-  return base_size + 
-         4*sizeof(double*) + // batch device pointers
-         4*sizeof(int64_t) +
-         2*sizeof(cutlass::gemm::GemmCoord);  // Dimensions + leading dimensions 
-                                              // (extra handled by get_static_mem_requirement)
+  // TODO: There is probably a better way to check this
+  required_term_storage reqt(terms);
+  if( reqt.task_nbe_scr ) {
+    base_size += 
+      4*sizeof(double*) + // batch device pointers
+      4*sizeof(int64_t) +
+      2*sizeof(cutlass::gemm::GemmCoord);  // Dimensions + leading dimensions 
+                                           // (extra handled by get_static_mem_requirement)
+  }
+  return base_size;
 
 
 }
@@ -46,8 +47,8 @@ AoSScheme1CUTLASSBase::Data::device_buffer_t
   buf = base_type::allocate_dynamic_stack( terms, task_begin, task_end,
     buf );
 
-  // All CUTLASS memory is related to exc/vxc +
-  if( not terms.exc_vxc ) return buf;
+  required_term_storage reqt(terms);
+  if( not reqt.task_nbe_scr ) return buf;
 
   // Allocate additional device memory 
   auto [ ptr, sz ] = buf;
@@ -77,7 +78,8 @@ void AoSScheme1CUTLASSBase::Data::pack_and_send(
   const BasisSetMap& basis_map ) {
 
   base_type::pack_and_send( terms, task_begin, task_end, basis_map );
-  if( not terms.exc_vxc ) return;
+  required_term_storage reqt(terms);
+  if( not reqt.task_nbe_scr ) return;
 
   const auto ntask = std::distance( task_begin, task_end );
   std::vector<double*> dmat_host( ntask ), zmat_host( ntask ), bf_host( ntask ),

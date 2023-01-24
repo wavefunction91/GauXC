@@ -297,17 +297,22 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   for( auto i = 0; i < nbf; ++i ) 
     K[i + j*ldk] = 0.;
 
+
+  // Precompure Shell Pairs
+  ShellPairCollection<double> shpairs(basis);
    
   // Compute V upper bounds per shell pair
   const size_t nshells_bf = basis.size();
   std::vector<double> V_max( nshells_bf * nshells_bf );
-  for( auto i = 0ul; i < nshells_bf; ++i )
-  for( auto j = 0ul; j < nshells_bf; ++j ) {
-    V_max[i + j*nshells_bf] = util::max_coulomb( basis.at(i), basis.at(j) );
+  for( auto i = 0; i < nshells_bf; ++i )
+  for( auto j = 0; j <= i;      ++j ) {
+    // This might be a redundant check...
+    if( shpairs.at(i,j).nprim_pairs() ) { 
+      const auto mv = util::max_coulomb( basis.at(i), basis.at(j) );
+      V_max[i + j*nshells_bf] = mv;
+      if( i != j ) V_max[j + i*nshells_bf] = mv;
+    }
   }
-
-  // Precompure Shell Pairs
-  ShellPairCollection<double> shpairs(basis);
 
   // Absolute value of P
   std::vector<double> P_abs(nbf*nbf);
@@ -341,6 +346,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   //            << std::endl;
   //}
 
+  // Reset the coulomb screening data
+  for(auto& task : tasks) task.cou_screening = XCTask::screening_data();
 
   // Precompute EK shell screening
   exx_ek_screening( basis, basis_map, P_abs.data(), nbf, V_max.data(), 
@@ -417,6 +424,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Loop over tasks
   const size_t ntasks = tasks.size();
   std::cout << "NTASKS = " << ntasks << std::endl;
+  std::cout << "NTASKS NNZ = " << std::count_if(tasks.begin(),tasks.end(),[](const auto& t){ return t.cou_screening.shell_pair_list.size(); }) << std::endl;
   #pragma omp parallel
   {
 

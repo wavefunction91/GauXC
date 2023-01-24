@@ -22,7 +22,7 @@ void AoSScheme1MAGMABase::eval_xmat( XCDeviceData* _data, bool do_grad ){
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
   auto static_stack  = data->static_stack;
   auto aos_stack     = data->aos_stack;
-  pack_submat( ntasks, aos_stack.device_tasks, static_stack.dmat_device, 
+  sym_pack_submat( ntasks, aos_stack.device_tasks, static_stack.dmat_device, 
     nbf, submat_block_size, data->device_backend_->queue() );
 
 
@@ -62,7 +62,7 @@ void AoSScheme1MAGMABase::inc_vxc( XCDeviceData* _data){
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
   auto static_stack  = data->static_stack;
   auto aos_stack     = data->aos_stack;
-  task_inc_potential( ntasks, aos_stack.device_tasks, 
+  sym_task_inc_potential( ntasks, aos_stack.device_tasks, 
     static_stack.vxc_device, nbf, submat_block_size, 
     data->device_backend_->queue() );
 }

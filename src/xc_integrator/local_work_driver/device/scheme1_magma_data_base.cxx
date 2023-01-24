@@ -20,14 +20,15 @@ size_t AoSScheme1MAGMABase::Data::get_mem_req( integrator_term_tracker terms,
   
   size_t base_size = base_type::get_mem_req(terms, task);
 
-  // All MAGMA memory is related to exc/vxc +
-  if( not terms.exc_vxc ) return base_size;
-
-  return base_size + 
-         4*sizeof(double*) + // batch device pointers
-         8*sizeof(int32_t);  // Dimensions + leading dimensions 
-                             // (extra handled by get_static_mem_requirement)
-
+  // TODO: There is probably a better way to check this
+  required_term_storage reqt(terms);
+  if( reqt.task_nbe_scr ) {
+    base_size += 
+      4*sizeof(double*) + // batch device pointers
+      8*sizeof(int32_t);  // Dimensions + leading dimensions 
+                          // (extra handled by get_static_mem_requirement)
+  }
+  return base_size;
 
 }
 AoSScheme1MAGMABase::Data::device_buffer_t 
@@ -40,8 +41,8 @@ AoSScheme1MAGMABase::Data::device_buffer_t
   buf = base_type::allocate_dynamic_stack( terms, task_begin, task_end,
     buf );
 
-  // All MAGMA memory is related to exc/vxc +
-  if( not terms.exc_vxc ) return buf;
+  required_term_storage reqt(terms);
+  if( not reqt.task_nbe_scr ) return buf;
 
   // Allocate additional device memory 
   auto [ ptr, sz ] = buf;
@@ -71,7 +72,8 @@ void AoSScheme1MAGMABase::Data::pack_and_send(
   const BasisSetMap& basis_map ) {
 
   base_type::pack_and_send( terms, task_begin, task_end, basis_map );
-  if( not terms.exc_vxc ) return;
+  required_term_storage reqt(terms);
+  if( not reqt.task_nbe_scr ) return;
 
   const auto ntask = std::distance( task_begin, task_end );
   std::vector<double*> dmat_host( ntask ), zmat_host( ntask ), bf_host( ntask ),
@@ -88,18 +90,18 @@ void AoSScheme1MAGMABase::Data::pack_and_send(
     auto& task = host_device_tasks[i];
     zmat_host[i] = task.zmat;    ld_zmat_host[i] = task.npts;
     bf_host[i]   = task.bf;      ld_bf_host[i]   = task.npts;
-    vmat_host[i] = task.nbe_scr; ld_vmat_host[i] = task.nbe;
-    if( task.ncut > 1 ) {
+    vmat_host[i] = task.nbe_scr; ld_vmat_host[i] = task.bfn_screening.nbe;
+    if( task.bfn_screening.ncut > 1 ) {
       dmat_host[i]    = task.nbe_scr;
-      ld_dmat_host[i] = task.nbe;
+      ld_dmat_host[i] = task.bfn_screening.nbe;
     } else {
-      dmat_host[i]    = static_dmat + task.ibf_begin*(nbf+1);
+      dmat_host[i]    = static_dmat + task.bfn_screening.ibf_begin*(nbf+1);
       ld_dmat_host[i] = nbf;
     }
 
     m_host[i] = task.npts;
-    n_host[i] = task.nbe;
-    k_host[i] = task.nbe;
+    n_host[i] = task.bfn_screening.nbe;
+    k_host[i] = task.bfn_screening.nbe;
   }
 
   // Send to device
