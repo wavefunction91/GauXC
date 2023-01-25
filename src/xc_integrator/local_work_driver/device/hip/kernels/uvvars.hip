@@ -16,7 +16,7 @@ __global__ void eval_uvars_lda_kernel( size_t           ntasks,
   auto& task = tasks_device[ batch_idx ];
 
   const auto npts            = task.npts;
-  const auto nbf             = task.nbe;
+  const auto nbf             = task.bfn_screening.nbe;
 
   auto* den_eval_device   = task.den;
 
@@ -86,7 +86,7 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
   auto& task = tasks_device[ batch_idx ];
 
   const auto npts            = task.npts;
-  const auto nbf             = task.nbe;
+  const auto nbf             = task.bfn_screening.nbe;
 
   auto* den_eval_device   = task.den;
   auto* den_x_eval_device = task.ddenx;
@@ -100,51 +100,38 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
 
   const auto* den_basis_prod_device = task.zmat;
 
+  // We always launch enough blocks to cover npts, so blocks aren't doing multiple results
+  double den_reg = 0.;
+  double dx_reg = 0.;
+  double dy_reg = 0.;
+  double dz_reg = 0.;
 
-  for( int  ipt = blockIdx.y * blockDim.y + threadIdx.y;
-            ipt < npts;
-	    ipt += blockDim.y * gridDim.y ) {
+  // Have each thread accumulate its own reduction result into a register.
+  // There's no real _need_ for LDS because the reductions are small and
+  // therefore can be done without sharing.
+  for( int ibf = 0; ibf < nbf; ibf++ ) {
 
-    double den = 0.;
-    double dx  = 0.;
-    double dy  = 0.;
-    double dz  = 0.;
+    for( int  ipt = blockIdx.x * blockDim.x + threadIdx.x; ipt < npts; ipt += blockDim.x * gridDim.x ) {
 
-    for( int ibf_st = 0; ibf_st < nbf; ibf_st += hip::warp_size ) {
+      const double* bf_col   = basis_eval_device     + ibf*npts;
+      const double* bf_x_col = dbasis_x_eval_device  + ibf*npts;
+      const double* bf_y_col = dbasis_y_eval_device  + ibf*npts;
+      const double* bf_z_col = dbasis_z_eval_device  + ibf*npts;
+      const double* db_col   = den_basis_prod_device + ibf*npts;
 
-      double den_reg = 0.;
-      double dx_reg  = 0.;
-      double dy_reg  = 0.;
-      double dz_reg  = 0.;
-
-      int ibf = ibf_st + threadIdx.x;
-      if( ibf < nbf ) {
-        const double* bf_col   = basis_eval_device     + ibf*npts;
-        const double* bf_x_col = dbasis_x_eval_device  + ibf*npts;
-        const double* bf_y_col = dbasis_y_eval_device  + ibf*npts;
-        const double* bf_z_col = dbasis_z_eval_device  + ibf*npts;
-        const double* db_col   = den_basis_prod_device + ibf*npts;
-
-        den_reg = bf_col[ ipt ]   * db_col[ ipt ];
-        dx_reg  = bf_x_col[ ipt ] * db_col[ ipt ];
-        dy_reg  = bf_y_col[ ipt ] * db_col[ ipt ];
-        dz_reg  = bf_z_col[ ipt ] * db_col[ ipt ];
-      }
-
-      den += 2 * hip::warp_reduce_sum<hip::warp_size>( den_reg );
-      dx  += 4 * hip::warp_reduce_sum<hip::warp_size>( dx_reg );
-      dy  += 4 * hip::warp_reduce_sum<hip::warp_size>( dy_reg );
-      dz  += 4 * hip::warp_reduce_sum<hip::warp_size>( dz_reg );
-
+      den_reg += 2 * bf_col[ ipt ]   * db_col[ ipt ];
+      dx_reg += 4 * bf_x_col[ ipt ] * db_col[ ipt ];
+      dy_reg += 4 * bf_y_col[ ipt ] * db_col[ ipt ];
+      dz_reg += 4 * bf_z_col[ ipt ] * db_col[ ipt ];
     }
+  }
 
-    if( threadIdx.x == 0 ) {
-      den_eval_device   [ipt] = den;
-      den_x_eval_device [ipt] = dx ;
-      den_y_eval_device [ipt] = dy ;
-      den_z_eval_device [ipt] = dz ;
-    }
 
+  for( int  ipt = blockIdx.x * blockDim.x + threadIdx.x; ipt < npts; ipt += blockDim.x * gridDim.x ) {
+    den_eval_device   [ipt] = den_reg;
+    den_x_eval_device [ipt] = dx_reg ;
+    den_y_eval_device [ipt] = dy_reg ;
+    den_z_eval_device [ipt] = dz_reg ;
   }
 
 }
@@ -182,9 +169,9 @@ void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max,
 
   // U Variables
   {
-  dim3 threads(hip::warp_size, hip::max_warps_per_thread_block, 1);
-  dim3 blocks( util::div_ceil( nbf_max , threads.x ),
-               util::div_ceil( npts_max , threads.y ),
+  dim3 threads(hip::max_threads_per_thread_block, 1, 1);
+  dim3 blocks( util::div_ceil( npts_max , threads.x ),
+               1,
                ntasks );
 
   hipLaunchKernelGGL(eval_uvars_gga_kernel, dim3(blocks), dim3(threads), 0, 

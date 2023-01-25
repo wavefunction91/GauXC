@@ -2,12 +2,13 @@
 #include "device/hip/hip_backend.hpp"
 #include "kernels/grid_to_center.hpp"
 #include "kernels/hip_ssf_1d.hpp"
+#include "kernels/hip_ssh_2d.hpp"
 
 namespace GauXC {
 
 template <typename Base>
-std::unique_ptr<XCDeviceData> HipAoSScheme1<Base>::create_device_data() {
-  return std::make_unique<Data>();
+std::unique_ptr<XCDeviceData> HipAoSScheme1<Base>::create_device_data(const DeviceRuntimeEnvironment& rt) {
+  return std::make_unique<Data>(rt);
 }
 
 
@@ -16,7 +17,7 @@ void HipAoSScheme1<Base>::partition_weights( XCDeviceData* _data ) {
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  auto device_backend = dynamic_cast<HIPBackend*>(data->device_backend_.get());
+  auto device_backend = dynamic_cast<HIPBackend*>(data->device_backend_);
   if( !device_backend ) GAUXC_BAD_BACKEND_CAST();
 
   const auto ldatoms = data->get_ldatoms();
@@ -30,12 +31,21 @@ void HipAoSScheme1<Base>::partition_weights( XCDeviceData* _data ) {
     base_stack.points_y_device, base_stack.points_z_device,
     scheme1_stack.dist_scratch_device, ldatoms, *device_backend->master_stream );
 
+#if 1
+  partition_weights_ssf_2d( data->total_npts_task_batch, data->global_dims.natoms,
+    static_stack.rab_device, ldatoms, static_stack.coords_device,
+    scheme1_stack.dist_scratch_device, ldatoms, scheme1_stack.iparent_device,
+    scheme1_stack.dist_nearest_device, base_stack.weights_device,
+    *device_backend->master_stream );
+
+#else
   // Modify weights
   partition_weights_ssf_1d( data->total_npts_task_batch, data->global_dims.natoms,
     static_stack.rab_device, ldatoms, static_stack.coords_device, 
     scheme1_stack.dist_scratch_device, ldatoms, scheme1_stack.iparent_device, 
     scheme1_stack.dist_nearest_device, base_stack.weights_device,
     *device_backend->master_stream );
+#endif
 
 }
 

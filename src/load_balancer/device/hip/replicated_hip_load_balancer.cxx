@@ -1,19 +1,20 @@
-#include "replicated_cuda_load_balancer.hpp"
+#include "replicated_hip_load_balancer.hpp"
 #include <gauxc/util/div_ceil.hpp>
-#include "device_specific/cuda_util.hpp"
+#include "device_specific/hip_util.hpp"
 
-#include "cuda_collision_detection.hpp"
+#include "hip_collision_detection.hpp"
 
-using namespace GauXC::load_balancer::cuda;
+using namespace GauXC::load_balancer::hip;
 
 namespace GauXC {
 namespace detail {
 
+// TODO: Make this use a pinned allocator
 template <typename T>
 using pinned_vector = std::vector<T>;
 
 // Helper data struction to keep inputs to collision detection kernels organized
-struct CollisionDetectionCudaData {
+struct CollisionDetectionData {
     // Inputs
     double* low_points_device;
     double* high_points_device;
@@ -74,8 +75,8 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   const size_t max_nbatches   = mg_->max_nbatches() * atBatchSz;
   const size_t LD_bit         = util::div_ceil(nspheres, 32);
 
-  CollisionDetectionCudaData data;
-  cudaStream_t master_stream = 0;
+  CollisionDetectionData data;
+  hipStream_t master_stream = 0;
 
   std::vector< XCTask > temp_tasks;              temp_tasks.reserve( max_nbatches );
   std::vector<std::array<double,3>> low_points;  low_points.reserve( max_nbatches );
@@ -92,17 +93,17 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   pinned_vector<int32_t> position_list;
   
   data.temp_storage_bytes = compute_scratch(max_nbatches, data.counts_device);
-  data.temp_storage_device = util::cuda_malloc<char>(data.temp_storage_bytes); // char is 1 byte
+  data.temp_storage_device = util::hip_malloc<char>(data.temp_storage_bytes); // char is 1 byte
 
-  data.low_points_device   = util::cuda_malloc<double>(max_nbatches * 3);
-  data.high_points_device  = util::cuda_malloc<double>(max_nbatches * 3);
-  data.collisions_device   = util::cuda_malloc<int32_t>(LD_bit * max_nbatches);
-  data.nbe_list_device     = util::cuda_malloc<size_t>(max_nbatches);
-  data.counts_device       = util::cuda_malloc<int32_t>(max_nbatches);
+  data.low_points_device   = util::hip_malloc<double>(max_nbatches * 3);
+  data.high_points_device  = util::hip_malloc<double>(max_nbatches * 3);
+  data.collisions_device   = util::hip_malloc<int32_t>(LD_bit * max_nbatches);
+  data.nbe_list_device     = util::hip_malloc<size_t>(max_nbatches);
+  data.counts_device       = util::hip_malloc<int32_t>(max_nbatches);
 
-  data.centers_device      = util::cuda_malloc<double>(nspheres * 3);
-  data.radii_device        = util::cuda_malloc<double>(nspheres);
-  data.shell_sizes_device  = util::cuda_malloc<size_t>(nspheres);
+  data.centers_device      = util::hip_malloc<double>(nspheres * 3);
+  data.radii_device        = util::hip_malloc<double>(nspheres);
+  data.shell_sizes_device  = util::hip_malloc<size_t>(nspheres);
 
   for(auto& shell : (*this->basis_)) {
     centers.push_back(shell.O());
@@ -110,16 +111,16 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
     shell_sizes.push_back(shell.size());
   }
 
-  util::cuda_copy(nspheres * 3, data.centers_device, centers[0].data(), "Centers HtoD");
-  util::cuda_copy(nspheres, data.radii_device, radii.data(), "Radii HtoD");
-  util::cuda_copy(nspheres, data.shell_sizes_device, shell_sizes.data(), "ShellSize HtoD");
+  util::hip_copy(nspheres * 3, data.centers_device, centers[0].data(), "Centers HtoD");
+  util::hip_copy(nspheres, data.radii_device, radii.data(), "Radii HtoD");
+  util::hip_copy(nspheres, data.shell_sizes_device, shell_sizes.data(), "ShellSize HtoD");
 
   // For batching of multiple atom screening
-  for (size_t atom_batch = 0; atom_batch < num_atom_batch; ++atom_batch) {
+  for (int atom_batch = 0; atom_batch < num_atom_batch; ++atom_batch) {
     //---------------------------------------------------------------------
     // production step 
     int32_t iCurrent  = atom_batch * atBatchSz;
-    for ( size_t atom_idx = 0; atom_idx < atBatchSz && atom_batch * atBatchSz + atom_idx < natoms; ++atom_idx ) {
+    for ( int atom_idx = 0; atom_idx < atBatchSz && atom_batch * atBatchSz + atom_idx < natoms; ++atom_idx ) {
 
       const auto atom = (*this->mol_)[atom_batch * atBatchSz + atom_idx];
       const std::array<double,3> center = { atom.x, atom.y, atom.z };
@@ -150,8 +151,8 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
     //---------------------------------------------------------------------
     // Device collision detection step  
     const size_t ncubes = low_points.size();
-    util::cuda_copy(ncubes * 3, data.low_points_device, low_points[0].data(), "Low points HtoD");
-    util::cuda_copy(ncubes * 3, data.high_points_device, high_points[0].data(), "High points HtoD");
+    util::hip_copy(ncubes * 3, data.low_points_device, low_points[0].data(), "Low points HtoD");
+    util::hip_copy(ncubes * 3, data.high_points_device, high_points[0].data(), "High points HtoD");
 
     collision_detection(
       ncubes, nspheres, LD_bit,
@@ -164,8 +165,8 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
 
     // Copy total number of collisions back to host to allocate result array
     int32_t total_collisions;
-    util::cuda_copy(1, &total_collisions, data.counts_device + ncubes - 1, "Total collisions DtoH");
-    data.position_list_device = util::cuda_malloc<int32_t>(total_collisions);
+    util::hip_copy(1, &total_collisions, data.counts_device + ncubes - 1, "Total collisions DtoH");
+    data.position_list_device = util::hip_malloc<int32_t>(total_collisions);
 
     compute_position_list(
       ncubes, nspheres, LD_bit,
@@ -179,12 +180,12 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
 
     position_list.reserve(total_collisions);
 
-    util::cuda_device_sync();
+    util::hip_device_sync();
     // Copy results back to host
-    util::cuda_copy(total_collisions, position_list.data(), data.position_list_device, "Position List DtoH");
-    util::cuda_copy(ncubes, pos_list_idx.data(), data.counts_device, "Position List Idx DtoH");
-    util::cuda_copy(ncubes, nbe_vec.data(), data.nbe_list_device, "NBE counts DtoH");
-    util::cuda_free(data.position_list_device);
+    util::hip_copy(total_collisions, position_list.data(), data.position_list_device, "Position List DtoH");
+    util::hip_copy(ncubes, pos_list_idx.data(), data.counts_device, "Position List Idx DtoH");
+    util::hip_copy(ncubes, nbe_vec.data(), data.nbe_list_device, "NBE counts DtoH");
+    util::hip_free(data.position_list_device);
 
     low_points.clear();
     high_points.clear();
@@ -192,7 +193,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
     //---------------------------------------------------------------------
     // Assign batches to MPI ranks
     size_t idx = 0;
-    for ( size_t atom_idx = 0; atom_idx < atBatchSz && atom_batch * atBatchSz + atom_idx < natoms; ++atom_idx ) {
+    for ( int atom_idx = 0; atom_idx < atBatchSz && atom_batch * atBatchSz + atom_idx < natoms; ++atom_idx ) {
 
       const auto atom = (*this->mol_)[atom_batch * atBatchSz + atom_idx];
       const std::array<double,3> center = { atom.x, atom.y, atom.z };
@@ -310,15 +311,15 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   local_work = std::move(local_work_unique);
   
   // Free all device memory
-  util::cuda_free(data.low_points_device);
-  util::cuda_free(data.high_points_device);
-  util::cuda_free(data.centers_device);
-  util::cuda_free(data.radii_device);
-  util::cuda_free(data.shell_sizes_device);
-  util::cuda_free(data.collisions_device);
-  util::cuda_free(data.nbe_list_device);
-  util::cuda_free(data.counts_device);
-  util::cuda_free(data.temp_storage_device);
+  util::hip_free(data.low_points_device);
+  util::hip_free(data.high_points_device);
+  util::hip_free(data.centers_device);
+  util::hip_free(data.radii_device);
+  util::hip_free(data.shell_sizes_device);
+  util::hip_free(data.collisions_device);
+  util::hip_free(data.nbe_list_device);
+  util::hip_free(data.counts_device);
+  util::hip_free(data.temp_storage_device);
 
   return local_work;
 }

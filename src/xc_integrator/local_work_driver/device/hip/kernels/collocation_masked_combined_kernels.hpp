@@ -27,15 +27,15 @@ void collocation_device_masked_combined_kernel(
 
     auto& task = device_tasks[ blockIdx.z ];
   
-    const auto               nshells     = task.nshells;
-    const auto               nbf         = task.nbe;
+    const auto               nshells     = task.bfn_screening.nshells;
+    const auto               nbf         = task.bfn_screening.nbe;
     const auto               npts        = task.npts;
     //const auto* __restrict__ pts_device  = task.points;
     const auto* __restrict__ pts_x_device  = task.points_x;
     const auto* __restrict__ pts_y_device  = task.points_y;
     const auto* __restrict__ pts_z_device  = task.points_z;
-    const auto* __restrict__ mask_device = task.shell_list;
-    const auto* __restrict__ offs_device = task.shell_offs;
+    const auto* __restrict__ mask_device = task.bfn_screening.shell_list;
+    const auto* __restrict__ offs_device = task.bfn_screening.shell_offs;
 
     auto* __restrict__ eval_device    = task.bf;
 
@@ -111,15 +111,15 @@ void collocation_device_masked_combined_kernel_deriv1(
 
     auto& task = device_tasks[ blockIdx.z ];
   
-    const auto               nshells     = task.nshells;
-    const auto               nbf         = task.nbe;
+    const auto               nshells     = task.bfn_screening.nshells;
+    const auto               nbf         = task.bfn_screening.nbe;
     const auto               npts        = task.npts;
     //const auto* __restrict__ pts_device  = task.points;
     const auto* __restrict__ pts_x_device  = task.points_x;
     const auto* __restrict__ pts_y_device  = task.points_y;
     const auto* __restrict__ pts_z_device  = task.points_z;
-    const auto* __restrict__ mask_device = task.shell_list;
-    const auto* __restrict__ offs_device = task.shell_offs;
+    const auto* __restrict__ mask_device = task.bfn_screening.shell_list;
+    const auto* __restrict__ offs_device = task.bfn_screening.shell_offs;
 
     auto* __restrict__ eval_device    = task.bf;
     auto* __restrict__ deval_device_x = task.dbfx;

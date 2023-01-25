@@ -1,6 +1,7 @@
 #include "hip/hip_runtime.h"
 #include "hip_extensions.hpp"
 #include "device_specific/hip_device_constants.hpp"
+#include "device/hip/hip_aos_scheme1.hpp"
 #include "common/integrator_constants.hpp"
 #include <numeric>
 
@@ -91,7 +92,6 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
     if( parent_weight < eps_d ) {
       if (threadIdx.x == 0)
         weights[ipt] = 0.;
-      __syncwarp();
       continue;
     }
 
@@ -99,7 +99,6 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
     if (threadIdx.x == 0) {
       jCounter[0] = 0;
     }
-    __syncwarp();
 
     // Each thread will process an iCenter. Atomic operations are used to assign
     // an iCenter value to each thread.
@@ -116,7 +115,7 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
     int cont = (iCenter < natoms);
 
     // We will continue iterating until all of the threads have cont set to 0
-    while (__any_sync(0xffffffff, cont)) {
+    while (__any(cont)) {
       if (cont) {
         double2 rj[weight_unroll/2];
         double2 rab_val[weight_unroll/2];
@@ -166,19 +165,43 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
 
     // All of the threads then sum their contributions. Only thread 0 needs to add the parent
     // contribution.
-    __syncwarp();
     sum = hip::warp_reduce_sum<hip::warp_size>(sum);
     if (threadIdx.x == 0) {
       sum += parent_weight;
       weights[ipt] *= parent_weight / sum;
     }
 
-    __syncwarp();
 #endif
   }
 
 }
 
+void partition_weights_ssf_2d( int32_t npts, int32_t natoms, const double* RAB,
+  int32_t ldRAB, const double* coords, const double* dist, int32_t lddist,
+  const int32_t* iparent, const double* dist_nearest, double* weights,
+  hipStream_t stream ) {
+
+  constexpr auto weight_unroll =
+    alg_constants::HipAoSScheme1::weight_unroll;
+  constexpr auto weight_thread_block =
+    alg_constants::HipAoSScheme1::weight_thread_block;
+  constexpr auto weight_thread_block_per_sm =
+    alg_constants::HipAoSScheme1::weight_thread_block_per_sm;
+
+  // Get the number of CUs on the device
+  int num_sm;
+  int dev_id = 0;
+  hipDeviceGetAttribute(&num_sm, hipDeviceAttributeMultiprocessorCount, dev_id);
+
+  // Modify weights
+  dim3 threads( hip::warp_size, weight_thread_block / hip::warp_size );
+  dim3 blocks ( 1, num_sm * weight_thread_block_per_sm );
+  modify_weights_ssf_kernel_2d
+    <weight_unroll, weight_thread_block, weight_thread_block_per_sm>
+    <<< blocks, threads, 0, stream >>> (
+   npts, natoms, RAB, ldRAB, coords, dist, lddist, iparent, dist_nearest, weights);
+
+}
 
 
 }

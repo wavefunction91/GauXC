@@ -7,9 +7,9 @@ namespace GauXC {
 namespace alg_constants {
 
 struct HipAoSScheme1 {
-  //static constexpr uint32_t weight_unroll = 4;
-  //static constexpr uint32_t weight_thread_block = 640;
-  //static constexpr uint32_t weight_thread_block_per_sm = 2;
+  static constexpr uint32_t weight_unroll = 4;
+  static constexpr uint32_t weight_thread_block = 640;
+  static constexpr uint32_t weight_thread_block_per_sm = 2;
   static constexpr uint32_t max_submat_blocks = 10;
 };
 
@@ -37,7 +37,8 @@ template <typename Base>
 struct HipAoSScheme1<Base>::Data : public Base::Data {
 
   virtual ~Data() noexcept;
-  Data();
+  Data() = delete;
+  Data(const DeviceRuntimeEnvironment& rt);
 
   // Final overrides
   size_t get_submat_chunk_size(int32_t,int32_t) override final;
