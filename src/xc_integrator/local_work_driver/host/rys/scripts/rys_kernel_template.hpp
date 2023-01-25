@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for retails
+ */
   double *hrrx = hrr_array + $(0*(lA+1) * (lB+1) * nroot);
   double *hrry = hrr_array + $(1*(lA+1) * (lB+1) * nroot);
   double *hrrz = hrr_array + $(2*(lA+1) * (lB+1) * nroot);

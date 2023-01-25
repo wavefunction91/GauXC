@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for retails
+ */
 #include <math.h>
 #include "../include/gpu/chebyshev_boys_computation.hpp"
 #include "config_obara_saika.hpp"

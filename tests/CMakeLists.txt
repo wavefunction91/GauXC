@@ -1,3 +1,10 @@
+#
+# GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory (subject to receipt of
+# any required approvals from the U.S. Dept. of Energy). All rights reserved.
+#
+# See LICENSE.txt for retails
+#
 message( STATUS "Building GauXC Tests" )
 add_library( gauxc_catch2 INTERFACE )
 
