@@ -12,8 +12,6 @@ struct Scheme1DataBase : public XCDeviceAoSData {
   using base_type::device_buffer_t;
   using shell_pair = ShellPair<double>;
 
-  static constexpr int points_per_subtask = 256;
-
   struct scheme1_data {
     double*  dist_scratch_device = nullptr;
     double*  dist_nearest_device = nullptr;

@@ -171,6 +171,7 @@ struct XCDeviceStackData : public XCDeviceData {
   // Implementation specific APIs
   virtual size_t get_ldatoms()   = 0; ///< Stride of RAB in device memory
   virtual size_t get_rab_align() = 0; ///< Alignment of RAB in device memory
+  virtual int get_points_per_subtask() = 0; ///< Number of points per subtask for OS kernels
   virtual size_t get_static_mem_requirement() = 0;
     ///< Static memory requirment for task batch which is independent of batch size
 

@@ -251,6 +251,7 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
   total_nshells_bfn_task_batch       = 0; 
   total_nshells_cou_sqlt_task_batch  = 0; 
   size_t num_subtasks = 0;
+  const int points_per_subtask = get_points_per_subtask();
   for( auto it = task_begin; it != task_end; ++it ) {
     const auto& shell_list_bfn  = it->bfn_screening.shell_list;
     const size_t nshells_bfn  = shell_list_bfn.size();
@@ -1291,6 +1292,7 @@ void Scheme1DataBase::pack_and_send(
       const auto itask = std::distance( task_begin, it );
 
       // Construct the subtasks
+      const int points_per_subtask = get_points_per_subtask();
       for (int subtask_i = 0; subtask_i < it->npts; subtask_i += points_per_subtask) {
         subtask.push_back({itask, subtask_i, std::min(it->npts, subtask_i+points_per_subtask), 0});
       }
