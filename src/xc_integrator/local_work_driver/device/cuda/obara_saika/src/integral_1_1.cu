@@ -3,7 +3,15 @@
 #include "config_obara_saika.hpp"
 #include "integral_1_1.hu"
 
+#include "task_map_base.hu"
+
+#include "device_specific/cuda_device_constants.hpp"
+#include "../../cuda_aos_scheme1.hpp"
+
 namespace XGPU {
+
+using namespace GauXC;
+
   __inline__ __device__ void dev_integral_1_1_driver(double X_AB,
 				   double Y_AB,
 				   double Z_AB,
@@ -763,456 +771,421 @@ namespace XGPU {
 
   }
 
-#define K11_WARPSIZE 32
-#define K11_NUMWARPS 8
-#define K11_NUMTHREADS (K11_WARPSIZE * K11_NUMWARPS)
-#define K11_USESHARED 1
-#define K11_MAX_PRIMPAIRS 32
+template<bool diag_, int points_per_subtask_, int primpair_shared_limit_>
+struct DeviceTask11 {
+  static constexpr int max_primpair_shared_limit = 32;
 
-__inline__ __device__ void dev_integral_1_1_task(
-  const int i,
-  const int npts,
-  const int nprim_pairs,
-  // Data
-  double X_AB,
-  double Y_AB,
-  double Z_AB,
-  // Point data
-  double4 (&s_task_data)[K11_NUMTHREADS],
-  // Shell Pair Data
-  const shell_pair* sp,
-  // Output Data
-  const double *Xi,
-  const double *Xj,
-  int ldX,
-  double *Gi,
-  double *Gj,
-  int ldG, 
-  // Other
-  double *boys_table) {
+  static int const primpair_shared_limit = primpair_shared_limit_;
+  static int const points_per_subtask = points_per_subtask_;
+  static int const num_threads = points_per_subtask_;
+  static bool const diag = diag_;
 
-  const int laneId = threadIdx.x % K11_WARPSIZE;
+  static constexpr bool use_shared = (primpair_shared_limit > 0) && 
+                                     (primpair_shared_limit <= max_primpair_shared_limit);
+  static constexpr int num_warps = points_per_subtask / cuda::warp_size;
+  // Cannot declare shared memory array with length 0
+  static constexpr int prim_buffer_size = (use_shared) ? num_warps * primpair_shared_limit : 1;
 
-  const auto& prim_pairs = sp->prim_pairs();
+  struct Params {
+    const double *Xi;
+    const double *Xj;
+    double *Gi;
+    double *Gj;
+    double X_AB;
+    double Y_AB;
+    double Z_AB;
+  };
 
-#if K11_USESHARED
-  // Load Primpairs to shared
-  __shared__ GauXC::PrimitivePair<double> s_prim_pairs[K11_NUMWARPS][K11_MAX_PRIMPAIRS];
+  __inline__ __device__ static Params get_params( 
+    const double *Xi, const double *Xj,
+    double *Gi, double *Gj,
+    double* sp_X_AB_device,
+    double* sp_Y_AB_device,
+    double* sp_Z_AB_device,
+    const int index) {
 
-  const int warpId = (threadIdx.x / K11_WARPSIZE);
-  const int32_t* src = (int32_t*) &(prim_pairs[0]);
-  int32_t* dst = (int32_t*) &(s_prim_pairs[warpId][0]);
+    Params param;
+    if (diag) {
+      param.Xi = Xi;
+      param.Xj = Xi;
+      param.Gi = Gi;
+      param.Gj = Gi;
+    } else {
+      param.Xi = Xi;
+      param.Xj = Xj;
+      param.Gi = Gi;
+      param.Gj = Gj;
+    }
+    param.X_AB = sp_X_AB_device[index];
+    param.Y_AB = sp_Y_AB_device[index];
+    param.Z_AB = sp_Z_AB_device[index];
 
-  for (int i = laneId; i < nprim_pairs * sizeof(GauXC::PrimitivePair<double>) / sizeof(int32_t); i+=K11_WARPSIZE) {
-    dst[i] = src[i]; 
+    return param;
   }
-  __syncwarp();
-#endif
 
+  __inline__ __device__ static void compute( 
+    const int i,
+    const int npts,
+    const int nprim_pairs,
+    // Point data
+    double4 (&s_task_data)[points_per_subtask],
+    // Shell Pair Data
+    const shell_pair* sp,
+    // Output Data
+    const Params param,
+    int ldX,
+    int ldG, 
+    // Other
+    double *boys_table) {
 
-  __shared__ double outBuffer[K11_NUMTHREADS][3];
+    // Unpack Params;
+    const double *Xi = param.Xi;
+    const double *Xj = param.Xj;
+    double *Gi = param.Gi;
+    double *Gj = param.Gj;
+    const double X_AB = param.X_AB;
+    const double Y_AB = param.Y_AB;
+    const double Z_AB = param.Z_AB;
 
-  // Loop over points in shared in batches of 32
-  for (int i = 0; i < K11_NUMTHREADS / K11_WARPSIZE; i++) {
-    for (int j = 0; j < 3; j++) {
-      outBuffer[threadIdx.x][j] = 0.0;
+    static constexpr bool use_shared = (primpair_shared_limit > 0);
+    static constexpr int num_warps = points_per_subtask / cuda::warp_size;
+    // Cannot declare shared memory array with length 0
+    static constexpr int prim_buffer_size = (use_shared) ? num_warps * primpair_shared_limit : 1;
+
+    const int laneId = threadIdx.x % cuda::warp_size;
+    const int warpId __attribute__((unused)) = threadIdx.x / cuda::warp_size;
+
+    const auto& prim_pairs = sp->prim_pairs();
+    __shared__ GauXC::PrimitivePair<double> s_prim_pairs[prim_buffer_size] __attribute__((unused));
+
+    if constexpr (use_shared) {
+      load_primpair_shared(laneId, warpId, nprim_pairs,
+        &(prim_pairs[0]), &(s_prim_pairs[warpId * primpair_shared_limit]));
+        __syncwarp();
     }
 
-    double temp_0, temp_1, temp_2, temp_3, temp_4, temp_5, temp_6, temp_7, temp_8;
-    temp_0 = SCALAR_ZERO();
-    temp_1 = SCALAR_ZERO();
-    temp_2 = SCALAR_ZERO();
-    temp_3 = SCALAR_ZERO();
-    temp_4 = SCALAR_ZERO();
-    temp_5 = SCALAR_ZERO();
-    temp_6 = SCALAR_ZERO();
-    temp_7 = SCALAR_ZERO();
-    temp_8 = SCALAR_ZERO();
+    __shared__ double outBuffer[num_threads][3];
 
-    const int pointIndex = i * K11_WARPSIZE + laneId;
-
-    if (pointIndex < npts) {
-      const double point_x = s_task_data[pointIndex].x;
-      const double point_y = s_task_data[pointIndex].y;
-      const double point_z = s_task_data[pointIndex].z;
-      const double weight = s_task_data[pointIndex].w;
-
-      for(int ij = 0; ij < nprim_pairs; ++ij) {
-#if K11_USESHARED
-        double RHO = s_prim_pairs[warpId][ij].gamma;
-        double RHO_INV = s_prim_pairs[warpId][ij].gamma_inv;
-        double X_PA = s_prim_pairs[warpId][ij].PA.x;
-        double Y_PA = s_prim_pairs[warpId][ij].PA.y;
-        double Z_PA = s_prim_pairs[warpId][ij].PA.z;
-
-        double xP = s_prim_pairs[warpId][ij].P.x;
-        double yP = s_prim_pairs[warpId][ij].P.y;
-        double zP = s_prim_pairs[warpId][ij].P.z;
-
-        double eval = s_prim_pairs[warpId][ij].K_coeff_prod;
-#else
-        double RHO = prim_pairs[ij].gamma;
-        double RHO_INV = prim_pairs[ij].gamma_inv;
-        double X_PA = prim_pairs[ij].PA.x;
-        double Y_PA = prim_pairs[ij].PA.y;
-        double Z_PA = prim_pairs[ij].PA.z;
-
-        double xP = prim_pairs[ij].P.x;
-        double yP = prim_pairs[ij].P.y;
-        double zP = prim_pairs[ij].P.z;
-
-        double eval = prim_pairs[ij].K_coeff_prod;
-#endif
-
-        // Evaluate T Values
-        SCALAR_TYPE X_PC = SCALAR_SUB(xP, point_x);
-        SCALAR_TYPE Y_PC = SCALAR_SUB(yP, point_y);
-        SCALAR_TYPE Z_PC = SCALAR_SUB(zP, point_z);
-
-
-        SCALAR_TYPE TVAL = SCALAR_MUL(X_PC, X_PC);
-        TVAL = SCALAR_FMA(Y_PC, Y_PC, TVAL);
-        TVAL = SCALAR_FMA(Z_PC, Z_PC, TVAL);
-        TVAL = SCALAR_MUL(RHO, TVAL);
-
-        SCALAR_TYPE t00, t01, t02, TVAL_inv_e;
-
-        // Evaluate Boys function
-        boys_element<2>(&TVAL, &TVAL_inv_e, &t02, boys_table);
-
-        // Evaluate VRR Buffer
-        SCALAR_TYPE t10, t11, t20, tx, ty;
-
-        t01 = SCALAR_MUL(SCALAR_ADD(SCALAR_MUL(TVAL, t02), TVAL_inv_e), SCALAR_SET1(0.66666666666666662966));
-        t00 = SCALAR_MUL(SCALAR_ADD(SCALAR_MUL(TVAL, t01), TVAL_inv_e), SCALAR_SET1(2.00000000000000000000));
-
-        t00 = SCALAR_MUL(eval, t00);
-        t01 = SCALAR_MUL(eval, t01);
-        t02 = SCALAR_MUL(eval, t02);
-        t10 = SCALAR_MUL(X_PA, t00);
-        t10 = SCALAR_FNMA(X_PC, t01, t10);
-        t11 = SCALAR_MUL(X_PA, t01);
-        t11 = SCALAR_FNMA(X_PC, t02, t11);
-        tx = temp_0;
-        tx = SCALAR_ADD(tx, t10);
-        temp_0 = tx;
-        t20 = SCALAR_MUL(X_PA, t10);
-        t20 = SCALAR_FNMA(X_PC, t11, t20);
-        tx = SCALAR_SUB(t00, t01);
-        ty = SCALAR_SET1(0.5 * 1);
-        ty = SCALAR_MUL(ty, RHO_INV);
-        t20 = SCALAR_FMA(tx, ty, t20);
-        tx = temp_3;
-        tx = SCALAR_ADD(tx, t20);
-        temp_3 = tx;
-        t20 = SCALAR_MUL(Y_PA, t10);
-        t20 = SCALAR_FNMA(Y_PC, t11, t20);
-        tx = temp_4;
-        tx = SCALAR_ADD(tx, t20);
-        temp_4 = tx;
-        t20 = SCALAR_MUL(Z_PA, t10);
-        t20 = SCALAR_FNMA(Z_PC, t11, t20);
-        tx = temp_5;
-        tx = SCALAR_ADD(tx, t20);
-        temp_5 = tx;
-        t10 = SCALAR_MUL(Y_PA, t00);
-        t10 = SCALAR_FNMA(Y_PC, t01, t10);
-        t11 = SCALAR_MUL(Y_PA, t01);
-        t11 = SCALAR_FNMA(Y_PC, t02, t11);
-        tx = temp_1;
-        tx = SCALAR_ADD(tx, t10);
-        temp_1 = tx;
-        t20 = SCALAR_MUL(Y_PA, t10);
-        t20 = SCALAR_FNMA(Y_PC, t11, t20);
-        tx = SCALAR_SUB(t00, t01);
-        ty = SCALAR_SET1(0.5 * 1);
-        ty = SCALAR_MUL(ty, RHO_INV);
-        t20 = SCALAR_FMA(tx, ty, t20);
-        tx = temp_6;
-        tx = SCALAR_ADD(tx, t20);
-        temp_6 = tx;
-        t20 = SCALAR_MUL(Z_PA, t10);
-        t20 = SCALAR_FNMA(Z_PC, t11, t20);
-        tx = temp_7;
-        tx = SCALAR_ADD(tx, t20);
-        temp_7 = tx;
-        t10 = SCALAR_MUL(Z_PA, t00);
-        t10 = SCALAR_FNMA(Z_PC, t01, t10);
-        t11 = SCALAR_MUL(Z_PA, t01);
-        t11 = SCALAR_FNMA(Z_PC, t02, t11);
-        tx = temp_2;
-        tx = SCALAR_ADD(tx, t10);
-        temp_2 = tx;
-        t20 = SCALAR_MUL(Z_PA, t10);
-        t20 = SCALAR_FNMA(Z_PC, t11, t20);
-        tx = SCALAR_SUB(t00, t01);
-        ty = SCALAR_SET1(0.5 * 1);
-        ty = SCALAR_MUL(ty, RHO_INV);
-        t20 = SCALAR_FMA(tx, ty, t20);
-        tx = temp_8;
-        tx = SCALAR_ADD(tx, t20);
-        temp_8 = tx;
+    // Loop over points in shared in batches of 32
+    for (int i = 0; i <  num_warps; i++) {
+      for (int j = 0; j < 3; j++) {
+        outBuffer[threadIdx.x][j] = 0.0;
       }
 
-      if (
-        abs(temp_0) > 1e-12 || abs(temp_1) > 1e-12 || abs(temp_2) > 1e-12 ||
-        abs(temp_3) > 1e-12 || abs(temp_4) > 1e-12 || abs(temp_5) > 1e-12 ||
-        abs(temp_6) > 1e-12 || abs(temp_7) > 1e-12 || abs(temp_8) > 1e-12
-      ) {
-        const double * __restrict__ Xik = (Xi + pointIndex);
-        const double * __restrict__ Xjk = (Xj + pointIndex);
-        double * __restrict__ Gik = (Gi + pointIndex);
-        double * __restrict__ Gjk = (Gj + pointIndex);
+      double temp_0, temp_1, temp_2, temp_3, temp_4, temp_5, temp_6, temp_7, temp_8;
+      temp_0 = SCALAR_ZERO();
+      temp_1 = SCALAR_ZERO();
+      temp_2 = SCALAR_ZERO();
+      temp_3 = SCALAR_ZERO();
+      temp_4 = SCALAR_ZERO();
+      temp_5 = SCALAR_ZERO();
+      temp_6 = SCALAR_ZERO();
+      temp_7 = SCALAR_ZERO();
+      temp_8 = SCALAR_ZERO();
 
-        SCALAR_TYPE const_value_v = weight;
+      const int pointIndex = i * cuda::warp_size + laneId;
 
-        double const_value, X_ABp, Y_ABp, Z_ABp, comb_m_i, comb_n_j, comb_p_k;
-        SCALAR_TYPE const_value_w;
-        SCALAR_TYPE tx, ty, tz, tw, t0, t1, t2;
+      if (pointIndex < npts) {
+        const double point_x = s_task_data[pointIndex].x;
+        const double point_y = s_task_data[pointIndex].y;
+        const double point_z = s_task_data[pointIndex].z;
+        const double weight = s_task_data[pointIndex].w;
 
-        /**** j = 0 ****/
-        X_ABp = 1.0; comb_m_i = 1.0;
-        Y_ABp = 1.0; comb_n_j = 1.0;
-        Z_ABp = 1.0; comb_p_k = 1.0;
-        const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
-        const_value_w = SCALAR_MUL(const_value_v, const_value);
+        for(int ij = 0; ij < nprim_pairs; ++ij) {
+          const GauXC::PrimitivePair<double>* prim_pairs_use = nullptr; 
+          if constexpr (use_shared) prim_pairs_use = &(s_prim_pairs[warpId * primpair_shared_limit]);
+          else                      prim_pairs_use = &(prim_pairs[0]);
 
-        tx = SCALAR_LOAD((Xik + 0 * ldX));
-        ty = SCALAR_LOAD((Xjk + 0 * ldX));
-        t0 = SCALAR_MUL(temp_3, const_value_w);
-        tz = SCALAR_MUL(ty, t0);
-        tw = SCALAR_MUL(tx, t0);
-        outBuffer[threadIdx.x][0] += tz;
+          double RHO = prim_pairs_use[ij].gamma;
+          double RHO_INV = prim_pairs_use[ij].gamma_inv;
+          double X_PA = prim_pairs_use[ij].PA.x;
+          double Y_PA = prim_pairs_use[ij].PA.y;
+          double Z_PA = prim_pairs_use[ij].PA.z;
 
-        tx = SCALAR_LOAD((Xik + 1 * ldX));
-        t1 = SCALAR_MUL(temp_4, const_value_w);
-        tz = SCALAR_MUL(ty, t1);
-        tw = SCALAR_FMA(tx, t1, tw);
-        outBuffer[threadIdx.x][1] += tz;
+          double xP = prim_pairs_use[ij].P.x;
+          double yP = prim_pairs_use[ij].P.y;
+          double zP = prim_pairs_use[ij].P.z;
 
-        tx = SCALAR_LOAD((Xik + 2 * ldX));
-        t2 = SCALAR_MUL(temp_5, const_value_w);
-        tz = SCALAR_MUL(ty, t2);
-        tw = SCALAR_FMA(tx, t2, tw);
-        outBuffer[threadIdx.x][2] += tz;
+          double eval = prim_pairs_use[ij].K_coeff_prod;
 
-        X_ABp = SCALAR_MUL(X_ABp, X_AB); comb_m_i = SCALAR_MUL(comb_m_i * 1, SCALAR_RECIPROCAL(1));
-        Y_ABp = 1.0; comb_n_j = 1.0;
-        Z_ABp = 1.0; comb_p_k = 1.0;
-        const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
-        const_value_w = SCALAR_MUL(const_value_v, const_value);
+          // Evaluate T Values
+          SCALAR_TYPE X_PC = SCALAR_SUB(xP, point_x);
+          SCALAR_TYPE Y_PC = SCALAR_SUB(yP, point_y);
+          SCALAR_TYPE Z_PC = SCALAR_SUB(zP, point_z);
 
-        tx = SCALAR_LOAD((Xik + 0 * ldX));
-        t0 = SCALAR_MUL(temp_0, const_value_w);
-        tz = SCALAR_MUL(ty, t0);
-        tw = SCALAR_FMA(tx, t0, tw);
-        outBuffer[threadIdx.x][0] += tz;
 
-        tx = SCALAR_LOAD((Xik + 1 * ldX));
-        t1 = SCALAR_MUL(temp_1, const_value_w);
-        tz = SCALAR_MUL(ty, t1);
-        tw = SCALAR_FMA(tx, t1, tw);
-        outBuffer[threadIdx.x][1] += tz;
+          SCALAR_TYPE TVAL = SCALAR_MUL(X_PC, X_PC);
+          TVAL = SCALAR_FMA(Y_PC, Y_PC, TVAL);
+          TVAL = SCALAR_FMA(Z_PC, Z_PC, TVAL);
+          TVAL = SCALAR_MUL(RHO, TVAL);
 
-        tx = SCALAR_LOAD((Xik + 2 * ldX));
-        t2 = SCALAR_MUL(temp_2, const_value_w);
-        tz = SCALAR_MUL(ty, t2);
-        tw = SCALAR_FMA(tx, t2, tw);
-        outBuffer[threadIdx.x][2] += tz;
-        atomicAdd((Gjk + 0 * ldG), tw);
+          SCALAR_TYPE t00, t01, t02, TVAL_inv_e;
 
-        /**** j = 1 ****/
-        X_ABp = 1.0; comb_m_i = 1.0;
-        Y_ABp = 1.0; comb_n_j = 1.0;
-        Z_ABp = 1.0; comb_p_k = 1.0;
-        const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
-        const_value_w = SCALAR_MUL(const_value_v, const_value);
+          // Evaluate Boys function
+          boys_element<2>(&TVAL, &TVAL_inv_e, &t02, boys_table);
 
-        tx = SCALAR_LOAD((Xik + 0 * ldX));
-        ty = SCALAR_LOAD((Xjk + 1 * ldX));
-        t0 = SCALAR_MUL(temp_4, const_value_w);
-        tz = SCALAR_MUL(ty, t0);
-        tw = SCALAR_MUL(tx, t0);
-        outBuffer[threadIdx.x][0] += tz;
+          // Evaluate VRR Buffer
+          SCALAR_TYPE t10, t11, t20, tx, ty;
 
-        tx = SCALAR_LOAD((Xik + 1 * ldX));
-        t1 = SCALAR_MUL(temp_6, const_value_w);
-        tz = SCALAR_MUL(ty, t1);
-        tw = SCALAR_FMA(tx, t1, tw);
-        outBuffer[threadIdx.x][1] += tz;
+          t01 = SCALAR_MUL(SCALAR_ADD(SCALAR_MUL(TVAL, t02), TVAL_inv_e), SCALAR_SET1(0.66666666666666662966));
+          t00 = SCALAR_MUL(SCALAR_ADD(SCALAR_MUL(TVAL, t01), TVAL_inv_e), SCALAR_SET1(2.00000000000000000000));
 
-        tx = SCALAR_LOAD((Xik + 2 * ldX));
-        t2 = SCALAR_MUL(temp_7, const_value_w);
-        tz = SCALAR_MUL(ty, t2);
-        tw = SCALAR_FMA(tx, t2, tw);
-        outBuffer[threadIdx.x][2] += tz;
+          t00 = SCALAR_MUL(eval, t00);
+          t01 = SCALAR_MUL(eval, t01);
+          t02 = SCALAR_MUL(eval, t02);
+          t10 = SCALAR_MUL(X_PA, t00);
+          t10 = SCALAR_FNMA(X_PC, t01, t10);
+          t11 = SCALAR_MUL(X_PA, t01);
+          t11 = SCALAR_FNMA(X_PC, t02, t11);
+          tx = temp_0;
+          tx = SCALAR_ADD(tx, t10);
+          temp_0 = tx;
+          t20 = SCALAR_MUL(X_PA, t10);
+          t20 = SCALAR_FNMA(X_PC, t11, t20);
+          tx = SCALAR_SUB(t00, t01);
+          ty = SCALAR_SET1(0.5 * 1);
+          ty = SCALAR_MUL(ty, RHO_INV);
+          t20 = SCALAR_FMA(tx, ty, t20);
+          tx = temp_3;
+          tx = SCALAR_ADD(tx, t20);
+          temp_3 = tx;
+          t20 = SCALAR_MUL(Y_PA, t10);
+          t20 = SCALAR_FNMA(Y_PC, t11, t20);
+          tx = temp_4;
+          tx = SCALAR_ADD(tx, t20);
+          temp_4 = tx;
+          t20 = SCALAR_MUL(Z_PA, t10);
+          t20 = SCALAR_FNMA(Z_PC, t11, t20);
+          tx = temp_5;
+          tx = SCALAR_ADD(tx, t20);
+          temp_5 = tx;
+          t10 = SCALAR_MUL(Y_PA, t00);
+          t10 = SCALAR_FNMA(Y_PC, t01, t10);
+          t11 = SCALAR_MUL(Y_PA, t01);
+          t11 = SCALAR_FNMA(Y_PC, t02, t11);
+          tx = temp_1;
+          tx = SCALAR_ADD(tx, t10);
+          temp_1 = tx;
+          t20 = SCALAR_MUL(Y_PA, t10);
+          t20 = SCALAR_FNMA(Y_PC, t11, t20);
+          tx = SCALAR_SUB(t00, t01);
+          ty = SCALAR_SET1(0.5 * 1);
+          ty = SCALAR_MUL(ty, RHO_INV);
+          t20 = SCALAR_FMA(tx, ty, t20);
+          tx = temp_6;
+          tx = SCALAR_ADD(tx, t20);
+          temp_6 = tx;
+          t20 = SCALAR_MUL(Z_PA, t10);
+          t20 = SCALAR_FNMA(Z_PC, t11, t20);
+          tx = temp_7;
+          tx = SCALAR_ADD(tx, t20);
+          temp_7 = tx;
+          t10 = SCALAR_MUL(Z_PA, t00);
+          t10 = SCALAR_FNMA(Z_PC, t01, t10);
+          t11 = SCALAR_MUL(Z_PA, t01);
+          t11 = SCALAR_FNMA(Z_PC, t02, t11);
+          tx = temp_2;
+          tx = SCALAR_ADD(tx, t10);
+          temp_2 = tx;
+          t20 = SCALAR_MUL(Z_PA, t10);
+          t20 = SCALAR_FNMA(Z_PC, t11, t20);
+          tx = SCALAR_SUB(t00, t01);
+          ty = SCALAR_SET1(0.5 * 1);
+          ty = SCALAR_MUL(ty, RHO_INV);
+          t20 = SCALAR_FMA(tx, ty, t20);
+          tx = temp_8;
+          tx = SCALAR_ADD(tx, t20);
+          temp_8 = tx;
+        }
 
-        Y_ABp = SCALAR_MUL(Y_ABp, Y_AB); comb_n_j = SCALAR_MUL(comb_n_j * 1, SCALAR_RECIPROCAL(1));
-        Z_ABp = 1.0; comb_p_k = 1.0;
-        const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
-        const_value_w = SCALAR_MUL(const_value_v, const_value);
+        if (diag ||
+          abs(temp_0) > 1e-12 || abs(temp_1) > 1e-12 || abs(temp_2) > 1e-12 ||
+          abs(temp_3) > 1e-12 || abs(temp_4) > 1e-12 || abs(temp_5) > 1e-12 ||
+          abs(temp_6) > 1e-12 || abs(temp_7) > 1e-12 || abs(temp_8) > 1e-12
+        ) {
+          const double * __restrict__ Xik = (Xi + pointIndex);
+          const double * __restrict__ Xjk = (Xj + pointIndex);
+          double * __restrict__ Gik = (Gi + pointIndex);
+          double * __restrict__ Gjk = (Gj + pointIndex);
 
-        tx = SCALAR_LOAD((Xik + 0 * ldX));
-        t0 = SCALAR_MUL(temp_0, const_value_w);
-        tz = SCALAR_MUL(ty, t0);
-        tw = SCALAR_FMA(tx, t0, tw);
-        outBuffer[threadIdx.x][0] += tz;
+          SCALAR_TYPE const_value_v = weight;
 
-        tx = SCALAR_LOAD((Xik + 1 * ldX));
-        t1 = SCALAR_MUL(temp_1, const_value_w);
-        tz = SCALAR_MUL(ty, t1);
-        tw = SCALAR_FMA(tx, t1, tw);
-        outBuffer[threadIdx.x][1] += tz;
+          double const_value, X_ABp, Y_ABp, Z_ABp, comb_m_i, comb_n_j, comb_p_k;
+          SCALAR_TYPE const_value_w;
+          SCALAR_TYPE tx, ty, tz, tw, t0, t1, t2;
 
-        tx = SCALAR_LOAD((Xik + 2 * ldX));
-        t2 = SCALAR_MUL(temp_2, const_value_w);
-        tz = SCALAR_MUL(ty, t2);
-        tw = SCALAR_FMA(tx, t2, tw);
-        outBuffer[threadIdx.x][2] += tz;
-        atomicAdd((Gjk + 1 * ldG), tw);
+          /**** j = 0 ****/
+          X_ABp = 1.0; comb_m_i = 1.0;
+          Y_ABp = 1.0; comb_n_j = 1.0;
+          Z_ABp = 1.0; comb_p_k = 1.0;
+          const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+          const_value_w = SCALAR_MUL(const_value_v, const_value);
 
-        /**** j = 2 ****/
-        X_ABp = 1.0; comb_m_i = 1.0;
-        Y_ABp = 1.0; comb_n_j = 1.0;
-        Z_ABp = 1.0; comb_p_k = 1.0;
-        const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
-        const_value_w = SCALAR_MUL(const_value_v, const_value);
+          tx = SCALAR_LOAD((Xik + 0 * ldX));
+          ty = SCALAR_LOAD((Xjk + 0 * ldX));
+          t0 = SCALAR_MUL(temp_3, const_value_w);
+          tz = SCALAR_MUL(ty, t0);
+          tw = SCALAR_MUL(tx, t0);
+          outBuffer[threadIdx.x][0] += tz;
 
-        tx = SCALAR_LOAD((Xik + 0 * ldX));
-        ty = SCALAR_LOAD((Xjk + 2 * ldX));
-        t0 = SCALAR_MUL(temp_5, const_value_w);
-        tz = SCALAR_MUL(ty, t0);
-        tw = SCALAR_MUL(tx, t0);
-        outBuffer[threadIdx.x][0] += tz;
+          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          t1 = SCALAR_MUL(temp_4, const_value_w);
+          tz = SCALAR_MUL(ty, t1);
+          tw = SCALAR_FMA(tx, t1, tw);
+          outBuffer[threadIdx.x][1] += tz;
 
-        tx = SCALAR_LOAD((Xik + 1 * ldX));
-        t1 = SCALAR_MUL(temp_7, const_value_w);
-        tz = SCALAR_MUL(ty, t1);
-        tw = SCALAR_FMA(tx, t1, tw);
-        outBuffer[threadIdx.x][1] += tz;
+          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          t2 = SCALAR_MUL(temp_5, const_value_w);
+          tz = SCALAR_MUL(ty, t2);
+          tw = SCALAR_FMA(tx, t2, tw);
+          outBuffer[threadIdx.x][2] += tz;
 
-        tx = SCALAR_LOAD((Xik + 2 * ldX));
-        t2 = SCALAR_MUL(temp_8, const_value_w);
-        tz = SCALAR_MUL(ty, t2);
-        tw = SCALAR_FMA(tx, t2, tw);
-        outBuffer[threadIdx.x][2] += tz;
+          X_ABp = SCALAR_MUL(X_ABp, X_AB); comb_m_i = SCALAR_MUL(comb_m_i * 1, SCALAR_RECIPROCAL(1));
+          Y_ABp = 1.0; comb_n_j = 1.0;
+          Z_ABp = 1.0; comb_p_k = 1.0;
+          const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+          const_value_w = SCALAR_MUL(const_value_v, const_value);
 
-        Z_ABp = SCALAR_MUL(Z_ABp, Z_AB); comb_p_k = SCALAR_MUL(comb_p_k * 1, SCALAR_RECIPROCAL(1));
-        const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
-        const_value_w = SCALAR_MUL(const_value_v, const_value);
+          tx = SCALAR_LOAD((Xik + 0 * ldX));
+          t0 = SCALAR_MUL(temp_0, const_value_w);
+          tz = SCALAR_MUL(ty, t0);
+          tw = SCALAR_FMA(tx, t0, tw);
+          outBuffer[threadIdx.x][0] += tz;
 
-        tx = SCALAR_LOAD((Xik + 0 * ldX));
-        t0 = SCALAR_MUL(temp_0, const_value_w);
-        tz = SCALAR_MUL(ty, t0);
-        tw = SCALAR_FMA(tx, t0, tw);
-        outBuffer[threadIdx.x][0] += tz;
+          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          t1 = SCALAR_MUL(temp_1, const_value_w);
+          tz = SCALAR_MUL(ty, t1);
+          tw = SCALAR_FMA(tx, t1, tw);
+          outBuffer[threadIdx.x][1] += tz;
 
-        tx = SCALAR_LOAD((Xik + 1 * ldX));
-        t1 = SCALAR_MUL(temp_1, const_value_w);
-        tz = SCALAR_MUL(ty, t1);
-        tw = SCALAR_FMA(tx, t1, tw);
-        outBuffer[threadIdx.x][1] += tz;
+          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          t2 = SCALAR_MUL(temp_2, const_value_w);
+          tz = SCALAR_MUL(ty, t2);
+          tw = SCALAR_FMA(tx, t2, tw);
+          outBuffer[threadIdx.x][2] += tz;
+          if constexpr (!diag) atomicAdd((Gjk + 0 * ldG), tw);
 
-        tx = SCALAR_LOAD((Xik + 2 * ldX));
-        t2 = SCALAR_MUL(temp_2, const_value_w);
-        tz = SCALAR_MUL(ty, t2);
-        tw = SCALAR_FMA(tx, t2, tw);
-        outBuffer[threadIdx.x][2] += tz;
-        atomicAdd((Gjk + 2 * ldG), tw);
+          /**** j = 1 ****/
+          X_ABp = 1.0; comb_m_i = 1.0;
+          Y_ABp = 1.0; comb_n_j = 1.0;
+          Z_ABp = 1.0; comb_p_k = 1.0;
+          const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+          const_value_w = SCALAR_MUL(const_value_v, const_value);
 
-        atomicAdd((Gik + 0 * ldG), outBuffer[threadIdx.x][0]);
-        atomicAdd((Gik + 1 * ldG), outBuffer[threadIdx.x][1]);
-        atomicAdd((Gik + 2 * ldG), outBuffer[threadIdx.x][2]);
+          tx = SCALAR_LOAD((Xik + 0 * ldX));
+          ty = SCALAR_LOAD((Xjk + 1 * ldX));
+          t0 = SCALAR_MUL(temp_4, const_value_w);
+          tz = SCALAR_MUL(ty, t0);
+          tw = SCALAR_MUL(tx, t0);
+          outBuffer[threadIdx.x][0] += tz;
 
+          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          t1 = SCALAR_MUL(temp_6, const_value_w);
+          tz = SCALAR_MUL(ty, t1);
+          tw = SCALAR_FMA(tx, t1, tw);
+          outBuffer[threadIdx.x][1] += tz;
+
+          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          t2 = SCALAR_MUL(temp_7, const_value_w);
+          tz = SCALAR_MUL(ty, t2);
+          tw = SCALAR_FMA(tx, t2, tw);
+          outBuffer[threadIdx.x][2] += tz;
+
+          Y_ABp = SCALAR_MUL(Y_ABp, Y_AB); comb_n_j = SCALAR_MUL(comb_n_j * 1, SCALAR_RECIPROCAL(1));
+          Z_ABp = 1.0; comb_p_k = 1.0;
+          const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+          const_value_w = SCALAR_MUL(const_value_v, const_value);
+
+          tx = SCALAR_LOAD((Xik + 0 * ldX));
+          t0 = SCALAR_MUL(temp_0, const_value_w);
+          tz = SCALAR_MUL(ty, t0);
+          tw = SCALAR_FMA(tx, t0, tw);
+          outBuffer[threadIdx.x][0] += tz;
+
+          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          t1 = SCALAR_MUL(temp_1, const_value_w);
+          tz = SCALAR_MUL(ty, t1);
+          tw = SCALAR_FMA(tx, t1, tw);
+          outBuffer[threadIdx.x][1] += tz;
+
+          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          t2 = SCALAR_MUL(temp_2, const_value_w);
+          tz = SCALAR_MUL(ty, t2);
+          tw = SCALAR_FMA(tx, t2, tw);
+          outBuffer[threadIdx.x][2] += tz;
+          if constexpr (!diag) atomicAdd((Gjk + 1 * ldG), tw);
+
+          /**** j = 2 ****/
+          X_ABp = 1.0; comb_m_i = 1.0;
+          Y_ABp = 1.0; comb_n_j = 1.0;
+          Z_ABp = 1.0; comb_p_k = 1.0;
+          const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+          const_value_w = SCALAR_MUL(const_value_v, const_value);
+
+          tx = SCALAR_LOAD((Xik + 0 * ldX));
+          ty = SCALAR_LOAD((Xjk + 2 * ldX));
+          t0 = SCALAR_MUL(temp_5, const_value_w);
+          tz = SCALAR_MUL(ty, t0);
+          tw = SCALAR_MUL(tx, t0);
+          outBuffer[threadIdx.x][0] += tz;
+
+          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          t1 = SCALAR_MUL(temp_7, const_value_w);
+          tz = SCALAR_MUL(ty, t1);
+          tw = SCALAR_FMA(tx, t1, tw);
+          outBuffer[threadIdx.x][1] += tz;
+
+          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          t2 = SCALAR_MUL(temp_8, const_value_w);
+          tz = SCALAR_MUL(ty, t2);
+          tw = SCALAR_FMA(tx, t2, tw);
+          outBuffer[threadIdx.x][2] += tz;
+
+          Z_ABp = SCALAR_MUL(Z_ABp, Z_AB); comb_p_k = SCALAR_MUL(comb_p_k * 1, SCALAR_RECIPROCAL(1));
+          const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+          const_value_w = SCALAR_MUL(const_value_v, const_value);
+
+          tx = SCALAR_LOAD((Xik + 0 * ldX));
+          t0 = SCALAR_MUL(temp_0, const_value_w);
+          tz = SCALAR_MUL(ty, t0);
+          tw = SCALAR_FMA(tx, t0, tw);
+          outBuffer[threadIdx.x][0] += tz;
+
+          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          t1 = SCALAR_MUL(temp_1, const_value_w);
+          tz = SCALAR_MUL(ty, t1);
+          tw = SCALAR_FMA(tx, t1, tw);
+          outBuffer[threadIdx.x][1] += tz;
+
+          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          t2 = SCALAR_MUL(temp_2, const_value_w);
+          tz = SCALAR_MUL(ty, t2);
+          tw = SCALAR_FMA(tx, t2, tw);
+          outBuffer[threadIdx.x][2] += tz;
+          if constexpr (!diag) atomicAdd((Gjk + 2 * ldG), tw);
+
+          atomicAdd((Gik + 0 * ldG), outBuffer[threadIdx.x][0]);
+          atomicAdd((Gik + 1 * ldG), outBuffer[threadIdx.x][1]);
+          atomicAdd((Gik + 2 * ldG), outBuffer[threadIdx.x][2]);
+
+        }
       }
     }
-  }
   __syncwarp();
-}
-
-__global__ void 
-__launch_bounds__(K11_NUMTHREADS, 1)
-dev_integral_1_1_task_batched(
-  int ntask, int nsubtask,
-  GauXC::XCDeviceTask*                device_tasks,
-  const GauXC::TaskToShellPairDevice* task2sp,
-  const int4* subtasks,
-  const int32_t* nprim_pairs_device,
-  shell_pair** sp_ptr_device,
-  double* sp_X_AB_device,
-  double* sp_Y_AB_device,
-  double* sp_Z_AB_device,
-  double *boys_table) {
-
-  __shared__ double4 s_task_data[K11_NUMTHREADS];
-
-  const int warpId = threadIdx.x / K11_WARPSIZE;
-  
-  const int i_subtask = blockIdx.x;
-  const int i_task = subtasks[i_subtask].x;
-  const int point_start = subtasks[i_subtask].y;
-  const int point_end = subtasks[i_subtask].z;
-  const int point_count = point_end - point_start;
-
-  const auto* task = device_tasks + i_task;
-
-  const int npts = task->npts;
-
-  const auto* points_x = task->points_x;
-  const auto* points_y = task->points_y;
-  const auto* points_z = task->points_z;
-  const auto* weights = task->weights;
-
-  const auto nsp = task2sp[i_task].nsp;
-
-  const int npts_block = (point_count + blockDim.x - 1) / blockDim.x;
-
-  for (int i_block = 0; i_block < npts_block; i_block++) {
-    const int i = point_start + i_block * blockDim.x;
-
-    // load point into registers
-    const double point_x = points_x[i + threadIdx.x];
-    const double point_y = points_y[i + threadIdx.x];
-    const double point_z = points_z[i + threadIdx.x];
-    const double weight = weights[i + threadIdx.x];
-
-    s_task_data[threadIdx.x].x = point_x;
-    s_task_data[threadIdx.x].y = point_y;
-    s_task_data[threadIdx.x].z = point_z;
-    s_task_data[threadIdx.x].w = weight;
-    __syncthreads();
-
-    for (int j = K11_NUMWARPS*blockIdx.y+warpId; j < nsp; j+=K11_NUMWARPS*gridDim.y) {
-      const auto i_off = task2sp[i_task].task_shell_off_row_device[j];
-      const auto j_off = task2sp[i_task].task_shell_off_col_device[j];
-
-      const auto index =  task2sp[i_task].shell_pair_linear_idx_device[j];
-      const auto* sp = sp_ptr_device[index];
-      const auto nprim_pairs = nprim_pairs_device[index];
-      const double X_AB = sp_X_AB_device[index];
-      const double Y_AB = sp_Y_AB_device[index];
-      const double Z_AB = sp_Z_AB_device[index];
-
-      dev_integral_1_1_task(
-        i, point_count, nprim_pairs,
-        X_AB, Y_AB, Z_AB,
-        s_task_data,
-        sp,
-        task->fmat + i_off + i,
-        task->fmat + j_off + i,
-        npts,
-        task->gmat + i_off + i,
-        task->gmat + j_off + i,
-        npts,
-        boys_table);
-    }
-    __syncthreads();
   }
-}
+};
+
+template <int primpair_limit>
+using AM11 = DeviceTask11<false,
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, primpair_limit>;
+
+template <int primpair_limit>
+using AM1 = DeviceTask11<true,
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, primpair_limit>;
 
   void integral_1_1_task_batched(
     size_t ntasks, size_t nsubtask,
-    int max_primpairs, size_t max_nsp,
+    int max_primpair, size_t max_nsp,
     GauXC::XCDeviceTask*                device_tasks,
     const GauXC::TaskToShellPairDevice* task2sp,
     const std::array<int32_t, 4>*  subtasks,
@@ -1224,15 +1197,44 @@ dev_integral_1_1_task_batched(
     double *boys_table,
     cudaStream_t stream) {
 
-    size_t xy_max = (1ul << 16) - 1;
-    int nthreads = K11_NUMTHREADS;
     int nblocks_x = nsubtask;
-    int nblocks_y = 8; //std::min(max_nsp,  xy_max);
+    int nblocks_y = 8; 
     int nblocks_z = 1;
     dim3 nblocks(nblocks_x, nblocks_y, nblocks_z);
+    dim3 nthreads(alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask);
+    
+    dev_integral_task_map_dispatcher<AM11>(
+      nblocks, nthreads, max_primpair, stream, 
+      ntasks, nsubtask,
+      device_tasks, task2sp, 
+      (int4*) subtasks, nprim_pairs_device, sp_ptr_device,
+      sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+      boys_table );
+  }
 
-    dev_integral_1_1_task_batched<<<nblocks, nthreads, 0, stream>>>(
-      ntasks, nsubtask, 
+  void integral_1_task_batched(
+    size_t ntasks, size_t nsubtask,
+    int max_primpair, size_t max_nsp,
+    GauXC::XCDeviceTask*                device_tasks,
+    const GauXC::TaskToShellPairDevice* task2sp,
+    const std::array<int32_t, 4>*  subtasks,
+    const int32_t* nprim_pairs_device,
+    shell_pair** sp_ptr_device,
+    double* sp_X_AB_device,
+    double* sp_Y_AB_device,
+    double* sp_Z_AB_device,
+    double *boys_table,
+    cudaStream_t stream) {
+
+    int nblocks_x = nsubtask;
+    int nblocks_y = 8; 
+    int nblocks_z = 1;
+    dim3 nblocks(nblocks_x, nblocks_y, nblocks_z);
+    dim3 nthreads(alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask);
+    
+    dev_integral_task_map_dispatcher<AM1>(
+      nblocks, nthreads, max_primpair, stream, 
+      ntasks, nsubtask,
       device_tasks, task2sp, 
       (int4*) subtasks, nprim_pairs_device, sp_ptr_device,
       sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,

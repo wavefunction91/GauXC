@@ -3,6 +3,8 @@
 #include "config_obara_saika.hpp"
 #include "integral_0_0.hu"
 
+#include "task_map_base.hu"
+
 #include "device_specific/cuda_device_constants.hpp"
 #include "../../cuda_aos_scheme1.hpp"
 
@@ -323,225 +325,165 @@ using namespace GauXC;
       nsp, sp2task, device_tasks, boys_table );
 
   }
-   
-template<int primpair_shared_limit, int points_per_subtask>
-__inline__ __device__ void dev_integral_0_0_task(
-  const int i,
-  const int npts,
-  const int nprim_pairs,
-  // Point data
-  double4 (&s_task_data)[points_per_subtask],
-  // Shell Pair Data
-  const shell_pair* sp,
-  // Output Data
-  const double *Xi,
-  const double *Xj,
-  int ldX,
-  double *Gi,
-  double *Gj,
-  int ldG, 
-  // Other
-  const double *boys_table) {
 
-  static constexpr bool use_shared = (primpair_shared_limit > 0);
+
+template<bool diag_, int points_per_subtask_, int primpair_shared_limit_>
+struct DeviceTask00 {
+  static constexpr int max_primpair_shared_limit = 32;
+
+  static int const primpair_shared_limit = primpair_shared_limit_;
+  static int const points_per_subtask = points_per_subtask_;
+  static int const num_threads = points_per_subtask_;
+  static bool const diag = diag_;
+
+  static constexpr bool use_shared = (primpair_shared_limit > 0) && 
+                                     (primpair_shared_limit <= max_primpair_shared_limit);
   static constexpr int num_warps = points_per_subtask / cuda::warp_size;
   // Cannot declare shared memory array with length 0
   static constexpr int prim_buffer_size = (use_shared) ? num_warps * primpair_shared_limit : 1;
 
-  const int laneId = threadIdx.x % cuda::warp_size;
-  const int warpId = threadIdx.x / cuda::warp_size;
+  struct Params {
+    const double *Xi;
+    const double *Xj;
+    double *Gi;
+    double *Gj;
+  };
 
-  const auto& prim_pairs = sp->prim_pairs();
-  __shared__ GauXC::PrimitivePair<double> s_prim_pairs[prim_buffer_size];
+  __inline__ __device__ static Params get_params( 
+    const double *Xi, const double *Xj,
+    double *Gi, double *Gj,
+    double* sp_X_AB_device,
+    double* sp_Y_AB_device,
+    double* sp_Z_AB_device,
+    const int index) {
 
-  if constexpr (use_shared) {
-      // Load Primpairs to shared
-      const int32_t* src = (int32_t*) &(prim_pairs[0]);
-      int32_t* dst = (int32_t*) &(s_prim_pairs[warpId * primpair_shared_limit]);
-      const int num_transfers = nprim_pairs * sizeof(GauXC::PrimitivePair<double>) / sizeof(int32_t);
+    Params param;
+    if (diag) {
+      param.Xi = Xi;
+      param.Xj = Xi;
+      param.Gi = Gi;
+      param.Gj = Gi;
+    } else {
+      param.Xi = Xi;
+      param.Xj = Xj;
+      param.Gi = Gi;
+      param.Gj = Gj;
+    }
 
-      for (int i = laneId; i < num_transfers; i += cuda::warp_size) {
-        dst[i] = src[i]; 
-      }
+    return param;
+  }
+
+  __inline__ __device__ static void compute( 
+    const int i,
+    const int npts,
+    const int nprim_pairs,
+    // Point data
+    double4 (&s_task_data)[points_per_subtask],
+    // Shell Pair Data
+    const shell_pair* sp,
+    // Output Data
+    const Params param,
+    int ldX,
+    int ldG, 
+    // Other
+    double *boys_table) {
+
+    // Unpack Params;
+    const double *Xi = param.Xi;
+    const double *Xj = param.Xj;
+    double *Gi = param.Gi;
+    double *Gj = param.Gj;
+
+    const int laneId = threadIdx.x % cuda::warp_size;
+    const int warpId __attribute__((unused)) = threadIdx.x / cuda::warp_size;
+
+    const auto& prim_pairs = sp->prim_pairs();
+    __shared__ GauXC::PrimitivePair<double> s_prim_pairs[prim_buffer_size] __attribute__((unused));
+
+    if constexpr (use_shared) {
+      load_primpair_shared(laneId, warpId, nprim_pairs,
+        &(prim_pairs[0]), &(s_prim_pairs[warpId * primpair_shared_limit]));
       __syncwarp();
-  }
+    }
 
-  // Loop over points in shared in batches of 32
-  for (int i = 0; i <  num_warps; i++) {
-    double temp = SCALAR_ZERO();
+    // Loop over points in shared in batches of 32
+    for (int i = 0; i <  num_warps; i++) {
+      double temp = SCALAR_ZERO();
 
-    const int pointIndex = i * cuda::warp_size + laneId;
+      const int pointIndex = i * cuda::warp_size + laneId;
 
-    if (pointIndex < npts) {
+      if (pointIndex < npts) {
 
-      const double point_x = s_task_data[pointIndex].x;
-      const double point_y = s_task_data[pointIndex].y;
-      const double point_z = s_task_data[pointIndex].z;
-      const double weight = s_task_data[pointIndex].w;
+        const double point_x = s_task_data[pointIndex].x;
+        const double point_y = s_task_data[pointIndex].y;
+        const double point_z = s_task_data[pointIndex].z;
+        const double weight = s_task_data[pointIndex].w;
 
-      for (int ij = 0; ij < nprim_pairs; ij++) {
-        const GauXC::PrimitivePair<double>* prim_pairs_use = nullptr; 
-        if constexpr (use_shared) prim_pairs_use = &(s_prim_pairs[warpId * primpair_shared_limit]);
-        else                      prim_pairs_use = &(prim_pairs[0]);
+        for (int ij = 0; ij < nprim_pairs; ij++) {
+          const GauXC::PrimitivePair<double>* prim_pairs_use = nullptr; 
+          if constexpr (use_shared) prim_pairs_use = &(s_prim_pairs[warpId * primpair_shared_limit]);
+          else                      prim_pairs_use = &(prim_pairs[0]);
 
-        double RHO = prim_pairs_use[ij].gamma;
-        double xP = prim_pairs_use[ij].P.x;
-        double yP = prim_pairs_use[ij].P.y;
-        double zP = prim_pairs_use[ij].P.z;
-        double eval = prim_pairs_use[ij].K_coeff_prod;
-     
-        // Evaluate T Values
-        const SCALAR_TYPE X_PC = SCALAR_SUB(xP, point_x);
-        const SCALAR_TYPE Y_PC = SCALAR_SUB(yP, point_y);
-        const SCALAR_TYPE Z_PC = SCALAR_SUB(zP, point_z);
-      
-        SCALAR_TYPE TVAL = SCALAR_MUL(X_PC, X_PC);
-        TVAL = SCALAR_FMA(Y_PC, Y_PC, TVAL);
-        TVAL = SCALAR_FMA(Z_PC, Z_PC, TVAL);
-        TVAL = SCALAR_MUL(RHO, TVAL);
-      
-        // Evaluate VRR Buffer
-        const SCALAR_TYPE t00 = boys_element_0(TVAL);
-        temp = SCALAR_FMA( eval, t00, temp );
-      }
+          double RHO = prim_pairs_use[ij].gamma;
+          double xP = prim_pairs_use[ij].P.x;
+          double yP = prim_pairs_use[ij].P.y;
+          double zP = prim_pairs_use[ij].P.z;
+          double eval = prim_pairs_use[ij].K_coeff_prod;
+       
+          // Evaluate T Values
+          const SCALAR_TYPE X_PC = SCALAR_SUB(xP, point_x);
+          const SCALAR_TYPE Y_PC = SCALAR_SUB(yP, point_y);
+          const SCALAR_TYPE Z_PC = SCALAR_SUB(zP, point_z);
+        
+          SCALAR_TYPE TVAL = SCALAR_MUL(X_PC, X_PC);
+          TVAL = SCALAR_FMA(Y_PC, Y_PC, TVAL);
+          TVAL = SCALAR_FMA(Z_PC, Z_PC, TVAL);
+          TVAL = SCALAR_MUL(RHO, TVAL);
+        
+          // Evaluate VRR Buffer
+          const SCALAR_TYPE t00 = boys_element_0(TVAL);
+          temp = SCALAR_FMA( eval, t00, temp );
+        }
 
-      // Output
-      if (abs(temp) > 1e-12) {
-        const double * __restrict__ Xik = (Xi + pointIndex);
-        const double * __restrict__ Xjk = (Xj + pointIndex);
-        double * __restrict__ Gik = (Gi + pointIndex);
-        double * __restrict__ Gjk = (Gj + pointIndex);
+        // Output
+        if (diag || abs(temp) > 1e-12) {
+          const double * __restrict__ Xik = (Xi + pointIndex);
+          const double * __restrict__ Xjk = (Xj + pointIndex);
+          double * __restrict__ Gik = (Gi + pointIndex);
+          double * __restrict__ Gjk = (Gj + pointIndex);
 
-        SCALAR_TYPE const_value_v = weight;
-      
-        double const_value, X_ABp, Y_ABp, Z_ABp, comb_m_i, comb_n_j, comb_p_k;
-        SCALAR_TYPE const_value_w;
-        SCALAR_TYPE tx, ty, tz, tw, t0;
-      
-        X_ABp = 1.0; comb_m_i = 1.0;
-        Y_ABp = 1.0; comb_n_j = 1.0;
-        Z_ABp = 1.0; comb_p_k = 1.0;
-        const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
-        const_value_w = SCALAR_MUL(const_value_v, const_value);
-        tx = SCALAR_LOAD(Xik);
-        ty = SCALAR_LOAD(Xjk);
-        t0 = SCALAR_MUL(temp, const_value_w);
-        tz = SCALAR_MUL(ty, t0);
-        tw = SCALAR_MUL(tx, t0);
-        atomicAdd(Gik, tz);
-        atomicAdd(Gjk, tw);
+          SCALAR_TYPE const_value_v = weight;
+        
+          double const_value, X_ABp, Y_ABp, Z_ABp, comb_m_i, comb_n_j, comb_p_k;
+          SCALAR_TYPE const_value_w;
+          SCALAR_TYPE tx, ty, tz, tw, t0;
+        
+          X_ABp = 1.0; comb_m_i = 1.0;
+          Y_ABp = 1.0; comb_n_j = 1.0;
+          Z_ABp = 1.0; comb_p_k = 1.0;
+          const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
+          const_value_w = SCALAR_MUL(const_value_v, const_value);
+          tx = SCALAR_LOAD(Xik);
+          ty = SCALAR_LOAD(Xjk);
+          t0 = SCALAR_MUL(temp, const_value_w);
+          tz = SCALAR_MUL(ty, t0);
+          tw = SCALAR_MUL(tx, t0);
+          atomicAdd(Gik, tz);
+          if constexpr (!diag) atomicAdd(Gjk, tw);
+        }
       }
     }
+    __syncwarp();
   }
-  __syncwarp();
-}
+};
 
-template<int primpair_shared_limit, int points_per_subtask>
-__global__ void 
-__launch_bounds__(points_per_subtask, 1)
-dev_integral_0_0_task_batched(
-  int ntask, int nsubtask,
-  GauXC::XCDeviceTask*                device_tasks,
-  const GauXC::TaskToShellPairDevice* task2sp,
-  const int4* subtasks,
-  const int32_t* nprim_pairs_device,
-  shell_pair** sp_ptr_device,
-  double *boys_table) {
+template <int primpair_limit>
+using AM00 = DeviceTask00<false,
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, primpair_limit>;
 
-  static constexpr int num_warps = points_per_subtask / cuda::warp_size;
-
-  __shared__ double4 s_task_data[points_per_subtask];
-
-  const int warpId = threadIdx.x / cuda::warp_size;
-  
-  const int i_subtask = blockIdx.x;
-  const int i_task = subtasks[i_subtask].x;
-  const int point_start = subtasks[i_subtask].y;
-  const int point_end = subtasks[i_subtask].z;
-  const int point_count = point_end - point_start;
-
-  const auto* task = device_tasks + i_task;
-
-  const int npts = task->npts;
-
-  const auto* points_x = task->points_x;
-  const auto* points_y = task->points_y;
-  const auto* points_z = task->points_z;
-  const auto* weights = task->weights;
-
-  const auto nsp = task2sp[i_task].nsp;
-
-  // NOTE: util::div_ceil converts to 64bit int
-  const int npts_block = util::div_ceil(point_count, blockDim.x);
-
-  for (int i_block = 0; i_block < npts_block; i_block++) {
-    const int i = point_start + i_block * blockDim.x;
-
-    // load point into registers
-    const double point_x = points_x[i + threadIdx.x];
-    const double point_y = points_y[i + threadIdx.x];
-    const double point_z = points_z[i + threadIdx.x];
-    const double weight = weights[i + threadIdx.x];
-
-    s_task_data[threadIdx.x].x = point_x;
-    s_task_data[threadIdx.x].y = point_y;
-    s_task_data[threadIdx.x].z = point_z;
-    s_task_data[threadIdx.x].w = weight;
-    __syncthreads();
-
-    for (int j = num_warps*blockIdx.y+warpId; j < nsp; j+=num_warps*gridDim.y) {
-      const auto i_off = task2sp[i_task].task_shell_off_row_device[j];
-      const auto j_off = task2sp[i_task].task_shell_off_col_device[j];
-
-      const auto index =  task2sp[i_task].shell_pair_linear_idx_device[j];
-      const auto* sp = sp_ptr_device[index];
-      const auto nprim_pairs = nprim_pairs_device[index];
-
-      dev_integral_0_0_task<primpair_shared_limit, points_per_subtask>(
-        i, point_count, nprim_pairs,
-        s_task_data,
-        sp,
-        task->fmat + i_off + i,
-        task->fmat + j_off + i,
-        npts,
-        task->gmat + i_off + i,
-        task->gmat + j_off + i,
-        npts,
-        boys_table);
-    }
-    __syncthreads();
-  }
-}
-
-template<typename... Args>
-void dev_integral_0_0_dispatcher(dim3 nblock, dim3 nthreads, int max_primpair, cudaStream_t stream, 
-  Args&&... args) {
-
-  constexpr auto points_per_subtask = 
-    alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask;
-
-  // Invoke different version of the kernel based on the maximum number of primpair for this 
-  // AM. The kernel with the smallest primpair buffer should perform best as it leaves the
-  // most space for L1 cache. The largest buffer size is capped by the 48KB static shared
-  // memory limit; using dynamic shared memory would allow us to go higher. If the max
-  // number of primpairs exceeds the largest buffer, it will not use a shared memory buffer
-  // by setting primpair_limit to zero.
-  if (constexpr int primpair_limit = 16; max_primpair <= primpair_limit) {
-    dev_integral_0_0_task_batched<
-      primpair_limit, points_per_subtask
-    ><<<nblock, nthreads, 0, stream>>>( std::forward<Args>(args)...);
-
-  } else if (constexpr int primpair_limit = 32; max_primpair <= primpair_limit) {
-    dev_integral_0_0_task_batched<
-      primpair_limit, points_per_subtask
-    ><<<nblock, nthreads, 0, stream>>>( std::forward<Args>(args)...);
-
-  } else {
-    dev_integral_0_0_task_batched<
-      0, points_per_subtask
-    ><<<nblock, nthreads, 0, stream>>>( std::forward<Args>(args)...);
-  }
-}
+template <int primpair_limit>
+using AM0 = DeviceTask00<true,
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, primpair_limit>;
 
   void integral_0_0_task_batched(
     size_t ntasks, size_t nsubtask,
@@ -562,12 +504,42 @@ void dev_integral_0_0_dispatcher(dim3 nblock, dim3 nthreads, int max_primpair, c
     int nblocks_z = 1;
     dim3 nblocks(nblocks_x, nblocks_y, nblocks_z);
     dim3 nthreads(alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask);
-
-    dev_integral_0_0_dispatcher(
+    
+    dev_integral_task_map_dispatcher<AM00>(
       nblocks, nthreads, max_primpair, stream, 
       ntasks, nsubtask,
       device_tasks, task2sp, 
       (int4*) subtasks, nprim_pairs_device, sp_ptr_device,
+      sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+      boys_table );
+  }
+
+  void integral_0_task_batched(
+    size_t ntasks, size_t nsubtask,
+    int max_primpair, size_t max_nsp,
+    GauXC::XCDeviceTask*                device_tasks,
+    const GauXC::TaskToShellPairDevice* task2sp,
+    const std::array<int32_t, 4>*  subtasks,
+    const int32_t* nprim_pairs_device,
+    shell_pair** sp_ptr_device,
+    double* sp_X_AB_device,
+    double* sp_Y_AB_device,
+    double* sp_Z_AB_device,
+    double *boys_table,
+    cudaStream_t stream) {
+
+    int nblocks_x = nsubtask;
+    int nblocks_y = 8; 
+    int nblocks_z = 1;
+    dim3 nblocks(nblocks_x, nblocks_y, nblocks_z);
+    dim3 nthreads(alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask);
+    
+    dev_integral_task_map_dispatcher<AM0>(
+      nblocks, nthreads, max_primpair, stream, 
+      ntasks, nsubtask,
+      device_tasks, task2sp, 
+      (int4*) subtasks, nprim_pairs_device, sp_ptr_device,
+      sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
       boys_table );
   }
 
