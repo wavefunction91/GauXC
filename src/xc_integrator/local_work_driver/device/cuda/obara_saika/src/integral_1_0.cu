@@ -343,14 +343,16 @@ using namespace GauXC;
 
   }
 
-template<bool swap_, int points_per_subtask_, int primpair_shared_limit_>
+template<ObaraSaikaType type_, int points_per_subtask_, int primpair_shared_limit_>
 struct DeviceTask10 {
   static constexpr int max_primpair_shared_limit = 32;
 
   static int const primpair_shared_limit = primpair_shared_limit_;
   static int const points_per_subtask = points_per_subtask_;
   static int const num_threads = points_per_subtask_;
-  static bool const swap = swap_;
+  static ObaraSaikaType const type = type_;
+
+  static_assert(ObaraSaikaType::diag != type, "DeviceTask10 does not support diag");
 
   static constexpr bool use_shared = (primpair_shared_limit > 0) && 
                                      (primpair_shared_limit <= max_primpair_shared_limit);
@@ -358,29 +360,7 @@ struct DeviceTask10 {
   // Cannot declare shared memory array with length 0
   static constexpr int prim_buffer_size = (use_shared) ? num_warps * primpair_shared_limit : 1;
 
-  struct Params {
-    const double *Xi;
-    const double *Xj;
-    double *Gi;
-    double *Gj;
-  };
-
-  __inline__ __device__ static Params get_params( 
-    const double *Xi, const double *Xj,
-    double *Gi, double *Gj,
-    double* sp_X_AB_device,
-    double* sp_Y_AB_device,
-    double* sp_Z_AB_device,
-    const int index) {
-
-    Params param;
-    param.Xi = swap ? Xj : Xi;
-    param.Xj = swap ? Xi : Xj;
-    param.Gi = swap ? Gj : Gi;
-    param.Gj = swap ? Gi : Gj;
-
-    return param;
-  }
+  using Params = ObaraSaikaBaseParams<type>;
 
   __inline__ __device__ static void compute( 
     const int i,
@@ -537,11 +517,11 @@ struct DeviceTask10 {
 };
 
 template <int primpair_limit>
-using AM10_swap = DeviceTask10<true,
+using AM10_swap = DeviceTask10<ObaraSaikaType::swap,
   alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, primpair_limit>;
 
 template <int primpair_limit>
-using AM10 = DeviceTask10<false,
+using AM10 = DeviceTask10<ObaraSaikaType::base,
   alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, primpair_limit>;
 
   void integral_1_0_task_batched(

@@ -1188,14 +1188,16 @@ using namespace GauXC;
 
   }
 
-template<bool swap_, int points_per_subtask_, int primpair_shared_limit_>
+template<ObaraSaikaType type_, int points_per_subtask_, int primpair_shared_limit_>
 struct DeviceTask21 {
   static constexpr int max_primpair_shared_limit = 8;
 
   static int const primpair_shared_limit = primpair_shared_limit_;
   static int const points_per_subtask = points_per_subtask_;
   static int const num_threads = points_per_subtask_;
-  static bool const swap = swap_;
+  static ObaraSaikaType const type = type_;
+
+  static_assert(ObaraSaikaType::diag != type, "DeviceTask21 does not support diag");
 
   static constexpr bool use_shared = (primpair_shared_limit > 0) && 
                                      (primpair_shared_limit <= max_primpair_shared_limit);
@@ -1203,38 +1205,7 @@ struct DeviceTask21 {
   // Cannot declare shared memory array with length 0
   static constexpr int prim_buffer_size = (use_shared) ? num_warps * primpair_shared_limit : 1;
 
-  struct Params {
-    const double *Xi;
-    const double *Xj;
-    double *Gi;
-    double *Gj;
-    double X_AB;
-    double Y_AB;
-    double Z_AB;
-  };
-
-  __inline__ __device__ static Params get_params( 
-    const double *Xi, const double *Xj,
-    double *Gi, double *Gj,
-    double* sp_X_AB_device,
-    double* sp_Y_AB_device,
-    double* sp_Z_AB_device,
-    const int index) {
-
-    Params param;
-    param.Xi = swap ? Xj : Xi;
-    param.Xj = swap ? Xi : Xj;
-    param.Gi = swap ? Gj : Gi;
-    param.Gj = swap ? Gi : Gj;
-    param.X_AB = swap ? -1.0 * sp_X_AB_device[index] :
-                               sp_X_AB_device[index];
-    param.Y_AB = swap ? -1.0 * sp_Y_AB_device[index] :
-                               sp_Y_AB_device[index];
-    param.Z_AB = swap ? -1.0 * sp_Z_AB_device[index] :
-                               sp_Z_AB_device[index];
-
-    return param;
-  }
+  using Params = ObaraSaikaParamsWithAB<type>;
 
   __inline__ __device__ static void compute( 
     const int i,
@@ -1857,11 +1828,11 @@ struct DeviceTask21 {
 };
 
 template <int primpair_limit>
-using AM21_swap = DeviceTask21<true, 
+using AM21_swap = DeviceTask21<ObaraSaikaType::swap, 
   alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, primpair_limit>;
 
 template <int primpair_limit>
-using AM21 = DeviceTask21<false, 
+using AM21 = DeviceTask21<ObaraSaikaType::base, 
   alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, primpair_limit>;
 
   void integral_2_1_task_batched(

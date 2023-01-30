@@ -20,6 +20,76 @@ __inline__ __device__ void load_primpair_shared(
   }
 }
 
+enum ObaraSaikaType {
+  base,
+  swap,
+  diag
+};
+
+template<ObaraSaikaType type>
+struct ObaraSaikaBaseParams {
+  const double *Xi;
+  const double *Xj;
+  double *Gi;
+  double *Gj;
+
+  __inline__ __device__ ObaraSaikaBaseParams( 
+    const double *Xi_, const double *Xj_,
+    double *Gi_, double *Gj_,
+    double* sp_X_AB_device,
+    double* sp_Y_AB_device,
+    double* sp_Z_AB_device,
+    const int index) {
+    if constexpr (type == ObaraSaikaType::diag) {
+      Xi = Xi_;
+      Xj = Xi_;
+      Gi = Gi_;
+      Gj = Gi_;
+    } else if constexpr (type == ObaraSaikaType::swap) {
+      Xi = Xj_;
+      Xj = Xi_;
+      Gi = Gj_;
+      Gj = Gi_;
+    } else {
+      Xi = Xi_;
+      Xj = Xj_;
+      Gi = Gi_;
+      Gj = Gj_;
+    }
+  }
+};
+
+template<ObaraSaikaType type>
+struct ObaraSaikaParamsWithAB : ObaraSaikaBaseParams<type> {
+  double X_AB;
+  double Y_AB;
+  double Z_AB;
+
+  __inline__ __device__ ObaraSaikaParamsWithAB( 
+    const double *Xi_, const double *Xj_,
+    double *Gi_, double *Gj_,
+    double* sp_X_AB_device,
+    double* sp_Y_AB_device,
+    double* sp_Z_AB_device,
+    const int index) 
+    : ObaraSaikaBaseParams<type>(
+        Xi_, Xj_, Gi_, Gj_, 
+        sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device, 
+        index) {
+
+    if constexpr (type == ObaraSaikaType::swap) {
+      X_AB = -1.0 * sp_X_AB_device[index];
+      Y_AB = -1.0 * sp_Y_AB_device[index];
+      Z_AB = -1.0 * sp_Z_AB_device[index];
+    } else {
+      X_AB = sp_X_AB_device[index];
+      Y_AB = sp_Y_AB_device[index];
+      Z_AB = sp_Z_AB_device[index];
+    }
+  }
+};
+
+
 template<typename AngularMomentum>
 __global__
 __launch_bounds__(AngularMomentum::num_threads, 1)
@@ -85,7 +155,7 @@ void task_map_kernel(
       const auto* sp = sp_ptr_device[index];
       const auto nprim_pairs = nprim_pairs_device[index];
 
-      const auto param = AngularMomentum::get_params(
+      const auto param = AngularMomentum::Params(
         task->fmat + i_off + i,
         task->fmat + j_off + i,
         task->gmat + i_off + i,
