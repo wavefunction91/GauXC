@@ -1192,10 +1192,10 @@ template<ObaraSaikaType type_, int points_per_subtask_, int primpair_shared_limi
 struct DeviceTask21 {
   static constexpr int max_primpair_shared_limit = 8;
 
-  static int const primpair_shared_limit = primpair_shared_limit_;
-  static int const points_per_subtask = points_per_subtask_;
-  static int const num_threads = points_per_subtask_;
-  static ObaraSaikaType const type = type_;
+  static constexpr int primpair_shared_limit = primpair_shared_limit_;
+  static constexpr int points_per_subtask = points_per_subtask_;
+  static constexpr int num_threads = points_per_subtask_;
+  static constexpr ObaraSaikaType type = type_;
 
   static_assert(ObaraSaikaType::diag != type, "DeviceTask21 does not support diag");
 

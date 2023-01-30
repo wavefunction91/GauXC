@@ -331,13 +331,13 @@ template<ObaraSaikaType type_, int points_per_subtask_, int primpair_shared_limi
 struct DeviceTask00 {
   static constexpr int max_primpair_shared_limit = 32;
 
-  static int const primpair_shared_limit = primpair_shared_limit_;
-  static int const points_per_subtask = points_per_subtask_;
-  static int const num_threads = points_per_subtask_;
-  static ObaraSaikaType const type = type_;
+  static constexpr int primpair_shared_limit = primpair_shared_limit_;
+  static constexpr int points_per_subtask = points_per_subtask_;
+  static constexpr int num_threads = points_per_subtask_;
+  static constexpr ObaraSaikaType type = type_;
 
   static_assert(ObaraSaikaType::swap != type, "DeviceTask00 does not support swap");
-  static bool const diag = (ObaraSaikaType::diag == type);
+  static constexpr bool diag = (ObaraSaikaType::diag == type);
 
   static constexpr bool use_shared = (primpair_shared_limit > 0) && 
                                      (primpair_shared_limit <= max_primpair_shared_limit);
