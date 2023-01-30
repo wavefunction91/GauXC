@@ -151,7 +151,7 @@ using namespace GauXC;
 		    double *boys_table,
         cudaStream_t stream) {
     int nthreads = 128;
-    int nblocks = std::min(intmax_t(320), GauXC::util::div_ceil(npts,nthreads));
+    int nblocks = std::min(uintmax_t(320), GauXC::util::div_ceil(npts,nthreads));
     dev_integral_0_0<<<nblocks, nthreads,0,stream>>>(npts,
 				   points_x,
 				   points_y,

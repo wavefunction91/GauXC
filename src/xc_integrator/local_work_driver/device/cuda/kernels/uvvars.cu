@@ -188,8 +188,8 @@ void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max,
   // U Variables
   {
   dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block / 2, 1 );
-  dim3 blocks( std::min(int64_t(4), util::div_ceil( nbf_max, 4 )),
-               std::min(int64_t(16), util::div_ceil( nbf_max, 16 )),
+  dim3 blocks( std::min(uint64_t(4), util::div_ceil( nbf_max, 4 )),
+               std::min(uint64_t(16), util::div_ceil( nbf_max, 16 )),
                ntasks );
   eval_uvars_gga_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
   }

@@ -49,6 +49,7 @@ using largest_t = typename largest<Args...>::type;
 
 }
 
+#if 0
 template <typename Integral1, typename Integral2>
 inline HOST_DEVICE_ACCESSIBLE
 intmax_t div_ceil( Integral1 i, Integral2 j ) {
@@ -61,6 +62,11 @@ intmax_t div_ceil( Integral1 i, Integral2 j ) {
   return  (i_us + j_us - 1) / j_us;
 
 }
+#else
+inline HOST_DEVICE_ACCESSIBLE uintmax_t div_ceil( uintmax_t i, uintmax_t j ) {
+  return (i + j - 1) / j;
+}
+#endif
 
 
 }
