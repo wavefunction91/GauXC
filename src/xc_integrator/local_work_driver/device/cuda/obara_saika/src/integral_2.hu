@@ -27,4 +27,6 @@ namespace XGPU {
         GauXC::XCDeviceTask*                device_tasks,
 		    double *boys_table,
         cudaStream_t stream); 
+
+
 }

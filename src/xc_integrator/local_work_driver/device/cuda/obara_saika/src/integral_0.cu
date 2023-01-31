@@ -10,7 +10,13 @@
 #include "config_obara_saika.hpp"
 #include "integral_0.hu"
 
+#include "device_specific/cuda_device_constants.hpp"
+#include "../../cuda_aos_scheme1.hpp"
+
 namespace XGPU {
+
+using namespace GauXC;
+
   __inline__ __device__ void dev_integral_0_driver(size_t npts,
 				 double *_points_x,
 				 double *_points_y,

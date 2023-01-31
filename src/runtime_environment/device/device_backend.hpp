@@ -67,6 +67,10 @@ public:
     set_zero_async_master_queue_( sz * sizeof(T), data, msg );
   }
 
+  void check_error(std::string msg) {
+    check_error_(msg);
+  }
+
 protected:
 
 
@@ -84,6 +88,8 @@ protected:
   virtual void set_zero_( size_t sz, void* data, std::string msg) = 0;
   virtual void set_zero_async_master_queue_( size_t sz, void* data, 
     std::string msg) = 0;
+
+  virtual void check_error_(std::string msg) = 0;
 };
 
 

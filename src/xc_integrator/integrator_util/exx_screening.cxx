@@ -220,7 +220,7 @@ void exx_ek_screening(
     for( auto x : task_ek_shells ) total_shells += __builtin_popcount(x);
 
     std::vector<uint32_t> ek_shells; ek_shells.reserve(total_shells);
-    for( auto i_block = 0; i_block < util::div_ceil(nshells,32); ++i_block ) {
+    for( auto i_block = 0u; i_block < util::div_ceil(nshells,32); ++i_block ) {
     for( unsigned i_local = 0; i_local < 32; ++i_local ) 
     if( task_ek_shells[i_block] & (1u << i_local) ) {
       ek_shells.emplace_back(i_local + i_block*32);

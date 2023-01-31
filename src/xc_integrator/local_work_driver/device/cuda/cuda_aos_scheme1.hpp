@@ -19,6 +19,11 @@ struct CudaAoSScheme1 {
   static constexpr uint32_t weight_thread_block = 640;
   static constexpr uint32_t weight_thread_block_per_sm = 2;
   static constexpr uint32_t max_submat_blocks = 10;
+
+  struct ObaraSaika {
+    static constexpr int points_per_subtask = 256;
+  };
+
 };
 
 }
@@ -54,6 +59,7 @@ struct CudaAoSScheme1<Base>::Data : public Base::Data {
   size_t get_submat_chunk_size(int32_t,int32_t) override final;
   size_t get_ldatoms() override final;
   size_t get_rab_align() override final;
+  int get_points_per_subtask() override final;
 
 };
 

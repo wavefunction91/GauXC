@@ -160,7 +160,7 @@ void XCDeviceStackData::allocate_static_data_exc_grad( int32_t nbf, int32_t nshe
 }
 
 
-void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells ) {
+void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells, int32_t max_l ) {
 
   if( allocated_terms.exx ) 
     GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXX");
@@ -168,6 +168,7 @@ void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells )
   // Save state
   global_dims.nshells = nshells;
   global_dims.nbf     = nbf; 
+  global_dims.max_l   = max_l; 
 
   // Allocate static memory with proper alignment
   buffer_adaptor mem( dynmem_ptr, dynmem_sz );
@@ -268,6 +269,8 @@ void XCDeviceStackData::send_static_data_shell_pairs(
     shell_pair_soa.shell_pair_dev_ptr.emplace_back(
       static_stack.shell_pairs_device + idx
     );
+
+    shell_pair_soa.shell_pair_nprim_pairs.push_back(shell_pairs.shell_pairs()[idx].nprim_pairs());
     auto& bra = basis[i];
     auto& ket = basis[j];
     shell_pair_soa.shell_pair_shidx.emplace_back(i,j);

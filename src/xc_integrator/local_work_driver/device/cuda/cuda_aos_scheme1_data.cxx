@@ -30,6 +30,12 @@ size_t CudaAoSScheme1<Base>::Data::get_rab_align() {
   return sizeof(double2);
 }
 
+template <typename Base>
+int CudaAoSScheme1<Base>::Data::get_points_per_subtask() {
+  return alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask;
+}
+
+
 
 template <typename Base>
 size_t CudaAoSScheme1<Base>::Data::get_submat_chunk_size(int32_t LDA, 

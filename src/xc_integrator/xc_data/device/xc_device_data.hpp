@@ -7,6 +7,7 @@
  */
 #pragma once
 #include <gauxc/xc_task.hpp>
+#include <gauxc/util/div_ceil.hpp>
 #include <vector>
 #include <gauxc/basisset_map.hpp>
 #include <gauxc/shell_pair.hpp>
@@ -157,6 +158,7 @@ struct required_term_storage {
   bool task_shell_offs_bfn    = false;
   bool shell_to_task_bfn      = false;
   bool shell_pair_to_task_cou = false;
+  bool task_to_shell_pair_cou = false;
   
   inline size_t task_shell_list_bfn_size(size_t nshells) {
     return PRDVL(task_shell_list_bfn, nshells);
@@ -182,6 +184,26 @@ struct required_term_storage {
     const size_t nslt = (nshells * (nshells+1)) / 2;
     return PRDVL(shell_pair_to_task_cou, nslt);
   }
+  inline size_t task_to_shell_pair_col_off_cou_size(size_t nshells) {
+    const size_t nslt = (nshells * (nshells+1)) / 2;
+    return PRDVL(task_to_shell_pair_cou, nslt);
+  }
+  inline size_t task_to_shell_pair_row_off_cou_size(size_t nshells) {
+    const size_t nslt = (nshells * (nshells+1)) / 2;
+    return PRDVL(task_to_shell_pair_cou, nslt);
+  }
+  inline size_t task_to_shell_pair_idx_cou_size(size_t nshells) {
+    const size_t nslt = (nshells * (nshells+1)) / 2;
+    return PRDVL(task_to_shell_pair_cou, nslt);
+  }
+  inline size_t task_to_shell_pair_cou_size() {
+    return PRDVL(task_to_shell_pair_cou, 1ul);
+  }
+  inline size_t task_to_shell_pair_cou_subtask_size(size_t npts, size_t subtask_size) {
+    const size_t num_subtasks = util::div_ceil(npts, subtask_size);
+    return PRDVL(task_to_shell_pair_cou, num_subtasks);
+  }
+
 
 
   inline explicit required_term_storage(integrator_term_tracker tracker) {
@@ -258,6 +280,7 @@ struct required_term_storage {
       task_shell_offs_bfn    = true;
       shell_to_task_bfn      = true;
       shell_pair_to_task_cou = true;
+      task_to_shell_pair_cou = true;
     }
 
   }
@@ -298,7 +321,7 @@ struct XCDeviceData {
   virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_den( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) = 0;
-  virtual void allocate_static_data_exx( int32_t nbf, int32_t nshells ) = 0;
+  virtual void allocate_static_data_exx( int32_t nbf, int32_t nshells, int32_t max_l ) = 0;
 
   // Send persistent data from host to device
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;

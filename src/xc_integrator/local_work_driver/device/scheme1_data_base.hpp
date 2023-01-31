@@ -17,6 +17,7 @@ struct Scheme1DataBase : public XCDeviceAoSData {
   using base_type = XCDeviceAoSData;
   using base_type::host_task_type;
   using base_type::device_buffer_t;
+  using shell_pair = ShellPair<double>;
 
   struct scheme1_data {
     double*  dist_scratch_device = nullptr;
@@ -53,6 +54,26 @@ struct Scheme1DataBase : public XCDeviceAoSData {
     inline void reset(){ std::memset(this,0,sizeof(shell_pair_to_task_data)); }
   };
 
+  struct task_to_shell_pair_data {
+    TaskToShellPairDevice* task_to_shell_pair_device;
+
+    // Each task has their own copy
+    int32_t* task_shell_linear_idx_device = nullptr;
+    int32_t* task_shell_off_row_device = nullptr;
+    int32_t* task_shell_off_col_device = nullptr;
+
+    std::array<int32_t, 4>* subtask_device = nullptr;
+
+    // Reused for all tasks. Indexed by linear idx
+    int32_t* nprim_pairs_device = nullptr;
+    shell_pair** sp_ptr_device = nullptr;
+    double* sp_X_AB_device = nullptr;
+    double* sp_Y_AB_device = nullptr;
+    double* sp_Z_AB_device = nullptr;
+
+    inline void reset(){ std::memset(this,0,sizeof(task_to_shell_pair_device)); }
+  };
+
   size_t total_nshells_bfn_task_batch  = 0; ///< Sum of nshells for task batch (bfn)
   scheme1_data       scheme1_stack;
   collocation_data   collocation_stack;
@@ -67,6 +88,21 @@ struct Scheme1DataBase : public XCDeviceAoSData {
   std::vector<AngularMomentumShellPairToTaskBatch> 
     l_batched_shell_pair_to_task_diag,
     l_batched_shell_pair_to_task_off_diag;
+
+  std::vector<TaskToShellPairHost> task_to_shell_pair;
+  std::vector<AngularMomentumTaskToShellPairBatchHost> l_batch_task_to_shell_pair;
+  std::vector<AngularMomentumTaskToShellPairBatch> l_batch_task_to_shell_pair_device;
+
+  std::vector<AngularMomentumTaskToShellPairBatchHost> l_batch_diag_task_to_shell_pair;
+  std::vector<AngularMomentumTaskToShellPairBatch> l_batch_diag_task_to_shell_pair_device;
+  task_to_shell_pair_data task_to_shell_pair_stack;
+
+  std::vector<std::array<int32_t, 4>> subtask;
+  std::vector<int32_t> nprim_pairs_host;
+  std::vector<shell_pair*> sp_ptr_host;
+  std::vector<double> sp_X_AB_host;
+  std::vector<double> sp_Y_AB_host;
+  std::vector<double> sp_Z_AB_host;
 
   virtual ~Scheme1DataBase() noexcept;
   Scheme1DataBase(const DeviceRuntimeEnvironment& rt);

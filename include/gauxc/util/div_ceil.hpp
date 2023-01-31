@@ -11,6 +11,8 @@
 #include <cstdint>
 #include <cassert>
 
+#include <gauxc/gauxc_config.hpp>
+
 namespace GauXC  {
 namespace util  {
 
@@ -54,20 +56,24 @@ using largest_t = typename largest<Args...>::type;
 
 }
 
+#if 0
 template <typename Integral1, typename Integral2>
+inline HOST_DEVICE_ACCESSIBLE
 intmax_t div_ceil( Integral1 i, Integral2 j ) {
 
   static_assert( detail::are_integral<Integral1, Integral2>::value );
-  assert( i >= 0 );
-  assert( j >  0 );
 
   intmax_t i_us = i;
   intmax_t j_us = j;
 
-  auto d = std::div(i_us,j_us);
-  return d.quot + !!d.rem;
+  return  (i_us + j_us - 1) / j_us;
 
 }
+#else
+inline HOST_DEVICE_ACCESSIBLE uintmax_t div_ceil( uintmax_t i, uintmax_t j ) {
+  return (i + j - 1) / j;
+}
+#endif
 
 
 }
