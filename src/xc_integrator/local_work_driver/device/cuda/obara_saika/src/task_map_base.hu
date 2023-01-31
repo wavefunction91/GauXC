@@ -20,7 +20,7 @@ __inline__ __device__ void load_primpair_shared(
   }
 }
 
-enum ObaraSaikaType {
+enum class ObaraSaikaType {
   base,
   swap,
   diag
