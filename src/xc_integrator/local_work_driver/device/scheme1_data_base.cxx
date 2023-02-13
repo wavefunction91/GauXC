@@ -45,7 +45,7 @@ void Scheme1DataBase::reset_allocations() {
 size_t Scheme1DataBase::get_static_mem_requirement() {
   size_t size = 0;
 
-  const size_t nsp = (global_dims.nshells*(global_dims.nshells+1))/2;
+  const size_t nsp = global_dims.nshell_pairs;
   size += 
     // Shell Pair map
     global_dims.nshells * sizeof(ShellToTaskDevice) +
@@ -292,8 +292,11 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
       mem.aligned_alloc<ShellToTaskDevice>( global_dims.nshells, csl );
   }
 
+  const size_t nsp = global_dims.nshell_pairs;
+
   // ShellPair -> Task buffer (cou)
   if(reqt.shell_pair_to_task_cou) {
+    throw std::runtime_error("SPARSE + SP2TASK NYI");
     shell_pair_to_task_stack.shell_pair_to_task_idx_device = 
       mem.aligned_alloc<int32_t>( total_nshells_cou_sqlt_task_batch, csl );
     shell_pair_to_task_stack.shell_pair_to_task_row_off_device = 
@@ -301,10 +304,12 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
     shell_pair_to_task_stack.shell_pair_to_task_col_off_device = 
       mem.aligned_alloc<int32_t>( total_nshells_cou_sqlt_task_batch, csl );
 
-    const size_t nsp = (global_dims.nshells*(global_dims.nshells+1))/2;
     shell_pair_to_task_stack.shell_pair_to_task_device =
       mem.aligned_alloc<ShellPairToTaskDevice>( nsp, csl );
+  }
 
+  // Task -> ShellPair (cou)
+  if(reqt.task_to_shell_pair_cou) { 
     const size_t ntasks = std::distance(task_begin, task_end);
     const int max_l = global_dims.max_l;
     const size_t n_sp_types = (max_l+1) * (max_l+1); 
@@ -948,12 +953,13 @@ void Scheme1DataBase::pack_and_send(
    *   GENERATE SHELLPAIR TO TASK (cou)    *
    *****************************************/
   auto sp2t_mem_st = hrt_t::now();
-  if(reqt.shell_pair_to_task_cou) {
+  if(reqt.shell_pair_to_task_cou or reqt.task_to_shell_pair_cou) {
 
-    const size_t nsp = (global_dims.nshells*(global_dims.nshells+1))/2;
+    const size_t nsp = global_dims.nshell_pairs;
 #define USE_TASK_MAP 1
 
 #if !USE_TASK_MAP
+    throw std::runtime_error("SP2T + Sparse NYI");
     // Unpack ShellPair SoA (populated in static allocation)
     auto sp2t_1 = hrt_t::now();
     shell_pair_to_task.clear();
@@ -1295,6 +1301,10 @@ void Scheme1DataBase::pack_and_send(
     const int max_l = basis_map.max_l();
 
     std::vector<int> sh_off_flat(nsp);
+    std::vector<size_t> sp_idx(nsp);
+
+    const auto& sp_row_ptr = this->shell_pair_soa.sp_row_ptr;
+    const auto& sp_col_ind = this->shell_pair_soa.sp_col_ind;
     for( auto it = task_begin; it != task_end; ++it ) {
       const auto itask = std::distance( task_begin, it );
 
@@ -1315,9 +1325,19 @@ void Scheme1DataBase::pack_and_send(
       for( auto i = 0ul; i < nshells_cou; ++i )
         sh_off_flat[shell_list_cou[i]] = shell_offs_cou[i];
 
+      // Calculate indices
+      for(auto i = 0ul; i < it->cou_screening.shell_pair_list.size(); ++i) {
+        auto [ish, jsh] = it->cou_screening.shell_pair_list[i];
+        sp_idx[i] = detail::csr_index(ish, jsh, global_dims.nshells, sp_row_ptr.data(), sp_col_ind.data()); 
+      }
+
+
       // Count the number of shell pairs per task
-      for( auto [ish,jsh] : it->cou_screening.shell_pair_list ) {
-        const auto idx = detail::packed_lt_index(ish,jsh, global_dims.nshells);
+      for(auto i = 0ul; i < it->cou_screening.shell_pair_list.size(); ++i) {
+        auto [ish, jsh] = it->cou_screening.shell_pair_list[i];
+        //const auto idx = detail::packed_lt_index(ish,jsh, global_dims.nshells);
+        //const auto idx = detail::csr_index(ish, jsh, global_dims.nshells, sp_row_ptr.data(), sp_col_ind.data()); 
+        const auto idx = sp_idx[i];
 
         int32_t lA, lB;
         std::tie(lA, lB) = this->shell_pair_soa.shell_pair_ls[idx];
@@ -1365,8 +1385,11 @@ void Scheme1DataBase::pack_and_send(
       }
 
       // Iterate over shell pairs adding to tasks
-      for( auto [ish,jsh] : it->cou_screening.shell_pair_list ) {
-        const auto idx = detail::packed_lt_index(ish,jsh, global_dims.nshells);
+      for(auto i = 0ul; i < it->cou_screening.shell_pair_list.size(); ++i) {
+        auto [ish, jsh] = it->cou_screening.shell_pair_list[i];
+        //const auto idx = detail::packed_lt_index(ish,jsh, global_dims.nshells);
+        //const auto idx = detail::csr_index(ish, jsh, global_dims.nshells, sp_row_ptr.data(), sp_col_ind.data()); 
+        const auto idx = sp_idx[i];
 
         int32_t lA, lB;
         std::tie(lA, lB) = this->shell_pair_soa.shell_pair_ls[idx];

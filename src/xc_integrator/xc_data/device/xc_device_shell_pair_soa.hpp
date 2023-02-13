@@ -18,6 +18,9 @@ struct XCDeviceShellPairSoA {
   std::vector<std::pair<int,int>>     shell_pair_ls;
   std::vector<std::pair<point,point>> shell_pair_centers;
 
+  std::vector<size_t> sp_row_ptr;
+  std::vector<size_t> sp_col_ind;
+
   inline void reset() {
     shell_pair_nprim_pairs.clear();
     shell_pair_dev_ptr.clear();

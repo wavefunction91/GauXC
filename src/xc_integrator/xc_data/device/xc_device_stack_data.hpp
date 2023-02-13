@@ -17,10 +17,11 @@ namespace GauXC {
 
 // Collection of dimensions used in the XC integration
 struct allocated_dims {
-  size_t nshells = 0; ///< Number of shells allocated for static data
-  size_t nbf     = 0; ///< Number of bfns allocated for static data
-  size_t natoms  = 0; ///< Number of atoms allocated for static data
-  size_t max_l   = 0; ///< Highest angular momentum value used
+  size_t nshells      = 0; ///< Number of shells allocated for static data
+  size_t nshell_pairs = 0; ///< Number of shell pairs allocated for static data
+  size_t nbf          = 0; ///< Number of bfns allocated for static data
+  size_t natoms       = 0; ///< Number of atoms allocated for static data
+  size_t max_l        = 0; ///< Highest angular momentum value used
 };
 
 /// Base type for XCDeviceData instances that use stack data allocation.
@@ -106,7 +107,7 @@ struct XCDeviceStackData : public XCDeviceData {
   void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) override final;
   void allocate_static_data_den( int32_t nbf, int32_t nshells ) override final;
   void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) override final;
-  void allocate_static_data_exx( int32_t nbf, int32_t nshells, int32_t max_l ) override final;
+  void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, int32_t max_l ) override final;
   void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) override final;
   void send_static_data_density_basis( const double* P, int32_t ldp, 
     const BasisSet<double>& basis ) override final;

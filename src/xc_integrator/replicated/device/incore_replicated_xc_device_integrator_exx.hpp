@@ -135,15 +135,30 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     const size_t ns2 = nshells * nshells;
     std::vector<double> V_max(ns2, 0.0);
+#if 0
+    // Loop over dense shell pairs
     for( auto i = 0; i < nshells; ++i )
     for( auto j = 0; j <= i;      ++j ) {
       // This might be a redundant check...
-      if( shell_pairs.at(i,j).nprim_pairs() ) { 
+      const auto mv = util::max_coulomb( basis.at(i), basis.at(j) );
+      V_max[i + j*nshells] = mv;
+      if( i != j ) V_max[j + i*nshells] = mv;
+    }
+#else
+    // Loop over sparse shell pairs
+    const auto sp_row_ptr = shell_pairs.row_ptr();
+    const auto sp_col_ind = shell_pairs.col_ind();
+    for( auto i = 0; i < nshells; ++i ) {
+      const auto j_st = sp_row_ptr[i];
+      const auto j_en = sp_row_ptr[i+1];
+      for( auto _j = j_st; _j < j_en; ++_j ) {
+        const auto j = sp_col_ind[_j];
         const auto mv = util::max_coulomb( basis.at(i), basis.at(j) );
         V_max[i + j*nshells] = mv;
         if( i != j ) V_max[j + i*nshells] = mv;
       }
     }
+#endif
     // Create LocalHostWorkDriver
     LocalHostWorkDriver host_lwd(
       std::make_unique<ReferenceLocalHostWorkDriver>()
@@ -268,7 +283,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Do EXX integration in task batches
   device_data.reset_allocations();
-  device_data.allocate_static_data_exx( nbf, nshells, basis_map.max_l() );
+  device_data.allocate_static_data_exx( nbf, nshells, shell_pairs.npairs(), basis_map.max_l() );
   device_data.send_static_data_density_basis( P, ldp, basis );
   device_data.send_static_data_shell_pairs( basis, shell_pairs );
 

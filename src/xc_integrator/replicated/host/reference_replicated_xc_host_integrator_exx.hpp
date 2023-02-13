@@ -311,6 +311,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Compute V upper bounds per shell pair
   const size_t nshells_bf = basis.size();
   std::vector<double> V_max( nshells_bf * nshells_bf );
+#if 0
+  // Loop over dense shell pairs
   for( auto i = 0; i < nshells_bf; ++i )
   for( auto j = 0; j <= i;      ++j ) {
     // This might be a redundant check...
@@ -320,6 +322,21 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       if( i != j ) V_max[j + i*nshells_bf] = mv;
     }
   }
+#else
+  // Loop over sparse shell pairs
+  const auto sp_row_ptr = shpairs.row_ptr();
+  const auto sp_col_ind = shpairs.col_ind();
+  for( auto i = 0; i < nshells_bf; ++i ) {
+    const auto j_st = sp_row_ptr[i];
+    const auto j_en = sp_row_ptr[i+1];
+    for( auto _j = j_st; _j < j_en; ++_j ) {
+      const auto j = sp_col_ind[_j];
+      const auto mv = util::max_coulomb( basis.at(i), basis.at(j) );
+      V_max[i + j*nshells_bf] = mv;
+      if( i != j ) V_max[j + i*nshells_bf] = mv;
+    }
+  }
+#endif
 
   // Absolute value of P
   std::vector<double> P_abs(nbf*nbf);

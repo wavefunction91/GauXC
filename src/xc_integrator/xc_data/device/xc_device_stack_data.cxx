@@ -160,22 +160,23 @@ void XCDeviceStackData::allocate_static_data_exc_grad( int32_t nbf, int32_t nshe
 }
 
 
-void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells, int32_t max_l ) {
+void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, int32_t max_l ) {
 
   if( allocated_terms.exx ) 
     GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXX");
 
   // Save state
-  global_dims.nshells = nshells;
-  global_dims.nbf     = nbf; 
-  global_dims.max_l   = max_l; 
+  global_dims.nshells      = nshells;
+  global_dims.nshell_pairs = nshell_pairs;
+  global_dims.nbf          = nbf; 
+  global_dims.max_l        = max_l; 
 
   // Allocate static memory with proper alignment
   buffer_adaptor mem( dynmem_ptr, dynmem_sz );
 
   static_stack.shells_device = mem.aligned_alloc<Shell<double>>( nshells , csl);
   static_stack.shell_pairs_device = 
-    mem.aligned_alloc<ShellPair<double>>((nshells*(nshells+1))/2, csl);
+    mem.aligned_alloc<ShellPair<double>>(nshell_pairs, csl);
 
   static_stack.exx_k_device = mem.aligned_alloc<double>( nbf * nbf , csl);
   static_stack.dmat_device  = mem.aligned_alloc<double>( nbf * nbf , csl);
@@ -254,6 +255,10 @@ void XCDeviceStackData::send_static_data_shell_pairs(
   if( shell_pairs.nshells() != nshells )
     GAUXC_GENERIC_EXCEPTION("Incompatible Basis for Stack Allocation");
 
+  const auto nshell_pairs = global_dims.nshell_pairs;
+  if( shell_pairs.npairs() != nshell_pairs )
+    GAUXC_GENERIC_EXCEPTION("Incompatible ShellPairs for Stack Allocation");
+
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
 
   // Copy shell pairs
@@ -263,6 +268,8 @@ void XCDeviceStackData::send_static_data_shell_pairs(
   // Create SoA
   shell_pair_soa.reset();
   using point = XCDeviceShellPairSoA::point;
+#if 0
+  // Loop over dense shell pairs
   for( size_t j = 0; j < nshells; ++j )
   for( size_t i = j; i < nshells; ++i ) {
     auto idx = detail::packed_lt_index(i,j,nshells);
@@ -280,6 +287,35 @@ void XCDeviceStackData::send_static_data_shell_pairs(
       point{ ket.O()[0], ket.O()[1], ket.O()[2] }
     );
   }
+#else
+  const auto sp_row_ptr = shell_pairs.row_ptr();
+  const auto sp_col_ind = shell_pairs.col_ind();
+
+  shell_pair_soa.sp_row_ptr = sp_row_ptr;
+  shell_pair_soa.sp_col_ind = sp_col_ind;
+
+  for( auto i = 0ul, idx = 0ul; i < nshells; ++i ) {
+    const auto j_st = sp_row_ptr[i];
+    const auto j_en = sp_row_ptr[i+1];
+    for( auto _j = j_st; _j < j_en; ++_j, idx++ ) {
+      const auto j = sp_col_ind[_j];
+
+      shell_pair_soa.shell_pair_dev_ptr.emplace_back(
+        static_stack.shell_pairs_device + idx
+      );
+
+      shell_pair_soa.shell_pair_nprim_pairs.push_back(shell_pairs.shell_pairs()[idx].nprim_pairs());
+      auto& bra = basis[i];
+      auto& ket = basis[j];
+      shell_pair_soa.shell_pair_shidx.emplace_back(i,j);
+      shell_pair_soa.shell_pair_ls.emplace_back( bra.l(), ket.l());
+      shell_pair_soa.shell_pair_centers.emplace_back(
+        point{ bra.O()[0], bra.O()[1], bra.O()[2] },
+        point{ ket.O()[0], ket.O()[1], ket.O()[2] }
+      );
+    }
+  }
+#endif
   
   device_backend_->master_queue_synchronize(); 
 }

@@ -279,7 +279,7 @@ struct required_term_storage {
       task_shell_list_bfn    = true;
       task_shell_offs_bfn    = true;
       shell_to_task_bfn      = true;
-      shell_pair_to_task_cou = true;
+      //shell_pair_to_task_cou = true;
       task_to_shell_pair_cou = true;
     }
 
@@ -321,7 +321,7 @@ struct XCDeviceData {
   virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_den( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) = 0;
-  virtual void allocate_static_data_exx( int32_t nbf, int32_t nshells, int32_t max_l ) = 0;
+  virtual void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, int32_t max_l ) = 0;
 
   // Send persistent data from host to device
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
