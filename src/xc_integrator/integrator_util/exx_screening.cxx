@@ -26,9 +26,6 @@ void exx_ek_screening(
   double eps_E, double eps_K, LocalHostWorkDriver* lwd, 
   exx_detail::host_task_iterator task_begin,
   exx_detail::host_task_iterator task_end ) {
- 
-  std::cout << "EPS E " << eps_E << std::endl;
-  std::cout << "EPS K " << eps_K << std::endl;
 
   const size_t nbf     = basis.nbf();
   const size_t nshells = basis.nshells();
@@ -246,6 +243,43 @@ void exx_ek_screening(
 
 #endif
 }
+
+
+#if 0
+void exx_ek_screening( 
+  const BasisSet<double>& basis, const BasisSetMap& basis_map,
+  const double* P_abs, size_t ldp, const double* V_shell_max, size_t ldv,
+  double eps_E, double eps_K, XCDeviceData& device_data, 
+  LocalDeviceWorkDriver* lwd, 
+  exx_detail::host_task_iterator task_begin,
+  exx_detail::host_task_iterator task_end ) {
+
+
+  // Setup EXX EK Screening memory on the device
+  device_data.allocate_static_data_exx_ek_screeening( nbf, nshells, 
+    basis_map.max_l() );
+  device_data.send_static_data_denity_basis( P_abs, ldp, basis );
+  device_data.send_static_data_exx_vshell_max( V_shell_max, ldv );
+
+
+  integrator_term_tracker enabled_terms;
+  enabled_terms.exx_ek_screening = true;
+
+  // Loop over tasks and form basis-related buffers
+  auto task_it = task_begin;
+  while( task_it != task_end ) {
+
+    // Determine next task patch, send relevant data (EXX_EK only)
+    task_it = 
+      device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
+
+    // Evaluate collocation
+    lwd->eval_collocation( &device_data );
+  }
+
+
+}
+#endif
 
 
 }

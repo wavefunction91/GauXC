@@ -8,6 +8,7 @@
 #pragma once
 #include <gauxc/xc_task.hpp>
 #include <host/local_host_work_driver.hpp>
+#include <device/local_device_work_driver.hpp>
 
 namespace GauXC {
 namespace exx_detail {

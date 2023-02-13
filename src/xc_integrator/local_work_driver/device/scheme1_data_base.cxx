@@ -1276,15 +1276,17 @@ void Scheme1DataBase::pack_and_send(
       }
 
       // Generate shell pair device buffer
+      nprim_pairs_host = this->shell_pair_soa.shell_pair_nprim_pairs;
+      sp_ptr_host = this->shell_pair_soa.shell_pair_dev_ptr;
       for( auto i = 0ul; i < nsp; ++i ) {
-        nprim_pairs_host.push_back(
-          this->shell_pair_soa.shell_pair_nprim_pairs[i]
-        );
-        sp_ptr_host.push_back(
-          this->shell_pair_soa.shell_pair_dev_ptr[i]
-        );
-        point rA, rB;
-        std::tie(rA, rB) = this->shell_pair_soa.shell_pair_centers[i];
+        //nprim_pairs_host.push_back(
+        //  this->shell_pair_soa.shell_pair_nprim_pairs[i]
+        //);
+        //sp_ptr_host.push_back(
+        //  this->shell_pair_soa.shell_pair_dev_ptr[i]
+        //);
+        //point rA, rB;
+        const auto& [rA, rB] = this->shell_pair_soa.shell_pair_centers[i];
 
         sp_X_AB_host.push_back(rA.x - rB.x);
         sp_Y_AB_host.push_back(rA.y - rB.y);
