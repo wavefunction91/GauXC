@@ -15,6 +15,7 @@
 #include "device/common/inc_potential.hpp"
 #include "device/common/symmetrize_mat.hpp"
 #include "device/common/increment_exc_grad.hpp"
+#include "device/common/exx_ek_screening.hpp"
 
 
 #include "device/common/shell_pair_to_task.hpp"
@@ -1234,6 +1235,17 @@ void AoSScheme1Base::symmetrize_exx_k( XCDeviceData* _data ) {
 
 
 void AoSScheme1Base::eval_exx_ek_screening_bfn_stats( XCDeviceData* _data ) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+  auto aos_stack    = data->aos_stack;
+  GauXC::exx_ek_screening_bfn_stats( ntasks, aos_stack.device_tasks,
+    data->device_backend_->queue() );
 
 }
 

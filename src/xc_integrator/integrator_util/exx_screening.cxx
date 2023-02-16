@@ -75,11 +75,15 @@ void exx_ek_screening(
     for( auto ipt = 0ul; ipt < npts; ++ipt ) {
       double tmp = 0.;
       for( auto ibf = 0ul; ibf < nbe_bfn; ++ibf ) {
+      //if(ipt == 0 and ibf == 0) printf("[HOST] ITASK = %lu BF(0,%lu) = %.6e\n", i_task,ibf,basis_eval[ ibf + ipt*nbe_bfn ]);
         tmp += std::abs( basis_eval[ ibf + ipt*nbe_bfn ] );
       }
+      //printf("[HOST] ITASK = %lu SUM(%lu) = %.6e\n", i_task,ipt, tmp;
       max_bfn_sum = std::max( max_bfn_sum, std::sqrt(weights[ipt])*tmp );
     }
     task_max_bf_sum[i_task] = max_bfn_sum;
+    printf("[HOST] ITASK = %lu MAX_SUM = %.6e\n", i_task, max_bfn_sum);
+    //printf("[HOST] ITASK = %lu NBE = %lu NPTS = %lu \n", i_task, nbe_bfn, npts);
 
     // Compute max value for each bfn over grid
     bfn_max_grid.resize(nbe_bfn);
@@ -279,8 +283,8 @@ void exx_ek_screening(
     // Evaluate collocation
     lwd->eval_collocation( &device_data );
 
-    //// Evaluate EXX EK Screening Basis Statistics
-    //lwd->eval_exx_ek_screening_bfn_stats( &device_data );
+    // Evaluate EXX EK Screening Basis Statistics
+    lwd->eval_exx_ek_screening_bfn_stats( &device_data );
 
   }
 
