@@ -94,6 +94,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   BasisSetMap basis_map(basis,mol);
   ShellPairCollection shell_pairs(basis);
 
+  // Populate submat maps
+  device_data.populate_submat_maps( basis.nbf(), task_begin, task_end, basis_map );
 
 
 
@@ -166,6 +168,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     exx_ek_screening( basis, basis_map, P_abs.data(), basis.nbf(),
       V_max.data(), nshells, sn_link_settings.energy_tol, 
       sn_link_settings.k_tol, &host_lwd, task_begin, task_end );
+
+    exx_ek_screening( basis, basis_map, P_abs.data(), basis.nbf(),
+      V_max.data(), nshells, sn_link_settings.energy_tol, 
+      sn_link_settings.k_tol, device_data, lwd, task_begin, task_end );
 
     // Remove tasks with no coulomb shells
     task_end = std::stable_partition( task_begin, task_end,
@@ -275,6 +281,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       })->cou_screening.nbe << std::endl;
 
   //return;
+
 
   // Populate submat maps
   device_data.populate_submat_maps( basis.nbf(), task_begin, task_end, basis_map );

@@ -33,6 +33,9 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   //void eval_exx_gmat( XCDeviceData* ) override final;
   void eval_exx_gmat( XCDeviceData*, const BasisSetMap& ) override final;
 
+  void eval_exx_ek_screening_bfn_stats( XCDeviceData* ) override final;
+  void eval_exx_ek_screening_approx_fmax( XCDeviceData* ) override final;
+
 
   // Overridable APIs
   virtual void eval_xmat( XCDeviceData*, bool do_grad ) override;

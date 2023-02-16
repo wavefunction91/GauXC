@@ -50,6 +50,9 @@ struct LocalDeviceWorkDriverPIMPL {
   virtual void symmetrize_vxc( XCDeviceData* ) = 0;
   virtual void symmetrize_exx_k( XCDeviceData* ) = 0;
 
+  virtual void eval_exx_ek_screening_bfn_stats( XCDeviceData* ) = 0;
+  virtual void eval_exx_ek_screening_approx_fmax( XCDeviceData* ) = 0;
+
   virtual std::unique_ptr<XCDeviceData> create_device_data(const DeviceRuntimeEnvironment&) = 0;
 
 };

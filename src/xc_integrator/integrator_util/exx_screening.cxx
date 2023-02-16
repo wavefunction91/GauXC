@@ -8,6 +8,7 @@
 #include "exx_screening.hpp"
 #include "host/blas.hpp"
 #include <gauxc/util/div_ceil.hpp>
+#include "exceptions/cuda_exception.hpp"
 #include <chrono>
 
 namespace std {
@@ -245,7 +246,6 @@ void exx_ek_screening(
 }
 
 
-#if 0
 void exx_ek_screening( 
   const BasisSet<double>& basis, const BasisSetMap& basis_map,
   const double* P_abs, size_t ldp, const double* V_shell_max, size_t ldv,
@@ -254,12 +254,15 @@ void exx_ek_screening(
   exx_detail::host_task_iterator task_begin,
   exx_detail::host_task_iterator task_end ) {
 
+  const size_t nbf = basis.nbf();
+  const auto nshells = basis.nshells();
 
   // Setup EXX EK Screening memory on the device
-  device_data.allocate_static_data_exx_ek_screeening( nbf, nshells, 
+  device_data.reset_allocations();
+  device_data.allocate_static_data_exx_ek_screening( nbf, nshells, 
     basis_map.max_l() );
-  device_data.send_static_data_denity_basis( P_abs, ldp, basis );
-  device_data.send_static_data_exx_vshell_max( V_shell_max, ldv );
+  device_data.send_static_data_density_basis( P_abs, ldp, basis );
+  //device_data.send_static_data_exx_vshell_max( V_shell_max, ldv );
 
 
   integrator_term_tracker enabled_terms;
@@ -275,11 +278,18 @@ void exx_ek_screening(
 
     // Evaluate collocation
     lwd->eval_collocation( &device_data );
+
+    //// Evaluate EXX EK Screening Basis Statistics
+    //lwd->eval_exx_ek_screening_bfn_stats( &device_data );
+
   }
 
+  // Compute approximate F Max
+  //lwd->eval_exx_ek_screening_approx_fmax( &device_data );
+
+  GAUXC_CUDA_ERROR("End Sync", cudaDeviceSynchronize());
 
 }
-#endif
 
 
 }

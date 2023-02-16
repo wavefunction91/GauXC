@@ -32,6 +32,7 @@ struct integrator_term_tracker {
   bool exc_vxc                   = false;
   bool exc_grad                  = false;
   bool exx                       = false;
+  bool exx_ek_screening          = false;
   integrator_xc_approx xc_approx = _UNDEFINED;
   inline void reset() {
     std::memset( this, 0, sizeof(integrator_term_tracker) );
@@ -87,6 +88,8 @@ struct required_term_storage {
   bool task_fmat          = false;
   bool task_gmat          = false;
   bool task_nbe_scr       = false;
+  bool task_bfn_shell_indirection = false;
+
 
   inline size_t task_bfn_size(size_t nbe, size_t npts) {
     return PRDVL(task_bfn, nbe * npts);
@@ -111,6 +114,9 @@ struct required_term_storage {
   }
   inline size_t task_nbe_scr_size(size_t nbe_bfn, size_t nbe_cou) {
     return PRDVL(task_nbe_scr, std::max(nbe_bfn,nbe_cou) * nbe_bfn);
+  }
+  inline size_t task_bfn_shell_indirection_size(size_t nbe) {
+    return PRDVL(task_bfn_shell_indirection, nbe);
   }
 
   // Index packing
@@ -283,6 +289,19 @@ struct required_term_storage {
       task_to_shell_pair_cou = true;
     }
 
+    if(tracker.exx_ek_screening) {
+      task_bfn              = true;
+      task_nbe_scr          = true;
+      task_submat_cut_bfn   = true;
+      task_submat_block_bfn = true;
+      task_indirection      = true;
+
+      task_shell_list_bfn    = true;
+      task_shell_offs_bfn    = true;
+      shell_to_task_bfn      = true;
+      //GAUXC_GENERIC_EXCEPTION("Device EK Screening NYI");
+    }
+
   }
 };
 
@@ -322,11 +341,13 @@ struct XCDeviceData {
   virtual void allocate_static_data_den( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) = 0;
   virtual void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, int32_t max_l ) = 0;
+  virtual void allocate_static_data_exx_ek_screening( int32_t nbf, int32_t nshells, int32_t max_l ) = 0;
 
   // Send persistent data from host to device
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
   virtual void send_static_data_density_basis( const double* P, int32_t ldp, const BasisSet<double>& basis ) = 0;
   virtual void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) = 0;
+  virtual void send_static_data_exx_vshell_max( const double* V_max, int32_t ldv ) = 0;
 
   /// Zero out the density integrands in device memory
   virtual void zero_den_integrands() = 0;

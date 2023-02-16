@@ -63,6 +63,8 @@ struct XCDeviceTask {
   double dist_nearest   = 0.;
   double * dist_scratch = nullptr;
 
+  double max_bfn_sum = 0.;
+
 };
 
 }

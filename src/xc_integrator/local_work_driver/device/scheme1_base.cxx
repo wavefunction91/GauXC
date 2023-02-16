@@ -295,6 +295,11 @@ void AoSScheme1Base::eval_collocation( XCDeviceData* _data ) {
 
   auto static_stack  = data->static_stack;
   auto aos_stack     = data->aos_stack;
+  if( ! static_stack.shells_device )
+    GAUXC_GENERIC_EXCEPTION("Shells not Allocated");
+  if( ! aos_stack.device_tasks )
+    GAUXC_GENERIC_EXCEPTION("Device Tasks not Allocated");
+
   eval_collocation_masked_combined( ntasks, npts_max, nshells_max,
     static_stack.shells_device, aos_stack.device_tasks, 
     data->device_backend_->queue() );
@@ -1228,6 +1233,13 @@ void AoSScheme1Base::symmetrize_exx_k( XCDeviceData* _data ) {
 }
 
 
+void AoSScheme1Base::eval_exx_ek_screening_bfn_stats( XCDeviceData* _data ) {
+
+}
+
+void AoSScheme1Base::eval_exx_ek_screening_approx_fmax( XCDeviceData* _data ) {
+
+}
 
 
 }

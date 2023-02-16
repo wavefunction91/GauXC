@@ -188,6 +188,28 @@ void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells, 
   allocated_terms.exx = true;
 }
 
+void XCDeviceStackData::allocate_static_data_exx_ek_screening( int32_t nbf, int32_t nshells, int32_t max_l ) {
+
+  if( allocated_terms.exx_ek_screening ) 
+    GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXX-EK Screening");
+
+  // Save state
+  global_dims.nshells      = nshells;
+  global_dims.nbf          = nbf; 
+  global_dims.max_l        = max_l; 
+
+  // Allocate static memory with proper alignment
+  buffer_adaptor mem( dynmem_ptr, dynmem_sz );
+
+  static_stack.shells_device = mem.aligned_alloc<Shell<double>>( nshells , csl);
+  static_stack.dmat_device   = mem.aligned_alloc<double>( nbf * nbf , csl);
+
+  // Get current stack location
+  dynmem_ptr = mem.stack();
+  dynmem_sz  = mem.nleft(); 
+
+  allocated_terms.exx_ek_screening = true;
+}
 
 
 
@@ -225,7 +247,7 @@ void XCDeviceStackData::send_static_data_weights( const Molecule& mol, const Mol
 void XCDeviceStackData::send_static_data_density_basis( const double* P, int32_t ldp,
   const BasisSet<double>& basis ) {
 
-  if( not (allocated_terms.exx or allocated_terms.exc_vxc or allocated_terms.exc_grad or allocated_terms.den) ) 
+  if( not (allocated_terms.exx or allocated_terms.exc_vxc or allocated_terms.exc_grad or allocated_terms.den or allocated_terms.exx_ek_screening) ) 
     GAUXC_GENERIC_EXCEPTION("Density/Basis Not Stack Allocated");
 
   const auto nbf    = global_dims.nbf;
@@ -320,6 +342,12 @@ void XCDeviceStackData::send_static_data_shell_pairs(
   device_backend_->master_queue_synchronize(); 
 }
 
+void XCDeviceStackData::send_static_data_exx_vshell_max( const double* V_max, 
+  int32_t ldv ) {
+
+  GAUXC_GENERIC_EXCEPTION("NYI");
+
+}
 
 
 void XCDeviceStackData::zero_den_integrands() {

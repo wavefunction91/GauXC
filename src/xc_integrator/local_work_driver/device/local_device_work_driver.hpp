@@ -80,6 +80,9 @@ public:
   void inc_exc_grad_gga( XCDeviceData* );
   void inc_exx_k( XCDeviceData* );
 
+  void eval_exx_ek_screening_bfn_stats( XCDeviceData* );
+  void eval_exx_ek_screening_approx_fmax( XCDeviceData* );
+
   void symmetrize_vxc( XCDeviceData* );
   void symmetrize_exx_k( XCDeviceData* );
 
