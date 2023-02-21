@@ -12,6 +12,8 @@ namespace GauXC {
 
 void exx_ek_screening_bfn_stats( size_t        ntasks,
                                  XCDeviceTask* tasks_device,
+                                 double      * bfn_max_device,
+                                 size_t        LDBFM,
                                  device_queue queue );
 
 

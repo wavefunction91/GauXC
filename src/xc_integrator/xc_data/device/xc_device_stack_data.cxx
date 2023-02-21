@@ -188,7 +188,7 @@ void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells, 
   allocated_terms.exx = true;
 }
 
-void XCDeviceStackData::allocate_static_data_exx_ek_screening( int32_t nbf, int32_t nshells, int32_t max_l ) {
+void XCDeviceStackData::allocate_static_data_exx_ek_screening( size_t ntasks, int32_t nbf, int32_t nshells, int32_t max_l ) {
 
   if( allocated_terms.exx_ek_screening ) 
     GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXX-EK Screening");
@@ -197,12 +197,19 @@ void XCDeviceStackData::allocate_static_data_exx_ek_screening( int32_t nbf, int3
   global_dims.nshells      = nshells;
   global_dims.nbf          = nbf; 
   global_dims.max_l        = max_l; 
+  global_dims.ntask_ek     = ntasks;
 
   // Allocate static memory with proper alignment
   buffer_adaptor mem( dynmem_ptr, dynmem_sz );
 
   static_stack.shells_device = mem.aligned_alloc<Shell<double>>( nshells , csl);
   static_stack.dmat_device   = mem.aligned_alloc<double>( nbf * nbf , csl);
+  static_stack.vshell_max_device = 
+    mem.aligned_alloc<double>( nshells*nshells , csl);
+  static_stack.max_f_device = 
+    mem.aligned_alloc<double>( nbf * ntasks , csl);
+  static_stack.ek_bfn_max_device = 
+    mem.aligned_alloc<double>( nbf * ntasks , csl);
 
   // Get current stack location
   dynmem_ptr = mem.stack();
@@ -345,7 +352,17 @@ void XCDeviceStackData::send_static_data_shell_pairs(
 void XCDeviceStackData::send_static_data_exx_vshell_max( const double* V_max, 
   int32_t ldv ) {
 
-  GAUXC_GENERIC_EXCEPTION("NYI");
+  if( not allocated_terms.exx_ek_screening ) 
+    GAUXC_GENERIC_EXCEPTION("VMAX Not Stack Allocated");
+
+  if( ldv != (int)global_dims.nshells ) GAUXC_GENERIC_EXCEPTION("LDV must bf NSHELLS");
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
+
+  // Copy VMAX
+  device_backend_->copy_async( ldv*ldv, V_max, static_stack.vshell_max_device,
+    "VMAX H2D");
+  
+  device_backend_->master_queue_synchronize(); 
 
 }
 
@@ -390,6 +407,15 @@ void XCDeviceStackData::zero_exx_integrands() {
 
 }
 
+void XCDeviceStackData::zero_exx_ek_screening_intermediates() {
+
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
+
+  const auto ntask_ek = global_dims.ntask_ek;
+  const auto nbf      = global_dims.nbf;
+  device_backend_->set_zero( ntask_ek*nbf, static_stack.ek_bfn_max_device, "EK BFNMAX Zero" );
+
+}
 
 
 
@@ -432,6 +458,18 @@ void XCDeviceStackData::retrieve_exx_integrands( double* K, int32_t ldk ) {
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
   
   device_backend_->copy_async( nbf*nbf, static_stack.exx_k_device, K,  "K D2H" );
+
+}
+
+void XCDeviceStackData::retrieve_exx_ek_approx_fmax( double* FMAX, int32_t ldF ) {
+
+  const auto ntask_ek = global_dims.ntask_ek;
+  const auto nbf      = global_dims.nbf;
+  if( ldF != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDF must bf NBF");
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
+
+  device_backend_->copy_async( ntask_ek * nbf, static_stack.max_f_device, FMAX, 
+    "FMAX D2H");
 
 }
 

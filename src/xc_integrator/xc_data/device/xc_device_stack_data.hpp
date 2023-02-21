@@ -22,6 +22,7 @@ struct allocated_dims {
   size_t nbf          = 0; ///< Number of bfns allocated for static data
   size_t natoms       = 0; ///< Number of atoms allocated for static data
   size_t max_l        = 0; ///< Highest angular momentum value used
+  size_t ntask_ek     = 0; ///< Number of total tasks allocated for static data (EK)
 };
 
 /// Base type for XCDeviceData instances that use stack data allocation.
@@ -55,6 +56,10 @@ struct XCDeviceStackData : public XCDeviceData {
     double* exx_k_device   = nullptr;  ///< EXX K storage (nbf,nbf)
     double* acc_scr_device = nullptr;  ///< Accumulaion scratch (1)
     double* exc_grad_device = nullptr; ///< EXC Gradient storage (3*natoms)
+
+    double* vshell_max_device = nullptr;
+    double* ek_bfn_max_device = nullptr;
+    double* max_f_device      = nullptr;
 
     inline void reset() { std::memset( this, 0, sizeof(static_data) ); }
   };
@@ -108,7 +113,7 @@ struct XCDeviceStackData : public XCDeviceData {
   void allocate_static_data_den( int32_t nbf, int32_t nshells ) override final;
   void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) override final;
   void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, int32_t max_l ) override final;
-  void allocate_static_data_exx_ek_screening( int32_t nbf, int32_t nshells, int32_t max_l ) override final;
+  void allocate_static_data_exx_ek_screening( size_t ntasks, int32_t nbf, int32_t nshells, int32_t max_l ) override final;
   void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) override final;
   void send_static_data_density_basis( const double* P, int32_t ldp, 
     const BasisSet<double>& basis ) override final;
@@ -119,11 +124,13 @@ struct XCDeviceStackData : public XCDeviceData {
   void zero_exc_vxc_integrands() override final;
   void zero_exc_grad_integrands() override final;
   void zero_exx_integrands() override final;
+  void zero_exx_ek_screening_intermediates() override final;
   void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
     double* VXC, int32_t ldvxc ) override final;
   void retrieve_exc_grad_integrands( double* EXC_GRAD, double* N_EL ) override final;
   void retrieve_den_integrands( double* N_EL ) override final;
   void retrieve_exx_integrands( double* K, int32_t ldk ) override final;
+  void retrieve_exx_ek_approx_fmax( double* FMAX, int32_t ldF ) override final;
   void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) override final;
 
   double* vxc_device_data() override;

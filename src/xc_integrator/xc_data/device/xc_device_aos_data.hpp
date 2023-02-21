@@ -16,6 +16,7 @@ namespace GauXC {
 /// Base type for XCDeviceData instances that address task batches as AoS
 struct XCDeviceAoSData : public XCDeviceStackData {
 
+  size_t total_nbe_bfn_task_batch      = 0; ///< Sum of nbe_bfn for task batch
   size_t total_nbe_scr_task_batch      = 0; ///< Sum of max(nbe,...) * nbe_bfn for task batch
   size_t total_nbe_bfn_npts_task_batch = 0; ///< Sum of npts*nbe_bfn for task batch
   size_t total_ncut_bfn_task_batch     = 0; ///< Sum of ncut_bfn for task batch
@@ -51,6 +52,9 @@ struct XCDeviceAoSData : public XCDeviceStackData {
     // EXX Intermediates
     double* fmat_exx_device = nullptr;
     double* gmat_exx_device = nullptr;
+
+    // EXX EK Maps
+    int32_t* bfn_shell_indirection_device = nullptr;
 
     // Scratch buffer
     double* nbe_scr_device = nullptr; ///< nbe*nbe scratch allocated for task batch

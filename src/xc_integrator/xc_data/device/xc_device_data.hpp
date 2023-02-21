@@ -291,13 +291,14 @@ struct required_term_storage {
 
     if(tracker.exx_ek_screening) {
       task_bfn              = true;
-      task_nbe_scr          = true;
-      task_submat_cut_bfn   = true;
-      task_submat_block_bfn = true;
+      //task_nbe_scr          = true;
+      //task_submat_cut_bfn   = true;
+      //task_submat_block_bfn = true;
       task_indirection      = true;
 
       task_shell_list_bfn    = true;
       task_shell_offs_bfn    = true;
+      task_bfn_shell_indirection = true;
       shell_to_task_bfn      = true;
       //GAUXC_GENERIC_EXCEPTION("Device EK Screening NYI");
     }
@@ -341,7 +342,7 @@ struct XCDeviceData {
   virtual void allocate_static_data_den( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) = 0;
   virtual void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, int32_t max_l ) = 0;
-  virtual void allocate_static_data_exx_ek_screening( int32_t nbf, int32_t nshells, int32_t max_l ) = 0;
+  virtual void allocate_static_data_exx_ek_screening( size_t ntasks, int32_t nbf, int32_t nshells, int32_t max_l ) = 0;
 
   // Send persistent data from host to device
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
@@ -360,6 +361,9 @@ struct XCDeviceData {
 
   /// Zero out the EXX integrands in device memory
   virtual void zero_exx_integrands() = 0;
+
+  /// Zero out intermediates for EXX EK screening
+  virtual void zero_exx_ek_screening_intermediates() = 0;
 
   /** Generate task batch to execute on device
    *
@@ -405,6 +409,8 @@ struct XCDeviceData {
 
 
   virtual void retrieve_exx_integrands( double* K, int32_t ldk ) = 0;
+
+  virtual void retrieve_exx_ek_approx_fmax( double* FMAX, int32_t ldF ) = 0;
 
 
   virtual void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) = 0;

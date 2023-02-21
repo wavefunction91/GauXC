@@ -75,6 +75,9 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
     // Index Packing (cou)
     reqt.task_submat_cut_cou_size( ncut_cou )     * sizeof(int32_t) +
     reqt.task_submat_block_cou_size( nblock_cou ) * sizeof(int32_t) +
+
+    // Map from packed to unpacked indices
+    reqt.task_bfn_shell_indirection_size( nbe_bfn ) * sizeof(int32_t) +
   
     // Memory associated with task indirection: valid for both AoS and SoA
     reqt.task_indirection_size() * sizeof(XCDeviceTask);
@@ -102,6 +105,7 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
 
   // Get dimensions
   total_nbe_scr_task_batch   = 0;
+  total_nbe_bfn_task_batch   = 0;
 
   total_nbe_bfn_npts_task_batch = 0; 
   total_ncut_bfn_task_batch     = 0; 
@@ -137,6 +141,8 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
     const size_t nblock_cou  = submat_block_cou.size();
     const auto nbe_cou       = it->cou_screening.nbe;
 
+    total_nbe_bfn_task_batch += nbe_bfn;
+
     total_nbe_scr_task_batch += reqt.task_nbe_scr_size(nbe_bfn, nbe_cou);
 
     total_nbe_bfn_npts_task_batch += reqt.task_bfn_size(nbe_bfn, npts);
@@ -153,6 +159,12 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
   if(reqt.task_indirection) {
     const size_t ntask = std::distance( task_begin, task_end );
     aos_stack.device_tasks = mem.aligned_alloc<XCDeviceTask>( ntask, csl );
+  }
+
+  // Map packed to unpacked indices
+  if(reqt.task_bfn_shell_indirection) {
+    aos_stack.bfn_shell_indirection_device =
+      mem.aligned_alloc<int32_t>( total_nbe_bfn_task_batch, csl );
   }
 
   // Collocation + derivatives 
@@ -254,6 +266,9 @@ void XCDeviceAoSData::pack_and_send(
   std::vector< std::array<int32_t, 3> > submat_cut_cou_pack;
   std::vector< int32_t > submat_block_cou_pack;
 
+  std::vector<int32_t> bfn_shell_indirection_pack;
+  bfn_shell_indirection_pack.reserve(total_nbe_bfn_task_batch);
+
 
   // Contatenation utility
   auto concat_iterable = []( auto& a, const auto& b ) {
@@ -307,6 +322,19 @@ void XCDeviceAoSData::pack_and_send(
     }
     if(reqt.task_submat_block_cou) {
       concat_iterable( submat_block_cou_pack, submat_block_cou );
+    }
+
+    // Map packed to unpacked indices
+    if(reqt.task_bfn_shell_indirection) {
+      std::vector<int32_t> bfn_indirection(nbe_bfn);
+      auto bit = bfn_indirection.begin();
+      for( auto& sh : it->bfn_screening.shell_list ) {
+        auto sh_range = basis_map.shell_to_ao_range()[sh];
+        for( auto j = sh_range.first; j < sh_range.second; ++j ) {
+          *bit = j; ++bit;
+        }
+      }
+      concat_iterable(bfn_shell_indirection_pack, bfn_indirection);
     }
 
     // Add task to device indirection
@@ -365,6 +393,11 @@ void XCDeviceAoSData::pack_and_send(
   }
 
 
+  if(reqt.task_bfn_shell_indirection) {
+    device_backend_->copy_async( bfn_shell_indirection_pack.size(), 
+      bfn_shell_indirection_pack.data(), aos_stack.bfn_shell_indirection_device, 
+      "send_bfn_shell_indirection"  ); 
+  }
 
   // Construct full indirection
   if(reqt.task_indirection) {
@@ -374,6 +407,11 @@ void XCDeviceAoSData::pack_and_send(
     buffer_adaptor points_y_mem( base_stack.points_y_device,  total_npts );
     buffer_adaptor points_z_mem( base_stack.points_z_device,  total_npts );
     buffer_adaptor weights_mem ( base_stack.weights_device,   total_npts );
+
+
+    const size_t total_nbe_bfn = total_nbe_bfn_task_batch * sizeof(int32_t);
+    buffer_adaptor bfn_shell_indirection_mem( 
+      aos_stack.bfn_shell_indirection_device, total_nbe_bfn );
 
     const size_t total_ncut_bfn   = 
       total_ncut_bfn_task_batch   * sizeof(int32_t);
@@ -532,6 +570,12 @@ void XCDeviceAoSData::pack_and_send(
         reqt.task_fmat_size(nbe_cou,npts), csl);
       task.gmat = gmat_mem.aligned_alloc<double>(
         reqt.task_gmat_size(nbe_cou,npts), csl);
+
+
+      task.bfn_shell_indirection =
+        bfn_shell_indirection_mem.aligned_alloc<int32_t>( 
+          reqt.task_bfn_shell_indirection_size(nbe_bfn), csl
+        );
 
     } // Loop over device tasks
 

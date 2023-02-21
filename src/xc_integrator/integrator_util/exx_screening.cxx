@@ -82,7 +82,7 @@ void exx_ek_screening(
       max_bfn_sum = std::max( max_bfn_sum, std::sqrt(weights[ipt])*tmp );
     }
     task_max_bf_sum[i_task] = max_bfn_sum;
-    printf("[HOST] ITASK = %lu MAX_SUM = %.6e\n", i_task, max_bfn_sum);
+    //printf("[HOST] ITASK = %lu MAX_SUM = %.6e\n", i_task, max_bfn_sum);
     //printf("[HOST] ITASK = %lu NBE = %lu NPTS = %lu \n", i_task, nbe_bfn, npts);
 
     // Compute max value for each bfn over grid
@@ -97,6 +97,7 @@ void exx_ek_screening(
       }
       bfn_max_grid[ibf] = tmp;
     }
+    //printf("[HOST] ITASK = %d MAX_BFN(0) = %.6e\n", i_task, bfn_max_grid[0]);
 
     // Place max bfn into larger array
     auto task_max_bfn_it = task_max_bfn.data() + i_task*nbf;
@@ -128,6 +129,9 @@ void exx_ek_screening(
   auto gemm_en = hrt_t::now();
   std::cout << "... done " << dur_t(gemm_en-gemm_st).count() << std::endl;
 
+  //std::cout << "CPU FMAX = ";
+  //for( auto x : task_approx_f ) std::cout << x << " ";
+  //std::cout << std::endl;
 #if 0
   // Compute EK shells list for each task
   std::vector<std::vector<int32_t>> ek_shell_task( ntasks );
@@ -260,14 +264,16 @@ void exx_ek_screening(
 
   const size_t nbf = basis.nbf();
   const auto nshells = basis.nshells();
+  const size_t ntasks  = std::distance(task_begin, task_end);
 
   // Setup EXX EK Screening memory on the device
   device_data.reset_allocations();
-  device_data.allocate_static_data_exx_ek_screening( nbf, nshells, 
+  device_data.allocate_static_data_exx_ek_screening( ntasks, nbf, nshells, 
     basis_map.max_l() );
   device_data.send_static_data_density_basis( P_abs, ldp, basis );
-  //device_data.send_static_data_exx_vshell_max( V_shell_max, ldv );
+  device_data.send_static_data_exx_vshell_max( V_shell_max, ldv );
 
+  device_data.zero_exx_ek_screening_intermediates();
 
   integrator_term_tracker enabled_terms;
   enabled_terms.exx_ek_screening = true;
@@ -289,9 +295,17 @@ void exx_ek_screening(
   }
 
   // Compute approximate F Max
-  //lwd->eval_exx_ek_screening_approx_fmax( &device_data );
+  lwd->eval_exx_ek_screening_approx_fmax( &device_data );
+
+  // Retreive to host
+  std::vector<double> task_f_max(ntasks * nbf);
+  device_data.retrieve_exx_ek_approx_fmax( task_f_max.data(), nbf );
 
   GAUXC_CUDA_ERROR("End Sync", cudaDeviceSynchronize());
+
+  //std::cout << "GPU FMAX = ";
+  //for( auto x : task_f_max ) std::cout << x << " ";
+  //std::cout << std::endl;
 
 }
 

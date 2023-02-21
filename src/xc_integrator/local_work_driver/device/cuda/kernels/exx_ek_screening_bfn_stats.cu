@@ -14,6 +14,8 @@
 namespace GauXC {
 
 __global__ void exx_ek_screening_bfn_stats_kernel( size_t ntasks, 
+                                                   double      * bfn_max_device,
+                                                   size_t        LDBFM,
                                                    XCDeviceTask* tasks_device ) {
 
   const int batch_idx = blockIdx.x;
@@ -125,10 +127,27 @@ __global__ void exx_ek_screening_bfn_stats_kernel( size_t ntasks,
 #endif
   if(threadIdx.x == 0) {
     task.max_bfn_sum = max_bfn_sum;
-    printf("[GPU] ITASK = %d MAX_SUM = %.6e\n", batch_idx, max_bfn_sum);
+    //printf("[GPU] ITASK = %d MAX_SUM = %.6e PTR = %x\n", batch_idx, max_bfn_sum, task.bfn_shell_indirection);
     //printf("[GPU] ITASK = %d NBE = %lu NPTS = %lu \n", batch_idx, nbf, npts);
   }
 
+
+  __syncthreads();
+  for(int ibf = warp_id; ibf < nbf; ibf += nwarp) {
+    double max_bf = 0;
+    for(int ipt = warp_lane; ipt < npts; ipt += cuda::warp_size) {
+      const auto val = basis_eval_device[ipt + ibf*npts];
+      max_bf = fmax( max_bf, val );
+    }
+
+    // Warp reduce bf max
+    max_bf = cuda::warp_reduce_max<cuda::warp_size>(max_bf);
+    if(warp_lane == 0) {
+      //printf("[GPU] ITASK = %d MAX_BFN(0) = %.6e\n", batch_idx, max_bf);
+      bfn_max_device[batch_idx*LDBFM + task.bfn_shell_indirection[ibf]] =
+        max_bf; 
+    }
+  }
 
 }
 
@@ -136,13 +155,15 @@ __global__ void exx_ek_screening_bfn_stats_kernel( size_t ntasks,
 
 void exx_ek_screening_bfn_stats( size_t        ntasks,
                                  XCDeviceTask* tasks_device,
+                                 double      * bfn_max_device,
+                                 size_t        LDBFM,
                                  device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
   dim3 threads = 1024;//cuda::max_threads_per_thread_block;
   dim3 blocks  = ntasks;
   exx_ek_screening_bfn_stats_kernel<<<blocks, threads, 0, stream >>>(
-    ntasks, tasks_device );
+    ntasks, bfn_max_device, LDBFM, tasks_device );
 
 }
 
