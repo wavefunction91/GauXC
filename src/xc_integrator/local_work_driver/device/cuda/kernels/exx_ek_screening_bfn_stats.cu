@@ -234,6 +234,9 @@ __global__ void exx_ek_shellpair_collision_kernel(
 
     const auto max_bf_sum = max_bf_sum_device[i_task];
 
+    for(int ij = 0; ij < LD_coll; ++ij) 
+      collisions[i_task * LD_coll + ij] = 0;
+
     for(int i_shell = 0, ij = 0; i_shell < nshells;  ++i_shell      )
     for(int j_shell = 0;         j_shell <= i_shell; ++j_shell, ij++) {
 
@@ -253,6 +256,29 @@ __global__ void exx_ek_shellpair_collision_kernel(
 
   }
 
+}
+
+__global__ void print_coll(size_t ntasks, size_t nshells, uint32_t* collisions,
+  size_t LD_coll) {
+
+
+  for(auto i_task = 0 ; i_task < ntasks; ++i_task) {
+
+    printf("[GPU] ITASK %d: ", i_task);
+    int count = 0;
+    for(int i_shell = 0, ij = 0; i_shell < nshells;  ++i_shell      )
+    for(int j_shell = 0;         j_shell <= i_shell; ++j_shell, ij++) {
+
+      const int ij_block = ij / 32;
+      const int ij_local = ij % 32;
+      if( collisions[i_task * LD_coll + ij_block] & (1u << ij_local) ) {
+        //printf("(%d, %d) ", i_shell, j_shell);
+        count++;
+      }
+    }
+    printf("%d\n", count);
+
+  }
 }
 
 
@@ -299,6 +325,32 @@ void exx_ek_collapse_fmax_to_shells(
     ntask, nshells, shells_device, shell_to_bf, fmax_bfn_device, LDF_bfn,
     fmax_shell_device, LDF_shell );
 
+}
+
+void exx_ek_shellpair_collision(
+  int32_t       ntasks,
+  int32_t       nshells,
+  const double* V_max_device,
+  size_t        LDV,
+  const double* F_max_shl_device,
+  size_t        LDF,
+  const double* max_bf_sum_device,
+  double        eps_E,
+  double        eps_K,
+  uint32_t*     collisions,
+  int           LD_coll,
+  device_queue  queue
+) {
+
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
+  dim3 threads = 1024;//cuda::max_threads_per_thread_block;
+  dim3 blocks  = GauXC::util::div_ceil(ntasks,threads.x);
+  exx_ek_shellpair_collision_kernel<<<blocks, threads, 0 , stream>>>(
+    ntasks, nshells, V_max_device, LDV, F_max_shl_device, LDF, 
+    max_bf_sum_device, eps_E, eps_K, collisions, LD_coll);
+
+  print_coll<<<1,1>>>(ntasks, nshells, collisions, LD_coll);
 }
 
 }

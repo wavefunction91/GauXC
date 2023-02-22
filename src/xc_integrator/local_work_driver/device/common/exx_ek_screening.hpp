@@ -30,4 +30,19 @@ void exx_ek_collapse_fmax_to_shells(
   device_queue         queue
 );
 
+void exx_ek_shellpair_collision(
+  int32_t       ntasks,
+  int32_t       nshells,
+  const double* V_max_device,
+  size_t        LDV,
+  const double* F_max_shl_device,
+  size_t        LDF,
+  const double* max_bf_sum_device,
+  double        eps_E,
+  double        eps_K,
+  uint32_t*     collisions,
+  int           LD_coll,
+  device_queue  queue
+);
+
 }

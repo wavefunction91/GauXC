@@ -1301,6 +1301,19 @@ void AoSScheme1Base::exx_ek_shellpair_collision( double eps_E, double eps_K,
 
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
+  const auto ntasks_ek = data->global_dims.ntask_ek;
+  const auto nshells   = data->global_dims.nshells;
+  auto static_stack    = data->static_stack;
+
+  const size_t nsp_dense = (nshells * (nshells+1))/2;
+  const size_t LD_coll = GauXC::util::div_ceil(nsp_dense, 32);
+
+  GauXC::exx_ek_shellpair_collision( ntasks_ek, nshells, 
+    static_stack.vshell_max_device, nshells, static_stack.max_f_shl_device,
+    ntasks_ek, static_stack.ek_max_bfn_sum_device, eps_E, eps_K,
+    static_stack.shellpair_collisions_device, LD_coll,
+    data->device_backend_->queue() );
+
 }
 
 

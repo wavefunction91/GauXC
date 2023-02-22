@@ -238,6 +238,9 @@ void exx_ek_screening(
     }
     }
 
+    printf("[CPU] ITASK %d: %lu\n", int(std::distance(task_begin,task_it)),
+      task_it->cou_screening.shell_pair_list.size());
+
     // Append to list
     task_it->cou_screening.shell_list =
       std::vector<int32_t>(ek_shells.begin(), ek_shells.end());
@@ -311,6 +314,8 @@ void exx_ek_screening(
   device_data.retrieve_exx_ek_max_bfn_sum( task_max_bfn_sum.data(), ntasks);
   device_data.retrieve_exx_ek_approx_fmax_bfn( task_f_bfn_max.data(), nbf );
   device_data.retrieve_exx_ek_approx_fmax_shell( task_f_shl_max.data(), nshells );
+
+  lwd->exx_ek_shellpair_collision( eps_E, eps_K, &device_data );
 
   GAUXC_CUDA_ERROR("End Sync", cudaDeviceSynchronize());
 

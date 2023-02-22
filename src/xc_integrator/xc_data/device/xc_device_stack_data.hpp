@@ -63,6 +63,7 @@ struct XCDeviceStackData : public XCDeviceData {
     double* max_f_bfn_device  = nullptr;
     double* max_f_shl_device  = nullptr;
     int32_t* shell_to_bf_device = nullptr;
+    uint32_t* shellpair_collisions_device = nullptr;
 
     inline void reset() { std::memset( this, 0, sizeof(static_data) ); }
   };

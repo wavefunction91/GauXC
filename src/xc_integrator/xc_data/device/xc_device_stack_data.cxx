@@ -199,6 +199,10 @@ void XCDeviceStackData::allocate_static_data_exx_ek_screening( size_t ntasks, in
   global_dims.max_l        = max_l; 
   global_dims.ntask_ek     = ntasks;
 
+  const size_t nsp_dense = (nshells * (nshells+1))/2;
+  const size_t LD_coll = GauXC::util::div_ceil(nsp_dense, 32);
+
+
   // Allocate static memory with proper alignment
   buffer_adaptor mem( dynmem_ptr, dynmem_sz );
 
@@ -216,6 +220,8 @@ void XCDeviceStackData::allocate_static_data_exx_ek_screening( size_t ntasks, in
     mem.aligned_alloc<double>( nbf * ntasks , csl);
   static_stack.shell_to_bf_device =
     mem.aligned_alloc<int32_t>( nshells, csl );
+  static_stack.shellpair_collisions_device =
+    mem.aligned_alloc<uint32_t>( LD_coll * ntasks ); 
 
   // Get current stack location
   dynmem_ptr = mem.stack();
