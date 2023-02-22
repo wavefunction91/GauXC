@@ -42,6 +42,9 @@ void exx_ek_shellpair_collision(
   double        eps_K,
   uint32_t*     collisions,
   int           LD_coll,
+  uint32_t*     counts,
+  void*         dyn_stack,
+  size_t        dyn_size,
   device_queue  queue
 );
 

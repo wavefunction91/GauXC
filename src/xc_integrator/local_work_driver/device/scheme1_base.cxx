@@ -1312,6 +1312,8 @@ void AoSScheme1Base::exx_ek_shellpair_collision( double eps_E, double eps_K,
     static_stack.vshell_max_device, nshells, static_stack.max_f_shl_device,
     ntasks_ek, static_stack.ek_max_bfn_sum_device, eps_E, eps_K,
     static_stack.shellpair_collisions_device, LD_coll,
+    static_stack.shellpair_counts_device,
+    data->dynmem_ptr, data->dynmem_sz,
     data->device_backend_->queue() );
 
 }

@@ -238,8 +238,8 @@ void exx_ek_screening(
     }
     }
 
-    printf("[CPU] ITASK %d: %lu\n", int(std::distance(task_begin,task_it)),
-      task_it->cou_screening.shell_pair_list.size());
+    //printf("[CPU] ITASK %d: %lu\n", int(std::distance(task_begin,task_it)),
+    //  task_it->cou_screening.shell_pair_list.size());
 
     // Append to list
     task_it->cou_screening.shell_list =
@@ -258,6 +258,12 @@ void exx_ek_screening(
   //  std::cout << std::endl;
   //}
   std::cout << "... done " << dur_t(list_en-list_st).count() << std::endl;
+
+  size_t total_count = 0;
+  for( auto it = task_begin; it != task_end; ++it ) {
+    total_count += it->cou_screening.shell_pair_list.size();
+  }
+  std::cout << "TOTAL COUNT = " << total_count << std::endl;
 
 #endif
 }

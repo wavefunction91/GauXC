@@ -11,6 +11,8 @@
 #include "device_specific/cuda_util.hpp"
 #include "cuda_extensions.hpp"
 #include "device_specific/cuda_device_constants.hpp"
+#include <cub/device/device_scan.cuh>
+#include "buffer_adaptor.hpp"
 
 namespace GauXC {
 
@@ -222,7 +224,8 @@ __global__ void exx_ek_shellpair_collision_kernel(
   double        eps_E,
   double        eps_K,
   uint32_t*     collisions,
-  int           LD_coll
+  int           LD_coll,
+  uint32_t*     counts
 ) {
 
 
@@ -254,6 +257,10 @@ __global__ void exx_ek_shellpair_collision_kernel(
 
     }
 
+    uint32_t count = 0;
+    for(int ij = 0; ij < LD_coll; ++ij)  count += __popc(collisions[i_task * LD_coll + ij]);
+    counts[i_task] = count;
+
   }
 
 }
@@ -281,8 +288,77 @@ __global__ void print_coll(size_t ntasks, size_t nshells, uint32_t* collisions,
   }
 }
 
+__global__ void print_counts(size_t ntasks, uint32_t* counts) {
 
 
+  for(auto i_task = 0 ; i_task < ntasks; ++i_task) {
+
+    printf("[GPU] ITASK %d: %d\n", i_task,counts[i_task]);
+
+  }
+}
+
+
+
+
+template <int32_t buffer_size, typename buffer_type = int32_t>
+__global__ void bitvector_to_position_list_shellpair(
+  size_t ntasks,
+  size_t nsp,
+  size_t LD_bit,
+  const uint32_t* collisions,
+  const uint32_t* counts,
+  uint32_t*       position_list
+) {
+
+  constexpr auto warp_size = cuda::warp_size;
+  constexpr auto element_size = CHAR_BIT * sizeof(buffer_type);
+  constexpr auto buffer_size_bits = element_size * buffer_size;
+  __shared__ buffer_type collisions_buffer[warp_size][warp_size][buffer_size];
+
+  // We are converting a large number of small bitvectors into position lists. For this reason, I am assigning a single thread to each bitvector
+  // This avoids having to do popcounts and warp wide reductions, but hurts the memory access pattern
+
+  // All threads in a warp must be active to do shared memory loads, so we seperate out the threadId.x
+  for (int i_base = threadIdx.y * blockDim.x + blockIdx.x * blockDim.x * blockDim.y; i_base < ntasks; i_base += blockDim.x * blockDim.y * gridDim.x) {
+    const int i = i_base + threadIdx.x;
+    auto* out = position_list;
+    if (i != 0 && i < ntasks) {
+      out += counts[i-1];
+    } 
+
+    int current = 0;
+    size_t nbe = 0;
+    size_t nsp_blocks = (nsp + buffer_size_bits - 1) / buffer_size_bits;
+    for (int j_block = 0; j_block < nsp_blocks; j_block++) {
+      // Each thread has a buffer of length BUFFER_SIZE. All the threads in the warp work to 
+      // load this data in a coalesced way (at least as much as possible)
+      for (int buffer_loop = 0; buffer_loop < warp_size; buffer_loop += warp_size/buffer_size) {
+        const int t_id_x        = threadIdx.x % buffer_size;
+        const int buffer_thread = threadIdx.x / buffer_size;
+        const int buffer_idx    = buffer_thread + buffer_loop;
+        if (j_block * buffer_size_bits + t_id_x * element_size < nsp && i_base + buffer_idx < ntasks) {
+          collisions_buffer[threadIdx.y][buffer_idx][t_id_x] = collisions[(i_base + buffer_idx) * LD_bit + j_block * buffer_size + t_id_x];
+        }
+      }
+
+      __syncwarp();
+      if (i < ntasks) {  // Once the data has been loaded, we exclude the threads not corresponding to a bitvector
+        // We have loaded in BUFFER_SIZE_BITS elements to be processed by each warp
+        for (int j_inner = 0; j_inner < buffer_size_bits && j_block * buffer_size_bits + j_inner < nsp; j_inner++) {
+          const int j = buffer_size_bits * j_block + j_inner;
+          const int j_int = j_inner / element_size;
+          const int j_bit = j_inner % element_size;
+          if( collisions_buffer[threadIdx.y][threadIdx.x][j_int] & (1 << (j_bit)) ) {
+            out[current++] = j;
+          }
+        }
+      }
+      __syncwarp();
+    }
+  }
+
+}
 
 
 
@@ -339,6 +415,9 @@ void exx_ek_shellpair_collision(
   double        eps_K,
   uint32_t*     collisions,
   int           LD_coll,
+  uint32_t*     counts,
+  void*         dyn_stack,
+  size_t        dyn_size,
   device_queue  queue
 ) {
 
@@ -348,9 +427,27 @@ void exx_ek_shellpair_collision(
   dim3 blocks  = GauXC::util::div_ceil(ntasks,threads.x);
   exx_ek_shellpair_collision_kernel<<<blocks, threads, 0 , stream>>>(
     ntasks, nshells, V_max_device, LDV, F_max_shl_device, LDF, 
-    max_bf_sum_device, eps_E, eps_K, collisions, LD_coll);
+    max_bf_sum_device, eps_E, eps_K, collisions, LD_coll, counts);
 
-  print_coll<<<1,1>>>(ntasks, nshells, collisions, LD_coll);
+  size_t prefix_sum_bytes = 0;
+  auto stat = cub::DeviceScan::InclusiveSum( NULL, prefix_sum_bytes,
+    counts, counts, ntasks, stream );
+
+  buffer_adaptor stack(dyn_stack, dyn_size);
+
+  void* prefix_sum_storage = stack.aligned_alloc<char>(prefix_sum_bytes, 16);
+  
+
+  // Get inclusive sum
+  stat = cub::DeviceScan::InclusiveSum( prefix_sum_storage, prefix_sum_bytes,
+    counts, counts, ntasks, stream );
+
+  uint32_t total_count = 0;
+  cudaMemcpy((char*)&total_count, counts + ntasks - 1, sizeof(int32_t), cudaMemcpyDeviceToHost);
+  std::cout << "TOTAL COUNT = " << total_count << std::endl;
+
+  //print_coll<<<1,1>>>(ntasks, nshells, collisions, LD_coll);
+  //print_counts<<<1,1>>>(ntasks, counts);
 }
 
 }

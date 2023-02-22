@@ -222,6 +222,8 @@ void XCDeviceStackData::allocate_static_data_exx_ek_screening( size_t ntasks, in
     mem.aligned_alloc<int32_t>( nshells, csl );
   static_stack.shellpair_collisions_device =
     mem.aligned_alloc<uint32_t>( LD_coll * ntasks ); 
+  static_stack.shellpair_counts_device =
+    mem.aligned_alloc<uint32_t>( ntasks ); 
 
   // Get current stack location
   dynmem_ptr = mem.stack();
