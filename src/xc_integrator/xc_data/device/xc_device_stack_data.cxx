@@ -204,6 +204,8 @@ void XCDeviceStackData::allocate_static_data_exx_ek_screening( size_t ntasks, in
 
   static_stack.shells_device = mem.aligned_alloc<Shell<double>>( nshells , csl);
   static_stack.dmat_device   = mem.aligned_alloc<double>( nbf * nbf , csl);
+  static_stack.ek_max_bfn_sum_device =
+    mem.aligned_alloc<double>( ntasks , csl);
   static_stack.vshell_max_device = 
     mem.aligned_alloc<double>( nshells*nshells , csl);
   static_stack.max_f_bfn_device = 
@@ -471,6 +473,17 @@ void XCDeviceStackData::retrieve_exx_integrands( double* K, int32_t ldk ) {
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
   
   device_backend_->copy_async( nbf*nbf, static_stack.exx_k_device, K,  "K D2H" );
+
+}
+
+void XCDeviceStackData::retrieve_exx_ek_max_bfn_sum( double* MBS, int32_t nt ) {
+
+  const auto ntask_ek = global_dims.ntask_ek;
+  if( nt != (int)ntask_ek ) GAUXC_GENERIC_EXCEPTION("Inconsistent Task Count");
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
+
+  device_backend_->copy_async( ntask_ek , static_stack.ek_max_bfn_sum_device, MBS, 
+    "MBS D2H");
 
 }
 

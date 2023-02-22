@@ -36,6 +36,7 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   void eval_exx_ek_screening_bfn_stats( XCDeviceData* ) override final;
   void eval_exx_ek_screening_approx_fmax( XCDeviceData* ) override final;
   void exx_ek_collapse_fmat_to_shells( XCDeviceData* ) override final;
+  void exx_ek_shellpair_collision( double eps_E, double eps_K, XCDeviceData* );
 
 
   // Overridable APIs

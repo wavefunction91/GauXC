@@ -58,6 +58,7 @@ struct XCDeviceStackData : public XCDeviceData {
     double* exc_grad_device = nullptr; ///< EXC Gradient storage (3*natoms)
 
     double* vshell_max_device = nullptr;
+    double* ek_max_bfn_sum_device = nullptr;
     double* ek_bfn_max_device = nullptr;
     double* max_f_bfn_device  = nullptr;
     double* max_f_shl_device  = nullptr;
@@ -134,6 +135,7 @@ struct XCDeviceStackData : public XCDeviceData {
   void retrieve_exx_integrands( double* K, int32_t ldk ) override final;
   void retrieve_exx_ek_approx_fmax_bfn( double* FMAX, int32_t ldF ) override final;
   void retrieve_exx_ek_approx_fmax_shell( double* FMAX, int32_t ldF ) override final;
+  void retrieve_exx_ek_max_bfn_sum( double* MBS, int32_t nt) override final;
   void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) override final;
 
   double* vxc_device_data() override;

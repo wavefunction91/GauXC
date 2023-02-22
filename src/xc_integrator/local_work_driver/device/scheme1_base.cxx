@@ -1248,7 +1248,8 @@ void AoSScheme1Base::eval_exx_ek_screening_bfn_stats( XCDeviceData* _data ) {
   auto aos_stack    = data->aos_stack;
   auto static_stack    = data->static_stack;
   GauXC::exx_ek_screening_bfn_stats( ntasks, aos_stack.device_tasks,
-    static_stack.ek_bfn_max_device, ntasks_ek, data->device_backend_->queue() );
+    static_stack.ek_max_bfn_sum_device, static_stack.ek_bfn_max_device, 
+    ntasks_ek, data->device_backend_->queue() );
 
 }
 
@@ -1289,6 +1290,16 @@ void AoSScheme1Base::exx_ek_collapse_fmat_to_shells( XCDeviceData* _data) {
     static_stack.max_f_shl_device, ntasks_ek,
     data->device_backend_->queue() );
      
+
+}
+
+void AoSScheme1Base::exx_ek_shellpair_collision( double eps_E, double eps_K,
+  XCDeviceData* _data) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
 }
 

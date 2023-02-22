@@ -119,6 +119,9 @@ void exx_ek_screening(
   auto coll_en = hrt_t::now();
   std::cout << "... done " << dur_t(coll_en-coll_st).count() << std::endl;
   
+  //std::cout << "CPU MBS = ";
+  //for( auto x : task_max_bf_sum) std::cout << x << " ";
+  //std::cout << std::endl;
 
   // Compute approx F_i^(k) = |P_ij| * B_j^(k) 
   auto gemm_st = hrt_t::now();
@@ -304,10 +307,16 @@ void exx_ek_screening(
   // Retreive to host
   std::vector<double> task_f_bfn_max(ntasks * nbf);
   std::vector<double> task_f_shl_max(ntasks * nshells);
+  std::vector<double> task_max_bfn_sum(ntasks);
+  device_data.retrieve_exx_ek_max_bfn_sum( task_max_bfn_sum.data(), ntasks);
   device_data.retrieve_exx_ek_approx_fmax_bfn( task_f_bfn_max.data(), nbf );
   device_data.retrieve_exx_ek_approx_fmax_shell( task_f_shl_max.data(), nshells );
 
   GAUXC_CUDA_ERROR("End Sync", cudaDeviceSynchronize());
+
+  //std::cout << "GPU MBS = ";
+  //for( auto x : task_max_bfn_sum) std::cout << x << " ";
+  //std::cout << std::endl;
 
   //std::cout << "GPU FMAX BFN = ";
   //for(int i = 0; i < ntasks; ++i)

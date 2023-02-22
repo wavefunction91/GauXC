@@ -15,6 +15,7 @@
 namespace GauXC {
 
 __global__ void exx_ek_screening_bfn_stats_kernel( size_t ntasks, 
+                                                   double      * max_bfn_sum_device,
                                                    double      * bfn_max_device,
                                                    size_t        LDBFM,
                                                    XCDeviceTask* tasks_device ) {
@@ -127,7 +128,8 @@ __global__ void exx_ek_screening_bfn_stats_kernel( size_t ntasks,
 
 #endif
   if(threadIdx.x == 0) {
-    task.max_bfn_sum = max_bfn_sum;
+    //task.max_bfn_sum = max_bfn_sum;
+    max_bfn_sum_device[batch_idx] =  max_bfn_sum;
     //printf("[GPU] ITASK = %d MAX_SUM = %.6e PTR = %x\n", batch_idx, max_bfn_sum, task.bfn_shell_indirection);
     //printf("[GPU] ITASK = %d NBE = %lu NPTS = %lu \n", batch_idx, nbf, npts);
   }
@@ -209,8 +211,61 @@ __global__ void exx_ek_collapse_fmax_to_shells_kernel(
 
 
 
+__global__ void exx_ek_shellpair_collision_kernel(
+  int32_t       ntasks,
+  int32_t       nshells,
+  const double* V_max_device,
+  size_t        LDV,
+  const double* F_max_shl_device,
+  size_t        LDF,
+  const double* max_bf_sum_device,
+  double        eps_E,
+  double        eps_K,
+  uint32_t*     collisions,
+  int           LD_coll
+) {
+
+
+
+  const int tid_x = threadIdx.x + blockIdx.x * blockDim.x;
+  const int nt_x  = blockDim.x * gridDim.x;
+
+  for(int i_task = tid_x; i_task < ntasks; i_task += nt_x) {
+
+    const auto max_bf_sum = max_bf_sum_device[i_task];
+
+    for(int i_shell = 0, ij = 0; i_shell < nshells;  ++i_shell      )
+    for(int j_shell = 0;         j_shell <= i_shell; ++j_shell, ij++) {
+
+      const auto V_ij = V_max_device[i_shell + j_shell*LDV];
+      const auto F_i  = F_max_shl_device[i_task + i_shell * LDF];
+      const auto F_j  = F_max_shl_device[i_task + j_shell * LDF];
+
+      const double eps_E_compare = F_i * F_j * V_ij;
+      const double eps_K_compare = fmax(F_i, F_j) * V_ij * max_bf_sum;
+
+      const int ij_block = ij / 32;
+      const int ij_local = ij % 32;
+      collisions[i_task * LD_coll + ij_block] |=
+        (eps_K_compare > eps_K or eps_E_compare > eps_E) ? (1u << ij_local) : 0;
+
+    }
+
+  }
+
+}
+
+
+
+
+
+
+
+
+
 void exx_ek_screening_bfn_stats( size_t        ntasks,
                                  XCDeviceTask* tasks_device,
+                                 double      * max_bfn_sum_device,
                                  double      * bfn_max_device,
                                  size_t        LDBFM,
                                  device_queue queue ) {
@@ -219,7 +274,7 @@ void exx_ek_screening_bfn_stats( size_t        ntasks,
   dim3 threads = 1024;//cuda::max_threads_per_thread_block;
   dim3 blocks  = ntasks;
   exx_ek_screening_bfn_stats_kernel<<<blocks, threads, 0, stream >>>(
-    ntasks, bfn_max_device, LDBFM, tasks_device );
+    ntasks, max_bfn_sum_device, bfn_max_device, LDBFM, tasks_device );
 
 }
 
