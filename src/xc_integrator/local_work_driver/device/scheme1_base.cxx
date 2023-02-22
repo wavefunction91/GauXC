@@ -1242,12 +1242,13 @@ void AoSScheme1Base::eval_exx_ek_screening_bfn_stats( XCDeviceData* _data ) {
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   auto tasks = data->host_device_tasks;
+  const auto ntasks_ek = data->global_dims.ntask_ek;
   const auto ntasks = tasks.size();
-  const auto nbf = data->global_dims.nbf;
+  //const auto nbf = data->global_dims.nbf;
   auto aos_stack    = data->aos_stack;
   auto static_stack    = data->static_stack;
   GauXC::exx_ek_screening_bfn_stats( ntasks, aos_stack.device_tasks,
-    static_stack.ek_bfn_max_device, nbf, data->device_backend_->queue() );
+    static_stack.ek_bfn_max_device, ntasks_ek, data->device_backend_->queue() );
 
 }
 
@@ -1264,10 +1265,30 @@ void AoSScheme1Base::eval_exx_ek_screening_approx_fmax( XCDeviceData* _data ) {
 
   gemm(data->device_backend_->master_blas_handle(), 
     DeviceBlasOp::NoTrans, DeviceBlasOp::NoTrans,
-    nbf, ntasks_ek, nbf, 
-    1.0, static_stack.dmat_device, nbf, static_stack.ek_bfn_max_device, nbf,
-    0.0, static_stack.max_f_device, nbf
+    ntasks_ek, nbf, nbf, 
+    1.0, static_stack.ek_bfn_max_device, ntasks_ek, static_stack.dmat_device, nbf, 
+    0.0, static_stack.max_f_bfn_device, ntasks_ek
   );
+
+}
+
+void AoSScheme1Base::exx_ek_collapse_fmat_to_shells( XCDeviceData* _data) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  const auto ntasks_ek = data->global_dims.ntask_ek;
+  const auto nshells   = data->global_dims.nshells;
+  auto static_stack    = data->static_stack;
+
+  GauXC::exx_ek_collapse_fmax_to_shells(ntasks_ek, nshells, 
+    static_stack.shells_device, static_stack.shell_to_bf_device,
+    static_stack.max_f_bfn_device, ntasks_ek, 
+    static_stack.max_f_shl_device, ntasks_ek,
+    data->device_backend_->queue() );
+     
 
 }
 

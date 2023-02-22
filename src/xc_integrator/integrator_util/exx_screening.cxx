@@ -129,7 +129,7 @@ void exx_ek_screening(
   auto gemm_en = hrt_t::now();
   std::cout << "... done " << dur_t(gemm_en-gemm_st).count() << std::endl;
 
-  //std::cout << "CPU FMAX = ";
+  //std::cout << "CPU FMAX BFN = ";
   //for( auto x : task_approx_f ) std::cout << x << " ";
   //std::cout << std::endl;
 #if 0
@@ -180,6 +180,7 @@ void exx_ek_screening(
   } // Loop over tasks
 #else
 
+  //std::cout << "CPU FMAX SHELLS = ";
   auto list_st = hrt_t::now();
   #pragma omp parallel for schedule(dynamic)
   for(size_t i_task = 0; i_task < ntasks; ++i_task) {
@@ -198,6 +199,7 @@ void exx_ek_screening(
       max_F_shells[ish] = tmp;
       ibf += sh_sz;
     }
+    //for(auto x : max_F_shells) std::cout << x << " ";
 
     auto task_it = task_begin + i_task;
     // Compute important shell set
@@ -243,6 +245,7 @@ void exx_ek_screening(
     //std::cout << "I_TASK " << i_task << " " << task_it->cou_screening.shell_list.size() << " " << nsp << " " << nspt << " " << nsp / double(nspt) << std::endl;
 
   } // Loop over tasks
+  //std::cout << std::endl;
   auto list_en = hrt_t::now();
   //for(auto task_it = task_begin; task_it != task_end; ++task_it) {
   //  std::cout << "I_TASK " << std::distance(task_begin,task_it) << " " << task_it->cou_screening.shell_list.size();
@@ -271,7 +274,7 @@ void exx_ek_screening(
   device_data.allocate_static_data_exx_ek_screening( ntasks, nbf, nshells, 
     basis_map.max_l() );
   device_data.send_static_data_density_basis( P_abs, ldp, basis );
-  device_data.send_static_data_exx_vshell_max( V_shell_max, ldv );
+  device_data.send_static_data_exx_ek_screening( V_shell_max, ldv, basis_map );
 
   device_data.zero_exx_ek_screening_intermediates();
 
@@ -296,17 +299,27 @@ void exx_ek_screening(
 
   // Compute approximate F Max
   lwd->eval_exx_ek_screening_approx_fmax( &device_data );
+  lwd->exx_ek_collapse_fmat_to_shells( &device_data );
 
   // Retreive to host
-  std::vector<double> task_f_max(ntasks * nbf);
-  device_data.retrieve_exx_ek_approx_fmax( task_f_max.data(), nbf );
+  std::vector<double> task_f_bfn_max(ntasks * nbf);
+  std::vector<double> task_f_shl_max(ntasks * nshells);
+  device_data.retrieve_exx_ek_approx_fmax_bfn( task_f_bfn_max.data(), nbf );
+  device_data.retrieve_exx_ek_approx_fmax_shell( task_f_shl_max.data(), nshells );
 
   GAUXC_CUDA_ERROR("End Sync", cudaDeviceSynchronize());
 
-  //std::cout << "GPU FMAX = ";
-  //for( auto x : task_f_max ) std::cout << x << " ";
+  //std::cout << "GPU FMAX BFN = ";
+  //for(int i = 0; i < ntasks; ++i)
+  //for(int j = 0; j < nbf;    ++j) std::cout << task_f_bfn_max[i + j*ntasks] << " ";
   //std::cout << std::endl;
 
+  //std::cout << "GPU FMAX SHELLS = ";
+  //for(int i = 0; i < ntasks; ++i)
+  //for(int j = 0; j < nshells;    ++j) std::cout << task_f_shl_max[i + j*ntasks] << " ";
+  //std::cout << std::endl;
+  
+  
 }
 
 

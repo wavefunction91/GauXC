@@ -7,6 +7,7 @@
  */
 #include "device/common/exx_ek_screening.hpp"
 #include <gauxc/util/div_ceil.hpp>
+#include <gauxc/shell.hpp>
 #include "device_specific/cuda_util.hpp"
 #include "cuda_extensions.hpp"
 #include "device_specific/cuda_device_constants.hpp"
@@ -74,7 +75,7 @@ __global__ void exx_ek_screening_bfn_stats_kernel( size_t ntasks,
 
 
 
-  __shared__ double bf_shared[32][32];
+  __shared__ double bf_shared[32][32 + 1];
   __shared__ double bfn_sum_shared[32];
   bfn_sum_shared[warp_lane] = 0.0;
   __syncthreads();
@@ -144,12 +145,67 @@ __global__ void exx_ek_screening_bfn_stats_kernel( size_t ntasks,
     max_bf = cuda::warp_reduce_max<cuda::warp_size>(max_bf);
     if(warp_lane == 0) {
       //printf("[GPU] ITASK = %d MAX_BFN(0) = %.6e\n", batch_idx, max_bf);
-      bfn_max_device[batch_idx*LDBFM + task.bfn_shell_indirection[ibf]] =
+      bfn_max_device[batch_idx + task.bfn_shell_indirection[ibf]*LDBFM] =
         max_bf; 
     }
   }
 
 }
+
+
+__global__ void exx_ek_collapse_fmax_to_shells_kernel(
+  int                  ntask,
+  int                  nshells,
+  const Shell<double>* shells_device,
+  const int32_t*       shell_to_bf,
+  const double*        fmax_bfn_device,
+  size_t               LDF_bfn,
+  double*              fmax_shell_device,
+  size_t               LDF_shell
+) {
+
+  const int total_nwarp_x   = (blockDim.x * gridDim.x) / cuda::warp_size;
+  const int tid_x           = threadIdx.x + blockIdx.x*blockDim.x;
+  const int warp_lane       = tid_x % cuda::warp_size;
+  const int warp_id_x       = tid_x / cuda::warp_size;
+
+
+  double sh_buffer[10];
+
+  // Each warp gets a shell
+  for(int ish = warp_id_x; ish < nshells; ish += total_nwarp_x) {
+
+    const int sh_sz = shells_device[ish].size();
+    const int sh_st = shell_to_bf[ish];
+
+    // Read in tasks in warp-sized chunks
+    for(int i_task = warp_lane; i_task < ntask; i_task += cuda::warp_size) {
+
+      // Get shell max
+      double sh_max = 0.0;
+      int sh_rem = sh_sz;      
+      while(sh_rem > 0) {
+        int ndo = min(sh_sz, 10);
+        // Load in batches to break up dependency tree
+        for(int ii = 0; ii < ndo; ++ii) {
+          sh_buffer[ii] = fmax_bfn_device[i_task + (ii + sh_st)*LDF_bfn];
+        }
+        
+        for(int ii = 0; ii < ndo; ++ii) {
+          sh_max = fmax(sh_max, sh_buffer[ii]);
+        }
+        sh_rem -= ndo;
+      }
+      
+      // Write to main memory
+      fmax_shell_device[i_task + ish*LDF_shell] = sh_max;
+      
+    }
+
+  }
+}
+
+
 
 
 
@@ -164,6 +220,29 @@ void exx_ek_screening_bfn_stats( size_t        ntasks,
   dim3 blocks  = ntasks;
   exx_ek_screening_bfn_stats_kernel<<<blocks, threads, 0, stream >>>(
     ntasks, bfn_max_device, LDBFM, tasks_device );
+
+}
+
+
+void exx_ek_collapse_fmax_to_shells(
+  int                  ntask,
+  int                  nshells,
+  const Shell<double>* shells_device,
+  const int32_t*       shell_to_bf,
+  const double*        fmax_bfn_device,
+  size_t               LDF_bfn,
+  double*              fmax_shell_device,
+  size_t               LDF_shell,
+  device_queue         queue
+) {
+
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
+  dim3 threads = 1024;//cuda::max_threads_per_thread_block;
+  dim3 blocks  = ntask / cuda::warp_size;
+  exx_ek_collapse_fmax_to_shells_kernel<<<blocks, threads, 0, stream >>>(
+    ntask, nshells, shells_device, shell_to_bf, fmax_bfn_device, LDF_bfn,
+    fmax_shell_device, LDF_shell );
 
 }
 

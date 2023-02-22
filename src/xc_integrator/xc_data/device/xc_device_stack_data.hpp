@@ -59,7 +59,9 @@ struct XCDeviceStackData : public XCDeviceData {
 
     double* vshell_max_device = nullptr;
     double* ek_bfn_max_device = nullptr;
-    double* max_f_device      = nullptr;
+    double* max_f_bfn_device  = nullptr;
+    double* max_f_shl_device  = nullptr;
+    int32_t* shell_to_bf_device = nullptr;
 
     inline void reset() { std::memset( this, 0, sizeof(static_data) ); }
   };
@@ -119,7 +121,7 @@ struct XCDeviceStackData : public XCDeviceData {
     const BasisSet<double>& basis ) override final;
   void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) 
     override final;
-  void send_static_data_exx_vshell_max( const double* V_max, int32_t ldv ) override final;
+  void send_static_data_exx_ek_screening( const double* V_max, int32_t ldv, const BasisSetMap& ) override final;
   void zero_den_integrands() override final;
   void zero_exc_vxc_integrands() override final;
   void zero_exc_grad_integrands() override final;
@@ -130,7 +132,8 @@ struct XCDeviceStackData : public XCDeviceData {
   void retrieve_exc_grad_integrands( double* EXC_GRAD, double* N_EL ) override final;
   void retrieve_den_integrands( double* N_EL ) override final;
   void retrieve_exx_integrands( double* K, int32_t ldk ) override final;
-  void retrieve_exx_ek_approx_fmax( double* FMAX, int32_t ldF ) override final;
+  void retrieve_exx_ek_approx_fmax_bfn( double* FMAX, int32_t ldF ) override final;
+  void retrieve_exx_ek_approx_fmax_shell( double* FMAX, int32_t ldF ) override final;
   void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) override final;
 
   double* vxc_device_data() override;

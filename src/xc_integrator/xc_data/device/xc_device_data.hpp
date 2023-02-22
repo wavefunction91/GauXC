@@ -348,7 +348,7 @@ struct XCDeviceData {
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
   virtual void send_static_data_density_basis( const double* P, int32_t ldp, const BasisSet<double>& basis ) = 0;
   virtual void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) = 0;
-  virtual void send_static_data_exx_vshell_max( const double* V_max, int32_t ldv ) = 0;
+  virtual void send_static_data_exx_ek_screening( const double* V_max, int32_t ldv, const BasisSetMap& ) = 0;
 
   /// Zero out the density integrands in device memory
   virtual void zero_den_integrands() = 0;
@@ -410,7 +410,8 @@ struct XCDeviceData {
 
   virtual void retrieve_exx_integrands( double* K, int32_t ldk ) = 0;
 
-  virtual void retrieve_exx_ek_approx_fmax( double* FMAX, int32_t ldF ) = 0;
+  virtual void retrieve_exx_ek_approx_fmax_bfn( double* FMAX, int32_t ldF ) = 0;
+  virtual void retrieve_exx_ek_approx_fmax_shell( double* FMAX, int32_t ldF ) = 0;
 
 
   virtual void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) = 0;
