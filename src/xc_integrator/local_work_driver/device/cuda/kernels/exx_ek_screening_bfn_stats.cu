@@ -242,11 +242,6 @@ __global__ void exx_ek_shellpair_collision_kernel(
 
     const auto max_bf_sum = max_bf_sum_device[i_task];
 
-    for(int ij = 0; ij < LD_coll; ++ij) 
-      collisions[i_task * LD_coll + ij] = 0;
-    for(int ij = 0; ij < LD_rc; ++ij) 
-      rc_collisions[i_task * LD_rc + ij] = 0;
-
     for(int ij_shell = 0; ij_shell < nshell_pairs;  ++ij_shell) {
 
       const auto i_shell = sp_row_ind_device[ij_shell]; 
@@ -526,6 +521,9 @@ void exx_ek_shellpair_collision(
   auto counts        = full_stack.aligned_alloc<uint32_t>(ntasks);
   auto rc_collisions = full_stack.aligned_alloc<uint32_t>(ntasks * LD_rc);
   auto rc_counts     = full_stack.aligned_alloc<uint32_t>(ntasks);
+
+  util::cuda_set_zero_async( ntasks * LD_coll,collisions.ptr,    stream, "Zero Coll");
+  util::cuda_set_zero_async( ntasks * LD_rc,  rc_collisions.ptr, stream, "Zero RC");
 
   // Compute approximate FMAX and screen
   {
