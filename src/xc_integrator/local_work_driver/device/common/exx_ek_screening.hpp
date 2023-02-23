@@ -40,6 +40,7 @@ void exx_ek_shellpair_collision(
   const double* F_max_shl_device,
   size_t        LDF,
   const double* max_bf_sum_device,
+  const int32_t* shell_sizes_device,
   double        eps_E,
   double        eps_K,
   uint32_t*     collisions,

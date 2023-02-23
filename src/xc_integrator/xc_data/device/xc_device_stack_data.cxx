@@ -220,6 +220,8 @@ void XCDeviceStackData::allocate_static_data_exx_ek_screening( size_t ntasks, in
     mem.aligned_alloc<double>( nbf * ntasks , csl);
   static_stack.shell_to_bf_device =
     mem.aligned_alloc<int32_t>( nshells, csl );
+  static_stack.shell_sizes_device =
+    mem.aligned_alloc<int32_t>( nshells, csl );
   static_stack.shellpair_collisions_device =
     mem.aligned_alloc<uint32_t>( LD_coll * ntasks ); 
   static_stack.shellpair_counts_device =
@@ -378,12 +380,17 @@ void XCDeviceStackData::send_static_data_exx_ek_screening( const double* V_max,
     "VMAX H2D");
 
   std::vector<int32_t> shell2bf(nshells);
+  std::vector<int32_t> shell_sizes(nshells);
   for(auto i = 0; i < nshells; ++i) {
     shell2bf[i] = basis_map.shell_to_first_ao(i);
+    shell_sizes[i] = basis_map.shell_size(i);
   }
+  
 
   device_backend_->copy_async( nshells, shell2bf.data(), static_stack.shell_to_bf_device,
     "Shell2BF H2D");
+  device_backend_->copy_async( nshells, shell_sizes.data(), static_stack.shell_sizes_device,
+    "ShellSizes H2D");
   
   device_backend_->master_queue_synchronize(); 
 
