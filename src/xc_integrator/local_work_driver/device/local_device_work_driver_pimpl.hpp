@@ -54,7 +54,8 @@ struct LocalDeviceWorkDriverPIMPL {
 
   virtual void eval_exx_ek_screening_bfn_stats( XCDeviceData* ) = 0;
   virtual void exx_ek_shellpair_collision( double eps_E, double eps_K, 
-    XCDeviceData*, host_task_iterator, host_task_iterator ) = 0;
+    XCDeviceData*, host_task_iterator, host_task_iterator, 
+    const ShellPairCollection<double>&) = 0;
 
   virtual std::unique_ptr<XCDeviceData> create_device_data(const DeviceRuntimeEnvironment&) = 0;
 

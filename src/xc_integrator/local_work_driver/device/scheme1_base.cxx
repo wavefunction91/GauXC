@@ -1255,7 +1255,8 @@ void AoSScheme1Base::eval_exx_ek_screening_bfn_stats( XCDeviceData* _data ) {
 
 
 void AoSScheme1Base::exx_ek_shellpair_collision( double eps_E, double eps_K,
-  XCDeviceData* _data, host_task_iterator tb, host_task_iterator te) {
+  XCDeviceData* _data, host_task_iterator tb, host_task_iterator te,
+  const ShellPairCollection<double>& shpairs ) {
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -1269,12 +1270,15 @@ void AoSScheme1Base::exx_ek_shellpair_collision( double eps_E, double eps_K,
 
   GauXC::exx_ek_shellpair_collision( ntasks_ek, nshells, nbf,
     static_stack.dmat_device, nbf,
-    static_stack.vshell_max_device, nshells, static_stack.ek_max_bfn_sum_device,
+    static_stack.vshell_max_sparse_device, 
+    static_stack.shpair_row_ind_device,
+    static_stack.shpair_col_ind_device,
+    static_stack.ek_max_bfn_sum_device,
     static_stack.ek_bfn_max_device, ntasks_ek, 
     static_stack.shells_device, static_stack.shell_to_bf_device,
     static_stack.shell_sizes_device, eps_E, eps_K,
     data->dynmem_ptr, data->dynmem_sz,
-    tb, te,
+    tb, te, shpairs,
     data->device_backend_->queue(),
     data->device_backend_->master_blas_handle()
    );

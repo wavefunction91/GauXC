@@ -188,13 +188,14 @@ void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells, 
   allocated_terms.exx = true;
 }
 
-void XCDeviceStackData::allocate_static_data_exx_ek_screening( size_t ntasks, int32_t nbf, int32_t nshells, int32_t max_l ) {
+void XCDeviceStackData::allocate_static_data_exx_ek_screening( size_t ntasks, int32_t nbf, int32_t nshells, int nshell_pairs, int32_t max_l ) {
 
   if( allocated_terms.exx_ek_screening ) 
     GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXX-EK Screening");
 
   // Save state
   global_dims.nshells      = nshells;
+  global_dims.nshell_pairs = nshell_pairs;
   global_dims.nbf          = nbf; 
   global_dims.max_l        = max_l; 
   global_dims.ntask_ek     = ntasks;
@@ -208,8 +209,12 @@ void XCDeviceStackData::allocate_static_data_exx_ek_screening( size_t ntasks, in
   static_stack.dmat_device   = mem.aligned_alloc<double>( nbf * nbf , csl);
   static_stack.ek_max_bfn_sum_device =
     mem.aligned_alloc<double>( ntasks , csl);
-  static_stack.vshell_max_device = 
-    mem.aligned_alloc<double>( nshells*nshells , csl);
+  static_stack.vshell_max_sparse_device = 
+    mem.aligned_alloc<double>( nshell_pairs , csl);
+  static_stack.shpair_row_ind_device = 
+    mem.aligned_alloc<size_t>( nshell_pairs , csl);
+  static_stack.shpair_col_ind_device = 
+    mem.aligned_alloc<size_t>( nshell_pairs , csl);
   static_stack.ek_bfn_max_device = 
     mem.aligned_alloc<double>( nbf * ntasks , csl);
   static_stack.shell_to_bf_device =
@@ -356,18 +361,54 @@ void XCDeviceStackData::send_static_data_shell_pairs(
 }
 
 void XCDeviceStackData::send_static_data_exx_ek_screening( const double* V_max, 
-  int32_t ldv, const BasisSetMap& basis_map ) {
+  int32_t ldv, const BasisSetMap& basis_map, 
+  const ShellPairCollection<double>& shpairs ) {
 
   if( not allocated_terms.exx_ek_screening ) 
     GAUXC_GENERIC_EXCEPTION("VMAX Not Stack Allocated");
 
-  const auto nshells = global_dims.nshells;
+  const auto nshells      = global_dims.nshells;
+  const auto nshell_pairs = global_dims.nshell_pairs;
   if( ldv != (int)nshells ) GAUXC_GENERIC_EXCEPTION("LDV must bf NSHELLS");
+  if( shpairs.npairs() != nshell_pairs ) 
+    GAUXC_GENERIC_EXCEPTION("Inconsistent ShellPairs"); 
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
 
+
+  // Pack VMAX
+  std::vector<double> V_pack(nshell_pairs);
+  const auto sp_row_ptr = shpairs.row_ptr();
+  const auto sp_col_ind = shpairs.col_ind();
+  for( auto i = 0; i < nshells; ++i ) {
+    const auto j_st = sp_row_ptr[i];
+    const auto j_en = sp_row_ptr[i+1];
+    for( auto _j = j_st; _j < j_en; ++_j ) {
+      const auto j = sp_col_ind[_j];
+      V_pack[_j] = V_max[i + j*ldv];
+    }
+  }
+
   // Copy VMAX
-  device_backend_->copy_async( nshells*nshells, V_max, static_stack.vshell_max_device,
-    "VMAX H2D");
+  device_backend_->copy_async( nshell_pairs, V_pack.data(), 
+    static_stack.vshell_max_sparse_device, "VMAX Sparse H2D");
+
+  // Create sparse triplet for device
+  std::vector<size_t> rowind(nshell_pairs);
+  for( auto i = 0; i < nshells; ++i ) {
+    const auto j_st = sp_row_ptr[i];
+    const auto j_en = sp_row_ptr[i+1];
+    for( auto _j = j_st; _j < j_en; ++_j ) {
+      rowind[_j] = i;
+    }
+  }
+
+  
+
+  // Send adjacency
+  device_backend_->copy_async( nshell_pairs, rowind.data(),
+    static_stack.shpair_row_ind_device, "SP RowInd H2D");
+  device_backend_->copy_async( nshell_pairs, sp_col_ind.data(),
+    static_stack.shpair_col_ind_device, "SP ColInd H2D");
 
   std::vector<int32_t> shell2bf(nshells);
   std::vector<int32_t> shell_sizes(nshells);

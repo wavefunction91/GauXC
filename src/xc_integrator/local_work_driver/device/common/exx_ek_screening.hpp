@@ -9,6 +9,7 @@
 #include "device/device_queue.hpp"
 #include "device/device_blas_handle.hpp"
 #include <gauxc/shell.hpp>
+#include <gauxc/shell_pair.hpp>
 #include <gauxc/xc_task.hpp>
 
 namespace GauXC {
@@ -27,8 +28,9 @@ void exx_ek_shellpair_collision(
   int32_t       nbf,
   const double* abs_dmat_device,
   size_t        LDP,
-  const double* V_max_device,
-  size_t        LDV,
+  const double* V_max_sparse_device,
+  const size_t* sp_row_ind_device,
+  const size_t* sp_col_ind_device,
   const double* max_bf_sum_device,
   const double* bfn_max_device,
   size_t        LDBM,
@@ -41,6 +43,7 @@ void exx_ek_shellpair_collision(
   size_t        dyn_size,
   host_task_iterator tb,
   host_task_iterator te,
+  const ShellPairCollection<double>& shpairs,
   device_queue  queue,
   device_blas_handle handle
 );

@@ -57,7 +57,9 @@ struct XCDeviceStackData : public XCDeviceData {
     double* acc_scr_device = nullptr;  ///< Accumulaion scratch (1)
     double* exc_grad_device = nullptr; ///< EXC Gradient storage (3*natoms)
 
-    double* vshell_max_device = nullptr;
+    double* vshell_max_sparse_device = nullptr;
+    size_t* shpair_row_ind_device = nullptr;
+    size_t* shpair_col_ind_device = nullptr;
     double* ek_max_bfn_sum_device = nullptr;
     double* ek_bfn_max_device     = nullptr;
     int32_t* shell_to_bf_device = nullptr;
@@ -115,13 +117,13 @@ struct XCDeviceStackData : public XCDeviceData {
   void allocate_static_data_den( int32_t nbf, int32_t nshells ) override final;
   void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) override final;
   void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, int32_t max_l ) override final;
-  void allocate_static_data_exx_ek_screening( size_t ntasks, int32_t nbf, int32_t nshells, int32_t max_l ) override final;
+  void allocate_static_data_exx_ek_screening( size_t ntasks, int32_t nbf, int32_t nshells, int nshell_pairs, int32_t max_l ) override final;
   void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) override final;
   void send_static_data_density_basis( const double* P, int32_t ldp, 
     const BasisSet<double>& basis ) override final;
   void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) 
     override final;
-  void send_static_data_exx_ek_screening( const double* V_max, int32_t ldv, const BasisSetMap& ) override final;
+  void send_static_data_exx_ek_screening( const double* V_max, int32_t ldv, const BasisSetMap&, const ShellPairCollection<double>& ) override final;
   void zero_den_integrands() override final;
   void zero_exc_vxc_integrands() override final;
   void zero_exc_grad_integrands() override final;

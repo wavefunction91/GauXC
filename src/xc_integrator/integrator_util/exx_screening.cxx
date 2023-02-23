@@ -75,15 +75,11 @@ void exx_ek_screening(
     for( auto ipt = 0ul; ipt < npts; ++ipt ) {
       double tmp = 0.;
       for( auto ibf = 0ul; ibf < nbe_bfn; ++ibf ) {
-      //if(ipt == 0 and ibf == 0) printf("[HOST] ITASK = %lu BF(0,%lu) = %.6e\n", i_task,ibf,basis_eval[ ibf + ipt*nbe_bfn ]);
         tmp += std::abs( basis_eval[ ibf + ipt*nbe_bfn ] );
       }
-      //printf("[HOST] ITASK = %lu SUM(%lu) = %.6e\n", i_task,ipt, tmp;
       max_bfn_sum = std::max( max_bfn_sum, std::sqrt(weights[ipt])*tmp );
     }
     task_max_bf_sum[i_task] = max_bfn_sum;
-    //printf("[HOST] ITASK = %lu MAX_SUM = %.6e\n", i_task, max_bfn_sum);
-    //printf("[HOST] ITASK = %lu NBE = %lu NPTS = %lu \n", i_task, nbe_bfn, npts);
 
     // Compute max value for each bfn over grid
     bfn_max_grid.resize(nbe_bfn);
@@ -97,7 +93,6 @@ void exx_ek_screening(
       }
       bfn_max_grid[ibf] = tmp;
     }
-    //printf("[HOST] ITASK = %d MAX_BFN(0) = %.6e\n", i_task, bfn_max_grid[0]);
 
     // Place max bfn into larger array
     auto task_max_bfn_it = task_max_bfn.data() + i_task*nbf;
@@ -118,70 +113,15 @@ void exx_ek_screening(
   } // Memory Scope
   auto coll_en = hrt_t::now();
   std::cout << "... done " << dur_t(coll_en-coll_st).count() << std::endl;
-  
-  //std::cout << "CPU MBS = ";
-  //for( auto x : task_max_bf_sum) std::cout << x << " ";
-  //std::cout << std::endl;
 
   // Compute approx F_i^(k) = |P_ij| * B_j^(k) 
   auto gemm_st = hrt_t::now();
   std::vector<double> task_approx_f( nbf * ntasks );
   blas::gemm( 'N', 'N', nbf, ntasks, nbf, 1., P_abs, ldp,
     task_max_bfn.data(), nbf, 0., task_approx_f.data(), nbf );
-
   auto gemm_en = hrt_t::now();
   std::cout << "... done " << dur_t(gemm_en-gemm_st).count() << std::endl;
 
-  //std::cout << "CPU FMAX BFN = ";
-  //for( auto x : task_approx_f ) std::cout << x << " ";
-  //std::cout << std::endl;
-#if 0
-  // Compute EK shells list for each task
-  std::vector<std::vector<int32_t>> ek_shell_task( ntasks );
-  std::vector<double> max_F_shells(nshells);
-  size_t i_task = 0;
-  for( auto task_it = task_begin; task_it != task_end; task_it++, i_task++ ) {
-    //std::cout << "ITASK = " << i_task << std::endl;
-    std::set<int32_t> ek_shells;
-
-    // Collapse max_F over shells
-    const double* max_F_approx_bfn = task_approx_f.data() + i_task*nbf;
-    for( auto ish = 0ul, ibf = 0ul; ish < nshells; ++ish) {
-      const auto sh_sz = basis[ish].size();
-      double tmp = 0.;
-      for( auto i = 0; i < sh_sz; ++i ) {
-        tmp = std::max( tmp, std::abs(max_F_approx_bfn[ibf + i]) );
-      }
-      max_F_shells[ish] = tmp;
-      ibf += sh_sz;
-    }
-
-    // Compute important shell set
-    const double max_bf_sum = task_max_bf_sum[i_task];
-    for( auto j = 0ul; j < nshells; ++j )
-    for( auto i = j;   i < nshells; ++i ) {
-      const auto V_ij = V_shell_max[i + j*ldv];
-      const auto F_i  = max_F_shells[i];
-      const auto F_j  = max_F_shells[j];
-
-      const double eps_E_compare = F_i * F_j * V_ij;
-      const double eps_K_compare = std::max(F_i, F_j) * V_ij * max_bf_sum;
-      if( eps_K_compare > eps_K or eps_E_compare > eps_E)  {
-        ek_shells.insert(i); 
-        ek_shells.insert(j); 
-      }
-    }
-
-    // Append to list
-    task_it->cou_screening.shell_list =
-      std::vector<int32_t>(ek_shells.begin(), ek_shells.end());
-    task_it->cou_screening.nbe = 
-      basis.nbf_subset( ek_shells.begin(), ek_shells.end() );
-
-    std::cout << "I_TASK " << i_task << " " << task_it->cou_screening.shell_list.size();
-    std::cout << std::endl;
-  } // Loop over tasks
-#else
 
   //std::cout << "CPU FMAX SHELLS = ";
   auto list_st = hrt_t::now();
@@ -238,48 +178,24 @@ void exx_ek_screening(
     }
     }
 
-    //printf("[CPU] ITASK %d: %lu\n", int(std::distance(task_begin,task_it)),
-    //  task_it->cou_screening.shell_pair_list.size());
 
     // Append to list
     task_it->cou_screening.shell_list =
       std::vector<int32_t>(ek_shells.begin(), ek_shells.end());
     task_it->cou_screening.nbe = 
       basis.nbf_subset( ek_shells.begin(), ek_shells.end() );
-    //size_t nspt = (nshells*(nshells+1))/2;
-    //size_t nsp   = task_it->cou_screening.shell_pair_list.size();
-    //std::cout << "I_TASK " << i_task << " " << task_it->cou_screening.shell_list.size() << " " << nsp << " " << nspt << " " << nsp / double(nspt) << std::endl;
 
   } // Loop over tasks
-  //std::cout << std::endl;
   auto list_en = hrt_t::now();
-  //for(auto task_it = task_begin; task_it != task_end; ++task_it) {
-  //  std::cout << "I_TASK " << std::distance(task_begin,task_it) << " " << task_it->cou_screening.shell_list.size();
-  //  std::cout << std::endl;
-  //}
   std::cout << "... done " << dur_t(list_en-list_st).count() << std::endl;
 
-  size_t total_count = 0;
-  for( auto it = task_begin; it != task_end; ++it ) {
-    total_count += it->cou_screening.shell_pair_list.size();
-    //std::cout << "CPU SPHR TASK " << std::distance(task_begin,it) << " ";
-    //std::vector<size_t> spidx(it->cou_screening.shell_pair_list.size());
-    //auto jit = spidx.begin();
-    //for( auto [i,j] : it->cou_screening.shell_pair_list ) {
-    //  *(jit++) = i + ((2*nshells - j - 1)*j)/2;
-    //}
-    //std::sort(spidx.begin(),spidx.end());
-    //for( auto idx : spidx ) std::cout << idx << " ";
-    //std::cout << std::endl;
-  }
-  std::cout << "TOTAL COUNT = " << total_count << std::endl;
 
-#endif
 }
 
 
 void exx_ek_screening( 
   const BasisSet<double>& basis, const BasisSetMap& basis_map,
+  const ShellPairCollection<double>& shpairs,
   const double* P_abs, size_t ldp, const double* V_shell_max, size_t ldv,
   double eps_E, double eps_K, XCDeviceData& device_data, 
   LocalDeviceWorkDriver* lwd, 
@@ -293,9 +209,10 @@ void exx_ek_screening(
   // Setup EXX EK Screening memory on the device
   device_data.reset_allocations();
   device_data.allocate_static_data_exx_ek_screening( ntasks, nbf, nshells, 
-    basis_map.max_l() );
+    shpairs.npairs(), basis_map.max_l() );
   device_data.send_static_data_density_basis( P_abs, ldp, basis );
-  device_data.send_static_data_exx_ek_screening( V_shell_max, ldv, basis_map );
+  device_data.send_static_data_exx_ek_screening( V_shell_max, ldv, basis_map,
+    shpairs );
 
   device_data.zero_exx_ek_screening_intermediates();
 
@@ -319,7 +236,8 @@ void exx_ek_screening(
   }
 
 
-  lwd->exx_ek_shellpair_collision( eps_E, eps_K, &device_data, task_begin, task_end );
+  lwd->exx_ek_shellpair_collision( eps_E, eps_K, &device_data, task_begin, task_end,
+    shpairs );
 
   GAUXC_CUDA_ERROR("End Sync", cudaDeviceSynchronize());
 

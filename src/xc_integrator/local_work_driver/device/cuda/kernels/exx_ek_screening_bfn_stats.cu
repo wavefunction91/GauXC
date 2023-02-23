@@ -216,9 +216,10 @@ __global__ void exx_ek_collapse_fmax_to_shells_kernel(
 
 __global__ void exx_ek_shellpair_collision_kernel(
   int32_t       ntasks,
-  int32_t       nshells,
-  const double* V_max_device,
-  size_t        LDV,
+  int32_t       nshell_pairs,
+  const double* V_max_sparse_device,
+  const size_t* sp_row_ind_device,
+  const size_t* sp_col_ind_device,
   const double* F_max_shl_device,
   size_t        LDF,
   const double* max_bf_sum_device,
@@ -246,10 +247,12 @@ __global__ void exx_ek_shellpair_collision_kernel(
     for(int ij = 0; ij < LD_rc; ++ij) 
       rc_collisions[i_task * LD_rc + ij] = 0;
 
-    for(int i_shell = 0; i_shell < nshells;  ++i_shell)
-    for(int j_shell = 0; j_shell <= i_shell; ++j_shell) {
+    for(int ij_shell = 0; ij_shell < nshell_pairs;  ++ij_shell) {
 
-      const auto V_ij = V_max_device[i_shell + j_shell*LDV];
+      const auto i_shell = sp_row_ind_device[ij_shell]; 
+      const auto j_shell = sp_col_ind_device[ij_shell]; 
+
+      const auto V_ij = V_max_sparse_device[ij_shell];
       const auto F_i  = F_max_shl_device[i_task + i_shell * LDF];
       const auto F_j  = F_max_shl_device[i_task + j_shell * LDF];
 
@@ -257,7 +260,7 @@ __global__ void exx_ek_shellpair_collision_kernel(
       const double eps_K_compare = fmax(F_i, F_j) * V_ij * max_bf_sum;
       const bool comp = (eps_K_compare > eps_K or eps_E_compare > eps_E);
 
-      const int ij = i_shell+ ((2*nshells - j_shell - 1)*j_shell)/2;
+      const int ij = ij_shell;
       const int ij_block = ij / 32;
       const int ij_local = ij % 32;
       collisions[i_task * LD_coll + ij_block] |= comp ? (1u << ij_local) : 0;
@@ -491,8 +494,9 @@ void exx_ek_shellpair_collision(
   int32_t       nbf,
   const double* abs_dmat_device,
   size_t        LDP,
-  const double* V_max_device,
-  size_t        LDV,
+  const double* V_max_sparse_device,
+  const size_t* sp_row_ind_device,
+  const size_t* sp_col_ind_device,
   const double* max_bf_sum_device,
   const double* bfn_max_device,
   size_t        LDBM,
@@ -505,15 +509,16 @@ void exx_ek_shellpair_collision(
   size_t        dyn_size,
   host_task_iterator tb,
   host_task_iterator te,
+  const ShellPairCollection<double>& shpairs,
   device_queue  queue,
   device_blas_handle handle
 ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
 
-  const size_t nsp_dense = (nshells * (nshells+1)) / 2;
-  const size_t LD_coll   = util::div_ceil(nsp_dense, 32);
-  const size_t LD_rc     = util::div_ceil(nshells  , 32);
+  const size_t nshell_pairs = shpairs.npairs();
+  const size_t LD_coll   = util::div_ceil(nshell_pairs, 32);
+  const size_t LD_rc     = util::div_ceil(nshells     , 32);
 
   buffer_adaptor full_stack(dyn_stack, dyn_size);
 
@@ -543,7 +548,8 @@ void exx_ek_shellpair_collision(
     dim3 threads = 1024;//cuda::max_threads_per_thread_block;
     dim3 blocks  = GauXC::util::div_ceil(ntasks,threads.x);
     exx_ek_shellpair_collision_kernel<<<blocks, threads, 0 , stream>>>(
-      ntasks, nshells, V_max_device, LDV, fmax_shl_device, ntasks, 
+      ntasks, nshell_pairs, V_max_sparse_device, sp_row_ind_device,
+      sp_col_ind_device, fmax_shl_device, ntasks, 
       max_bf_sum_device, eps_E, eps_K, collisions, LD_coll, 
       rc_collisions, LD_rc, counts, rc_counts);
   }
@@ -571,9 +577,7 @@ void exx_ek_shellpair_collision(
   util::cuda_copy(ntasks, rc_counts_host.data(), rc_counts.ptr);
 
   uint32_t total_sp_count = counts_host.back();
-  std::cout << "TOTAL SPCOUNT = " << total_sp_count << std::endl;
   uint32_t total_s_count = rc_counts_host.back();
-  std::cout << "TOTAL SCOUNT = " << total_s_count << std::endl;
 
 
 
@@ -584,7 +588,7 @@ void exx_ek_shellpair_collision(
   dim3 threads(32,32);
   dim3 blocks( util::div_ceil(ntasks, 1024) );
   bitvector_to_position_list_shellpair<8><<<blocks, threads, 0, stream>>>(
-    ntasks, nsp_dense, LD_coll, collisions, counts, position_sp_list_device
+    ntasks, nshell_pairs, LD_coll, collisions, counts, position_sp_list_device
   );
   bitvector_to_position_list_shells<8><<<blocks, threads, 0, stream>>>(
     ntasks, nshells, LD_rc, rc_collisions.ptr, rc_counts.ptr, shell_sizes_device,
@@ -597,19 +601,21 @@ void exx_ek_shellpair_collision(
 
 
 
-  std::vector<std::pair<int,int>> lt_indices(nsp_dense);
-  {
-  auto it = lt_indices.begin();
-  for(int j = 0; j < nshells; ++j)
-  for(int i = j; i < nshells; ++i) {
-    *(it++) = std::make_pair(i,j);
-  }
-  }
-
   std::vector<uint32_t> position_s_list(total_s_count);
   std::vector<size_t> nbe_list_host(ntasks);
   util::cuda_copy(total_s_count, position_s_list.data(), position_s_list_device.ptr, "Position List Shell");
   util::cuda_copy(ntasks, nbe_list_host.data(), nbe_list.ptr, "NBE List");
+
+  const auto& shpair_row_ptr = shpairs.row_ptr();
+  const auto& shpair_col_ind = shpairs.col_ind();
+  std::vector<size_t> shpair_row_ind(nshell_pairs);
+  for( auto i = 0; i < nshells; ++i ) {
+    const auto j_st = shpair_row_ptr[i];
+    const auto j_en = shpair_row_ptr[i+1];
+    for( auto _j = j_st; _j < j_en; ++_j ) {
+      shpair_row_ind[_j] = i;
+    }
+  }
 
   for( auto it = tb; it != te; ++it ) {
     {
@@ -618,8 +624,9 @@ void exx_ek_shellpair_collision(
 
     it->cou_screening.shell_pair_list.resize(end - begin);
     for( auto ij = begin, idx = 0ul; ij < end; ++ij, ++idx) {
-      it->cou_screening.shell_pair_list[idx] = 
-        lt_indices[position_sp_list[ij]];
+      it->cou_screening.shell_pair_list[idx] = std::make_pair(
+        shpair_row_ind.at(position_sp_list[ij]), shpair_col_ind.at(position_sp_list[ij])
+      );
     }
     }
 
