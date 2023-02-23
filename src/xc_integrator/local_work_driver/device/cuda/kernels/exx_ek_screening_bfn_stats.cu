@@ -418,6 +418,8 @@ void exx_ek_shellpair_collision(
   uint32_t*     counts,
   void*         dyn_stack,
   size_t        dyn_size,
+  host_task_iterator tb,
+  host_task_iterator te,
   device_queue  queue
 ) {
 
@@ -429,9 +431,6 @@ void exx_ek_shellpair_collision(
     ntasks, nshells, V_max_device, LDV, F_max_shl_device, LDF, 
     max_bf_sum_device, eps_E, eps_K, collisions, LD_coll, counts);
 
-  // Get counts before prefix sum
-  std::vector<uint32_t> counts_host(ntasks);
-  util::cuda_copy(ntasks, counts_host.data(), counts);
 
 
   size_t prefix_sum_bytes = 0;
@@ -451,12 +450,16 @@ void exx_ek_shellpair_collision(
   util::cuda_copy(1, &total_count, counts + ntasks - 1);
   std::cout << "TOTAL COUNT = " << total_count << std::endl;
 
+  // Get counts after prefix sum
+  std::vector<uint32_t> counts_host(ntasks);
+  util::cuda_copy(ntasks, counts_host.data(), counts);
 
+
+  size_t nsp_dense = (nshells * (nshells+1))/2;
   auto position_list_device = stack.aligned_alloc<uint32_t>(total_count);
   {
   dim3 threads(32,32);
   dim3 blocks( util::div_ceil(ntasks, 1024) );
-  size_t nsp_dense = (nshells * (nshells+1))/2;
   bitvector_to_position_list_shellpair<8><<<blocks, threads, 0, stream>>>(
     ntasks, nsp_dense, LD_coll, collisions, counts, position_list_device
   );
@@ -465,19 +468,29 @@ void exx_ek_shellpair_collision(
   std::vector<uint32_t> position_list(total_count);
   util::cuda_copy(total_count, position_list.data(), position_list_device.ptr, "Position List ShellPair");
 
-  //{
-  //size_t ioff = 0;
-  //for(size_t i = 0; i < ntasks; ++i) {
-  //  std::cout << "GPU SPHR TASK " << i << " ";
-  //  for(auto j = ioff; j < ioff + counts_host[i]; ++j) std::cout << position_list[j] << " ";
-  //  std::cout << std::endl;
-  //  ioff += counts_host[i];
-  //}
-  //}
 
 
-  //print_coll<<<1,1>>>(ntasks, nshells, collisions, LD_coll);
-  //print_counts<<<1,1>>>(ntasks, counts);
+  std::vector<std::pair<int,int>> lt_indices(nsp_dense);
+  {
+  auto it = lt_indices.begin();
+  for(int j = 0; j < nshells; ++j)
+  for(int i = j; i < nshells; ++i) {
+    *(it++) = std::make_pair(i,j);
+  }
+  }
+
+  for( auto it = tb; it != te; ++it ) {
+    size_t begin = (it == tb) ? 0 : counts_host[std::distance(tb,it)-1];
+    size_t end   = counts_host[std::distance(tb,it)];
+
+    it->cou_screening.shell_pair_list.resize(end - begin);
+    for( auto ij = begin, idx = 0ul; ij < end; ++ij, ++idx) {
+      it->cou_screening.shell_pair_list[idx] = 
+        lt_indices[position_list[ij]];
+    }
+    
+  }
+
 }
 
 }

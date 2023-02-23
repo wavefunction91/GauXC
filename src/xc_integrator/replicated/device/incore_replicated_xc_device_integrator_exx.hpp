@@ -165,13 +165,34 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     LocalHostWorkDriver host_lwd(
       std::make_unique<ReferenceLocalHostWorkDriver>()
     );
-    exx_ek_screening( basis, basis_map, P_abs.data(), basis.nbf(),
-      V_max.data(), nshells, sn_link_settings.energy_tol, 
-      sn_link_settings.k_tol, &host_lwd, task_begin, task_end );
 
     exx_ek_screening( basis, basis_map, P_abs.data(), basis.nbf(),
       V_max.data(), nshells, sn_link_settings.energy_tol, 
       sn_link_settings.k_tol, device_data, lwd, task_begin, task_end );
+
+    
+    for( auto it = task_begin; it != task_end; ++it) {
+    //  std::cout << "GPU TASK " << std::distance(task_begin, it) << ": ";
+    //  std::sort(it->cou_screening.shell_pair_list.begin(), 
+    //            it->cou_screening.shell_pair_list.end());
+    //  for( auto [i,j] :  it->cou_screening.shell_pair_list )
+    //    std::cout << "(" << i << ", " << j << ") ";
+    //  std::cout << std::endl;
+      it->cou_screening = XCTask::screening_data();
+    }
+
+    exx_ek_screening( basis, basis_map, P_abs.data(), basis.nbf(),
+      V_max.data(), nshells, sn_link_settings.energy_tol, 
+      sn_link_settings.k_tol, &host_lwd, task_begin, task_end );
+
+    //for( auto it = task_begin; it != task_end; ++it) {
+    //  std::cout << "CPU TASK " << std::distance(task_begin, it) << ": ";
+    //  std::sort(it->cou_screening.shell_pair_list.begin(), 
+    //            it->cou_screening.shell_pair_list.end());
+    //  for( auto [i,j] :  it->cou_screening.shell_pair_list )
+    //    std::cout << "(" << i << ", " << j << ") ";
+    //  std::cout << std::endl;
+    //}
 
     // Remove tasks with no coulomb shells
     task_end = std::stable_partition( task_begin, task_end,

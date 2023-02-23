@@ -8,8 +8,10 @@
 #include "device/xc_device_task.hpp"
 #include "device/device_queue.hpp"
 #include <gauxc/shell.hpp>
+#include <gauxc/xc_task.hpp>
 
 namespace GauXC {
+using host_task_iterator = std::vector<XCTask>::iterator;
 
 void exx_ek_screening_bfn_stats( size_t        ntasks,
                                  XCDeviceTask* tasks_device,
@@ -45,6 +47,8 @@ void exx_ek_shellpair_collision(
   uint32_t*     counts,
   void*         dyn_stack,
   size_t        dyn_size,
+  host_task_iterator tb,
+  host_task_iterator te,
   device_queue  queue
 );
 

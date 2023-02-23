@@ -31,6 +31,8 @@ class LocalDeviceWorkDriver : public LocalWorkDriver {
 
 public:
 
+  using host_task_iterator = std::vector<XCTask>::iterator;
+
   /// Construct LocalDeviceWorkDriver instance in invalid state
   LocalDeviceWorkDriver();
 
@@ -83,7 +85,8 @@ public:
   void eval_exx_ek_screening_bfn_stats( XCDeviceData* );
   void eval_exx_ek_screening_approx_fmax( XCDeviceData* );
   void exx_ek_collapse_fmat_to_shells( XCDeviceData* );
-  void exx_ek_shellpair_collision( double eps_E, double eps_K, XCDeviceData* );
+  void exx_ek_shellpair_collision( double eps_E, double eps_K, XCDeviceData*, 
+    host_task_iterator, host_task_iterator );
 
   void symmetrize_vxc( XCDeviceData* );
   void symmetrize_exx_k( XCDeviceData* );

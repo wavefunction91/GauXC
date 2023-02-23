@@ -1294,7 +1294,7 @@ void AoSScheme1Base::exx_ek_collapse_fmat_to_shells( XCDeviceData* _data) {
 }
 
 void AoSScheme1Base::exx_ek_shellpair_collision( double eps_E, double eps_K,
-  XCDeviceData* _data) {
+  XCDeviceData* _data, host_task_iterator tb, host_task_iterator te) {
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -1314,6 +1314,7 @@ void AoSScheme1Base::exx_ek_shellpair_collision( double eps_E, double eps_K,
     static_stack.shellpair_collisions_device, LD_coll,
     static_stack.shellpair_counts_device,
     data->dynmem_ptr, data->dynmem_sz,
+    tb, te,
     data->device_backend_->queue() );
 
 }

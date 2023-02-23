@@ -91,9 +91,10 @@ std::unique_ptr<XCDeviceData> LocalDeviceWorkDriver::create_device_data(const De
   return pimpl_->create_device_data(rt);
 }
 
-void LocalDeviceWorkDriver::exx_ek_shellpair_collision( double eps_E, double eps_K, XCDeviceData* device_data ) {
+void LocalDeviceWorkDriver::exx_ek_shellpair_collision( double eps_E, double eps_K, 
+  XCDeviceData* device_data, host_task_iterator tb, host_task_iterator te ) {
   throw_if_invalid_pimpl(pimpl_);
-  pimpl_->exx_ek_shellpair_collision( eps_E, eps_K, device_data );
+  pimpl_->exx_ek_shellpair_collision( eps_E, eps_K, device_data, tb, te );
 }
 
 }

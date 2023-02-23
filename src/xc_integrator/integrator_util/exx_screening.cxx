@@ -330,7 +330,7 @@ void exx_ek_screening(
   device_data.retrieve_exx_ek_approx_fmax_bfn( task_f_bfn_max.data(), nbf );
   device_data.retrieve_exx_ek_approx_fmax_shell( task_f_shl_max.data(), nshells );
 
-  lwd->exx_ek_shellpair_collision( eps_E, eps_K, &device_data );
+  lwd->exx_ek_shellpair_collision( eps_E, eps_K, &device_data, task_begin, task_end );
 
   GAUXC_CUDA_ERROR("End Sync", cudaDeviceSynchronize());
 
