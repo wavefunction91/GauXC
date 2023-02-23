@@ -240,8 +240,8 @@ __global__ void exx_ek_shellpair_collision_kernel(
     for(int ij = 0; ij < LD_coll; ++ij) 
       collisions[i_task * LD_coll + ij] = 0;
 
-    for(int i_shell = 0, ij = 0; i_shell < nshells;  ++i_shell      )
-    for(int j_shell = 0;         j_shell <= i_shell; ++j_shell, ij++) {
+    for(int i_shell = 0; i_shell < nshells;  ++i_shell)
+    for(int j_shell = 0; j_shell <= i_shell; ++j_shell) {
 
       const auto V_ij = V_max_device[i_shell + j_shell*LDV];
       const auto F_i  = F_max_shl_device[i_task + i_shell * LDF];
@@ -250,6 +250,7 @@ __global__ void exx_ek_shellpair_collision_kernel(
       const double eps_E_compare = F_i * F_j * V_ij;
       const double eps_K_compare = fmax(F_i, F_j) * V_ij * max_bf_sum;
 
+      const int ij = i_shell+ ((2*nshells - j_shell - 1)*j_shell)/2;
       const int ij_block = ij / 32;
       const int ij_local = ij % 32;
       collisions[i_task * LD_coll + ij_block] |=
@@ -301,7 +302,7 @@ __global__ void print_counts(size_t ntasks, uint32_t* counts) {
 
 
 
-template <int32_t buffer_size, typename buffer_type = int32_t>
+template <int32_t buffer_size, typename buffer_type = uint32_t>
 __global__ void bitvector_to_position_list_shellpair(
   size_t ntasks,
   size_t nsp,
@@ -328,7 +329,6 @@ __global__ void bitvector_to_position_list_shellpair(
     } 
 
     int current = 0;
-    size_t nbe = 0;
     size_t nsp_blocks = (nsp + buffer_size_bits - 1) / buffer_size_bits;
     for (int j_block = 0; j_block < nsp_blocks; j_block++) {
       // Each thread has a buffer of length BUFFER_SIZE. All the threads in the warp work to 
@@ -429,6 +429,11 @@ void exx_ek_shellpair_collision(
     ntasks, nshells, V_max_device, LDV, F_max_shl_device, LDF, 
     max_bf_sum_device, eps_E, eps_K, collisions, LD_coll, counts);
 
+  // Get counts before prefix sum
+  std::vector<uint32_t> counts_host(ntasks);
+  util::cuda_copy(ntasks, counts_host.data(), counts);
+
+
   size_t prefix_sum_bytes = 0;
   auto stat = cub::DeviceScan::InclusiveSum( NULL, prefix_sum_bytes,
     counts, counts, ntasks, stream );
@@ -443,8 +448,33 @@ void exx_ek_shellpair_collision(
     counts, counts, ntasks, stream );
 
   uint32_t total_count = 0;
-  cudaMemcpy((char*)&total_count, counts + ntasks - 1, sizeof(int32_t), cudaMemcpyDeviceToHost);
+  util::cuda_copy(1, &total_count, counts + ntasks - 1);
   std::cout << "TOTAL COUNT = " << total_count << std::endl;
+
+
+  auto position_list_device = stack.aligned_alloc<uint32_t>(total_count);
+  {
+  dim3 threads(32,32);
+  dim3 blocks( util::div_ceil(ntasks, 1024) );
+  size_t nsp_dense = (nshells * (nshells+1))/2;
+  bitvector_to_position_list_shellpair<8><<<blocks, threads, 0, stream>>>(
+    ntasks, nsp_dense, LD_coll, collisions, counts, position_list_device
+  );
+  }
+
+  std::vector<uint32_t> position_list(total_count);
+  util::cuda_copy(total_count, position_list.data(), position_list_device.ptr, "Position List ShellPair");
+
+  //{
+  //size_t ioff = 0;
+  //for(size_t i = 0; i < ntasks; ++i) {
+  //  std::cout << "GPU SPHR TASK " << i << " ";
+  //  for(auto j = ioff; j < ioff + counts_host[i]; ++j) std::cout << position_list[j] << " ";
+  //  std::cout << std::endl;
+  //  ioff += counts_host[i];
+  //}
+  //}
+
 
   //print_coll<<<1,1>>>(ntasks, nshells, collisions, LD_coll);
   //print_counts<<<1,1>>>(ntasks, counts);

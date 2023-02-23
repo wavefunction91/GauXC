@@ -262,6 +262,15 @@ void exx_ek_screening(
   size_t total_count = 0;
   for( auto it = task_begin; it != task_end; ++it ) {
     total_count += it->cou_screening.shell_pair_list.size();
+    //std::cout << "CPU SPHR TASK " << std::distance(task_begin,it) << " ";
+    //std::vector<size_t> spidx(it->cou_screening.shell_pair_list.size());
+    //auto jit = spidx.begin();
+    //for( auto [i,j] : it->cou_screening.shell_pair_list ) {
+    //  *(jit++) = i + ((2*nshells - j - 1)*j)/2;
+    //}
+    //std::sort(spidx.begin(),spidx.end());
+    //for( auto idx : spidx ) std::cout << idx << " ";
+    //std::cout << std::endl;
   }
   std::cout << "TOTAL COUNT = " << total_count << std::endl;
 
