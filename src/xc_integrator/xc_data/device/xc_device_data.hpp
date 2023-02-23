@@ -411,8 +411,6 @@ struct XCDeviceData {
   virtual void retrieve_exx_integrands( double* K, int32_t ldk ) = 0;
 
   virtual void retrieve_exx_ek_max_bfn_sum( double* MBS, int32_t nt) = 0;
-  //virtual void retrieve_exx_ek_approx_fmax_bfn( double* FMAX, int32_t ldF ) = 0;
-  //virtual void retrieve_exx_ek_approx_fmax_shell( double* FMAX, int32_t ldF ) = 0;
 
 
   virtual void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) = 0;

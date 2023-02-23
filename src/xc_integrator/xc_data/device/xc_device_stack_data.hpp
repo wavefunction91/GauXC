@@ -132,8 +132,6 @@ struct XCDeviceStackData : public XCDeviceData {
   void retrieve_exc_grad_integrands( double* EXC_GRAD, double* N_EL ) override final;
   void retrieve_den_integrands( double* N_EL ) override final;
   void retrieve_exx_integrands( double* K, int32_t ldk ) override final;
-  //void retrieve_exx_ek_approx_fmax_bfn( double* FMAX, int32_t ldF ) override final;
-  //void retrieve_exx_ek_approx_fmax_shell( double* FMAX, int32_t ldF ) override final;
   void retrieve_exx_ek_max_bfn_sum( double* MBS, int32_t nt) override final;
   void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) override final;
 

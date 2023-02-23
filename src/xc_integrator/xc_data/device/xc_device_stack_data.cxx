@@ -199,8 +199,6 @@ void XCDeviceStackData::allocate_static_data_exx_ek_screening( size_t ntasks, in
   global_dims.max_l        = max_l; 
   global_dims.ntask_ek     = ntasks;
 
-  //const size_t nsp_dense = (nshells * (nshells+1))/2;
-  //const size_t LD_coll = GauXC::util::div_ceil(nsp_dense, 32);
 
 
   // Allocate static memory with proper alignment
@@ -212,20 +210,12 @@ void XCDeviceStackData::allocate_static_data_exx_ek_screening( size_t ntasks, in
     mem.aligned_alloc<double>( ntasks , csl);
   static_stack.vshell_max_device = 
     mem.aligned_alloc<double>( nshells*nshells , csl);
-  //static_stack.max_f_bfn_device = 
-  //  mem.aligned_alloc<double>( nbf * ntasks , csl);
-  //static_stack.max_f_shl_device = 
-  //  mem.aligned_alloc<double>( nshells * ntasks , csl);
   static_stack.ek_bfn_max_device = 
     mem.aligned_alloc<double>( nbf * ntasks , csl);
   static_stack.shell_to_bf_device =
     mem.aligned_alloc<int32_t>( nshells, csl );
   static_stack.shell_sizes_device =
     mem.aligned_alloc<int32_t>( nshells, csl );
-  //static_stack.shellpair_collisions_device =
-  //  mem.aligned_alloc<uint32_t>( LD_coll * ntasks ); 
-  //static_stack.shellpair_counts_device =
-  //  mem.aligned_alloc<uint32_t>( ntasks ); 
 
   // Get current stack location
   dynmem_ptr = mem.stack();
@@ -502,29 +492,6 @@ void XCDeviceStackData::retrieve_exx_ek_max_bfn_sum( double* MBS, int32_t nt ) {
 
 }
 
-//void XCDeviceStackData::retrieve_exx_ek_approx_fmax_bfn( double* FMAX, int32_t ldF ) {
-//
-//  const auto ntask_ek = global_dims.ntask_ek;
-//  const auto nbf      = global_dims.nbf;
-//  if( ldF != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDF must bf NBF");
-//  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
-//
-//  device_backend_->copy_async( ntask_ek * nbf, static_stack.max_f_bfn_device, FMAX, 
-//    "FMAX BFN D2H");
-//
-//}
-//
-//void XCDeviceStackData::retrieve_exx_ek_approx_fmax_shell( double* FMAX, int32_t ldF ) {
-//
-//  const auto ntask_ek = global_dims.ntask_ek;
-//  const auto nshell      = global_dims.nshells;
-//  if( ldF != (int)nshell ) GAUXC_GENERIC_EXCEPTION("LDF must bf NSHELL");
-//  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
-//
-//  device_backend_->copy_async( ntask_ek * nshell, static_stack.max_f_shl_device, FMAX, 
-//    "FMAX SHELL D2H");
-//
-//}
 
 
 

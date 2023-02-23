@@ -53,8 +53,6 @@ struct LocalDeviceWorkDriverPIMPL {
   virtual void symmetrize_exx_k( XCDeviceData* ) = 0;
 
   virtual void eval_exx_ek_screening_bfn_stats( XCDeviceData* ) = 0;
-  //virtual void eval_exx_ek_screening_approx_fmax( XCDeviceData* ) = 0;
-  //virtual void exx_ek_collapse_fmat_to_shells( XCDeviceData* ) = 0;
   virtual void exx_ek_shellpair_collision( double eps_E, double eps_K, 
     XCDeviceData*, host_task_iterator, host_task_iterator ) = 0;
 
