@@ -206,6 +206,8 @@ void exx_ek_screening(
   const auto nshells = basis.nshells();
   const size_t ntasks  = std::distance(task_begin, task_end);
 
+  const size_t task_batch_size = 10000;
+
   // Setup EXX EK Screening memory on the device
   device_data.reset_allocations();
   device_data.allocate_static_data_exx_ek_screening( ntasks, nbf, nshells, 
@@ -214,32 +216,47 @@ void exx_ek_screening(
   device_data.send_static_data_exx_ek_screening( V_shell_max, ldv, basis_map,
     shpairs );
 
-  device_data.zero_exx_ek_screening_intermediates();
-
   integrator_term_tracker enabled_terms;
   enabled_terms.exx_ek_screening = true;
 
-  // Loop over tasks and form basis-related buffers
-  auto task_it = task_begin;
-  while( task_it != task_end ) {
 
-    // Determine next task patch, send relevant data (EXX_EK only)
-    task_it = 
-      device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
 
-    // Evaluate collocation
-    lwd->eval_collocation( &device_data );
+  auto task_batch_begin = task_begin;
+  while(task_batch_begin != task_end) {
 
-    // Evaluate EXX EK Screening Basis Statistics
-    lwd->eval_exx_ek_screening_bfn_stats( &device_data );
+    size_t nleft = std::distance(task_batch_begin, task_end);
+    exx_detail::host_task_iterator task_batch_end;
+    if(nleft > task_batch_size) 
+      task_batch_end = task_batch_begin + task_batch_size;
+    else 
+      task_batch_end = task_end;
 
+    device_data.zero_exx_ek_screening_intermediates();
+
+
+    // Loop over tasks and form basis-related buffers
+    auto task_it = task_batch_begin;
+    while( task_it != task_batch_end ) {
+
+      // Determine next task patch, send relevant data (EXX_EK only)
+      task_it = device_data.generate_buffers( enabled_terms, basis_map, task_it, 
+        task_batch_end );
+
+      // Evaluate collocation
+      lwd->eval_collocation( &device_data );
+
+      // Evaluate EXX EK Screening Basis Statistics
+      lwd->eval_exx_ek_screening_bfn_stats( &device_data );
+
+    }
+
+
+    lwd->exx_ek_shellpair_collision( eps_E, eps_K, &device_data, task_batch_begin, 
+      task_batch_end, shpairs );
+    task_batch_begin = task_batch_end;
   }
 
-
-  lwd->exx_ek_shellpair_collision( eps_E, eps_K, &device_data, task_begin, task_end,
-    shpairs );
-
-  GAUXC_CUDA_ERROR("End Sync", cudaDeviceSynchronize());
+  //GAUXC_CUDA_ERROR("End Sync", cudaDeviceSynchronize());
 
   //std::cout << "GPU MBS = ";
   //for( auto x : task_max_bfn_sum) std::cout << x << " ";

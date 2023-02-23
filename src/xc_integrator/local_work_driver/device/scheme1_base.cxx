@@ -1263,18 +1263,21 @@ void AoSScheme1Base::exx_ek_shellpair_collision( double eps_E, double eps_K,
 
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
-  const auto ntasks_ek = data->global_dims.ntask_ek;
+  const auto ntasks = std::distance(tb, te);
+  if( ntasks > data->global_dims.ntask_ek ) 
+    GAUXC_GENERIC_EXCEPTION("EK - Too Many Tasks");
+
   const auto nshells   = data->global_dims.nshells;
   const auto nbf   = data->global_dims.nbf;
   auto static_stack    = data->static_stack;
 
-  GauXC::exx_ek_shellpair_collision( ntasks_ek, nshells, nbf,
+  GauXC::exx_ek_shellpair_collision( ntasks, nshells, nbf,
     static_stack.dmat_device, nbf,
     static_stack.vshell_max_sparse_device, 
     static_stack.shpair_row_ind_device,
     static_stack.shpair_col_ind_device,
     static_stack.ek_max_bfn_sum_device,
-    static_stack.ek_bfn_max_device, ntasks_ek, 
+    static_stack.ek_bfn_max_device, data->global_dims.ntask_ek, 
     static_stack.shells_device, static_stack.shell_to_bf_device,
     static_stack.shell_sizes_device, eps_E, eps_K,
     data->dynmem_ptr, data->dynmem_sz,
