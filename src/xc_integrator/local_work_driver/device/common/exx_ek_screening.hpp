@@ -7,6 +7,7 @@
  */
 #include "device/xc_device_task.hpp"
 #include "device/device_queue.hpp"
+#include "device/device_blas_handle.hpp"
 #include <gauxc/shell.hpp>
 #include <gauxc/xc_task.hpp>
 
@@ -20,18 +21,19 @@ void exx_ek_screening_bfn_stats( size_t        ntasks,
                                  size_t        LDBFM,
                                  device_queue queue );
 
-void exx_ek_collapse_fmax_to_shells(
-  int                  ntask,
-  int                  nshells,
-  const Shell<double>* shells_device,
-  const int32_t*       shell_to_bf,
-  const double*        fmax_bfn_device,
-  size_t               LDF_bfn,
-  double*              fmax_shell_device,
-  size_t               LDF_shell,
-  device_queue         queue
-);
+//void exx_ek_collapse_fmax_to_shells(
+//  int                  ntask,
+//  int                  nshells,
+//  const Shell<double>* shells_device,
+//  const int32_t*       shell_to_bf,
+//  const double*        fmax_bfn_device,
+//  size_t               LDF_bfn,
+//  double*              fmax_shell_device,
+//  size_t               LDF_shell,
+//  device_queue         queue
+//);
 
+#if 0
 void exx_ek_shellpair_collision(
   int32_t       ntasks,
   int32_t       nshells,
@@ -52,5 +54,30 @@ void exx_ek_shellpair_collision(
   host_task_iterator te,
   device_queue  queue
 );
+#else
+void exx_ek_shellpair_collision(
+  int32_t       ntasks,
+  int32_t       nshells,
+  int32_t       nbf,
+  const double* abs_dmat_device,
+  size_t        LDP,
+  const double* V_max_device,
+  size_t        LDV,
+  const double* max_bf_sum_device,
+  const double* bfn_max_device,
+  size_t        LDBM,
+  const Shell<double>* shells_device,
+  const int32_t* shell_to_bf_device,
+  const int32_t* shell_sizes_device,
+  double        eps_E,
+  double        eps_K,
+  void*         dyn_stack,
+  size_t        dyn_size,
+  host_task_iterator tb,
+  host_task_iterator te,
+  device_queue  queue,
+  device_blas_handle handle
+);
+#endif 
 
 }

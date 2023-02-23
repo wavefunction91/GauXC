@@ -170,7 +170,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       V_max.data(), nshells, sn_link_settings.energy_tol, 
       sn_link_settings.k_tol, device_data, lwd, task_begin, task_end );
 
-    
 #if 0
     for( auto it = task_begin; it != task_end; ++it) {
       std::cout << "GPU TASK " << std::distance(task_begin, it) << ": ";
@@ -184,11 +183,15 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       std::cout << std::endl;
       it->cou_screening = XCTask::screening_data();
     }
+#endif
 
+#if 0
     exx_ek_screening( basis, basis_map, P_abs.data(), basis.nbf(),
       V_max.data(), nshells, sn_link_settings.energy_tol, 
       sn_link_settings.k_tol, &host_lwd, task_begin, task_end );
+#endif
 
+#if 0
     for( auto it = task_begin; it != task_end; ++it) {
       std::cout << "CPU TASK " << std::distance(task_begin, it) << ": ";
       //std::sort(it->cou_screening.shell_pair_list.begin(), 

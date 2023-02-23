@@ -13,6 +13,7 @@
 #include "device_specific/cuda_device_constants.hpp"
 #include <cub/device/device_scan.cuh>
 #include "buffer_adaptor.hpp"
+#include "device/common/device_blas.hpp"
 
 namespace GauXC {
 
@@ -487,61 +488,86 @@ void exx_ek_collapse_fmax_to_shells(
 void exx_ek_shellpair_collision(
   int32_t       ntasks,
   int32_t       nshells,
+  int32_t       nbf,
+  const double* abs_dmat_device,
+  size_t        LDP,
   const double* V_max_device,
   size_t        LDV,
-  const double* F_max_shl_device,
-  size_t        LDF,
   const double* max_bf_sum_device,
+  const double* bfn_max_device,
+  size_t        LDBM,
+  const Shell<double>* shells_device,
+  const int32_t* shell_to_bf_device,
   const int32_t* shell_sizes_device,
   double        eps_E,
   double        eps_K,
-  uint32_t*     collisions,
-  int           LD_coll,
-  uint32_t*     counts,
   void*         dyn_stack,
   size_t        dyn_size,
   host_task_iterator tb,
   host_task_iterator te,
-  device_queue  queue
+  device_queue  queue,
+  device_blas_handle handle
 ) {
 
-  buffer_adaptor stack(dyn_stack, dyn_size);
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>();
 
-  size_t LD_rc = util::div_ceil(nshells, 32);
-  auto rc_collisions = stack.aligned_alloc<uint32_t>(ntasks * LD_rc);
-  auto rc_counts = stack.aligned_alloc<uint32_t>(ntasks);
+  const size_t nsp_dense = (nshells * (nshells+1)) / 2;
+  const size_t LD_coll   = util::div_ceil(nsp_dense, 32);
+  const size_t LD_rc     = util::div_ceil(nshells  , 32);
 
-  
+  buffer_adaptor full_stack(dyn_stack, dyn_size);
 
-  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
-  dim3 threads = 1024;//cuda::max_threads_per_thread_block;
-  dim3 blocks  = GauXC::util::div_ceil(ntasks,threads.x);
-  exx_ek_shellpair_collision_kernel<<<blocks, threads, 0 , stream>>>(
-    ntasks, nshells, V_max_device, LDV, F_max_shl_device, LDF, 
-    max_bf_sum_device, eps_E, eps_K, collisions, LD_coll, 
-    rc_collisions, LD_rc, counts, rc_counts);
+  auto collisions    = full_stack.aligned_alloc<uint32_t>(ntasks * LD_coll);
+  auto counts        = full_stack.aligned_alloc<uint32_t>(ntasks);
+  auto rc_collisions = full_stack.aligned_alloc<uint32_t>(ntasks * LD_rc);
+  auto rc_counts     = full_stack.aligned_alloc<uint32_t>(ntasks);
 
+  // Compute approximate FMAX and screen
+  {
+    buffer_adaptor sub_stack( full_stack.stack(), full_stack.nleft() );
+    double* fmax_shl_device = nullptr;
+    double* fmax_bfn_device = nullptr;
+    fmax_bfn_device = sub_stack.aligned_alloc<double>(ntasks * nbf);
+    fmax_shl_device = sub_stack.aligned_alloc<double>(ntasks * nshells);
+    
+    gemm(handle, DeviceBlasOp::NoTrans, DeviceBlasOp::NoTrans,
+      ntasks, nbf, nbf,
+      1.0, bfn_max_device,  LDBM, abs_dmat_device, nbf,
+      0.0, fmax_bfn_device, ntasks
+    );
+
+    exx_ek_collapse_fmax_to_shells( ntasks, nshells, shells_device,
+      shell_to_bf_device, fmax_bfn_device, ntasks, fmax_shl_device,
+      ntasks, queue );
+    
+    dim3 threads = 1024;//cuda::max_threads_per_thread_block;
+    dim3 blocks  = GauXC::util::div_ceil(ntasks,threads.x);
+    exx_ek_shellpair_collision_kernel<<<blocks, threads, 0 , stream>>>(
+      ntasks, nshells, V_max_device, LDV, fmax_shl_device, ntasks, 
+      max_bf_sum_device, eps_E, eps_K, collisions, LD_coll, 
+      rc_collisions, LD_rc, counts, rc_counts);
+  }
 
 
   cudaError_t stat;
 
   size_t prefix_sum_bytes = 0;
   stat = cub::DeviceScan::InclusiveSum( NULL, prefix_sum_bytes,
-    counts, counts, ntasks, stream );
+    counts.ptr, counts.ptr, ntasks, stream );
 
 
-  void* prefix_sum_storage = stack.aligned_alloc<char>(prefix_sum_bytes, 16);
+  void* prefix_sum_storage = full_stack.aligned_alloc<char>(prefix_sum_bytes, 16);
   
 
   // Get inclusive sums
   stat = cub::DeviceScan::InclusiveSum( prefix_sum_storage, prefix_sum_bytes,
-    counts, counts, ntasks, stream );
+    counts.ptr, counts.ptr, ntasks, stream );
   stat = cub::DeviceScan::InclusiveSum( prefix_sum_storage, prefix_sum_bytes,
     rc_counts.ptr, rc_counts.ptr, ntasks, stream );
 
   // Get counts after prefix sum
   std::vector<uint32_t> counts_host(ntasks), rc_counts_host(ntasks);
-  util::cuda_copy(ntasks, counts_host.data(), counts);
+  util::cuda_copy(ntasks, counts_host.data(), counts.ptr);
   util::cuda_copy(ntasks, rc_counts_host.data(), rc_counts.ptr);
 
   uint32_t total_sp_count = counts_host.back();
@@ -551,10 +577,9 @@ void exx_ek_shellpair_collision(
 
 
 
-  size_t nsp_dense = (nshells * (nshells+1))/2;
-  auto position_sp_list_device = stack.aligned_alloc<uint32_t>(total_sp_count);
-  auto position_s_list_device  = stack.aligned_alloc<uint32_t>(total_s_count);
-  auto nbe_list                = stack.aligned_alloc<size_t>(ntasks);
+  auto position_sp_list_device = full_stack.aligned_alloc<uint32_t>(total_sp_count);
+  auto position_s_list_device  = full_stack.aligned_alloc<uint32_t>(total_s_count);
+  auto nbe_list                = full_stack.aligned_alloc<size_t>(ntasks);
   {
   dim3 threads(32,32);
   dim3 blocks( util::div_ceil(ntasks, 1024) );

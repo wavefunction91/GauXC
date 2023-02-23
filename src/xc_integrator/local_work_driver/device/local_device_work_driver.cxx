@@ -57,8 +57,8 @@ FWD_TO_PIMPL(inc_exc_grad_gga)
 FWD_TO_PIMPL(symmetrize_vxc)
 FWD_TO_PIMPL(symmetrize_exx_k)
 FWD_TO_PIMPL(eval_exx_ek_screening_bfn_stats)
-FWD_TO_PIMPL(eval_exx_ek_screening_approx_fmax)
-FWD_TO_PIMPL(exx_ek_collapse_fmat_to_shells)
+//FWD_TO_PIMPL(eval_exx_ek_screening_approx_fmax)
+//FWD_TO_PIMPL(exx_ek_collapse_fmat_to_shells)
 
 // X     = P * B
 // dX/dx = P * dB/dx (do_grad)

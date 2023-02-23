@@ -1253,6 +1253,7 @@ void AoSScheme1Base::eval_exx_ek_screening_bfn_stats( XCDeviceData* _data ) {
 
 }
 
+#if 0
 void AoSScheme1Base::eval_exx_ek_screening_approx_fmax( XCDeviceData* _data ) {
 
   auto* data = dynamic_cast<Data*>(_data);
@@ -1292,6 +1293,7 @@ void AoSScheme1Base::exx_ek_collapse_fmat_to_shells( XCDeviceData* _data) {
      
 
 }
+#endif
 
 void AoSScheme1Base::exx_ek_shellpair_collision( double eps_E, double eps_K,
   XCDeviceData* _data, host_task_iterator tb, host_task_iterator te) {
@@ -1303,8 +1305,10 @@ void AoSScheme1Base::exx_ek_shellpair_collision( double eps_E, double eps_K,
 
   const auto ntasks_ek = data->global_dims.ntask_ek;
   const auto nshells   = data->global_dims.nshells;
+  const auto nbf   = data->global_dims.nbf;
   auto static_stack    = data->static_stack;
 
+#if 0
   const size_t nsp_dense = (nshells * (nshells+1))/2;
   const size_t LD_coll = GauXC::util::div_ceil(nsp_dense, 32);
 
@@ -1318,6 +1322,19 @@ void AoSScheme1Base::exx_ek_shellpair_collision( double eps_E, double eps_K,
     data->dynmem_ptr, data->dynmem_sz,
     tb, te,
     data->device_backend_->queue() );
+#else
+  GauXC::exx_ek_shellpair_collision( ntasks_ek, nshells, nbf,
+    static_stack.dmat_device, nbf,
+    static_stack.vshell_max_device, nshells, static_stack.ek_max_bfn_sum_device,
+    static_stack.ek_bfn_max_device, ntasks_ek, 
+    static_stack.shells_device, static_stack.shell_to_bf_device,
+    static_stack.shell_sizes_device, eps_E, eps_K,
+    data->dynmem_ptr, data->dynmem_sz,
+    tb, te,
+    data->device_backend_->queue(),
+    data->device_backend_->master_blas_handle()
+   );
+#endif
 
 }
 
