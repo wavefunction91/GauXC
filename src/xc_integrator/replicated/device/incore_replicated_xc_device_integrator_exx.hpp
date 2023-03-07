@@ -161,10 +161,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       }
     }
 #endif
-    // Create LocalHostWorkDriver
-    LocalHostWorkDriver host_lwd(
-      std::make_unique<ReferenceLocalHostWorkDriver>()
-    );
 
     exx_ek_screening( basis, basis_map, shell_pairs, P_abs.data(), basis.nbf(),
       V_max.data(), nshells, sn_link_settings.energy_tol, 
@@ -186,6 +182,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 #endif
 
 #if 0
+    // Create LocalHostWorkDriver
+    LocalHostWorkDriver host_lwd(
+      std::make_unique<ReferenceLocalHostWorkDriver>()
+    );
     exx_ek_screening( basis, basis_map, P_abs.data(), basis.nbf(),
       V_max.data(), nshells, sn_link_settings.energy_tol, 
       sn_link_settings.k_tol, &host_lwd, task_begin, task_end );
@@ -278,7 +278,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   size_t total_npts = std::accumulate( task_begin, task_end, 0ul,
     [](const auto& a, const auto& b) { return a + b.npts; } );
-  std::cout << "TOTAL NPTS " << total_npts << std::endl;
+  //std::cout << "TOTAL NPTS " << total_npts << std::endl;
 
   size_t total_nbe_bfn = std::accumulate( task_begin, task_end, 0ul,
     [](const auto& a, const auto& b) { return a + b.bfn_screening.nbe; } );
@@ -286,31 +286,31 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     [](const auto& a, const auto& b) { return a + b.cou_screening.nbe; } );
 
   size_t ntasks = std::distance(task_begin,task_end);
-  std::cout << "NTASKS " << ntasks << std::endl;
-  std::cout << "AVERAGE NBE_BFN " << total_nbe_bfn / double(ntasks) << std::endl;
-  std::cout << "AVERAGE NBE_COU " << total_nbe_cou / double(ntasks) << std::endl;
+  //std::cout << "NTASKS " << ntasks << std::endl;
+  //std::cout << "AVERAGE NBE_BFN " << total_nbe_bfn / double(ntasks) << std::endl;
+  //std::cout << "AVERAGE NBE_COU " << total_nbe_cou / double(ntasks) << std::endl;
 
-  std::cout << "MIN NBE_BFN " <<
-    std::min_element(task_begin, task_end, 
-      [](const auto& a, const auto& b){ 
-        return a.bfn_screening.nbe < b.bfn_screening.nbe;
-      })->bfn_screening.nbe << std::endl;
-  std::cout << "MIN NBE_COU " <<
-    std::min_element(task_begin, task_end, 
-      [](const auto& a, const auto& b){ 
-        return a.cou_screening.nbe < b.cou_screening.nbe;
-      })->cou_screening.nbe << std::endl;
+  //std::cout << "MIN NBE_BFN " <<
+  //  std::min_element(task_begin, task_end, 
+  //    [](const auto& a, const auto& b){ 
+  //      return a.bfn_screening.nbe < b.bfn_screening.nbe;
+  //    })->bfn_screening.nbe << std::endl;
+  //std::cout << "MIN NBE_COU " <<
+  //  std::min_element(task_begin, task_end, 
+  //    [](const auto& a, const auto& b){ 
+  //      return a.cou_screening.nbe < b.cou_screening.nbe;
+  //    })->cou_screening.nbe << std::endl;
 
-  std::cout << "MAX NBE_BFN " <<
-    std::max_element(task_begin, task_end, 
-      [](const auto& a, const auto& b){ 
-        return a.bfn_screening.nbe < b.bfn_screening.nbe;
-      })->bfn_screening.nbe << std::endl;
-  std::cout << "MAX NBE_COU " <<
-    std::max_element(task_begin, task_end, 
-      [](const auto& a, const auto& b){ 
-        return a.cou_screening.nbe < b.cou_screening.nbe;
-      })->cou_screening.nbe << std::endl;
+  //std::cout << "MAX NBE_BFN " <<
+  //  std::max_element(task_begin, task_end, 
+  //    [](const auto& a, const auto& b){ 
+  //      return a.bfn_screening.nbe < b.bfn_screening.nbe;
+  //    })->bfn_screening.nbe << std::endl;
+  //std::cout << "MAX NBE_COU " <<
+  //  std::max_element(task_begin, task_end, 
+  //    [](const auto& a, const auto& b){ 
+  //      return a.cou_screening.nbe < b.cou_screening.nbe;
+  //    })->cou_screening.nbe << std::endl;
 
   //return;
 

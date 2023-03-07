@@ -1222,12 +1222,12 @@ void Scheme1DataBase::pack_and_send(
   dur_t sp2t_dur_4 = sp2t_5 - sp2t_4;
   dur_t sp2t_dur_5 = sp2t_6 - sp2t_5;
   dur_t sp2t_dur_6 = sp2t_7 - sp2t_6;
-  std::cout << "SP2T 1 = " << sp2t_dur_1.count() << std::endl;
-  std::cout << "SP2T 2 = " << sp2t_dur_2.count() << std::endl;
-  std::cout << "SP2T 3 = " << sp2t_dur_3.count() << std::endl;
-  std::cout << "SP2T 4 = " << sp2t_dur_4.count() << std::endl;
-  std::cout << "SP2T 5 = " << sp2t_dur_5.count() << std::endl;
-  std::cout << "SP2T 6 = " << sp2t_dur_6.count() << std::endl;
+  //std::cout << "SP2T 1 = " << sp2t_dur_1.count() << std::endl;
+  //std::cout << "SP2T 2 = " << sp2t_dur_2.count() << std::endl;
+  //std::cout << "SP2T 3 = " << sp2t_dur_3.count() << std::endl;
+  //std::cout << "SP2T 4 = " << sp2t_dur_4.count() << std::endl;
+  //std::cout << "SP2T 5 = " << sp2t_dur_5.count() << std::endl;
+  //std::cout << "SP2T 6 = " << sp2t_dur_6.count() << std::endl;
 
 
 #else
@@ -1587,15 +1587,15 @@ void Scheme1DataBase::pack_and_send(
   dur_t s2t_mem_dur = s2t_mem_en - s2t_mem_st;
   dur_t sp2t_mem_dur = sp2t_mem_en - sp2t_mem_st;
 
-  std::cout << "W DUR    = " << w_mem_dur.count() << std::endl;
-  std::cout << "SL DUR   = " << sl_mem_dur.count() << std::endl;
-  std::cout << "S2T DUR  = " << s2t_mem_dur.count() << std::endl;
-  std::cout << "SP2T DUR = " << sp2t_mem_dur.count() << std::endl;
+  //std::cout << "W DUR    = " << w_mem_dur.count() << std::endl;
+  //std::cout << "SL DUR   = " << sl_mem_dur.count() << std::endl;
+  //std::cout << "S2T DUR  = " << s2t_mem_dur.count() << std::endl;
+  //std::cout << "SP2T DUR = " << sp2t_mem_dur.count() << std::endl;
 
   auto snd_st = hrt_t::now();
   device_backend_->master_queue_synchronize(); 
   auto snd_en = hrt_t::now();
-  std::cout << "SND_WAIT = " << dur_t(snd_en-snd_st).count() << std::endl;
+  //std::cout << "SND_WAIT = " << dur_t(snd_en-snd_st).count() << std::endl;
 }
 
 
