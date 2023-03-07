@@ -1250,7 +1250,7 @@ void Scheme1DataBase::pack_and_send(
     l_batch_diag_task_to_shell_pair.clear();
 
     {
-      using point = detail::cartesian_point;
+      //using point = detail::cartesian_point;
       const int max_l = basis_map.max_l();
       const size_t ntasks = std::distance(task_begin, task_end);
 
@@ -1298,17 +1298,22 @@ void Scheme1DataBase::pack_and_send(
 
     // Total length of the concatenated task map buffers
     size_t task_map_aggregate_length = 0;
+    double interim_dur = 0.0;
 
     {
     const int max_l = basis_map.max_l();
 
     std::vector<int> sh_off_flat(nsp);
-    std::vector<size_t> sp_idx(nsp);
+    //std::vector<size_t> sp_idx(nsp);
 
-    const auto& sp_row_ptr = this->shell_pair_soa.sp_row_ptr;
-    const auto& sp_col_ind = this->shell_pair_soa.sp_col_ind;
-    for( auto it = task_begin; it != task_end; ++it ) {
-      const auto itask = std::distance( task_begin, it );
+
+    //const auto& sp_row_ptr = this->shell_pair_soa.sp_row_ptr;
+    //const auto& sp_col_ind = this->shell_pair_soa.sp_col_ind;
+    const size_t ntask = std::distance(task_begin,task_end);
+    //for( auto it = task_begin; it != task_end; ++it ) {
+    //const auto itask = std::distance( task_begin, it );
+    for( size_t itask = 0; itask < ntask; ++itask ) {
+      auto it = task_begin + itask;
 
       // Construct the subtasks
       const int points_per_subtask = get_points_per_subtask();
@@ -1328,10 +1333,10 @@ void Scheme1DataBase::pack_and_send(
         sh_off_flat[shell_list_cou[i]] = shell_offs_cou[i];
 
       // Calculate indices
-      for(auto i = 0ul; i < it->cou_screening.shell_pair_list.size(); ++i) {
-        auto [ish, jsh] = it->cou_screening.shell_pair_list[i];
-        sp_idx[i] = detail::csr_index(ish, jsh, global_dims.nshells, sp_row_ptr.data(), sp_col_ind.data()); 
-      }
+      //for(auto i = 0ul; i < it->cou_screening.shell_pair_list.size(); ++i) {
+      //  auto [ish, jsh] = it->cou_screening.shell_pair_list[i];
+      //  sp_idx[i] = detail::csr_index(ish, jsh, global_dims.nshells, sp_row_ptr.data(), sp_col_ind.data()); 
+      //}
 
 
       // Count the number of shell pairs per task
@@ -1339,7 +1344,8 @@ void Scheme1DataBase::pack_and_send(
         auto [ish, jsh] = it->cou_screening.shell_pair_list[i];
         //const auto idx = detail::packed_lt_index(ish,jsh, global_dims.nshells);
         //const auto idx = detail::csr_index(ish, jsh, global_dims.nshells, sp_row_ptr.data(), sp_col_ind.data()); 
-        const auto idx = sp_idx[i];
+        //const auto idx = sp_idx[i];
+        const auto idx = it->cou_screening.shell_pair_idx_list[i];;
 
         int32_t lA, lB;
         std::tie(lA, lB) = this->shell_pair_soa.shell_pair_ls[idx];
@@ -1368,6 +1374,7 @@ void Scheme1DataBase::pack_and_send(
         }
       }
 
+      auto _st = hrt_t::now();
       // Allocate space for the shell pair data
       for (auto& batch : l_batch_task_to_shell_pair) {
         for (auto& ttsp : batch.task_to_shell_pair) {
@@ -1385,13 +1392,15 @@ void Scheme1DataBase::pack_and_send(
           ttsp.nsp_filled = 0;
         }
       }
+      interim_dur += dur_t(hrt_t::now() - _st).count();
 
       // Iterate over shell pairs adding to tasks
       for(auto i = 0ul; i < it->cou_screening.shell_pair_list.size(); ++i) {
         auto [ish, jsh] = it->cou_screening.shell_pair_list[i];
         //const auto idx = detail::packed_lt_index(ish,jsh, global_dims.nshells);
         //const auto idx = detail::csr_index(ish, jsh, global_dims.nshells, sp_row_ptr.data(), sp_col_ind.data()); 
-        const auto idx = sp_idx[i];
+        //const auto idx = sp_idx[i];
+        const auto idx = it->cou_screening.shell_pair_idx_list[i];;
 
         int32_t lA, lB;
         std::tie(lA, lB) = this->shell_pair_soa.shell_pair_ls[idx];
@@ -1575,6 +1584,7 @@ void Scheme1DataBase::pack_and_send(
   std::cout << "T2SP 4 = " << t2sp_dur_4.count() << std::endl;
   std::cout << "T2SP 5 = " << t2sp_dur_5.count() << std::endl;
   std::cout << "T2SP 6 = " << t2sp_dur_6.count() << std::endl;
+  std::cout << "INTERIM = " << interim_dur << std::endl;
 
 #endif
 

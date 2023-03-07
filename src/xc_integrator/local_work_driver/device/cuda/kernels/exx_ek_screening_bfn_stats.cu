@@ -621,9 +621,12 @@ void exx_ek_shellpair_collision(
     size_t end   = counts_host[std::distance(tb,it)];
 
     it->cou_screening.shell_pair_list.resize(end - begin);
+    it->cou_screening.shell_pair_idx_list.resize(end - begin);
     for( auto ij = begin, idx = 0ul; ij < end; ++ij, ++idx) {
+      const auto global_ij =  position_sp_list[ij];
+      it->cou_screening.shell_pair_idx_list[idx] = global_ij;
       it->cou_screening.shell_pair_list[idx] = std::make_pair(
-        shpair_row_ind.at(position_sp_list[ij]), shpair_col_ind.at(position_sp_list[ij])
+        shpair_row_ind[global_ij], shpair_col_ind[global_ij]
       );
     }
     }

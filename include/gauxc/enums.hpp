@@ -28,7 +28,8 @@ enum class RadialQuad {
 enum class AtomicGridSizeDefault {
   FineGrid,       ///< Fine grid      (least accurate)
   UltraFineGrid,  ///< Ultrafine grid (appropriate accuracy)
-  SuperFineGrid   ///< Superfine grid (most accurate)
+  SuperFineGrid,  ///< Superfine grid (most accurate)
+  GM3, GM5
 };
 
 /**
