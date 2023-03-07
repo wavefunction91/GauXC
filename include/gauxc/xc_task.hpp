@@ -32,6 +32,7 @@ struct XCTask {
     using pair_t = std::pair<int32_t,int32_t>;
     std::vector<int32_t>               shell_list;
     std::vector<pair_t>                shell_pair_list;
+    std::vector<int32_t>               shell_pair_idx_list;
     std::vector<int32_t>               submat_block;
     std::vector<std::array<int32_t,3>> submat_map;
     int32_t                            nbe = 0;

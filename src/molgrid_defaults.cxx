@@ -99,13 +99,17 @@ std::tuple<RadialSize,AngularSize>
   default_grid_size(AtomicNumber Z, RadialQuad rq, AtomicGridSizeDefault s) {
 
   switch(s) {
+    case AtomicGridSizeDefault::GM3:
+      return std::make_tuple( RadialSize(35), AngularSize(110) );
+
+    case AtomicGridSizeDefault::GM5:
+      return std::make_tuple( RadialSize(50), AngularSize(302) );
 
     case AtomicGridSizeDefault::FineGrid:
       return std::make_tuple( RadialSize(75), AngularSize(302) );
 
     case AtomicGridSizeDefault::UltraFineGrid:
       return std::make_tuple( RadialSize(99), AngularSize(590) );
-
 
     case AtomicGridSizeDefault::SuperFineGrid:
       if( Z.get() <= 2 ) {

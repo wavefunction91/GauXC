@@ -172,7 +172,9 @@ int main(int argc, char** argv) {
     std::map< std::string, AtomicGridSizeDefault > mg_map = {
       {"FINE",      AtomicGridSizeDefault::FineGrid},
       {"ULTRAFINE", AtomicGridSizeDefault::UltraFineGrid},
-      {"SUPERFINE", AtomicGridSizeDefault::SuperFineGrid}
+      {"SUPERFINE", AtomicGridSizeDefault::SuperFineGrid},
+      {"GM3",       AtomicGridSizeDefault::GM3},
+      {"GM5",       AtomicGridSizeDefault::GM5}
     };
 
     std::map< std::string, PruningScheme > prune_map = {
