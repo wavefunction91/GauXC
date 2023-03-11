@@ -42,6 +42,11 @@ const LoadBalancer& ReplicatedXCIntegrator<MatrixType>::get_load_balancer_() con
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->get_load_balancer();
 }
+template <typename MatrixType>
+LoadBalancer& ReplicatedXCIntegrator<MatrixType>::get_load_balancer_() {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->get_load_balancer();
+}
 
 
 template <typename MatrixType>

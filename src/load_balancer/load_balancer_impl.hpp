@@ -55,6 +55,10 @@ public:
   const std::vector< XCTask >& get_tasks() const;
         std::vector< XCTask >& get_tasks()      ;
 
+  void rebalance_weights();
+  void rebalance_exc_vxc();
+  void rebalance_exx();
+
   const util::Timer& get_timings() const;
 
   size_t max_npts()       const;

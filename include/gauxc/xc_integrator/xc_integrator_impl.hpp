@@ -33,6 +33,7 @@ protected:
                                         const IntegratorSettingsEXX& settings ) = 0;
   virtual const util::Timer& get_timings_() const = 0;
   virtual const LoadBalancer& get_load_balancer_() const = 0;
+  virtual LoadBalancer& get_load_balancer_() = 0;
   
 public:
 
@@ -95,6 +96,9 @@ public:
 
 
   const LoadBalancer& load_balancer() const {
+    return get_load_balancer_();
+  }
+  LoadBalancer& load_balancer() {
     return get_load_balancer_();
   }
 };

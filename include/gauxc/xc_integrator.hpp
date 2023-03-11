@@ -60,6 +60,7 @@ public:
 
   const util::Timer& get_timings() const;
   const LoadBalancer& load_balancer() const;
+  LoadBalancer& load_balancer();
 };
 
 

@@ -41,7 +41,18 @@ struct XCTask {
       return shell_list == other.shell_list and 
         shell_pair_list == other.shell_pair_list;
     }
+
+    inline size_t volume() const {
+      return (shell_list.size() + 2*shell_pair_list.size() + submat_block.size() +
+              3*submat_map.size() + 1) * sizeof(int32_t);
+    }
   };
+
+  inline size_t volume() const {
+    return 2 * sizeof(int32_t) +
+      (3*points.size() + weights.size() + 2) * sizeof(double) +
+      bfn_screening.volume() + cou_screening.volume();
+  }
 
   screening_data bfn_screening;
   screening_data cou_screening;
@@ -94,6 +105,13 @@ struct XCTask {
 
   inline size_t cost(size_t n_deriv, size_t natoms) const {
     return (bfn_screening.nbe * ( 1 + bfn_screening.nbe + n_deriv ) + natoms * natoms) * npts;
+  }
+  inline size_t cost_exc_vxc(size_t n_deriv) const {
+    return bfn_screening.nbe * ( 1 + bfn_screening.nbe + n_deriv ) * npts;
+  }
+  inline size_t cost_exx() const {
+    return ( bfn_screening.nbe + 2*cou_screening.nbe*bfn_screening.nbe +
+             2*cou_screening.shell_pair_list.size() ) * npts;
   }
 };
 

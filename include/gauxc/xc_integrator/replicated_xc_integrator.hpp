@@ -43,6 +43,7 @@ private:
   exx_type      eval_exx_     ( const MatrixType&, const IntegratorSettingsEXX& ) override;
   const util::Timer& get_timings_() const override;
   const LoadBalancer& get_load_balancer_() const override;
+  LoadBalancer& get_load_balancer_() override;
 
 public:
 

@@ -31,6 +31,21 @@ std::vector<XCTask>& LoadBalancer::get_tasks() {
   return pimpl_->get_tasks();
 }
 
+void LoadBalancer::rebalance_weights() {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->rebalance_weights();
+}
+
+void LoadBalancer::rebalance_exc_vxc() {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->rebalance_exc_vxc();
+}
+
+void LoadBalancer::rebalance_exx() {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->rebalance_exx();
+}
+
 const util::Timer& LoadBalancer::get_timings() const {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->get_timings();

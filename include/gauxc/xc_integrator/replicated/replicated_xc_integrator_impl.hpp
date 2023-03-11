@@ -78,7 +78,9 @@ public:
   }
 
   inline const auto& load_balancer() const { return *load_balancer_; }
+  inline auto& load_balancer() { return *load_balancer_; }
   inline const auto& get_load_balancer() const { return load_balancer(); }
+  inline auto& get_load_balancer() { return load_balancer(); }
 };
 
 
