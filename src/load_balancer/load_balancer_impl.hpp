@@ -16,7 +16,9 @@ class LoadBalancerImpl {
 
 public:
 
-  using basis_type = BasisSet<double>;
+  using basis_type      = BasisSet<double>;
+  using basis_map_type  = BasisSetMap;
+  using shell_pair_type = ShellPairCollection<double>;
 
 protected:
 
@@ -25,6 +27,8 @@ protected:
   std::shared_ptr<MolGrid>    mg_;
   std::shared_ptr<basis_type> basis_;
   std::shared_ptr<MolMeta>    molmeta_;
+  std::shared_ptr<basis_map_type> basis_map_;
+  std::shared_ptr<shell_pair_type> shell_pairs_;
 
   std::vector< XCTask >     local_tasks_;
 
@@ -70,6 +74,8 @@ public:
   const MolMeta&  molmeta()  const;
   const basis_type& basis()  const;
   const RuntimeEnvironment& runtime() const;
+  const basis_map_type& basis_map() const;
+  const shell_pair_type& shell_pairs() const;
 
   LoadBalancerState& state();
 

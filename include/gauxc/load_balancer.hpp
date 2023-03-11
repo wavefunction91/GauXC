@@ -10,6 +10,8 @@
 #include <gauxc/molgrid.hpp>
 #include <gauxc/molmeta.hpp>
 #include <gauxc/basisset.hpp>
+#include <gauxc/basisset_map.hpp>
+#include <gauxc/shell_pair.hpp>
 #include <gauxc/xc_task.hpp>
 #include <gauxc/util/timer.hpp>
 #include <gauxc/runtime_environment.hpp>
@@ -25,12 +27,14 @@ struct LoadBalancerState {
 };
 
 class LoadBalancer {
-
-  using basis_type = BasisSet<double>;
   using pimpl_type = detail::LoadBalancerImpl;
   std::unique_ptr<pimpl_type> pimpl_;
 
 public:
+
+  using basis_type      = BasisSet<double>;
+  using basis_map_type  = BasisSetMap;
+  using shell_pair_type = ShellPairCollection<double>;
 
   LoadBalancer();
 
@@ -58,6 +62,8 @@ public:
   const Molecule& molecule() const;
   const MolMeta&  molmeta()  const;
   const basis_type& basis()  const;
+  const basis_map_type& basis_map() const;
+  const shell_pair_type& shell_pairs() const;
   const RuntimeEnvironment& runtime() const;
   
   LoadBalancerState& state();

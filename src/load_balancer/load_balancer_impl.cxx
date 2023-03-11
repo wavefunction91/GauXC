@@ -16,7 +16,12 @@ LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule
   mg_( std::make_shared<MolGrid>(mg)  ),
   basis_( std::make_shared<basis_type>(basis) ),
   molmeta_( molmeta ),
-  pad_value_(pv) { }
+  pad_value_(pv) { 
+
+  shell_pairs_ = std::make_shared<shell_pair_type>(*basis_);
+  basis_map_   = std::make_shared<basis_map_type>(*basis_, mol);
+
+}
 
 LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
   const MolGrid& mg, const basis_type& basis, const MolMeta& molmeta, size_t pv ) :
@@ -105,6 +110,12 @@ const MolMeta& LoadBalancerImpl::molmeta() const {
 
 const LoadBalancerImpl::basis_type& LoadBalancerImpl::basis() const {
   return *basis_;
+}
+const LoadBalancerImpl::basis_map_type& LoadBalancerImpl::basis_map() const {
+  return *basis_map_;
+}
+const LoadBalancerImpl::shell_pair_type& LoadBalancerImpl::shell_pairs() const {
+  return *shell_pairs_;
 }
 
 const RuntimeEnvironment& LoadBalancerImpl::runtime() const {

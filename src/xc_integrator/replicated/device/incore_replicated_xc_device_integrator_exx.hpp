@@ -40,13 +40,18 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   if( ldk < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDK");
 
-  // Get Tasks
-  auto& tasks = this->load_balancer_->get_tasks();
-
   // Allocate Device memory
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
   auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
   auto device_data_ptr = lwd->create_device_data(rt);
+
+  this->timer_.time_op("XCIntegrator.EXX_Screening", [&]() { 
+    exx_ek_screening_local_work_( basis, P, ldp, K, ldk, *device_data_ptr, settings);
+  });
+
+
+  // Get Tasks
+  auto& tasks = this->load_balancer_->get_tasks();
 
   // Compute local contributions to K and retrieve
   // data from device 
@@ -67,6 +72,80 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   });
 }
 
+template <typename ValueType>
+void IncoreReplicatedXCDeviceIntegrator<ValueType>::
+  exx_ek_screening_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
+                       value_type* K, int64_t ldk,
+                       XCDeviceData& device_data,
+                       const IntegratorSettingsEXX& settings ) {
+
+  auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
+  IntegratorSettingsSNLinK sn_link_settings;
+  if( auto* tmp = dynamic_cast<const IntegratorSettingsSNLinK*>(&settings) ) {
+    sn_link_settings = *tmp;
+  }
+
+  // Get Tasks
+  auto& tasks = this->load_balancer_->get_tasks();
+  auto task_begin = tasks.begin();
+  auto task_end = tasks.end();
+
+
+  // Setup Aliases
+  const auto& mol   = this->load_balancer_->molecule();
+
+  const auto nbf     = basis.nbf();
+  const auto nshells = basis.nshells();
+
+
+  // Get basis map and shell pairs
+  //BasisSetMap basis_map(basis,mol);
+  //ShellPairCollection shell_pairs(basis);
+  auto& basis_map   = this->load_balancer_->basis_map();
+  auto& shell_pairs = this->load_balancer_->shell_pairs();
+
+  // Populate submat maps
+  device_data.populate_submat_maps( basis.nbf(), task_begin, task_end, basis_map );
+
+
+  // Check that Partition Weights have been calculated
+  auto& lb_state = this->load_balancer_->state();
+  if( not lb_state.modified_weights_are_stored ) {
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
+  }
+
+  // Reset the coulomb screening data
+  for( auto it = task_begin; it != task_end; ++it) {
+    it->cou_screening = XCTask::screening_data();
+  }
+
+  // Compute base screening quantities
+  const size_t nb2 = basis.nbf() * basis.nbf();
+  std::vector<double> P_abs(nb2);
+  for( auto i = 0ul; i < nb2; ++i ) P_abs[i] = std::abs(P[i]);
+
+  // Loop over sparse shell pairs
+  const size_t ns2 = nshells * nshells;
+  std::vector<double> V_max(ns2, 0.0);
+  const auto sp_row_ptr = shell_pairs.row_ptr();
+  const auto sp_col_ind = shell_pairs.col_ind();
+  for( auto i = 0; i < nshells; ++i ) {
+    const auto j_st = sp_row_ptr[i];
+    const auto j_en = sp_row_ptr[i+1];
+    for( auto _j = j_st; _j < j_en; ++_j ) {
+      const auto j = sp_col_ind[_j];
+      const auto mv = util::max_coulomb( basis.at(i), basis.at(j) );
+      V_max[i + j*nshells] = mv;
+      if( i != j ) V_max[j + i*nshells] = mv;
+    }
+  }
+
+  exx_ek_screening( basis, basis_map, shell_pairs, P_abs.data(), basis.nbf(),
+    V_max.data(), nshells, sn_link_settings.energy_tol, 
+    sn_link_settings.k_tol, device_data, lwd, task_begin, task_end );
+
+
+}
 
 
 template <typename ValueType>
@@ -91,8 +170,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
 
   // Get basis map and shell pairs
-  BasisSetMap basis_map(basis,mol);
-  ShellPairCollection shell_pairs(basis);
+  //BasisSetMap basis_map(basis,mol);
+  //ShellPairCollection shell_pairs(basis);
+  auto& basis_map   = this->load_balancer_->basis_map();
+  auto& shell_pairs = this->load_balancer_->shell_pairs();
 
   // Populate submat maps
   device_data.populate_submat_maps( basis.nbf(), task_begin, task_end, basis_map );
@@ -113,6 +194,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
   }
 
+#if 0
 #if 0
   // TODO: This turns off EK screening 
   std::vector<int32_t> full_shell_list(nshells);
@@ -209,6 +291,11 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     task_end = std::stable_partition( task_begin, task_end,
       []( const auto& t ) { return t.cou_screening.shell_list.size() > 0; } );
   });
+#endif
+
+#else
+    task_end = std::stable_partition( task_begin, task_end,
+      []( const auto& t ) { return t.cou_screening.shell_list.size() > 0; } );
 #endif
 
   // Lexicographic ordering of tasks

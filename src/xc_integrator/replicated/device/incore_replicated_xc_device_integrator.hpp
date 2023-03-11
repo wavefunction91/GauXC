@@ -77,6 +77,12 @@ protected:
                         XCDeviceData& device_data, 
                         const IntegratorSettingsEXX& settings);
 
+  void exx_ek_screening_local_work_( const basis_type& basis, 
+                        const value_type* P, int64_t ldp, 
+                        value_type* K, int64_t ldk,
+                        XCDeviceData& device_data, 
+                        const IntegratorSettingsEXX& settings);
+
 public:
 
   template <typename... Args>
