@@ -14,6 +14,7 @@
 #include <cub/device/device_scan.cuh>
 #include "buffer_adaptor.hpp"
 #include "device/common/device_blas.hpp"
+#include <chrono>
 
 namespace GauXC {
 
@@ -255,17 +256,19 @@ __global__ void exx_ek_shellpair_collision_kernel(
       const double eps_K_compare = fmax(F_i, F_j) * V_ij * max_bf_sum;
       const bool comp = (eps_K_compare > eps_K or eps_E_compare > eps_E);
 
-      const int ij = ij_shell;
-      const int ij_block = ij / 32;
-      const int ij_local = ij % 32;
-      collisions[i_task * LD_coll + ij_block] |= comp ? (1u << ij_local) : 0;
+      if(comp) {
+        const int ij = ij_shell;
+        const int ij_block = ij / 32;
+        const int ij_local = ij % 32;
+        collisions[i_task * LD_coll + ij_block] |= (1u << ij_local);
 
-      const int i_block = i_shell / 32;
-      const int i_local = i_shell % 32;
-      rc_collisions[i_task * LD_rc + i_block] |= comp ? (1u << i_local) : 0;
-      const int j_block = j_shell / 32;
-      const int j_local = j_shell % 32;
-      rc_collisions[i_task * LD_rc + j_block] |= comp ? (1u << j_local) : 0;
+        const int i_block = i_shell / 32;
+        const int i_local = i_shell % 32;
+        rc_collisions[i_task * LD_rc + i_block] |= (1u << i_local);
+        const int j_block = j_shell / 32;
+        const int j_local = j_shell % 32;
+        rc_collisions[i_task * LD_rc + j_block] |= (1u << j_local);
+      }
     }
 
     uint32_t count = 0;
@@ -509,7 +512,12 @@ void exx_ek_shellpair_collision(
   device_blas_handle handle
 ) {
 
+  using hrt_t = std::chrono::high_resolution_clock;
+  using dur_t = std::chrono::duration<double,std::milli>;
+
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
+  std::vector<uint32_t> counts_host    (ntasks);
+  std::vector<uint32_t> rc_counts_host (ntasks);
 
   const size_t nshell_pairs = shpairs.npairs();
   const size_t LD_coll   = util::div_ceil(nshell_pairs, 32);
@@ -522,6 +530,7 @@ void exx_ek_shellpair_collision(
   auto rc_collisions = full_stack.aligned_alloc<uint32_t>(ntasks * LD_rc);
   auto rc_counts     = full_stack.aligned_alloc<uint32_t>(ntasks);
 
+  auto sp_check_st = hrt_t::now();
   util::cuda_set_zero_async( ntasks * LD_coll,collisions.ptr,    stream, "Zero Coll");
   util::cuda_set_zero_async( ntasks * LD_rc,  rc_collisions.ptr, stream, "Zero RC");
 
@@ -551,7 +560,9 @@ void exx_ek_shellpair_collision(
       max_bf_sum_device, eps_E, eps_K, collisions, LD_coll, 
       rc_collisions, LD_rc, counts, rc_counts);
   }
+  auto sp_check_en = hrt_t::now();
 
+  dur_t sp_check_dur = sp_check_en - sp_check_st;
 
   cudaError_t stat;
 
@@ -562,6 +573,7 @@ void exx_ek_shellpair_collision(
 
   void* prefix_sum_storage = full_stack.aligned_alloc<char>(prefix_sum_bytes, 16);
   
+  auto scan_st = hrt_t::now();
 
   // Get inclusive sums
   stat = cub::DeviceScan::InclusiveSum( prefix_sum_storage, prefix_sum_bytes,
@@ -570,14 +582,16 @@ void exx_ek_shellpair_collision(
     rc_counts.ptr, rc_counts.ptr, ntasks, stream );
 
   // Get counts after prefix sum
-  std::vector<uint32_t> counts_host(ntasks), rc_counts_host(ntasks);
   util::cuda_copy(ntasks, counts_host.data(), counts.ptr);
   util::cuda_copy(ntasks, rc_counts_host.data(), rc_counts.ptr);
+  auto scan_en = hrt_t::now();
+  dur_t scan_dur = scan_en - scan_st;
 
-  uint32_t total_sp_count = counts_host.back();
-  uint32_t total_s_count = rc_counts_host.back();
+  uint32_t total_sp_count = counts_host[ntasks-1];
+  uint32_t total_s_count = rc_counts_host[ntasks-1];
 
 
+  auto bv_st = hrt_t::now();
 
   auto position_sp_list_device = full_stack.aligned_alloc<uint32_t>(total_sp_count);
   auto position_s_list_device  = full_stack.aligned_alloc<uint32_t>(total_s_count);
@@ -597,13 +611,20 @@ void exx_ek_shellpair_collision(
   std::vector<uint32_t> position_sp_list(total_sp_count);
   util::cuda_copy(total_sp_count, position_sp_list.data(), position_sp_list_device.ptr, "Position List ShellPair");
 
+  auto bv_en = hrt_t::now();
+  dur_t bv_dur = bv_en - bv_st;
 
 
+  auto d2h_st = hrt_t::now();
   std::vector<uint32_t> position_s_list(total_s_count);
   std::vector<size_t> nbe_list_host(ntasks);
   util::cuda_copy(total_s_count, position_s_list.data(), position_s_list_device.ptr, "Position List Shell");
   util::cuda_copy(ntasks, nbe_list_host.data(), nbe_list.ptr, "NBE List");
+  auto d2h_en = hrt_t::now();
+  dur_t d2h_dur = d2h_en - d2h_st;
 
+
+  auto gen_trip_st = hrt_t::now();
   const auto& shpair_row_ptr = shpairs.row_ptr();
   const auto& shpair_col_ind = shpairs.col_ind();
   std::vector<size_t> shpair_row_ind(nshell_pairs);
@@ -614,7 +635,10 @@ void exx_ek_shellpair_collision(
       shpair_row_ind[_j] = i;
     }
   }
+  auto gen_trip_en = hrt_t::now();
+  dur_t gen_trip_dur = gen_trip_en - gen_trip_st;
 
+  auto finalize_st = hrt_t::now();
   for( auto it = tb; it != te; ++it ) {
     {
     size_t begin = (it == tb) ? 0 : counts_host[std::distance(tb,it)-1];
@@ -644,8 +668,13 @@ void exx_ek_shellpair_collision(
     
   }
 
+  auto finalize_en = hrt_t::now();
+  dur_t finalize_dur = finalize_en - finalize_st;
   
 
+  printf("SPC = %.3f SCAN = %.3f BV = %.3f D2H = %.3f GT = %.3f FIN = %.3f\n", 
+    sp_check_dur.count(), scan_dur.count(), bv_dur.count(),
+    d2h_dur.count(), gen_trip_dur.count(), finalize_dur.count());
   
 }
 
