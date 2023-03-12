@@ -127,6 +127,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Loop over sparse shell pairs
   const size_t ns2 = nshells * nshells;
   std::vector<double> V_max(ns2, 0.0);
+  this->timer_.time_op("XCIntegrator.VM", [&](){
   const auto sp_row_ptr = shell_pairs.row_ptr();
   const auto sp_col_ind = shell_pairs.col_ind();
   for( auto i = 0; i < nshells; ++i ) {
@@ -139,6 +140,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       if( i != j ) V_max[j + i*nshells] = mv;
     }
   }
+  });
 
   exx_ek_screening( basis, basis_map, shell_pairs, P_abs.data(), basis.nbf(),
     V_max.data(), nshells, sn_link_settings.energy_tol, 
@@ -376,6 +378,13 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   //std::cout << "NTASKS " << ntasks << std::endl;
   //std::cout << "AVERAGE NBE_BFN " << total_nbe_bfn / double(ntasks) << std::endl;
   //std::cout << "AVERAGE NBE_COU " << total_nbe_cou / double(ntasks) << std::endl;
+
+  int world_rank;
+  MPI_Comm_rank(this->load_balancer_->runtime().comm(), &world_rank);
+  printf("RANK %d, LC_EXX = %lu\n",
+    world_rank,
+    std::accumulate(task_begin, task_end, 0ul, [](auto c, const auto& t){ return c + t.cost_exx(); })
+  );
 
   //std::cout << "MIN NBE_BFN " <<
   //  std::min_element(task_begin, task_end, 
