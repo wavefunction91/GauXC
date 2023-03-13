@@ -12,6 +12,7 @@
 #include <stdexcept>
 #include "device/xc_device_aos_data.hpp"
 #include <fstream>
+#include <memory_resource>
 #include <gauxc/util/unused.hpp>
 
 #include "integrator_util/exx_screening.hpp"
@@ -26,6 +27,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
              int64_t ldp, value_type* K, int64_t ldk, 
              const IntegratorSettingsEXX& settings ) { 
 
+  // Setup memory pool
+  auto def_pmr = std::pmr::get_default_resource();
+  std::pmr::unsynchronized_pool_resource pool(def_pmr);
+  std::pmr::set_default_resource( &pool );
 
   const auto& basis = this->load_balancer_->basis();
 
@@ -70,7 +75,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     // Reduce results in device memory
     this->timer_.time_op("XCIntegrator.Allreduce_EXX", [&](){
-      printf("KPTR = %p\n", device_data_ptr->exx_k_device_data());
       this->reduction_driver_->allreduce_inplace(
         device_data_ptr->exx_k_device_data(), nbf*nbf, ReductionOp::Sum, 
         device_data_ptr->queue());
@@ -90,11 +94,11 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
         tasks.begin(), tasks.end(), *device_data_ptr, settings);
     });
 
-    //GAUXC_MPI_CODE(
-    //this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
-    //  MPI_Barrier(rt.comm());
-    //});  
-    //)
+    GAUXC_MPI_CODE(
+    this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
+      MPI_Barrier(rt.comm());
+    });  
+    )
 
     // Reduce Results in host mem
     this->timer_.time_op("XCIntegrator.Allreduce_EXX", [&](){
@@ -102,6 +106,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     });
 
   }
+  std::pmr::set_default_resource( def_pmr );
 }
 
 template <typename ValueType>
@@ -225,6 +230,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
 
   exx_local_work_(basis, P, ldp, task_begin, task_end, device_data, settings);
+  auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
+  rt.device_backend()->master_queue_synchronize();
 
   // Receive K from host
   this->timer_.time_op("XCIntegrator.DeviceToHostCopy_EXX",[&](){

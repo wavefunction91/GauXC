@@ -15,8 +15,43 @@
 #include <gauxc/gauxc_config.hpp>
 #include <gauxc/shell.hpp>
 #include <gauxc/exceptions.hpp>
+#include <memory_resource>
 
 namespace GauXC {
+
+namespace detail {
+
+// Allocator adaptor that interposes construct() calls to
+// convert value initialization into default initialization.
+template <typename T, typename A=std::allocator<T>>
+class default_init_allocator : public A {
+  typedef std::allocator_traits<A> a_t;
+public:
+  template <typename U> struct rebind {
+    using other =
+      default_init_allocator<
+        U, typename a_t::template rebind_alloc<U>
+      >;
+  };
+
+  using A::A;
+
+  template <typename U>
+  void construct(U* ptr)
+    noexcept(std::is_nothrow_default_constructible<U>::value) {
+    //::new(static_cast<void*>(ptr)) U;
+  }
+  template <typename U, typename...Args>
+  void construct(U* ptr, Args&&... args) {
+    a_t::construct(static_cast<A&>(*this),
+                   ptr, std::forward<Args>(args)...);
+  }
+};
+
+template <typename T>
+using default_init_vector = std::vector<T, default_init_allocator<T>>;
+
+}
 
 struct XCTask {
 
@@ -31,11 +66,11 @@ struct XCTask {
   struct screening_data {
     using pair_t = std::pair<int32_t,int32_t>;
     std::vector<int32_t>               shell_list;
-    std::vector<pair_t>                shell_pair_list;
-    std::vector<int32_t>               shell_pair_idx_list;
+    detail::default_init_vector<pair_t>           shell_pair_list;
+    detail::default_init_vector<int32_t>          shell_pair_idx_list;
     std::vector<int32_t>               submat_block;
     std::vector<std::array<int32_t,3>> submat_map;
-    int32_t                            nbe = 0;
+    int32_t                                 nbe = 0;
 
     bool equiv_with( const screening_data& other ) const {
       return shell_list == other.shell_list and 

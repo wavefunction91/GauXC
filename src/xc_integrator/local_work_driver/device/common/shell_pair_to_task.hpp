@@ -7,6 +7,7 @@
  */
 #pragma once 
 #include <gauxc/shell_pair.hpp>
+#include <gauxc/xc_task.hpp>
 
 namespace GauXC {
 
@@ -54,9 +55,9 @@ struct AngularMomentumShellPairToTaskBatch {
 struct TaskToShellPairHost {
   using shell_pair = ShellPair<double>;
   using point      = detail::cartesian_point;
-  std::vector<int32_t> shell_pair_linear_idx;
-  std::vector<int32_t> task_shell_off_row;
-  std::vector<int32_t> task_shell_off_col;
+  detail::default_init_vector<int32_t> shell_pair_linear_idx;
+  detail::default_init_vector<int32_t> task_shell_off_row;
+  detail::default_init_vector<int32_t> task_shell_off_col;
   int32_t nsp;
   int32_t nsp_filled;
 

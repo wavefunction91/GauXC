@@ -1375,7 +1375,6 @@ void Scheme1DataBase::pack_and_send(
 
         }
       }
-      interim_dur += dur_t(hrt_t::now() - _st).count();
 
       // Allocate space for the shell pair data
       for (auto& batch : l_batch_task_to_shell_pair) {
@@ -1394,6 +1393,7 @@ void Scheme1DataBase::pack_and_send(
           ttsp.nsp_filled = 0;
         }
       }
+      interim_dur += dur_t(hrt_t::now() - _st).count();
 
       // Iterate over shell pairs adding to tasks
       for(auto i = 0ul; i < task_nsp; ++i) {

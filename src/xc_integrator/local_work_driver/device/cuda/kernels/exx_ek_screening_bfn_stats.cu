@@ -17,6 +17,7 @@
 //#include <mpi.h>
 #include <chrono>
 //#include <fstream>
+#include "exceptions/cuda_exception.hpp"
 
 namespace GauXC {
 
@@ -221,12 +222,11 @@ __global__ void exx_ek_collapse_fmax_to_shells_kernel(
 }
 
 
-
-
-
-__global__ void exx_ek_shellpair_collision_kernel(
+__global__ void exx_ek_shellpair_collision_shared_kernel(
   int32_t       ntasks,
   int32_t       nshell_pairs,
+  int32_t       nshells,
+  int32_t       shell_buffer_length,
   const double* V_max_sparse_device,
   const size_t* sp_row_ind_device,
   const size_t* sp_col_ind_device,
@@ -243,16 +243,21 @@ __global__ void exx_ek_shellpair_collision_kernel(
   uint32_t*     rc_counts
 ) {
 
+  extern __shared__ uint32_t s_rc_collisions[];
 
-
-  const int tid_x = threadIdx.x + blockIdx.x * blockDim.x;
-  const int nt_x  = blockDim.x * gridDim.x;
+  const int tid_x = threadIdx.y + blockIdx.x * blockDim.y;
+  const int nt_x  = blockDim.y * gridDim.x;
 
   for(int i_task = tid_x; i_task < ntasks; i_task += nt_x) {
 
     const auto max_bf_sum = max_bf_sum_device[i_task];
 
-    for(int ij_shell = 0; ij_shell < nshell_pairs;  ++ij_shell) {
+    for (int i = threadIdx.x; i < shell_buffer_length; i+= blockDim.x) {
+      s_rc_collisions[i] = 0;
+    }
+    __syncthreads();
+
+    for(int ij_shell = threadIdx.x; ij_shell < nshell_pairs;  ij_shell+=blockDim.x) {
 
       const auto i_shell = sp_row_ind_device[ij_shell]; 
       const auto j_shell = sp_col_ind_device[ij_shell]; 
@@ -265,31 +270,41 @@ __global__ void exx_ek_shellpair_collision_kernel(
       const double eps_K_compare = fmax(F_i, F_j) * V_ij * max_bf_sum;
       const bool comp = (eps_K_compare > eps_K or eps_E_compare > eps_E);
 
-      if(comp) {
-        const int ij = ij_shell;
-        const int ij_block = ij / 32;
-        const int ij_local = ij % 32;
-        collisions[i_task * LD_coll + ij_block] |= (1u << ij_local);
+      const int ij = ij_shell;
+      const int ij_block = ij / 32;
+      const int ij_local = ij % 32;
+      atomicOr(&(collisions[i_task * LD_coll + ij_block]), (comp ? (1u << ij_local) : 0));
 
-        const int i_block = i_shell / 32;
-        const int i_local = i_shell % 32;
-        rc_collisions[i_task * LD_rc + i_block] |= (1u << i_local);
-        const int j_block = j_shell / 32;
-        const int j_local = j_shell % 32;
-        rc_collisions[i_task * LD_rc + j_block] |= (1u << j_local);
-      }
+      const int i_block = i_shell / 32;
+      const int i_local = i_shell % 32;
+      atomicOr(&(s_rc_collisions[i_block]), (comp ? (1u << i_local) : 0));
+
+      const int j_block = j_shell / 32;
+      const int j_local = j_shell % 32;
+      atomicOr(&(s_rc_collisions[j_block]), (comp ? (1u << j_local) : 0));
     }
+    __syncthreads();
 
+    // Write from shared to global memory
+    for (int i = threadIdx.x; i < shell_buffer_length; i+= blockDim.x) {
+      rc_collisions[i_task * LD_rc + i] = s_rc_collisions[i];
+    }
+    __syncthreads();
+
+
+    // TODO use thread block level reduction before writing to global memory
     uint32_t count = 0;
-    for(int ij = 0; ij < LD_coll; ++ij)  count += __popc(collisions[i_task * LD_coll + ij]);
-    counts[i_task] = count;
+    for(int ij = threadIdx.x; ij < LD_coll; ij+=blockDim.x)  count += __popc(collisions[i_task * LD_coll + ij]);
+    atomicAdd(&(counts[i_task]), count);
 
     count = 0;
-    for(int ij = 0; ij < LD_rc; ++ij)  count += __popc(rc_collisions[i_task * LD_rc + ij]);
-    rc_counts[i_task] = count;
+    for(int ij = threadIdx.x; ij < LD_rc; ij+=blockDim.x)  count += __popc(rc_collisions[i_task * LD_rc + ij]);
+    atomicAdd(&(rc_counts[i_task]), count);
+    __syncthreads();
   }
 
 }
+
 
 __global__ void print_coll(size_t ntasks, size_t nshells, uint32_t* collisions,
   size_t LD_coll) {
@@ -532,6 +547,29 @@ void exx_ek_shellpair_collision(
   const size_t LD_coll   = util::div_ceil(nshell_pairs, 32);
   const size_t LD_rc     = util::div_ceil(nshells     , 32);
 
+  // We need 1 bit per shell 
+  // This is the number of shells divided by 8
+  const int requiredSharedMemoryInBytes = LD_rc * sizeof(uint32_t);
+
+  // By default the maximum amount of shared memory per block is 48KiB, but
+  // newer archs can go higher with an opt-in setting
+  int dev_id = 0;
+  int maxSharedMemoryPerBlock, maxSharedMemoryPerBlockOptin;
+  cudaDeviceGetAttribute(&maxSharedMemoryPerBlock,
+    cudaDevAttrMaxSharedMemoryPerBlock, dev_id);
+
+  cudaDeviceGetAttribute(&maxSharedMemoryPerBlockOptin,
+    cudaDevAttrMaxSharedMemoryPerBlockOptin, dev_id);
+
+  if (requiredSharedMemoryInBytes > maxSharedMemoryPerBlock) {
+    cudaError_t res = cudaFuncSetAttribute(&exx_ek_shellpair_collision_shared_kernel,
+      cudaFuncAttributeMaxDynamicSharedMemorySize, maxSharedMemoryPerBlockOptin);
+
+    if (requiredSharedMemoryInBytes > maxSharedMemoryPerBlockOptin) {
+      throw cuda_exception(__FILE__, __LINE__, "Number of shell pairs exceeds device shared memory", res);
+    }
+  }
+
   buffer_adaptor full_stack(dyn_stack, dyn_size);
 
   auto collisions    = full_stack.aligned_alloc<uint32_t>(ntasks * LD_coll);
@@ -542,7 +580,8 @@ void exx_ek_shellpair_collision(
   auto sp_check_st = hrt_t::now();
   util::cuda_set_zero_async( ntasks * LD_coll,collisions.ptr,    stream, "Zero Coll");
   util::cuda_set_zero_async( ntasks * LD_rc,  rc_collisions.ptr, stream, "Zero RC");
-  //int world_rank; MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+  util::cuda_set_zero_async( ntasks,  counts.ptr, stream, "Zero counts");
+  util::cuda_set_zero_async( ntasks,  rc_counts.ptr, stream, "Zero rc counts");
 
   // Compute approximate FMAX and screen
   {
@@ -584,10 +623,11 @@ void exx_ek_shellpair_collision(
     //}
     //#endif
     
-    dim3 threads = 1024;//cuda::max_threads_per_thread_block;
-    dim3 blocks  = GauXC::util::div_ceil(ntasks,threads.x);
-    exx_ek_shellpair_collision_kernel<<<blocks, threads, 0 , stream>>>(
-      ntasks, nshell_pairs, V_max_sparse_device, sp_row_ind_device,
+    dim3 threads = dim3(512, 1);//cuda::max_threads_per_thread_block;
+    dim3 blocks  = GauXC::util::div_ceil(ntasks,threads.y);
+    exx_ek_shellpair_collision_shared_kernel<<<blocks, threads,
+      requiredSharedMemoryInBytes, stream>>>(
+      ntasks, nshell_pairs, nshells, LD_rc, V_max_sparse_device, sp_row_ind_device,
       sp_col_ind_device, fmax_shl_device, ntasks, 
       max_bf_sum_device, eps_E, eps_K, collisions, LD_coll, 
       rc_collisions, LD_rc, counts, rc_counts);
@@ -732,9 +772,9 @@ void exx_ek_shellpair_collision(
   dur_t finalize_dur = finalize_en - finalize_st;
   
 
-  //printf("SPC = %.3f SCAN = %.3f BV = %.3f D2H = %.3f GT = %.3f FIN = %.3f\n", 
-  //  sp_check_dur.count(), scan_dur.count(), bv_dur.count(),
-  //  d2h_dur.count(), gen_trip_dur.count(), finalize_dur.count());
+  printf("SPC = %.3f SCAN = %.3f BV = %.3f D2H = %.3f GT = %.3f FIN = %.3f\n", 
+    sp_check_dur.count(), scan_dur.count(), bv_dur.count(),
+    d2h_dur.count(), gen_trip_dur.count(), finalize_dur.count());
   
 }
 

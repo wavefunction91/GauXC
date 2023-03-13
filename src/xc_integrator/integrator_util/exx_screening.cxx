@@ -203,7 +203,7 @@ void exx_ek_screening(
 
     // Append to list
     task_it->cou_screening.shell_list =
-      std::vector<int32_t>(ek_shells.begin(), ek_shells.end());
+      decltype(task_it->cou_screening.shell_list)(ek_shells.begin(), ek_shells.end());
     task_it->cou_screening.nbe = 
       basis.nbf_subset( ek_shells.begin(), ek_shells.end() );
 
