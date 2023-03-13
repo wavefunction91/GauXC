@@ -358,7 +358,7 @@ int main(int argc, char** argv) {
     if( integrate_exx ) {
       K = integrator.eval_exx(P, sn_link_settings);
       matrix_type K_tmp = 0.5 * (K + K.transpose());
-      K = K_tmp;
+      K = -K_tmp;
     } else                K = K_ref;
 
     //std::cout << (K).block(0,0,5,5) << std::endl << std::endl;

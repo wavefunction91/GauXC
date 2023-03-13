@@ -46,36 +46,67 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   auto device_data_ptr = lwd->create_device_data(rt);
 
   this->timer_.time_op("XCIntegrator.EXX_Screening", [&]() { 
-    exx_ek_screening_local_work_( basis, P, ldp, K, ldk, *device_data_ptr, settings);
+    exx_ek_screening_local_work_( basis, P, ldp, *device_data_ptr, settings);
   });
 
 
   // Get Tasks
   auto& tasks = this->load_balancer_->get_tasks();
+  if( this->reduction_driver_->takes_device_memory() ) {
+    //GAUXC_GENERIC_EXCEPTION("EXX + NCCL NYI");
 
-  // Compute local contributions to K and retrieve
-  // data from device 
-  this->timer_.time_op("XCIntegrator.LocalWork_EXX", [&](){
-    exx_local_work_( basis, P, ldp, K, ldk, 
-      tasks.begin(), tasks.end(), *device_data_ptr, settings);
-  });
+    // Compute local contributions to K and keep on device
+    this->timer_.time_op("XCIntegrator.LocalWork_EXX", [&](){
+      exx_local_work_( basis, P, ldp, 
+        tasks.begin(), tasks.end(), *device_data_ptr, settings);
+      rt.device_backend()->master_queue_synchronize();
+    });
 
-  GAUXC_MPI_CODE(
-  this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
-    MPI_Barrier(rt.comm());
-  });  
-  )
+    GAUXC_MPI_CODE(
+    this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
+      MPI_Barrier(rt.comm());
+    });  
+    )
 
-  // Reduce Results in host mem
-  this->timer_.time_op("XCIntegrator.Allreduce", [&](){
-    this->reduction_driver_->allreduce_inplace( K, nbf*nbf, ReductionOp::Sum );
-  });
+    // Reduce results in device memory
+    this->timer_.time_op("XCIntegrator.Allreduce_EXX", [&](){
+      printf("KPTR = %p\n", device_data_ptr->exx_k_device_data());
+      this->reduction_driver_->allreduce_inplace(
+        device_data_ptr->exx_k_device_data(), nbf*nbf, ReductionOp::Sum, 
+        device_data_ptr->queue());
+    });
+
+    // Receive K from host
+    this->timer_.time_op("XCIntegrator.DeviceToHostCopy_EXX",[&](){
+      device_data_ptr->retrieve_exx_integrands( K, ldk );
+    });
+
+  } else {
+
+    // Compute local contributions to K and retrieve
+    // data from device 
+    this->timer_.time_op("XCIntegrator.LocalWork_EXX", [&](){
+      exx_local_work_( basis, P, ldp, K, ldk, 
+        tasks.begin(), tasks.end(), *device_data_ptr, settings);
+    });
+
+    //GAUXC_MPI_CODE(
+    //this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
+    //  MPI_Barrier(rt.comm());
+    //});  
+    //)
+
+    // Reduce Results in host mem
+    this->timer_.time_op("XCIntegrator.Allreduce_EXX", [&](){
+      this->reduction_driver_->allreduce_inplace( K, nbf*nbf, ReductionOp::Sum );
+    });
+
+  }
 }
 
 template <typename ValueType>
 void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   exx_ek_screening_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
-                       value_type* K, int64_t ldk,
                        XCDeviceData& device_data,
                        const IntegratorSettingsEXX& settings ) {
 
@@ -90,6 +121,27 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   auto task_begin = tasks.begin();
   auto task_end = tasks.end();
 
+  //size_t total_npts = std::accumulate( task_begin, task_end, 0ul,
+  //  [](const auto& a, const auto& b) { return a + b.npts; } );
+  ////std::cout << "TOTAL NPTS " << total_npts << std::endl;
+
+  //size_t total_nbe_bfn = std::accumulate( task_begin, task_end, 0ul,
+  //  [](const auto& a, const auto& b) { return a + b.bfn_screening.nbe; } );
+  //size_t total_nbe_cou = std::accumulate( task_begin, task_end, 0ul,
+  //  [](const auto& a, const auto& b) { return a + b.cou_screening.nbe; } );
+
+  //size_t ntasks = std::distance(task_begin,task_end);
+
+  //{
+  //  MPI_Allreduce(MPI_IN_PLACE, &ntasks, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
+  //  MPI_Allreduce(MPI_IN_PLACE, &total_npts, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
+  //  MPI_Allreduce(MPI_IN_PLACE, &total_nbe_bfn, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
+  //  MPI_Allreduce(MPI_IN_PLACE, &total_nbe_cou, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
+  //  int world_rank; MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+  //  if(!world_rank) {
+  //    printf("*****DISTCHECK %lu %lu %lu %lu\n", ntasks, total_npts, total_nbe_bfn, total_nbe_cou);
+  //  }
+  //}
 
   // Setup Aliases
   const auto& mol   = this->load_balancer_->molecule();
@@ -142,18 +194,48 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   }
   });
 
+#if 1
   exx_ek_screening( basis, basis_map, shell_pairs, P_abs.data(), basis.nbf(),
     V_max.data(), nshells, sn_link_settings.energy_tol, 
     sn_link_settings.k_tol, device_data, lwd, task_begin, task_end );
+#else
+  for( auto it = task_begin; it != task_end; ++it) {
+    it->cou_screening = XCTask::screening_data();
+  }
+  // Create LocalHostWorkDriver
+  LocalHostWorkDriver host_lwd(
+    std::make_unique<ReferenceLocalHostWorkDriver>()
+  );
+  exx_ek_screening( basis, basis_map, P_abs.data(), basis.nbf(),
+    V_max.data(), nshells, sn_link_settings.energy_tol, 
+    sn_link_settings.k_tol, &host_lwd, task_begin, task_end );
+#endif
 
+  //this->load_balancer_->rebalance_exx();
 
 }
-
 
 template <typename ValueType>
 void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   exx_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                        value_type* K, int64_t ldk,
+                       host_task_iterator task_begin, host_task_iterator task_end,
+                       XCDeviceData& device_data,
+                       const IntegratorSettingsEXX& settings ) {
+
+
+  exx_local_work_(basis, P, ldp, task_begin, task_end, device_data, settings);
+
+  // Receive K from host
+  this->timer_.time_op("XCIntegrator.DeviceToHostCopy_EXX",[&](){
+    device_data.retrieve_exx_integrands( K, ldk );
+  });
+
+}
+
+template <typename ValueType>
+void IncoreReplicatedXCDeviceIntegrator<ValueType>::
+  exx_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                        host_task_iterator task_begin, host_task_iterator task_end,
                        XCDeviceData& device_data,
                        const IntegratorSettingsEXX& settings ) {
@@ -300,6 +382,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       []( const auto& t ) { return t.cou_screening.shell_list.size() > 0; } );
 #endif
 
+#if 0
   // Lexicographic ordering of tasks
   auto task_order = []( const auto& a, const auto& b ) {
 
@@ -359,6 +442,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   std::copy(local_work_unique.begin(), local_work_unique.end(),
     task_begin);
   task_end = task_begin + local_work_unique.size();
+#endif
   
   std::sort(task_begin,task_end,
     [](auto& a, auto& b){ return a.cou_screening.shell_pair_list.size() >
@@ -378,6 +462,22 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   //std::cout << "NTASKS " << ntasks << std::endl;
   //std::cout << "AVERAGE NBE_BFN " << total_nbe_bfn / double(ntasks) << std::endl;
   //std::cout << "AVERAGE NBE_COU " << total_nbe_cou / double(ntasks) << std::endl;
+
+  //{
+  //  MPI_Allreduce(MPI_IN_PLACE, &ntasks, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
+  //  MPI_Allreduce(MPI_IN_PLACE, &total_npts, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
+  //  MPI_Allreduce(MPI_IN_PLACE, &total_nbe_bfn, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
+  //  MPI_Allreduce(MPI_IN_PLACE, &total_nbe_cou, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
+  //  int world_rank; MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
+  //  if(!world_rank) {
+  //    printf("*****DISTCHECK %lu %lu %lu %lu\n", ntasks, total_npts, total_nbe_bfn, total_nbe_cou);
+  //  }
+
+  //  std::ofstream ofile("ek_tasks." + std::to_string(world_rank) + ".txt");
+  //  for(auto it = task_begin; it != task_end; ++it) {
+  //    ofile << it->points.size() << ", " << it->bfn_screening.nbe << ", " << it->cou_screening.nbe << ", " << it->cou_screening.shell_pair_list.size() << std::endl;
+  //  }
+  //}
 
   int world_rank;
   MPI_Comm_rank(this->load_balancer_->runtime().comm(), &world_rank);
@@ -468,7 +568,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   lwd->symmetrize_exx_k( &device_data );
 #endif
 
-  device_data.retrieve_exx_integrands( K, ldk );
 }
 
 }

@@ -14,7 +14,9 @@
 #include <cub/device/device_scan.cuh>
 #include "buffer_adaptor.hpp"
 #include "device/common/device_blas.hpp"
+//#include <mpi.h>
 #include <chrono>
+//#include <fstream>
 
 namespace GauXC {
 
@@ -176,7 +178,8 @@ __global__ void exx_ek_collapse_fmax_to_shells_kernel(
   const int warp_id_x       = tid_x / cuda::warp_size;
 
 
-  double sh_buffer[10];
+  //double sh_buffer[10];
+  double sh_buffer;
 
   // Each warp gets a shell
   for(int ish = warp_id_x; ish < nshells; ish += total_nwarp_x) {
@@ -189,9 +192,10 @@ __global__ void exx_ek_collapse_fmax_to_shells_kernel(
 
       // Get shell max
       double sh_max = 0.0;
+      #if 0
       int sh_rem = sh_sz;      
       while(sh_rem > 0) {
-        int ndo = min(sh_sz, 10);
+        int ndo = min(sh_sz, 1);
         // Load in batches to break up dependency tree
         for(int ii = 0; ii < ndo; ++ii) {
           sh_buffer[ii] = fmax_bfn_device[i_task + (ii + sh_st)*LDF_bfn];
@@ -202,6 +206,11 @@ __global__ void exx_ek_collapse_fmax_to_shells_kernel(
         }
         sh_rem -= ndo;
       }
+      #else
+      for(int ii = 0; ii < sh_sz; ++ii) {
+        sh_max = fmax(sh_max, fabs(fmax_bfn_device[i_task + (ii + sh_st)*LDF_bfn]));
+      }
+      #endif
       
       // Write to main memory
       fmax_shell_device[i_task + ish*LDF_shell] = sh_max;
@@ -479,7 +488,7 @@ void exx_ek_collapse_fmax_to_shells(
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
   dim3 threads = 1024;//cuda::max_threads_per_thread_block;
-  dim3 blocks  = ntask / cuda::warp_size;
+  dim3 blocks  = std::max(ntask / cuda::warp_size,1u);
   exx_ek_collapse_fmax_to_shells_kernel<<<blocks, threads, 0, stream >>>(
     ntask, nshells, shells_device, shell_to_bf, fmax_bfn_device, LDF_bfn,
     fmax_shell_device, LDF_shell );
@@ -533,6 +542,7 @@ void exx_ek_shellpair_collision(
   auto sp_check_st = hrt_t::now();
   util::cuda_set_zero_async( ntasks * LD_coll,collisions.ptr,    stream, "Zero Coll");
   util::cuda_set_zero_async( ntasks * LD_rc,  rc_collisions.ptr, stream, "Zero RC");
+  //int world_rank; MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
 
   // Compute approximate FMAX and screen
   {
@@ -551,6 +561,28 @@ void exx_ek_shellpair_collision(
     exx_ek_collapse_fmax_to_shells( ntasks, nshells, shells_device,
       shell_to_bf_device, fmax_bfn_device, ntasks, fmax_shl_device,
       ntasks, queue );
+
+    //#if 1
+    //{
+    //std::vector<double> fmax_host(ntasks * nshells);
+    //util::cuda_copy(ntasks * nshells,fmax_host.data(), fmax_shl_device);
+    //std::ofstream ofile("gpu_fmax." + std::to_string(world_rank) + ".txt");
+    //for(auto i = 0; i < ntasks; ++i) 
+    //for(auto j = 0; j < nshells; ++j) {
+    //  ofile << i << " " << fmax_host[i + j*ntasks] << std::endl;
+    //}
+    //}
+    //#else
+    //{
+    //std::vector<double> fmax_host(ntasks * nbf);
+    //util::cuda_copy(ntasks * nbf,fmax_host.data(), fmax_bfn_device);
+    //std::ofstream ofile("gpu_fmax." + std::to_string(world_rank) + ".txt");
+    //for(auto i = 0; i < ntasks; ++i) 
+    //for(auto j = 0; j < nbf; ++j) {
+    //  ofile << i << " " << fmax_host[i + j*ntasks] << std::endl;
+    //}
+    //}
+    //#endif
     
     dim3 threads = 1024;//cuda::max_threads_per_thread_block;
     dim3 blocks  = GauXC::util::div_ceil(ntasks,threads.x);
@@ -561,6 +593,28 @@ void exx_ek_shellpair_collision(
       rc_collisions, LD_rc, counts, rc_counts);
   }
   auto sp_check_en = hrt_t::now();
+  //util::cuda_copy(ntasks, counts_host.data(), counts.ptr);
+  //util::cuda_copy(ntasks, rc_counts_host.data(), rc_counts.ptr);
+  //{
+  //std::vector<double> max_bfn_host(ntasks);
+  //util::cuda_copy(ntasks,max_bfn_host.data(), max_bf_sum_device);
+  //std::ofstream ofile("gpu_max_bfn." + std::to_string(world_rank) + ".txt");
+  //for(auto i = 0; i < ntasks; ++i) {
+  //  ofile << i << " " << max_bfn_host[i] << std::endl;
+  //}
+  //}
+  //{
+  //std::ofstream ofile("gpu_counts." + std::to_string(world_rank) + ".txt");
+  //for(auto i = 0; i < ntasks; ++i) {
+  //  ofile << i << " " << counts_host[i] << std::endl;
+  //}
+  //}
+  //{
+  //std::ofstream ofile("gpu_rc_counts." + std::to_string(world_rank) + ".txt");
+  //for(auto i = 0; i < ntasks; ++i) {
+  //  ofile << i << " " << rc_counts_host[i] << std::endl;
+  //}
+  //}
 
   dur_t sp_check_dur = sp_check_en - sp_check_st;
 
@@ -590,6 +644,12 @@ void exx_ek_shellpair_collision(
   uint32_t total_sp_count = counts_host[ntasks-1];
   uint32_t total_s_count = rc_counts_host[ntasks-1];
 
+  //size_t global_sp_count = total_sp_count;
+  //MPI_Allreduce(MPI_IN_PLACE, &global_sp_count, 1, MPI_UINT64_T, MPI_SUM,
+  //  MPI_COMM_WORLD);
+  //if(!world_rank) {
+  //  printf("*****TOTAL_SP %lu\n", global_sp_count);
+  //}
 
   auto bv_st = hrt_t::now();
 
@@ -672,9 +732,9 @@ void exx_ek_shellpair_collision(
   dur_t finalize_dur = finalize_en - finalize_st;
   
 
-  printf("SPC = %.3f SCAN = %.3f BV = %.3f D2H = %.3f GT = %.3f FIN = %.3f\n", 
-    sp_check_dur.count(), scan_dur.count(), bv_dur.count(),
-    d2h_dur.count(), gen_trip_dur.count(), finalize_dur.count());
+  //printf("SPC = %.3f SCAN = %.3f BV = %.3f D2H = %.3f GT = %.3f FIN = %.3f\n", 
+  //  sp_check_dur.count(), scan_dur.count(), bv_dur.count(),
+  //  d2h_dur.count(), gen_trip_dur.count(), finalize_dur.count());
   
 }
 

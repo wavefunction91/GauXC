@@ -10,6 +10,8 @@
 #include <gauxc/util/div_ceil.hpp>
 #include "exceptions/cuda_exception.hpp"
 #include <chrono>
+//#include <mpi.h>
+//#include <fstream>
 
 namespace std {
 template <typename T>
@@ -28,9 +30,12 @@ void exx_ek_screening(
   exx_detail::host_task_iterator task_begin,
   exx_detail::host_task_iterator task_end ) {
 
+  //int world_rank; MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
   const size_t nbf     = basis.nbf();
   const size_t nshells = basis.nshells();
   const size_t ntasks  = std::distance(task_begin, task_end);
+
+  ShellPairCollection<double> shpairs(basis);
 
   std::vector<double> task_max_bf_sum(ntasks);
   std::vector<double> task_max_bfn(nbf * ntasks);
@@ -123,6 +128,7 @@ void exx_ek_screening(
   std::cout << "... done " << dur_t(gemm_en-gemm_st).count() << std::endl;
 
 
+  //std::ofstream fmax_file("cpu_fmax." + std::to_string(world_rank) + ".txt");
   //std::cout << "CPU FMAX SHELLS = ";
   auto list_st = hrt_t::now();
   #pragma omp parallel for schedule(dynamic)
@@ -143,12 +149,26 @@ void exx_ek_screening(
       ibf += sh_sz;
     }
     //for(auto x : max_F_shells) std::cout << x << " ";
+    //#if 1
+    //for( auto x : max_F_shells ) {
+    //  fmax_file << i_task << " " << x << std::endl;
+    //}
+    //#else
+    //for(auto i = 0; i < nbf; ++i) {
+    //  fmax_file << i_task << " " << max_F_approx_bfn[i] << std::endl;
+    //}
+    //#endif
 
     auto task_it = task_begin + i_task;
     // Compute important shell set
     const double max_bf_sum = task_max_bf_sum[i_task];
-    for( auto i = 0ul; i < nshells; ++i )
-    for( auto j = 0ul; j <= i;      ++j ) {
+    for( auto i = 0ul; i < nshells; ++i ) {
+    //for( auto j = 0ul; j <= i;      ++j ) 
+      auto row_st = shpairs.row_ptr()[i];
+      auto row_en = shpairs.row_ptr()[i+1];
+      for(auto _j = row_st; _j < row_en; ++_j)
+    {
+      const auto j = shpairs.col_ind()[_j];
       const auto V_ij = V_shell_max[i + j*ldv];
       const auto F_i  = max_F_shells[i];
       const auto F_j  = max_F_shells[j];
@@ -164,7 +184,9 @@ void exx_ek_screening(
         task_ek_shells[i_block] |= (1u << i_local); 
         task_ek_shells[j_block] |= (1u << j_local); 
         task_it->cou_screening.shell_pair_list.emplace_back(i,j);
+        task_it->cou_screening.shell_pair_idx_list.emplace_back(_j);
       }
+    }
     }
 
     uint32_t total_shells = 0;
@@ -188,6 +210,25 @@ void exx_ek_screening(
   } // Loop over tasks
   auto list_en = hrt_t::now();
   std::cout << "... done " << dur_t(list_en-list_st).count() << std::endl;
+
+  //{
+  //std::ofstream ofile("cpu_max_bfn." + std::to_string(world_rank) + ".txt");
+  //for(auto i = 0; i < ntasks; ++i) {
+  //  ofile << i << " " << task_max_bf_sum[i] << std::endl;
+  //}
+  //}
+  //{
+  //std::ofstream ofile("cpu_counts." + std::to_string(world_rank) + ".txt");
+  //for(auto i = 0; i < ntasks; ++i) {
+  //  ofile << i << " " << (task_begin+i)->cou_screening.shell_pair_list.size() << std::endl;
+  //}
+  //}
+  //{
+  //std::ofstream ofile("cpu_rc_counts." + std::to_string(world_rank) + ".txt");
+  //for(auto i = 0; i < ntasks; ++i) {
+  //  ofile << i << " " << (task_begin+i)->cou_screening.shell_list.size() << std::endl;
+  //}
+  //}
 
 
 }

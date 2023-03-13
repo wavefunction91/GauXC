@@ -1339,8 +1339,10 @@ void Scheme1DataBase::pack_and_send(
       //}
 
 
+      auto _st = hrt_t::now();
       // Count the number of shell pairs per task
-      for(auto i = 0ul; i < it->cou_screening.shell_pair_list.size(); ++i) {
+      const size_t task_nsp = it->cou_screening.shell_pair_list.size();
+      for(auto i = 0ul; i < task_nsp; ++i) {
         auto [ish, jsh] = it->cou_screening.shell_pair_list[i];
         //const auto idx = detail::packed_lt_index(ish,jsh, global_dims.nshells);
         //const auto idx = detail::csr_index(ish, jsh, global_dims.nshells, sp_row_ptr.data(), sp_col_ind.data()); 
@@ -1373,8 +1375,8 @@ void Scheme1DataBase::pack_and_send(
 
         }
       }
+      interim_dur += dur_t(hrt_t::now() - _st).count();
 
-      auto _st = hrt_t::now();
       // Allocate space for the shell pair data
       for (auto& batch : l_batch_task_to_shell_pair) {
         for (auto& ttsp : batch.task_to_shell_pair) {
@@ -1392,10 +1394,9 @@ void Scheme1DataBase::pack_and_send(
           ttsp.nsp_filled = 0;
         }
       }
-      interim_dur += dur_t(hrt_t::now() - _st).count();
 
       // Iterate over shell pairs adding to tasks
-      for(auto i = 0ul; i < it->cou_screening.shell_pair_list.size(); ++i) {
+      for(auto i = 0ul; i < task_nsp; ++i) {
         auto [ish, jsh] = it->cou_screening.shell_pair_list[i];
         //const auto idx = detail::packed_lt_index(ish,jsh, global_dims.nshells);
         //const auto idx = detail::csr_index(ish, jsh, global_dims.nshells, sp_row_ptr.data(), sp_col_ind.data()); 
@@ -1577,13 +1578,13 @@ void Scheme1DataBase::pack_and_send(
   dur_t t2sp_dur_4 = t2sp_4 - t2sp_3;
   dur_t t2sp_dur_5 = t2sp_5 - t2sp_4;
   dur_t t2sp_dur_6 = t2sp_end - t2sp_5;
-  std::cout << "T2SP TOTAL  = " << t2sp_dur_total.count() << std::endl;
-  std::cout << "T2SP 1 = " << t2sp_dur_1.count() << std::endl;
+  //std::cout << "T2SP TOTAL  = " << t2sp_dur_total.count() << std::endl;
+  //std::cout << "T2SP 1 = " << t2sp_dur_1.count() << std::endl;
   std::cout << "T2SP 2 = " << t2sp_dur_2.count() << std::endl;
-  std::cout << "T2SP 3 = " << t2sp_dur_3.count() << std::endl;
-  std::cout << "T2SP 4 = " << t2sp_dur_4.count() << std::endl;
-  std::cout << "T2SP 5 = " << t2sp_dur_5.count() << std::endl;
-  std::cout << "T2SP 6 = " << t2sp_dur_6.count() << std::endl;
+  //std::cout << "T2SP 3 = " << t2sp_dur_3.count() << std::endl;
+  //std::cout << "T2SP 4 = " << t2sp_dur_4.count() << std::endl;
+  //std::cout << "T2SP 5 = " << t2sp_dur_5.count() << std::endl;
+  //std::cout << "T2SP 6 = " << t2sp_dur_6.count() << std::endl;
   std::cout << "INTERIM = " << interim_dur << std::endl;
 
 #endif

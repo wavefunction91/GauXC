@@ -162,12 +162,12 @@ auto rebalance(TaskIterator begin, TaskIterator end, const CostFunctor& cost, MP
   auto pack_st = hrt_t::now();
   {
 
-  std::ofstream ofile("task_send." + std::to_string(world_rank) + ".txt");
+  //std::ofstream ofile("task_send." + std::to_string(world_rank) + ".txt");
 
   auto pack_msg = [&](const auto& msg, auto& mpi_buffer) {
     size_t ntask_send = msg.idx_en - msg.idx_st;
-    ofile << "DEST " << msg.dst << std::endl;
-    mpi_buffer.pack(ntask_send); ofile << ntask_send << std::endl;
+    //ofile << "DEST " << msg.dst << std::endl;
+    mpi_buffer.pack(ntask_send); //ofile << ntask_send << std::endl;
     for(size_t i = msg.idx_st; i < msg.idx_en; ++i) {
       const auto& task = *(begin + i);
       mpi_buffer.pack(task.iParent);
@@ -181,11 +181,11 @@ auto rebalance(TaskIterator begin, TaskIterator end, const CostFunctor& cost, MP
       mpi_buffer.pack(task.cou_screening.shell_pair_idx_list);
       mpi_buffer.pack(task.cou_screening.nbe);
       mpi_buffer.pack(task.dist_nearest);
-      ofile << task.iParent << ", " << task.npts << ", " << task.dist_nearest <<
-        ", " << task.bfn_screening.nbe << ", " << task.points.size() <<
-        ", " << task.cou_screening.nbe << ", " << task.cou_screening.shell_list.size() <<
-        ", " << task.cou_screening.shell_pair_list.size() << ", " << task.cou_screening.shell_pair_idx_list.size()
-        << std::endl;
+      //ofile << task.iParent << ", " << task.npts << ", " << task.dist_nearest <<
+      //  ", " << task.bfn_screening.nbe << ", " << task.points.size() <<
+      //  ", " << task.cou_screening.nbe << ", " << task.cou_screening.shell_list.size() <<
+      //  ", " << task.cou_screening.shell_pair_list.size() << ", " << task.cou_screening.shell_pair_idx_list.size()
+      //  << std::endl;
     }
 
     // Send data to neighbor
@@ -280,13 +280,13 @@ auto rebalance(TaskIterator begin, TaskIterator end, const CostFunctor& cost, MP
 
   {
 
-  std::ofstream ofile("task_recv." + std::to_string(world_rank) + ".txt");
+  //std::ofstream ofile("task_recv." + std::to_string(world_rank) + ".txt");
   auto unpack_msg = [&](auto& mpi_buffer) {
     size_t ntask_recv = 0;
-    if(&mpi_buffer == &packed_incoming_backward) ofile << "SRC " << world_rank - 1 << std::endl;
-    else ofile << "SRC " << world_rank + 1 << std::endl;
+    //if(&mpi_buffer == &packed_incoming_backward) ofile << "SRC " << world_rank - 1 << std::endl;
+    //else ofile << "SRC " << world_rank + 1 << std::endl;
 
-    mpi_buffer.unpack(ntask_recv); ofile << ntask_recv << std::endl;
+    mpi_buffer.unpack(ntask_recv); //ofile << ntask_recv << std::endl;
     for(size_t i = 0; i < ntask_recv; ++i) {
       auto& task = local_work.emplace_back();
       mpi_buffer.unpack(task.iParent);
@@ -300,11 +300,11 @@ auto rebalance(TaskIterator begin, TaskIterator end, const CostFunctor& cost, MP
       mpi_buffer.unpack(task.cou_screening.shell_pair_idx_list);
       mpi_buffer.unpack(task.cou_screening.nbe);
       mpi_buffer.unpack(task.dist_nearest);
-      ofile << task.iParent << ", " << task.npts << ", " << task.dist_nearest <<
-        ", " << task.bfn_screening.nbe << ", " << task.points.size() <<
-        ", " << task.cou_screening.nbe << ", " << task.cou_screening.shell_list.size() <<
-        ", " << task.cou_screening.shell_pair_list.size() << ", " << task.cou_screening.shell_pair_idx_list.size()
-        << std::endl;
+      //ofile << task.iParent << ", " << task.npts << ", " << task.dist_nearest <<
+      //  ", " << task.bfn_screening.nbe << ", " << task.points.size() <<
+      //  ", " << task.cou_screening.nbe << ", " << task.cou_screening.shell_list.size() <<
+      //  ", " << task.cou_screening.shell_pair_list.size() << ", " << task.cou_screening.shell_pair_idx_list.size()
+      //  << std::endl;
     }
   };
   #if 0
