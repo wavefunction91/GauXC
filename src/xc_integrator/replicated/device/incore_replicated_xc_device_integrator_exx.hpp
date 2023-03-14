@@ -28,9 +28,9 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
              const IntegratorSettingsEXX& settings ) { 
 
   // Setup memory pool
-  auto def_pmr = std::pmr::get_default_resource();
-  std::pmr::unsynchronized_pool_resource pool(def_pmr);
-  std::pmr::set_default_resource( &pool );
+  //auto def_pmr = std::pmr::get_default_resource();
+  //std::pmr::unsynchronized_pool_resource pool(def_pmr);
+  //std::pmr::set_default_resource( &pool );
 
   const auto& basis = this->load_balancer_->basis();
 
@@ -106,7 +106,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     });
 
   }
-  std::pmr::set_default_resource( def_pmr );
+  //std::pmr::set_default_resource( def_pmr );
 }
 
 template <typename ValueType>
