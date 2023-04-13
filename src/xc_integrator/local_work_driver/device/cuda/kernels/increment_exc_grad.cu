@@ -3,7 +3,7 @@
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
- * See LICENSE.txt for retails
+ * See LICENSE.txt for details
  */
 #include "device/common/increment_exc_grad.hpp"
 #include "cuda_extensions.hpp"
