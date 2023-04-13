@@ -43,6 +43,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
   auto device_data_ptr = lwd->create_device_data(rt);
 
+  MPI_Barrier(rt.comm());
 
   // Temporary electron count to judge integrator accuracy
   value_type N_EL;
@@ -51,30 +52,30 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     // If we can do reductions on the device (e.g. NCCL)
     // Don't communicate data back to the hot before reduction
-    this->timer_.time_op("XCIntegrator.LocalWork", [&](){
+    this->timer_.time_op("XCIntegrator.LocalWork_EXC_VXC", [&](){
       exc_vxc_local_work_( basis, P, ldp, tasks.begin(), tasks.end(), 
         *device_data_ptr);
     });
 
-    //GAUXC_MPI_CODE(
-    //this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
-    //  MPI_Barrier(this->load_balancer_->runtime().comm());
-    //});  
-    //)
+    GAUXC_MPI_CODE(
+    this->timer_.time_op("XCIntegrator.ImbalanceWait_EXC_VXC",[&](){
+      MPI_Barrier(this->load_balancer_->runtime().comm());
+    });  
+    )
 
     // Reduce results in device memory
     auto vxc_device = device_data_ptr->vxc_device_data();
     auto exc_device = device_data_ptr->exc_device_data();
     auto nel_device = device_data_ptr->nel_device_data();
     auto queue      = device_data_ptr->queue();
-    this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+    this->timer_.time_op("XCIntegrator.Allreduce_EXC_VXC", [&](){
       this->reduction_driver_->allreduce_inplace( vxc_device, nbf*nbf, ReductionOp::Sum, queue );
       this->reduction_driver_->allreduce_inplace( exc_device, 1,       ReductionOp::Sum, queue );
       this->reduction_driver_->allreduce_inplace( nel_device, 1,       ReductionOp::Sum, queue );
     });
 
     // Retrieve data to host
-    this->timer_.time_op("XCIntegrator.DeviceToHostCopy",[&](){
+    this->timer_.time_op("XCIntegrator.DeviceToHostCopy_EXC_VXC",[&](){
       device_data_ptr->retrieve_exc_vxc_integrands( EXC, &N_EL, VXC, ldvxc );
     });
 
@@ -89,13 +90,13 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     });
 
     GAUXC_MPI_CODE(
-    this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
+    this->timer_.time_op("XCIntegrator.ImbalanceWait_EXC_VXC",[&](){
       MPI_Barrier(this->load_balancer_->runtime().comm());
     });  
     )
 
     // Reduce Results in host mem
-    this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+    this->timer_.time_op("XCIntegrator.Allreduce_EXC_VXC", [&](){
       this->reduction_driver_->allreduce_inplace( VXC, nbf*nbf, ReductionOp::Sum );
       this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
       this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
@@ -235,9 +236,11 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Get integrate and keep data on device
   exc_vxc_local_work_( basis, P, ldp, task_begin, task_end, device_data );
+  auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
+  rt.device_backend()->master_queue_synchronize();
 
   // Receive XC terms from host
-  this->timer_.time_op("XCIntegrator.DeviceToHostCopy",[&](){
+  this->timer_.time_op("XCIntegrator.DeviceToHostCopy_EXC_VXC",[&](){
     device_data.retrieve_exc_vxc_integrands( EXC, N_EL, VXC, ldvxc );
   });
 

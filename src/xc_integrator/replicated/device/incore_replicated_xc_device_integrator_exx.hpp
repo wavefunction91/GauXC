@@ -50,6 +50,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
   auto device_data_ptr = lwd->create_device_data(rt);
 
+  MPI_Barrier(rt.comm());
+
   this->timer_.time_op("XCIntegrator.EXX_Screening", [&]() { 
     exx_ek_screening_local_work_( basis, P, ldp, *device_data_ptr, settings);
   });
@@ -68,7 +70,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     });
 
     GAUXC_MPI_CODE(
-    this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
+    this->timer_.time_op("XCIntegrator.ImbalanceWait_EXX",[&](){
       MPI_Barrier(rt.comm());
     });  
     )
@@ -95,7 +97,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     });
 
     GAUXC_MPI_CODE(
-    this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
+    this->timer_.time_op("XCIntegrator.ImbalanceWait_EXX",[&](){
       MPI_Barrier(rt.comm());
     });  
     )
@@ -184,7 +186,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Loop over sparse shell pairs
   const size_t ns2 = nshells * nshells;
   std::vector<double> V_max(ns2, 0.0);
-  this->timer_.time_op("XCIntegrator.VM", [&](){
+  this->timer_.time_op("XCIntegrator.VM_EXX", [&](){
   const auto sp_row_ptr = shell_pairs.row_ptr();
   const auto sp_col_ind = shell_pairs.col_ind();
   for( auto i = 0; i < nshells; ++i ) {
