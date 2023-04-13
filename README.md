@@ -68,6 +68,15 @@ for flexible and agile development in the field of KS-DFT.
 
 Please cite the following publications if GauXC was used in your publication:
 ```
+% Seminumerical Exact Exchange implementation
+@article{williams2023distributed,
+  title={Distributed Memory, GPU Accelerated Fock Construction for Hybrid, Gaussian Basis Density Functional Theory},
+  author={Williams-Young, David B and Asadchev, Andrey and Popovici, Doru Thom and Clark, David and Waldrop, Johnathan and 
+          Windus, Theresa and Valeev, Edward F and de Jong, Wibe A},
+  journal={arXiv preprint arXiv:2303.14280},
+  year={2023}
+}
+
 % Performance Portability (HIP/SYCL implementations)
 @article{williams2021achieving,
   title={Achieving performance portability in Gaussian basis set density functional 
@@ -161,7 +170,7 @@ target_link_libraries( my_target PUBLIC gauxc::gauxc )
 | `GAUXC_ENABLE_SYCL`        | Enable SYCL integrators                                   | `OFF`    |
 | `GAUXC_ENABLE_MAGMA`       | Enable MAGMA for batched BLAS (No effect if no GPU)       | `ON`     | 
 | `GAUXC_ENABLE_CUTLASS`     | Enable CUTLASS for batched BLAS (No effect if no CUDA)    | `OFF`    |
-| `GAUXC_ENABLE_NCCL`        | Enable NCCL bindings for shmem GPU reductions             | `OFF`    |
+| `GAUXC_ENABLE_NCCL`        | Enable NCCL bindings for topology aware GPU reductions    | `OFF`    |
 | `GAUXC_ENABLE_MPI`         | Enable MPI Bindings                                       | `ON`     | 
 | `GAUXC_ENABLE_OPENMP`      | Enable OpenMP Bindings                                    | `ON`     | 
 | `CMAKE_CUDA_ARCHITECTURES1 | CUDA architechtures (e.g. 70 for Volta, 80 for Ampere)    |  --      |
@@ -173,7 +182,7 @@ target_link_libraries( my_target PUBLIC gauxc::gauxc )
 
 # Example Usage
 
-Coming Soon....
+Coming Soon.... See `test/standalone_driver.cxx` for an example end-to-end invocation of GauXC for various integrands.
 
 
 # License

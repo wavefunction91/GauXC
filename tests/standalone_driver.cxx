@@ -43,7 +43,6 @@ int main(int argc, char** argv) {
     std::vector< std::string > opts( argc );
     for( int i = 0; i < argc; ++i ) opts[i] = argv[i];
 
-    //std::string ref_file  = opts.at(1);
     auto input_file = opts.at(1);
     INIFile input(input_file);
 
@@ -51,16 +50,18 @@ int main(int argc, char** argv) {
     auto ref_file = input.getData<std::string>("GAUXC.REF_FILE");
 
     // Optional Args
-    std::string grid_spec = "ULTRAFINE";
-    std::string prune_spec = "UNPRUNED";
-    std::string lb_exec_space_str = "Host";
+    std::string grid_spec          = "ULTRAFINE";
+    std::string prune_spec         = "UNPRUNED";
+    std::string lb_exec_space_str  = "Host";
     std::string int_exec_space_str = "Host";
-    std::string integrator_kernel = "Default";
+    std::string integrator_kernel  = "Default";
     std::string lwd_kernel         = "Default";
     std::string reduction_kernel   = "Default";
+
     size_t      batch_size = 512;
-    double      basis_tol = 1e-10;
-    std::string func_spec = "PBE0";
+    double      basis_tol  = 1e-10;
+    std::string func_spec  = "PBE0";
+
     bool integrate_den      = false;
     bool integrate_vxc      = true;
     bool integrate_exx      = false;
@@ -70,53 +71,40 @@ int main(int argc, char** argv) {
       std::transform( str.begin(), str.end(), str.begin(), ::toupper );
     };
 
-    if( input.containsData("GAUXC.GRID") ) {
-      grid_spec = input.getData<std::string>("GAUXC.GRID");
-      string_to_upper( grid_spec );
+    #define OPTIONAL_KEYWORD(NAME,VAR,TYPE) \
+    if( input.containsData(NAME) ) {        \
+        VAR = input.getData<TYPE>(NAME);    \
     }
 
-    if( input.containsData("GAUXC.PRUNING_SCHEME") ) {
-      prune_spec = input.getData<std::string>("GAUXC.PRUNING_SCHEME");
-      string_to_upper( prune_spec );
-    }
-
-    if( input.containsData("GAUXC.BATCH_SIZE") )
-      batch_size = input.getData<size_t>("GAUXC.BATCH_SIZE");
-
-    if( input.containsData("GAUXC.BASIS_TOL") )
-      basis_tol = input.getData<double>("GAUXC.BASIS_TOL");
-
-    if( input.containsData("GAUXC.FUNC") ) {
-      func_spec = input.getData<std::string>("GAUXC.FUNC");
-      string_to_upper( func_spec );
-    }
-
-    if( input.containsData("GAUXC.INTEGRATE_DEN" ) )
-      integrate_den = input.getData<bool>("GAUXC.INTEGRATE_DEN");
-    if( input.containsData("GAUXC.INTEGRATE_VXC" ) )
-      integrate_vxc = input.getData<bool>("GAUXC.INTEGRATE_VXC");
-    if( input.containsData("GAUXC.INTEGRATE_EXX" ) )
-      integrate_exx = input.getData<bool>("GAUXC.INTEGRATE_EXX");
-    if( input.containsData("GAUXC.INTEGRATE_EXC_GRAD" ) )
-      integrate_exc_grad = input.getData<bool>("GAUXC.INTEGRATE_EXC_GRAD");
-
-    if( input.containsData("GAUXC.LB_EXEC_SPACE") )
-      lb_exec_space_str = input.getData<std::string>("GAUXC.LB_EXEC_SPACE");
-    if( input.containsData("GAUXC.INT_EXEC_SPACE") )
-      int_exec_space_str = input.getData<std::string>("GAUXC.INT_EXEC_SPACE");
-
-    if( input.containsData("GAUXC.INTEGRATOR_KERNEL") )
-      integrator_kernel = input.getData<std::string>("GAUXC.INTEGRATOR_KERNEL");
-    if( input.containsData("GAUXC.LWD_KERNEL") )
-      lwd_kernel = input.getData<std::string>("GAUXC.LWD_KERNEL");
-    if( input.containsData("GAUXC.REDUCTION_KERNEL") )
-      reduction_kernel = input.getData<std::string>("GAUXC.REDUCTION_KERNEL");
-
-    string_to_upper( lb_exec_space_str );
+    OPTIONAL_KEYWORD( "GAUXC.GRID",              grid_spec,          std::string );
+    OPTIONAL_KEYWORD( "GAUXC.FUNC",              func_spec,          std::string );
+    OPTIONAL_KEYWORD( "GAUXC.PRUNING_SCHEME",    prune_spec,         std::string );
+    OPTIONAL_KEYWORD( "GAUXC.LB_EXEC_SPACE",     lb_exec_space_str,  std::string );
+    OPTIONAL_KEYWORD( "GAUXC.INT_EXEC_SPACE",    int_exec_space_str, std::string );
+    OPTIONAL_KEYWORD( "GAUXC.INTEGRATOR_KERNEL", integrator_kernel,  std::string );
+    OPTIONAL_KEYWORD( "GAUXC.LWD_KERNEL",        lwd_kernel,         std::string );
+    OPTIONAL_KEYWORD( "GAUXC.REDUCTION_KERNEL",  reduction_kernel,   std::string );
+    string_to_upper( grid_spec          );
+    string_to_upper( func_spec          );
+    string_to_upper( prune_spec         );
+    string_to_upper( lb_exec_space_str  );
     string_to_upper( int_exec_space_str );
-    string_to_upper( integrator_kernel );
-    string_to_upper( lwd_kernel );
-    string_to_upper( reduction_kernel );
+    string_to_upper( integrator_kernel  );
+    string_to_upper( lwd_kernel         );
+    string_to_upper( reduction_kernel   );
+
+    OPTIONAL_KEYWORD( "GAUXC.BATCH_SIZE",     batch_size, size_t );
+    OPTIONAL_KEYWORD( "GAUXC.BASIS_TOL",      basis_tol,  double );
+
+    OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_DEN",      integrate_den,      bool );
+    OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_VXC",      integrate_vxc,      bool );
+    OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_EXX",      integrate_exx,      bool );
+    OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_EXC_GRAD", integrate_exc_grad, bool );
+
+    IntegratorSettingsSNLinK sn_link_settings;
+    OPTIONAL_KEYWORD( "EXX.TOL_E", sn_link_settings.energy_tol, double );
+    OPTIONAL_KEYWORD( "EXX.TOL_K", sn_link_settings.k_tol,      double );
+
 
     #ifdef GAUXC_ENABLE_DEVICE
     std::map< std::string, ExecutionSpace > exec_space_map = {
@@ -132,6 +120,7 @@ int main(int argc, char** argv) {
     #endif
 
     if( !world_rank ) {
+      std::cout << std::boolalpha;
       std::cout << "DRIVER SETTINGS: " << std::endl
                 << "  REF_FILE          = " << ref_file << std::endl
                 << "  GRID              = " << grid_spec << std::endl
@@ -144,16 +133,19 @@ int main(int argc, char** argv) {
                 << "  INTEGRATOR_KERNEL = " << integrator_kernel << std::endl
                 << "  LWD_KERNEL        = " << lwd_kernel << std::endl
                 << "  REDUCTION_KERNEL  = " << reduction_kernel << std::endl
-                << "  VXC (?)           = " << std::boolalpha << integrate_vxc << std::endl
-                << "  EXX (?)           = " << std::boolalpha << integrate_exx << std::endl
-                << std::endl;
+                << "  DEN (?)           = " << integrate_den << std::endl
+                << "  VXC (?)           = " << integrate_vxc << std::endl
+                << "  EXX (?)           = " << integrate_exx << std::endl
+                << "  EXC_GRAD (?)      = " << integrate_exc_grad << std::endl;
+                if(integrate_exx) {
+                  std::cout << "  EXX.TOL_E         = " 
+                            << sn_link_settings.energy_tol << std::endl
+                            << "  EXX.TOL_K         = " 
+                            << sn_link_settings.k_tol << std::endl;
+                }
+                std::cout << std::endl;
     }
 
-    IntegratorSettingsSNLinK sn_link_settings;
-    if( input.containsData("EXX.TOL_E") )
-      sn_link_settings.energy_tol = input.getData<double>("EXX.TOL_E");
-    if( input.containsData("EXX.TOL_K") )
-      sn_link_settings.k_tol = input.getData<double>("EXX.TOL_K");
 
 
 
@@ -162,11 +154,6 @@ int main(int argc, char** argv) {
     // Read Molecule
     Molecule mol;
     read_hdf5_record( mol, ref_file, "/MOLECULE" );
-    //std::cout << "Molecule" << std::endl;
-    //for( auto x : mol ) {
-    //  std::cout << x.Z.get() << ", " 
-    //    << x.x << ", " << x.y << ", " << x.z << std::endl;
-    //}
 
     // Construct MolGrid / MolMeta
     std::map< std::string, AtomicGridSizeDefault > mg_map = {
@@ -190,47 +177,18 @@ int main(int argc, char** argv) {
     // Read BasisSet
     BasisSet<double> basis; 
     read_hdf5_record( basis, ref_file, "/BASIS" );
-    //std::cout << basis.nbf() << std::endl;
 
     for( auto& sh : basis ){ 
       sh.set_shell_tolerance( basis_tol );
     }
 
-    //std::cout << "Basis" << std::endl;
-    //for( auto& sh : basis ) std::cout << sh << std::endl;
-
-    //std::cout << "Basis" << std::endl;
-    //for( auto i = 0; i < basis.size(); ++i ) {
-    //  const auto& sh = basis[i];
-    //  std::cout << "CEN = " << sh.O()[0] << ", " << sh.O()[1] << ", " << sh.O()[2] << std::endl;
-    //  std::cout << "L = " << sh.l() << std::endl;
-    //  std::cout << "CR = " << sh.cutoff_radius() << std::endl;
-    //  std::cout << "PRIMS" << std::endl;
-    //  for( auto p = 0; p < sh.nprim(); ++p )
-    //    std::cout << "  " << sh.alpha()[p] << ", " << sh.coeff()[p] << std::endl;
-    //  std::cout << std::endl;
-    //}
-
     // Setup load balancer
-    //LoadBalancerFactory lb_factory(ExecutionSpace::Device, "Default");
-    //LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Replicated-FillIn");
     LoadBalancerFactory lb_factory( lb_exec_space, "Replicated");
     auto lb = lb_factory.get_shared_instance( rt, mol, mg, basis);
 
-    if(0){
-      auto& tasks = lb->get_tasks();
-      size_t total_npts = 0, total_npts_fixed = 0;
-      for( auto&& task : tasks ) {
-        auto npts = task.points.size();
-        auto npts_fix = util::div_ceil( npts, 32 ) * 32;
-        total_npts += npts;
-        total_npts_fixed += npts_fix;
-      }
-      std::cout << "TOTAL NPTS = " << total_npts << " , FIXED = " << total_npts_fixed << std::endl;
-    }
-
     // Apply molecular partition weights
-    MolecularWeightsFactory mw_factory( int_exec_space, "Default", MolecularWeightsSettings{} );
+    MolecularWeightsFactory mw_factory( int_exec_space, "Default", 
+      MolecularWeightsSettings{} );
     auto mw = mw_factory.get_instance();
     mw.modify_weights(*lb);
 
@@ -257,9 +215,9 @@ int main(int argc, char** argv) {
       VXC_ref = matrix_type( dims[0], dims[1] );
       K_ref   = matrix_type( dims[0], dims[1] );
 
-      if( P.rows() != P.cols() ) throw std::runtime_error("Density Must Be Square");
+      if( P.rows() != P.cols() ) GAUXC_GENERIC_EXCEPTION("Density Must Be Square");
       if( P.rows() != basis.nbf() ) 
-        throw std::runtime_error("Density Not Compatible With Basis");
+        GAUXC_GENERIC_EXCEPTION("Density Not Compatible With Basis");
 
       dset.read( P.data() );
 
@@ -269,7 +227,7 @@ int main(int argc, char** argv) {
           dset.read( VXC_ref.data() );
         } catch(...) {
           if(world_rank == 0) {
-            std::cout << "Could Not Find Reference VXC" << std::endl;
+            std::cout << "** Warning: Could Not Find Reference VXC" << std::endl;
           }
           VXC_ref.fill(0);
         }
@@ -279,7 +237,7 @@ int main(int argc, char** argv) {
           dset.read( &EXC_ref );
         } catch(...) {
           if(world_rank == 0) {
-            std::cout << "Could Not Find Reference EXC" << std::endl;
+            std::cout << "** Warning: Could Not Find Reference EXC" << std::endl;
           }
           EXC_ref = 0.;
         }
@@ -290,11 +248,12 @@ int main(int argc, char** argv) {
           dset = file.getDataSet("EXC_GRAD");
           auto xc_grad_dims = dset.getDimensions();
           if( xc_grad_dims[0] != mol.size() or xc_grad_dims[1] != 3 )
-            throw std::runtime_error("Incorrect dims for EXC_GRAD");
+            GAUXC_GENERIC_EXCEPTION("Incorrect dims for EXC_GRAD");
           dset.read( EXC_GRAD_ref.data() );
         } catch(...) {
           if(world_rank == 0) {
-            std::cout << "Could Not Find Reference EXC_GRAD" << std::endl;
+            std::cout << "** Warning: Could Not Find Reference EXC_GRAD" 
+                      << std::endl;
           }
           std::fill( EXC_GRAD_ref.begin(), EXC_GRAD_ref.end(), 0. );
         }
@@ -306,15 +265,13 @@ int main(int argc, char** argv) {
           dset.read( K_ref.data() );
         } catch(...) {
           if(world_rank == 0) {
-            std::cout << "Could Not Find Reference K" << std::endl;
+            std::cout << "** Warning: Could Not Find Reference K" << std::endl;
           }
           K_ref.fill(0);
         }
       }
 
     }
-
-    //std::cout << "NBF = " << basis.nbf() << std::endl;
     
 #ifdef GAUXC_ENABLE_MPI
     MPI_Barrier( MPI_COMM_WORLD );
@@ -324,10 +281,10 @@ int main(int argc, char** argv) {
     matrix_type VXC, K;
     double EXC, N_EL;
 
+    std::cout << std::scientific << std::setprecision(12);
     if( integrate_den ) {
       N_EL = integrator.integrate_den( P );
-      std::cout << std::scientific << std::setprecision(12);
-      std::cout << "N_EL = " << N_EL << std::endl;
+      if(!world_rank) std::cout << "N_EL = " << N_EL << std::endl;
     } else {
       N_EL = N_EL_ref;
     }
@@ -335,7 +292,7 @@ int main(int argc, char** argv) {
     if( integrate_vxc ) {
       std::tie(EXC, VXC) = integrator.eval_exc_vxc( P );
       std::cout << std::scientific << std::setprecision(12);
-      std::cout << "EXC = " << EXC << std::endl;
+      if(!world_rank) std::cout << "EXC = " << EXC << std::endl;
     } else {
       EXC = EXC_ref;
       VXC = VXC_ref;
@@ -344,26 +301,25 @@ int main(int argc, char** argv) {
     std::vector<double> EXC_GRAD;
     if( integrate_exc_grad ) {
       EXC_GRAD = integrator.eval_exc_grad( P );
-      std::cout << "EXC Gradient:" << std::endl;
-      std::cout << std::scientific << std::setprecision(6);
-      for( auto iAt = 0; iAt < mol.size(); ++iAt ) {
-        std::cout << "  " 
-                  << std::setw(16) << EXC_GRAD[3*iAt + 0] 
-                  << std::setw(16) << EXC_GRAD[3*iAt + 1] 
-                  << std::setw(16) << EXC_GRAD[3*iAt + 2] 
-                  << std::endl;
+      if(!world_rank) {
+        std::cout << "EXC Gradient:" << std::endl;
+        std::cout << std::scientific << std::setprecision(6);
+        for( auto iAt = 0; iAt < mol.size(); ++iAt ) {
+          std::cout << "  " 
+                    << std::setw(16) << EXC_GRAD[3*iAt + 0] 
+                    << std::setw(16) << EXC_GRAD[3*iAt + 1] 
+                    << std::setw(16) << EXC_GRAD[3*iAt + 2] 
+                    << std::endl;
+        }
       }
     }
 
     if( integrate_exx ) {
       K = integrator.eval_exx(P, sn_link_settings);
       matrix_type K_tmp = 0.5 * (K + K.transpose());
-      K = -K_tmp;
-    } else                K = K_ref;
+      //K = -K_tmp;
+    } else { K = K_ref; }
 
-    //std::cout << (K).block(0,0,5,5) << std::endl << std::endl;
-    //std::cout << (K_ref).block(0,0,5,5) << std::endl << std::endl;
-    //std::cout << (K - K_ref).block(0,0,5,5) << std::endl << std::endl;
 #ifdef GAUXC_ENABLE_MPI
     MPI_Barrier( MPI_COMM_WORLD );
 #endif
@@ -426,7 +382,7 @@ int main(int argc, char** argv) {
         const auto max     = mpi_xc_timings.get_max_duration(name).count();
         const auto std_dev = mpi_xc_timings.get_std_dev(name).count();
         #endif
-        std::cout << "  " << std::setw(30) << name << ": " 
+        std::cout << "  " << std::setw(40) << name << ": " 
         #ifdef GAUXC_ENABLE_MPI
                   << "AVG = " << std::setw(12) << avg << " ms, " 
                   << "MIN = " << std::setw(12) << min << " ms, " 

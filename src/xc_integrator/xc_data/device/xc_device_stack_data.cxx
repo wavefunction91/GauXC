@@ -546,7 +546,7 @@ XCDeviceStackData::host_task_iterator XCDeviceStackData::generate_buffers(
   }
 
   // TODO: print this if verbose
-  std::cout << "XCDeviceStackData will allocate for " << std::distance(task_begin, task_it) << " Tasks MEMLEFT = " << mem_left << std::endl;
+  //std::cout << "XCDeviceStackData will allocate for " << std::distance(task_begin, task_it) << " Tasks MEMLEFT = " << mem_left << std::endl;
 
   // Pack host data and send to device
   allocate_dynamic_stack( terms, task_begin, task_it,
