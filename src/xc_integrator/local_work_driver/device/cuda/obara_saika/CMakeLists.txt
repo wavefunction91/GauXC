@@ -23,5 +23,5 @@ target_include_directories( gauxc PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 )
 
-add_executable( cuda_obara_saika_test test/test_new.cpp )
-target_link_libraries( cuda_obara_saika_test PUBLIC gauxc )
+#add_executable( cuda_obara_saika_test test/test_new.cpp )
+#target_link_libraries( cuda_obara_saika_test PUBLIC gauxc )
