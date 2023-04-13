@@ -291,16 +291,12 @@ struct required_term_storage {
 
     if(tracker.exx_ek_screening) {
       task_bfn              = true;
-      //task_nbe_scr          = true;
-      //task_submat_cut_bfn   = true;
-      //task_submat_block_bfn = true;
       task_indirection      = true;
 
-      task_shell_list_bfn    = true;
-      task_shell_offs_bfn    = true;
+      task_shell_list_bfn        = true;
+      task_shell_offs_bfn        = true;
       task_bfn_shell_indirection = true;
-      shell_to_task_bfn      = true;
-      //GAUXC_GENERIC_EXCEPTION("Device EK Screening NYI");
+      shell_to_task_bfn          = true;
     }
 
   }

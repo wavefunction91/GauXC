@@ -7,7 +7,6 @@
  */
 #pragma once 
 #include <gauxc/shell_pair.hpp>
-#include <gauxc/xc_task.hpp>
 
 namespace GauXC {
 

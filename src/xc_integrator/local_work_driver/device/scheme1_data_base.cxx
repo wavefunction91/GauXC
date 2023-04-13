@@ -1298,20 +1298,12 @@ void Scheme1DataBase::pack_and_send(
 
     // Total length of the concatenated task map buffers
     size_t task_map_aggregate_length = 0;
-    double interim_dur = 0.0;
 
     {
     const int max_l = basis_map.max_l();
 
     std::vector<int> sh_off_flat(nsp);
-    //std::vector<size_t> sp_idx(nsp);
-
-
-    //const auto& sp_row_ptr = this->shell_pair_soa.sp_row_ptr;
-    //const auto& sp_col_ind = this->shell_pair_soa.sp_col_ind;
     const size_t ntask = std::distance(task_begin,task_end);
-    //for( auto it = task_begin; it != task_end; ++it ) {
-    //const auto itask = std::distance( task_begin, it );
     for( size_t itask = 0; itask < ntask; ++itask ) {
       auto it = task_begin + itask;
 
@@ -1332,21 +1324,10 @@ void Scheme1DataBase::pack_and_send(
       for( auto i = 0ul; i < nshells_cou; ++i )
         sh_off_flat[shell_list_cou[i]] = shell_offs_cou[i];
 
-      // Calculate indices
-      //for(auto i = 0ul; i < it->cou_screening.shell_pair_list.size(); ++i) {
-      //  auto [ish, jsh] = it->cou_screening.shell_pair_list[i];
-      //  sp_idx[i] = detail::csr_index(ish, jsh, global_dims.nshells, sp_row_ptr.data(), sp_col_ind.data()); 
-      //}
-
-
-      auto _st = hrt_t::now();
       // Count the number of shell pairs per task
       const size_t task_nsp = it->cou_screening.shell_pair_list.size();
       for(auto i = 0ul; i < task_nsp; ++i) {
         auto [ish, jsh] = it->cou_screening.shell_pair_list[i];
-        //const auto idx = detail::packed_lt_index(ish,jsh, global_dims.nshells);
-        //const auto idx = detail::csr_index(ish, jsh, global_dims.nshells, sp_row_ptr.data(), sp_col_ind.data()); 
-        //const auto idx = sp_idx[i];
         const auto idx = it->cou_screening.shell_pair_idx_list[i];;
 
         int32_t lA, lB;
@@ -1393,14 +1374,10 @@ void Scheme1DataBase::pack_and_send(
           ttsp.nsp_filled = 0;
         }
       }
-      interim_dur += dur_t(hrt_t::now() - _st).count();
 
       // Iterate over shell pairs adding to tasks
       for(auto i = 0ul; i < task_nsp; ++i) {
         auto [ish, jsh] = it->cou_screening.shell_pair_list[i];
-        //const auto idx = detail::packed_lt_index(ish,jsh, global_dims.nshells);
-        //const auto idx = detail::csr_index(ish, jsh, global_dims.nshells, sp_row_ptr.data(), sp_col_ind.data()); 
-        //const auto idx = sp_idx[i];
         const auto idx = it->cou_screening.shell_pair_idx_list[i];;
 
         int32_t lA, lB;
@@ -1580,12 +1557,12 @@ void Scheme1DataBase::pack_and_send(
   dur_t t2sp_dur_6 = t2sp_end - t2sp_5;
   //std::cout << "T2SP TOTAL  = " << t2sp_dur_total.count() << std::endl;
   //std::cout << "T2SP 1 = " << t2sp_dur_1.count() << std::endl;
-  std::cout << "T2SP 2 = " << t2sp_dur_2.count() << std::endl;
+  //std::cout << "T2SP 2 = " << t2sp_dur_2.count() << std::endl;
   //std::cout << "T2SP 3 = " << t2sp_dur_3.count() << std::endl;
   //std::cout << "T2SP 4 = " << t2sp_dur_4.count() << std::endl;
   //std::cout << "T2SP 5 = " << t2sp_dur_5.count() << std::endl;
   //std::cout << "T2SP 6 = " << t2sp_dur_6.count() << std::endl;
-  std::cout << "INTERIM = " << interim_dur << std::endl;
+  //std::cout << "INTERIM = " << interim_dur << std::endl;
 
 #endif
 

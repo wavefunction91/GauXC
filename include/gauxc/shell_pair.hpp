@@ -18,19 +18,6 @@ namespace detail {
 
   static constexpr size_t nprim_pair_max = 64ul;
 
-  //inline constexpr intmax_t packed_lt_index(intmax_t i, intmax_t j, intmax_t m) {
-  //  return i + ((2*m - j - 1)*j)/2;
-  //}
-
-  //inline auto from_packed_lt_index( intmax_t idx, intmax_t m ) {
-  //  for( intmax_t j = 0; j < m; ++j ) 
-  //  for( intmax_t i = j; i < m; ++i ) {
-  //    intmax_t __i = packed_lt_index(i,j,m);
-  //    if( __i == idx ) return std::make_pair(i,j);
-  //  }
-  //  abort();
-  //}
-
   template <typename Integral>
   inline intmax_t csr_index( size_t i, size_t j, size_t n, Integral* row_ptr, Integral* col_ind ) {
     const auto j_st = col_ind + row_ptr[i];
@@ -142,14 +129,6 @@ public:
   ShellPairCollection( const BasisSet<F>& basis ) {
     nshells_ = basis.size();
 
-#if 0
-    // Pack into column-major lower triangle
-    shell_pairs_.reserve( (nshells_ * (nshells_+1))/2 );
-    for(auto j = 0ul; j < nshells_; ++j)
-    for(auto i = j; i < nshells_; ++i) {
-      shell_pairs_.emplace_back( basis[i], basis[j] );
-    }
-#else
     // Sparse Storage based on primitive screening
     row_ptr_.resize(nshells_+1);
     row_ptr_[0] = 0;
@@ -166,8 +145,6 @@ public:
       }
       row_ptr_[i+1] = row_ptr_[i] + nnz_row;
     }    
-    std::cout << "NSP = " << double(shell_pairs_.size()) / ((nshells_*(nshells_+1))/2)*100 << "%" << std::endl;
-#endif
   }
 
   inline int64_t get_linear_shell_pair_index(size_t i, size_t j) const {
@@ -177,27 +154,13 @@ public:
 
   // Retreive unique LT element
   inline auto& at( size_t i, size_t j ) {
-#if 0
-    if( j <= i ) {
-      const auto idx = detail::packed_lt_index(i,j,nshells_);
-      return shell_pairs_[idx];
-    } else GAUXC_GENERIC_EXCEPTION("Not LT Element");
-#else
     auto idx = get_linear_shell_pair_index(i,j);
     return idx >= 0 ? shell_pairs_[idx] : dummy;
-#endif
   }
 
   inline const auto& at( size_t i, size_t j ) const {
-#if 0
-    if( j <= i ) {
-      const auto idx = detail::packed_lt_index(i,j,nshells_);
-      return shell_pairs_[idx];
-    } else GAUXC_GENERIC_EXCEPTION("Not LT Element");
-#else
     auto idx = get_linear_shell_pair_index(i,j);
     return idx >= 0 ? shell_pairs_[idx] : dummy;
-#endif
   }
 
   inline size_t nshells() const { return nshells_; }

@@ -6,6 +6,7 @@
 # See LICENSE.txt for retails
 #
 if(GAUXC_ENABLE_DEVICE)
+  message(STATUS "**** DBWY")
   add_subdirectory( device )
   target_include_directories( gauxc
     PUBLIC

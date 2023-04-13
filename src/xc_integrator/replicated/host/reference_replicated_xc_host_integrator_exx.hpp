@@ -311,18 +311,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Compute V upper bounds per shell pair
   const size_t nshells_bf = basis.size();
   std::vector<double> V_max( nshells_bf * nshells_bf );
-#if 0
-  // Loop over dense shell pairs
-  for( auto i = 0; i < nshells_bf; ++i )
-  for( auto j = 0; j <= i;      ++j ) {
-    // This might be a redundant check...
-    if( shpairs.at(i,j).nprim_pairs() ) { 
-      const auto mv = util::max_coulomb( basis.at(i), basis.at(j) );
-      V_max[i + j*nshells_bf] = mv;
-      if( i != j ) V_max[j + i*nshells_bf] = mv;
-    }
-  }
-#else
   // Loop over sparse shell pairs
   const auto sp_row_ptr = shpairs.row_ptr();
   const auto sp_col_ind = shpairs.col_ind();
@@ -336,7 +324,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       if( i != j ) V_max[j + i*nshells_bf] = mv;
     }
   }
-#endif
 
   // Absolute value of P
   std::vector<double> P_abs(nbf*nbf);
@@ -447,8 +434,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Loop over tasks
   const size_t ntasks = tasks.size();
-  std::cout << "NTASKS = " << ntasks << std::endl;
-  std::cout << "NTASKS NNZ = " << std::count_if(tasks.begin(),tasks.end(),[](const auto& t){ return t.cou_screening.shell_pair_list.size(); }) << std::endl;
+  //std::cout << "NTASKS = " << ntasks << std::endl;
+  //std::cout << "NTASKS NNZ = " << std::count_if(tasks.begin(),tasks.end(),[](const auto& t){ return t.cou_screening.shell_pair_list.size(); }) << std::endl;
   #pragma omp parallel
   {
 

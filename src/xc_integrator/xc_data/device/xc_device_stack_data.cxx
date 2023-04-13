@@ -308,26 +308,6 @@ void XCDeviceStackData::send_static_data_shell_pairs(
   // Create SoA
   shell_pair_soa.reset();
   using point = XCDeviceShellPairSoA::point;
-#if 0
-  // Loop over dense shell pairs
-  for( size_t j = 0; j < nshells; ++j )
-  for( size_t i = j; i < nshells; ++i ) {
-    auto idx = detail::packed_lt_index(i,j,nshells);
-    shell_pair_soa.shell_pair_dev_ptr.emplace_back(
-      static_stack.shell_pairs_device + idx
-    );
-
-    shell_pair_soa.shell_pair_nprim_pairs.push_back(shell_pairs.shell_pairs()[idx].nprim_pairs());
-    auto& bra = basis[i];
-    auto& ket = basis[j];
-    shell_pair_soa.shell_pair_shidx.emplace_back(i,j);
-    shell_pair_soa.shell_pair_ls.emplace_back( bra.l(), ket.l());
-    shell_pair_soa.shell_pair_centers.emplace_back(
-      point{ bra.O()[0], bra.O()[1], bra.O()[2] },
-      point{ ket.O()[0], ket.O()[1], ket.O()[2] }
-    );
-  }
-#else
   const auto sp_row_ptr = shell_pairs.row_ptr();
   const auto sp_col_ind = shell_pairs.col_ind();
 
@@ -355,7 +335,6 @@ void XCDeviceStackData::send_static_data_shell_pairs(
       );
     }
   }
-#endif
   
   device_backend_->master_queue_synchronize(); 
 }

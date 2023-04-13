@@ -12,7 +12,6 @@
 #include <stdexcept>
 #include "device/xc_device_aos_data.hpp"
 #include <fstream>
-#include <memory_resource>
 #include <gauxc/util/unused.hpp>
 
 #include "integrator_util/exx_screening.hpp"
@@ -27,10 +26,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
              int64_t ldp, value_type* K, int64_t ldk, 
              const IntegratorSettingsEXX& settings ) { 
 
-  // Setup memory pool
-  //auto def_pmr = std::pmr::get_default_resource();
-  //std::pmr::unsynchronized_pool_resource pool(def_pmr);
-  //std::pmr::set_default_resource( &pool );
 
   const auto& basis = this->load_balancer_->basis();
 
@@ -108,7 +103,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     });
 
   }
-  //std::pmr::set_default_resource( def_pmr );
 }
 
 template <typename ValueType>
@@ -127,28 +121,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   auto& tasks = this->load_balancer_->get_tasks();
   auto task_begin = tasks.begin();
   auto task_end = tasks.end();
-
-  //size_t total_npts = std::accumulate( task_begin, task_end, 0ul,
-  //  [](const auto& a, const auto& b) { return a + b.npts; } );
-  ////std::cout << "TOTAL NPTS " << total_npts << std::endl;
-
-  //size_t total_nbe_bfn = std::accumulate( task_begin, task_end, 0ul,
-  //  [](const auto& a, const auto& b) { return a + b.bfn_screening.nbe; } );
-  //size_t total_nbe_cou = std::accumulate( task_begin, task_end, 0ul,
-  //  [](const auto& a, const auto& b) { return a + b.cou_screening.nbe; } );
-
-  //size_t ntasks = std::distance(task_begin,task_end);
-
-  //{
-  //  MPI_Allreduce(MPI_IN_PLACE, &ntasks, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
-  //  MPI_Allreduce(MPI_IN_PLACE, &total_npts, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
-  //  MPI_Allreduce(MPI_IN_PLACE, &total_nbe_bfn, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
-  //  MPI_Allreduce(MPI_IN_PLACE, &total_nbe_cou, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
-  //  int world_rank; MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-  //  if(!world_rank) {
-  //    printf("*****DISTCHECK %lu %lu %lu %lu\n", ntasks, total_npts, total_nbe_bfn, total_nbe_cou);
-  //  }
-  //}
 
   // Setup Aliases
   const auto& mol   = this->load_balancer_->molecule();
@@ -263,8 +235,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
 
   // Get basis map and shell pairs
-  //BasisSetMap basis_map(basis,mol);
-  //ShellPairCollection shell_pairs(basis);
   auto& basis_map   = this->load_balancer_->basis_map();
   auto& shell_pairs = this->load_balancer_->shell_pairs();
 
@@ -287,109 +257,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
   }
 
-#if 0
-#if 0
-  // TODO: This turns off EK screening 
-  std::vector<int32_t> full_shell_list(nshells);
-  std::iota(full_shell_list.begin(),full_shell_list.end(),0);
-  for( auto it = task_begin; it != task_end; ++it ) {
-    it->cou_screening.shell_list = full_shell_list;
-    it->cou_screening.nbe        = nbf;
-  }
-#else
-  // Compute EXX screening modifications
-  this->timer_.time_op("XCIntegrator.EXX_Screening", [&]() { 
-
-    // Reset the coulomb screening data
-    for( auto it = task_begin; it != task_end; ++it) {
-      it->cou_screening = XCTask::screening_data();
-    }
-
-    // Compute base screening quantities
-    const size_t nb2 = basis.nbf() * basis.nbf();
-    std::vector<double> P_abs(nb2);
-    for( auto i = 0ul; i < nb2; ++i ) P_abs[i] = std::abs(P[i]);
-
-    const size_t ns2 = nshells * nshells;
-    std::vector<double> V_max(ns2, 0.0);
-#if 0
-    // Loop over dense shell pairs
-    for( auto i = 0; i < nshells; ++i )
-    for( auto j = 0; j <= i;      ++j ) {
-      // This might be a redundant check...
-      const auto mv = util::max_coulomb( basis.at(i), basis.at(j) );
-      V_max[i + j*nshells] = mv;
-      if( i != j ) V_max[j + i*nshells] = mv;
-    }
-#else
-    // Loop over sparse shell pairs
-    const auto sp_row_ptr = shell_pairs.row_ptr();
-    const auto sp_col_ind = shell_pairs.col_ind();
-    for( auto i = 0; i < nshells; ++i ) {
-      const auto j_st = sp_row_ptr[i];
-      const auto j_en = sp_row_ptr[i+1];
-      for( auto _j = j_st; _j < j_en; ++_j ) {
-        const auto j = sp_col_ind[_j];
-        const auto mv = util::max_coulomb( basis.at(i), basis.at(j) );
-        V_max[i + j*nshells] = mv;
-        if( i != j ) V_max[j + i*nshells] = mv;
-      }
-    }
-#endif
-
-    exx_ek_screening( basis, basis_map, shell_pairs, P_abs.data(), basis.nbf(),
-      V_max.data(), nshells, sn_link_settings.energy_tol, 
-      sn_link_settings.k_tol, device_data, lwd, task_begin, task_end );
-
-#if 0
-    for( auto it = task_begin; it != task_end; ++it) {
-      std::cout << "GPU TASK " << std::distance(task_begin, it) << ": ";
-      std::sort(it->cou_screening.shell_pair_list.begin(), 
-                it->cou_screening.shell_pair_list.end());
-      for( auto [i,j] :  it->cou_screening.shell_pair_list )
-        std::cout << "(" << i << ", " << j << ") ";
-      //std::cout << "NBE = " << it->cou_screening.nbe << " ";
-      //for( auto i :  it->cou_screening.shell_list )
-      //  std::cout << i << " ";
-      std::cout << std::endl;
-      it->cou_screening = XCTask::screening_data();
-    }
-#endif
-
-#if 0
-    // Create LocalHostWorkDriver
-    LocalHostWorkDriver host_lwd(
-      std::make_unique<ReferenceLocalHostWorkDriver>()
-    );
-    exx_ek_screening( basis, basis_map, P_abs.data(), basis.nbf(),
-      V_max.data(), nshells, sn_link_settings.energy_tol, 
-      sn_link_settings.k_tol, &host_lwd, task_begin, task_end );
-#endif
-
-#if 0
-    for( auto it = task_begin; it != task_end; ++it) {
-      std::cout << "CPU TASK " << std::distance(task_begin, it) << ": ";
-      std::sort(it->cou_screening.shell_pair_list.begin(), 
-                it->cou_screening.shell_pair_list.end());
-      for( auto [i,j] :  it->cou_screening.shell_pair_list )
-        std::cout << "(" << i << ", " << j << ") ";
-      //std::cout << "NBE = " << it->cou_screening.nbe << " ";
-      //for( auto i :  it->cou_screening.shell_list )
-      //  std::cout << i << " ";
-      std::cout << std::endl;
-    }
-#endif
-
-    // Remove tasks with no coulomb shells
     task_end = std::stable_partition( task_begin, task_end,
       []( const auto& t ) { return t.cou_screening.shell_list.size() > 0; } );
-  });
-#endif
-
-#else
-    task_end = std::stable_partition( task_begin, task_end,
-      []( const auto& t ) { return t.cou_screening.shell_list.size() > 0; } );
-#endif
 
 #if 0
   // Lexicographic ordering of tasks
@@ -468,57 +337,13 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     [](const auto& a, const auto& b) { return a + b.cou_screening.nbe; } );
 
   size_t ntasks = std::distance(task_begin,task_end);
-  //std::cout << "NTASKS " << ntasks << std::endl;
-  //std::cout << "AVERAGE NBE_BFN " << total_nbe_bfn / double(ntasks) << std::endl;
-  //std::cout << "AVERAGE NBE_COU " << total_nbe_cou / double(ntasks) << std::endl;
-
-  //{
-  //  MPI_Allreduce(MPI_IN_PLACE, &ntasks, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
-  //  MPI_Allreduce(MPI_IN_PLACE, &total_npts, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
-  //  MPI_Allreduce(MPI_IN_PLACE, &total_nbe_bfn, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
-  //  MPI_Allreduce(MPI_IN_PLACE, &total_nbe_cou, 1, MPI_UINT64_T, MPI_SUM, MPI_COMM_WORLD);
-  //  int world_rank; MPI_Comm_rank(MPI_COMM_WORLD, &world_rank);
-  //  if(!world_rank) {
-  //    printf("*****DISTCHECK %lu %lu %lu %lu\n", ntasks, total_npts, total_nbe_bfn, total_nbe_cou);
-  //  }
-
-  //  std::ofstream ofile("ek_tasks." + std::to_string(world_rank) + ".txt");
-  //  for(auto it = task_begin; it != task_end; ++it) {
-  //    ofile << it->points.size() << ", " << it->bfn_screening.nbe << ", " << it->cou_screening.nbe << ", " << it->cou_screening.shell_pair_list.size() << std::endl;
-  //  }
-  //}
 
   int world_rank;
   MPI_Comm_rank(this->load_balancer_->runtime().comm(), &world_rank);
-  printf("RANK %d, LC_EXX = %lu\n",
-    world_rank,
-    std::accumulate(task_begin, task_end, 0ul, [](auto c, const auto& t){ return c + t.cost_exx(); })
-  );
-
-  //std::cout << "MIN NBE_BFN " <<
-  //  std::min_element(task_begin, task_end, 
-  //    [](const auto& a, const auto& b){ 
-  //      return a.bfn_screening.nbe < b.bfn_screening.nbe;
-  //    })->bfn_screening.nbe << std::endl;
-  //std::cout << "MIN NBE_COU " <<
-  //  std::min_element(task_begin, task_end, 
-  //    [](const auto& a, const auto& b){ 
-  //      return a.cou_screening.nbe < b.cou_screening.nbe;
-  //    })->cou_screening.nbe << std::endl;
-
-  //std::cout << "MAX NBE_BFN " <<
-  //  std::max_element(task_begin, task_end, 
-  //    [](const auto& a, const auto& b){ 
-  //      return a.bfn_screening.nbe < b.bfn_screening.nbe;
-  //    })->bfn_screening.nbe << std::endl;
-  //std::cout << "MAX NBE_COU " <<
-  //  std::max_element(task_begin, task_end, 
-  //    [](const auto& a, const auto& b){ 
-  //      return a.cou_screening.nbe < b.cou_screening.nbe;
-  //    })->cou_screening.nbe << std::endl;
-
-  //return;
-
+  //printf("RANK %d, LC_EXX = %lu\n",
+  //  world_rank,
+  //  std::accumulate(task_begin, task_end, 0ul, [](auto c, const auto& t){ return c + t.cost_exx(); })
+  //);
 
   // Populate submat maps
   device_data.populate_submat_maps( basis.nbf(), task_begin, task_end, basis_map );

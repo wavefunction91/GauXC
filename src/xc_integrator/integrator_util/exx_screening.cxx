@@ -117,7 +117,7 @@ void exx_ek_screening(
   } // Loop over tasks
   } // Memory Scope
   auto coll_en = hrt_t::now();
-  std::cout << "... done " << dur_t(coll_en-coll_st).count() << std::endl;
+  //std::cout << "... done " << dur_t(coll_en-coll_st).count() << std::endl;
 
   // Compute approx F_i^(k) = |P_ij| * B_j^(k) 
   auto gemm_st = hrt_t::now();
@@ -125,7 +125,7 @@ void exx_ek_screening(
   blas::gemm( 'N', 'N', nbf, ntasks, nbf, 1., P_abs, ldp,
     task_max_bfn.data(), nbf, 0., task_approx_f.data(), nbf );
   auto gemm_en = hrt_t::now();
-  std::cout << "... done " << dur_t(gemm_en-gemm_st).count() << std::endl;
+  //std::cout << "... done " << dur_t(gemm_en-gemm_st).count() << std::endl;
 
 
   //std::ofstream fmax_file("cpu_fmax." + std::to_string(world_rank) + ".txt");
@@ -209,7 +209,7 @@ void exx_ek_screening(
 
   } // Loop over tasks
   auto list_en = hrt_t::now();
-  std::cout << "... done " << dur_t(list_en-list_st).count() << std::endl;
+  //std::cout << "... done " << dur_t(list_en-list_st).count() << std::endl;
 
   //{
   //std::ofstream ofile("cpu_max_bfn." + std::to_string(world_rank) + ".txt");

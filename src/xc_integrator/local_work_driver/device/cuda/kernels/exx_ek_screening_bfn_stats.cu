@@ -41,33 +41,6 @@ __global__ void exx_ek_screening_bfn_stats_kernel( size_t ntasks,
   const int warp_id   = threadIdx.x / cuda::warp_size;
   const int nwarp  = blockDim.x  / cuda::warp_size;
 
-#if 0
-  for(int ibf = warp_id; ibf < nbf; ibf += nwarp) {
-    double tmp = 0.0;
-    for(int ipt = warp_lane; ipt < npts; ipt += cuda::warp_size) {
-      tmp = fmax( tmp,
-        std::sqrt(weights_device[ipt]) *
-        std::abs( basis_eval_device[ ipt + ibf*npts ] )
-      );
-    }
-    bfn_max_device[ibf] = tmp;
-  }
-#endif
-
-  //printf("[GPU] ITASK %d TID %d WL %d WID %d\n", batch_idx, threadIdx.x, warp_lane, warp_id);
-
-  // Compute Max Bfn Sum
-#if 0
-  double max_bfn_sum = 0.0;
-  for(int ipt = warp_lane; ipt < npts; ipt += cuda::warp_size) {
-    double tmp = 0.0;
-    for(int ibf = warp_id; ibf < nbf; ibf += nwarp) {
-      tmp += std::abs( basis_eval_device[ ipt + ibf*npts ] );
-    }
-    max_bfn_sum = fmax( max_bfn_sum, std::sqrt(weights_device[ipt]) * tmp );
-  }
-  max_bfn_sum = cuda::warp_reduce_max<cuda::warp_size>(max_bfn_sum);
-#else
 
 
   // First scale the basis functions by the weights
@@ -133,7 +106,6 @@ __global__ void exx_ek_screening_bfn_stats_kernel( size_t ntasks,
     max_bfn_sum = cuda::warp_reduce_max<cuda::warp_size>(tmp);
   }
 
-#endif
   if(threadIdx.x == 0) {
     //task.max_bfn_sum = max_bfn_sum;
     max_bfn_sum_device[batch_idx] =  max_bfn_sum;
@@ -193,25 +165,9 @@ __global__ void exx_ek_collapse_fmax_to_shells_kernel(
 
       // Get shell max
       double sh_max = 0.0;
-      #if 0
-      int sh_rem = sh_sz;      
-      while(sh_rem > 0) {
-        int ndo = min(sh_sz, 1);
-        // Load in batches to break up dependency tree
-        for(int ii = 0; ii < ndo; ++ii) {
-          sh_buffer[ii] = fmax_bfn_device[i_task + (ii + sh_st)*LDF_bfn];
-        }
-        
-        for(int ii = 0; ii < ndo; ++ii) {
-          sh_max = fmax(sh_max, sh_buffer[ii]);
-        }
-        sh_rem -= ndo;
-      }
-      #else
       for(int ii = 0; ii < sh_sz; ++ii) {
         sh_max = fmax(sh_max, fabs(fmax_bfn_device[i_task + (ii + sh_st)*LDF_bfn]));
       }
-      #endif
       
       // Write to main memory
       fmax_shell_device[i_task + ish*LDF_shell] = sh_max;
@@ -772,9 +728,9 @@ void exx_ek_shellpair_collision(
   dur_t finalize_dur = finalize_en - finalize_st;
   
 
-  printf("SPC = %.3f SCAN = %.3f BV = %.3f D2H = %.3f GT = %.3f FIN = %.3f\n", 
-    sp_check_dur.count(), scan_dur.count(), bv_dur.count(),
-    d2h_dur.count(), gen_trip_dur.count(), finalize_dur.count());
+  //printf("SPC = %.3f SCAN = %.3f BV = %.3f D2H = %.3f GT = %.3f FIN = %.3f\n", 
+  //  sp_check_dur.count(), scan_dur.count(), bv_dur.count(),
+  //  d2h_dur.count(), gen_trip_dur.count(), finalize_dur.count());
   
 }
 
