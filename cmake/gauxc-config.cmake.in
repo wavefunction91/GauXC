@@ -45,7 +45,7 @@ if( GAUXC_ENABLE_MPI )
   find_dependency( MPI )
 endif()
 
-if( GAUXC_ENABLE_OpenMP )
+if( GAUXC_ENABLE_OPENMP )
   find_dependency( OpenMP )
 endif()
 
