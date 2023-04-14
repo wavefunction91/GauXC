@@ -8,7 +8,9 @@
 #pragma once
 #include <gauxc/xc_task.hpp>
 #include <host/local_host_work_driver.hpp>
+#ifdef GAUXC_ENABLE_DEVICE
 #include <device/local_device_work_driver.hpp>
+#endif
 
 namespace GauXC {
 namespace exx_detail {
@@ -23,6 +25,7 @@ void exx_ek_screening(
   exx_detail::host_task_iterator task_begin,
   exx_detail::host_task_iterator task_end );
 
+#ifdef GAUXC_ENABLE_DEVICE
 void exx_ek_screening( 
   const BasisSet<double>& basis, const BasisSetMap& basis_map,
   const ShellPairCollection<double>& shpairs,
@@ -31,5 +34,6 @@ void exx_ek_screening(
   LocalDeviceWorkDriver* lwd, 
   exx_detail::host_task_iterator task_begin,
   exx_detail::host_task_iterator task_end );
+#endif
  
 }

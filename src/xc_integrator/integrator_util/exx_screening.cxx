@@ -8,10 +8,12 @@
 #include "exx_screening.hpp"
 #include "host/blas.hpp"
 #include <gauxc/util/div_ceil.hpp>
-#include "exceptions/cuda_exception.hpp"
 #include <chrono>
 //#include <mpi.h>
 //#include <fstream>
+#ifdef GAUXC_ENABLE_CUDA
+#include "exceptions/cuda_exception.hpp"
+#endif
 
 namespace std {
 template <typename T>
@@ -234,6 +236,7 @@ void exx_ek_screening(
 }
 
 
+#ifdef GAUXC_ENABLE_DEVICE
 void exx_ek_screening( 
   const BasisSet<double>& basis, const BasisSetMap& basis_map,
   const ShellPairCollection<double>& shpairs,
@@ -315,6 +318,7 @@ void exx_ek_screening(
   
   
 }
+#endif
 
 
 }
