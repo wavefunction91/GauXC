@@ -43,7 +43,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
   auto device_data_ptr = lwd->create_device_data(rt);
 
-  MPI_Barrier(rt.comm());
+  GAUXC_MPI_CODE( MPI_Barrier(rt.comm());) 
 
   // Temporary electron count to judge integrator accuracy
   value_type N_EL;

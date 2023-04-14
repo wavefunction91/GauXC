@@ -45,7 +45,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
   auto device_data_ptr = lwd->create_device_data(rt);
 
-  MPI_Barrier(rt.comm());
+  GAUXC_MPI_CODE(MPI_Barrier(rt.comm());)
 
   this->timer_.time_op("XCIntegrator.EXX_Screening", [&]() { 
     exx_ek_screening_local_work_( basis, P, ldp, *device_data_ptr, settings);
@@ -338,8 +338,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   size_t ntasks = std::distance(task_begin,task_end);
 
-  int world_rank;
+  int world_rank = 0;
+  GAUXC_MPI_CODE(
   MPI_Comm_rank(this->load_balancer_->runtime().comm(), &world_rank);
+  )
   //printf("RANK %d, LC_EXX = %lu\n",
   //  world_rank,
   //  std::accumulate(task_begin, task_end, 0ul, [](auto c, const auto& t){ return c + t.cost_exx(); })
