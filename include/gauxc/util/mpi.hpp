@@ -1,4 +1,7 @@
 #pragma once
+#include <gauxc/gauxc_config.hpp>
+
+#ifdef GAUXC_ENABLE_MPI
 #include <mpi.h>
 #include <type_traits>
 
@@ -144,3 +147,4 @@ void ring_execute( const Op& op, MPI_Comm comm ) {
 
 
 }
+#endif
