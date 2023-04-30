@@ -1,5 +1,5 @@
-set( GAUXC_LINALG_MODULES_REPOSITORY https://github.com/ajaypanyala/linalg-cmake-modules.git )
-set( GAUXC_LINALG_MODULES_REVISION  0c2effde6fa0c87eaeb961eeb412d8cca27bf4cb ) 
+set( GAUXC_LINALG_MODULES_REPOSITORY https://github.com/wavefunction91/linalg-cmake-modules.git )
+set( GAUXC_LINALG_MODULES_REVISION  97d9d968917b9e60ff07033d298e8d3ffb7e82ac )
 
 set( GAUXC_CEREAL_REPOSITORY https://github.com/USCiLab/cereal.git )
 set( GAUXC_CEREAL_REVISION   v1.3.0 )
