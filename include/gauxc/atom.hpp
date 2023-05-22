@@ -68,6 +68,14 @@ inline bool operator==( const Atom& a1, const Atom& a2 ) {
   return a1.Z == a2.Z and a1.x == a2.x and a1.y == a2.y and a1.z == a2.z; 
 }
 
+/**
+ *  @brief Check inequality of two Atom objects
+ *
+ *  @param[in] a1 First atom object
+ *  @param[in] a2 Second atom object
+ *  @returns   false if a1 and a2 represent identical atom objects,
+ *             true otherwise
+ */
 inline bool operator!=( const Atom& a1, const Atom& a2 ) {
   return not (a1 == a2);
 }

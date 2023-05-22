@@ -14,19 +14,22 @@
 
 namespace GauXC {
 
+/// Generic specification of an unpruned atomic quadrature
 struct UnprunedAtomicGridSpecification {
-  RadialQuad  radial_quad;
-  RadialSize  radial_size;
-  RadialScale radial_scale;
+  RadialQuad  radial_quad;  ///< Radial quadrature specification
+  RadialSize  radial_size;  ///< Number of radial quadrature points
+  RadialScale radial_scale; ///< Radial scaling factor
 
-  AngularSize angular_size;
+  AngularSize angular_size; /// Number of angular quadrature points
 };
 
+/// Speficiation of a pruned region of an atomic quadrature
 struct PruningRegion {
-  size_t idx_st;
-  size_t idx_en;
-  AngularSize angular_size;
+  size_t idx_st;             ///< Starting radial index for pruned region
+  size_t idx_en;             ///< Ending radial index (exclusive) for the pruned region
+  AngularSize angular_size;  ///< Number of angular quadrature points in the pruned region
 
+  /// Check equality of `PruningRegion` instances
   bool operator==(const PruningRegion& other) const {
     return other.idx_st == idx_st and 
            other.idx_en == idx_en and
@@ -34,28 +37,35 @@ struct PruningRegion {
   }
 };
 
+/// Generic specification of a pruned atomic quadrature
 struct PrunedAtomicGridSpecification {
-  RadialQuad  radial_quad;
-  RadialSize  radial_size;
-  RadialScale radial_scale;
+  RadialQuad  radial_quad;  ///< Radial quadrature specification
+  RadialSize  radial_size;  ///< Number of radial quadrature points
+  RadialScale radial_scale; ///< Radial scaling factor
 
-  std::vector<PruningRegion> pruning_regions;
+  std::vector<PruningRegion> pruning_regions; ///< List of pruning regions over the radial quadrature
 };
 
 
+/// Generate a "Robust"-Psi4 Pruning specification from an unpruned quadrature specification
 PrunedAtomicGridSpecification robust_psi4_pruning_scheme(
   UnprunedAtomicGridSpecification
 );
+
+/// Generate a Pruning specification according to the Treutler-Aldrichs scheme from an unpruned specification
 PrunedAtomicGridSpecification treutler_pruning_scheme(
   UnprunedAtomicGridSpecification
 );
 
+/// High-level specification of pruning schemes for atomic quadratures
 enum class PruningScheme {
-  Unpruned,
-  Robust,
-  Treutler
+  Unpruned, /// Unpruned atomic quadrature
+  Robust,   /// The "Robust" scheme of Psi4
+  Treutler  /// The Treutler-Aldrichs scheme
 };
 
+/// Generate a pruning specification from a specificed pruning scheme and 
+/// an unpruned grid specification
 PrunedAtomicGridSpecification create_pruned_spec(
   PruningScheme, UnprunedAtomicGridSpecification
 );
@@ -64,6 +74,8 @@ using atomic_grid_variant =
   std::variant<UnprunedAtomicGridSpecification,
                PrunedAtomicGridSpecification>;
 
+
+/// Factory for Atomic grids
 struct AtomicGridFactory {
 
   template <typename RadialType, typename AngularType>
@@ -77,6 +89,19 @@ struct AtomicGridFactory {
       std::decay_t<RadialType>, std::decay_t<AngularType>
     >;
 
+  /**
+   *  @brief Generate an unpruned atomic grid given a suppled radial and
+   *         angular quadrature.
+   *
+   *  All arguments are passed with perfect forwarding
+   *
+   *  @tparam RadialType Type of the radial quadrature
+   *  @tparam AngularType Type of the angular quadrature
+   * 
+   *  @oaram     rq Radial quadrature from which to construct the atomic quadrature. 
+   *  @oaram     aq Angular quadrature from which to construct the atomic quadrature. 
+   *  @param[in] bsz Batch size for the grid generation.
+   */
   template <typename RadialType, typename AngularType>
   static Grid generate_unpruned_grid( RadialType&& rq, AngularType&& aq, BatchSize bsz ) {
     using sphere_type = unpruned_sphere_type<RadialType,AngularType>;

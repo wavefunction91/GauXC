@@ -20,36 +20,10 @@
 
 #cmakedefine GAUXC_ENABLE_DEVICE
 
-
-#if 0
-#ifdef GAUXC_ENABLE_CUDA
-  #include <cuda_runtime.h>
-  #include <cublas_v2.h>
-#endif
-
-#ifdef GAUXC_ENABLE_HIP
-  #include <hip/hip_runtime_api.h>
-  #include <hipblas.h>
-#endif
-
-#ifdef GAUXC_ENABLE_MAGMA
-  #include <magma_v2.h>
-#endif
-
-#ifdef GAUXC_ENABLE_NCCL
-  #include <nccl.h>
-#endif
-
-#ifdef GAUXC_ENABLE_MPI
-  #include <mpi.h>
-#endif
-#endif
-
-
 #if defined(__CUDACC__) || defined(__HIPCC__)
   #define HOST_DEVICE_ACCESSIBLE __host__ __device__
 #else
   #define HOST_DEVICE_ACCESSIBLE
 #endif
 
-#include <gauxc/mpi_util.hpp>
+#include <gauxc/util/mpi.hpp>

@@ -2,11 +2,21 @@
 #include <gauxc/gauxc_config.hpp>
 
 #ifdef GAUXC_ENABLE_MPI
+  #define GAUXC_MPI_CODE(...) __VA_ARGS__
+#else
+  #define GAUXC_MPI_CODE(...) 
+#endif
+
+#ifdef GAUXC_ENABLE_MPI
 #include <mpi.h>
 #include <type_traits>
+#include <vector>
+#include <numeric>
+#include <algorithm>
 
 namespace GauXC {
 
+/// C++ Wrapper for MPI Primitive Datatypes
 template <typename T>
 MPI_Datatype mpi_data_type();
 
@@ -19,12 +29,24 @@ REG_MPI_TYPE(size_t, MPI_UINT64_T)
 
 #undef REG_MPI_TYPE
 
+/// Type-aware wrapper for MPI_Allreduce
 template <typename T>
 void allreduce(const T* src, T* dst, int count, MPI_Op op, MPI_Comm comm) {
   MPI_Allreduce(src, dst, count, mpi_data_type<T>(), op, comm);
 }
 
 
+/**
+ * @brief Type-aware wrapper for MPI_Allreduce on scalar data
+ *
+ * @tparam T Datatype to be reduced
+ *
+ * @param[in] data Input data to be reduced over
+ * @param[in] op   MPI_Op defining reduction operation
+ * @param[in] comm MPI Communicator defining reduction context.
+ *
+ * @returns Reduction result of `data` over `op`
+ */
 template <typename T>
 T allreduce( const T& data, MPI_Op op, MPI_Comm comm) {
   T result;
@@ -33,7 +55,20 @@ T allreduce( const T& data, MPI_Op op, MPI_Comm comm) {
 }
 
 
-
+/**
+ * @param Compute a distributed memory prefix sum (exclusive scan).
+ *
+ * PREFIX_SUM[i+1] = PREFIX_SUM[i] + DATA[i]
+ * PREFIX_SUM[0] = 0
+ *
+ * @tparam InputIterator  Type of input data
+ * @tparam OutputIterator Type of output (prefix sum) data
+ *
+ * @param[in]  begin       Starting iterator for local chunk of DATA
+ * @param[in]  end         Ending iterator for local chunk of DATA
+ * @param[out] prefix_sum  Local chunk of prefix sum (length distance(begin,end))
+ * @param[in]  comm        MPI Communicator defining the compute context 
+ */
 template <typename InputIterator, typename OutputIterator>
 auto mpi_prefix_sum(InputIterator begin, InputIterator end,
   OutputIterator prefix_sum, MPI_Comm comm) {
@@ -42,6 +77,7 @@ auto mpi_prefix_sum(InputIterator begin, InputIterator end,
   auto local_sum = std::accumulate(begin, end, value_type(0));
 
   // Compute global prefix scan (exclusive) to compute local seed values
+  // XXX: Value on 0 may be clobbered
   value_type prefix_seed = 0;
   MPI_Exscan(&local_sum, &prefix_seed, 1, mpi_data_type<value_type>(),
     MPI_SUM, comm);
@@ -50,7 +86,6 @@ auto mpi_prefix_sum(InputIterator begin, InputIterator end,
   std::exclusive_scan(begin, end, prefix_sum, value_type(0));
 
   // Update local scans with seed values
-  // XXX: Value on 0 may be clobbered
   int world_rank; MPI_Comm_rank(comm, &world_rank);
   if(world_rank) {
     const size_t n = std::distance(begin,end);
@@ -63,6 +98,7 @@ auto mpi_prefix_sum(InputIterator begin, InputIterator end,
 
 
 
+#if 1
 class MPI_Packed_Buffer {
   MPI_Comm comm_;
   int internal_position_;
@@ -144,6 +180,7 @@ void ring_execute( const Op& op, MPI_Comm comm ) {
       MPI_Recv(&token, 1, MPI_INT, comm_size-1, 0, comm, MPI_STATUS_IGNORE);
   }
 }
+#endif
 
 
 }

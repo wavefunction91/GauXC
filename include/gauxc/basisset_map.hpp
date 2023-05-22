@@ -12,28 +12,31 @@
 
 namespace GauXC {
 
+/// A class to manage index maps pertaining to a BasisSet object
 class BasisSetMap {
 
   using ao_range    = std::pair<int32_t,int32_t>;
   using shell_range = std::pair<int32_t, int32_t>;
 
-  //int32_t nbf_;     ///< Number of basis functions
   int32_t nshells_; ///< Number of basis shells
 
   std::vector<int32_t>      shell_sizes_;       ///< Shell sizes
-  std::vector<int32_t>      shell_ls_;
-  std::vector<bool>         shell_pure_;
+  std::vector<int32_t>      shell_ls_;          ///< Shell angular momenta
+  std::vector<bool>         shell_pure_;        ///< Shell purity (cart/sph)
   std::vector<int32_t>      shell_to_first_ao_; ///< Map from shell index to first basis function of that shell
   std::vector<ao_range>     shell_to_ao_range_; ///< Map from shell index to range of basis functions for that shell
-  std::vector<int32_t>      shell_to_center_;
-  std::vector<shell_range>  center_to_shell_range_;
+  std::vector<int32_t>      shell_to_center_;   ///< Map from shell index to basis center (atom in a moledule)
+  std::vector<shell_range>  center_to_shell_range_; ///< Map from unique basis center to range of shells
  
 public:
 
   /**
    *  @brief Construct a BasisSetMap object from a BasisSet
    *
-   *  Generate the maps from shell indices to basis function indices
+   *  Generate the maps from shell indices to basis function and center indices
+   *
+   *  @param[in] basis BasisSet for which to generate maps
+   *  @param[in] mol   Molecule instatance upon which `basis` is defined.
    */
   template <typename F>
   BasisSetMap( const BasisSet<F>& basis, const Molecule& mol ) :
@@ -59,7 +62,6 @@ public:
       st_idx = range_end;
     }
 
-#if 1
     shell_to_center_.resize( nshells_ );
     size_t sh_idx = 0;
     for( const auto& shell : basis ) {
@@ -70,22 +72,6 @@ public:
       else shell_to_center_[sh_idx] = -1;
       ++sh_idx;
     }
-#else
-    // Assume basis is sorted wrt Molecule
-    shell_to_center_.reserve( nshells_ );
-    int32_t atom_idx = 0;
-
-    auto shell_on_atom( auto& center, auto& atom ) {
-      return center[0] == atom.x and center[1] == atom.y and center[2] == atom.z;
-    }
-
-    for( const auto& shell : basis ) {
-      auto& atom = mol.at(atom_idx);
-      auto  on_cur_atom = shell_on_atom( shell.O(), atom );
-      if( !on_cur_atom ) atom_idx++;
-      shell_to_center_.emplace_back(atom_idx);
-    }
-#endif
 
   }
 
@@ -109,7 +95,10 @@ public:
   /// Return container that stores the shell sizes (non-const)
   auto& shell_sizes() { return shell_sizes_; }
 
+  /// Return map from shell indices to unique basis centers (const)
   const auto& shell_to_center() const { return shell_to_center_; }
+
+  /// Return map from shell indices to unique basis centers (non-const)
   auto& shell_to_center() { return shell_to_center_; }
 
 
@@ -137,27 +126,57 @@ public:
    */
   auto shell_size(int32_t i) const { return shell_sizes_.at(i); }
 
+  /**
+   *  @brief Get unique basis center index for shell "i"
+   *
+   *  @param[in] i Shell index
+   *  @returns   Basis center index for shell "i"
+   */
   const auto& shell_to_center(int32_t i) const { return shell_to_center_[i]; }
+
+  /**
+   *  @brief Get unique basis center index for shell "i"
+   *
+   *  @param[in] i Shell index
+   *  @returns   Basis center index for shell "i"
+   */
   auto& shell_to_center(int32_t i) { return shell_to_center_[i]; }
 
 
+  /**
+   *  @brief Get angular momentum for shell "i"
+   *
+   *  @param[in] i Shell index
+   *  @returns   Angular momentum for shell "i"
+   */
   auto shell_l(size_t i) const { return shell_ls_.at(i); }
+
+  /**
+   *  @brief Get purity (cart/sph) of shell "i"
+   *
+   *  @param[in] i Shell index
+   *  @returns   Purity of shell "i"
+   */
   auto shell_pure(size_t i) const { return shell_pure_.at(i); }
 
+  /// Get max angular momentum for the basis set
   inline uint32_t max_l() const {
     return *std::max_element(shell_ls_.begin(), shell_ls_.end());
   }
 
+  /// Count the number of shells with angular momentum `l`
   inline size_t nshells_with_l(uint32_t l) const {
     return std::count( shell_ls_.begin(), shell_ls_.end(), l );
   }
 
+  /// Check whether shells of angular momentum `l` are spherical (pure)
   inline bool l_purity(uint32_t l) const {
     // Find first shell with L
     auto first_shell_w_l = std::find( shell_ls_.begin(), shell_ls_.end(), l );
     return shell_pure( std::distance( shell_ls_.begin(), first_shell_w_l ) );
   }
 
+  /// Obtain list of shell offsets for a shell subset if compressed in memory 
   template <typename IntegralType, typename IntegralIterator>
   std::vector<IntegralType> shell_offs( IntegralIterator begin, 
                                         IntegralIterator end ) const {

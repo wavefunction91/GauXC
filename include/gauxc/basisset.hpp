@@ -74,6 +74,15 @@ struct BasisSet : public std::vector<Shell<F>> {
       } );
   };
 
+  /**
+   *  @brief Return the number of cartesian GTO basis functions which comprise the 
+   *  BasisSet object.
+   *
+   *  This routine accumulates the cartesian shell sizes for each shell in the basis set.
+   *
+   *  @returns the number of cartesian GTO basis functions which comprise the BasisSet
+   *  object.
+   */
   inline int32_t nbf_cart()     const {
     return std::accumulate( this->cbegin(), this->cend(), 0ul,
       [](const auto& a, const auto& b) { 
@@ -104,6 +113,20 @@ struct BasisSet : public std::vector<Shell<F>> {
     return _nbf;
   }
 
+  /**
+   *  @brief Determine the number of cartesian basis functions contained in a
+   *  specified subset of the BasisSet object.
+   *
+   *  Performs the following operation:
+   *    for( i in shell_list ) nbf += cartesian size of shell i
+   *
+   *  @tparam IntegralIterator Iterator type representing the list of
+   *  shell indices.
+   *
+   *  @param[in] shell_list_begin Start iterator for shell list
+   *  @param[in] shell_list_end   End iterator for shell_list
+   *  @returns   Number of cartesian basis functions in the specified shell subset.
+   */
   template <typename IntegralIterator>
   inline int32_t nbf_cart_subset( IntegralIterator shell_list_begin,
                                   IntegralIterator shell_list_end ) const {

@@ -25,15 +25,11 @@ using BatchSize    = detail::NamedType< int64_t, struct BatchSizeType   >;
 using RadialScale  = detail::NamedType< double,  struct RadialScaleType >;
 
 namespace detail {
-  /**
-   *  @brief A class which contains the implementation details of a Grid instance
-   */
+  /// A class which contains the implementation details of a Grid instance
   class GridImpl;
 }
 
-/**
- *  @brief A class to manage a particular spherical (atomic) quadrature
- */
+/// A class to manage a particular spherical (atomic) quadrature
 class Grid {
 
   std::shared_ptr<detail::GridImpl> pimpl_; 
@@ -41,8 +37,15 @@ class Grid {
 
 public:
 
+  // Delete default ctor
   Grid() = delete;
 
+  /**
+   *  @brief Generate a batched atomic grid
+   *
+   *  @param[in] q   Shared ptr to a preconstructed quadrature instance
+   *  @param[in] bsz Batch size for quadrature
+   */
   Grid( std::shared_ptr<quadrature_type> q, BatchSize bsz );
 
   /// Copy a Grid object

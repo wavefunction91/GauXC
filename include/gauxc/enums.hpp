@@ -29,7 +29,8 @@ enum class AtomicGridSizeDefault {
   FineGrid,       ///< Fine grid      (least accurate)
   UltraFineGrid,  ///< Ultrafine grid (appropriate accuracy)
   SuperFineGrid,  ///< Superfine grid (most accurate)
-  GM3, GM5
+  GM3,            ///< Treutler-Aldrichs GM3
+  GM5             ///< Treutlet-Aldrichs GM5
 };
 
 /**
@@ -39,7 +40,7 @@ enum class AtomicGridSizeDefault {
 enum class XCWeightAlg {
   Becke, ///< The original Becke weighting scheme
   SSF,   ///< The Stratmann-Scuseria-Frisch weighting scheme
-  LKO
+  LKO    ///< The Lauqua-Kuessman-Ochsenfeld weighting scheme
 };
 
 /**
