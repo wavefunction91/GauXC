@@ -72,45 +72,6 @@ size_t Scheme1DataBase::get_mem_req( integrator_term_tracker terms,
   // All local memory is weights related
   size_t base_size = base_type::get_mem_req(terms, task);
 
-#if 0
-  if( terms.weights ) {
-    const auto ldatoms = get_ldatoms();
-    const auto mem_dist_scr = ldatoms * task.npts;
-    const auto mem_dist_ner = task.npts;
-    const auto mem_iparent  = task.npts;
-
-    base_size += (mem_dist_scr + mem_dist_ner) * sizeof(double) + 
-                 mem_iparent * sizeof(int32_t);
-  }
-
-  if( terms.exx or terms.exc_vxc or terms.exc_grad or terms.den ) {
-    const auto& shell_list_bfn = task.bfn_screening.shell_list;
-    const size_t nshells_bfn  = shell_list_bfn.size();
-    const auto& shell_list_cou = task.cou_screening.shell_list;
-    const size_t nshells_cou  = shell_list_cou.size();
-
-    const size_t mem_shell_list_bfn = nshells_bfn * sizeof(size_t);
-    const size_t mem_shell_offs_bfn = nshells_bfn * sizeof(size_t);
-
-    const size_t mem_shell_list_cou = /* terms.exx ? nshells_cou * sizeof(size_t) : */ 0;
-    const size_t mem_shell_offs_cou = /* terms.exx ? nshells_cou * sizeof(size_t) : */ 0;
-
-    // Shell -> Task maps
-    const size_t mem_shell_to_task_idx  = nshells_bfn * sizeof(int32_t);
-    const size_t mem_shell_to_task_off  = nshells_bfn * sizeof(int32_t);
-
-    // ShellPair -> Task maps
-    const size_t nshells_cou_sqlt = (nshells_cou*(nshells_cou+1))/2;
-    const size_t mem_shell_pair_to_task_idx     = terms.exx ? nshells_cou_sqlt * sizeof(int32_t) : 0;
-    const size_t mem_shell_pair_to_task_row_off = terms.exx ? nshells_cou_sqlt * sizeof(int32_t) : 0;
-    const size_t mem_shell_pair_to_task_col_off = terms.exx ? nshells_cou_sqlt * sizeof(int32_t) : 0;
-
-    base_size +=  mem_shell_list_bfn + mem_shell_offs_bfn +
-      mem_shell_list_cou + mem_shell_offs_cou +
-      mem_shell_to_task_idx + mem_shell_to_task_off +
-      mem_shell_pair_to_task_idx + mem_shell_pair_to_task_row_off + mem_shell_pair_to_task_col_off;
-  }
-#else
   required_term_storage reqt(terms);
   const auto ldatoms = get_ldatoms();
   const auto npts = task.npts;
@@ -145,7 +106,6 @@ size_t Scheme1DataBase::get_mem_req( integrator_term_tracker terms,
     reqt.task_to_shell_pair_idx_cou_size(nshells_cou) * sizeof(int32_t) + 
     reqt.task_to_shell_pair_cou_subtask_size(npts, 256) * sizeof(std::array<int32_t, 4>);
 
-#endif
 
   //std::cout << "MEM REQ: " << base_size << std::endl;
   return base_size;
@@ -173,69 +133,6 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
   auto [ ptr, sz ] = buf;
   buffer_adaptor mem( ptr, sz );
 
-#if 0
-  // Weights related memory
-  if( terms.weights ) { 
-    const auto ldatoms = get_ldatoms();
-    scheme1_stack.dist_scratch_device = 
-      mem.aligned_alloc<double>( ldatoms * total_npts_task_batch, sizeof(double2), csl );
-    scheme1_stack.dist_nearest_device = 
-      mem.aligned_alloc<double>( total_npts_task_batch, csl );
-    scheme1_stack.iparent_device = 
-      mem.aligned_alloc<int32_t>( total_npts_task_batch, csl );
-  }
-
-  if( terms.exx or terms.exc_vxc or terms.exc_grad or terms.den ) {
-    total_nshells_bfn_task_batch  = 0; 
-    //total_nshells_cou_task_batch  = 0; 
-    total_nshells_cou_sqlt_task_batch  = 0; 
-    for( auto it = task_begin; it != task_end; ++it ) {
-      const auto& shell_list_bfn  = it->bfn_screening.shell_list;
-      const size_t nshells_bfn  = shell_list_bfn.size();
-      total_nshells_bfn_task_batch  += nshells_bfn;
-
-      const auto& shell_list_cou  = it->cou_screening.shell_list;
-      const size_t nshells_cou  = shell_list_cou.size();
-      const size_t nshells_cou_sqlt = (nshells_cou*(nshells_cou+1))/2;
-      //total_nshells_cou_task_batch  += nshells_cou;
-      total_nshells_cou_sqlt_task_batch  += nshells_cou_sqlt;
-    }
-
-    collocation_stack.shell_list_device = 
-      mem.aligned_alloc<size_t>( total_nshells_bfn_task_batch , csl);
-    collocation_stack.shell_offs_device = 
-      mem.aligned_alloc<size_t>( total_nshells_bfn_task_batch , csl);
-
-    // Shell -> Task buffers
-    shell_to_task_stack.shell_to_task_idx_device = 
-      mem.aligned_alloc<int32_t>( total_nshells_bfn_task_batch, csl );
-    shell_to_task_stack.shell_to_task_off_device = 
-      mem.aligned_alloc<int32_t>( total_nshells_bfn_task_batch, csl );
-    shell_to_task_stack.shell_to_task_device =
-      mem.aligned_alloc<ShellToTaskDevice>( global_dims.nshells, csl );
-
-    if(terms.exx) {
-    #if 0
-      coulomb_stack.shell_list_device = 
-        mem.aligned_alloc<size_t>( total_nshells_cou_task_batch , csl);
-      coulomb_stack.shell_offs_device = 
-        mem.aligned_alloc<size_t>( total_nshells_cou_task_batch , csl);
-    #endif
-      
-      // ShellPair -> Task buffers
-      const size_t nsp = (global_dims.nshells*(global_dims.nshells+1))/2;
-      shell_pair_to_task_stack.shell_pair_to_task_idx_device = 
-        mem.aligned_alloc<int32_t>( total_nshells_cou_sqlt_task_batch, csl );
-      shell_pair_to_task_stack.shell_pair_to_task_row_off_device = 
-        mem.aligned_alloc<int32_t>( total_nshells_cou_sqlt_task_batch, csl );
-      shell_pair_to_task_stack.shell_pair_to_task_col_off_device = 
-        mem.aligned_alloc<int32_t>( total_nshells_cou_sqlt_task_batch, csl );
-      shell_pair_to_task_stack.shell_pair_to_task_device =
-        mem.aligned_alloc<ShellPairToTaskDevice>( nsp, csl );
-    }
-
-  }
-#else
 
   required_term_storage reqt(terms);
 
@@ -341,7 +238,6 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
   }
 
 
-#endif
 
   // Update dynmem data for derived impls
   return device_buffer_t{ mem.stack(), mem.nleft() };
@@ -363,384 +259,6 @@ void Scheme1DataBase::pack_and_send(
   // Pack and send base data
   base_type::pack_and_send( terms, task_begin, task_end, basis_map );
 
-#if 0
-  // All local memory is weights related
-  if( terms.weights ) { 
-    // Host Packing Arrays
-    std::vector< int32_t > iparent_pack;
-    std::vector< double >  dist_nearest_pack;
-  
-    iparent_pack.reserve( total_npts_task_batch );
-    dist_nearest_pack.reserve( total_npts_task_batch );
-  
-    // Pack additional host data and send
-    for( auto it = task_begin; it != task_end; ++it ) {
-      iparent_pack.insert( iparent_pack.end(), it->points.size(), it->iParent );
-      dist_nearest_pack.insert( dist_nearest_pack.end(), it->points.size(), 
-        it->dist_nearest );
-    }
-  
-    device_backend_->copy_async( iparent_pack.size(), iparent_pack.data(), 
-      scheme1_stack.iparent_device, "send iparent"  );
-    device_backend_->copy_async( dist_nearest_pack.size(), 
-      dist_nearest_pack.data(), scheme1_stack.dist_nearest_device, 
-      "send dist_nearest" );
-  }
-
-  if( terms.exx or terms.exc_vxc or terms.exc_grad or terms.den ) {
-    // Contatenation utility
-    auto concat_iterable = []( auto& a, const auto& b ) {
-      a.insert( a.end(), b.begin(), b.end() );
-    };
-
-    std::vector< size_t > shell_list_bfn_pack;
-    std::vector< size_t > shell_offs_bfn_pack;
-
-    std::vector< std::vector<int32_t> > shell_to_task_idx( global_dims.nshells ),
-                                        shell_to_task_off( global_dims.nshells );
-
-
-    // Shell Pair -> Task
-    if( terms.exx ) {
-      shell_pair_to_task.clear();
-      const size_t nsp = (global_dims.nshells*(global_dims.nshells+1))/2;
-      shell_pair_to_task.resize(nsp);
-      for( auto i = 0ul; i < nsp; ++i ) {
-        auto& sptt = shell_pair_to_task[i];
-        sptt.shell_pair_device =
-          this->shell_pair_soa.shell_pair_dev_ptr[i];
-        std::tie(sptt.lA, sptt.lB) =
-          this->shell_pair_soa.shell_pair_ls[i];
-        std::tie(sptt.rA, sptt.rB) =
-          this->shell_pair_soa.shell_pair_centers[i];
-        std::tie(sptt.idx_bra, sptt.idx_ket) =
-          this->shell_pair_soa.shell_pair_shidx[i];
-      }
-    }
-
-    for( auto it = task_begin; it != task_end; ++it ) {
-      const auto& shell_list_bfn  = it->bfn_screening.shell_list;
-      const size_t nshells_bfn  = shell_list_bfn.size();
-
-      // Compute offsets (bfn)
-#if 0 
-      std::vector< size_t > shell_offs_bfn( nshells_bfn );
-      shell_offs_bfn.at(0) = 0;
-      for( auto i = 1ul; i < nshells_bfn; ++i )
-        shell_offs_bfn.at(i) = shell_offs_bfn.at(i-1) + 
-                             basis_map.shell_size( shell_list_bfn.at(i-1) );
-#else
-      auto shell_offs_bfn = basis_map.shell_offs<size_t>( 
-        shell_list_bfn.begin(), shell_list_bfn.end() );
-#endif
-
-      concat_iterable( shell_list_bfn_pack, shell_list_bfn );
-      concat_iterable( shell_offs_bfn_pack, shell_offs_bfn );
-
-
-
-      // Setup Shell -> Task
-      const auto itask = std::distance( task_begin, it );
-      for( auto i = 0ul; i < nshells_bfn; ++i ) {
-        shell_to_task_idx[ shell_list_bfn.at(i) ].emplace_back(itask);
-        shell_to_task_off[ shell_list_bfn.at(i) ].emplace_back(shell_offs_bfn[i]);
-      }
-
-
-      if(terms.exx) {
-        const auto& shell_list_cou  = it->cou_screening.shell_list;
-        const size_t nshells_cou  = shell_list_cou.size();
-
-        // Compute offsets (cou)
-#if 0
-        std::vector< size_t > shell_offs_cou( nshells_cou );
-        shell_offs_cou.at(0) = 0;
-        for( auto i = 1ul; i < nshells_cou; ++i )
-          shell_offs_cou.at(i) = shell_offs_cou.at(i-1) + 
-                               basis_map.shell_size( shell_list_cou.at(i-1) );
-#else
-        auto shell_offs_cou = basis_map.shell_offs<size_t>( 
-          shell_list_cou.begin(), shell_list_cou.end() );
-#endif
-
-        // Setup Shell Pair -> Task
-        for( auto j = 0ul; j < nshells_cou; ++j )
-        for( auto i = j;   i < nshells_cou; ++i ) {
-          const auto ish = shell_list_cou[i];
-          const auto jsh = shell_list_cou[j];
-          const auto idx = detail::packed_lt_index(ish,jsh, global_dims.nshells);
-
-          auto& sptt = shell_pair_to_task[idx];
-          sptt.task_idx.emplace_back(itask);
-          sptt.task_shell_off_row.emplace_back(shell_offs_cou[i]);
-          sptt.task_shell_off_col.emplace_back(shell_offs_cou[j]);
-        }
-      }
-
-
-    }
-
-    // Send Shell List data (bfn)
-    device_backend_->copy_async( shell_list_bfn_pack.size(), 
-      shell_list_bfn_pack.data(), collocation_stack.shell_list_device, 
-      "send_shell_list_bfn" );
-    device_backend_->copy_async( shell_offs_bfn_pack.size(), 
-      shell_offs_bfn_pack.data(), collocation_stack.shell_offs_device, 
-      "send_shell_offs_bfn" );
-
-    // Construct Shell -> Task (bfn)
-    std::vector<int32_t> concat_shell_to_task_idx, concat_shell_to_task_off;
-    {
-      const size_t total_nshells_bfn = total_nshells_bfn_task_batch * sizeof(int32_t);
-      buffer_adaptor 
-        shell_idx_mem( shell_to_task_stack.shell_to_task_idx_device, total_nshells_bfn );
-      buffer_adaptor                                                                  
-        shell_off_mem( shell_to_task_stack.shell_to_task_off_device, total_nshells_bfn );
-
-
-      std::vector<ShellToTaskDevice> host_shell_to_task(global_dims.nshells);
-      for( auto ish = 0ul; ish < global_dims.nshells; ++ish ) {
-        const auto ntask = shell_to_task_idx[ish].size();
-        auto& bck = host_shell_to_task[ish];
-        bck.ntask = ntask;
-        bck.center_idx = basis_map.shell_to_center( ish );
-        bck.true_idx   = ish;
-        bck.shell_device = static_stack.shells_device + ish;
-
-        bck.task_idx_device        = shell_idx_mem.aligned_alloc<int32_t>( ntask, csl );
-        bck.task_shell_offs_device = shell_off_mem.aligned_alloc<int32_t>( ntask, csl );
-
-        // Pack data
-        concat_iterable( concat_shell_to_task_idx, shell_to_task_idx[ish] );
-        concat_iterable( concat_shell_to_task_off, shell_to_task_off[ish] );
-      }
-
-      // Send Data
-      device_backend_->copy_async( concat_shell_to_task_idx.size(),
-        concat_shell_to_task_idx.data(), 
-        shell_to_task_stack.shell_to_task_idx_device, "shell_to_task_idx_device" );
-      device_backend_->copy_async( concat_shell_to_task_off.size(),
-        concat_shell_to_task_off.data(), 
-        shell_to_task_stack.shell_to_task_off_device, "shell_to_task_off_device" );
-
-
-      // Sort shell indices by L
-      std::vector<uint32_t> shell_idx( global_dims.nshells );
-      std::iota( shell_idx.begin(), shell_idx.end(), 0 );
-      std::stable_sort( shell_idx.begin(), shell_idx.end(),
-        [&]( auto i, auto j ){ 
-          return basis_map.shell_l(i) < basis_map.shell_l(j); 
-        } );
-
-      {
-      std::vector<ShellToTaskDevice> shell_to_task_sorted( global_dims.nshells );
-      for( auto i = 0ul; i < global_dims.nshells; ++i ) 
-        shell_to_task_sorted[i] = host_shell_to_task[shell_idx[i]];
-      host_shell_to_task = std::move(shell_to_task_sorted);
-      }
-
-      // Send shell to task maps
-      device_backend_->copy_async( global_dims.nshells, 
-        host_shell_to_task.data(), shell_to_task_stack.shell_to_task_device,
-        "shell_to_task_device" );
-
-
-      // Form angular momenta batches
-      auto max_l = basis_map.max_l();
-      l_batched_shell_to_task.resize(max_l + 1);
-      {
-      auto* p = shell_to_task_stack.shell_to_task_device;
-      auto* h = host_shell_to_task.data();
-      for( auto l = 0ul; l <= max_l; ++l ) {
-        auto nsh  = basis_map.nshells_with_l(l);
-        auto pure = basis_map.l_purity(l);
-        l_batched_shell_to_task[l].nshells_in_batch     = nsh;
-        l_batched_shell_to_task[l].pure                 = pure;
-        l_batched_shell_to_task[l].shell_to_task_device = p;
-                            
-        size_t max_ntask = std::max_element( h, h+nsh,
-          [](auto& a, auto& b){ return a.ntask < b.ntask; } )->ntask;
-
-        l_batched_shell_to_task[l].ntask_average = max_ntask;
-        l_batched_shell_to_task[l].npts_average  = 0;
-
-        p += nsh;
-        h += nsh;
-      }
-      }
-    } // Shell -> Task data
-
-
-
-
-
-    // Construct ShellPair -> Task
-    std::vector<int32_t> concat_shell_pair_to_task_idx, concat_shell_pair_to_task_off_row, concat_shell_pair_to_task_off_col;
-    if(terms.exx) {
-      const size_t total_nshells_cou_sqlt = total_nshells_cou_sqlt_task_batch * sizeof(int32_t);
-      buffer_adaptor 
-        shell_idx_mem( shell_pair_to_task_stack.shell_pair_to_task_idx_device, total_nshells_cou_sqlt );
-      buffer_adaptor                                                                            
-        shell_row_off_mem( shell_pair_to_task_stack.shell_pair_to_task_row_off_device, total_nshells_cou_sqlt );
-      buffer_adaptor                                                                            
-        shell_col_off_mem( shell_pair_to_task_stack.shell_pair_to_task_col_off_device, total_nshells_cou_sqlt );
-
-      // Sort Shell Pairs by diag + L pairs
-      const size_t nsp = (global_dims.nshells*(global_dims.nshells+1))/2;
-      {
-        std::vector<int> sp_idx(nsp);
-
-        // First partition the shell pairs into diagonal and off diagonal
-        std::iota( sp_idx.begin(), sp_idx.end(), 0 );
-        auto diag_end = std::stable_partition( sp_idx.begin(), sp_idx.end(),
-          [&](auto idx) {
-            auto [i,j] = detail::from_packed_lt_index(idx, global_dims.nshells);
-            return i == j;
-          });
-
-        // Next sort diag and off diag by shell pair
-        auto lp_functor = [&](int i, int j){
-          const auto& sp_i = shell_pair_to_task[i];
-          const auto& sp_j = shell_pair_to_task[j];
-
-          auto l_i = std::make_pair( sp_i.lA, sp_i.lB );
-          auto l_j = std::make_pair( sp_j.lA, sp_j.lB );
-          return l_i < l_j;
-        };
-
-        std::stable_sort( sp_idx.begin(), diag_end, lp_functor );
-        std::stable_sort( diag_end, sp_idx.end(),   lp_functor );
-
-        // Reorder shell pairs
-        std::vector<ShellPairToTaskHost> sorted_shell_pair_to_task(nsp);
-        for( auto i = 0ul; i < nsp; ++i ) {
-          sorted_shell_pair_to_task[i] = shell_pair_to_task[sp_idx[i]];
-        }
-        shell_pair_to_task = std::move(sorted_shell_pair_to_task);
-      }
-
-
-      std::vector<ShellPairToTaskDevice> host_shell_pair_to_task(nsp);
-      for( auto isp = 0ul; isp < nsp; ++isp ) {
-        auto& sptt = shell_pair_to_task[isp];
-        auto& bck = host_shell_pair_to_task[isp];
-
-        const auto ntask = sptt.task_idx.size();
-        bck.ntask = ntask;
-        bck.X_AB = sptt.rA.x - sptt.rB.x;
-        bck.Y_AB = sptt.rA.y - sptt.rB.y;
-        bck.Z_AB = sptt.rA.z - sptt.rB.z;
-        bck.shell_pair_device = sptt.shell_pair_device;
-
-        bck.task_idx_device           = shell_idx_mem.aligned_alloc<int32_t>( ntask, csl );
-        bck.task_shell_off_row_device = shell_row_off_mem.aligned_alloc<int32_t>( ntask, csl );
-        bck.task_shell_off_col_device = shell_col_off_mem.aligned_alloc<int32_t>( ntask, csl );
-
-        // Pack data
-        concat_iterable( concat_shell_pair_to_task_idx,     sptt.task_idx           );
-        concat_iterable( concat_shell_pair_to_task_off_row, sptt.task_shell_off_row );
-        concat_iterable( concat_shell_pair_to_task_off_col, sptt.task_shell_off_col );
-      }
-
-      // Send Data
-      device_backend_->copy_async( concat_shell_pair_to_task_idx.size(),
-        concat_shell_pair_to_task_idx.data(), 
-        shell_pair_to_task_stack.shell_pair_to_task_idx_device, "shell_pair_to_task_idx_device" );
-
-      device_backend_->copy_async( concat_shell_pair_to_task_off_row.size(),
-        concat_shell_pair_to_task_off_row.data(), 
-        shell_pair_to_task_stack.shell_pair_to_task_row_off_device, "shell_pair_to_task_row_off_device" );
-
-      device_backend_->copy_async( concat_shell_pair_to_task_off_col.size(),
-        concat_shell_pair_to_task_off_col.data(), 
-        shell_pair_to_task_stack.shell_pair_to_task_col_off_device, "shell_pair_to_task_col_off_device" );
-
-      // Send shell to task maps
-      device_backend_->copy_async( nsp, 
-        host_shell_pair_to_task.data(), shell_pair_to_task_stack.shell_pair_to_task_device,
-        "shell_pair_to_task_device" );
-
-      
-      const int max_l = basis_map.max_l();
-
-      // Setup DIAGONAL SP AM batches
-      l_batched_shell_pair_to_task_diag.clear();
-      l_batched_shell_pair_to_task_diag.resize(max_l+1);
-      {
-      auto* p = shell_pair_to_task_stack.shell_pair_to_task_device;
-      auto h  = shell_pair_to_task.begin();
-      for( auto l = 0; l <= max_l; ++l ) {
-        auto& batch_map = l_batched_shell_pair_to_task_diag[l];
-        const auto nsh = basis_map.nshells_with_l(l);
-
-        size_t max_npts = 0;
-        size_t max_ntask = std::max_element( h, h + nsh,
-          [](auto& a, auto& b){
-            return a.task_idx.size() < b.task_idx.size();
-          })->task_idx.size();
-
-        batch_map.ntask_average = max_ntask;
-        batch_map.npts_average  = max_npts;
-        batch_map.nshells_in_batch = nsh;
-        batch_map.shell_pair_to_task_device = p;
-        batch_map.lA = l;
-        batch_map.lB = l;
-
-        p += nsh;
-        h += nsh;
-      }
-      }
-
-      // Setup OFFDIAGONAL SP AM batches
-      l_batched_shell_pair_to_task_off_diag.clear();
-      l_batched_shell_pair_to_task_off_diag.resize((max_l+1)*(max_l+1));
-      {
-      auto* p = shell_pair_to_task_stack.shell_pair_to_task_device +
-        global_dims.nshells;
-      auto h  = shell_pair_to_task.begin() + global_dims.nshells;
-      for( auto l_i = 0, l_ij = 0; l_i <= max_l; ++l_i )
-      for( auto l_j = 0; l_j <= max_l; ++l_j, ++l_ij ) {
-        auto& batch_map = l_batched_shell_pair_to_task_off_diag[l_ij];
-        size_t nsh = std::count_if(
-          h, shell_pair_to_task.end(),
-          [=](const auto& sp) {
-            return sp.lA == l_i and sp.lB == l_j;
-          });
-
-        size_t max_npts = 0;
-        size_t max_ntask = std::max_element( h, h + nsh,
-          [](auto& a, auto& b){
-            return a.task_idx.size() < b.task_idx.size();
-          })->task_idx.size();
-
-        batch_map.ntask_average = max_ntask;
-        batch_map.npts_average  = max_npts;
-        batch_map.nshells_in_batch = nsh;
-        batch_map.shell_pair_to_task_device = p;
-        batch_map.lA = l_i;
-        batch_map.lB = l_j;
-
-        p += nsh;
-        h += nsh;
-      }
-      }
-
-
-      std::cout << "DIAG SP Batches" << std::endl;
-      for( auto& b : l_batched_shell_pair_to_task_diag ) {
-        std::cout << b.lA << " " << b.lB << " " << b.nshells_in_batch << " " 
-          << b.ntask_average << std::endl;
-      }
-
-      std::cout << "OFFDIAG SP Batches" << std::endl;
-      for( auto& b : l_batched_shell_pair_to_task_off_diag ) {
-        std::cout << b.lA << " " << b.lB << " " << b.nshells_in_batch << " " 
-          << b.ntask_average << std::endl;
-      }
-    } // ShellPair -> Task data
-    device_backend_->master_queue_synchronize(); 
-  }
-#else
 
   required_term_storage reqt(terms);
 
@@ -956,281 +474,7 @@ void Scheme1DataBase::pack_and_send(
   if(reqt.shell_pair_to_task_cou or reqt.task_to_shell_pair_cou) {
 
     const size_t nsp = global_dims.nshell_pairs;
-#define USE_TASK_MAP 1
 
-#if !USE_TASK_MAP
-    throw std::runtime_error("SP2T + Sparse NYI");
-    // Unpack ShellPair SoA (populated in static allocation)
-    auto sp2t_1 = hrt_t::now();
-    shell_pair_to_task.clear();
-    shell_pair_to_task.resize(nsp);
-    for( auto i = 0ul; i < nsp; ++i ) {
-      auto& sptt = shell_pair_to_task[i];
-      sptt.shell_pair_device =
-        this->shell_pair_soa.shell_pair_dev_ptr[i];
-      std::tie(sptt.lA, sptt.lB) =
-        this->shell_pair_soa.shell_pair_ls[i];
-      std::tie(sptt.rA, sptt.rB) =
-        this->shell_pair_soa.shell_pair_centers[i];
-      std::tie(sptt.idx_bra, sptt.idx_ket) =
-        this->shell_pair_soa.shell_pair_shidx[i];
-    }
-
-    
-    // Unpack meta data for cou shell pairs
-    auto sp2t_2 = hrt_t::now();
-    {
-    for( auto it = task_begin; it != task_end; ++it ) {
-      const auto& shell_list_cou  = it->cou_screening.shell_list;
-      const size_t nshells_cou  = shell_list_cou.size();
-
-      // Compute shell offsets (cou)
-      auto shell_offs_cou = basis_map.shell_offs<size_t>( 
-        shell_list_cou.begin(), shell_list_cou.end() );
-    
-      // Setup ShellPair -> Task meta data (cou)
-      const auto itask = std::distance( task_begin, it );
-
-      std::map<int,int> sh_off;
-      for( auto i = 0ul; i < nshells_cou; ++i )
-        sh_off[shell_list_cou[i]] = shell_offs_cou[i];
-
-      for( auto [ish,jsh] : it->cou_screening.shell_pair_list ) {
-        const auto idx = detail::packed_lt_index(ish,jsh, global_dims.nshells);
-
-        auto& sptt = shell_pair_to_task[idx];
-        sptt.task_idx.emplace_back(itask);
-        sptt.task_shell_off_row.emplace_back(sh_off[ish]);
-        sptt.task_shell_off_col.emplace_back(sh_off[jsh]);
-      }
-    }
-    }
-
-
-    // Sort Shell Pairs by diag + L pairs
-    auto sp2t_3 = hrt_t::now();
-    {
-      std::vector<int> sp_idx(nsp);
-
-      // First partition the shell pairs into diagonal and off diagonal
-      #if 0
-      std::iota( sp_idx.begin(), sp_idx.end(), 0 );
-      auto diag_end = std::partition( sp_idx.begin(), sp_idx.end(),
-        [=](auto idx) {
-          auto [i,j] = detail::from_packed_lt_index(idx, global_dims.nshells);
-          return i == j;
-        });
-
-      std::sort(sp_idx.begin(), diag_end);
-      size_t ioff = 0;
-      for( auto i = 0; i < global_dims.nshells; ++i) {
-        std::cout << sp_idx[i] << " " << ioff << std::endl;
-        ioff += global_dims.nshells - i;
-      }
-      #else
-      auto diag_end = sp_idx.begin() + global_dims.nshells;
-      const size_t ns = global_dims.nshells;
-      for(size_t j = 0, ioff = 0, odoff = ns; j < ns; ++j) {
-        sp_idx[j] = ioff; ++ioff;
-        for(size_t i = j + 1; i < ns; ++i) {
-          sp_idx[odoff] = ioff; ioff++; odoff++;
-        }
-      }
-      #endif
-
-      // Next sort diag and off diag by shell pair angular momenta
-      auto lp_functor = [&](int i, int j){
-        const auto& sp_i = shell_pair_to_task[i];
-        const auto& sp_j = shell_pair_to_task[j];
-
-        auto l_i = std::make_pair( sp_i.lA, sp_i.lB );
-        auto l_j = std::make_pair( sp_j.lA, sp_j.lB );
-        return l_i < l_j;
-      };
-
-      std::sort( sp_idx.begin(), diag_end, lp_functor );
-      std::sort( diag_end, sp_idx.end(),   lp_functor );
-
-      // Reorder shell pairs
-      std::vector<ShellPairToTaskHost> sorted_shell_pair_to_task(nsp);
-      for( auto i = 0ul; i < nsp; ++i ) {
-        sorted_shell_pair_to_task[i] = std::move(shell_pair_to_task[sp_idx[i]]);
-      }
-      shell_pair_to_task = std::move(sorted_shell_pair_to_task);
-    }
-
-
-    // Set up buffer allocations from preallocated device segments
-    const size_t total_nshells_cou_sqlt = 
-      total_nshells_cou_sqlt_task_batch * sizeof(int32_t);
-    buffer_adaptor shell_idx_mem( 
-      shell_pair_to_task_stack.shell_pair_to_task_idx_device, 
-      total_nshells_cou_sqlt );
-    buffer_adaptor shell_row_off_mem( 
-      shell_pair_to_task_stack.shell_pair_to_task_row_off_device, 
-      total_nshells_cou_sqlt );
-    buffer_adaptor shell_col_off_mem( 
-      shell_pair_to_task_stack.shell_pair_to_task_col_off_device, 
-      total_nshells_cou_sqlt );
-
-    // Reserve memory 
-    auto sp2t_4 = hrt_t::now();
-    host_shell_pair_to_task_cou.resize(nsp);
-    size_t sptt_sz = std::accumulate(shell_pair_to_task.begin(),shell_pair_to_task.end(),0ul,[](const auto& a, const auto& b){ return a + b.task_idx.size(); });
-    concat_shell_pair_to_task_idx_cou.reserve(sptt_sz);
-    concat_shell_pair_to_task_off_row_cou.reserve(sptt_sz);
-    concat_shell_pair_to_task_off_col_cou.reserve(sptt_sz);
-
-    // Setup ShellPair -> Task (cou) data structures
-    for( auto isp = 0ul; isp < nsp; ++isp ) {
-      auto& sptt = shell_pair_to_task[isp];
-      auto& bck = host_shell_pair_to_task_cou[isp];
-
-      // Unpack meta data
-      const auto ntask = sptt.task_idx.size();
-      bck.ntask = ntask;
-      bck.X_AB = sptt.rA.x - sptt.rB.x;
-      bck.Y_AB = sptt.rA.y - sptt.rB.y;
-      bck.Z_AB = sptt.rA.z - sptt.rB.z;
-      bck.shell_pair_device = sptt.shell_pair_device;
-
-      // Allocate device memory 
-      bck.task_idx_device = 
-        shell_idx_mem.aligned_alloc<int32_t>( ntask, csl );
-      bck.task_shell_off_row_device = 
-        shell_row_off_mem.aligned_alloc<int32_t>( ntask, csl );
-      bck.task_shell_off_col_device = 
-        shell_col_off_mem.aligned_alloc<int32_t>( ntask, csl );
-
-      // Pack host data
-      concat_iterable(concat_shell_pair_to_task_idx_cou, sptt.task_idx);
-      concat_iterable(
-        concat_shell_pair_to_task_off_row_cou, sptt.task_shell_off_row);
-      concat_iterable(
-        concat_shell_pair_to_task_off_col_cou, sptt.task_shell_off_col);
-    }
-
-    // Send packed data to device
-    device_backend_->copy_async( concat_shell_pair_to_task_idx_cou.size(),
-      concat_shell_pair_to_task_idx_cou.data(), 
-      shell_pair_to_task_stack.shell_pair_to_task_idx_device, 
-      "shell_pair_to_task_idx_device" );
-
-    device_backend_->copy_async( concat_shell_pair_to_task_off_row_cou.size(),
-      concat_shell_pair_to_task_off_row_cou.data(), 
-      shell_pair_to_task_stack.shell_pair_to_task_row_off_device, 
-      "shell_pair_to_task_row_off_device" );
-
-    device_backend_->copy_async( concat_shell_pair_to_task_off_col_cou.size(),
-      concat_shell_pair_to_task_off_col_cou.data(), 
-      shell_pair_to_task_stack.shell_pair_to_task_col_off_device, 
-      "shell_pair_to_task_col_off_device" );
-
-    // Send ShellPair -> Task (cou) to device 
-    device_backend_->copy_async( nsp, 
-      host_shell_pair_to_task_cou.data(), 
-      shell_pair_to_task_stack.shell_pair_to_task_device,
-      "shell_pair_to_task_device" );
-
-    
-    const int max_l = basis_map.max_l();
-
-    // Setup DIAGONAL SP AM batches
-    auto sp2t_5 = hrt_t::now();
-    l_batched_shell_pair_to_task_diag.clear();
-    l_batched_shell_pair_to_task_diag.resize(max_l+1);
-    {
-      auto* p = shell_pair_to_task_stack.shell_pair_to_task_device;
-      auto h  = shell_pair_to_task.begin();
-      for( auto l = 0; l <= max_l; ++l ) {
-        auto& batch_map = l_batched_shell_pair_to_task_diag[l];
-        const auto nsh = basis_map.nshells_with_l(l);
-
-        size_t max_npts = 0;
-        size_t max_ntask = std::max_element( h, h + nsh,
-          [](auto& a, auto& b){
-            return a.task_idx.size() < b.task_idx.size();
-          })->task_idx.size();
-
-        batch_map.ntask_average = max_ntask;
-        batch_map.npts_average  = max_npts;
-        batch_map.nshells_in_batch = nsh;
-        batch_map.shell_pair_to_task_device = p;
-        batch_map.lA = l;
-        batch_map.lB = l;
-
-        p += nsh;
-        h += nsh;
-      }
-    } // DIAGONAL SP AM Scope
-
-    // Setup OFFDIAGONAL SP AM batches
-    auto sp2t_6 = hrt_t::now();
-    l_batched_shell_pair_to_task_off_diag.clear();
-    l_batched_shell_pair_to_task_off_diag.resize((max_l+1)*(max_l+1));
-    {
-      // XXX: NSHELLS offset b/c there are exactly NSHELLS diagonal blocks
-      auto* p = shell_pair_to_task_stack.shell_pair_to_task_device +
-        global_dims.nshells;
-      auto h  = shell_pair_to_task.begin() + global_dims.nshells;
-      for( auto l_i = 0, l_ij = 0; l_i <= max_l; ++l_i )
-      for( auto l_j = 0; l_j <= max_l; ++l_j, ++l_ij ) {
-        auto& batch_map = l_batched_shell_pair_to_task_off_diag[l_ij];
-        size_t nsh = std::count_if(
-          h, shell_pair_to_task.end(),
-          [=](const auto& sp) {
-            return sp.lA == l_i and sp.lB == l_j;
-          });
-
-        size_t max_npts = 0;
-        size_t max_ntask = std::max_element( h, h + nsh,
-          [](auto& a, auto& b){
-            return a.task_idx.size() < b.task_idx.size();
-          })->task_idx.size();
-
-        batch_map.ntask_average = max_ntask;
-        batch_map.npts_average  = max_npts;
-        batch_map.nshells_in_batch = nsh;
-        batch_map.shell_pair_to_task_device = p;
-        batch_map.lA = l_i;
-        batch_map.lB = l_j;
-
-        p += nsh;
-        h += nsh;
-      }
-    } // OFFDIAGONAL SP AM Scope
-
-    auto sp2t_7 = hrt_t::now();
-
-#if 0
-    std::cout << "DIAG SP Batches" << std::endl;
-    for( auto& b : l_batched_shell_pair_to_task_diag ) {
-      std::cout << b.lA << " " << b.lB << " " << b.nshells_in_batch << " " 
-        << b.ntask_average << std::endl;
-    }
-
-    std::cout << "OFFDIAG SP Batches" << std::endl;
-    for( auto& b : l_batched_shell_pair_to_task_off_diag ) {
-      std::cout << b.lA << " " << b.lB << " " << b.nshells_in_batch << " " 
-        << b.ntask_average << std::endl;
-    }
-#endif
-
-  dur_t sp2t_dur_1 = sp2t_2 - sp2t_1;
-  dur_t sp2t_dur_2 = sp2t_3 - sp2t_2;
-  dur_t sp2t_dur_3 = sp2t_4 - sp2t_3;
-  dur_t sp2t_dur_4 = sp2t_5 - sp2t_4;
-  dur_t sp2t_dur_5 = sp2t_6 - sp2t_5;
-  dur_t sp2t_dur_6 = sp2t_7 - sp2t_6;
-  //std::cout << "SP2T 1 = " << sp2t_dur_1.count() << std::endl;
-  //std::cout << "SP2T 2 = " << sp2t_dur_2.count() << std::endl;
-  //std::cout << "SP2T 3 = " << sp2t_dur_3.count() << std::endl;
-  //std::cout << "SP2T 4 = " << sp2t_dur_4.count() << std::endl;
-  //std::cout << "SP2T 5 = " << sp2t_dur_5.count() << std::endl;
-  //std::cout << "SP2T 6 = " << sp2t_dur_6.count() << std::endl;
-
-
-#else
   /*****************************************
    *   GENERATE TASK TO SHELLPAIR (cou)    *
    *****************************************/
@@ -1310,7 +554,7 @@ void Scheme1DataBase::pack_and_send(
       // Construct the subtasks
       const int points_per_subtask = get_points_per_subtask();
       for (int subtask_i = 0; subtask_i < it->npts; subtask_i += points_per_subtask) {
-        subtask.push_back({itask, subtask_i, std::min(it->npts, subtask_i+points_per_subtask), 0});
+        subtask.push_back({int(itask), subtask_i, std::min(it->npts, subtask_i+points_per_subtask), 0});
       }
 
       // Setup ShellPair offset data
@@ -1442,12 +686,11 @@ void Scheme1DataBase::pack_and_send(
         auto& ttsp = l_batch_task_to_shell_pair[l_ij].task_to_shell_pair[itask];
 
         auto& bck = host_task_to_shell_pair_task[l_ij * ntasks + itask];
-        const auto nsp = ttsp.nsp;
-        bck.nsp = nsp;
+        bck.nsp = ttsp.nsp;
 
-        bck.shell_pair_linear_idx_device = task_sp_mem.aligned_alloc<int32_t>(nsp, csl);
-        bck.task_shell_off_row_device = task_row_off_mem.aligned_alloc<int32_t>(nsp, csl);
-        bck.task_shell_off_col_device = task_col_off_mem.aligned_alloc<int32_t>(nsp, csl);
+        bck.shell_pair_linear_idx_device = task_sp_mem.aligned_alloc<int32_t>(ttsp.nsp, csl);
+        bck.task_shell_off_row_device = task_row_off_mem.aligned_alloc<int32_t>(ttsp.nsp, csl);
+        bck.task_shell_off_col_device = task_col_off_mem.aligned_alloc<int32_t>(ttsp.nsp, csl);
 
         concat_iterable( concat_task_to_shell_pair_idx, ttsp.shell_pair_linear_idx );
         concat_iterable( concat_task_to_shell_pair_off_row, ttsp.task_shell_off_row );
@@ -1459,12 +702,11 @@ void Scheme1DataBase::pack_and_send(
         auto& ttsp = l_batch_diag_task_to_shell_pair[l_i].task_to_shell_pair[itask];
 
         auto& bck = host_task_to_shell_pair_task[(num_sp_types + l_i) * ntasks + itask];
-        const auto nsp = ttsp.nsp;
-        bck.nsp = nsp;
+        bck.nsp = ttsp.nsp;
 
-        bck.shell_pair_linear_idx_device = task_sp_mem.aligned_alloc<int32_t>(nsp, csl);
-        bck.task_shell_off_row_device = task_row_off_mem.aligned_alloc<int32_t>(nsp, csl);
-        bck.task_shell_off_col_device = task_col_off_mem.aligned_alloc<int32_t>(nsp, csl);
+        bck.shell_pair_linear_idx_device = task_sp_mem.aligned_alloc<int32_t>(ttsp.nsp, csl);
+        bck.task_shell_off_row_device = task_row_off_mem.aligned_alloc<int32_t>(ttsp.nsp, csl);
+        bck.task_shell_off_col_device = task_col_off_mem.aligned_alloc<int32_t>(ttsp.nsp, csl);
 
         concat_iterable( concat_task_to_shell_pair_idx, ttsp.shell_pair_linear_idx );
         concat_iterable( concat_task_to_shell_pair_off_row, ttsp.task_shell_off_row );
@@ -1564,11 +806,9 @@ void Scheme1DataBase::pack_and_send(
   //std::cout << "T2SP 6 = " << t2sp_dur_6.count() << std::endl;
   //std::cout << "INTERIM = " << interim_dur << std::endl;
 
-#endif
 
   } // Generate ShellPair -> Task (cou)
   auto sp2t_mem_en = hrt_t::now();
-#endif
 
   dur_t w_mem_dur = w_mem_en - w_mem_st;
   dur_t sl_mem_dur = sl_mem_en - sl_mem_st;
@@ -1580,9 +820,9 @@ void Scheme1DataBase::pack_and_send(
   //std::cout << "S2T DUR  = " << s2t_mem_dur.count() << std::endl;
   //std::cout << "SP2T DUR = " << sp2t_mem_dur.count() << std::endl;
 
-  auto snd_st = hrt_t::now();
+  //auto snd_st = hrt_t::now();
   device_backend_->master_queue_synchronize(); 
-  auto snd_en = hrt_t::now();
+  //auto snd_en = hrt_t::now();
   //std::cout << "SND_WAIT = " << dur_t(snd_en-snd_st).count() << std::endl;
 }
 
