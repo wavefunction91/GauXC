@@ -16,8 +16,8 @@
 namespace XCPU {
 void integral_3_0(size_t npts,
                   double *_points,
-                  point rA,
-                  point rB,
+                  point /*rA*/,
+                  point /*rB*/,
                   int nprim_pairs,
                   prim_pair *prim_pairs,
                   double *Xi,

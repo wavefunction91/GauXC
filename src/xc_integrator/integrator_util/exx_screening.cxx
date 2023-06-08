@@ -42,10 +42,10 @@ void exx_ek_screening(
   std::vector<double> task_max_bf_sum(ntasks);
   std::vector<double> task_max_bfn(nbf * ntasks);
 
-  using hrt_t = std::chrono::high_resolution_clock;
-  using dur_t = std::chrono::duration<double>;
+  //using hrt_t = std::chrono::high_resolution_clock;
+  //using dur_t = std::chrono::duration<double>;
 
-  auto coll_st = hrt_t::now();
+  //auto coll_st = hrt_t::now();
   #pragma omp parallel
   { // Scope temp mem
   std::vector<double> basis_eval;
@@ -118,21 +118,21 @@ void exx_ek_screening(
 
   } // Loop over tasks
   } // Memory Scope
-  auto coll_en = hrt_t::now();
+  //auto coll_en = hrt_t::now();
   //std::cout << "... done " << dur_t(coll_en-coll_st).count() << std::endl;
 
   // Compute approx F_i^(k) = |P_ij| * B_j^(k) 
-  auto gemm_st = hrt_t::now();
+  //auto gemm_st = hrt_t::now();
   std::vector<double> task_approx_f( nbf * ntasks );
   blas::gemm( 'N', 'N', nbf, ntasks, nbf, 1., P_abs, ldp,
     task_max_bfn.data(), nbf, 0., task_approx_f.data(), nbf );
-  auto gemm_en = hrt_t::now();
+  //auto gemm_en = hrt_t::now();
   //std::cout << "... done " << dur_t(gemm_en-gemm_st).count() << std::endl;
 
 
   //std::ofstream fmax_file("cpu_fmax." + std::to_string(world_rank) + ".txt");
   //std::cout << "CPU FMAX SHELLS = ";
-  auto list_st = hrt_t::now();
+  //auto list_st = hrt_t::now();
   #pragma omp parallel for schedule(dynamic)
   for(size_t i_task = 0; i_task < ntasks; ++i_task) {
     //std::cout << "ITASK = " << i_task << std::endl;
@@ -210,7 +210,7 @@ void exx_ek_screening(
       basis.nbf_subset( ek_shells.begin(), ek_shells.end() );
 
   } // Loop over tasks
-  auto list_en = hrt_t::now();
+  //auto list_en = hrt_t::now();
   //std::cout << "... done " << dur_t(list_en-list_st).count() << std::endl;
 
   //{

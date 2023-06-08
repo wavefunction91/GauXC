@@ -29,32 +29,14 @@ void reference_becke_weights_host(
 
   const auto&  RAB    = meta.rab();
 
-#if 0
-  auto slater_64 = slater_radii_64();
-  auto clementi_67 = clementi_radii_67();
-
-  auto smap = slater_64;
-  smap.merge( clementi_67 );
-
-
-  std::vector<double> slater_radii;
-  for( auto& atom : mol ) {
-    auto r_it = smap.find(atom.Z);
-    if( r_it == smap.end() ) {
-      slater_radii.emplace_back(3.79835);
-    } else {
-      slater_radii.emplace_back(r_it->second.get());
-    }
-  }
-#else
   std::vector<double> slater_radii;
   for( auto& atom : mol ) {
     slater_radii.emplace_back( default_atomic_radius(atom.Z) );
   }
-#endif
 
 
 #if 0
+  // TODO: Add a pathway for this
   std::vector<double> size_adj(natoms * natoms);
   for( auto i = 0; i < natoms; ++i ) 
   for( auto j = 0; j < natoms; ++j ) {
@@ -354,19 +336,6 @@ void reference_lko_weights_host(
 
       const double mu = 
         (r_i - r_j) / std::min(RAB_i_idx[idx_j], R_cutoff);
-
-      // The breaks in the above loops ensure this never gets encountered
-      #if 0
-      if( mu <= -1 ) {
-        partitionScratch[j] = 0.;
-        continue;
-      }
-
-      if( mu >= 1 ) {
-        partitionScratch[i] = 0.;
-        continue;
-      }
-      #endif
 
       const double g = gBecke(mu);
       const auto   s_ij = 0.5 * (1. - g);

@@ -19,7 +19,7 @@ namespace detail {
   static constexpr size_t nprim_pair_max = 64ul;
 
   template <typename Integral>
-  inline intmax_t csr_index( size_t i, size_t j, size_t n, Integral* row_ptr, Integral* col_ind ) {
+  inline intmax_t csr_index( size_t i, size_t j, Integral* row_ptr, Integral* col_ind ) {
     const auto j_st = col_ind + row_ptr[i];
     const auto j_en = col_ind + row_ptr[i+1];
     auto it = std::lower_bound(j_st, j_en, j);
@@ -132,10 +132,10 @@ public:
     // Sparse Storage based on primitive screening
     row_ptr_.resize(nshells_+1);
     row_ptr_[0] = 0;
-    for(int i = 0; i < nshells_; ++i) {
+    for(size_t i = 0; i < nshells_; ++i) {
 
       size_t nnz_row = 0;
-      for(int j = 0; j <= i; ++j) {
+      for(size_t j = 0; j <= i; ++j) {
         ShellPair<F> sp(basis[i], basis[j]);
         if(sp.nprim_pairs()) {
           nnz_row++;
@@ -148,8 +148,7 @@ public:
   }
 
   inline int64_t get_linear_shell_pair_index(size_t i, size_t j) const {
-    return detail::csr_index(i,j, nshells_, 
-      row_ptr_.data(), col_ind_.data());
+    return detail::csr_index(i, j, row_ptr_.data(), col_ind_.data());
   }
 
   // Retreive unique LT element
