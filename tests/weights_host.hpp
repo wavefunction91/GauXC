@@ -14,7 +14,7 @@
 #include "host/reference/weights.hpp"
 using namespace GauXC;
 
-void test_host_weights( std::ifstream& in_file ) {
+void test_host_weights( std::ifstream& in_file, XCWeightAlg weight_alg ) {
 
   ref_weights_data ref_data;
   {
@@ -22,9 +22,23 @@ void test_host_weights( std::ifstream& in_file ) {
     ar( ref_data );
   }
 
-  reference_ssf_weights_host( 
-    ref_data.mol, *ref_data.meta, ref_data.tasks_unm.begin(), 
-    ref_data.tasks_unm.end() );
+  switch(weight_alg) {
+    case XCWeightAlg::Becke:
+      reference_becke_weights_host( 
+        ref_data.mol, *ref_data.meta, ref_data.tasks_unm.begin(), 
+        ref_data.tasks_unm.end() );
+      break;
+    case XCWeightAlg::SSF:
+      reference_ssf_weights_host( 
+        ref_data.mol, *ref_data.meta, ref_data.tasks_unm.begin(), 
+        ref_data.tasks_unm.end() );
+      break;
+    case XCWeightAlg::LKO:
+      reference_lko_weights_host( 
+        ref_data.mol, *ref_data.meta, ref_data.tasks_unm.begin(), 
+        ref_data.tasks_unm.end() );
+      break;
+  }
 
 
   size_t ntasks = ref_data.tasks_unm.size();

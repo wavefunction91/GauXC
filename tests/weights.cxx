@@ -19,7 +19,7 @@
 #include "weights_hip.hpp"
 
 //#define GENERATE_TESTS
-TEST_CASE( "Benzene", "[weights]" ) {
+TEST_CASE( "Partition Weights", "[weights]" ) {
 
   auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
 #ifdef GENERATE_TESTS
@@ -32,16 +32,44 @@ TEST_CASE( "Benzene", "[weights]" ) {
   BasisSet<double> basis = make_631Gd( mol, SphericalType(true) );
   for( auto& sh : basis ) sh.set_shell_tolerance( 1e-6 );
 
+  {
+  std::ofstream ref_data( "benzene_weights_becke.bin", std::ios::binary );
+  generate_weights_data( mol, basis, ref_data, XCWeightAlg::Becke );  
+  }
+  {
   std::ofstream ref_data( "benzene_weights_ssf.bin", std::ios::binary );
-  generate_weights_data( mol, basis, ref_data );  
+  generate_weights_data( mol, basis, ref_data, XCWeightAlg::SSF );  
+  }
+  {
+  std::ofstream ref_data( "benzene_weights_lko.bin", std::ios::binary );
+  generate_weights_data( mol, basis, ref_data, XCWeightAlg::LKO );  
+  }
+  return;
 #else
+
+
+#ifdef GAUXC_ENABLE_HOST
+  SECTION("Becke") {
+  std::ifstream ref_data( GAUXC_REF_DATA_PATH "/benzene_weights_becke.bin", 
+                          std::ios::binary );
+  test_host_weights( ref_data, XCWeightAlg::Becke );
+  }
+  SECTION("LKO") {
+  std::ifstream ref_data( GAUXC_REF_DATA_PATH "/benzene_weights_lko.bin", 
+                          std::ios::binary );
+  test_host_weights( ref_data, XCWeightAlg::LKO );
+  }
+#endif
+
+
+  SECTION("SSF") {
 
   std::ifstream ref_data( GAUXC_REF_DATA_PATH "/benzene_weights_ssf.bin", 
                           std::ios::binary );
 
 #ifdef GAUXC_ENABLE_HOST
   SECTION( "Host Weights" ) {
-    test_host_weights( ref_data );
+    test_host_weights( ref_data, XCWeightAlg::SSF );
   }
 #endif
 
@@ -55,6 +83,8 @@ TEST_CASE( "Benzene", "[weights]" ) {
   }
 #endif
 #endif
+
+  }
 }
 
 

@@ -35,7 +35,8 @@ struct ref_weights_data {
 #include "host/reference/weights.hpp"
 
 void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
-                                std::ofstream& out_file, size_t ntask_save = 15 ) {
+                            std::ofstream& out_file, XCWeightAlg weight_alg,
+                            size_t ntask_save = 15 ) {
 
 
   auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
@@ -70,8 +71,21 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
 
   ref_data.tasks_unm = tasks; // Make a copy of un modified tasks
 
-  reference_ssf_weights_host( 
-    mol, lb.molmeta(), tasks.begin(), tasks.end() );
+
+  switch( weight_alg ) {
+    case XCWeightAlg::Becke:
+      reference_becke_weights_host( 
+        mol, lb.molmeta(), tasks.begin(), tasks.end() );
+      break;
+    case XCWeightAlg::SSF:
+      reference_ssf_weights_host( 
+        mol, lb.molmeta(), tasks.begin(), tasks.end() );
+      break;
+    case XCWeightAlg::LKO:
+      reference_lko_weights_host( 
+        mol, lb.molmeta(), tasks.begin(), tasks.end() );
+      break;
+  }
 
   // Clear out unneeded data
   for( auto& task : tasks ) {
