@@ -13,6 +13,7 @@ namespace GauXC {
 struct AoSScheme1MAGMABase : public AoSScheme1Base {
 
   void eval_xmat( XCDeviceData*, bool do_grad ) override final;
+  void eval_exx_fmat( XCDeviceData* ) override final;
   void inc_vxc( XCDeviceData* ) override final;
 
   struct Data;
@@ -27,18 +28,27 @@ struct AoSScheme1MAGMABase::Data : public AoSScheme1Base::Data {
   using base_type::device_buffer_t;
 
   struct magma_data {
-    double** dmat_array_device = nullptr;
-    double** vmat_array_device = nullptr;
-    double** zmat_array_device = nullptr;
-    double** bf_array_device   = nullptr;
+    double** xdmat_array_device = nullptr;
+    double** fdmat_array_device = nullptr;
+    double** vmat_array_device  = nullptr;
+    double** zmat_array_device  = nullptr;
+    double** fmat_array_device  = nullptr;
+    double** bf_array_device    = nullptr;
 
-    int32_t* m_array_device   = nullptr;
-    int32_t* n_array_device   = nullptr;
-    int32_t* k_array_device   = nullptr;
-    int32_t* ld_dmat_array_device = nullptr;
-    int32_t* ld_vmat_array_device = nullptr;
-    int32_t* ld_zmat_array_device = nullptr;
-    int32_t* ld_bf_array_device   = nullptr;
+    int32_t* xmat_m_array_device   = nullptr;
+    int32_t* xmat_n_array_device   = nullptr;
+    int32_t* xmat_k_array_device   = nullptr;
+    int32_t* ld_xdmat_array_device = nullptr;
+
+    int32_t* fmat_m_array_device   = nullptr;
+    int32_t* fmat_n_array_device   = nullptr;
+    int32_t* fmat_k_array_device   = nullptr;
+    int32_t* ld_fdmat_array_device = nullptr;
+
+    int32_t* ld_vmat_array_device  = nullptr;
+    int32_t* ld_zmat_array_device  = nullptr;
+    int32_t* ld_fmat_array_device  = nullptr;
+    int32_t* ld_bf_array_device    = nullptr;
 
     inline void reset(){ std::memset(this,0,sizeof(magma_data)); }
   };
@@ -61,6 +71,9 @@ struct AoSScheme1MAGMABase::Data : public AoSScheme1Base::Data {
     host_task_iterator begin, host_task_iterator end, 
     const BasisSetMap& basis_map ) override final;
 
+
+  void pack_and_send_xmat( host_task_iterator, host_task_iterator ); 
+  void pack_and_send_fmat( host_task_iterator, host_task_iterator );
 };
 
 }

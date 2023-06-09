@@ -27,9 +27,8 @@ size_t AoSScheme1MAGMABase::Data::get_mem_req( integrator_term_tracker terms,
   
   size_t base_size = base_type::get_mem_req(terms, task);
 
-  // TODO: There is probably a better way to check this
   required_term_storage reqt(terms);
-  if( reqt.task_nbe_scr ) {
+  if( reqt.task_xmat ) {
     base_size += 
       4*sizeof(double*) + // batch device pointers
       8*sizeof(int32_t);  // Dimensions + leading dimensions 
@@ -49,25 +48,41 @@ AoSScheme1MAGMABase::Data::device_buffer_t
     buf );
 
   required_term_storage reqt(terms);
-  if( not reqt.task_nbe_scr ) return buf;
+  //if( not reqt.task_xmat ) return buf;
 
   // Allocate additional device memory 
   auto [ ptr, sz ] = buf;
   buffer_adaptor mem( ptr, sz );
 
   const auto ntask = std::distance( task_begin, task_end );
-  magma_stack.dmat_array_device = mem.aligned_alloc<double*>( ntask, csl );
-  magma_stack.vmat_array_device = mem.aligned_alloc<double*>( ntask, csl );
-  magma_stack.zmat_array_device = mem.aligned_alloc<double*>( ntask, csl );
-  magma_stack.bf_array_device   = mem.aligned_alloc<double*>( ntask, csl );
+  auto& s = magma_stack;
+  if(reqt.task_xmat) {
+    s.xdmat_array_device = mem.aligned_alloc<double*>(ntask,csl);
+    s.vmat_array_device  = mem.aligned_alloc<double*>(ntask,csl);
+    s.zmat_array_device  = mem.aligned_alloc<double*>(ntask,csl);
+    s.bf_array_device    = mem.aligned_alloc<double*>(ntask,csl);
 
-  magma_stack.m_array_device   = mem.aligned_alloc<int32_t>( ntask + 1, csl );
-  magma_stack.n_array_device   = mem.aligned_alloc<int32_t>( ntask + 1, csl );
-  magma_stack.k_array_device   = mem.aligned_alloc<int32_t>( ntask + 1, csl );
-  magma_stack.ld_dmat_array_device = mem.aligned_alloc<int32_t>( ntask + 1, csl );
-  magma_stack.ld_zmat_array_device = mem.aligned_alloc<int32_t>( ntask + 1, csl );
-  magma_stack.ld_vmat_array_device = mem.aligned_alloc<int32_t>( ntask + 1, csl );
-  magma_stack.ld_bf_array_device   = mem.aligned_alloc<int32_t>( ntask + 1, csl );
+    s.xmat_m_array_device   = mem.aligned_alloc<int32_t>(ntask + 1,csl);
+    s.xmat_n_array_device   = mem.aligned_alloc<int32_t>(ntask + 1,csl);
+    s.xmat_k_array_device   = mem.aligned_alloc<int32_t>(ntask + 1,csl);
+    s.ld_xdmat_array_device = mem.aligned_alloc<int32_t>(ntask + 1,csl);
+    s.ld_zmat_array_device  = mem.aligned_alloc<int32_t>(ntask + 1,csl);
+    s.ld_vmat_array_device  = mem.aligned_alloc<int32_t>(ntask + 1,csl);
+    s.ld_bf_array_device    = mem.aligned_alloc<int32_t>(ntask + 1,csl);
+  }
+
+  if(reqt.task_fmat) {
+    s.fdmat_array_device = mem.aligned_alloc<double*>(ntask,csl);
+    s.fmat_array_device  = mem.aligned_alloc<double*>(ntask,csl);
+    s.bf_array_device    = mem.aligned_alloc<double*>(ntask,csl);
+
+    s.fmat_m_array_device   = mem.aligned_alloc<int32_t>(ntask + 1,csl);
+    s.fmat_n_array_device   = mem.aligned_alloc<int32_t>(ntask + 1,csl);
+    s.fmat_k_array_device   = mem.aligned_alloc<int32_t>(ntask + 1,csl);
+    s.ld_fdmat_array_device = mem.aligned_alloc<int32_t>(ntask + 1,csl);
+    s.ld_fmat_array_device  = mem.aligned_alloc<int32_t>(ntask + 1,csl);
+    s.ld_bf_array_device    = mem.aligned_alloc<int32_t>(ntask + 1,csl);
+  }
 
   // Update dynmem data for derived impls
   return device_buffer_t{ mem.stack(), mem.nleft() };
@@ -78,9 +93,18 @@ void AoSScheme1MAGMABase::Data::pack_and_send(
   host_task_iterator task_begin, host_task_iterator task_end,
   const BasisSetMap& basis_map ) {
 
+
   base_type::pack_and_send( terms, task_begin, task_end, basis_map );
   required_term_storage reqt(terms);
-  if( not reqt.task_nbe_scr ) return;
+
+  if(reqt.task_xmat) pack_and_send_xmat(task_begin, task_end); 
+  if(reqt.task_fmat) pack_and_send_fmat(task_begin, task_end); 
+
+}
+
+void AoSScheme1MAGMABase::Data::pack_and_send_xmat( 
+  host_task_iterator task_begin, host_task_iterator task_end 
+) {
 
   const auto ntask = std::distance( task_begin, task_end );
   std::vector<double*> dmat_host( ntask ), zmat_host( ntask ), bf_host( ntask ),
@@ -113,7 +137,7 @@ void AoSScheme1MAGMABase::Data::pack_and_send(
 
   // Send to device
   device_backend_->copy_async( ntask, dmat_host.data(), 
-    magma_stack.dmat_array_device, "send dmat array" );
+    magma_stack.xdmat_array_device, "send xdmat array" );
   device_backend_->copy_async( ntask, zmat_host.data(), 
     magma_stack.zmat_array_device, "send zmat array" );
   device_backend_->copy_async( ntask, vmat_host.data(), 
@@ -121,20 +145,74 @@ void AoSScheme1MAGMABase::Data::pack_and_send(
   device_backend_->copy_async( ntask, bf_host.data(), 
     magma_stack.bf_array_device, "send bf array" );
 
-  device_backend_->copy_async( ntask, m_host.data(), magma_stack.m_array_device,
-    "send m array" );
-  device_backend_->copy_async( ntask, n_host.data(), magma_stack.n_array_device,
-    "send n array" );
-  device_backend_->copy_async( ntask, k_host.data(), magma_stack.k_array_device,
-    "send k array" );
+  device_backend_->copy_async( ntask, m_host.data(), magma_stack.xmat_m_array_device,
+    "send m array (xmat)" );
+  device_backend_->copy_async( ntask, n_host.data(), magma_stack.xmat_n_array_device,
+    "send n array (xmat)" );
+  device_backend_->copy_async( ntask, k_host.data(), magma_stack.xmat_k_array_device,
+    "send k array (xmat)" );
   device_backend_->copy_async( ntask, ld_dmat_host.data(), 
-    magma_stack.ld_dmat_array_device, "send ld dmat array" );
+    magma_stack.ld_xdmat_array_device, "send ld dmat array (xmat)" );
   device_backend_->copy_async( ntask, ld_zmat_host.data(), 
     magma_stack.ld_zmat_array_device, "send ld zmat array" );
   device_backend_->copy_async( ntask, ld_vmat_host.data(), 
     magma_stack.ld_vmat_array_device, "send ld vmat array" );
   device_backend_->copy_async( ntask, ld_bf_host.data(), 
     magma_stack.ld_bf_array_device, "send ld bf array" );
+  device_backend_->master_queue_synchronize(); 
+
+}
+
+
+
+void AoSScheme1MAGMABase::Data::pack_and_send_fmat( 
+  host_task_iterator task_begin, host_task_iterator task_end 
+) {
+
+  const auto ntask = std::distance( task_begin, task_end );
+  std::vector<double*> dmat_host( ntask ), fmat_host( ntask ), bf_host( ntask );
+  std::vector<int32_t> m_host( ntask ), n_host( ntask ), k_host( ntask ),
+                       ld_dmat_host( ntask ), ld_fmat_host( ntask ), 
+                       ld_bf_host( ntask );
+
+  //double* static_dmat = static_stack.dmat_device;
+  //const auto nbf = global_dims.nbf;
+
+  // host_device_tasks should be populated by parent impl called at top
+  for( auto i = 0; i < ntask; ++i ) {
+    auto& task = host_device_tasks[i];
+    fmat_host[i] = task.fmat;    ld_fmat_host[i] = task.npts;
+    bf_host[i]   = task.bf;      ld_bf_host[i]   = task.npts;
+
+    dmat_host[i]    = task.nbe_scr; 
+    ld_dmat_host[i] = task.bfn_screening.nbe;
+
+    m_host[i] = task.npts;
+    n_host[i] = task.cou_screening.nbe;
+    k_host[i] = task.bfn_screening.nbe;
+  }
+
+  // Send to device
+  device_backend_->copy_async( ntask, dmat_host.data(), 
+    magma_stack.fdmat_array_device, "send fdmat array" );
+  device_backend_->copy_async( ntask, fmat_host.data(), 
+    magma_stack.fmat_array_device, "send fmat array" );
+  device_backend_->copy_async( ntask, bf_host.data(), 
+    magma_stack.bf_array_device, "send bf array" );
+
+  device_backend_->copy_async( ntask, m_host.data(), magma_stack.fmat_m_array_device,
+    "send m array (fmat)" );
+  device_backend_->copy_async( ntask, n_host.data(), magma_stack.fmat_n_array_device,
+    "send n array (fmat)" );
+  device_backend_->copy_async( ntask, k_host.data(), magma_stack.fmat_k_array_device,
+    "send k array (fmat)" );
+  device_backend_->copy_async( ntask, ld_dmat_host.data(), 
+    magma_stack.ld_fdmat_array_device, "send ld dmat array (fmat)" );
+  device_backend_->copy_async( ntask, ld_fmat_host.data(), 
+    magma_stack.ld_fmat_array_device, "send ld fmat array" );
+  device_backend_->copy_async( ntask, ld_bf_host.data(), 
+    magma_stack.ld_bf_array_device, "send ld bf array" );
+
   device_backend_->master_queue_synchronize(); 
 
 }

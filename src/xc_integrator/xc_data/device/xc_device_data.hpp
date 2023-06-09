@@ -84,6 +84,7 @@ struct required_term_storage {
   bool task_bfn_grad      = false;
   bool task_bfn_hess      = false;
   bool task_zmat_lda_gga  = false;
+  bool task_xmat          = false;
   bool task_xmat_grad     = false;
   bool task_fmat          = false;
   bool task_gmat          = false;
@@ -243,6 +244,7 @@ struct required_term_storage {
       task_bfn_grad     = is_gga or  is_grad;
       task_bfn_hess     = is_gga and is_grad;
       task_zmat_lda_gga = true;
+      task_xmat         = true;
       task_xmat_grad    = is_gga and is_grad;
       task_nbe_scr      = true;
 
@@ -260,6 +262,7 @@ struct required_term_storage {
       grid_den              = true;
       task_bfn              = true;
       task_nbe_scr          = true;
+      task_xmat             = true;
       task_zmat_lda_gga     = true;
       task_submat_cut_bfn   = true;
       task_submat_block_bfn = true;

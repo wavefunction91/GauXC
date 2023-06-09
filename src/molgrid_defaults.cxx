@@ -96,7 +96,7 @@ RadialScale default_radial_scaling_factor(RadialQuad rq, AtomicNumber Z) {
 
 
 std::tuple<RadialSize,AngularSize> 
-  default_grid_size(AtomicNumber Z, RadialQuad rq, AtomicGridSizeDefault s) {
+  default_grid_size(AtomicNumber Z, RadialQuad /*rq*/, AtomicGridSizeDefault s) {
 
   switch(s) {
     case AtomicGridSizeDefault::GM3:

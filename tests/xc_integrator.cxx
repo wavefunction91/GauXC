@@ -166,14 +166,14 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func, Pruni
     SECTION( "Incore - MPI Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
         reference_file, func, pruning_scheme, 1, 
-        check_grad, true, check_grad, "Default" );
+        check_grad, true, check_k, "Default" );
     }
 
     #ifdef GAUXC_ENABLE_MAGMA
     SECTION( "Incore - MPI Reduction - MAGMA" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
         reference_file, func, pruning_scheme,
-        1, false, true, false, "Default", "Default", 
+        1, false, true, check_k, "Default", "Default", 
         "Scheme1-MAGMA" );
     }
     #endif

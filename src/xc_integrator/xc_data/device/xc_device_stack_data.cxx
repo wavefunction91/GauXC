@@ -358,7 +358,7 @@ void XCDeviceStackData::send_static_data_exx_ek_screening( const double* V_max,
   std::vector<double> V_pack(nshell_pairs);
   const auto sp_row_ptr = shpairs.row_ptr();
   const auto sp_col_ind = shpairs.col_ind();
-  for( auto i = 0; i < nshells; ++i ) {
+  for( auto i = 0ul; i < nshells; ++i ) {
     const auto j_st = sp_row_ptr[i];
     const auto j_en = sp_row_ptr[i+1];
     for( auto _j = j_st; _j < j_en; ++_j ) {
@@ -373,7 +373,7 @@ void XCDeviceStackData::send_static_data_exx_ek_screening( const double* V_max,
 
   // Create sparse triplet for device
   std::vector<size_t> rowind(nshell_pairs);
-  for( auto i = 0; i < nshells; ++i ) {
+  for( auto i = 0ul; i < nshells; ++i ) {
     const auto j_st = sp_row_ptr[i];
     const auto j_en = sp_row_ptr[i+1];
     for( auto _j = j_st; _j < j_en; ++_j ) {
@@ -391,7 +391,7 @@ void XCDeviceStackData::send_static_data_exx_ek_screening( const double* V_max,
 
   std::vector<int32_t> shell2bf(nshells);
   std::vector<int32_t> shell_sizes(nshells);
-  for(auto i = 0; i < nshells; ++i) {
+  for(auto i = 0ul; i < nshells; ++i) {
     shell2bf[i] = basis_map.shell_to_first_ao(i);
     shell_sizes[i] = basis_map.shell_size(i);
   }
