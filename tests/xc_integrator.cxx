@@ -22,6 +22,7 @@ using namespace GauXC;
 void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   std::string reference_file, 
   ExchCXX::Functional func_key, 
+  PruningScheme pruning_scheme,
   size_t quad_pad_value,
   bool check_grad,
   bool check_integrate_den,
@@ -74,13 +75,11 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
 
-  //MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
-  auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
+  auto mg = MolGridFactory::create_default_molgrid(mol, pruning_scheme,
     BatchSize(512), RadialQuad::MuraKnowles, AtomicGridSizeDefault::UltraFineGrid);
 
   // Construct Load Balancer
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
-  //LoadBalancerFactory lb_factory(ExecutionSpace::Host, "REPLICATED-FILLIN");
   auto lb = lb_factory.get_instance(rt, mol, mg, basis, quad_pad_value);
 
   // Construct Weights Module
@@ -115,7 +114,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 ); 
 
   // Check if the integrator propagates state correctly
-  if( true ) {
+  {
     auto [ EXC1, VXC1 ] = integrator.eval_exc_vxc( P );
     CHECK( EXC1 == Approx( EXC_ref ) );
     auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
@@ -141,7 +140,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
 }
 
-void test_integrator(std::string reference_file, ExchCXX::Functional func) {
+void test_integrator(std::string reference_file, ExchCXX::Functional func, PruningScheme pruning_scheme) {
 
 #ifdef GAUXC_ENABLE_DEVICE
   auto rt = DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.9);
@@ -152,7 +151,7 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func) {
 #ifdef GAUXC_ENABLE_HOST
   SECTION( "Host" ) {
     test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
-      1, true, true, true );
+      pruning_scheme, 1, true, true, true );
   }
 #endif
 
@@ -166,13 +165,15 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func) {
     #endif
     SECTION( "Incore - MPI Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
-        reference_file, func, 32, check_grad, true, check_grad, "Default" );
+        reference_file, func, pruning_scheme, 1, 
+        check_grad, true, check_grad, "Default" );
     }
 
     #ifdef GAUXC_ENABLE_MAGMA
     SECTION( "Incore - MPI Reduction - MAGMA" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
-        reference_file, func, 32, false, true, false, "Default", "Default", 
+        reference_file, func, pruning_scheme,
+        1, false, true, false, "Default", "Default", 
         "Scheme1-MAGMA" );
     }
     #endif
@@ -180,7 +181,9 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func) {
     #ifdef GAUXC_ENABLE_CUTLASS
     SECTION( "Incore - MPI Reduction - CUTLASS" ) {
       test_xc_integrator( ExecutionSpace::Device, rt, 
-        reference_file, func, 32, false, true, false, "Default", "Default", "Scheme1-CUTLASS" );
+        reference_file, func, pruning_scheme,
+        1, false, true, false, "Default", "Default", 
+        "Scheme1-CUTLASS" );
     }
     #endif
 
@@ -188,13 +191,15 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func) {
     #ifdef GAUXC_ENABLE_NCCL
     SECTION( "Incore - NCCL Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
-        reference_file, func, 32, false, false, false, "Default", "NCCL" );
+        reference_file, func, pruning_scheme, 
+        1, false, false, false, "Default", "NCCL" );
     }
     #endif
 
     SECTION( "ShellBatched" ) {
       test_xc_integrator( ExecutionSpace::Device, rt, 
-        reference_file, func, 32, false, false, false, "ShellBatched" );
+        reference_file, func, pruning_scheme, 1, 
+        false, false, false, "ShellBatched" );
     }
   }
 #endif
@@ -207,16 +212,27 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
 
   // LDA Test
   SECTION( "Benzene / SVWN5 / cc-pVDZ" ) {
-    test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf.hdf5", ExchCXX::Functional::SVWN5 );
+    test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf.hdf5", 
+        ExchCXX::Functional::SVWN5, PruningScheme::Unpruned );
+  }
+  SECTION( "Benzene / SVWN5 / cc-pVDZ (Treutler)" ) {
+    test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf_treutler_prune.hdf5", 
+        ExchCXX::Functional::SVWN5, PruningScheme::Treutler );
+  }
+  SECTION( "Benzene / SVWN5 / cc-pVDZ (Robust)" ) {
+    test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf_robust_prune.hdf5", 
+        ExchCXX::Functional::SVWN5, PruningScheme::Robust );
   }
 
   // GGA Test
   SECTION( "Benzene / PBE0 / cc-pVDZ" ) {
-    test_integrator(GAUXC_REF_DATA_PATH "/benzene_pbe0_cc-pvdz_ufg_ssf.hdf5", ExchCXX::Functional::PBE0 );
+    test_integrator(GAUXC_REF_DATA_PATH "/benzene_pbe0_cc-pvdz_ufg_ssf.hdf5", 
+        ExchCXX::Functional::PBE0, PruningScheme::Unpruned );
   }
 
   // sn-LinK Test
   SECTION( "Benzene / PBE0 / 6-31G(d)" ) {
-    test_integrator(GAUXC_REF_DATA_PATH "/benzene_631gd_pbe0_ufg.hdf5", ExchCXX::Functional::PBE0 );
+    test_integrator(GAUXC_REF_DATA_PATH "/benzene_631gd_pbe0_ufg.hdf5", 
+        ExchCXX::Functional::PBE0, PruningScheme::Unpruned );
   }
 }
