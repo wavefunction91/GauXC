@@ -15,6 +15,7 @@ struct AoSScheme1MAGMABase : public AoSScheme1Base {
   void eval_xmat( XCDeviceData*, bool do_grad ) override final;
   void eval_exx_fmat( XCDeviceData* ) override final;
   void inc_vxc( XCDeviceData* ) override final;
+  void inc_exx_k( XCDeviceData* ) override final;
 
   struct Data;
 
@@ -31,8 +32,10 @@ struct AoSScheme1MAGMABase::Data : public AoSScheme1Base::Data {
     double** xdmat_array_device = nullptr;
     double** fdmat_array_device = nullptr;
     double** vmat_array_device  = nullptr;
+    double** kmat_array_device  = nullptr;
     double** zmat_array_device  = nullptr;
     double** fmat_array_device  = nullptr;
+    double** gmat_array_device  = nullptr;
     double** bf_array_device    = nullptr;
 
     int32_t* xmat_m_array_device   = nullptr;

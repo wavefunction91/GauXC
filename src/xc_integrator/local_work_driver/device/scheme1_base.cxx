@@ -1111,7 +1111,6 @@ void AoSScheme1Base::inc_exx_k( XCDeviceData* _data ) {
     auto npts = task.npts;
     auto nbe_bfn = task.bfn_screening.nbe;
     auto nbe_cou = task.cou_screening.nbe;
-    // XXX Needs to be modified to account for screening
     gemm( handle, DeviceBlasOp::Trans, DeviceBlasOp::NoTrans, 
       nbe_bfn, nbe_cou, npts, 1., task.bf, npts, task.gmat, npts, 0., 
       task.nbe_scr, nbe_bfn );

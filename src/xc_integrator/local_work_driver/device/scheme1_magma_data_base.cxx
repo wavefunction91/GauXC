@@ -28,9 +28,9 @@ size_t AoSScheme1MAGMABase::Data::get_mem_req( integrator_term_tracker terms,
   size_t base_size = base_type::get_mem_req(terms, task);
 
   required_term_storage reqt(terms);
-  if( reqt.task_xmat ) {
+  if( reqt.task_xmat or reqt.task_fmat ) {
     base_size += 
-      4*sizeof(double*) + // batch device pointers
+      8*sizeof(double*) + // batch device pointers
       8*sizeof(int32_t);  // Dimensions + leading dimensions 
                           // (extra handled by get_static_mem_requirement)
   }
@@ -74,6 +74,8 @@ AoSScheme1MAGMABase::Data::device_buffer_t
   if(reqt.task_fmat) {
     s.fdmat_array_device = mem.aligned_alloc<double*>(ntask,csl);
     s.fmat_array_device  = mem.aligned_alloc<double*>(ntask,csl);
+    s.gmat_array_device  = mem.aligned_alloc<double*>(ntask,csl);
+    s.kmat_array_device  = mem.aligned_alloc<double*>(ntask,csl);
     s.bf_array_device    = mem.aligned_alloc<double*>(ntask,csl);
 
     s.fmat_m_array_device   = mem.aligned_alloc<int32_t>(ntask + 1,csl);
@@ -170,7 +172,8 @@ void AoSScheme1MAGMABase::Data::pack_and_send_fmat(
 ) {
 
   const auto ntask = std::distance( task_begin, task_end );
-  std::vector<double*> dmat_host( ntask ), fmat_host( ntask ), bf_host( ntask );
+  std::vector<double*> dmat_host( ntask ), fmat_host( ntask ), bf_host( ntask ),
+                       kmat_host( ntask ), gmat_host( ntask );
   std::vector<int32_t> m_host( ntask ), n_host( ntask ), k_host( ntask ),
                        ld_dmat_host( ntask ), ld_fmat_host( ntask ), 
                        ld_bf_host( ntask );
@@ -182,7 +185,9 @@ void AoSScheme1MAGMABase::Data::pack_and_send_fmat(
   for( auto i = 0; i < ntask; ++i ) {
     auto& task = host_device_tasks[i];
     fmat_host[i] = task.fmat;    ld_fmat_host[i] = task.npts;
+    gmat_host[i] = task.gmat;
     bf_host[i]   = task.bf;      ld_bf_host[i]   = task.npts;
+    kmat_host[i] = task.nbe_scr;
 
     dmat_host[i]    = task.nbe_scr; 
     ld_dmat_host[i] = task.bfn_screening.nbe;
@@ -197,6 +202,10 @@ void AoSScheme1MAGMABase::Data::pack_and_send_fmat(
     magma_stack.fdmat_array_device, "send fdmat array" );
   device_backend_->copy_async( ntask, fmat_host.data(), 
     magma_stack.fmat_array_device, "send fmat array" );
+  device_backend_->copy_async( ntask, gmat_host.data(), 
+    magma_stack.gmat_array_device, "send gmat array" );
+  device_backend_->copy_async( ntask, kmat_host.data(), 
+    magma_stack.kmat_array_device, "send kmat array" );
   device_backend_->copy_async( ntask, bf_host.data(), 
     magma_stack.bf_array_device, "send bf array" );
 

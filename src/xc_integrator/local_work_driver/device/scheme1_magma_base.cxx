@@ -107,4 +107,37 @@ void AoSScheme1MAGMABase::inc_vxc( XCDeviceData* _data){
     data->device_backend_->queue() );
 }
 
+void AoSScheme1MAGMABase::inc_exx_k( XCDeviceData* _data){
+#if 0
+  AoSScheme1Base::inc_exx_k(_data);
+#else
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+
+  auto master_queue = data->device_backend_->master_magma_queue();
+  auto magma_stack = data->magma_stack;
+  magmablas_dgemm_vbatched( MagmaTrans, MagmaNoTrans,
+    magma_stack.fmat_k_array_device, magma_stack.fmat_n_array_device, 
+    magma_stack.fmat_m_array_device, 
+    1., magma_stack.bf_array_device,   magma_stack.ld_bf_array_device,
+        magma_stack.gmat_array_device, magma_stack.ld_fmat_array_device,
+    0., magma_stack.kmat_array_device, magma_stack.ld_fdmat_array_device,
+    ntasks, *master_queue );
+
+  // Increment EXX_K
+  const auto nbf = data->global_dims.nbf;
+  const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
+  auto static_stack  = data->static_stack;
+  auto aos_stack     = data->aos_stack;
+  asym_task_inc_potential( ntasks, aos_stack.device_tasks, 
+    static_stack.exx_k_device, nbf, submat_block_size, 
+    data->device_backend_->queue() );
+#endif
+}
+
 }
