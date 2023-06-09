@@ -18,8 +18,9 @@ public:
   HostMolecularWeights( const HostMolecularWeights& ) = delete;
   HostMolecularWeights( HostMolecularWeights&& ) noexcept = default;
 
-  inline HostMolecularWeights(std::unique_ptr<LocalWorkDriver>&& lwd) :
-    MolecularWeightsImpl(std::move(lwd)) {}
+  template <typename... Args>
+  inline HostMolecularWeights(Args&&... args) :
+    MolecularWeightsImpl(std::forward<Args>(args)...) {}
 
   void modify_weights(LoadBalancer&) const final;
 

@@ -19,6 +19,7 @@ namespace detail {
 
 struct MolecularWeightsSettings { 
     XCWeightAlg weight_alg = XCWeightAlg::SSF; ///< Weight partitioning scheme
+    bool becke_size_adjustment = false; ///< Whether to use Becke size adjustments
 };
 
 

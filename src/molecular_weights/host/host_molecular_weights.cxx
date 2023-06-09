@@ -30,7 +30,7 @@ void HostMolecularWeights::modify_weights( LoadBalancer& lb ) const {
   // Modify the weights
   const auto& mol  = lb.molecule();
   const auto& meta = lb.molmeta();
-  lwd->partition_weights( XCWeightAlg::SSF, mol, meta, 
+  lwd->partition_weights( this->settings_.weight_alg, mol, meta, 
     tasks.begin(), tasks.end() );
 
   lb.state().modified_weights_are_stored = true;

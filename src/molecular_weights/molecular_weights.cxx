@@ -52,12 +52,12 @@ std::shared_ptr<MolecularWeights>
   // Create MolecularWeights instance
   if( ex_ == ExecutionSpace::Host ) {
     return std::make_shared<MolecularWeights>(
-      detail::make_host_mol_weights_impl(std::move(lwd))
+      detail::make_host_mol_weights_impl(std::move(lwd), settings_)
     );
   } else {
   #ifdef GAUXC_ENABLE_DEVICE
     return std::make_shared<MolecularWeights>(
-      detail::make_device_mol_weights_impl(std::move(lwd))
+      detail::make_device_mol_weights_impl(std::move(lwd), settings_)
     );
   #else
     GAUXC_GENERIC_EXCEPTION("Device API Not Enabled");

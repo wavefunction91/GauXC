@@ -111,7 +111,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                        XCDeviceData& device_data,
                        const IntegratorSettingsEXX& settings ) {
 
-  auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
+  auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get());
   IntegratorSettingsSNLinK sn_link_settings;
   if( auto* tmp = dynamic_cast<const IntegratorSettingsSNLinK*>(&settings) ) {
     sn_link_settings = *tmp;

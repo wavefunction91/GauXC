@@ -18,8 +18,9 @@ public:
   DeviceMolecularWeights( const DeviceMolecularWeights& ) = delete;
   DeviceMolecularWeights( DeviceMolecularWeights&& ) noexcept = default;
 
-  inline DeviceMolecularWeights(std::unique_ptr<LocalWorkDriver>&& lwd) :
-    MolecularWeightsImpl(std::move(lwd)) {}
+  template <typename... Args>
+  inline DeviceMolecularWeights(Args&&... args) :
+    MolecularWeightsImpl(std::forward<Args>(args)...) {}
 
   void modify_weights(LoadBalancer&) const final;
 

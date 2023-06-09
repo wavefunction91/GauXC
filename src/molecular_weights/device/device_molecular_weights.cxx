@@ -15,6 +15,8 @@ void DeviceMolecularWeights::modify_weights( LoadBalancer& lb ) const {
 
   if(lb.state().modified_weights_are_stored)
     GAUXC_GENERIC_EXCEPTION("Attempting to Overwrite Modified Weights");
+  if(this->settings_.weight_alg != XCWeightAlg::SSF)
+    GAUXC_GENERIC_EXCEPTION("Non-SSF Weights NYI for Device Integration");
 
   // Cast LWD to LocalDeviceWorkDriver
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );

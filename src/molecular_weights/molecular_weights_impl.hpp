@@ -16,6 +16,7 @@ class MolecularWeightsImpl {
 protected:
 
   std::unique_ptr<LocalWorkDriver> local_work_driver_;
+  MolecularWeightsSettings         settings_;
   util::Timer timer_;
 
 public:
@@ -25,8 +26,10 @@ public:
   MolecularWeightsImpl( const MolecularWeightsImpl& ) = delete;
   MolecularWeightsImpl( MolecularWeightsImpl&& ) noexcept = default;
 
-  inline MolecularWeightsImpl(std::unique_ptr<LocalWorkDriver>&& lwd) :
-    local_work_driver_(std::move(lwd)) {}
+  inline MolecularWeightsImpl(std::unique_ptr<LocalWorkDriver>&& lwd,
+    MolecularWeightsSettings settings) :
+    local_work_driver_(std::move(lwd)),
+    settings_(settings) {}
 
   virtual void modify_weights(LoadBalancer&) const = 0;
   inline const util::Timer& get_timings() const {
