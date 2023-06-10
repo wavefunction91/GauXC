@@ -399,7 +399,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   } // Loop over batches of batches 
 
-#if 0
+#if 1
   // Symmetrize K in device memory
   lwd->symmetrize_exx_k( &device_data );
 #endif

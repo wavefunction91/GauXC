@@ -1136,7 +1136,11 @@ void AoSScheme1Base::symmetrize_exx_k( XCDeviceData* _data ) {
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
-  GAUXC_GENERIC_EXCEPTION("NYI");
+
+  const auto nbf = data->global_dims.nbf;
+  auto static_stack  = data->static_stack;
+  symmetrize_matrix_inc( nbf, static_stack.exx_k_device, nbf, 
+    data->device_backend_->queue() ); 
 
 }
 
