@@ -31,6 +31,12 @@ size_t HipAoSScheme1<Base>::Data::get_rab_align() {
   return sizeof(double2);
 }
 
+template <typename Base>
+int HipAoSScheme1<Base>::Data::get_points_per_subtask() {
+  //GAUXC_GENERIC_EXCEPTION("sn-K Path for HIP NYI");
+  return 64;
+}
+
 
 template <typename Base>
 size_t HipAoSScheme1<Base>::Data::get_submat_chunk_size(int32_t LDA, int32_t dev_id) {

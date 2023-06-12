@@ -10,6 +10,10 @@
 #include "device/common/inc_potential.hpp"
 #include "device/common/device_blas.hpp"
 
+#ifdef GAUXC_ENABLE_CUDA
+#define GAUXC_ENABLE_EXX
+#endif
+
 namespace GauXC {
 
 void AoSScheme1MAGMABase::eval_xmat( XCDeviceData* _data, bool do_grad ){
@@ -46,8 +50,8 @@ void AoSScheme1MAGMABase::eval_xmat( XCDeviceData* _data, bool do_grad ){
 }
 
 void AoSScheme1MAGMABase::eval_exx_fmat( XCDeviceData* _data ) {
-#if 0
-  AoSScheme1Base::eval_exx_fmat(_data);
+#ifndef GAUXC_ENABLE_EXX
+  GAUXC_GENERIC_EXCEPTION("EXX + non-CUDA NYI");
 #else
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -108,8 +112,8 @@ void AoSScheme1MAGMABase::inc_vxc( XCDeviceData* _data){
 }
 
 void AoSScheme1MAGMABase::inc_exx_k( XCDeviceData* _data){
-#if 0
-  AoSScheme1Base::inc_exx_k(_data);
+#ifndef GAUXC_ENABLE_EXX
+  GAUXC_GENERIC_EXCEPTION("EXX + non-CUDA NYI");
 #else
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();

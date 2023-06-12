@@ -1131,7 +1131,9 @@ void AoSScheme1Base::inc_exx_k( XCDeviceData* _data ) {
 }
 
 void AoSScheme1Base::symmetrize_exx_k( XCDeviceData* _data ) {
-
+#ifndef GAUXC_ENABLE_EXX
+  GAUXC_GENERIC_EXCEPTION("EXX + non-CUDA NYI");
+#else
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
@@ -1141,12 +1143,14 @@ void AoSScheme1Base::symmetrize_exx_k( XCDeviceData* _data ) {
   auto static_stack  = data->static_stack;
   symmetrize_matrix_inc( nbf, static_stack.exx_k_device, nbf, 
     data->device_backend_->queue() ); 
-
+#endif
 }
 
 
 void AoSScheme1Base::eval_exx_ek_screening_bfn_stats( XCDeviceData* _data ) {
-
+#ifndef GAUXC_ENABLE_EXX
+  GAUXC_GENERIC_EXCEPTION("EXX + non-CUDA NYI");
+#else
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
@@ -1161,14 +1165,16 @@ void AoSScheme1Base::eval_exx_ek_screening_bfn_stats( XCDeviceData* _data ) {
   GauXC::exx_ek_screening_bfn_stats( ntasks, aos_stack.device_tasks,
     static_stack.ek_max_bfn_sum_device, static_stack.ek_bfn_max_device, 
     ntasks_ek, data->device_backend_->queue() );
-
+#endif
 }
 
 
 void AoSScheme1Base::exx_ek_shellpair_collision( double eps_E, double eps_K,
   XCDeviceData* _data, host_task_iterator tb, host_task_iterator te,
   const ShellPairCollection<double>& shpairs ) {
-
+#ifndef GAUXC_ENABLE_EXX
+  GAUXC_GENERIC_EXCEPTION("EXX + non-CUDA NYI");
+#else
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
@@ -1196,7 +1202,7 @@ void AoSScheme1Base::exx_ek_shellpair_collision( double eps_E, double eps_K,
     data->device_backend_->queue(),
     data->device_backend_->master_blas_handle()
    );
-
+#endif
 }
 
 

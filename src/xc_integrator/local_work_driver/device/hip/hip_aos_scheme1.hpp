@@ -51,6 +51,7 @@ struct HipAoSScheme1<Base>::Data : public Base::Data {
   size_t get_submat_chunk_size(int32_t,int32_t) override final;
   size_t get_ldatoms() override final;
   size_t get_rab_align() override final;
+  int get_points_per_subtask() override final;
 
 };
 

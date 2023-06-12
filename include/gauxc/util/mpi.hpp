@@ -16,6 +16,21 @@
 
 namespace GauXC {
 
+namespace detail {
+template <typename InputIt, typename OutputIt, typename T>
+OutputIt exclusive_scan(InputIt begin, InputIt end, OutputIt d_first, T init) {
+  *(d_first++) = init;
+  T sum = init;
+  for(auto it = begin; it != end; ++it) {
+    *(d_first++) = *it + sum;
+    sum += *it;
+  }
+  return d_first;
+}
+
+using byte = char;
+}
+
 /// C++ Wrapper for MPI Primitive Datatypes
 template <typename T>
 MPI_Datatype mpi_data_type();
@@ -83,7 +98,7 @@ auto mpi_prefix_sum(InputIterator begin, InputIterator end,
     MPI_SUM, comm);
 
   // Compute local exclusive scan
-  std::exclusive_scan(begin, end, prefix_sum, value_type(0));
+  detail::exclusive_scan(begin, end, prefix_sum, value_type(0));
 
   // Update local scans with seed values
   int world_rank; MPI_Comm_rank(comm, &world_rank);
@@ -102,7 +117,7 @@ auto mpi_prefix_sum(InputIterator begin, InputIterator end,
 class MPI_Packed_Buffer {
   MPI_Comm comm_;
   int internal_position_;
-  std::vector<std::byte> buffer_;
+  std::vector<detail::byte> buffer_;
 
 public:
 
