@@ -8,9 +8,7 @@
 #pragma once
 #include <gauxc/runtime_environment/fwd.hpp>
 #include <memory>
-#ifdef GAUXC_ENABLE_MPI
-#include <mpi.h>
-#endif
+#include <gauxc/util/mpi.hpp>
 
 namespace GauXC {
 
