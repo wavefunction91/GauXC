@@ -135,7 +135,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   // Check K
   if( has_k and check_k ) {
     auto K = integrator.eval_exx( P );
-    CHECK((K - K.transpose()).norm() < 1e-12); // Symmetric
+    CHECK((K - K.transpose()).norm() < std::numeric_limits<double>::epsilon()); // Symmetric
     CHECK( (K - K_ref).norm() / basis.nbf() < 1e-7 );
   }
 
