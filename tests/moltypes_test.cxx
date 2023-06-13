@@ -1,8 +1,17 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "ut_common.hpp"
 #include "catch2/catch.hpp"
 #include <gauxc/molecule.hpp>
 #include <gauxc/molmeta.hpp>
 #include <gauxc/external/hdf5.hpp>
+//#include <filesystem>
+#include <fstream>
 
 #include "standards.hpp"
 
@@ -145,6 +154,12 @@ TEST_CASE("HDF5-MOLECULE", "[moltypes]") {
   
   // Write file
   const std::string fname = GAUXC_REF_DATA_PATH "/test_mol.hdf5";
+  //if( std::filesystem::exists(fname) ) std::filesystem::remove(fname);
+  auto file_exists = [](const auto& f ) {
+    std::ifstream file(f); return file.good();
+  };
+  if(file_exists(fname)) std::remove(fname.c_str());
+
   write_hdf5_record( mol, fname , "/MOL" );
 
   // Read File
@@ -154,6 +169,7 @@ TEST_CASE("HDF5-MOLECULE", "[moltypes]") {
   // Check that IO was correct
   CHECK( mol == mol_read );
 
-  std::remove( fname.c_str() ); // Delete the test file
+  //std::filesystem::remove(fname); // Delete the test file
+  std::remove(fname.c_str());
 
 }

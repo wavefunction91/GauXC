@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "nccl_reduction_driver.hpp"
 #include <cstring>
 #include <memory>
@@ -44,9 +51,9 @@ cudaStream_t get_cuda_stream_from_optional_args( std::any& args ) {
 }
 
 
-NCCLReductionDriver::NCCLReductionDriver(GAUXC_MPI_CODE(MPI_Comm comm)) :
-  DeviceReductionDriver(GAUXC_MPI_CODE(comm)),
-  nccl_comm_( std::make_shared<util::nccl_comm>(comm) ){ }
+NCCLReductionDriver::NCCLReductionDriver(const RuntimeEnvironment& rt) :
+  DeviceReductionDriver(rt),
+  nccl_comm_( std::make_shared<util::nccl_comm>(rt.comm()) ){ }
 
 
 NCCLReductionDriver::~NCCLReductionDriver() noexcept = default;

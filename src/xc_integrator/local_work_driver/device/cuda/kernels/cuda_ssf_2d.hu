@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "cuda_extensions.hpp"
 #include "device_specific/cuda_device_constants.hpp"
 #include "common/integrator_constants.hpp"
@@ -38,7 +45,7 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
   size_t lddist, const int32_t* iparent, const double* dist_nearest,
   double* weights ) {
 
-  constexpr uint32_t warps_per_thread_block = weight_thread_block / cuda::warp_size;
+  //constexpr uint32_t warps_per_thread_block = weight_thread_block / cuda::warp_size;
   static_assert( weight_unroll == 4 );
 
   constexpr double weight_tol = 1e-10;

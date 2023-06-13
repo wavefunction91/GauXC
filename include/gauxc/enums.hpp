@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 namespace GauXC {
@@ -8,8 +15,9 @@ namespace GauXC {
  *  Generally mapped to equivalent enums in IntegratorXX
  */
 enum class RadialQuad {
-  MuraKnowles,      ///< Mura-Knowles radial quadrature
-  MurrayHandyLaming ///< Murray-Handy-Laming radial quadrature
+  MuraKnowles,       ///< Mura-Knowles radial quadrature
+  MurrayHandyLaming, ///< Murray-Handy-Laming radial quadrature
+  TreutlerAldrichs   ///< Treutler-Aldrichs radial quadrature
 };
 
 /**
@@ -20,7 +28,9 @@ enum class RadialQuad {
 enum class AtomicGridSizeDefault {
   FineGrid,       ///< Fine grid      (least accurate)
   UltraFineGrid,  ///< Ultrafine grid (appropriate accuracy)
-  SuperFineGrid   ///< Superfine grid (most accurate)
+  SuperFineGrid,  ///< Superfine grid (most accurate)
+  GM3,            ///< Treutler-Aldrichs GM3
+  GM5             ///< Treutlet-Aldrichs GM5
 };
 
 /**
@@ -30,7 +40,7 @@ enum class AtomicGridSizeDefault {
 enum class XCWeightAlg {
   Becke, ///< The original Becke weighting scheme
   SSF,   ///< The Stratmann-Scuseria-Frisch weighting scheme
-  LKO
+  LKO    ///< The Lauqua-Kuessman-Ochsenfeld weighting scheme
 };
 
 /**

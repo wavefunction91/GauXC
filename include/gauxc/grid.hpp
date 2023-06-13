@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include <memory>
@@ -17,20 +24,12 @@ using BatchSize    = detail::NamedType< int64_t, struct BatchSizeType   >;
 /// A named type pertaining to a scaling factor for a radial quadrature
 using RadialScale  = detail::NamedType< double,  struct RadialScaleType >;
 
-/// A type alias for the specficiation of the radial and angular dimensions of
-/// a spherical quadrature
-using GridSize = std::pair< RadialSize, AngularSize >;
-
 namespace detail {
-  /**
-   *  @brief A class which contains the implementation details of a Grid instance
-   */
+  /// A class which contains the implementation details of a Grid instance
   class GridImpl;
 }
 
-/**
- *  @brief A class to manage a particular spherical (atomic) quadrature
- */
+/// A class to manage a particular spherical (atomic) quadrature
 class Grid {
 
   std::shared_ptr<detail::GridImpl> pimpl_; 
@@ -38,100 +37,16 @@ class Grid {
 
 public:
 
+  // Delete default ctor
   Grid() = delete;
 
   /**
-   *  @brief Construct a Grid object
-   *  
-   *  @param[in] rq   Radial quadrature
-   *  @param[in] rs   Number of radial quadrature points
-   *  @param[in] as   Number of angular quadrature points
-   *  @param[in] scal Radial scaling factor ( r -> scal*r )
-   *  @param[in] bs   Max number of quadrature points per batch
-   */
-  Grid( RadialQuad rq, RadialSize rs, AngularSize as, RadialScale scal, 
-        BatchSize bs); 
-
-  /**
-   *  @brief Construct a Grid object
+   *  @brief Generate a batched atomic grid
    *
-   *  Default batch size
-   *  
-   *  @param[in] rq   Radial quadrature
-   *  @param[in] rs   Number of radial quadrature points
-   *  @param[in] as   Number of angular quadrature points
-   *  @param[in] scal Radial scaling factor ( r -> scal*r )
+   *  @param[in] q   Shared ptr to a preconstructed quadrature instance
+   *  @param[in] bsz Batch size for quadrature
    */
-  Grid( RadialQuad rq, RadialSize rs, AngularSize as, RadialScale scal ); 
-
-  /**
-   *  @brief Construct a Grid object
-   *
-   *  Default radial quadrature (MuraKnowles)
-   *  
-   *  @param[in] rs   Number of radial quadrature points
-   *  @param[in] as   Number of angular quadrature points
-   *  @param[in] scal Radial scaling factor ( r -> scal*r )
-   *  @param[in] bs   Max number of quadrature points per batch
-   */
-  Grid( RadialSize rs, AngularSize as, RadialScale scal, BatchSize bs ); 
-
-  /**
-   *  @brief Construct a Grid object
-   *
-   *  Default radial quadrature (MuraKnowles) and batch size
-   *  
-   *  @param[in] rs   Number of radial quadrature points
-   *  @param[in] as   Number of angular quadrature points
-   *  @param[in] scal Radial scaling factor ( r -> scal*r )
-   */
-  Grid( RadialSize rs, AngularSize as, RadialScale scal ); 
-
-
-
-
-  /**
-   *  @brief Construct a Grid object
-   *  
-   *  @param[in] rq   Radial quadrature
-   *  @param[in] gs   Grid dimensions
-   *  @param[in] scal Radial scaling factor ( r -> scal*r )
-   *  @param[in] bs   Max number of quadrature points per batch
-   */
-  Grid( RadialQuad rq, GridSize gs, RadialScale scal, BatchSize bs );
-
-  /**
-   *  @brief Construct a Grid object
-   *
-   *  Default batch size
-   *  
-   *  @param[in] rq   Radial quadrature
-   *  @param[in] gs   Grid dimensions
-   *  @param[in] scal Radial scaling factor ( r -> scal*r )
-   */
-  Grid( RadialQuad rq, GridSize gs, RadialScale scal );
-
-  /**
-   *  @brief Construct a Grid object
-   *
-   *  Default radial quadrature (MuraKnowles)
-   *  
-   *  @param[in] gs   Grid dimensions
-   *  @param[in] scal Radial scaling factor ( r -> scal*r )
-   *  @param[in] bs   Max number of quadrature points per batch
-   */
-  Grid( GridSize gs, RadialScale scal, BatchSize bs );
-
-  /**
-   *  @brief Construct a Grid object
-   *
-   *  Default radial quadrature (MuraKnowles) and batch size
-   *  
-   *  @param[in] gs   Grid dimensions
-   *  @param[in] scal Radial scaling factor ( r -> scal*r )
-   */
-  Grid( GridSize gs, RadialScale scal );
-
+  Grid( std::shared_ptr<quadrature_type> q, BatchSize bsz );
 
   /// Copy a Grid object
   Grid( const Grid& );
@@ -164,23 +79,7 @@ public:
    *
    *  @returns Batcher instance pertaining to the Grid object
    */
-   batcher_type& batcher();
-
-  
-  /// Return the number of radial points in the spherical quadrature
-  RadialSize  n_rad()        const noexcept;
-
-  /// Return the number of angular points in the spherical quadrature
-  AngularSize n_ang()        const noexcept;
-
-  /// Return the max batch size for the spherical quadrature
-  BatchSize   max_batch_sz() const noexcept;
-
-  /// Return radial scaling factor for the spherical quadrature
-  RadialScale rscal_factor() const noexcept; 
-
-  /// Return the radial quadrature specifier
-  RadialQuad  radial_quad()  const noexcept;
+  batcher_type& batcher();
 
 }; // class Grid
 

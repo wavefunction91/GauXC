@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 #include <gauxc/reduction_driver.hpp>
 
@@ -8,15 +15,13 @@ class ReductionDriverImpl {
 
 protected: 
 
-  GAUXC_MPI_CODE( MPI_Comm comm_; )
+  const RuntimeEnvironment& runtime_;
 
 public:
 
-  #ifdef GAUXC_ENABLE_MPI
   ReductionDriverImpl() = delete;
-  #endif
+  ReductionDriverImpl( const RuntimeEnvironment& rt);
 
-  ReductionDriverImpl( GAUXC_MPI_CODE(MPI_Comm comm) );
   virtual ~ReductionDriverImpl() noexcept;
   ReductionDriverImpl( const ReductionDriverImpl& );
 
@@ -25,10 +30,6 @@ public:
 
   virtual bool takes_host_memory() const = 0;
   virtual bool takes_device_memory() const = 0;
-
-#ifdef GAUXC_ENABLE_MPI
-  MPI_Comm comm() const;
-#endif
 
   virtual std::unique_ptr<ReductionDriverImpl> clone() = 0;
 };

@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "reduction_driver_impl.hpp"
 #include <gauxc/exceptions.hpp>
 
@@ -37,12 +44,6 @@ bool ReductionDriver::takes_device_memory() const {
 }
 
 
-#ifdef GAUXC_ENABLE_MPI
-MPI_Comm ReductionDriver::comm() const {
-  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-  return pimpl_->comm();
-}
-#endif
 
 
 }

@@ -1,20 +1,22 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "ut_common.hpp"
 #include <gauxc/load_balancer.hpp>
+#include <gauxc/molgrid/defaults.hpp>
 
 using namespace GauXC;
 
 
 void gen_ref_lb_data( std::vector<XCTask>& tasks, size_t pv ) {
 
-  int world_size;
-  int world_rank;
-#ifdef GAUXC_ENABLE_MPI
-  MPI_Comm_size( MPI_COMM_WORLD, &world_size );
-  MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
-#else
-  world_size = 1;
-  world_rank = 0;
-#endif
+  auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
+  int world_rank = rt.comm_rank();
+  int world_size = rt.comm_size();
 
   std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_cc-pvdz_ufg_tasks_" + std::to_string(world_size) + "mpi_rank" + std::to_string(world_rank) + 
     "_pv" + std::to_string(pv) + ".bin";
@@ -34,15 +36,9 @@ void gen_ref_lb_data( std::vector<XCTask>& tasks, size_t pv ) {
 
 void check_lb_data( const std::vector<XCTask>& tasks, size_t pv ) {
 
-  int world_size;
-  int world_rank;
-#ifdef GAUXC_ENABLE_MPI
-  MPI_Comm_size( MPI_COMM_WORLD, &world_size );
-  MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
-#else
-  world_size = 1;
-  world_rank = 0;
-#endif
+  auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
+  int world_rank = rt.comm_rank();
+  int world_size = rt.comm_size();
 
   std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_cc-pvdz_ufg_tasks_" + std::to_string(world_size) + "mpi_rank" + std::to_string(world_rank) + 
     "_pv" + std::to_string(pv) + ".bin";
@@ -62,12 +58,12 @@ void check_lb_data( const std::vector<XCTask>& tasks, size_t pv ) {
     const auto& t  = tasks[i]; 
     const auto& rt = ref_tasks[i];
     CHECK( t.iParent == rt.iParent );
-    CHECK( t.shell_list == rt.shell_list );
-    CHECK( t.nbe == rt.nbe );
     CHECK( t.dist_nearest == Approx(rt.dist_nearest) );
     CHECK( t.npts == rt.npts );
     CHECK( t.points.size() == rt.npts );
     CHECK( t.weights.size() == rt.npts );
+    CHECK( t.bfn_screening.shell_list == rt.bfn_screening.shell_list );
+    CHECK( t.bfn_screening.nbe == rt.bfn_screening.nbe );
 
     /* 
     // Points / Weights not stored in reference data to 
@@ -90,9 +86,7 @@ void check_lb_data( const std::vector<XCTask>& tasks, size_t pv ) {
 //#define GAUXC_GEN_TESTS
 TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
 
-#ifdef GAUXC_ENABLE_MPI
-  MPI_Comm comm = MPI_COMM_WORLD;
-#endif
+  auto world = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
 
   Molecule mol           = make_benzene();
   BasisSet<double> basis = make_ccpvdz( mol, SphericalType(true) );
@@ -100,7 +94,8 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
 
-  MolGrid mg(AtomicGridSizeDefault::UltraFineGrid, mol);
+  auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
+    BatchSize(512), RadialQuad::MuraKnowles, AtomicGridSizeDefault::UltraFineGrid);
 
   auto meta = std::make_shared<MolMeta>( mol );
 
@@ -111,7 +106,7 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
   SECTION("PV = 32") { pv = 32; }
 
   LoadBalancerFactory lb_factory( ExecutionSpace::Host, "Default" );
-  auto lb = lb_factory.get_instance( GAUXC_MPI_CODE(comm,) mol, mg, basis, pv);
+  auto lb = lb_factory.get_instance( world, mol, mg, basis, pv);
   auto& tasks = lb.get_tasks();
   gen_ref_lb_data(tasks, pv);
 
@@ -124,7 +119,7 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
     SECTION("PV = 32") { pv = 32; }
 
     LoadBalancerFactory lb_factory( ExecutionSpace::Host, "Default" );
-    auto lb = lb_factory.get_instance( GAUXC_MPI_CODE(comm,) mol, mg, basis, pv);
+    auto lb = lb_factory.get_instance( world, mol, mg, basis, pv);
     auto& tasks = lb.get_tasks();
     check_lb_data( tasks, pv );
 
@@ -135,7 +130,7 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
 
   }
 
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_ENABLE_DEVICE
   SECTION("Default Device") {
 
     size_t pv = 1;
@@ -143,7 +138,7 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
     SECTION("PV = 32") { pv = 32; }
 
     LoadBalancerFactory lb_factory( ExecutionSpace::Device, "Default" );
-    auto lb = lb_factory.get_instance( GAUXC_MPI_CODE(comm,) mol, mg, basis, pv);
+    auto lb = lb_factory.get_instance( world, mol, mg, basis, pv);
     auto& tasks = lb.get_tasks();
     check_lb_data( tasks, pv );
 
@@ -155,7 +150,7 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
     
     // Make sure Host/Device tasks are identical
     LoadBalancerFactory host_lb_factory( ExecutionSpace::Host, "Default" );
-    auto host_lb = host_lb_factory.get_instance( GAUXC_MPI_CODE(comm,) mol, mg, basis, pv);
+    auto host_lb = host_lb_factory.get_instance( world, mol, mg, basis, pv);
     auto& host_tasks = host_lb.get_tasks();
 
     for( auto i = 0; i < host_tasks.size(); ++i ) {
@@ -174,7 +169,7 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
         CHECK( weights[j] == Approx( h_weights[j] ) );
       }
 
-      CHECK( tasks[i].shell_list == host_tasks[i].shell_list );
+      CHECK( tasks[i].bfn_screening.shell_list == host_tasks[i].bfn_screening.shell_list );
     }
   }
 #endif

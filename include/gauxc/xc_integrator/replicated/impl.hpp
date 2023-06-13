@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include <gauxc/xc_integrator/replicated/replicated_xc_integrator_impl.hpp>
@@ -35,7 +42,24 @@ const LoadBalancer& ReplicatedXCIntegrator<MatrixType>::get_load_balancer_() con
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->get_load_balancer();
 }
+template <typename MatrixType>
+LoadBalancer& ReplicatedXCIntegrator<MatrixType>::get_load_balancer_() {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->get_load_balancer();
+}
 
+
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::value_type 
+  ReplicatedXCIntegrator<MatrixType>::integrate_den_( const MatrixType& P ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  value_type N_EL;
+  
+  pimpl_->integrate_den( P.rows(), P.cols(), P.data(), P.rows(), &N_EL );
+
+  return N_EL;
+}
 
 template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type 

@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include <gauxc/xc_integrator/replicated/replicated_xc_integrator_impl.hpp>
 
 namespace GauXC  {
@@ -16,6 +23,14 @@ template <typename ValueType>
 ReplicatedXCIntegratorImpl<ValueType>::
   ~ReplicatedXCIntegratorImpl() noexcept = default;
 
+template <typename ValueType>
+void ReplicatedXCIntegratorImpl<ValueType>::
+  integrate_den( int64_t m, int64_t n, const value_type* P,
+                 int64_t ldp, value_type* N_EL ) {
+
+    integrate_den_(m,n,P,ldp,N_EL);
+
+}
 
 template <typename ValueType>
 void ReplicatedXCIntegratorImpl<ValueType>::

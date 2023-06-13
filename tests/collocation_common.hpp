@@ -1,9 +1,17 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include "ut_common.hpp"
 #include <gauxc/molgrid.hpp>
 #include <gauxc/basisset.hpp>
 #include <gauxc/load_balancer.hpp>
+#include <gauxc/molgrid/defaults.hpp>
 #include <fstream>
 #include <string>
 

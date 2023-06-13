@@ -1,3 +1,10 @@
+#
+# GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory (subject to receipt of
+# any required approvals from the U.S. Dept. of Energy). All rights reserved.
+#
+# See LICENSE.txt for details
+#
 set( GAUXC_OBARA_SAIKA_HOST_SRC
      src/integral_0.cxx
      src/integral_1.cxx
@@ -23,6 +30,6 @@ set( GAUXC_OBARA_SAIKA_HOST_SRC
      src/chebyshev_boys_computation.cxx
 )
 target_sources( gauxc PRIVATE ${GAUXC_OBARA_SAIKA_HOST_SRC} )
-target_include_directories( gauxc PRIVATE
+target_include_directories( gauxc PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
 )

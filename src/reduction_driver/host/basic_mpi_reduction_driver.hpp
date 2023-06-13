@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 #include "host_reduction_driver.hpp"
 
@@ -5,7 +12,7 @@ namespace GauXC {
 
 struct BasicMPIReductionDriver : public HostReductionDriver {
 
-  BasicMPIReductionDriver(GAUXC_MPI_CODE(MPI_Comm comm));
+  BasicMPIReductionDriver(const RuntimeEnvironment& rt);
   virtual ~BasicMPIReductionDriver() noexcept;
   BasicMPIReductionDriver(const BasicMPIReductionDriver& );
 

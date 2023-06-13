@@ -1,3 +1,10 @@
+#
+# GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory (subject to receipt of
+# any required approvals from the U.S. Dept. of Energy). All rights reserved.
+#
+# See LICENSE.txt for details
+#
 message( STATUS "Building GauXC Tests" )
 add_library( gauxc_catch2 INTERFACE )
 
@@ -7,7 +14,7 @@ if( NOT Catch2_FOUND )
   FetchContent_Declare(
     catch2
     GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG        v2.13.2
+    GIT_TAG        v2.13.10
   )
   
   set(CATCH_BUILD_TESTING OFF CACHE BOOL "Build SelfTest project" FORCE)
@@ -46,6 +53,7 @@ add_executable( gauxc_test
   collocation.cxx
   weights.cxx
   standards.cxx 
+  runtime.cxx
   basis/parse_basis.cxx
 )
 target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
@@ -66,10 +74,15 @@ target_link_libraries( standalone_driver PUBLIC gauxc gauxc_catch2 Eigen3::Eigen
 target_include_directories( standalone_driver PRIVATE ${PROJECT_BINARY_DIR}/tests )
 target_include_directories( standalone_driver PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
-add_executable( conv_cereal_to_hdf5 conv_cereal_to_hdf5.cxx standards.cxx basis/parse_basis.cxx )
-target_link_libraries( conv_cereal_to_hdf5 PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
-target_include_directories( conv_cereal_to_hdf5 PRIVATE ${PROJECT_BINARY_DIR}/tests )
-target_include_directories( conv_cereal_to_hdf5 PRIVATE ${PROJECT_SOURCE_DIR}/tests )
+#add_executable( grid_opt grid_opt.cxx standards.cxx basis/parse_basis.cxx ini_input.cxx )
+#target_link_libraries( grid_opt PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
+#target_include_directories( grid_opt PRIVATE ${PROJECT_BINARY_DIR}/tests )
+#target_include_directories( grid_opt PRIVATE ${PROJECT_SOURCE_DIR}/tests )
+
+#add_executable( conv_cereal_to_hdf5 conv_cereal_to_hdf5.cxx standards.cxx basis/parse_basis.cxx )
+#target_link_libraries( conv_cereal_to_hdf5 PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
+#target_include_directories( conv_cereal_to_hdf5 PRIVATE ${PROJECT_BINARY_DIR}/tests )
+#target_include_directories( conv_cereal_to_hdf5 PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
 add_test( NAME GAUXC_SERIAL_TEST COMMAND $<TARGET_FILE:gauxc_test> )
 if( GAUXC_ENABLE_MPI )

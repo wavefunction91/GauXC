@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "load_balancer_impl.hpp"
 #include "load_balancer_device_factory.hpp"
 
@@ -5,10 +12,14 @@
 #include "cuda/replicated_cuda_load_balancer.hpp"
 #endif
 
+#ifdef GAUXC_ENABLE_HIP
+#include "hip/replicated_hip_load_balancer.hpp"
+#endif
+
 namespace GauXC {
 
 std::shared_ptr<LoadBalancer> LoadBalancerDeviceFactory::get_shared_instance(
-  std::string kernel_name, GAUXC_MPI_CODE(MPI_Comm comm,)
+  std::string kernel_name, const RuntimeEnvironment& rt,
   const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis,
   size_t pv
 ) {
@@ -20,10 +31,10 @@ std::shared_ptr<LoadBalancer> LoadBalancerDeviceFactory::get_shared_instance(
   if( kernel_name == "DEFAULT" ) kernel_name = "REPLICATED";
 
   std::unique_ptr<detail::LoadBalancerImpl> ptr = nullptr;
-  #ifdef GAUXC_ENABLE_CUDA
+  #ifdef GAUXC_ENABLE_DEVICE
   if( kernel_name == "REPLICATED" ) {
     ptr = std::make_unique<detail::DeviceReplicatedLoadBalancer>(
-      GAUXC_MPI_CODE(comm,) mol, mg, basis, pv
+      rt, mol, mg, basis, pv
     );
   }
   #endif

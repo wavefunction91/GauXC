@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include <gauxc/load_balancer.hpp>
@@ -9,16 +16,19 @@ class LoadBalancerImpl {
 
 public:
 
-  using basis_type = BasisSet<double>;
+  using basis_type      = BasisSet<double>;
+  using basis_map_type  = BasisSetMap;
+  using shell_pair_type = ShellPairCollection<double>;
 
 protected:
 
-  GAUXC_MPI_CODE(MPI_Comm comm_;)
-
+  RuntimeEnvironment          runtime_;
   std::shared_ptr<Molecule>   mol_;
   std::shared_ptr<MolGrid>    mg_;
   std::shared_ptr<basis_type> basis_;
   std::shared_ptr<MolMeta>    molmeta_;
+  std::shared_ptr<basis_map_type> basis_map_;
+  std::shared_ptr<shell_pair_type> shell_pairs_;
 
   std::vector< XCTask >     local_tasks_;
 
@@ -34,11 +44,11 @@ public:
 
   LoadBalancerImpl() = delete;
 
-  LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm,) const Molecule&, const MolGrid& mg,  
+  LoadBalancerImpl( const RuntimeEnvironment&, const Molecule&, const MolGrid& mg,  
     const basis_type&, size_t pv );
-  LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm,) const Molecule&, const MolGrid& mg,  
+  LoadBalancerImpl( const RuntimeEnvironment&, const Molecule&, const MolGrid& mg,  
     const basis_type&, const MolMeta&, size_t pv );
-  LoadBalancerImpl( GAUXC_MPI_CODE(MPI_Comm,) const Molecule&, const MolGrid& mg,  
+  LoadBalancerImpl( const RuntimeEnvironment&, const Molecule&, const MolGrid& mg,  
     const basis_type&, std::shared_ptr<MolMeta>, size_t pv );
 
   LoadBalancerImpl( const LoadBalancerImpl& );
@@ -48,6 +58,10 @@ public:
 
   const std::vector< XCTask >& get_tasks() const;
         std::vector< XCTask >& get_tasks()      ;
+
+  void rebalance_weights();
+  void rebalance_exc_vxc();
+  void rebalance_exx();
 
   const util::Timer& get_timings() const;
 
@@ -59,12 +73,11 @@ public:
   const Molecule& molecule() const;
   const MolMeta&  molmeta()  const;
   const basis_type& basis()  const;
+  const RuntimeEnvironment& runtime() const;
+  const basis_map_type& basis_map() const;
+  const shell_pair_type& shell_pairs() const;
 
   LoadBalancerState& state();
-
-#ifdef GAUXC_ENABLE_MPI
-  MPI_Comm comm() const;
-#endif
 
   virtual std::unique_ptr<LoadBalancerImpl> clone() const = 0;
 

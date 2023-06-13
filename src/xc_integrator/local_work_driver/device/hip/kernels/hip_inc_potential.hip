@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "device_specific/hip_device_constants.hpp"
 #include "device/common/inc_potential.hpp"
 #include <gauxc/util/div_ceil.hpp>
@@ -18,9 +25,9 @@ __global__ void inc_by_submat_combined_kernel( size_t           ntasks,
 
   auto& task = device_tasks[ batch_id ];
 
-  const auto  ncut              = task.ncut;
-  const auto* submat_cut_device = task.submat_cut;
-  const auto  LDAS              = task.nbe;
+  const auto  ncut              = task.bfn_screening.ncut;
+  const auto* submat_cut_device = task.bfn_screening.submat_cut;
+  const auto  LDAS              = task.bfn_screening.nbe;
         auto* ASmall_device     = task.nbe_scr;
 
   //if( LDAS == LDAB ) return;
@@ -55,7 +62,7 @@ __global__ void inc_by_submat_combined_kernel( size_t           ntasks,
   } // batch_id check
 }
 
-void task_inc_potential( size_t        ntasks,
+void sym_task_inc_potential( size_t        ntasks,
                          XCDeviceTask* device_tasks,
                          double*       V_device,
                          size_t        LDV,

@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 #include <cmath>
 #include <cstddef>
@@ -19,6 +26,8 @@ T gau_rad_eval( int32_t l, int32_t nprim, const T* alpha, const T* coeff, T r ) 
 
 template <typename T>
 T gau_rad_cutoff( int32_t l, int32_t nprim, const T* alpha, const T* coeff, T tol ) {
+
+  if( tol <= 0.0 ) return std::numeric_limits<T>::infinity();
 
   const double log_tol = -std::log(tol);
   // Initial guess

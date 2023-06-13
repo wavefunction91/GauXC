@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include <gauxc/molgrid.hpp>
@@ -7,19 +14,11 @@ namespace detail {
 
 class MolGridImpl {
 
-  atomic_scal_factor_map scal_factors_;
-  atomic_grid_size_map   grid_sizes_;
-
   atomic_grid_map molgrid_;
-
-  void generate( RadialQuad, const Molecule& );
 
 public:
 
   MolGridImpl( const atomic_grid_map& );
-
-  MolGridImpl( RadialQuad, const atomic_grid_size_map&, 
-    const atomic_scal_factor_map&, const Molecule& );
 
   MolGridImpl( const MolGridImpl& );
   MolGridImpl( MolGridImpl&& ) noexcept;
@@ -29,9 +28,6 @@ public:
   size_t natoms_uniq() const;
   const Grid& get_grid( AtomicNumber ) const;
         Grid& get_grid( AtomicNumber )      ;
-  RadialScale get_rscal_factor( AtomicNumber ) const;
-  GridSize    get_grid_size( AtomicNumber ) const;
-  RadialQuad  get_radial_quad( AtomicNumber ) const;
 
   size_t max_nbatches() const;
 

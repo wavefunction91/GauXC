@@ -1,18 +1,19 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "reduction_driver_impl.hpp"
 
 namespace GauXC::detail {
 
 
-ReductionDriverImpl::ReductionDriverImpl( GAUXC_MPI_CODE(MPI_Comm comm) ) 
-  GAUXC_MPI_CODE( : comm_(comm) ) {}
+ReductionDriverImpl::ReductionDriverImpl( const RuntimeEnvironment& rt ) 
+  : runtime_(rt){}
 
 ReductionDriverImpl::~ReductionDriverImpl() noexcept = default;
 ReductionDriverImpl::ReductionDriverImpl(const ReductionDriverImpl& ) = default;
-
-#ifdef GAUXC_ENABLE_MPI
-MPI_Comm ReductionDriverImpl::comm() const {
-  return comm_;
-}
-#endif
 
 }

@@ -1,5 +1,13 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 #include <gauxc/molgrid.hpp>
+#include <gauxc/molgrid/defaults.hpp>
 #include <gauxc/load_balancer.hpp>
 
 
@@ -27,12 +35,16 @@ struct ref_weights_data {
 #include "host/reference/weights.hpp"
 
 void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
-                                std::ofstream& out_file, size_t ntask_save = 15 ) {
+                            std::ofstream& out_file, XCWeightAlg weight_alg,
+                            size_t ntask_save = 15 ) {
 
 
-  MolGrid mg(AtomicGridSizeDefault::FineGrid, mol);
+  auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
+  auto mg = MolGridFactory::create_default_molgrid(mol, PruningScheme::Unpruned,
+    BatchSize(512), RadialQuad::MuraKnowles, AtomicGridSizeDefault::FineGrid);
+
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
-  auto lb = lb_factory.get_instance(GAUXC_MPI_CODE(MPI_COMM_WORLD,) mol, mg, basis);
+  auto lb = lb_factory.get_instance(rt, mol, mg, basis);
   auto& tasks = lb.get_tasks();
 
   ref_weights_data   ref_data;
@@ -59,13 +71,26 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
 
   ref_data.tasks_unm = tasks; // Make a copy of un modified tasks
 
-  reference_ssf_weights_host( 
-    mol, lb.molmeta(), tasks.begin(), tasks.end() );
+
+  switch( weight_alg ) {
+    case XCWeightAlg::Becke:
+      reference_becke_weights_host( 
+        mol, lb.molmeta(), tasks.begin(), tasks.end() );
+      break;
+    case XCWeightAlg::SSF:
+      reference_ssf_weights_host( 
+        mol, lb.molmeta(), tasks.begin(), tasks.end() );
+      break;
+    case XCWeightAlg::LKO:
+      reference_lko_weights_host( 
+        mol, lb.molmeta(), tasks.begin(), tasks.end() );
+      break;
+  }
 
   // Clear out unneeded data
   for( auto& task : tasks ) {
     task.points.clear();
-    task.shell_list.clear();
+    task.bfn_screening.shell_list.clear();
   }
   ref_data.tasks_mod = tasks;
 

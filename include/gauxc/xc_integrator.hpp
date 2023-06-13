@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include <memory>
@@ -44,6 +51,7 @@ public:
   XCIntegrator( const XCIntegrator& ) = delete;
   XCIntegrator( XCIntegrator&& ) noexcept;
 
+  value_type    integrate_den( const MatrixType& );
   exc_vxc_type  eval_exc_vxc ( const MatrixType& );
   exc_grad_type eval_exc_grad( const MatrixType& );
   exx_type      eval_exx     ( const MatrixType&, 
@@ -52,6 +60,7 @@ public:
 
   const util::Timer& get_timings() const;
   const LoadBalancer& load_balancer() const;
+  LoadBalancer& load_balancer();
 };
 
 

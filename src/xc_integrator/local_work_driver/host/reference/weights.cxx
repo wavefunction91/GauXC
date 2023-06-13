@@ -1,5 +1,14 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "host/reference/weights.hpp"
 #include "common/integrator_constants.hpp"
+
+#include <gauxc/molgrid/defaults.hpp>
 
 namespace GauXC {
 
@@ -19,6 +28,27 @@ void reference_becke_weights_host(
   const size_t natoms = mol.natoms();
 
   const auto&  RAB    = meta.rab();
+
+  std::vector<double> slater_radii;
+  for( auto& atom : mol ) {
+    slater_radii.emplace_back( default_atomic_radius(atom.Z) );
+  }
+
+
+#if 0
+  // TODO: Add a pathway for this
+  std::vector<double> size_adj(natoms * natoms);
+  for( auto i = 0; i < natoms; ++i ) 
+  for( auto j = 0; j < natoms; ++j ) {
+    const auto si  = slater_radii[i];
+    const auto sj  = slater_radii[j];
+    const auto chi = std::sqrt(si/sj);
+    const auto u   = (chi-1.)/(chi+1.);
+    const auto a   = u / (u*u-1.);
+
+    size_adj[i + j*natoms] = a;
+  }
+#endif
 
   #pragma omp parallel 
   {
@@ -49,7 +79,15 @@ void reference_becke_weights_host(
     std::fill(partitionScratch.begin(),partitionScratch.end(),1.);
     for( size_t iA = 0; iA < natoms; iA++ ) 
     for( size_t jA = 0; jA < iA;     jA++ ){
-      const double mu = (atomDist[iA] - atomDist[jA]) / RAB[jA + iA*natoms];
+
+      double mu  = (atomDist[iA] - atomDist[jA]) / RAB[jA + iA*natoms];
+
+#if 0
+      // Size Adjustment
+      const double a = size_adj[iA + jA*natoms];
+      mu = mu + a * ( 1. - mu*mu );
+#endif
+
       const double g = gBecke(mu);
 
       partitionScratch[iA] *= 0.5 * (1. - g);
@@ -203,12 +241,12 @@ void reference_lko_weights_host(
   std::vector<size_t> point_dist_idx( natoms );
 
   #pragma omp for schedule(dynamic)
-  for( auto iAtom = 0; iAtom < natoms; ++iAtom ) {
+  for( auto iAtom = 0ul; iAtom < natoms; ++iAtom ) {
 
     auto atom_begin = std::find_if( task_begin, task_end,
-      [&](const auto& t){ return t.iParent == iAtom; } );
+      [&](const auto& t){ return t.iParent == (int)iAtom; } );
     auto atom_end = std::find_if( task_begin, task_end,
-      [&](const auto& t){ return t.iParent == (iAtom+1); } );
+      [&](const auto& t){ return t.iParent == (int)(iAtom+1); } );
 
     auto* RAB_parent = RAB.data() + iAtom*natoms;
 
@@ -222,7 +260,7 @@ void reference_lko_weights_host(
     auto& weights = task_it->weights;
     const auto npts = points.size();
 
-  for( auto ipt = 0; ipt < npts; ++ipt ) {
+  for( auto ipt = 0ul; ipt < npts; ++ipt ) {
 
     auto& weight = weights[ipt];
     const auto point = points[ipt];
@@ -283,7 +321,7 @@ void reference_lko_weights_host(
 
     // Evaluate unnormalized partition functions 
     std::fill_n(partitionScratch.begin(),natoms_keep,0.);
-    for( int i = 0; i < natoms_keep; ++i ) {
+    for( auto i = 0ul; i < natoms_keep; ++i ) {
       auto idx_i = point_dist_idx[i];
       auto r_i = atomDist[i];
       if( r_i > (r_nearest + R_cutoff) ) { break; }
@@ -291,26 +329,13 @@ void reference_lko_weights_host(
 
       const auto* RAB_i_idx = RAB.data() + idx_i*natoms;
 
-    for( int j = 0; j < i; ++j ) {
+    for( auto j = 0ul; j < i; ++j ) {
       auto idx_j = point_dist_idx[j];
       auto r_j = atomDist[j];
       if( r_j > (r_i + R_cutoff) ) { break; }
 
       const double mu = 
         (r_i - r_j) / std::min(RAB_i_idx[idx_j], R_cutoff);
-
-      // The breaks in the above loops ensure this never gets encountered
-      #if 0
-      if( mu <= -1 ) {
-        partitionScratch[j] = 0.;
-        continue;
-      }
-
-      if( mu >= 1 ) {
-        partitionScratch[i] = 0.;
-        continue;
-      }
-      #endif
 
       const double g = gBecke(mu);
       const auto   s_ij = 0.5 * (1. - g);

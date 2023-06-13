@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "cuda_aos_scheme1.hpp"
 #include "device/cuda/cuda_backend.hpp"
 #include "cuda_aos_scheme1_weights.hpp"
@@ -5,8 +12,8 @@
 namespace GauXC {
 
 template <typename Base>
-std::unique_ptr<XCDeviceData> CudaAoSScheme1<Base>::create_device_data() {
-  return std::make_unique<Data>();
+std::unique_ptr<XCDeviceData> CudaAoSScheme1<Base>::create_device_data(const DeviceRuntimeEnvironment& rt) {
+  return std::make_unique<Data>(rt);
 }
 
 template <typename Base> 
@@ -14,7 +21,7 @@ void CudaAoSScheme1<Base>::partition_weights( XCDeviceData* _data ) {
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-  auto device_backend = dynamic_cast<CUDABackend*>(data->device_backend_.get());
+  auto device_backend = dynamic_cast<CUDABackend*>(data->device_backend_);
   if( !device_backend ) GAUXC_BAD_BACKEND_CAST();
 
 

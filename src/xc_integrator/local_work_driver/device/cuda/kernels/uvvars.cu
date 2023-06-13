@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "device/common/uvvars.hpp"
 #include "cuda_extensions.hpp"
 #include "device_specific/cuda_device_constants.hpp"
@@ -15,7 +22,7 @@ __global__ void eval_uvars_lda_kernel( size_t        ntasks,
   auto& task = tasks_device[ batch_idx ];
 
   const auto npts            = task.npts;
-  const auto nbf             = task.nbe;
+  const auto nbf             = task.bfn_screening.nbe;
 
   auto* den_eval_device   = task.den;
 
@@ -39,7 +46,7 @@ __global__ void eval_uvars_lda_kernel( size_t        ntasks,
 
   // Warp blocks are stored col major
   constexpr auto warp_size = cuda::warp_size;
-  constexpr auto max_warps_per_thread_block = cuda::max_warps_per_thread_block;
+  //constexpr auto max_warps_per_thread_block = cuda::max_warps_per_thread_block;
   den_reg = 2 * cuda::warp_reduce_sum<warp_size>( den_reg );
 
 
@@ -58,7 +65,7 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
                                        XCDeviceTask* tasks_device ) {
 
   constexpr auto warp_size = cuda::warp_size;
-  constexpr auto max_warps_per_thread_block = cuda::max_warps_per_thread_block;
+  //constexpr auto max_warps_per_thread_block = cuda::max_warps_per_thread_block;
 
   const int batch_idx = blockIdx.z;
   if( batch_idx >= ntasks ) return;
@@ -66,7 +73,7 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
   auto& task = tasks_device[ batch_idx ];
 
   const auto npts            = task.npts;
-  const auto nbf             = task.nbe;
+  const auto nbf             = task.bfn_screening.nbe;
 
   auto* den_eval_device   = task.den;
   auto* den_x_eval_device = task.ddenx;
@@ -188,8 +195,8 @@ void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max,
   // U Variables
   {
   dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block / 2, 1 );
-  dim3 blocks( std::min(int64_t(4), util::div_ceil( nbf_max, 4 )),
-               std::min(int64_t(16), util::div_ceil( nbf_max, 16 )),
+  dim3 blocks( std::min(uint64_t(4), util::div_ceil( nbf_max, 4 )),
+               std::min(uint64_t(16), util::div_ceil( nbf_max, 16 )),
                ntasks );
   eval_uvars_gga_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
   }

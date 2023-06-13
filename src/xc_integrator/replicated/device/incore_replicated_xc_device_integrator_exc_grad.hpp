@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "incore_replicated_xc_device_integrator.hpp"
 #include "device/local_device_work_driver.hpp"
 #include <stdexcept>
@@ -28,9 +35,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Allocate Device memory
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
+  auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
   auto device_data_ptr = 
     this->timer_.time_op("XCIntegrator.DeviceAlloc",
-      [=](){ return lwd->create_device_data(); });
+      [&](){ return lwd->create_device_data(rt); });
 
   const auto& mol = this->load_balancer_->molecule();
   const auto natoms = mol.size();
@@ -44,6 +52,12 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       eval_exc_grad_local_work_( basis, P, ldp, EXC_GRAD, tasks.begin(),
         tasks.end(), *device_data_ptr );
     });
+
+    GAUXC_MPI_CODE(
+    this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
+      MPI_Barrier(this->load_balancer_->runtime().comm());
+    });  
+    )
 
     this->timer_.time_op("XCIntegrator.Allreduce", [&](){
       this->reduction_driver_->allreduce_inplace( EXC_GRAD, 3*natoms, 
@@ -66,7 +80,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Setup Aliases
   const auto& func  = *this->func_;
   const auto& mol   = this->load_balancer_->molecule();
-  const auto& meta  = this->load_balancer_->molmeta();
 
   // Get basis map
   BasisSetMap basis_map(basis,mol);
@@ -76,52 +89,18 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Sort tasks 
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
-    return (a.points.size() * a.nbe) > (b.points.size() * b.nbe);
+    return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
   };
   std::sort( task_begin, task_end, task_comparator );
 
 
 
 
-  // TODO: Refactor this into separate function
+  // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
-
-  // Modify weights if need be
   if( not lb_state.modified_weights_are_stored ) {
-
-  integrator_term_tracker enabled_terms;
-  enabled_terms.weights = true;
-
-  this->timer_.time_op("XCIntegrator.Weights", [&]() { 
-    const auto natoms = mol.natoms();
-    device_data.reset_allocations();
-    device_data.allocate_static_data_weights( natoms );
-    device_data.send_static_data_weights( mol, meta );
-
-    // Processes batches in groups that saturadate available device memory
-    auto task_it = task_begin;
-    while( task_it != task_end ) {
-      
-      // Determine next task batch, send relevant data to device (weights only)
-      auto task_batch_end = 
-        device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
-
-      // Apply partition weights 
-      lwd->partition_weights( &device_data );
-      
-      // Copy back to host data
-      device_data.copy_weights_to_tasks( task_it, task_batch_end );
-
-      // Update iterator
-      task_it = task_batch_end;
-
-    } // End loop over batches
-
-    // Signal that we don't need to do weights again
-    lb_state.modified_weights_are_stored = true;
-  });
-
-  } // Mofify Weights
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
+  }
 
   // Do XC integration in task batches
   const auto nbf     = basis.nbf();
@@ -191,7 +170,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   double N_EL;
   device_data.retrieve_exc_grad_integrands( EXC_GRAD, &N_EL );
 
-  std::cout << N_EL << std::endl;
+  //std::cout << N_EL << std::endl;
 }
 
 

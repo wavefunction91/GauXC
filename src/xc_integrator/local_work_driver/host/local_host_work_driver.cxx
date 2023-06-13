@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "local_host_work_driver_pimpl.hpp"
 #include <stdexcept>
 
@@ -97,14 +104,16 @@ void LocalHostWorkDriver::eval_exx_fmat( size_t npts, size_t nbf, size_t nbe_bra
 
 
 // G Matrix G(mu,i) = w(i) * A(mu,nu,i) * X(mu,i)
-void LocalHostWorkDriver::eval_exx_gmat( size_t npts, size_t nshells, size_t nbe,
-  const double* points, const double* weights, const BasisSet<double>& basis,
-  const BasisSetMap& basis_map, const int32_t* shell_list, const double* X, 
-  size_t ldx, double* G, size_t ldg ) {
+void LocalHostWorkDriver::eval_exx_gmat( size_t npts, size_t nshells, 
+  size_t nshell_pairs, size_t nbe, const double* points, const double* weights, 
+  const BasisSet<double>& basis, const ShellPairCollection<double>& shpairs, 
+  const BasisSetMap& basis_map, const int32_t* shell_list, 
+  const std::pair<int32_t,int32_t>* shell_pair_list, 
+  const double* X, size_t ldx, double* G, size_t ldg ) {;
 
   throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_exx_gmat(npts, nshells, nbe, points, weights, basis, basis_map, 
-    shell_list, X, ldx, G, ldg );
+  pimpl_->eval_exx_gmat(npts, nshells, nshell_pairs, nbe, points, weights, 
+    basis, shpairs, basis_map, shell_list, shell_pair_list, X, ldx, G, ldg );
 
 }
 

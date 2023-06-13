@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include <array>
@@ -25,7 +32,7 @@ template <size_t N, typename T>
 bool cube_sphere_intersect( const T* lo, const T* up, const T* center, T rad ) {
 
   T dist = rad * rad;
-  for( int i = 0; i < N; ++i ) {
+  for( size_t i = 0; i < N; ++i ) {
     T r = 0.;
     if( center[i] < lo[i] )      r = lo[i] - center[i];
     else if( center[i] > up[i] ) r = center[i] - up[i];

@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "device/common/zmat_vxc.hpp"
 #include <gauxc/util/div_ceil.hpp>
 #include "device_specific/cuda_util.hpp"
@@ -14,7 +21,7 @@ __global__ void zmat_lda_vxc_kernel( size_t        ntasks,
 
   auto& task = tasks_device[ batch_idx ];
   const auto npts            = task.npts;
-  const auto nbf             = task.nbe;
+  const auto nbf             = task.bfn_screening.nbe;
   const auto* vrho_device    = task.vrho;
 
   const auto* basis_eval_device = task.bf;
@@ -83,7 +90,7 @@ __global__ void zmat_gga_vxc_kernel( size_t        ntasks,
 
   auto& task = tasks_device[ batch_idx ];
   const auto npts            = task.npts;
-  const auto nbf             = task.nbe;
+  const auto nbf             = task.bfn_screening.nbe;
   const auto* vrho_device    = task.vrho;
   const auto* vgamma_device  = task.vgamma;
   const auto* den_x_eval_device = task.ddenx;

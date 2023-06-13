@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include <gauxc/xc_integrator/xc_integrator_impl.hpp>
@@ -17,6 +24,12 @@ XCIntegrator<MatrixType>::~XCIntegrator() noexcept = default;
 template <typename MatrixType>
 XCIntegrator<MatrixType>::XCIntegrator(XCIntegrator&&) noexcept = default;
 
+template <typename MatrixType>
+typename XCIntegrator<MatrixType>::value_type
+  XCIntegrator<MatrixType>::integrate_den( const MatrixType& P ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->integrate_den(P);
+};
 
 template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_vxc_type
@@ -48,6 +61,12 @@ const util::Timer& XCIntegrator<MatrixType>::get_timings() const {
 
 template <typename MatrixType>
 const LoadBalancer& XCIntegrator<MatrixType>::load_balancer() const {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->load_balancer();
+}
+
+template <typename MatrixType>
+LoadBalancer& XCIntegrator<MatrixType>::load_balancer() {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->load_balancer();
 }

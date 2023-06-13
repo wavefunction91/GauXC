@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include <array>
@@ -13,21 +20,45 @@ namespace GauXC {
 
 struct XCTask {
 
-  int32_t                              iParent;
+  int32_t                              iParent = -1;
   std::vector< std::array<double,3> >  points;
   std::vector< double  >               weights;
-  std::vector< int32_t >               shell_list;
-  int32_t                              nbe;
-  int32_t                              npts;
+  int32_t                              npts = 0;
 
   double                               dist_nearest;
-  double                               max_weight;
+  double                               max_weight = std::numeric_limits<double>::infinity();
 
-  std::vector< std::array<int32_t,3> > submat_map;
-  std::vector< int32_t >               submat_block;
+  struct screening_data {
+    using pair_t = std::pair<int32_t,int32_t>;
+    std::vector<int32_t>               shell_list;
+    std::vector<pair_t>                shell_pair_list;
+    std::vector<int32_t>               shell_pair_idx_list;
+    std::vector<int32_t>               submat_block;
+    std::vector<std::array<int32_t,3>> submat_map;
+    int32_t                            nbe = 0;
+
+    bool equiv_with( const screening_data& other ) const {
+      return shell_list == other.shell_list and 
+        shell_pair_list == other.shell_pair_list;
+    }
+
+    inline size_t volume() const {
+      return (shell_list.size() + 2*shell_pair_list.size() + submat_block.size() +
+              3*submat_map.size() + 1) * sizeof(int32_t);
+    }
+  };
+
+  inline size_t volume() const {
+    return 2 * sizeof(int32_t) +
+      (3*points.size() + weights.size() + 2) * sizeof(double) +
+      bfn_screening.volume() + cou_screening.volume();
+  }
+
+  screening_data bfn_screening;
+  screening_data cou_screening;
 
   void merge_with( const XCTask& other ) {
-    if( shell_list != other.shell_list or iParent != other.iParent )
+    if( !equiv_with(other) )
       GAUXC_GENERIC_EXCEPTION("Cannot Perform Requested Merge: Incompatible Tasks");
     points.insert( points.end(), other.points.begin(), other.points.end() );
     weights.insert( weights.end(), other.weights.begin(), other.weights.end() );
@@ -50,7 +81,7 @@ struct XCTask {
     auto points_it  = points.begin()  + old_sz;
     auto weights_it = weights.begin() + old_sz;
     for( auto it = begin; it != end; ++it ) {
-      if( shell_list != it->shell_list or iParent != it->iParent )
+      if( !equiv_with(*it) )
         GAUXC_GENERIC_EXCEPTION("Cannot Perform Requested Task Merge");
       points_it  = std::copy( it->points.begin(), it->points.end(), points_it );
       weights_it = std::copy( it->weights.begin(), it->weights.end(), weights_it );
@@ -62,18 +93,25 @@ struct XCTask {
 
   inline bool equiv_with( const XCTask& other ) const {
     return iParent == other.iParent and 
-           shell_list == other.shell_list;
+      bfn_screening.equiv_with(other.bfn_screening);
   }
 
   template <typename Archive>
   void serialize( Archive& ar ) {
-    ar( iParent, nbe, npts, dist_nearest, max_weight, 
-      shell_list, points, weights );  
+    ar( iParent, bfn_screening.nbe, npts, dist_nearest, max_weight, 
+      bfn_screening.shell_list, points, weights );  
   }
 
 
   inline size_t cost(size_t n_deriv, size_t natoms) const {
-    return (nbe * ( 1 + nbe + n_deriv ) + natoms * natoms) * npts;
+    return (bfn_screening.nbe * ( 1 + bfn_screening.nbe + n_deriv ) + natoms * natoms) * npts;
+  }
+  inline size_t cost_exc_vxc(size_t n_deriv) const {
+    return bfn_screening.nbe * ( 1 + bfn_screening.nbe + n_deriv ) * npts;
+  }
+  inline size_t cost_exx() const {
+    return ( bfn_screening.nbe + 2*cou_screening.nbe*bfn_screening.nbe +
+             2*cou_screening.shell_pair_list.size() ) * npts;
   }
 };
 

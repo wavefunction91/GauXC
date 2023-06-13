@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "load_balancer_impl.hpp"
 #include "load_balancer_host_factory.hpp"
 #include "petite_replicated_load_balancer.hpp"
@@ -6,7 +13,7 @@
 namespace GauXC {
 
 std::shared_ptr<LoadBalancer> LoadBalancerHostFactory::get_shared_instance(
-  std::string kernel_name, GAUXC_MPI_CODE(MPI_Comm comm,)
+  std::string kernel_name, const RuntimeEnvironment& rt,
   const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis,
   size_t pv
 ) {
@@ -21,12 +28,12 @@ std::shared_ptr<LoadBalancer> LoadBalancerHostFactory::get_shared_instance(
   std::unique_ptr<detail::LoadBalancerImpl> ptr = nullptr;
   if( kernel_name == "REPLICATED-PETITE" )
     ptr = std::make_unique<detail::PetiteHostReplicatedLoadBalancer>(
-      GAUXC_MPI_CODE(comm,) mol, mg, basis, pv
+      rt, mol, mg, basis, pv
     );
 
   if( kernel_name == "REPLICATED-FILLIN" )
     ptr = std::make_unique<detail::FillInHostReplicatedLoadBalancer>(
-      GAUXC_MPI_CODE(comm,) mol, mg, basis, pv
+      rt, mol, mg, basis, pv
     );
 
   if( ! ptr ) GAUXC_GENERIC_EXCEPTION("Load Balancer Kernel Not Recognized: " + kernel_name);

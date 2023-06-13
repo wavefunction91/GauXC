@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "molgrid_impl.hpp"
 #include <gauxc/exceptions.hpp>
 
@@ -7,16 +14,6 @@ namespace detail {
 MolGridImpl::MolGridImpl( const atomic_grid_map& ag ) :
   molgrid_( ag ) { }
   
-MolGridImpl::MolGridImpl( 
-  RadialQuad                    rq,
-  const atomic_grid_size_map&   grid_sz, 
-  const atomic_scal_factor_map& rad_scl, 
-  const Molecule& mol 
-) : scal_factors_(rad_scl), grid_sizes_(grid_sz) {
-
- generate( rq, mol );
-
-}
 
 MolGridImpl::MolGridImpl( const MolGridImpl& )     = default;
 MolGridImpl::MolGridImpl( MolGridImpl&& ) noexcept = default;
@@ -31,16 +28,6 @@ const Grid& MolGridImpl::get_grid( AtomicNumber Z ) const {
 Grid& MolGridImpl::get_grid( AtomicNumber Z ) {
   return molgrid_.at(Z);
 }
-RadialScale MolGridImpl::get_rscal_factor( AtomicNumber Z ) const {
-  return scal_factors_.at(Z);
-}
-GridSize MolGridImpl::get_grid_size( AtomicNumber Z ) const {
-  return grid_sizes_.at(Z);
-}
-RadialQuad MolGridImpl::get_radial_quad( AtomicNumber Z ) const {
-  return molgrid_.at(Z).radial_quad();
-}
-
 
 size_t MolGridImpl::max_nbatches() const {
 
@@ -56,11 +43,15 @@ size_t MolGridImpl::max_nbatches() const {
 
 
 
+#if 0
 void MolGridImpl::generate( RadialQuad rq, const Molecule& mol ) { 
 
   std::vector<AtomicNumber> Zs; Zs.reserve( mol.natoms() );
   for( const auto& atom : mol ) Zs.emplace_back( atom.Z );
 
+  std::sort(Zs.begin(),Zs.end(),
+    [](auto& a, auto& b) { return a.get() < b.get(); }
+  );
   auto zuniq_it = std::unique( Zs.begin(), Zs.end() );
   Zs.erase( zuniq_it, Zs.end() );
   Zs.shrink_to_fit();
@@ -89,6 +80,7 @@ void MolGridImpl::generate( RadialQuad rq, const Molecule& mol ) {
   }
 
 }
+#endif
 
 
 }

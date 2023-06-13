@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "local_device_work_driver_pimpl.hpp"
 #include <stdexcept>
 
@@ -37,19 +44,31 @@ FWD_TO_PIMPL(eval_uvvar_gga)            // U/VVar GGA (density + grad, gamma)
 FWD_TO_PIMPL(eval_zmat_lda_vxc)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc)         // Eval Z Matrix GGA VXC
 
+FWD_TO_PIMPL(eval_exx_fmat)             // Eval EXX F Matrix
+//FWD_TO_PIMPL(eval_exx_gmat)             // Eval EXX G Matrix
+
 FWD_TO_PIMPL(inc_exc)
 FWD_TO_PIMPL(inc_nel)
 FWD_TO_PIMPL(inc_vxc)                   // Increment VXC by Z 
+FWD_TO_PIMPL(inc_exx_k)     
 FWD_TO_PIMPL(inc_exc_grad_lda)
 FWD_TO_PIMPL(inc_exc_grad_gga)
 
 FWD_TO_PIMPL(symmetrize_vxc)
+FWD_TO_PIMPL(symmetrize_exx_k)
+FWD_TO_PIMPL(eval_exx_ek_screening_bfn_stats)
 
 // X     = P * B
 // dX/dx = P * dB/dx (do_grad)
 void LocalDeviceWorkDriver::eval_xmat( XCDeviceData* device_data, bool do_grad ) {
   throw_if_invalid_pimpl(pimpl_);
   pimpl_->eval_xmat(device_data, do_grad);
+}
+
+void LocalDeviceWorkDriver::eval_exx_gmat( XCDeviceData* device_data, 
+  const BasisSetMap& basis_map) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_exx_gmat(device_data, basis_map);
 }
 
 void LocalDeviceWorkDriver::eval_kern_exc_vxc_lda( const functional_type& func,
@@ -65,9 +84,16 @@ void LocalDeviceWorkDriver::eval_kern_exc_vxc_gga( const functional_type& func,
 }
 
 
-std::unique_ptr<XCDeviceData> LocalDeviceWorkDriver::create_device_data() {
+std::unique_ptr<XCDeviceData> LocalDeviceWorkDriver::create_device_data(const DeviceRuntimeEnvironment& rt) {
   throw_if_invalid_pimpl(pimpl_);
-  return pimpl_->create_device_data();
+  return pimpl_->create_device_data(rt);
+}
+
+void LocalDeviceWorkDriver::exx_ek_shellpair_collision( double eps_E, double eps_K, 
+  XCDeviceData* device_data, host_task_iterator tb, host_task_iterator te,
+  const ShellPairCollection<double>& shpairs ) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->exx_ek_shellpair_collision( eps_E, eps_K, device_data, tb, te, shpairs );
 }
 
 }

@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 #include "device_reduction_driver.hpp"
 #include <nccl.h>
@@ -42,7 +49,7 @@ struct NCCLReductionDriver : public DeviceReductionDriver {
 
   std::shared_ptr<util::nccl_comm> nccl_comm_;
 
-  NCCLReductionDriver(GAUXC_MPI_CODE(MPI_Comm comm));
+  NCCLReductionDriver(const RuntimeEnvironment& rt);
   virtual ~NCCLReductionDriver() noexcept;
   NCCLReductionDriver(const NCCLReductionDriver& );
 

@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 #include <gauxc/xc_integrator/impl.hpp>
 #include <stdexcept>
@@ -54,7 +61,7 @@ public:
 
     // Create Reduction Driver
     auto rd = ReductionDriverFactory::get_shared_instance( 
-      GAUXC_MPI_CODE(lb->comm(),) rd_kernel_ );
+      lb->runtime(), rd_kernel_ );
 
     // Create Integrator instance
     std::transform( input_type_.begin(), input_type_.end(), input_type_.begin(), 

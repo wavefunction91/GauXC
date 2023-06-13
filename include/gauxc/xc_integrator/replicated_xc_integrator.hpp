@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include <gauxc/xc_integrator/xc_integrator_impl.hpp>
@@ -30,11 +37,13 @@ private:
   using pimpl_type = ReplicatedXCIntegratorImpl<value_type>;
   std::unique_ptr< pimpl_type > pimpl_;
 
+  value_type    integrate_den_( const MatrixType& ) override;
   exc_vxc_type  eval_exc_vxc_ ( const MatrixType& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType& ) override;
   exx_type      eval_exx_     ( const MatrixType&, const IntegratorSettingsEXX& ) override;
   const util::Timer& get_timings_() const override;
   const LoadBalancer& get_load_balancer_() const override;
+  LoadBalancer& get_load_balancer_() override;
 
 public:
 

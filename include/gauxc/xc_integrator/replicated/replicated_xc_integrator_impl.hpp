@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include <gauxc/xc_integrator/replicated_xc_integrator.hpp>
@@ -29,6 +36,8 @@ protected:
   util::Timer timer_;
 
 
+  virtual void integrate_den_( int64_t m, int64_t n, const value_type* P,
+                               int64_t ldp, value_type* N_EL ) = 0;
   virtual void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                               int64_t ldp, value_type* VXC, int64_t ldvxc,
                               value_type* EXC ) = 0;
@@ -48,6 +57,9 @@ public:
 
   virtual ~ReplicatedXCIntegratorImpl() noexcept;
 
+  void integrate_den( int64_t m, int64_t n, const value_type* P,
+                      int64_t ldp, value_type* N_EL );
+
   void eval_exc_vxc( int64_t m, int64_t n, const value_type* P,
                      int64_t ldp, value_type* VXC, int64_t ldvxc,
                      value_type* EXC ); 
@@ -66,7 +78,9 @@ public:
   }
 
   inline const auto& load_balancer() const { return *load_balancer_; }
+  inline auto& load_balancer() { return *load_balancer_; }
   inline const auto& get_load_balancer() const { return load_balancer(); }
+  inline auto& get_load_balancer() { return load_balancer(); }
 };
 
 

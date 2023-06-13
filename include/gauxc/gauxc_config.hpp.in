@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #cmakedefine GAUXC_ENABLE_HOST
@@ -9,39 +16,12 @@
 #cmakedefine GAUXC_ENABLE_CUTLASS
 #cmakedefine GAUXC_ENABLE_GAU2GRID
 #cmakedefine GAUXC_ENABLE_HDF5
+#cmakedefine GAUXC_ENABLE_FAST_RSQRT
 
 #cmakedefine GAUXC_ENABLE_DEVICE
-
-
-#if 0
-#ifdef GAUXC_ENABLE_CUDA
-  #include <cuda_runtime.h>
-  #include <cublas_v2.h>
-#endif
-
-#ifdef GAUXC_ENABLE_HIP
-  #include <hip/hip_runtime_api.h>
-  #include <hipblas.h>
-#endif
-
-#ifdef GAUXC_ENABLE_MAGMA
-  #include <magma_v2.h>
-#endif
-
-#ifdef GAUXC_ENABLE_NCCL
-  #include <nccl.h>
-#endif
-
-#ifdef GAUXC_ENABLE_MPI
-  #include <mpi.h>
-#endif
-#endif
-
 
 #if defined(__CUDACC__) || defined(__HIPCC__)
   #define HOST_DEVICE_ACCESSIBLE __host__ __device__
 #else
   #define HOST_DEVICE_ACCESSIBLE
 #endif
-
-#include <gauxc/mpi_util.hpp>

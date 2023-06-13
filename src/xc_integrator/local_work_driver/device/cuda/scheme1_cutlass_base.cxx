@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include <stdexcept>
 
 #include "scheme1_cutlass_base.hpp"
@@ -26,7 +33,7 @@ void AoSScheme1CUTLASSBase::eval_xmat( XCDeviceData* _data, bool do_grad ){
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
   auto static_stack  = data->static_stack;
   auto aos_stack     = data->aos_stack;
-  pack_submat( ntasks, aos_stack.device_tasks, static_stack.dmat_device, 
+  sym_pack_submat( ntasks, aos_stack.device_tasks, static_stack.dmat_device, 
     nbf, submat_block_size, data->device_backend_->queue() );
 
   auto cutlass_stack = data->cutlass_stack;
@@ -71,7 +78,7 @@ void AoSScheme1CUTLASSBase::inc_vxc( XCDeviceData* _data){
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
   auto static_stack  = data->static_stack;
   auto aos_stack     = data->aos_stack;
-  task_inc_potential( ntasks, aos_stack.device_tasks, 
+  sym_task_inc_potential( ntasks, aos_stack.device_tasks, 
     static_stack.vxc_device, nbf, submat_block_size, 
     data->device_backend_->queue() );
 }

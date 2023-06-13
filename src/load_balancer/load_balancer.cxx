@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "load_balancer_impl.hpp"
 
 namespace GauXC {
@@ -22,6 +29,21 @@ const std::vector<XCTask>& LoadBalancer::get_tasks() const {
 std::vector<XCTask>& LoadBalancer::get_tasks() {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->get_tasks();
+}
+
+void LoadBalancer::rebalance_weights() {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->rebalance_weights();
+}
+
+void LoadBalancer::rebalance_exc_vxc() {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->rebalance_exc_vxc();
+}
+
+void LoadBalancer::rebalance_exx() {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->rebalance_exx();
 }
 
 const util::Timer& LoadBalancer::get_timings() const {
@@ -61,17 +83,28 @@ const LoadBalancer::basis_type& LoadBalancer::basis() const {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->basis();
 }
+const LoadBalancer::basis_map_type& LoadBalancer::basis_map() const {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->basis_map();
+}
+const LoadBalancer::shell_pair_type& LoadBalancer::shell_pairs() const {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->shell_pairs();
+}
 
 LoadBalancerState& LoadBalancer::state() {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->state();
 }
 
-#ifdef GAUXC_ENABLE_MPI
-MPI_Comm LoadBalancer::comm() const {
+const RuntimeEnvironment& LoadBalancer::runtime() const {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-  return pimpl_->comm();
+  return pimpl_->runtime();
 }
-#endif
+
+
+bool LoadBalancer::operator==( const LoadBalancer& other ) const {
+  return (&other) == this;
+}
 
 }

@@ -1,18 +1,49 @@
-#ifndef __MY_INTEGRAL_1_0
-#define __MY_INTEGRAL_1_0
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
+#pragma once
 
-__global__ void integral_1_0(size_t npts,
-                             shell_pair shpair,
-			     int np,
-			     prim_pair *prim_pairs,
-                             double *points,
-                             double *Xi,
-                             double *Xj,
-                             int ldX,
-                             double *Gi,
-                             double *Gj,
-                             int ldG, 
-                             double *weights,
-                             double *boys_table);
+#include "../include/gpu/integral_data_types.hpp"
+namespace XGPU {
+  void integral_1_0(size_t npts,
+		    double *_points_x,
+		    double *_points_y,
+		    double *_points_z,
+        shell_pair* sp,
+		    double *Xi,
+		    double *Xj,
+		    int ldX,
+		    double *Gi,
+		    double *Gj,
+		    int ldG, 
+		    double *weights,
+		    double *boys_table,
+        cudaStream_t stream);
 
-#endif
+  void integral_1_0_batched(bool swap, size_t ntask_sp,
+        const GauXC::ShellPairToTaskDevice* sp2task,
+        GauXC::XCDeviceTask*                device_tasks,
+		    double *boys_table,
+        cudaStream_t stream); 
+
+  void integral_1_0_task_batched(
+    bool swap,
+    size_t ntasks,
+    size_t nsubtasks,
+    int max_primpairs, size_t max_nsp,
+    GauXC::XCDeviceTask*                device_tasks,
+    const GauXC::TaskToShellPairDevice* task2sp,
+    const std::array<int32_t, 4>*  subtasks,
+    const int32_t* nprim_pairs_device,
+    shell_pair** sp_ptr_device,
+    double* sp_X_AB_device,
+    double* sp_Y_AB_device,
+    double* sp_Z_AB_device,
+    double *boys_table,
+    cudaStream_t stream);
+
+}

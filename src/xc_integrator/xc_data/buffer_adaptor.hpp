@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 #include <memory>
 #include <gauxc/exceptions.hpp>
@@ -9,9 +16,9 @@ namespace GauXC {
 
 template <typename T>
 struct buffer {
-  T*     ptr;
-  size_t len;
-  size_t alignment;
+  T*     ptr = nullptr;
+  size_t length = 0;
+  size_t alignment = 0;
 
   operator T*() { return ptr; }
   //buffer( nullptr_t ) : ptr(nullptr), len(0), alignment(0) { }
@@ -38,6 +45,8 @@ public:
   buffer<T> aligned_alloc( size_t len, 
                            size_t align = alignof(T),
                            std::string msg = "" ) {
+
+    if(len == 0ul) return buffer<T>{nullptr, 0, align};
 
     char* old_stack = (char*)stack_;
     if( std::align( align, 

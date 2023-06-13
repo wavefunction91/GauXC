@@ -1,5 +1,19 @@
+#
+# GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory (subject to receipt of
+# any required approvals from the U.S. Dept. of Energy). All rights reserved.
+#
+# See LICENSE.txt for details
+#
+
 # Parallelism
-find_package( OpenMP  REQUIRED )
+if( GAUXC_ENABLE_OPENMP ) 
+  message( STATUS "GauXC Enabling OpenMP" )
+  find_package( OpenMP  REQUIRED )
+else()
+  message( STATUS "GauXC Disabling OpenMP" )
+endif()
+
 if( GAUXC_ENABLE_MPI )
   message( STATUS "GauXC Enabling MPI" )
   find_package( MPI REQUIRED )
@@ -15,6 +29,7 @@ include( gauxc-exchcxx      )
 add_library( gauxc STATIC 
   grid.cxx 
   grid_impl.cxx 
+  grid_factory.cxx
   molmeta.cxx 
   molgrid.cxx 
   molgrid_impl.cxx 
@@ -79,6 +94,8 @@ if( GAUXC_ENABLE_MPI )
   target_link_libraries( gauxc PUBLIC MPI::MPI_C MPI::MPI_CXX )
 endif()
 
+add_subdirectory( runtime_environment )
+add_subdirectory( molecular_weights )
 add_subdirectory( xc_integrator )
 add_subdirectory( load_balancer )
 add_subdirectory( reduction_driver )

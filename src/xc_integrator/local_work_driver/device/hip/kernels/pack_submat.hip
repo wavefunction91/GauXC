@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "device_specific/hip_device_constants.hpp"
 #include "device/common/pack_submat.hpp"
 #include <gauxc/util/div_ceil.hpp>
@@ -20,12 +27,12 @@ void submat_set_combined_kernel( size_t           ntasks,
   auto& task = device_tasks[ batch_id ];
 
   if constexpr (skip_single_cut ) {
-    if( task.ncut == 1 ) return;
+    if( task.bfn_screening.ncut == 1 ) return;
   }
 
-  const auto  ncut              = task.ncut;
-  const auto* submat_cut_device = task.submat_cut;
-  const auto  LDAS              = task.nbe;
+  const auto  ncut              = task.bfn_screening.ncut;
+  const auto* submat_cut_device = task.bfn_screening.submat_cut;
+  const auto  LDAS              = task.bfn_screening.nbe;
         auto* ASmall_device     = task.nbe_scr;
 
   //if( LDAS == LDAB ) return;
@@ -60,7 +67,7 @@ void submat_set_combined_kernel( size_t           ntasks,
 }
 
 
-void pack_submat( size_t ntasks, XCDeviceTask* device_tasks, const double* A,
+void sym_pack_submat( size_t ntasks, XCDeviceTask* device_tasks, const double* A,
   int32_t LDA, int32_t submat_block_size, device_queue queue ) {
 
   hipStream_t stream = queue.queue_as<util::hip_stream>();

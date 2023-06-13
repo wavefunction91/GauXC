@@ -1,9 +1,17 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 #include <gauxc/xc_integrator/local_work_driver.hpp>
 
 #include <memory>
 #include <gauxc/molmeta.hpp>
 #include <gauxc/basisset.hpp>
+#include <gauxc/shell_pair.hpp>
 #include <gauxc/basisset_map.hpp>
 #include <gauxc/xc_task.hpp>
 
@@ -157,9 +165,11 @@ public:
     const double* basis_eval, size_t ldb, double* F, size_t ldf,
     double* scr );
 
-  void eval_exx_gmat( size_t npts, size_t nshells, size_t nbe, const double* points, 
-    const double* weights, const BasisSet<double>& basis, 
+  void eval_exx_gmat( size_t npts, size_t nshells, size_t nshell_pairs,
+    size_t nbe, const double* points, const double* weights, 
+    const BasisSet<double>& basis, const ShellPairCollection<double>& shpairs, 
     const BasisSetMap& basis_map, const int32_t* shell_list, 
+    const std::pair<int32_t,int32_t>* shell_pair_list, 
     const double* X, size_t ldx, double* G, size_t ldg );
 
   void inc_exx_k( size_t npts, size_t nbf, size_t nbe_bra, size_t nbe_ket, 

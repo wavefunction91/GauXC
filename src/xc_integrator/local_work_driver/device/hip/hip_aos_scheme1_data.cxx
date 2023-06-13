@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "hip_aos_scheme1.hpp"
 #include "buffer_adaptor.hpp"
 #include <gauxc/util/div_ceil.hpp>
@@ -9,8 +16,8 @@ template <typename Base>
 HipAoSScheme1<Base>::Data::~Data() noexcept = default;
 
 template <typename Base>
-HipAoSScheme1<Base>::Data::Data() :
-  Base::Data( std::make_unique<HIPBackend>() ) { }
+HipAoSScheme1<Base>::Data::Data(const DeviceRuntimeEnvironment& rt) :
+  Base::Data( rt ) { }
 
 template <typename Base>
 size_t HipAoSScheme1<Base>::Data::get_ldatoms() {
@@ -22,6 +29,12 @@ size_t HipAoSScheme1<Base>::Data::get_ldatoms() {
 template <typename Base>
 size_t HipAoSScheme1<Base>::Data::get_rab_align() {
   return sizeof(double2);
+}
+
+template <typename Base>
+int HipAoSScheme1<Base>::Data::get_points_per_subtask() {
+  //GAUXC_GENERIC_EXCEPTION("sn-K Path for HIP NYI");
+  return 64;
 }
 
 

@@ -1,9 +1,13 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "replicated_cuda_load_balancer.hpp"
 #include <gauxc/util/div_ceil.hpp>
 #include "device_specific/cuda_util.hpp"
-
-#include <thrust/host_vector.h>
-#include <thrust/system/cuda/experimental/pinned_allocator.h>
 
 #include "cuda_collision_detection.hpp"
 
@@ -13,7 +17,7 @@ namespace GauXC {
 namespace detail {
 
 template <typename T>
-using pinned_vector = thrust::host_vector<T, thrust::cuda::experimental::pinned_allocator<T>>;
+using pinned_vector = std::vector<T>;
 
 // Helper data struction to keep inputs to collision detection kernels organized
 struct CollisionDetectionCudaData {
@@ -65,16 +69,8 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   const int32_t n_deriv = 1;
   const size_t atBatchSz = 256;
 
-  int32_t world_rank;
-  int32_t world_size;
-
-#ifdef GAUXC_ENABLE_MPI
-  MPI_Comm_rank( comm_, &world_rank );
-  MPI_Comm_size( comm_, &world_size );
-#else
-  world_rank = 0;
-  world_size = 1;
-#endif
+  int32_t world_rank = runtime_.comm_rank();
+  int32_t world_size = runtime_.comm_size();
 
   std::vector< XCTask > local_work;
   std::vector<size_t> global_workload( world_size, 0 );   
@@ -126,11 +122,11 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   util::cuda_copy(nspheres, data.shell_sizes_device, shell_sizes.data(), "ShellSize HtoD");
 
   // For batching of multiple atom screening
-  for (int atom_batch = 0; atom_batch < num_atom_batch; ++atom_batch) {
+  for (size_t atom_batch = 0; atom_batch < num_atom_batch; ++atom_batch) {
     //---------------------------------------------------------------------
     // production step 
     int32_t iCurrent  = atom_batch * atBatchSz;
-    for ( int atom_idx = 0; atom_idx < atBatchSz && atom_batch * atBatchSz + atom_idx < natoms; ++atom_idx ) {
+    for ( size_t atom_idx = 0; atom_idx < atBatchSz && atom_batch * atBatchSz + atom_idx < natoms; ++atom_idx ) {
 
       const auto atom = (*this->mol_)[atom_batch * atBatchSz + atom_idx];
       const std::array<double,3> center = { atom.x, atom.y, atom.z };
@@ -192,7 +188,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
 
     util::cuda_device_sync();
     // Copy results back to host
-    util::cuda_copy(total_collisions, thrust::raw_pointer_cast(position_list.data()), data.position_list_device, "Position List DtoH");
+    util::cuda_copy(total_collisions, position_list.data(), data.position_list_device, "Position List DtoH");
     util::cuda_copy(ncubes, pos_list_idx.data(), data.counts_device, "Position List Idx DtoH");
     util::cuda_copy(ncubes, nbe_vec.data(), data.nbe_list_device, "NBE counts DtoH");
     util::cuda_free(data.position_list_device);
@@ -203,7 +199,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
     //---------------------------------------------------------------------
     // Assign batches to MPI ranks
     size_t idx = 0;
-    for ( int atom_idx = 0; atom_idx < atBatchSz && atom_batch * atBatchSz + atom_idx < natoms; ++atom_idx ) {
+    for ( size_t atom_idx = 0; atom_idx < atBatchSz && atom_batch * atBatchSz + atom_idx < natoms; ++atom_idx ) {
 
       const auto atom = (*this->mol_)[atom_batch * atBatchSz + atom_idx];
       const std::array<double,3> center = { atom.x, atom.y, atom.z };
@@ -215,7 +211,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
       for( size_t ibatch = 0; ibatch < nbatches; ++ibatch ) {
         auto [ npts, pts_b, pts_en, w_b, w_en ] = (batcher.begin() + ibatch).range();
         XCTask task = std::move( temp_tasks.at( idx ) );
-        task.nbe  = nbe_vec[idx];
+        task.bfn_screening.nbe  = nbe_vec[idx];
 
         // Update npts with (possibly) padded value
         size_t npts_padded = util::div_ceil(npts, pad_value_) * pad_value_;
@@ -232,7 +228,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
           auto shell_list = std::move( copy_shell_list(idx, pos_list_idx, position_list) );
           // Course grain screening
           if( shell_list.size() ) {
-            task.shell_list = shell_list;
+            task.bfn_screening.shell_list = shell_list;
 
             // Get local copy of points weights
             std::vector<std::array<double,3>> points(pts_b, pts_en);
@@ -269,7 +265,7 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
     else if( a.iParent > b.iParent ) return false;
 
     // Equal iParent: lex sort on shell list
-    else return a.shell_list < b.shell_list;
+    else return a.bfn_screening.shell_list < b.bfn_screening.shell_list;
 
   };
 

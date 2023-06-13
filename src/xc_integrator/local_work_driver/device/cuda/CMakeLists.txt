@@ -1,3 +1,10 @@
+#
+# GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory (subject to receipt of
+# any required approvals from the U.S. Dept. of Energy). All rights reserved.
+#
+# See LICENSE.txt for details
+#
 target_sources(gauxc PRIVATE
   cuda_aos_scheme1_data.cxx
   cuda_aos_scheme1.cxx
@@ -16,6 +23,7 @@ target_sources(gauxc PRIVATE
   kernels/cuda_inc_potential.cu
   kernels/symmetrize_mat.cu
   kernels/increment_exc_grad.cu
+  kernels/exx_ek_screening_bfn_stats.cu
 )
 
 # Check if CMAKE_CUDA_ARCHITECTURES is set
@@ -30,6 +38,7 @@ foreach( cuda_arch ${CMAKE_CUDA_ARCHITECTURES} )
   endif()
 endforeach()
 
+add_subdirectory(obara_saika)
 if(GAUXC_ENABLE_CUTLASS)
     include( gauxc-cutlass )
     target_link_libraries( gauxc PRIVATE gauxc_cutlass )
