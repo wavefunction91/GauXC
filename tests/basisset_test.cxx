@@ -1,14 +1,42 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
+#include "ut_common.hpp"
 #include "catch2/catch.hpp"
 #include <gauxc/basisset.hpp>
+#include <gauxc/basisset_map.hpp>
 #include <gauxc/molecule.hpp>
+#include <gauxc/external/hdf5.hpp>
 
 #include "standards.hpp"
 
 #include <random>
 #include <algorithm>
 
+#include <gauxc/gauxc_config.hpp>
+
+#ifdef GAUXC_ENABLE_MPI
+#include <mpi.h>
+#endif
+
 using namespace GauXC;
 
+auto rad_eval( const Shell<double>& sh, double r ) {
+  return util::gau_rad_eval( sh.l(), sh.nprim(), sh.alpha_data(), 
+    sh.coeff_data(), r );
+}
+
+auto check_cutoff_radius( const Shell<double>& sh, double tol ) {
+  double r = sh.cutoff_radius();
+  auto calc_rad = util::gau_rad_cutoff( sh.l(), sh.nprim(), sh.alpha_data(), 
+    sh.coeff_data(), tol );
+  CHECK( r == Approx(calc_rad) );
+  CHECK( std::abs(rad_eval(sh, r)) < tol ); 
+}
 
 
 TEST_CASE("Shell", "[basisset]") {
@@ -17,13 +45,6 @@ TEST_CASE("Shell", "[basisset]") {
   using cart_array = Shell<double>::cart_array;
 
   const cart_array center = {0., 1., 0.};
-
-  auto cutFunc = []( double alpha, double tol ) -> double {
-    const double log_tol  = -std::log(tol);
-    const double log_alph =  std::log(alpha);
-    return std::sqrt( (log_tol + 0.5 * log_alph)/alpha );
-  };
-
 
   const double sqrt_pi = std::sqrt(M_PI);
   auto s_int = [=](double a) { return sqrt_pi / std::sqrt(a); };
@@ -50,8 +71,7 @@ TEST_CASE("Shell", "[basisset]") {
       CHECK( sh.coeff()[0] == Approx(ncoeff) );
       CHECK( sh.size() == 1 );
 
-
-      CHECK( sh.cutoff_radius() == Approx(cutFunc(alpha[0], 1e-10)) );
+      check_cutoff_radius( sh, 1e-10 ); 
 
       double exact_int = 0.;
       for( int32_t i = 0; i < 1; ++i )
@@ -78,7 +98,7 @@ TEST_CASE("Shell", "[basisset]") {
       CHECK( sh.size() == 3 );
 
 
-      CHECK( sh.cutoff_radius() == Approx(cutFunc(alpha[0], 1e-10)) );
+      check_cutoff_radius( sh, 1e-10 ); 
 
     }
 
@@ -98,7 +118,7 @@ TEST_CASE("Shell", "[basisset]") {
       CHECK( sh.size() == 6 );
 
 
-      CHECK( sh.cutoff_radius() == Approx(cutFunc(alpha[0], 1e-10)) );
+      check_cutoff_radius( sh, 1e-10 ); 
 
     }
 
@@ -123,13 +143,7 @@ TEST_CASE("Shell", "[basisset]") {
     CHECK( exact_int == Approx(1.) );
 
 
-    std::vector<double> indiv_cutoffs( 3 );
-    std::transform( sh.alpha().begin(), sh.alpha().begin()+3, indiv_cutoffs.begin(),
-      [&](double a) { return cutFunc(a, 1e-10); });
-
-    CHECK( sh.cutoff_radius() == Approx(*std::max_element(
-      indiv_cutoffs.begin(), indiv_cutoffs.end()
-    )));
+    check_cutoff_radius( sh, 1e-10 ); 
 
   }
 
@@ -142,13 +156,13 @@ TEST_CASE("Shell", "[basisset]") {
     Shell<double> sh( nprim, AngularMomentum(2), SphericalType(false),
       alpha, coeff, center );
 
-    CHECK(sh.cutoff_radius() == Approx( cutFunc( alpha[0], 1e-10 ) ));    
+    check_cutoff_radius( sh, 1e-10 ); 
 
     sh.set_shell_tolerance( 1e-10 );
-    CHECK(sh.cutoff_radius() == Approx( cutFunc( alpha[0], 1e-10 ) ));    
+    check_cutoff_radius( sh, 1e-10 ); 
 
     sh.set_shell_tolerance( 1e-7 );
-    CHECK(sh.cutoff_radius() == Approx( cutFunc( alpha[0], 1e-7 ) ));    
+    check_cutoff_radius( sh, 1e-7 ); 
 
   }
 
@@ -168,6 +182,7 @@ TEST_CASE("Shell", "[basisset]") {
 
 }
 
+
 TEST_CASE("BasisSet", "[basisset]") {
 
 
@@ -181,8 +196,7 @@ TEST_CASE("BasisSet", "[basisset]") {
 
   CHECK( basis.nshells() == 10 );
   CHECK( basis.nbf()     == (test_spherical ? 18 : 19) );
-  basis.generate_shell_to_ao();
-
+  BasisSetMap basis_map( basis, mol );
 
   std::vector<int32_t> ref_shell_to_ao = {
   0, 1, // H1
@@ -190,12 +204,43 @@ TEST_CASE("BasisSet", "[basisset]") {
   (test_spherical ? 16 : 17), (test_spherical ? 17 : 18)  // H2
   };
 
-  CHECK( basis.shell_to_first_ao() == ref_shell_to_ao );
+  CHECK( basis_map.shell_to_first_ao() == ref_shell_to_ao );
+  auto centers_correct = std::none_of( basis_map.shell_to_center().begin(), basis_map.shell_to_center().end(), [](auto i){ return i == -1;} );
+  CHECK( centers_correct );
 
   for(auto i = 0; i < basis.nshells(); ++i) {
-    auto [sh_st,sh_en] = basis.shell_to_ao_range(i);
+    auto [sh_st,sh_en] = basis_map.shell_to_ao_range(i);
     CHECK(sh_st == ref_shell_to_ao[i]);
     CHECK(sh_en == ref_shell_to_ao[i] + basis[i].size());
   }
+
+}
+
+
+
+TEST_CASE("HDF5-BASISSET", "[basisset]") {
+
+#ifdef GAUXC_ENABLE_MPI
+  int world_rank;
+  MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
+  if( world_rank ) return; // Only run on root rank
+#endif
+
+
+  Molecule mol = make_water();
+  BasisSet<double> basis = make_631Gd(mol, SphericalType(false));
+  
+  // Write file
+  const std::string fname = GAUXC_REF_DATA_PATH "/test_basis.hdf5";
+  write_hdf5_record( basis, fname , "/BASIS" );
+
+  // Read File
+  BasisSet<double> basis_read;
+  read_hdf5_record( basis_read, fname, "/BASIS" );
+
+  // Check that IO was correct
+  CHECK( basis == basis_read );
+
+  std::remove( fname.c_str() ); // Delete the test file
 
 }

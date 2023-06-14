@@ -1,6 +1,14 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "collocation_common.hpp"
 #include "collocation_host.hpp"
 #include "collocation_cuda.hpp"
+#include "collocation_hip.hpp"
 
 //#define GENERATE_TESTS
 
@@ -41,35 +49,42 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
   SECTION( "Host Eval Grad" ) {
     test_host_collocation_deriv1( basis, ref_data );
   }
+
+  SECTION( "Host Eval Hessian" ) {
+    test_host_collocation_deriv2( basis, ref_data );
+  }
 #endif
 
 #ifdef GAUXC_ENABLE_CUDA
-  SECTION( "CUDA Eval: Petite Shell List" ) {
-    test_cuda_collocation_petite( basis, ref_data );
+  BasisSetMap basis_map( basis, mol );
+  SECTION( "CUDA Eval" ) {
+    test_cuda_collocation( basis, ref_data );
   }
-  SECTION( "CUDA Eval: Masked" ) {
-    test_cuda_collocation_masked( basis, ref_data );
-  }
-  SECTION( "CUDA Eval: Petite Combined" ) {
-    test_cuda_collocation_petite_combined( basis, ref_data );
-  }
-  SECTION( "CUDA Eval: Masked Combined" ) {
-    test_cuda_collocation_masked_combined( basis, ref_data );
+  SECTION( "CUDA Shell to Task Eval" ) {
+    test_cuda_collocation_shell_to_task( basis, basis_map, ref_data );
   }
 
-  SECTION( "CUDA Eval Grad: Petite Shell List" ) {
-    test_cuda_collocation_deriv1_petite( basis, ref_data );
+  SECTION( "CUDA Eval Grad" ) {
+    test_cuda_collocation_deriv1( basis, ref_data );
   }
-  SECTION( "CUDA Eval Grad: Masked" ) {
-    test_cuda_collocation_deriv1_masked( basis, ref_data );
+  SECTION( "CUDA Shell to Task Eval Grad" ) {
+    test_cuda_collocation_shell_to_task_gradient( basis, basis_map, ref_data );
   }
-  SECTION( "CUDA Eval Grad: Petite Combined" ) {
-    test_cuda_collocation_petite_combined_deriv1( basis, ref_data );
-  }
-  SECTION( "CUDA Eval: Masked Combined" ) {
-    test_cuda_collocation_masked_combined_deriv1( basis, ref_data );
+
+  SECTION( "CUDA Shell to Task Eval Hessian" ) {
+    test_cuda_collocation_shell_to_task_hessian( basis, basis_map, ref_data );
   }
 #endif // GAUXC_ENABLE_CUDA
+
+#ifdef GAUXC_ENABLE_HIP
+  SECTION( "HIP Eval" ) {
+    test_hip_collocation( basis, ref_data );
+  }
+
+  SECTION( "HIP Eval Grad" ) {
+    test_hip_collocation_deriv1( basis, ref_data );
+  }
+#endif // GAUXC_ENABLE_HIP
 
 
 

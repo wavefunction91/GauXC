@@ -1,19 +1,22 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include <gauxc/molecule.hpp>
 #include <gauxc/grid.hpp>
+#include <gauxc/grid_factory.hpp>
 
 #include <unordered_map>
 
 namespace GauXC {
 
-using atomic_scal_factor_map =
-  std::unordered_map< AtomicNumber, RadialScale >;
-
-using atomic_grid_size_map =
-  std::unordered_map< AtomicNumber, GridSize >;
-
 using atomic_grid_map = std::unordered_map< AtomicNumber, Grid >;
+using atomic_grid_spec_map = std::unordered_map< AtomicNumber, atomic_grid_variant>;
 
 namespace detail {
   class MolGridImpl;
@@ -26,22 +29,7 @@ class MolGrid {
 public:
 
   MolGrid( const atomic_grid_map& );
-
-  MolGrid( RadialQuad, const atomic_grid_size_map&, const atomic_scal_factor_map&, 
-    const Molecule& );
-  MolGrid( RadialQuad, const atomic_grid_size_map&, const Molecule& );
-
-  MolGrid( RadialQuad, AtomicGridSizeDefault, const atomic_scal_factor_map&, 
-    const Molecule& );
-  MolGrid( RadialQuad, AtomicGridSizeDefault, const Molecule& );
-
-  MolGrid( const atomic_grid_size_map&, const atomic_scal_factor_map&, 
-    const Molecule& );
-  MolGrid( const atomic_grid_size_map&, const Molecule& );
-
-  MolGrid( AtomicGridSizeDefault, const atomic_scal_factor_map&, 
-    const Molecule& );
-  MolGrid( AtomicGridSizeDefault, const Molecule& );
+  MolGrid( const atomic_grid_spec_map& );
 
   MolGrid( const MolGrid& );
   MolGrid( MolGrid&& ) noexcept;
@@ -51,9 +39,6 @@ public:
   size_t natoms_uniq() const;
   const Grid& get_grid( AtomicNumber ) const;
         Grid& get_grid( AtomicNumber )      ;
-  RadialScale get_rscal_factor( AtomicNumber ) const;
-  GridSize    get_grid_size( AtomicNumber ) const ;
-  RadialQuad  get_radial_quad( AtomicNumber ) const;
 
   size_t max_nbatches() const;
 

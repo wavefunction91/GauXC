@@ -1,10 +1,20 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 #include <type_traits>
 #include <cstdlib>
 #include <cstdint>
 #include <cassert>
 
+#include <gauxc/gauxc_config.hpp>
+
 namespace GauXC  {
+namespace util  {
 
 namespace detail {
 
@@ -46,23 +56,9 @@ using largest_t = typename largest<Args...>::type;
 
 }
 
-
-namespace util  {
-
-template <typename Integral1, typename Integral2>
-intmax_t div_ceil( Integral1 i, Integral2 j ) {
-
-  static_assert( detail::are_integral<Integral1, Integral2>::value );
-  assert( i >= 0 );
-  assert( j >  0 );
-
-  intmax_t i_us = i;
-  intmax_t j_us = j;
-
-  auto d = std::div(i_us,j_us);
-  return d.quot + !!d.rem;
-
-};
+inline HOST_DEVICE_ACCESSIBLE uintmax_t div_ceil( uintmax_t i, uintmax_t j ) {
+  return (i + j - 1) / j;
+}
 
 
 }

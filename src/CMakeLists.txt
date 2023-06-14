@@ -1,5 +1,19 @@
+#
+# GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory (subject to receipt of
+# any required approvals from the U.S. Dept. of Energy). All rights reserved.
+#
+# See LICENSE.txt for details
+#
+
 # Parallelism
-find_package( OpenMP  REQUIRED )
+if( GAUXC_ENABLE_OPENMP ) 
+  message( STATUS "GauXC Enabling OpenMP" )
+  find_package( OpenMP  REQUIRED )
+else()
+  message( STATUS "GauXC Disabling OpenMP" )
+endif()
+
 if( GAUXC_ENABLE_MPI )
   message( STATUS "GauXC Enabling MPI" )
   find_package( MPI REQUIRED )
@@ -15,13 +29,12 @@ include( gauxc-exchcxx      )
 add_library( gauxc STATIC 
   grid.cxx 
   grid_impl.cxx 
+  grid_factory.cxx
   molmeta.cxx 
   molgrid.cxx 
   molgrid_impl.cxx 
   molgrid_defaults.cxx 
   atomic_radii.cxx 
-  load_balancer_impl.cxx 
-  load_balancer.cxx 
 )
 
 target_include_directories( gauxc
@@ -32,11 +45,32 @@ target_include_directories( gauxc
     $<INSTALL_INTERFACE:include>
 )
 
-target_compile_options( gauxc
-  PRIVATE
-    $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wpedantic -Wnon-virtual-dtor>
-)
+include( CheckCXXCompilerFlag )
+check_cxx_compiler_flag( -Wall              GAUXC_CXX_HAS_WALL              )
+check_cxx_compiler_flag( -Wextra            GAUXC_CXX_HAS_WEXTRA            )
+check_cxx_compiler_flag( -Wpedantic         GAUXC_CXX_HAS_WPEDANTIC         )
+check_cxx_compiler_flag( -Wnon-virtual-dtor GAUXC_CXX_HAS_WNON_VIRTUAL_DTOR )
+check_cxx_compiler_flag( -Wshadow           GAUXC_CXX_HAS_WSHADOW           )
 
+if( GAUXC_CXX_HAS_WALL )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wall> )
+endif()
+
+if( GAUXC_CXX_HAS_WEXTRA )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wextra> )
+endif()
+
+if( GAUXC_CXX_HAS_WPEDANTIC )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wpedantic> )
+endif()
+
+if( GAUXC_CXX_HAS_WNON_VIRTUAL_DTOR )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wnon-virtual-dtor -Werror=non-virtual-dtor> )
+endif()
+
+if( GAUXC_CXX_HAS_WSHADOW )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wshadow> )
+endif()
 
 
 configure_file( 
@@ -47,15 +81,25 @@ configure_file(
 target_link_libraries( gauxc PUBLIC 
   ExchCXX::ExchCXX 
   IntegratorXX::IntegratorXX 
-  OpenMP::OpenMP_CXX
 )
-
-if( GAUXC_ENABLE_MPI )
-  target_link_libraries( gauxc PUBLIC MPI::MPI_C )
+if( TARGET OpenMP::OpenMP_CXX )
+  target_link_libraries( gauxc PUBLIC OpenMP::OpenMP_CXX )
+else()
+  find_package(Threads REQUIRED)
+  target_link_libraries( gauxc PUBLIC Threads::Threads )
 endif()
 
-add_subdirectory( integrator )
+
+if( GAUXC_ENABLE_MPI )
+  target_link_libraries( gauxc PUBLIC MPI::MPI_C MPI::MPI_CXX )
+endif()
+
+add_subdirectory( runtime_environment )
+add_subdirectory( molecular_weights )
+add_subdirectory( xc_integrator )
 add_subdirectory( load_balancer )
+add_subdirectory( reduction_driver )
+add_subdirectory( external )
 
 
 add_library( gauxc::gauxc ALIAS gauxc )
@@ -77,17 +121,17 @@ export(EXPORT gauxc-targets
       NAMESPACE gauxc::
       FILE "${PROJECT_BINARY_DIR}/gauxc-targets.cmake")
 
-# Install staic headers
+# Install static headers
 install( 
   DIRECTORY   ${PROJECT_SOURCE_DIR}/include
-  DESTINATION ${CMAKE_INSTALL_PREFIX}
+  DESTINATION .
   FILES_MATCHING PATTERN "*.hpp"
 )
 
 # Install generated headers
 install(
   FILES       ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/gauxc
+  DESTINATION include/gauxc
 )
   
    

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.17 FATAL_ERROR) # Require CMake 3.17+
+cmake_minimum_required(VERSION 3.18 FATAL_ERROR) # Require CMake 3.18+
 
 get_filename_component(GauXC_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 
@@ -7,24 +7,27 @@ list(APPEND CMAKE_MODULE_PATH ${GauXC_CMAKE_DIR}/linalg-cmake-modules )
 include(CMakeFindDependencyMacro)
 
 # Always Required Dependencies
+find_dependency( ExchCXX )
 find_dependency( IntegratorXX )
-find_dependency( ExchCXX      )
 find_dependency( OpenMP       )
 
 
 set( GAUXC_ENABLE_HOST       @GAUXC_ENABLE_HOST@      )
 set( GAUXC_ENABLE_CUDA       @GAUXC_ENABLE_CUDA@      )
 set( GAUXC_ENABLE_MAGMA      @GAUXC_ENABLE_MAGMA@     )
-set( GAUXC_ENABLE_NCCL       @GAUXC_ENABLE_NCCL@     )
+set( GAUXC_ENABLE_NCCL       @GAUXC_ENABLE_NCCL@      )
+set( GAUXC_ENABLE_CUTLASS    @GAUXC_ENABLE_CUTLASS@   )
 set( GAUXC_ENABLE_MPI        @GAUXC_ENABLE_MPI@       )
+set( GAUXC_ENABLE_OPENMP     @GAUXC_ENABLE_OPENMP@    )
 set( GAUXC_ENABLE_GAU2GRID   @GAUXC_ENABLE_GAU2GRID@  )
+set( GAUXC_ENABLE_HDF5       @GAUXC_ENABLE_HDF5@      )
 
 
 if( GAUXC_ENABLE_HOST )
-  find_dependency( LAPACK )
-  if( GAUXC_ENABLE_GAU2GRID )
-    find_dependency( gau2grid )
-  endif()
+  find_dependency( BLAS )
+  #if( GAUXC_ENABLE_GAU2GRID )
+  #  find_dependency( gau2grid )
+  #endif()
 endif()
 
 if( GAUXC_ENABLE_CUDA )
@@ -40,6 +43,14 @@ endif()
 
 if( GAUXC_ENABLE_MPI )
   find_dependency( MPI )
+endif()
+
+if( GAUXC_ENABLE_OPENMP )
+  find_dependency( OpenMP )
+endif()
+
+if( GAUXC_ENABLE_HDF5 )
+  find_dependency( HighFive )
 endif()
 
 list(REMOVE_AT CMAKE_MODULE_PATH -1)

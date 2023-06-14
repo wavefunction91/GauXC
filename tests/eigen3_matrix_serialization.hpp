@@ -1,15 +1,24 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include <cereal/cereal.hpp>
 
-#ifdef __PGI
-  #define _GAUXC_COMP_IS_PGI
-  #undef __PGI
-#endif
+//#ifdef __PGI
+//  #define _GAUXC_COMP_IS_PGI
+//  #undef __PGI
+//#endif
+#define EIGEN_DONT_VECTORIZE
+#define EIGEN_NO_CUDA
 #include <Eigen/Core>
-#ifdef _GAUXC_COMP_IS_PGI
-  #define __PGI
-#endif
+//#ifdef _GAUXC_COMP_IS_PGI
+//  #define __PGI
+//#endif
 
 namespace cereal {
 

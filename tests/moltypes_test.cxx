@@ -1,10 +1,27 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
+#include "ut_common.hpp"
 #include "catch2/catch.hpp"
 #include <gauxc/molecule.hpp>
 #include <gauxc/molmeta.hpp>
+#include <gauxc/external/hdf5.hpp>
+//#include <filesystem>
+#include <fstream>
 
 #include "standards.hpp"
 
 #include <random>
+
+#include <gauxc/gauxc_config.hpp>
+
+#ifdef GAUXC_ENABLE_MPI
+#include <mpi.h>
+#endif
 
 using namespace GauXC;
 
@@ -121,5 +138,38 @@ TEST_CASE( "MolMeta", "[moltypes]" ) {
   for( auto i = 0; i < mol.natoms(); ++i )
     CHECK( dist_nearest[i] == Approx(2.68755847909) );
   
+
+}
+
+TEST_CASE("HDF5-MOLECULE", "[moltypes]") {
+
+#ifdef GAUXC_ENABLE_MPI
+  int world_rank;
+  MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
+  if( world_rank ) return; // Only run on root rank
+#endif
+
+
+  Molecule mol = make_water();
+  
+  // Write file
+  const std::string fname = GAUXC_REF_DATA_PATH "/test_mol.hdf5";
+  //if( std::filesystem::exists(fname) ) std::filesystem::remove(fname);
+  auto file_exists = [](const auto& f ) {
+    std::ifstream file(f); return file.good();
+  };
+  if(file_exists(fname)) std::remove(fname.c_str());
+
+  write_hdf5_record( mol, fname , "/MOL" );
+
+  // Read File
+  Molecule mol_read;
+  read_hdf5_record( mol_read, fname, "/MOL" );
+
+  // Check that IO was correct
+  CHECK( mol == mol_read );
+
+  //std::filesystem::remove(fname); // Delete the test file
+  std::remove(fname.c_str());
 
 }

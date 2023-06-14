@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include <array>
@@ -5,10 +12,12 @@
 #include <iostream>
 #include <cassert>
 #include <algorithm>
+#include <tuple>
 
 #include <gauxc/named_type.hpp>
 #include <gauxc/gauxc_config.hpp>
 #include <gauxc/util/contiguous_container_data.hpp>
+#include <gauxc/util/gau_rad_eval.hpp>
 
 
 namespace GauXC {
@@ -33,7 +42,7 @@ using AngularMomentum = detail::NamedType< int32_t, struct AngularMomentumType >
 using SphericalType   = detail::NamedType< int32_t, struct SphericalTypeType >;
 
 template <typename F>
-class Shell {
+class alignas(256) Shell {
 
 public:
 
@@ -42,18 +51,19 @@ public:
 
 private:
 
-  int32_t nprim_;
-  int32_t l_;
-  int32_t pure_;
-
   prim_array alpha_;
   prim_array coeff_;
   cart_array O_;
 
+  int32_t nprim_;
+  int32_t l_;
+  int32_t pure_;
+
   double cutoff_radius_;
   double shell_tolerance_{detail::default_shell_tolerance}; 
 
-  double _pad_; // Pad to be a multiple of 16
+  //double _pad_; // Pad to be a multiple of 16
+    
   // Shamelessly adapted from Libint...
   void normalize() {
 
@@ -96,6 +106,7 @@ private:
 
   void compute_shell_cutoff() {
 
+#if 0
     // Cutoff radius according to Eq.20 in J. Chem. Theory Comput. 2011, 7, 3097-3104
     auto cutFunc = [tol=shell_tolerance_] (double alpha) -> double {
       const double log_tol  = -std::log(tol);
@@ -108,11 +119,15 @@ private:
         [&](F x, F y){ return cutFunc(x) < cutFunc(y); }
       )
     );
+#else
+    cutoff_radius_ = util::gau_rad_cutoff( l_, nprim_, alpha_.data(), 
+      coeff_.data(), shell_tolerance_ );
+#endif
 
   }
 public:
 
-  Shell() = delete;
+  Shell() : nprim_(0), l_(0), pure_(false) { };
 
   Shell( PrimSize nprim, AngularMomentum l, SphericalType pure,
     prim_array alpha, prim_array coeff, cart_array O, bool _normalize = true ) :
@@ -168,8 +183,14 @@ public:
     return cutoff_radius_;
   }
 
+  inline HOST_DEVICE_ACCESSIBLE int32_t cart_size() const {
+    return (l_+1)*(l_+2)/2;
+  }
+  inline HOST_DEVICE_ACCESSIBLE int32_t pure_size() const {
+    return 2*l_ + 1;
+  }
   inline HOST_DEVICE_ACCESSIBLE int32_t size() const {;
-    return pure_ ? 2*l_ + 1 : (l_+1)*(l_+2)/2;
+    return pure_ ? pure_size() : cart_size();
   }
 
   inline const prim_array& alpha()  const { return alpha_; }
@@ -179,6 +200,52 @@ public:
   inline       prim_array& coeff()        { return coeff_; }
   inline       cart_array& O()            { return O_;     }
 
+  inline void set_pure(bool p) { pure_ = p; }
+
+  template <typename Archive>
+  void serialize( Archive& ar ) {
+    ar( nprim_, l_, pure_, alpha_, coeff_, O_, cutoff_radius_, shell_tolerance_ );
+  }
+
+
+  bool operator==( const Shell& other ) const {
+    if( other.nprim_ != nprim_ ) return false;
+    if( other.l_ != l_ ) return false;
+    if( other.pure_ != pure_ ) return false;
+    if( other.O_ != O_ ) return false;
+
+    for( auto i = 0; i < nprim_; ++i ) {
+      if( alpha_[i] != other.alpha_[i] ) return false;
+      if( coeff_[i] != other.coeff_[i] ) return false;
+    }
+
+    return true;
+  }
+
 };
+
+
+#if 0
+template <typename T>
+inline std::ostream& operator<<( std::ostream& os, const Shell<T>& sh ) {
+    os << "GauXC::Shell:( O={" 
+	<< sh.O()[0] << "," << sh.O()[1] << "," << sh.O()[2] 
+	<< "}" << std::endl;
+    os << "  ";
+    os << " {l=" << sh.l() << ",sph=" << sh.pure() << "}";
+    os << std::endl;
+    os << " {cr=" << sh.cutoff_radius() << ",cv=" << sh.cutoff_val() 
+	    <<",mr=" << sh.max_radius() << ",mv=" << sh.max_val() << "}";
+    os << std::endl;
+
+    for(auto i=0ul; i<sh.nprim(); ++i) {
+      os << "  " << sh.alpha()[i];
+      os << " "  << sh.coeff().at(i);
+      os << std::endl;
+    }
+
+    return os;
+}
+#endif
 
 }

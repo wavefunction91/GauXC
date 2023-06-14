@@ -1,3 +1,10 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include <gauxc/atom.hpp>
@@ -30,6 +37,12 @@ public:
       })->Z;
   }
 
+  bool operator==(const Molecule& other) {
+    if(other.size() != this->size()) return false;
+    for( auto i = 0ul; i < this->size(); ++i )
+      if( other[i] != operator[](i) ) return false;
+    return true;
+  }
 };
 
 }
