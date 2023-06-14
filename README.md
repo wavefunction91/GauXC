@@ -25,8 +25,7 @@ accelerator-based (GPU) architectures. Currently, GPU support is provided throug
 the 
 [CUDA](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html) and 
 [HIP](https://rocmdocs.amd.com/en/latest/Programming_Guides/HIP-GUIDE.html)
-<!-- and [SYCL/DPC++](https://oneapi-src.github.io/DPCPP_Reference/) -->
-frameworks to target NVIDIA and AMD <!-- and Intel --> GPUs, respectively. 
+frameworks to target NVIDIA and AMD GPUs, respectively. 
 Evaluation
 of the XC functional CPU/accelerator architectures is provided by the
 [ExchCXX](https://github.com/wavefunction91/ExchCXX) library. Quadratures are generated
@@ -59,8 +58,7 @@ for flexible and agile development in the field of KS-DFT.
 * [Eigen3](https://eigen.tuxfamily.org/dox/) (Testing Only)
 * [CUDA](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)/[cuBLAS](https://docs.nvidia.com/cuda/cublas/index.html) (Required only if CUDA enabled)
 * [HIP](https://rocmdocs.amd.com/en/latest/Programming_Guides/HIP-GUIDE.html)/[ROCm](https://github.com/RadeonOpenCompute/ROCm) (Required only if HIP enabled)
-<!-- * [DPC++ SYCL](https://oneapi-src.github.io/DPCPP_Reference/)/[oneMKL](https://github.com/oneapi-src/oneMKL) (Required only if SYCL enabled) -->
-* [MAGMA](https://icl.utk.edu/magma/) (Optional if CUDA/HIP<!-- /SYCL --> enabled)
+* [MAGMA](https://icl.utk.edu/magma/) (Optional if CUDA/HIP enabled)
 
 
 # Publications
@@ -166,7 +164,6 @@ target_link_libraries( my_target PUBLIC gauxc::gauxc )
 | `GAUXC_ENABLE_HOST`        | Enable HOST integrators                                   | `ON`     |
 | `GAUXC_ENABLE_CUDA`        | Enable CUDA integrators                                   | `OFF`    |
 | `GAUXC_ENABLE_HIP`         | Enable HIP integrators                                    | `OFF`    |
-<!--| `GAUXC_ENABLE_SYCL`        | Enable SYCL integrators                                   | `OFF`    |-->
 | `GAUXC_ENABLE_MAGMA`       | Enable MAGMA for batched BLAS (No effect if no GPU)       | `ON`     | 
 | `GAUXC_ENABLE_CUTLASS`     | Enable CUTLASS for batched BLAS (No effect if no CUDA)    | `OFF`    |
 | `GAUXC_ENABLE_NCCL`        | Enable NCCL bindings for topology aware GPU reductions    | `OFF`    |
