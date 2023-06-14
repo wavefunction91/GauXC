@@ -169,7 +169,7 @@ target_link_libraries( my_target PUBLIC gauxc::gauxc )
 | `GAUXC_ENABLE_NCCL`        | Enable NCCL bindings for topology aware GPU reductions    | `OFF`    |
 | `GAUXC_ENABLE_MPI`         | Enable MPI Bindings                                       | `ON`     | 
 | `GAUXC_ENABLE_OPENMP`      | Enable OpenMP Bindings                                    | `ON`     | 
-| `CMAKE_CUDA_ARCHITECTURES1 | CUDA architechtures (e.g. 70 for Volta, 80 for Ampere)    |  --      |
+| `CMAKE_CUDA_ARCHITECTURES` | CUDA architechtures (e.g. 70 for Volta, 80 for Ampere)    |  --      |
 | `BLAS_LIBRARIES`           | Full BLAS linker.                                         |  --      |
 | `MAGMA_ROOT_DIR`           | Install prefix for MAGMA.                                 |  --      |
 
