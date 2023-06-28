@@ -2,8 +2,8 @@ cmake_minimum_required(VERSION 3.18 FATAL_ERROR) # Require CMake 3.18+
 
 get_filename_component(GauXC_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 
-list(APPEND CMAKE_MODULE_PATH ${GauXC_CMAKE_DIR}                      )
-list(APPEND CMAKE_MODULE_PATH ${GauXC_CMAKE_DIR}/linalg-cmake-modules )
+list(PREPEND CMAKE_MODULE_PATH ${GauXC_CMAKE_DIR}                      )
+list(PREPEND CMAKE_MODULE_PATH ${GauXC_CMAKE_DIR}/linalg-cmake-modules )
 include(CMakeFindDependencyMacro)
 
 # Always Required Dependencies
@@ -61,3 +61,6 @@ if(NOT TARGET gauxc::gauxc)
 endif()
 
 set(GauXC_LIBRARIES gauxc::gauxc)
+
+list(REMOVE_AT CMAKE_MODULE_PATH 0)
+list(REMOVE_AT CMAKE_MODULE_PATH 0)
