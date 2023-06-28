@@ -53,14 +53,11 @@ if( GAUXC_ENABLE_HDF5 )
   find_dependency( HighFive )
 endif()
 
-list(REMOVE_AT CMAKE_MODULE_PATH -1)
-list(REMOVE_AT CMAKE_MODULE_PATH -1)
+list(REMOVE_AT CMAKE_MODULE_PATH 0)
+list(REMOVE_AT CMAKE_MODULE_PATH 0)
 
 if(NOT TARGET gauxc::gauxc)
     include("${GauXC_CMAKE_DIR}/gauxc-targets.cmake")
 endif()
 
 set(GauXC_LIBRARIES gauxc::gauxc)
-
-list(REMOVE_AT CMAKE_MODULE_PATH 0)
-list(REMOVE_AT CMAKE_MODULE_PATH 0)
