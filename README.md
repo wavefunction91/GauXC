@@ -67,11 +67,16 @@ Please cite the following publications if GauXC was used in your publication:
 ```
 % Distributed Memory Seminumerical Exact Exchange implementation
 @article{williams2023distributed,
-  title={Distributed Memory, GPU Accelerated Fock Construction for Hybrid, Gaussian Basis Density Functional Theory},
-  author={Williams-Young, David B and Asadchev, Andrey and Popovici, Doru Thom and Clark, David and Waldrop, Johnathan and 
-          Windus, Theresa and Valeev, Edward F and de Jong, Wibe A},
-  journal={arXiv preprint arXiv:2303.14280},
-  year={2023}
+  title = {Distributed memory, GPU accelerated Fock construction for hybrid, Gaussian basis density functional theory},
+  author = {Williams-Young, David B. and Asadchev, Andrey and Popovici, Doru Thom and Clark, David and Waldrop, Jonathan and 
+            Windus, Theresa L. and Valeev, Edward F. and de Jong, Wibe A.},
+  journal = {The Journal of Chemical Physics},
+  volume = {158},
+  number = {23},
+  pages = {234104},
+  year = {2023},
+  doi = {10.1063/5.0151070},
+  url = {https://doi.org/10.1063/5.0151070}
 }
 
 % Performance Portability (HIP/SYCL implementations)
@@ -90,7 +95,7 @@ Please cite the following publications if GauXC was used in your publication:
 }
 
 % CUDA and distributed memory implementation
-@article{ williams20_on,
+@article{williams20on,
   author={David B. Williams--Young and Wibe A. de Jong and Hubertus J.J. van Dam and
           Chao Yang},
   title={On the Efficient Evaluation of the Exchange Correlation Potential on 
@@ -105,7 +110,7 @@ Please cite the following publications if GauXC was used in your publication:
 }
 
 % Algorithm for XC potential assembly and shared-memory CPU implementation
-@article{ petrone18_an,
+@article{petrone18an,
   author={Alessio Petrone and David B. Williams--Young and Shichao Sun and
           Torin F. Stetina and Xiaosong Li},
   title={An Efficient Implementation of Two-Component Relativistic Density 
