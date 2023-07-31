@@ -79,6 +79,38 @@ protected:
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data );
 
+  void exc_vxc_local_work_UKS_( const basis_type& basis, const value_type* P, int64_t ldp,
+                                const value_type* Pz, int64_t ldpz,
+                            host_task_iterator task_begin, host_task_iterator task_end,
+                            XCDeviceData& device_data );
+
+  void exc_vxc_local_work_UKS_( const basis_type& basis, const value_type* P, int64_t ldp,
+                            const value_type* Pz, int64_t ldpz,
+                            value_type* VXC, int64_t ldvxc,
+                            value_type* VXCz, int64_t ldvxcz, value_type* EXC, value_type *N_EL,
+                            host_task_iterator task_begin, host_task_iterator task_end,
+                            XCDeviceData& device_data );
+
+
+  void exc_vxc_local_work_GKS_( const basis_type& basis, const value_type* P, int64_t ldp,
+                            const value_type* Pz, int64_t ldpz,
+                            const value_type* Px, int64_t ldpx,
+                            const value_type* Py, int64_t ldpy,
+                            host_task_iterator task_begin, host_task_iterator task_end,
+                            XCDeviceData& device_data );
+
+  void exc_vxc_local_work_GKS_( const basis_type& basis, const value_type* P, int64_t ldp,
+                            const value_type* Pz, int64_t ldpz,
+                            const value_type* Px, int64_t ldpx,
+                            const value_type* Py, int64_t ldpy,
+                            value_type* VXC, int64_t ldvxc,
+                            value_type* VXCz, int64_t ldvxcz,
+                            value_type* VXCx, int64_t ldvxcx,
+                            value_type* VXCy, int64_t ldvxcy, value_type* EXC, value_type *N_EL,
+                            host_task_iterator task_begin, host_task_iterator task_end,
+                            XCDeviceData& device_data );
+
+
 
 
 
@@ -122,6 +154,17 @@ public:
   void exc_vxc_local_work(Args&&... args) {
     exc_vxc_local_work_( std::forward<Args>(args)... );
   }
+
+  template <typename... Args>
+  void exc_vxc_local_work_UKS(Args&&... args) {
+    exc_vxc_local_work_UKS_( std::forward<Args>(args)... );
+  }
+
+  template <typename... Args>
+  void exc_vxc_local_work_GKS(Args&&... args) {
+    exc_vxc_local_work_GKS_( std::forward<Args>(args)... );
+  }
+
 };
 
 extern template class IncoreReplicatedXCDeviceIntegrator<double>;
