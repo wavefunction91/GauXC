@@ -88,7 +88,7 @@ template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   eval_exc_vxc_UKS_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp,
-                      int64_t m1, int64_t n1, const value_type* Pz,
+                      const value_type* Pz,
                       int64_t ldpz,
                       value_type* VXC, int64_t ldvxc,
                       value_type* VXCz, int64_t ldvxcz,
@@ -103,11 +103,11 @@ template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   eval_exc_vxc_GKS_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp,
-                      int64_t m1, int64_t n1, const value_type* Pz,
+                      const value_type* Pz,
                       int64_t ldpz,
-                      int64_t m2, int64_t n2, const value_type* Px,
+                      const value_type* Px,
                       int64_t ldpx,
-                      int64_t m3, int64_t n3, const value_type* Py,
+                      const value_type* Py,
                       int64_t ldpy,
                       value_type* VXC, int64_t ldvxc,
                       value_type* VXCz, int64_t ldvxcz,

@@ -86,7 +86,7 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_UKS
   value_type  EXC;
 
   pimpl_->eval_exc_vxc_UKS( P.rows(), P.cols(), P.data(), P.rows(),
-                        Pz.rows(), Pz.cols(), Pz.data(), Pz.rows(),
+                        Pz.data(), Pz.rows(),
                         VXC.data(), VXC.rows(),
                         VXCz.data(), VXCz.rows(), &EXC );
 
@@ -106,9 +106,9 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_GKS
   value_type  EXC;
 
   pimpl_->eval_exc_vxc_GKS( P.rows(), P.cols(), P.data(), P.rows(),
-                        Pz.rows(), Pz.cols(), Pz.data(), Pz.rows(),
-                        Px.rows(), Px.cols(), Px.data(), Px.rows(),
-                        Py.rows(), Py.cols(), Py.data(), Py.rows(),
+                        Pz.data(), Pz.rows(),
+                        Px.data(), Px.rows(),
+                        Py.data(), Py.rows(),
                         VXC.data(), VXC.rows(),
                         VXCz.data(), VXCz.rows(),
                         VXCx.data(), VXCx.rows(),
