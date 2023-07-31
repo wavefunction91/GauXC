@@ -77,6 +77,48 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type
 }
 
 template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_UKS
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_UKS_( const MatrixType& P, const MatrixType& Pz ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  matrix_type VXC( P.rows(), P.cols() );
+  matrix_type VXCz( Pz.rows(), Pz.cols() );
+  value_type  EXC;
+
+  pimpl_->eval_exc_vxc_UKS( P.rows(), P.cols(), P.data(), P.rows(),
+                        Pz.rows(), Pz.cols(), Pz.data(), Pz.rows(),
+                        VXC.data(), VXC.rows(),
+                        VXCz.data(), VXCz.rows(), &EXC );
+
+  return std::make_tuple( EXC, VXC, VXCz );
+
+}
+
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_GKS
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_GKS_( const MatrixType& P,const MatrixType& Pz, const MatrixType& Px,const MatrixType& Py ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  matrix_type VXC( P.rows(), P.cols() );
+  matrix_type VXCz( Pz.rows(), Pz.cols() );
+  matrix_type VXCx( Px.rows(), Px.cols() );
+  matrix_type VXCy( Py.rows(), Py.cols() );
+  value_type  EXC;
+
+  pimpl_->eval_exc_vxc_GKS( P.rows(), P.cols(), P.data(), P.rows(),
+                        Pz.rows(), Pz.cols(), Pz.data(), Pz.rows(),
+                        Px.rows(), Px.cols(), Px.data(), Px.rows(),
+                        Py.rows(), Py.cols(), Py.data(), Py.rows(),
+                        VXC.data(), VXC.rows(),
+                        VXCz.data(), VXCz.rows(),
+                        VXCx.data(), VXCx.rows(),
+                        VXCy.data(), VXCy.rows(), &EXC );
+
+  return std::make_tuple( EXC, VXC, VXCz, VXCx, VXCy );
+
+}
+
+template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type 
   ReplicatedXCIntegrator<MatrixType>::eval_exc_grad_( const MatrixType& P ) {
 

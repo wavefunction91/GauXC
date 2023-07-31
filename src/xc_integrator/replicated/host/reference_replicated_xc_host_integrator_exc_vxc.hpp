@@ -63,6 +63,44 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
+  eval_exc_vxc_UKS_( int64_t m, int64_t n, const value_type* P,
+                      int64_t ldp,
+                      int64_t m1, int64_t n1, const value_type* Pz,
+                      int64_t ldpz,
+                      value_type* VXC, int64_t ldvxc,
+                      value_type* VXCz, int64_t ldvxcz,
+                      value_type* EXC ) {
+
+  //CErr(" ReferenceReplicatedXCHostIntegrator<ValueType>::eval_exc_vxc_UKS_ NOT YET IMPLEMENTED");
+ std::cout << " ReferenceReplicatedXCHostIntegrator<ValueType>::eval_exc_vxc_UKS_ NOT YET IMPLEMENTED" << std::endl;
+ std::exit(0);
+
+}
+
+template <typename ValueType>
+void ReferenceReplicatedXCHostIntegrator<ValueType>::
+  eval_exc_vxc_GKS_( int64_t m, int64_t n, const value_type* P,
+                      int64_t ldp,
+                      int64_t m1, int64_t n1, const value_type* Pz,
+                      int64_t ldpz,
+                      int64_t m2, int64_t n2, const value_type* Px,
+                      int64_t ldpx,
+                      int64_t m3, int64_t n3, const value_type* Py,
+                      int64_t ldpy,
+                      value_type* VXC, int64_t ldvxc,
+                      value_type* VXCz, int64_t ldvxcz,
+                      value_type* VXCx, int64_t ldvxcx,
+                      value_type* VXCy, int64_t ldvxcy,
+                      value_type* EXC ) {
+
+  //CErr(" ReferenceReplicatedXCHostIntegrator<ValueType>::eval_exc_vxc_GKS_ NOT YET IMPLEMENTED");
+ std::cout << " ReferenceReplicatedXCHostIntegrator<ValueType>::eval_exc_vxc_GKS_ NOT YET IMPLEMENTED" << std::endl; 
+ std::exit(0);
+}
+
+
+template <typename ValueType>
+void ReferenceReplicatedXCHostIntegrator<ValueType>::
   exc_vxc_local_work_( const value_type* P, int64_t ldp, 
     value_type* VXC, int64_t ldvxc, value_type* EXC, 
     value_type* N_EL ) {

@@ -32,6 +32,9 @@ public:
   using basisset_type = BasisSet< value_type >;
 
   using exc_vxc_type  = std::tuple< value_type, matrix_type >;
+  using exc_vxc_type_UKS  = std::tuple< value_type, matrix_type, matrix_type >;
+  using exc_vxc_type_GKS  = std::tuple< value_type, matrix_type, matrix_type, matrix_type, matrix_type >;
+  
   using exc_grad_type = std::vector< value_type >;
   using exx_type      = matrix_type;
 
@@ -53,6 +56,8 @@ public:
 
   value_type    integrate_den( const MatrixType& );
   exc_vxc_type  eval_exc_vxc ( const MatrixType& );
+  exc_vxc_type_UKS  eval_exc_vxc_UKS ( const MatrixType&, const MatrixType& );
+  exc_vxc_type_GKS  eval_exc_vxc_GKS ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType& );
   exc_grad_type eval_exc_grad( const MatrixType& );
   exx_type      eval_exx     ( const MatrixType&, 
                                const IntegratorSettingsEXX& = IntegratorSettingsEXX{} );
