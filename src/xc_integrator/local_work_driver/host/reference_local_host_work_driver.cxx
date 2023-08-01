@@ -106,13 +106,15 @@ namespace GauXC {
   // U/VVar LDA (density)
   void ReferenceLocalHostWorkDriver::eval_uvvar_lda( size_t npts, size_t nbe, 
 						     const double* basis_eval, const double* X, size_t ldx, double* den_eval) {
+
+
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
       const size_t ioff = size_t(i) * ldx;
       const auto*   X_i = X + ioff;
       den_eval[i] = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 );
-      
-    }
+
+    }    
 
   }
 
@@ -120,8 +122,21 @@ namespace GauXC {
   void ReferenceLocalHostWorkDriver::eval_uvvar_lda_uks( size_t npts, size_t nbe,
    const double* basis_eval, const double* X, size_t ldx, double* den_eval) {
   
-   GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
-  
+    const size_t ushift = npts * nbe;
+    for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+
+      const size_t ioff = size_t(i) * ldx;
+      const auto*   X_i = X + ioff;
+
+      const size_t ioff2 = size_t(i) * ldx + ushift;
+      const auto*   X_i2 = X + ioff2;
+
+      den_eval[i] = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 );
+      den_eval[i + ushift] = blas::dot( nbe, basis_eval + ioff2, 1, X_i2, 1 );
+
+    }
+
+ 
   }
   
   
@@ -164,7 +179,63 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
   size_t ldx, double* den_eval, double* dden_x_eval, double* dden_y_eval,
   double* dden_z_eval, double* gamma ) {
 
- GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+   const size_t ushift = npts * nbe;
+
+   for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+      //std::cout << " UKS SECTION " << std::endl;
+
+      const size_t ioff = size_t(i) * ldx;
+      const auto*   X_i = X + ioff;
+
+      double tmp1 = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 ); // S density
+      double tmp2 = blas::dot( nbe, basis_eval + ioff, 1, X_i + ushift, 1 ); // Z density
+
+      std::cout << "SCALAR GXC " << tmp1 << std::endl;
+      std::cout << "Z GXC " << tmp2 << std::endl;
+
+      den_eval[2*i] =0.5*(tmp1 + tmp2);
+      den_eval[2*i+1] = 0.5*(tmp1 - tmp2);
+
+      std::cout << " GXC UPLUS UMINUS " << den_eval[2*i] << " " << den_eval[2*i+1] << std::endl;
+
+      //std::cout << " UKS SECTION DID DENSITY " << std::endl;
+
+      const auto dndx =
+        2. * blas::dot( nbe, dbasis_x_eval + ioff, 1, X_i, 1 );
+      const auto dndy =
+        2. * blas::dot( nbe, dbasis_y_eval + ioff, 1, X_i, 1 );
+      const auto dndz =
+        2. * blas::dot( nbe, dbasis_z_eval + ioff, 1, X_i, 1 );
+
+      const auto dMzdx =
+        2. * blas::dot( nbe, dbasis_x_eval + ioff, 1, X_i+ushift, 1 );
+      const auto dMzdy =
+        2. * blas::dot( nbe, dbasis_y_eval + ioff, 1, X_i+ushift, 1 );
+      const auto dMzdz =
+        2. * blas::dot( nbe, dbasis_z_eval + ioff, 1, X_i+ushift, 1 );
+
+
+      //std::cout << " UKS SECTION Set Up dMz and dn" << std::endl;
+
+      dden_x_eval[2*i] = dndx;
+      dden_y_eval[2*i] = dndy;
+      dden_z_eval[2*i] = dndz;
+
+      dden_x_eval[2*i  ] = dMzdx;
+      dden_y_eval[2*i+1] = dMzdy;
+      dden_z_eval[2*i+2] = dMzdz;
+
+
+
+      //std::cout << " UKS SECTION  reassigned vars" << std::endl;
+      gamma[3*i  ] = 0.25*(dndx*dndx + dndy*dndy + dndz*dndz + dMzdx*dMzdx + dMzdy*dMzdy + dMzdz*dMzdz) + 0.5*(dndx*dMzdx + dndy*dMzdy + dndz*dMzdz);
+      gamma[3*i+1] = 0.25*(dndx*dndx + dndy*dndy + dndz*dndz - dMzdx*dMzdx - dMzdy*dMzdy - dMzdz*dMzdz);
+      gamma[3*i+2] = 0.25*(dndx*dndx + dndy*dndy + dndz*dndz + dMzdx*dMzdx + dMzdy*dMzdy + dMzdz*dMzdz) - 0.5*(dndx*dMzdx + dndy*dMzdy + dndz*dMzdz);
+      //std::cout << " UKS SECTION did GAMMA" << std::endl;
+      //
+      std::cout << " GAMMA RAW " << gamma[3*i  ] << " " << gamma[3*i+1] << " " << gamma[3*i+2] << std::endl;
+      //
+    }
 
 }
 
