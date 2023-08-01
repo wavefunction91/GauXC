@@ -73,7 +73,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   //CErr(" ReferenceReplicatedXCHostIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED");
  std::cout << " ReferenceReplicatedXCHostIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED" << std::endl;
- std::exit(0);
+ GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 
 }
 
@@ -95,7 +95,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   //CErr(" ReferenceReplicatedXCHostIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED");
  std::cout << " ReferenceReplicatedXCHostIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED" << std::endl; 
- std::exit(0);
+ GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 }
 
 
@@ -303,7 +303,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                             value_type* VXCz, int64_t ldvxcz, value_type* EXC, value_type *N_EL ) {
 
   std::cout << "NOT YET IMPLEMENTED" << std::endl;
-  exit(0);
+  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 } 
 
 template <typename ValueType>
@@ -318,7 +318,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                             value_type* VXCy, int64_t ldvxcy, value_type* EXC, value_type *N_EL ) {
 
   std::cout << "NOT YET IMPLEMENTED" << std::endl;
-  exit(0);
+  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 }
 
 

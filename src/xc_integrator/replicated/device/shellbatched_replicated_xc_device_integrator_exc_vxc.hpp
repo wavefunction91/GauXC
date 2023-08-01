@@ -96,7 +96,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
   //CErr(" ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED");
   std::cout << " ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED" << std::endl;
-  std::exit(0);
+  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 }
 
 template <typename ValueType>
@@ -117,7 +117,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
   //CErr(" ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED");
   std::cout << " ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED" << std::endl;
-  std::exit(0);
+  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
  
   };
 
@@ -231,7 +231,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
                             XCDeviceData& device_data ) {
 
   std::cout << "NOT YET IMPLEMENTED" << std::endl;
-  exit(0);
+  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 }
 
 template <typename ValueType>
@@ -248,7 +248,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
                             XCDeviceData& device_data ) {
 
   std::cout << "NOT YET IMPLEMENTED" << std::endl;
-  exit(0);
+  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 }
 
 
