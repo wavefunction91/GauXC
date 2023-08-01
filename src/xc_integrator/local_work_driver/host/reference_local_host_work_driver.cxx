@@ -322,7 +322,72 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
               const double* dbasis_z_eval, const double* dden_x_eval,
               const double* dden_y_eval, const double* dden_z_eval, double* Z, size_t ldz ) {
 
-     GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+    size_t shift = nbf*npts;
+
+    if( ldz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
+    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z, nbf );
+    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z + shift, nbf );
+
+    for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+
+      const int32_t ioff = i * nbf;
+
+      auto* z_col    = Z + ioff;
+      auto* bf_x_col = dbasis_x_eval + ioff;
+      auto* bf_y_col = dbasis_y_eval + ioff;
+      auto* bf_z_col = dbasis_z_eval + ioff;
+
+      const auto lda_fact_p = vrho[2*i] *0.5;
+      const auto lda_fact_m = vrho[2*i+1]*0.5;
+
+      blas::scal( nbf, lda_fact_p + lda_fact_m, z_col, 1 ); // scalar part
+      blas::scal( nbf, lda_fact_p - lda_fact_m, z_col + shift, 1 ); // Z part
+
+
+      std::cout << "grid point " << i << " vrho + " << vrho[2*i]
+                                      << " vrho -  " << vrho[2*i+1]
+                                      << " vgamma ++  " << vgamma[3*i]
+                                      << " vgamma +-  " << vgamma[3*i+1]
+                                      << " vgamma --  " << vgamma[3*i+2] << std::endl;
+
+
+      const auto gga_fact_pp = 2. * vgamma[3*i];
+      const auto gga_fact_pm = 2. * vgamma[3*i+1];
+      const auto gga_fact_mm = 2. * vgamma[3*i+2];
+      const auto gga_fact_s = gga_fact_pp + gga_fact_pm + gga_fact_mm;
+      const auto gga_fact_z = gga_fact_pp - gga_fact_pm + gga_fact_mm;
+
+      const auto x_fact_s = gga_fact_s * dden_x_eval[2*i];
+      const auto y_fact_s = gga_fact_s * dden_y_eval[2*i];
+      const auto z_fact_s = gga_fact_s * dden_z_eval[2*i];
+
+      const auto x_fact_z = gga_fact_z * dden_x_eval[2*i+1];
+      const auto y_fact_z = gga_fact_z * dden_y_eval[2*i+1];
+      const auto z_fact_z = gga_fact_z * dden_z_eval[2*i+1];
+
+      std::cout << "LDA FAC P M " << lda_fact_p << " " << lda_fact_m << std::endl;
+      std::cout << "GGA FAC PP PM MM " << gga_fact_pp << " " << gga_fact_pm << " " <<gga_fact_mm << " " << std::endl;
+      std::cout << "X Y Z _FACT_S " << x_fact_s << " " << y_fact_s << " " << z_fact_s << std::endl;
+      std::cout << "X Y Z _FACT_z " << x_fact_z << " " << y_fact_z << " " << z_fact_z << std::endl;
+
+
+      blas::axpy( nbf, x_fact_s, bf_x_col, 1, z_col, 1 );
+      blas::axpy( nbf, y_fact_s, bf_y_col, 1, z_col, 1 );
+      blas::axpy( nbf, z_fact_s, bf_z_col, 1, z_col, 1 );
+
+      blas::axpy( nbf, x_fact_z, bf_x_col, 1, z_col+shift, 1 );
+      blas::axpy( nbf, y_fact_z, bf_y_col, 1, z_col+shift, 1 );
+      blas::axpy( nbf, z_fact_z, bf_z_col, 1, z_col+shift, 1 );
+
+
+      double* a1 = z_col;
+      double* a2 = z_col+shift;
+
+      std::cout << " Z COL " << a1[0] << " " << a2[0] << std::endl;
+      std::cout << " BF X " << bf_x_col[0]  << " BF X " << bf_y_col[0] << " BF X " << bf_z_col[0] << std::endl;
+
+
+    }
   }
 
   void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nbf,
