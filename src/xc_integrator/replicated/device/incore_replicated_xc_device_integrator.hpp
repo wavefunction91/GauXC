@@ -35,7 +35,7 @@ protected:
                       int64_t ldp, value_type* VXC, int64_t ldvxc,
                       value_type* EXC ) override;
 
-  void eval_exc_vxc_UKS_( int64_t m, int64_t n, const value_type* P,
+  void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp,
                       const value_type* Pz,
                       int64_t ldpz,
@@ -43,7 +43,7 @@ protected:
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC ) override;
 
-  void eval_exc_vxc_GKS_( int64_t m, int64_t n, const value_type* P,
+  void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp,
                       const value_type* Pz,
                       int64_t ldpz,
@@ -79,12 +79,12 @@ protected:
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data );
 
-  void exc_vxc_local_work_UKS_( const basis_type& basis, const value_type* P, int64_t ldp,
+  void exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp,
                                 const value_type* Pz, int64_t ldpz,
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data );
 
-  void exc_vxc_local_work_UKS_( const basis_type& basis, const value_type* P, int64_t ldp,
+  void exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp,
                             const value_type* Pz, int64_t ldpz,
                             value_type* VXC, int64_t ldvxc,
                             value_type* VXCz, int64_t ldvxcz, value_type* EXC, value_type *N_EL,
@@ -92,14 +92,14 @@ protected:
                             XCDeviceData& device_data );
 
 
-  void exc_vxc_local_work_GKS_( const basis_type& basis, const value_type* P, int64_t ldp,
+  void exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp,
                             const value_type* Pz, int64_t ldpz,
                             const value_type* Px, int64_t ldpx,
                             const value_type* Py, int64_t ldpy,
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data );
 
-  void exc_vxc_local_work_GKS_( const basis_type& basis, const value_type* P, int64_t ldp,
+  void exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp,
                             const value_type* Pz, int64_t ldpz,
                             const value_type* Px, int64_t ldpx,
                             const value_type* Py, int64_t ldpy,
@@ -156,13 +156,13 @@ public:
   }
 
   template <typename... Args>
-  void exc_vxc_local_work_UKS(Args&&... args) {
-    exc_vxc_local_work_UKS_( std::forward<Args>(args)... );
+  void exc_vxc_local_work(Args&&... args) {
+    exc_vxc_local_work_( std::forward<Args>(args)... );
   }
 
   template <typename... Args>
-  void exc_vxc_local_work_GKS(Args&&... args) {
-    exc_vxc_local_work_GKS_( std::forward<Args>(args)... );
+  void exc_vxc_local_work(Args&&... args) {
+    exc_vxc_local_work_( std::forward<Args>(args)... );
   }
 
 };

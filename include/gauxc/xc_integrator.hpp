@@ -56,8 +56,8 @@ public:
 
   value_type    integrate_den( const MatrixType& );
   exc_vxc_type  eval_exc_vxc ( const MatrixType& );
-  exc_vxc_type_UKS  eval_exc_vxc_UKS ( const MatrixType&, const MatrixType& );
-  exc_vxc_type_GKS  eval_exc_vxc_GKS ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType& );
+  exc_vxc_type_UKS  eval_exc_vxc ( const MatrixType&, const MatrixType& );
+  exc_vxc_type_GKS  eval_exc_vxc ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType& );
   exc_grad_type eval_exc_grad( const MatrixType& );
   exx_type      eval_exx     ( const MatrixType&, 
                                const IntegratorSettingsEXX& = IntegratorSettingsEXX{} );

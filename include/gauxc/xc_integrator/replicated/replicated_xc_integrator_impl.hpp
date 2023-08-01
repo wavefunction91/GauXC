@@ -41,14 +41,14 @@ protected:
   virtual void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                               int64_t ldp, value_type* VXC, int64_t ldvxc,
                               value_type* EXC ) = 0;
-  virtual void eval_exc_vxc_UKS_( int64_t m, int64_t n, const value_type* P,
+  virtual void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                               int64_t ldp,
                               const value_type* Pz,
                               int64_t ldpz,
                               value_type* VXC, int64_t ldvxc,
                               value_type* VXCz, int64_t ldvxcz,
                               value_type* EXC ) = 0;
-  virtual void eval_exc_vxc_GKS_( int64_t m, int64_t n, const value_type* P,
+  virtual void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                               int64_t ldp,
                               const value_type* Pz,
                               int64_t ldpz,
@@ -84,14 +84,14 @@ public:
                      int64_t ldp, value_type* VXC, int64_t ldvxc,
                      value_type* EXC ); 
 
-  void eval_exc_vxc_UKS( int64_t m, int64_t n, const value_type* P,
+  void eval_exc_vxc( int64_t m, int64_t n, const value_type* P,
                      int64_t ldp,
                      const value_type* Pz,
                      int64_t ldpz,
                      value_type* VXC, int64_t ldvxc,
                      value_type* VXCz, int64_t ldvxcz,
                      value_type* EXC );
-  void eval_exc_vxc_GKS( int64_t m, int64_t n, const value_type* P,
+  void eval_exc_vxc( int64_t m, int64_t n, const value_type* P,
                      int64_t ldp,
                      const value_type* Pz,
                      int64_t ldpz,

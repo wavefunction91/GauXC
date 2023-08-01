@@ -78,14 +78,14 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type
 
 template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_UKS
-  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_UKS_( const MatrixType& P, const MatrixType& Pz ) {
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P, const MatrixType& Pz ) {
 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   matrix_type VXC( P.rows(), P.cols() );
   matrix_type VXCz( Pz.rows(), Pz.cols() );
   value_type  EXC;
 
-  pimpl_->eval_exc_vxc_UKS( P.rows(), P.cols(), P.data(), P.rows(),
+  pimpl_->eval_exc_vxc( P.rows(), P.cols(), P.data(), P.rows(),
                         Pz.data(), Pz.rows(),
                         VXC.data(), VXC.rows(),
                         VXCz.data(), VXCz.rows(), &EXC );
@@ -96,7 +96,7 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_UKS
 
 template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_GKS
-  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_GKS_( const MatrixType& P,const MatrixType& Pz, const MatrixType& Px,const MatrixType& Py ) {
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P,const MatrixType& Pz, const MatrixType& Px,const MatrixType& Py ) {
 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   matrix_type VXC( P.rows(), P.cols() );
@@ -105,7 +105,7 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_GKS
   matrix_type VXCy( Py.rows(), Py.cols() );
   value_type  EXC;
 
-  pimpl_->eval_exc_vxc_GKS( P.rows(), P.cols(), P.data(), P.rows(),
+  pimpl_->eval_exc_vxc( P.rows(), P.cols(), P.data(), P.rows(),
                         Pz.data(), Pz.rows(),
                         Px.data(), Px.rows(),
                         Py.data(), Py.rows(),

@@ -41,8 +41,8 @@ private:
 
   value_type    integrate_den_( const MatrixType& ) override;
   exc_vxc_type  eval_exc_vxc_ ( const MatrixType& ) override;
-  exc_vxc_type_UKS  eval_exc_vxc_UKS_ ( const MatrixType&, const MatrixType& ) override;
-  exc_vxc_type_GKS  eval_exc_vxc_GKS_ ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType& ) override;
+  exc_vxc_type_UKS  eval_exc_vxc_ ( const MatrixType&, const MatrixType& ) override;
+  exc_vxc_type_GKS  eval_exc_vxc_ ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType& ) override;
   exx_type      eval_exx_     ( const MatrixType&, const IntegratorSettingsEXX& ) override;
   const util::Timer& get_timings_() const override;

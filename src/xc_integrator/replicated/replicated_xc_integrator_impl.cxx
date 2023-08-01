@@ -44,7 +44,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
 
 template <typename ValueType>
 void ReplicatedXCIntegratorImpl<ValueType>::
-  eval_exc_vxc_UKS( int64_t m, int64_t n, const value_type* P,
+  eval_exc_vxc( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp,
                       const value_type* Pz,
                       int64_t ldpz,
@@ -52,7 +52,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC ) {
 
-    eval_exc_vxc_UKS_(m,n,P,ldp,
+    eval_exc_vxc_(m,n,P,ldp,
                       Pz,ldpz,
                       VXC,ldvxc,
                       VXCz,ldvxcz,EXC);
@@ -63,7 +63,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
 
 template <typename ValueType>
 void ReplicatedXCIntegratorImpl<ValueType>::
-  eval_exc_vxc_GKS( int64_t m, int64_t n, const value_type* P,
+  eval_exc_vxc( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp,
                       const value_type* Pz,
                       int64_t ldpz,
@@ -77,7 +77,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
                       value_type* VXCy, int64_t ldvxcy,
                       value_type* EXC ) {
 
-    eval_exc_vxc_GKS_(m,n,P,ldp,
+    eval_exc_vxc_(m,n,P,ldp,
                       Pz,ldpz,
                       Px,ldpx,
                       Py,ldpy,

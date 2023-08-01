@@ -86,7 +86,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
-  eval_exc_vxc_UKS_( int64_t m, int64_t n, const value_type* P,
+  eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp,
                       const value_type* Pz,
                       int64_t ldpz,
@@ -94,14 +94,14 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC ) {
 
-  //CErr(" ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_UKS_ NOT YET IMPLEMENTED");
-  std::cout << " ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_UKS_ NOT YET IMPLEMENTED" << std::endl;
+  //CErr(" ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED");
+  std::cout << " ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED" << std::endl;
   std::exit(0);
 }
 
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
-  eval_exc_vxc_GKS_( int64_t m, int64_t n, const value_type* P,
+  eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp,
                       const value_type* Pz,
                       int64_t ldpz,
@@ -115,8 +115,8 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
                       value_type* VXCy, int64_t ldvxcy,
                       value_type* EXC ) {
 
-  //CErr(" ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_GKS_ NOT YET IMPLEMENTED");
-  std::cout << " ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_GKS_ NOT YET IMPLEMENTED" << std::endl;
+  //CErr(" ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED");
+  std::cout << " ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED" << std::endl;
   std::exit(0);
  
   };
@@ -223,7 +223,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
-  exc_vxc_local_work_UKS_( const basis_type& basis, const value_type* P, int64_t ldp,
+  exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp,
                             const value_type* Pz, int64_t ldpz,
                             value_type* VXC, int64_t ldvxc,
                             value_type* VXCz, int64_t ldvxcz, value_type* EXC, value_type *N_EL,
@@ -236,7 +236,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
-  exc_vxc_local_work_GKS_( const basis_type& basis, const value_type* P, int64_t ldp,
+  exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp,
                             const value_type* Pz, int64_t ldpz,
                             const value_type* Px, int64_t ldpx,
                             const value_type* Py, int64_t ldpy,

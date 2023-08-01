@@ -30,8 +30,8 @@ protected:
 
   virtual value_type    integrate_den_( const MatrixType& P ) = 0;
   virtual exc_vxc_type  eval_exc_vxc_ ( const MatrixType& P ) = 0;
-  virtual exc_vxc_type_UKS  eval_exc_vxc_UKS_ ( const MatrixType& P, const MatrixType& Pz ) = 0;
-  virtual exc_vxc_type_GKS  eval_exc_vxc_GKS_ ( const MatrixType& P, const MatrixType& Pz, const MatrixType& Px, const MatrixType& Py ) = 0;
+  virtual exc_vxc_type_UKS  eval_exc_vxc_ ( const MatrixType& P, const MatrixType& Pz ) = 0;
+  virtual exc_vxc_type_GKS  eval_exc_vxc_ ( const MatrixType& P, const MatrixType& Pz, const MatrixType& Px, const MatrixType& Py ) = 0;
   virtual exc_grad_type eval_exc_grad_( const MatrixType& P ) = 0;
   virtual exx_type      eval_exx_     ( const MatrixType&     P, 
                                         const IntegratorSettingsEXX& settings ) = 0;
@@ -68,12 +68,12 @@ public:
     return eval_exc_vxc_(P);
   }
 
-  exc_vxc_type_UKS eval_exc_vxc_UKS( const MatrixType& P, const MatrixType& Pz ) {
-    return eval_exc_vxc_UKS_(P, Pz);
+  exc_vxc_type_UKS eval_exc_vxc( const MatrixType& P, const MatrixType& Pz ) {
+    return eval_exc_vxc_(P, Pz);
   }
 
-  exc_vxc_type_GKS eval_exc_vxc_GKS( const MatrixType& P, const MatrixType& Pz, const MatrixType& Px, const MatrixType& Py ) {
-    return eval_exc_vxc_GKS_(P, Pz, Px, Py);
+  exc_vxc_type_GKS eval_exc_vxc( const MatrixType& P, const MatrixType& Pz, const MatrixType& Px, const MatrixType& Py ) {
+    return eval_exc_vxc_(P, Pz, Px, Py);
   }
 
   /** Integrate EXC gradient for RKS

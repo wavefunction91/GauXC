@@ -32,7 +32,7 @@ protected:
                       int64_t ldp, value_type* VXC, int64_t ldvxc,
                       value_type* EXC ) override;
 
-  void eval_exc_vxc_UKS_( int64_t m, int64_t n, const value_type* P,
+  void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp,
                       const value_type* Pz,
                       int64_t ldpz,
@@ -40,7 +40,7 @@ protected:
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC ) override;
 
-  void eval_exc_vxc_GKS_( int64_t m, int64_t n, const value_type* P,
+  void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp,
                       const value_type* Pz,
                       int64_t ldpz,
@@ -67,13 +67,13 @@ protected:
   void exc_vxc_local_work_( const value_type* P, int64_t ldp, value_type* VXC,
                             int64_t ldvxc, value_type* EXC, value_type *N_EL );
 
-  void exc_vxc_local_work_UKS_( const value_type* P, int64_t ldp,
+  void exc_vxc_local_work_( const value_type* P, int64_t ldp,
                             const value_type* Pz, int64_t ldpz,
                             value_type* VXC, int64_t ldvxc,
                             value_type* VXCz, int64_t ldvxcz, value_type* EXC, value_type *N_EL );
 
 
-  void exc_vxc_local_work_GKS_( const value_type* P, int64_t ldp,
+  void exc_vxc_local_work_( const value_type* P, int64_t ldp,
                             const value_type* Pz, int64_t ldpz,
                             const value_type* Px, int64_t ldpx,
                             const value_type* Py, int64_t ldpy,
