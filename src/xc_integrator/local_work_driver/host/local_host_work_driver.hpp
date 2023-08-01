@@ -194,10 +194,10 @@ public:
   void eval_uvvar_lda( size_t npts, size_t nbe, const double* basis_eval,
     const double* X, size_t ldx, double* den_eval);
 
-  void eval_uvvar_lda_UKS( size_t npts, size_t nbe, const double* basis_eval,
+  void eval_uvvar_lda_uks( size_t npts, size_t nbe, const double* basis_eval,
     const double* X, size_t ldx, double* den_eval);
 
-  void eval_uvvar_lda_GKS( size_t npts, size_t nbe, const double* basis_eval,
+  void eval_uvvar_lda_gks( size_t npts, size_t nbe, const double* basis_eval,
     const double* X, size_t ldx, double* den_eval);
 
   /** Evaluate the U and V variavles for RKS GGA
@@ -227,12 +227,12 @@ public:
     const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval, 
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma );
 
-  void eval_uvvar_gga_UKS( size_t npts, size_t nbe, const double* basis_eval,
+  void eval_uvvar_gga_uks( size_t npts, size_t nbe, const double* basis_eval,
     const double* dbasis_x_eavl, const double *dbasis_y_eval,
     const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval,
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma );
 
-  void eval_uvvar_gga_GKS( size_t npts, size_t nbe, const double* basis_eval,
+  void eval_uvvar_gga_gks( size_t npts, size_t nbe, const double* basis_eval,
     const double* dbasis_x_eavl, const double *dbasis_y_eval,
     const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval,
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma );

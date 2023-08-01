@@ -117,7 +117,7 @@ namespace GauXC {
   }
 
   
-  void ReferenceLocalHostWorkDriver::eval_uvvar_lda_UKS( size_t npts, size_t nbe,
+  void ReferenceLocalHostWorkDriver::eval_uvvar_lda_uks( size_t npts, size_t nbe,
    const double* basis_eval, const double* X, size_t ldx, double* den_eval) {
   
    GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
@@ -125,7 +125,7 @@ namespace GauXC {
   }
   
   
-  void ReferenceLocalHostWorkDriver::eval_uvvar_lda_GKS( size_t npts, size_t nbe,
+  void ReferenceLocalHostWorkDriver::eval_uvvar_lda_gks( size_t npts, size_t nbe,
    const double* basis_eval, const double* X, size_t ldx, double* den_eval) {
   
    GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
@@ -158,7 +158,7 @@ namespace GauXC {
     }
   }
 
-void ReferenceLocalHostWorkDriver::eval_uvvar_gga_UKS( size_t npts, size_t nbe,
+void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
   const double* basis_eval, const double* dbasis_x_eval,
   const double *dbasis_y_eval, const double* dbasis_z_eval, const double* X,
   size_t ldx, double* den_eval, double* dden_x_eval, double* dden_y_eval,
@@ -168,7 +168,7 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_UKS( size_t npts, size_t nbe,
 
 }
 
-void ReferenceLocalHostWorkDriver::eval_uvvar_gga_GKS( size_t npts, size_t nbe,
+void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
   const double* basis_eval, const double* dbasis_x_eval,
   const double *dbasis_y_eval, const double* dbasis_z_eval, const double* X,
   size_t ldx, double* den_eval, double* dden_x_eval, double* dden_y_eval,

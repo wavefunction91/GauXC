@@ -466,26 +466,26 @@ void AoSScheme1Base::eval_uvvar_gga( XCDeviceData* _data ){
 
 }
 
-void AoSScheme1Base::eval_uvvar_lda_UKS( XCDeviceData* _data ){
+void AoSScheme1Base::eval_uvvar_lda_uks( XCDeviceData* _data ){
 
   GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED"); 
 
 }
 
-void AoSScheme1Base::eval_uvvar_gga_UKS( XCDeviceData* _data ){
+void AoSScheme1Base::eval_uvvar_gga_uks( XCDeviceData* _data ){
 
   GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 
 }
 
 
-void AoSScheme1Base::eval_uvvar_lda_GKS( XCDeviceData* _data ){
+void AoSScheme1Base::eval_uvvar_lda_gks( XCDeviceData* _data ){
 
   GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 
 }
 
-void AoSScheme1Base::eval_uvvar_lda_GKS( XCDeviceData* _data ){
+void AoSScheme1Base::eval_uvvar_lda_gks( XCDeviceData* _data ){
 
   GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 
