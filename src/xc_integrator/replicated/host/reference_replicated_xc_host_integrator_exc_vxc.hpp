@@ -71,9 +71,45 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC ) {
 
-  //CErr(" ReferenceReplicatedXCHostIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED");
- std::cout << " ReferenceReplicatedXCHostIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED" << std::endl;
- GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+  const auto& basis = this->load_balancer_->basis();
+
+  // Check that P / VXC are sane
+  const int64_t nbf = basis.nbf();
+  if( m != n )
+    GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
+  if( m != nbf )
+    GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
+  if( ldp < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDP");
+  if( ldvxc < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXC");
+
+
+  // Get Tasks
+  this->load_balancer_->get_tasks();
+
+  // Temporary electron count to judge integrator accuracy
+  value_type N_EL;
+
+  // Compute Local contributions to EXC / VXC
+  this->timer_.time_op("XCIntegrator.LocalWork", [&](){
+    exc_vxc_local_work_( P, ldp, Pz, ldpz,  VXC, ldvxc, VXCz, ldvxcz, EXC, &N_EL );
+  });
+
+
+  // Reduce Results
+  this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+
+    if( not this->reduction_driver_->takes_host_memory() )
+      GAUXC_GENERIC_EXCEPTION("This Module Only Works With Host Reductions");
+
+    this->reduction_driver_->allreduce_inplace( VXC, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( VXCz, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
+
+  });
+
 
 }
 
@@ -93,9 +129,48 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                       value_type* VXCy, int64_t ldvxcy,
                       value_type* EXC ) {
 
-  //CErr(" ReferenceReplicatedXCHostIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED");
- std::cout << " ReferenceReplicatedXCHostIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED" << std::endl; 
- GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+  const auto& basis = this->load_balancer_->basis();
+
+  // Check that P / VXC are sane
+  const int64_t nbf = basis.nbf();
+  if( m != n )
+    GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
+  if( m != nbf )
+    GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
+  if( ldp < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDP");
+  if( ldvxc < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXC");
+
+
+  // Get Tasks
+  this->load_balancer_->get_tasks();
+
+  // Temporary electron count to judge integrator accuracy
+  value_type N_EL;
+
+  // Compute Local contributions to EXC / VXC
+  this->timer_.time_op("XCIntegrator.LocalWork", [&](){
+    exc_vxc_local_work_( P, ldp, Pz, ldpz, Px, ldpx, Py, ldpy, 
+                         VXC, ldvxc, VXCz, ldvxcz, VXCx, ldvxcx, VXCy, ldvxcy, EXC, &N_EL );
+  });
+
+
+  // Reduce Results
+  this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+
+    if( not this->reduction_driver_->takes_host_memory() )
+      GAUXC_GENERIC_EXCEPTION("This Module Only Works With Host Reductions");
+
+    this->reduction_driver_->allreduce_inplace( VXC, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( VXCz, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( VXCx, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( VXCy, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
+
+  });
+
 }
 
 
