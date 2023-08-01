@@ -276,6 +276,29 @@ void AoSScheme1Base::eval_zmat_gga_vxc( XCDeviceData* _data){
 
 }
 
+void AoSScheme1Base::eval_zmat_lda_vxc_uks( XCDeviceData* _data){
+
+  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+
+}
+
+void AoSScheme1Base::eval_zmat_gga_vxc_uks( XCDeviceData* _data){
+
+  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+
+}
+
+void AoSScheme1Base::eval_zmat_lda_vxc_gks( XCDeviceData* _data){
+
+  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+
+}
+
+void AoSScheme1Base::eval_zmat_gga_vxc_gks( XCDeviceData* _data){
+
+  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+
+}
 
 
 void AoSScheme1Base::eval_collocation( XCDeviceData* _data ) {

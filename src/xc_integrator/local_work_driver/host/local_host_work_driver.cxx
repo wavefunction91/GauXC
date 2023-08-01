@@ -198,6 +198,20 @@ void LocalHostWorkDriver::eval_zmat_lda_vxc( size_t npts, size_t nbe,
 
 }
 
+void LocalHostWorkDriver::eval_zmat_lda_vxc_uks( size_t npts, size_t nbe,
+  const double* vrho, const double* basis_eval, double* Z, size_t ldz ) {
+
+ GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+
+}
+
+void LocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nbe,
+  const double* vrho, const double* basis_eval, double* Z, size_t ldz ) {
+
+ GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+
+}
+
 // Eval Z Matrix GGA VXC
 void LocalHostWorkDriver::eval_zmat_gga_vxc( size_t npts, size_t nbe, 
   const double* vrho, const double* vgamma, const double* basis_eval, 
@@ -212,6 +226,26 @@ void LocalHostWorkDriver::eval_zmat_gga_vxc( size_t npts, size_t nbe,
 
 }
 
+
+void LocalHostWorkDriver::eval_zmat_gga_vxc_uks( size_t npts, size_t nbe,
+  const double* vrho, const double* vgamma, const double* basis_eval,
+  const double* dbasis_x_eval, const double* dbasis_y_eval,
+  const double* dbasis_z_eval, const double* dden_x_eval,
+  const double* dden_y_eval, const double* dden_z_eval, double* Z, size_t ldz ) {
+
+ GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+
+}
+
+void LocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nbe,
+  const double* vrho, const double* vgamma, const double* basis_eval,
+  const double* dbasis_x_eval, const double* dbasis_y_eval,
+  const double* dbasis_z_eval, const double* dden_x_eval,
+  const double* dden_y_eval, const double* dden_z_eval, double* Z, size_t ldz ) {
+
+ GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+
+}
 
 // Increment VXC by Z
 void LocalHostWorkDriver::inc_vxc( size_t npts, size_t nbf, size_t nbe, 

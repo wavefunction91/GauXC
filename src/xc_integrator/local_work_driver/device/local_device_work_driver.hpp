@@ -78,6 +78,12 @@ public:
   void eval_zmat_lda_vxc( XCDeviceData* );
   void eval_zmat_gga_vxc( XCDeviceData* );
 
+  void eval_zmat_lda_vxc_uks( XCDeviceData* );
+  void eval_zmat_gga_vxc_uks( XCDeviceData* );
+
+  void eval_zmat_lda_vxc_gks( XCDeviceData* );
+  void eval_zmat_gga_vxc_gks( XCDeviceData* );
+
   void eval_exx_fmat( XCDeviceData* );
   void eval_exx_gmat( XCDeviceData*, const BasisSetMap& );
 
