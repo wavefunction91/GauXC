@@ -66,6 +66,12 @@ public:
   void eval_uvvar_lda( XCDeviceData* );
   void eval_uvvar_gga( XCDeviceData* );
 
+  void eval_uvvar_lda_uks( XCDeviceData* );
+  void eval_uvvar_gga_uks( XCDeviceData* );
+
+  void eval_uvvar_lda_gks( XCDeviceData* );
+  void eval_uvvar_gga_gks( XCDeviceData* );
+
   void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* );
   void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* );
 

@@ -41,6 +41,12 @@ FWD_TO_PIMPL(eval_collocation_hessian)  // Collocation Hessian
 FWD_TO_PIMPL(eval_uvvar_lda)            // U/VVar LDA (density)
 FWD_TO_PIMPL(eval_uvvar_gga)            // U/VVar GGA (density + grad, gamma)
 
+FWD_TO_PIMPL(eval_uvvar_lda_uks)            // U/VVar LDA (density)
+FWD_TO_PIMPL(eval_uvvar_gga_uks)            // U/VVar GGA (density + grad, gamma)
+
+FWD_TO_PIMPL(eval_uvvar_lda_gks)            // U/VVar LDA (density)
+FWD_TO_PIMPL(eval_uvvar_gga_gks)            // U/VVar GGA (density + grad, gamma)
+
 FWD_TO_PIMPL(eval_zmat_lda_vxc)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc)         // Eval Z Matrix GGA VXC
 

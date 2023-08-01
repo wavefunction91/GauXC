@@ -68,11 +68,27 @@ struct LocalHostWorkDriverPIMPL {
     
   virtual void eval_uvvar_lda( size_t npts, size_t nbe, const double* basis_eval,
     const double* X, size_t ldx, double* den_eval) = 0;
+  virtual void eval_uvvar_lda_UKS( size_t npts, size_t nbe, const double* basis_eval,
+    const double* X, size_t ldx, double* den_eval) = 0;
+  virtual void eval_uvvar_lda_GKS( size_t npts, size_t nbe, const double* basis_eval,
+    const double* X, size_t ldx, double* den_eval) = 0;
+
   virtual void eval_uvvar_gga( size_t npts, size_t nbe, const double* basis_eval,
     const double* dbasis_x_eavl, const double *dbasis_y_eval, 
     const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval, 
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, 
     double* gamma ) = 0;
+  virtual void eval_uvvar_gga_UKS( size_t npts, size_t nbe, const double* basis_eval,
+    const double* dbasis_x_eavl, const double *dbasis_y_eval,
+    const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval,
+    double* dden_x_eval, double* dden_y_eval, double* dden_z_eval,
+    double* gamma ) = 0;
+  virtual void eval_uvvar_gga_GKS( size_t npts, size_t nbe, const double* basis_eval,
+    const double* dbasis_x_eavl, const double *dbasis_y_eval,
+    const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval,
+    double* dden_x_eval, double* dden_y_eval, double* dden_z_eval,
+    double* gamma ) = 0;
+
 
   virtual void eval_zmat_lda_vxc( size_t npts, size_t nbe, const double* vrho, 
     const double* basis_eval, double* Z, size_t ldz ) = 0;

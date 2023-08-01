@@ -138,6 +138,21 @@ void LocalHostWorkDriver::eval_uvvar_lda( size_t npts, size_t nbe,
 
 }
 
+void LocalHostWorkDriver::eval_uvvar_lda_UKS( size_t npts, size_t nbe,
+ const double* basis_eval, const double* X, size_t ldx, double* den_eval) {
+
+ GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+
+}
+
+
+void LocalHostWorkDriver::eval_uvvar_lda_GKS( size_t npts, size_t nbe,
+ const double* basis_eval, const double* X, size_t ldx, double* den_eval) {
+
+ GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+
+}
+
 
 // U/VVar GGA (density + grad, gamma)
 void LocalHostWorkDriver::eval_uvvar_gga( size_t npts, size_t nbe, 
@@ -150,6 +165,27 @@ void LocalHostWorkDriver::eval_uvvar_gga( size_t npts, size_t nbe,
   pimpl_->eval_uvvar_gga(npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
     dbasis_z_eval, X, ldx, den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
     gamma);
+
+}
+
+
+void LocalHostWorkDriver::eval_uvvar_gga_UKS( size_t npts, size_t nbe,
+  const double* basis_eval, const double* dbasis_x_eval,
+  const double *dbasis_y_eval, const double* dbasis_z_eval, const double* X,
+  size_t ldx, double* den_eval, double* dden_x_eval, double* dden_y_eval,
+  double* dden_z_eval, double* gamma ) {
+
+ GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+
+}
+
+void LocalHostWorkDriver::eval_uvvar_gga_GKS( size_t npts, size_t nbe,
+  const double* basis_eval, const double* dbasis_x_eval,
+  const double *dbasis_y_eval, const double* dbasis_z_eval, const double* X,
+  size_t ldx, double* den_eval, double* dden_x_eval, double* dden_y_eval,
+  double* dden_z_eval, double* gamma ) {
+
+ GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 
 }
 
