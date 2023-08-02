@@ -532,9 +532,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       vrho[2*i+1] *= weights[i];
     }
 
-    if( func.is_gga() )
-      for( int32_t i = 0; i < 3*npts; ++i ) vgamma[i] *= weights[i/3];
-
+    if( func.is_gga() ){
+      for( int32_t i = 0; i < npts; ++i ) {
+         vgamma[3*i] *= weights[i];
+         vgamma[3*i+1] *= weights[i];
+         vgamma[3*i+2] *= weights[i];
+      }
+    }
 
 
 
