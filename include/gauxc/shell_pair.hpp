@@ -16,7 +16,11 @@ namespace detail {
     double x, y, z;
   };
 
+#ifdef GAUXC_SHELLPAIR_PRIMPAIR_MAX
+  static constexpr size_t nprim_pair_max = GAUXC_SHELLPAIR_PRIMPAIR_MAX;
+#else
   static constexpr size_t nprim_pair_max = 64ul;
+#endif
 
   template <typename Integral>
   inline intmax_t csr_index( size_t i, size_t j, Integral* row_ptr, Integral* col_ind ) {

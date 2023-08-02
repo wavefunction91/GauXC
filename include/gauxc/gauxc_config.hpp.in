@@ -19,6 +19,7 @@
 #cmakedefine GAUXC_ENABLE_FAST_RSQRT
 
 #cmakedefine GAUXC_ENABLE_DEVICE
+#cmakedefine GAUXC_SHELLPAIR_PRIMPAIR_MAX @GAUXC_SHELLPAIR_PRIMPAIR_MAX@
 
 #if defined(__CUDACC__) || defined(__HIPCC__)
   #define HOST_DEVICE_ACCESSIBLE __host__ __device__
