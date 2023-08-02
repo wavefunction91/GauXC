@@ -371,19 +371,11 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
       auto* bf_y_col = dbasis_y_eval + ioff;
       auto* bf_z_col = dbasis_z_eval + ioff;
 
-      const auto lda_fact_p = vrho[2*i] *0.5;
-      const auto lda_fact_m = vrho[2*i+1]*0.5;
+      const auto lda_fact_s = 0.5 * (vrho[2*i] + vrho[2*i+1]);
+      const auto lda_fact_z = 0.5 * (vrho[2*i] - vrho[2*i+1]);
 
-      blas::scal( nbf, 0.5*(lda_fact_p + lda_fact_m), z_col, 1 ); // scalar part
-      blas::scal( nbf, 0.5*(lda_fact_p - lda_fact_m), z_col2, 1 ); // Z part
-
-
-      //std::cout << "grid point " << i << " vrho + " << vrho[2*i]
-      //                                << " vrho -  " << vrho[2*i+1]
-      //                                << " vgamma ++  " << vgamma[3*i]
-      //                                << " vgamma +-  " << vgamma[3*i+1]
-      //                                << " vgamma --  " << vgamma[3*i+2] << std::endl;
-
+      blas::scal( nbf, 0.5*lda_fact_s, z_col, 1 ); // scalar part
+      blas::scal( nbf, 0.5*lda_fact_z, z_col2, 1 ); // Z part
 
       const auto gga_fact_pp = 2.0 * vgamma[3*i];
       const auto gga_fact_pm = 2.0 * vgamma[3*i+1];
@@ -392,7 +384,6 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
       const auto gga_fact_1 = 0.5*(gga_fact_pp + gga_fact_pm + gga_fact_mm);
       const auto gga_fact_2 = 0.5*(gga_fact_pp - gga_fact_mm);
       const auto gga_fact_3 = 0.5*(gga_fact_pp - gga_fact_pm + gga_fact_mm);
-
 
       const auto x_fact_s = gga_fact_1 * dden_x_eval[2*i] + gga_fact_2 * dden_x_eval[2*i+1];
       const auto y_fact_s = gga_fact_1 * dden_y_eval[2*i] + gga_fact_2 * dden_y_eval[2*i+1];
@@ -409,13 +400,6 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
       blas::axpy( nbf, x_fact_z, bf_x_col, 1, z_col2, 1 );
       blas::axpy( nbf, y_fact_z, bf_y_col, 1, z_col2, 1 );
       blas::axpy( nbf, z_fact_z, bf_z_col, 1, z_col2, 1 );
-
-      //double* a1 = z_col;
-      //double* a2 = z_col+shift;
-
-      //std::cout << " Z COL " << a1[0] << " " << a2[0] << std::endl;
-      //std::cout << " BF X " << bf_x_col[0]  << " BF X " << bf_y_col[0] << " BF X " << bf_z_col[0] << std::endl;
-
 
     }
   }
