@@ -406,9 +406,12 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   }
 
   // Zero out integrands
-  for( auto j = 0; j < nbf; ++j )
-  for( auto i = 0; i < nbf; ++i )
+  for( auto j = 0; j < nbf; ++j ) {
+  for( auto i = 0; i < nbf; ++i ) {
     VXC[i + j*ldvxc] = 0.;
+    VXCz[i + j*ldvxc] = 0.;
+  }
+  }
   *EXC = 0.;
 
 
@@ -439,7 +442,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Allocate enough memory for batch
 
     // Things that every calc needs
-    host_data.nbe_scr .resize( nbe * nbe  );
+    host_data.nbe_scr .resize( nbe * nbe * 2 );
     host_data.zmat    .resize( npts * nbe * 2);
     host_data.eps     .resize( npts );
     host_data.vrho    .resize( npts * 2);
@@ -505,7 +508,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       zmat, nbe, nbe_scr );
 
     lwd->eval_xmat( npts, nbf, nbe, submat_map, Pz, ldpz, basis_eval, nbe,
-      zmat + npts*nbe, nbe, nbe_scr );
+      zmat + npts*nbe, nbe, nbe_scr + nbe * nbe);
 
 
     // Evaluate U and V variables
@@ -557,7 +560,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, VXC, ldvxc,
         nbe_scr );
       lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat+ npts*nbe, nbe, VXCz, ldvxcz,
-        nbe_scr );
+        nbe_scr + nbe * nbe);
 
     }
 
@@ -565,7 +568,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   } // End OpenMP region
 
-  //std::cout << "N_EL = " << std::setprecision(12) << std::scientific << *N_EL << std::endl;
+  std::cout << "N_EL = " << std::setprecision(12) << std::scientific << *N_EL << std::endl;
 
   // Symmetrize VXC
   for( int32_t j = 0;   j < nbf; ++j ) {

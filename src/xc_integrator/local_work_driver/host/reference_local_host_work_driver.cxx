@@ -123,16 +123,22 @@ namespace GauXC {
    const double* basis_eval, const double* X, size_t ldx, double* den_eval) {
   
     const size_t ushift = npts * nbe;
+    
+    const auto* X2 = X + ushift;
+
+    //std::cout << "X COMPARE" << X[0] << " " << xt1[0] << std::endl; 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
       const size_t ioff = size_t(i) * ldx;
       const auto*   X_i = X + ioff;
 
-      const size_t ioff2 = size_t(i) * ldx + ushift;
-      const auto*   X_i2 = X + ioff2;
+      const auto*   X2_i = X2 + ioff;
 
-      den_eval[2*i] = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 );
-      den_eval[2*i + 1] = blas::dot( nbe, basis_eval + ioff2, 1, X_i2, 1 );
+      double rhos = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 );
+      double rhoz = blas::dot( nbe, basis_eval + ioff, 1, X2_i, 1 );
+      
+      den_eval[2*i] = 0.5*(rhos + rhoz);
+      den_eval[2*i+1] = 0.5*(rhos - rhoz);
 
     }
  
@@ -272,18 +278,26 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
               const double* vrho, const double* basis_eval, double* Z, size_t ldz ) {
 
     size_t shift = nbf*npts;
+    
+    auto* Z2 = Z + shift;
 
     blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z, ldz );
-    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z + shift, nbf );
+    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z2, ldz);
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
+   
+
       auto* z_col = Z + i*ldz;
+      auto* z_col2= Z2+ i*ldz;
 
       const double factp = 0.5 * vrho[2*i];
       const double factm = 0.5 * vrho[2*i+1];
-      GauXC::blas::scal( nbf, factp + factm, z_col, 1 );
-      GauXC::blas::scal( nbf, factp - factm, z_col+shift, 1 );
+
+
+      GauXC::blas::scal( nbf, 0.5*(factp + factm), z_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. " 
+      GauXC::blas::scal( nbf, 0.5*(factp - factm), z_col2, 1 );
+
     }
  
 
