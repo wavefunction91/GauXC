@@ -363,7 +363,7 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
-      const int32_t ioff = i * nbf;
+      const int32_t ioff = i * ldz;
 
       auto* z_col    = Z + ioff;
       auto* z_col2   = Z2+ ioff;
@@ -388,24 +388,20 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
       const auto gga_fact_pp = 2.0 * vgamma[3*i];
       const auto gga_fact_pm = 2.0 * vgamma[3*i+1];
       const auto gga_fact_mm = 2.0 * vgamma[3*i+2];
-      const auto gga_fact_s = 0.5*(gga_fact_pp + gga_fact_pm + gga_fact_mm);
-      const auto gga_fact_z = 0.5*(gga_fact_pp - gga_fact_pm + gga_fact_mm);
 
-      const auto x_fact_s = gga_fact_s * dden_x_eval[2*i];
-      const auto y_fact_s = gga_fact_s * dden_y_eval[2*i];
-      const auto z_fact_s = gga_fact_s * dden_z_eval[2*i];
+      const auto gga_fact_1 = 0.5*(gga_fact_pp + gga_fact_pm + gga_fact_mm);
+      const auto gga_fact_2 = 0.5*(gga_fact_pp - gga_fact_mm);
+      const auto gga_fact_3 = 0.5*(gga_fact_pp - gga_fact_pm + gga_fact_mm);
 
-      const auto x_fact_z = gga_fact_z * dden_x_eval[2*i+1];
-      const auto y_fact_z = gga_fact_z * dden_y_eval[2*i+1];
-      const auto z_fact_z = gga_fact_z * dden_z_eval[2*i+1];
 
-      //std::cout << "LDA FAC P M " << lda_fact_p << " " << lda_fact_m << std::endl;
-      //std::cout << "GGA FAC PP PM MM " << gga_fact_pp << " " << gga_fact_pm << " " <<gga_fact_mm << " " << std::endl;
-      //std::cout << "X Y Z _FACT_S " << x_fact_s << " " << y_fact_s << " " << z_fact_s << std::endl;
-      //std::cout << "X Y Z _FACT_z " << x_fact_z << " " << y_fact_z << " " << z_fact_z << std::endl;
+      const auto x_fact_s = gga_fact_1 * dden_x_eval[2*i] + gga_fact_2 * dden_x_eval[2*i+1];
+      const auto y_fact_s = gga_fact_1 * dden_y_eval[2*i] + gga_fact_2 * dden_y_eval[2*i+1];
+      const auto z_fact_s = gga_fact_1 * dden_z_eval[2*i] + gga_fact_2 * dden_z_eval[2*i+1];
 
-#define POTATO
-#ifdef POTATO
+      const auto x_fact_z = gga_fact_3 * dden_x_eval[2*i+1] + gga_fact_2 * dden_x_eval[2*i];
+      const auto y_fact_z = gga_fact_3 * dden_y_eval[2*i+1] + gga_fact_2 * dden_y_eval[2*i];
+      const auto z_fact_z = gga_fact_3 * dden_z_eval[2*i+1] + gga_fact_2 * dden_z_eval[2*i];
+      
       blas::axpy( nbf, x_fact_s, bf_x_col, 1, z_col, 1 );
       blas::axpy( nbf, y_fact_s, bf_y_col, 1, z_col, 1 );
       blas::axpy( nbf, z_fact_s, bf_z_col, 1, z_col, 1 );
@@ -413,7 +409,6 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
       blas::axpy( nbf, x_fact_z, bf_x_col, 1, z_col2, 1 );
       blas::axpy( nbf, y_fact_z, bf_y_col, 1, z_col2, 1 );
       blas::axpy( nbf, z_fact_z, bf_z_col, 1, z_col2, 1 );
-#endif
 
       //double* a1 = z_col;
       //double* a2 = z_col+shift;
