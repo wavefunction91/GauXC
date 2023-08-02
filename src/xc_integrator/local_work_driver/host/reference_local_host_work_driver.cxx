@@ -186,14 +186,17 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
 
    const size_t ushift = npts * nbe;
 
+   const auto* X2 = X + ushift;
+
    for( int32_t i = 0; i < (int32_t)npts; ++i ) {
       //std::cout << " UKS SECTION " << std::endl;
 
       const size_t ioff = size_t(i) * ldx;
       const auto*   X_i = X + ioff;
+      const auto*   X2_i = X2 + ioff;
 
       double tmp1 = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 ); // S density
-      double tmp2 = blas::dot( nbe, basis_eval + ioff, 1, X_i + ushift, 1 ); // Z density
+      double tmp2 = blas::dot( nbe, basis_eval + ioff, 1, X2_i, 1 ); // Z density
 
       //std::cout << "SCALAR GXC " << tmp1 << std::endl;
       //std::cout << "Z GXC " << tmp2 << std::endl;
@@ -213,11 +216,11 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
         2. * blas::dot( nbe, dbasis_z_eval + ioff, 1, X_i, 1 );
 
       const auto dMzdx =
-        2. * blas::dot( nbe, dbasis_x_eval + ioff, 1, X_i+ushift, 1 );
+        2. * blas::dot( nbe, dbasis_x_eval + ioff, 1, X2_i, 1 );
       const auto dMzdy =
-        2. * blas::dot( nbe, dbasis_y_eval + ioff, 1, X_i+ushift, 1 );
+        2. * blas::dot( nbe, dbasis_y_eval + ioff, 1, X2_i, 1 );
       const auto dMzdz =
-        2. * blas::dot( nbe, dbasis_z_eval + ioff, 1, X_i+ushift, 1 );
+        2. * blas::dot( nbe, dbasis_z_eval + ioff, 1, X2_i, 1 );
 
 
       //std::cout << " UKS SECTION Set Up dMz and dn" << std::endl;
@@ -226,9 +229,9 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
       dden_y_eval[2*i] = dndy;
       dden_z_eval[2*i] = dndz;
 
-      dden_x_eval[2*i  ] = dMzdx;
+      dden_x_eval[2*i+1] = dMzdx;
       dden_y_eval[2*i+1] = dMzdy;
-      dden_z_eval[2*i+2] = dMzdz;
+      dden_z_eval[2*i+1] = dMzdz;
 
 
 
@@ -352,15 +355,18 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
 
     size_t shift = nbf*npts;
 
+    auto* Z2 = Z + shift;
+
     if( ldz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
     blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z, nbf );
-    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z + shift, nbf );
+    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z2, nbf );
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
       const int32_t ioff = i * nbf;
 
       auto* z_col    = Z + ioff;
+      auto* z_col2   = Z2+ ioff;
       auto* bf_x_col = dbasis_x_eval + ioff;
       auto* bf_y_col = dbasis_y_eval + ioff;
       auto* bf_z_col = dbasis_z_eval + ioff;
@@ -368,8 +374,8 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
       const auto lda_fact_p = vrho[2*i] *0.5;
       const auto lda_fact_m = vrho[2*i+1]*0.5;
 
-      blas::scal( nbf, lda_fact_p + lda_fact_m, z_col, 1 ); // scalar part
-      blas::scal( nbf, lda_fact_p - lda_fact_m, z_col + shift, 1 ); // Z part
+      blas::scal( nbf, 0.5*(lda_fact_p + lda_fact_m), z_col, 1 ); // scalar part
+      blas::scal( nbf, 0.5*(lda_fact_p - lda_fact_m), z_col2, 1 ); // Z part
 
 
       //std::cout << "grid point " << i << " vrho + " << vrho[2*i]
@@ -403,13 +409,13 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
       blas::axpy( nbf, y_fact_s, bf_y_col, 1, z_col, 1 );
       blas::axpy( nbf, z_fact_s, bf_z_col, 1, z_col, 1 );
 
-      blas::axpy( nbf, x_fact_z, bf_x_col, 1, z_col+shift, 1 );
-      blas::axpy( nbf, y_fact_z, bf_y_col, 1, z_col+shift, 1 );
-      blas::axpy( nbf, z_fact_z, bf_z_col, 1, z_col+shift, 1 );
+      blas::axpy( nbf, x_fact_z, bf_x_col, 1, z_col2, 1 );
+      blas::axpy( nbf, y_fact_z, bf_y_col, 1, z_col2, 1 );
+      blas::axpy( nbf, z_fact_z, bf_z_col, 1, z_col2, 1 );
 
 
-      double* a1 = z_col;
-      double* a2 = z_col+shift;
+      //double* a1 = z_col;
+      //double* a2 = z_col+shift;
 
       //std::cout << " Z COL " << a1[0] << " " << a2[0] << std::endl;
       //std::cout << " BF X " << bf_x_col[0]  << " BF X " << bf_y_col[0] << " BF X " << bf_z_col[0] << std::endl;
