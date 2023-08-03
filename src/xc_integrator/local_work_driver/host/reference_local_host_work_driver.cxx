@@ -134,11 +134,11 @@ namespace GauXC {
 
       const auto*   X2_i = X2 + ioff;
 
-      double rhos = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 );
-      double rhoz = blas::dot( nbe, basis_eval + ioff, 1, X2_i, 1 );
+      const double rhos = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 );
+      const double rhoz = blas::dot( nbe, basis_eval + ioff, 1, X2_i, 1 );
       
-      den_eval[2*i] = 0.5*(rhos + rhoz);
-      den_eval[2*i+1] = 0.5*(rhos - rhoz);
+      den_eval[2*i] = 0.5*(rhos + sqrt(rhoz*rhoz));
+      den_eval[2*i+1] = 0.5*(rhos - sqrt(rhoz*rhoz));
 
     }
  
@@ -201,8 +201,8 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
       //std::cout << "SCALAR GXC " << tmp1 << std::endl;
       //std::cout << "Z GXC " << tmp2 << std::endl;
 
-      den_eval[2*i] =0.5*(tmp1 + tmp2);
-      den_eval[2*i+1] = 0.5*(tmp1 - tmp2);
+      den_eval[2*i] =0.5*(tmp1 + sqrt(tmp2*tmp2));
+      den_eval[2*i+1] = 0.5*(tmp1 - sqrt(tmp2*tmp2));
 
       //std::cout << " GXC UPLUS UMINUS " << den_eval[2*i] << " " << den_eval[2*i+1] << std::endl;
 
