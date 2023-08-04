@@ -122,22 +122,21 @@ namespace GauXC {
   void ReferenceLocalHostWorkDriver::eval_uvvar_lda_uks( size_t npts, size_t nbe,
    const double* basis_eval, const double* X, size_t ldx, double* den_eval) {
   
-    const size_t ushift = npts * nbe;
-    
+    const size_t ushift = npts * ldx;
     const auto* X2 = X + ushift;
 
     //std::cout << "X COMPARE" << X[0] << " " << xt1[0] << std::endl; 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
       const size_t ioff = size_t(i) * ldx;
-      const auto*   X_i = X + ioff;
 
+      const auto*   X_i = X + ioff;
       const auto*   X2_i = X2 + ioff;
 
       const double rhos = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 );
       const double rhoz = blas::dot( nbe, basis_eval + ioff, 1, X2_i, 1 );
       
-      den_eval[2*i] = 0.5*(rhos + rhoz);
+      den_eval[2*i]   = 0.5*(rhos + rhoz);
       den_eval[2*i+1] = 0.5*(rhos - rhoz);
 
     }

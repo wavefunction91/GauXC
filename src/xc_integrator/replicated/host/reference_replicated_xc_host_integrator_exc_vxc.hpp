@@ -406,6 +406,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   }
 
   // Zero out integrands
+  
   for( auto j = 0; j < nbf; ++j ) {
   for( auto i = 0; i < nbf; ++i ) {
     VXC[i + j*ldvxc] = 0.;
@@ -413,8 +414,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   }
   }
   *EXC = 0.;
-
-
+ 
+  std::cout << "EXC CHECK BEFORE CALC SHOULD BE 0 : " << *EXC << std::endl;
+    
   // Loop over tasks
   const size_t ntasks = tasks.size();
 
@@ -518,12 +520,29 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         gamma );
      else
       lwd->eval_uvvar_lda_uks( npts, nbe, basis_eval, zmat, nbe, den_eval );
+    
+
+#ifdef TERIDEBUG
+    std::cout << " GAUXC INTERNAL ANALYTICS " << std::endl;
+    for (size_t i=0; i< 2*npts; i++) {
+      std::cout << "DENSITY " << den_eval[i] << std::endl;
+    }
+    for (size_t i=0; i< npts; i++) {
+      std::cout << "GRID POINT " << task.points[i][0] << " " << task.points[i][1] << " " << task.points[i][2] << std::endl;
+    }
+#endif
 
     // Evaluate XC functional
     if( func.is_gga() )
       func.eval_exc_vxc( npts, den_eval, gamma, eps, vrho, vgamma );
     else
       func.eval_exc_vxc( npts, den_eval, eps, vrho );
+
+#ifdef TERIDEBUG
+    for (size_t i=0; i< npts; i++) {
+      std::cout << "EPS " << eps[i] << std::endl;
+    }
+#endif
 
     // Factor weights into XC results
     for( int32_t i = 0; i < npts; ++i ) {
