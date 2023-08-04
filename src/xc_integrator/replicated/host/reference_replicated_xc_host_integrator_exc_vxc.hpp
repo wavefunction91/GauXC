@@ -521,7 +521,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
      else
       lwd->eval_uvvar_lda_uks( npts, nbe, basis_eval, zmat, nbe, den_eval );
     
-
+//#define TERIDEBUG
 #ifdef TERIDEBUG
     std::cout << " GAUXC INTERNAL ANALYTICS " << std::endl;
     for (size_t i=0; i< 2*npts; i++) {
@@ -543,6 +543,15 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       std::cout << "EPS " << eps[i] << std::endl;
     }
 #endif
+#ifdef TERIDEBUG
+    if( func.is_gga() ) {
+    for (size_t i=0; i< npts; i++) {
+      std::cout << "VGAMMA " << vgamma[3*i] << " " << vgamma[3*i+1] << " "<< vgamma[3*i+2] << std::endl;
+    }
+    }
+#endif
+
+
 
     // Factor weights into XC results
     for( int32_t i = 0; i < npts; ++i ) {

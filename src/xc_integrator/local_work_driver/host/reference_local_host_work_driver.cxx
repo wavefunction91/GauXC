@@ -183,7 +183,7 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
   size_t ldx, double* den_eval, double* dden_x_eval, double* dden_y_eval,
   double* dden_z_eval, double* gamma ) {
 
-   const size_t ushift = npts * nbe;
+   const size_t ushift = npts * ldx;
 
    const auto* X2 = X + ushift;
 
@@ -200,7 +200,7 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
       //std::cout << "SCALAR GXC " << tmp1 << std::endl;
       //std::cout << "Z GXC " << tmp2 << std::endl;
 
-      den_eval[2*i] =0.5*(tmp1 + tmp2);
+      den_eval[2*i]   =0.5*(tmp1 + tmp2);
       den_eval[2*i+1] = 0.5*(tmp1 - tmp2);
 
       //std::cout << " GXC UPLUS UMINUS " << den_eval[2*i] << " " << den_eval[2*i+1] << std::endl;
@@ -352,7 +352,7 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
               const double* dbasis_z_eval, const double* dden_x_eval,
               const double* dden_y_eval, const double* dden_z_eval, double* Z, size_t ldz ) {
 
-    size_t shift = nbf*npts;
+    size_t shift = ldz*npts;
 
     auto* Z2 = Z + shift;
 
@@ -370,15 +370,15 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
       auto* bf_y_col = dbasis_y_eval + ioff;
       auto* bf_z_col = dbasis_z_eval + ioff;
 
-      const auto lda_fact_s = 0.5 * (vrho[2*i] + vrho[2*i+1]);
-      const auto lda_fact_z = 0.5 * (vrho[2*i] - vrho[2*i+1]);
+      const double factp = 0.5 * vrho[2*i];
+      const double factm = 0.5 * vrho[2*i+1];
 
-      blas::scal( nbf, 0.5*lda_fact_s, z_col, 1 ); // scalar part
-      blas::scal( nbf, 0.5*lda_fact_z, z_col2, 1 ); // Z part
+      GauXC::blas::scal( nbf, 0.5*(factp + factm), z_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
+      GauXC::blas::scal( nbf, 0.5*(factp - factm), z_col2, 1 );
 
-      const auto gga_fact_pp = 2.0 * vgamma[3*i];
-      const auto gga_fact_pm = 2.0 * vgamma[3*i+1];
-      const auto gga_fact_mm = 2.0 * vgamma[3*i+2];
+      const auto gga_fact_pp = vgamma[3*i];  // Why is this multiplied by 2 in RKS??????
+      const auto gga_fact_pm = vgamma[3*i+1]; // See eval_zmat_gga_vxc
+      const auto gga_fact_mm = vgamma[3*i+2];
 
       const auto gga_fact_1 = 0.5*(gga_fact_pp + gga_fact_pm + gga_fact_mm);
       const auto gga_fact_2 = 0.5*(gga_fact_pp - gga_fact_mm);
