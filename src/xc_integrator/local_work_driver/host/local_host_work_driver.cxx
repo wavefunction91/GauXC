@@ -147,14 +147,6 @@ void LocalHostWorkDriver::eval_uvvar_lda_uks( size_t npts, size_t nbe,
 }
 
 
-void LocalHostWorkDriver::eval_uvvar_lda_gks( size_t npts, size_t nbe,
- const double* basis_eval, const double* X, size_t ldx, double* den_eval) {
-
- GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
-
-}
-
-
 // U/VVar GGA (density + grad, gamma)
 void LocalHostWorkDriver::eval_uvvar_gga( size_t npts, size_t nbe, 
   const double* basis_eval, const double* dbasis_x_eval, 
@@ -183,16 +175,6 @@ void LocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
 
 }
 
-void LocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
-  const double* basis_eval, const double* dbasis_x_eval,
-  const double *dbasis_y_eval, const double* dbasis_z_eval, const double* X,
-  size_t ldx, double* den_eval, double* dden_x_eval, double* dden_y_eval,
-  double* dden_z_eval, double* gamma ) {
-
- GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
-
-}
-
 // Eval Z Matrix LDA VXC
 void LocalHostWorkDriver::eval_zmat_lda_vxc( size_t npts, size_t nbe, 
   const double* vrho, const double* basis_eval, double* Z, size_t ldz ) {
@@ -208,13 +190,6 @@ void LocalHostWorkDriver::eval_zmat_lda_vxc_uks( size_t npts, size_t nbe,
   throw_if_invalid_pimpl(pimpl_);
   pimpl_->eval_zmat_lda_vxc_uks(npts, nbe, vrho, basis_eval, Z, ldz);
 
-
-}
-
-void LocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nbe,
-  const double* vrho, const double* basis_eval, double* Z, size_t ldz ) {
-
- GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 
 }
 
@@ -243,16 +218,6 @@ void LocalHostWorkDriver::eval_zmat_gga_vxc_uks( size_t npts, size_t nbe,
   pimpl_->eval_zmat_gga_vxc_uks(npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
     dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval, dden_z_eval,
     Z, ldz);
-
-}
-
-void LocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nbe,
-  const double* vrho, const double* vgamma, const double* basis_eval,
-  const double* dbasis_x_eval, const double* dbasis_y_eval,
-  const double* dbasis_z_eval, const double* dden_x_eval,
-  const double* dden_y_eval, const double* dden_z_eval, double* Z, size_t ldz ) {
-
- GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 
 }
 

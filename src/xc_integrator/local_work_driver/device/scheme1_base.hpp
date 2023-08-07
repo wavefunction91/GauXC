@@ -27,11 +27,6 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   void eval_zmat_lda_vxc_uks( XCDeviceData* ) override final;
   void eval_zmat_gga_vxc_uks( XCDeviceData* ) override final;
 
-  void eval_uvvar_lda_gks( XCDeviceData* ) override final;
-  void eval_uvvar_gga_gks( XCDeviceData* ) override final;
-  void eval_zmat_lda_vxc_gks( XCDeviceData* ) override final;
-  void eval_zmat_gga_vxc_gks( XCDeviceData* ) override final;
-
   void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* ) override final;
   void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* ) override final;
   void inc_exc( XCDeviceData* ) override final;

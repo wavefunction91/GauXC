@@ -288,19 +288,6 @@ void AoSScheme1Base::eval_zmat_gga_vxc_uks( XCDeviceData* _data){
 
 }
 
-void AoSScheme1Base::eval_zmat_lda_vxc_gks( XCDeviceData* _data){
-
-  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
-
-}
-
-void AoSScheme1Base::eval_zmat_gga_vxc_gks( XCDeviceData* _data){
-
-  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
-
-}
-
-
 void AoSScheme1Base::eval_collocation( XCDeviceData* _data ) {
 
   auto* data = dynamic_cast<Data*>(_data);
@@ -500,20 +487,6 @@ void AoSScheme1Base::eval_uvvar_gga_uks( XCDeviceData* _data ){
   GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 
 }
-
-
-void AoSScheme1Base::eval_uvvar_lda_gks( XCDeviceData* _data ){
-
-  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
-
-}
-
-void AoSScheme1Base::eval_uvvar_lda_gks( XCDeviceData* _data ){
-
-  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
-
-}
-
 
 
 void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func, 

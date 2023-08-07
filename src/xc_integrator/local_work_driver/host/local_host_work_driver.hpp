@@ -197,9 +197,6 @@ public:
   void eval_uvvar_lda_uks( size_t npts, size_t nbe, const double* basis_eval,
     const double* X, size_t ldx, double* den_eval);
 
-  void eval_uvvar_lda_gks( size_t npts, size_t nbe, const double* basis_eval,
-    const double* X, size_t ldx, double* den_eval);
-
   /** Evaluate the U and V variavles for RKS GGA
    *
    *  U = rho + gradient
@@ -232,11 +229,6 @@ public:
     const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval,
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma );
 
-  void eval_uvvar_gga_gks( size_t npts, size_t nbe, const double* basis_eval,
-    const double* dbasis_x_eavl, const double *dbasis_y_eval,
-    const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval,
-    double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma );
-
   /** Evaluate the VXC Z Matrix for RKS LDA
    *
    *  Z(mu,i) = 0.5 * vrho(i) * B(mu, i)
@@ -255,9 +247,6 @@ public:
     const double* basis_eval, double* Z, size_t ldz );
 
   void eval_zmat_lda_vxc_uks( size_t npts, size_t nbe, const double* vrho,
-    const double* basis_eval, double* Z, size_t ldz );
-
-  void eval_zmat_lda_vxc_gks( size_t npts, size_t nbe, const double* vrho,
     const double* basis_eval, double* Z, size_t ldz );
 
   /** Evaluate the VXC Z Matrix for RKS LDA
@@ -289,12 +278,6 @@ public:
     double* Z, size_t ldz );
 
   void eval_zmat_gga_vxc_uks( size_t npts, size_t nbe, const double* vrho,
-    const double* vgamma, const double* basis_eval, const double* dbasis_x_eval,
-    const double* dbasis_y_eval, const double* dbasis_z_eval,
-    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
-    double* Z, size_t ldz );
-
-  void eval_zmat_gga_vxc_gks( size_t npts, size_t nbe, const double* vrho,
     const double* vgamma, const double* basis_eval, const double* dbasis_x_eval,
     const double* dbasis_y_eval, const double* dbasis_z_eval,
     const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,

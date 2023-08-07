@@ -69,9 +69,6 @@ public:
   void eval_uvvar_lda_uks( XCDeviceData* );
   void eval_uvvar_gga_uks( XCDeviceData* );
 
-  void eval_uvvar_lda_gks( XCDeviceData* );
-  void eval_uvvar_gga_gks( XCDeviceData* );
-
   void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* );
   void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* );
 
@@ -80,9 +77,6 @@ public:
 
   void eval_zmat_lda_vxc_uks( XCDeviceData* );
   void eval_zmat_gga_vxc_uks( XCDeviceData* );
-
-  void eval_zmat_lda_vxc_gks( XCDeviceData* );
-  void eval_zmat_gga_vxc_gks( XCDeviceData* );
 
   void eval_exx_fmat( XCDeviceData* );
   void eval_exx_gmat( XCDeviceData*, const BasisSetMap& );

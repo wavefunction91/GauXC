@@ -143,13 +143,6 @@ namespace GauXC {
   }
   
   
-  void ReferenceLocalHostWorkDriver::eval_uvvar_lda_gks( size_t npts, size_t nbe,
-   const double* basis_eval, const double* X, size_t ldx, double* den_eval) {
-  
-   GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
-  
-  }
-
   void ReferenceLocalHostWorkDriver::eval_uvvar_gga( size_t npts, size_t nbe, 
 						     const double* basis_eval, const double* dbasis_x_eval, 
 						     const double *dbasis_y_eval, const double* dbasis_z_eval, const double* X, 
@@ -228,16 +221,6 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
 
 }
 
-void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
-  const double* basis_eval, const double* dbasis_x_eval,
-  const double *dbasis_y_eval, const double* dbasis_z_eval, const double* X,
-  size_t ldx, double* den_eval, double* dden_x_eval, double* dden_y_eval,
-  double* dden_z_eval, double* gamma ) {
-
- GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
-
-}
-
 
   // Eval Z Matrix LDA VXC
   void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc( size_t npts, size_t nbf, 
@@ -285,12 +268,6 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
     }
  
 
-  }
-
-  void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nbf,
-              const double* vrho, const double* basis_eval, double* Z, size_t ldz ) {
-
-     GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
   }
 
   // Eval Z Matrix GGA VXC
@@ -383,15 +360,6 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
       blas::axpy( nbf, z_fact_z, bf_z_col, 1, z_col2, 1 );
 
     }
-  }
-
-  void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nbf,
-              const double* vrho, const double* vgamma, const double* basis_eval,
-              const double* dbasis_x_eval, const double* dbasis_y_eval,
-              const double* dbasis_z_eval, const double* dden_x_eval,
-              const double* dden_y_eval, const double* dden_z_eval, double* Z, size_t ldz ) {
-
-     GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
   }
 
   // Increment VXC by Z
