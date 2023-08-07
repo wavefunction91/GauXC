@@ -23,11 +23,9 @@ basis set discretization of Kohn-Sham density function theory (KS-DFT). GauXC
 provides efficient, scalable distributed memory XC and K integrators for both CPU and
 accelerator-based (GPU) architectures. Currently, GPU support is provided through
 the 
-[CUDA](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html),
+[CUDA](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html) and 
 [HIP](https://rocmdocs.amd.com/en/latest/Programming_Guides/HIP-GUIDE.html)
-and 
-[SYCL/DPC++](https://oneapi-src.github.io/DPCPP_Reference/)
-frameworks to target NVIDIA, AMD and Intel GPUs, respectively. 
+frameworks to target NVIDIA and AMD GPUs, respectively. 
 Evaluation
 of the XC functional CPU/accelerator architectures is provided by the
 [ExchCXX](https://github.com/wavefunction91/ExchCXX) library. Quadratures are generated
@@ -60,21 +58,25 @@ for flexible and agile development in the field of KS-DFT.
 * [Eigen3](https://eigen.tuxfamily.org/dox/) (Testing Only)
 * [CUDA](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)/[cuBLAS](https://docs.nvidia.com/cuda/cublas/index.html) (Required only if CUDA enabled)
 * [HIP](https://rocmdocs.amd.com/en/latest/Programming_Guides/HIP-GUIDE.html)/[ROCm](https://github.com/RadeonOpenCompute/ROCm) (Required only if HIP enabled)
-* [DPC++ SYCL](https://oneapi-src.github.io/DPCPP_Reference/)/[oneMKL](https://github.com/oneapi-src/oneMKL) (Required only if SYCL enabled)
-* [MAGMA](https://icl.utk.edu/magma/) (Optional if CUDA/HIP/SYCL enabled)
+* [MAGMA](https://icl.utk.edu/magma/) (Optional if CUDA/HIP enabled)
 
 
 # Publications
 
 Please cite the following publications if GauXC was used in your publication:
 ```
-% Seminumerical Exact Exchange implementation
+% Distributed Memory Seminumerical Exact Exchange implementation
 @article{williams2023distributed,
-  title={Distributed Memory, GPU Accelerated Fock Construction for Hybrid, Gaussian Basis Density Functional Theory},
-  author={Williams-Young, David B and Asadchev, Andrey and Popovici, Doru Thom and Clark, David and Waldrop, Johnathan and 
-          Windus, Theresa and Valeev, Edward F and de Jong, Wibe A},
-  journal={arXiv preprint arXiv:2303.14280},
-  year={2023}
+  title = {Distributed memory, GPU accelerated Fock construction for hybrid, Gaussian basis density functional theory},
+  author = {Williams-Young, David B. and Asadchev, Andrey and Popovici, Doru Thom and Clark, David and Waldrop, Jonathan and 
+            Windus, Theresa L. and Valeev, Edward F. and de Jong, Wibe A.},
+  journal = {The Journal of Chemical Physics},
+  volume = {158},
+  number = {23},
+  pages = {234104},
+  year = {2023},
+  doi = {10.1063/5.0151070},
+  url = {https://doi.org/10.1063/5.0151070}
 }
 
 % Performance Portability (HIP/SYCL implementations)
@@ -93,7 +95,7 @@ Please cite the following publications if GauXC was used in your publication:
 }
 
 % CUDA and distributed memory implementation
-@article{ williams20_on,
+@article{williams20on,
   author={David B. Williams--Young and Wibe A. de Jong and Hubertus J.J. van Dam and
           Chao Yang},
   title={On the Efficient Evaluation of the Exchange Correlation Potential on 
@@ -108,7 +110,7 @@ Please cite the following publications if GauXC was used in your publication:
 }
 
 % Algorithm for XC potential assembly and shared-memory CPU implementation
-@article{ petrone18_an,
+@article{petrone18an,
   author={Alessio Petrone and David B. Williams--Young and Shichao Sun and
           Torin F. Stetina and Xiaosong Li},
   title={An Efficient Implementation of Two-Component Relativistic Density 
@@ -167,13 +169,12 @@ target_link_libraries( my_target PUBLIC gauxc::gauxc )
 | `GAUXC_ENABLE_HOST`        | Enable HOST integrators                                   | `ON`     |
 | `GAUXC_ENABLE_CUDA`        | Enable CUDA integrators                                   | `OFF`    |
 | `GAUXC_ENABLE_HIP`         | Enable HIP integrators                                    | `OFF`    |
-| `GAUXC_ENABLE_SYCL`        | Enable SYCL integrators                                   | `OFF`    |
 | `GAUXC_ENABLE_MAGMA`       | Enable MAGMA for batched BLAS (No effect if no GPU)       | `ON`     | 
 | `GAUXC_ENABLE_CUTLASS`     | Enable CUTLASS for batched BLAS (No effect if no CUDA)    | `OFF`    |
 | `GAUXC_ENABLE_NCCL`        | Enable NCCL bindings for topology aware GPU reductions    | `OFF`    |
 | `GAUXC_ENABLE_MPI`         | Enable MPI Bindings                                       | `ON`     | 
 | `GAUXC_ENABLE_OPENMP`      | Enable OpenMP Bindings                                    | `ON`     | 
-| `CMAKE_CUDA_ARCHITECTURES1 | CUDA architechtures (e.g. 70 for Volta, 80 for Ampere)    |  --      |
+| `CMAKE_CUDA_ARCHITECTURES` | CUDA architechtures (e.g. 70 for Volta, 80 for Ampere)    |  --      |
 | `BLAS_LIBRARIES`           | Full BLAS linker.                                         |  --      |
 | `MAGMA_ROOT_DIR`           | Install prefix for MAGMA.                                 |  --      |
 
