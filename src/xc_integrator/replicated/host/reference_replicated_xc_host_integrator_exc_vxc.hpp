@@ -115,67 +115,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
-                      int64_t ldp,
-                      const value_type* Pz,
-                      int64_t ldpz,
-                      const value_type* Px,
-                      int64_t ldpx,
-                      const value_type* Py,
-                      int64_t ldpy,
-                      value_type* VXC, int64_t ldvxc,
-                      value_type* VXCz, int64_t ldvxcz,
-                      value_type* VXCx, int64_t ldvxcx,
-                      value_type* VXCy, int64_t ldvxcy,
-                      value_type* EXC ) {
-
-  const auto& basis = this->load_balancer_->basis();
-
-  // Check that P / VXC are sane
-  const int64_t nbf = basis.nbf();
-  if( m != n )
-    GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
-  if( m != nbf )
-    GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
-  if( ldp < nbf )
-    GAUXC_GENERIC_EXCEPTION("Invalid LDP");
-  if( ldvxc < nbf )
-    GAUXC_GENERIC_EXCEPTION("Invalid LDVXC");
-
-
-  // Get Tasks
-  this->load_balancer_->get_tasks();
-
-  // Temporary electron count to judge integrator accuracy
-  value_type N_EL;
-
-  // Compute Local contributions to EXC / VXC
-  this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    exc_vxc_local_work_( P, ldp, Pz, ldpz, Px, ldpx, Py, ldpy, 
-                         VXC, ldvxc, VXCz, ldvxcz, VXCx, ldvxcx, VXCy, ldvxcy, EXC, &N_EL );
-  });
-
-
-  // Reduce Results
-  this->timer_.time_op("XCIntegrator.Allreduce", [&](){
-
-    if( not this->reduction_driver_->takes_host_memory() )
-      GAUXC_GENERIC_EXCEPTION("This Module Only Works With Host Reductions");
-
-    this->reduction_driver_->allreduce_inplace( VXC, nbf*nbf, ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( VXCz, nbf*nbf, ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( VXCx, nbf*nbf, ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( VXCy, nbf*nbf, ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
-
-  });
-
-}
-
-
-template <typename ValueType>
-void ReferenceReplicatedXCHostIntegrator<ValueType>::
   exc_vxc_local_work_( const value_type* P, int64_t ldp, 
     value_type* VXC, int64_t ldvxc, value_type* EXC, 
     value_type* N_EL ) {
@@ -584,21 +523,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   }
 
 } 
-
-template <typename ValueType>
-void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  exc_vxc_local_work_( const value_type* P, int64_t ldp,
-                            const value_type* Pz, int64_t ldpz,
-                            const value_type* Px, int64_t ldpx,
-                            const value_type* Py, int64_t ldpy,
-                            value_type* VXC, int64_t ldvxc,
-                            value_type* VXCz, int64_t ldvxcz,
-                            value_type* VXCx, int64_t ldvxcx,
-                            value_type* VXCy, int64_t ldvxcy, value_type* EXC, value_type *N_EL ) {
-
-  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
-}
-
 
 }
 }

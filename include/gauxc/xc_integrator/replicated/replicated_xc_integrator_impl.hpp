@@ -48,19 +48,6 @@ protected:
                               value_type* VXC, int64_t ldvxc,
                               value_type* VXCz, int64_t ldvxcz,
                               value_type* EXC ) = 0;
-  virtual void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
-                              int64_t ldp,
-                              const value_type* Pz,
-                              int64_t ldpz,
-                              const value_type* Px,
-                              int64_t ldpx,
-                              const value_type* Py,
-                              int64_t ldpy,
-                              value_type* VXC, int64_t ldvxc,
-                              value_type* VXCz, int64_t ldvxcz,
-                              value_type* VXCx, int64_t ldvxcx,
-                              value_type* VXCy, int64_t ldvxcy,
-                              value_type* EXC ) = 0;
   virtual void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
                                int64_t ldp, value_type* EXC_GRAD ) = 0;
   virtual void eval_exx_( int64_t m, int64_t n, const value_type* P,
@@ -90,19 +77,6 @@ public:
                      int64_t ldpz,
                      value_type* VXC, int64_t ldvxc,
                      value_type* VXCz, int64_t ldvxcz,
-                     value_type* EXC );
-  void eval_exc_vxc( int64_t m, int64_t n, const value_type* P,
-                     int64_t ldp,
-                     const value_type* Pz,
-                     int64_t ldpz,
-                     const value_type* Px,
-                     int64_t ldpx,
-                     const value_type* Py,
-                     int64_t ldpy,
-                     value_type* VXC, int64_t ldvxc,
-                     value_type* VXCz, int64_t ldvxcz,
-                     value_type* VXCx, int64_t ldvxcx,
-                     value_type* VXCy, int64_t ldvxcy,
                      value_type* EXC );
 
   void eval_exc_grad( int64_t m, int64_t n, const value_type* P,
