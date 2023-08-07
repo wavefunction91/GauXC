@@ -125,7 +125,6 @@ namespace GauXC {
     const size_t ushift = npts * ldx;
     const auto* X2 = X + ushift;
 
-    //std::cout << "X COMPARE" << X[0] << " " << xt1[0] << std::endl; 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
       const size_t ioff = size_t(i) * ldx;
@@ -188,7 +187,6 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
    const auto* X2 = X + ushift;
 
    for( int32_t i = 0; i < (int32_t)npts; ++i ) {
-      //std::cout << " UKS SECTION " << std::endl;
 
       const size_t ioff = size_t(i) * ldx;
       const auto*   X_i = X + ioff;
@@ -197,15 +195,9 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
       double tmp1 = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 ); // S density
       double tmp2 = blas::dot( nbe, basis_eval + ioff, 1, X2_i, 1 ); // Z density
 
-      //std::cout << "SCALAR GXC " << tmp1 << std::endl;
-      //std::cout << "Z GXC " << tmp2 << std::endl;
 
       den_eval[2*i]   =0.5*(tmp1 + tmp2);
       den_eval[2*i+1] = 0.5*(tmp1 - tmp2);
-
-      //std::cout << " GXC UPLUS UMINUS " << den_eval[2*i] << " " << den_eval[2*i+1] << std::endl;
-
-      //std::cout << " UKS SECTION DID DENSITY " << std::endl;
 
       const auto dndx =
         2. * blas::dot( nbe, dbasis_x_eval + ioff, 1, X_i, 1 );
@@ -221,9 +213,6 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
       const auto dMzdz =
         2. * blas::dot( nbe, dbasis_z_eval + ioff, 1, X2_i, 1 );
 
-
-      //std::cout << " UKS SECTION Set Up dMz and dn" << std::endl;
-
       dden_x_eval[2*i] = dndx;
       dden_y_eval[2*i] = dndy;
       dden_z_eval[2*i] = dndz;
@@ -232,16 +221,9 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
       dden_y_eval[2*i+1] = dMzdy;
       dden_z_eval[2*i+1] = dMzdz;
 
-
-
-      //std::cout << " UKS SECTION  reassigned vars" << std::endl;
       gamma[3*i  ] = 0.25*(dndx*dndx + dndy*dndy + dndz*dndz + dMzdx*dMzdx + dMzdy*dMzdy + dMzdz*dMzdz) + 0.5*(dndx*dMzdx + dndy*dMzdy + dndz*dMzdz);
       gamma[3*i+1] = 0.25*(dndx*dndx + dndy*dndy + dndz*dndz - dMzdx*dMzdx - dMzdy*dMzdy - dMzdz*dMzdz);
       gamma[3*i+2] = 0.25*(dndx*dndx + dndy*dndy + dndz*dndz + dMzdx*dMzdx + dMzdy*dMzdy + dMzdz*dMzdz) - 0.5*(dndx*dMzdx + dndy*dMzdy + dndz*dMzdz);
-      //std::cout << " UKS SECTION did GAMMA" << std::endl;
-      //
-      //std::cout << " GAMMA RAW " << gamma[3*i  ] << " " << gamma[3*i+1] << " " << gamma[3*i+2] << std::endl;
-      //
     }
 
 }

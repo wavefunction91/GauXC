@@ -415,7 +415,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   }
   *EXC = 0.;
  
-  std::cout << "EXC CHECK BEFORE CALC SHOULD BE 0 : " << *EXC << std::endl;
     
   // Loop over tasks
   const size_t ntasks = tasks.size();
@@ -521,37 +520,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
      else
       lwd->eval_uvvar_lda_uks( npts, nbe, basis_eval, zmat, nbe, den_eval );
     
-//#define TERIDEBUG
-#ifdef TERIDEBUG
-    std::cout << " GAUXC INTERNAL ANALYTICS " << std::endl;
-    for (size_t i=0; i< 2*npts; i++) {
-      std::cout << "DENSITY " << den_eval[i] << std::endl;
-    }
-    for (size_t i=0; i< npts; i++) {
-      std::cout << "GRID POINT " << task.points[i][0] << " " << task.points[i][1] << " " << task.points[i][2] << std::endl;
-    }
-#endif
-
     // Evaluate XC functional
     if( func.is_gga() )
       func.eval_exc_vxc( npts, den_eval, gamma, eps, vrho, vgamma );
     else
       func.eval_exc_vxc( npts, den_eval, eps, vrho );
-
-#ifdef TERIDEBUG
-    for (size_t i=0; i< npts; i++) {
-      std::cout << "EPS " << eps[i] << std::endl;
-    }
-#endif
-#ifdef TERIDEBUG
-    if( func.is_gga() ) {
-    for (size_t i=0; i< npts; i++) {
-      std::cout << "VGAMMA " << vgamma[3*i] << " " << vgamma[3*i+1] << " "<< vgamma[3*i+2] << std::endl;
-    }
-    }
-#endif
-
-
 
     // Factor weights into XC results
     for( int32_t i = 0; i < npts; ++i ) {
@@ -600,7 +573,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   } // End OpenMP region
 
-  std::cout << "N_EL = " << std::setprecision(12) << std::scientific << *N_EL << std::endl;
+  //std::cout << "N_EL = " << std::setprecision(12) << std::scientific << *N_EL << std::endl;
 
   // Symmetrize VXC
   for( int32_t j = 0;   j < nbf; ++j ) {
@@ -623,7 +596,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                             value_type* VXCx, int64_t ldvxcx,
                             value_type* VXCy, int64_t ldvxcy, value_type* EXC, value_type *N_EL ) {
 
-  std::cout << "NOT YET IMPLEMENTED" << std::endl;
   GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 }
 
