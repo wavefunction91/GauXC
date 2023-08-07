@@ -63,11 +63,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
-                      int64_t ldp,
+  eval_exc_vxc_( int64_t m, int64_t n, const value_type* Pscalar,
+                      int64_t ldpscalar,
                       const value_type* Pz,
                       int64_t ldpz,
-                      value_type* VXC, int64_t ldvxc,
+                      value_type* VXCscalar, int64_t ldvxcscalar,
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC ) {
 
@@ -79,11 +79,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
   if( m != nbf )
     GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
-  if( ldp < nbf )
-    GAUXC_GENERIC_EXCEPTION("Invalid LDP");
-  if( ldvxc < nbf )
-    GAUXC_GENERIC_EXCEPTION("Invalid LDVXC");
-
+  if( ldpscalar < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPSCALAR");
+  if( ldpz < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPZ");
+  if( ldvxcscalar < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCSCALAR");
+  if( ldvxcz < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCZ");
 
   // Get Tasks
   this->load_balancer_->get_tasks();
@@ -93,7 +96,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    exc_vxc_local_work_( P, ldp, Pz, ldpz,  VXC, ldvxc, VXCz, ldvxcz, EXC, &N_EL );
+    exc_vxc_local_work_( Pscalar, ldpscalar, Pz, ldpz,  VXCscalar, ldvxcscalar, VXCz, ldvxcz, EXC, &N_EL );
   });
 
 
@@ -103,7 +106,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     if( not this->reduction_driver_->takes_host_memory() )
       GAUXC_GENERIC_EXCEPTION("This Module Only Works With Host Reductions");
 
-    this->reduction_driver_->allreduce_inplace( VXC, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( VXCscalar, nbf*nbf, ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( VXCz, nbf*nbf, ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
@@ -311,9 +314,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  exc_vxc_local_work_( const value_type* P, int64_t ldp,
+  exc_vxc_local_work_( const value_type* Pscalar, int64_t ldpscalar,
                             const value_type* Pz, int64_t ldpz,
-                            value_type* VXC, int64_t ldvxc,
+                            value_type* VXCscalar, int64_t ldvxcscalar,
                             value_type* VXCz, int64_t ldvxcz, value_type* EXC, value_type *N_EL ) {
 
   // Cast LWD to LocalHostWorkDriver
@@ -348,8 +351,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   
   for( auto j = 0; j < nbf; ++j ) {
   for( auto i = 0; i < nbf; ++i ) {
-    VXC[i + j*ldvxc] = 0.;
-    VXCz[i + j*ldvxc] = 0.;
+    VXCscalar[i + j*ldvxcscalar] = 0.;
+    VXCz[i + j*ldvxcz] = 0.;
   }
   }
   *EXC = 0.;
@@ -444,7 +447,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
     // Evaluate X matrix (P * B) -> store in Z
-    lwd->eval_xmat( npts, nbf, nbe, submat_map, P, ldp, basis_eval, nbe,
+    lwd->eval_xmat( npts, nbf, nbe, submat_map, Pscalar, ldpscalar, basis_eval, nbe,
       zmat, nbe, nbe_scr );
 
     lwd->eval_xmat( npts, nbf, nbe, submat_map, Pz, ldpz, basis_eval, nbe,
@@ -501,7 +504,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       }
 
       // Increment VXC
-      lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, VXC, ldvxc,
+      lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, VXCscalar, ldvxcscalar,
         nbe_scr );
       lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat+ npts*nbe, nbe, VXCz, ldvxcz,
         nbe_scr + nbe * nbe);
@@ -517,7 +520,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Symmetrize VXC
   for( int32_t j = 0;   j < nbf; ++j ) {
   for( int32_t i = j+1; i < nbf; ++i ) {
-    VXC[ j + i*nbf ] = VXC[ i + j*nbf ];
+    VXCscalar[ j + i*nbf ] = VXCscalar[ i + j*nbf ];
     VXCz[ j + i*nbf ] = VXCz[ i + j*nbf ];
   }
   }

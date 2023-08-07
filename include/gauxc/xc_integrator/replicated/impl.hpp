@@ -78,19 +78,19 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_rks
 
 template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_uks
-  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P, const MatrixType& Pz ) {
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& Pscalar, const MatrixType& Pz ) {
 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-  matrix_type VXC( P.rows(), P.cols() );
+  matrix_type VXCscalar( Pscalar.rows(), Pscalar.cols() );
   matrix_type VXCz( Pz.rows(), Pz.cols() );
   value_type  EXC;
 
-  pimpl_->eval_exc_vxc( P.rows(), P.cols(), P.data(), P.rows(),
+  pimpl_->eval_exc_vxc( Pscalar.rows(), Pscalar.cols(), Pscalar.data(), Pscalar.rows(),
                         Pz.data(), Pz.rows(),
-                        VXC.data(), VXC.rows(),
+                        VXCscalar.data(), VXCscalar.rows(),
                         VXCz.data(), VXCz.rows(), &EXC );
 
-  return std::make_tuple( EXC, VXC, VXCz );
+  return std::make_tuple( EXC, VXCscalar, VXCz );
 
 }
 

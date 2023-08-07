@@ -86,11 +86,11 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
-  eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
-                      int64_t ldp,
+  eval_exc_vxc_( int64_t m, int64_t n, const value_type* Pscalar,
+                      int64_t ldpscalar,
                       const value_type* Pz,
                       int64_t ldpz,
-                      value_type* VXC, int64_t ldvxc,
+                      value_type* VXCscalar, int64_t ldvxcscalar,
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC ) {
 
@@ -195,9 +195,9 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
-  exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp,
+  exc_vxc_local_work_( const basis_type& basis, const value_type* Pscalar, int64_t ldpscalar,
                             const value_type* Pz, int64_t ldpz,
-                            value_type* VXC, int64_t ldvxc,
+                            value_type* VXCscalar, int64_t ldvxcscalar,
                             value_type* VXCz, int64_t ldvxcz, value_type* EXC, value_type *N_EL,
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data ) {

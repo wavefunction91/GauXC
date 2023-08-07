@@ -40,9 +40,9 @@ typename XCIntegrator<MatrixType>::exc_vxc_type_rks
 
 template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_vxc_type_uks
-  XCIntegrator<MatrixType>::eval_exc_vxc( const MatrixType& P, const MatrixType& Pz ) {
+  XCIntegrator<MatrixType>::eval_exc_vxc( const MatrixType& Pscalar, const MatrixType& Pz ) {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-  return pimpl_->eval_exc_vxc(P, Pz);
+  return pimpl_->eval_exc_vxc(Pscalar, Pz);
 };
 
 template <typename MatrixType>
