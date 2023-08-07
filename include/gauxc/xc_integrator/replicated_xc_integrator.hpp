@@ -28,8 +28,8 @@ public:
 
   using matrix_type    = typename XCIntegratorImpl<MatrixType>::matrix_type;
   using value_type     = typename XCIntegratorImpl<MatrixType>::value_type;
-  using exc_vxc_type   = typename XCIntegratorImpl<MatrixType>::exc_vxc_type;
-  using exc_vxc_type_UKS   = typename XCIntegratorImpl<MatrixType>::exc_vxc_type_UKS;
+  using exc_vxc_type_rks   = typename XCIntegratorImpl<MatrixType>::exc_vxc_type_rks;
+  using exc_vxc_type_uks   = typename XCIntegratorImpl<MatrixType>::exc_vxc_type_uks;
   using exc_grad_type  = typename XCIntegratorImpl<MatrixType>::exc_grad_type;
   using exx_type       = typename XCIntegratorImpl<MatrixType>::exx_type;
 
@@ -39,8 +39,8 @@ private:
   std::unique_ptr< pimpl_type > pimpl_;
 
   value_type    integrate_den_( const MatrixType& ) override;
-  exc_vxc_type  eval_exc_vxc_ ( const MatrixType& ) override;
-  exc_vxc_type_UKS  eval_exc_vxc_ ( const MatrixType&, const MatrixType& ) override;
+  exc_vxc_type_rks  eval_exc_vxc_ ( const MatrixType& ) override;
+  exc_vxc_type_uks  eval_exc_vxc_ ( const MatrixType&, const MatrixType& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType& ) override;
   exx_type      eval_exx_     ( const MatrixType&, const IntegratorSettingsEXX& ) override;
   const util::Timer& get_timings_() const override;

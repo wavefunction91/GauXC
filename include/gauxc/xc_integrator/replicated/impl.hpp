@@ -62,7 +62,7 @@ typename ReplicatedXCIntegrator<MatrixType>::value_type
 }
 
 template <typename MatrixType>
-typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type 
+typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_rks 
   ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P ) {
 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
@@ -77,7 +77,7 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type
 }
 
 template <typename MatrixType>
-typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_UKS
+typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_uks
   ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P, const MatrixType& Pz ) {
 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
