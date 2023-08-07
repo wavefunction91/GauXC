@@ -335,8 +335,8 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
       GauXC::blas::scal( nbf, 0.5*(factp + factm), z_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
       GauXC::blas::scal( nbf, 0.5*(factp - factm), z_col2, 1 );
 
-      const auto gga_fact_pp = vgamma[3*i];  // Why is this multiplied by 2 in RKS??????
-      const auto gga_fact_pm = vgamma[3*i+1]; // See eval_zmat_gga_vxc
+      const auto gga_fact_pp = vgamma[3*i];
+      const auto gga_fact_pm = vgamma[3*i+1];
       const auto gga_fact_mm = vgamma[3*i+2];
 
       const auto gga_fact_1 = 0.5*(gga_fact_pp + gga_fact_pm + gga_fact_mm);
