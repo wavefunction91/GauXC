@@ -99,9 +99,6 @@ std::tuple<RadialSize,AngularSize>
   default_grid_size(AtomicNumber Z, RadialQuad /*rq*/, AtomicGridSizeDefault s) {
 
   switch(s) {
-    case AtomicGridSizeDefault::TestGrid:
-      return std::make_tuple( RadialSize(1), AngularSize(6) );
-
     case AtomicGridSizeDefault::GM3:
       return std::make_tuple( RadialSize(35), AngularSize(110) );
 

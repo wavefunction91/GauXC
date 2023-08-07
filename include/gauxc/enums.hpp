@@ -26,7 +26,6 @@ enum class RadialQuad {
  *  See https://gaussian.com/integral for specification
  */
 enum class AtomicGridSizeDefault {
-  TestGrid,       ///< Test Grid (1,6)(use only for testing)
   FineGrid,       ///< Fine grid      (least accurate)
   UltraFineGrid,  ///< Ultrafine grid (appropriate accuracy)
   SuperFineGrid,  ///< Superfine grid (most accurate)

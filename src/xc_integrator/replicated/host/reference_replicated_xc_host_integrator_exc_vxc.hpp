@@ -268,7 +268,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     }
 
     if( func.is_gga() )
-      for( int32_t i = 0; i < 3*npts; ++i ) vgamma[i] *= weights[i];
+      for( int32_t i = 0; i < npts; ++i ) vgamma[i] *= weights[i];
 
 
 
