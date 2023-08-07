@@ -94,8 +94,6 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC ) {
 
-  //CErr(" ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED");
-  std::cout << " ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED" << std::endl;
   GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 }
 
@@ -202,7 +200,6 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data ) {
 
-  std::cout << "NOT YET IMPLEMENTED" << std::endl;
   GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 }
 

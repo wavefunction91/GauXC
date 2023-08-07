@@ -63,8 +63,8 @@ public:
 
   void eval_xmat( XCDeviceData*, bool do_grad = false );
 
-  void eval_uvvar_lda( XCDeviceData* );
-  void eval_uvvar_gga( XCDeviceData* );
+  void eval_uvvar_lda_rks( XCDeviceData* );
+  void eval_uvvar_gga_rks( XCDeviceData* );
 
   void eval_uvvar_lda_uks( XCDeviceData* );
   void eval_uvvar_gga_uks( XCDeviceData* );
@@ -72,8 +72,8 @@ public:
   void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* );
   void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* );
 
-  void eval_zmat_lda_vxc( XCDeviceData* );
-  void eval_zmat_gga_vxc( XCDeviceData* );
+  void eval_zmat_lda_vxc_rks( XCDeviceData* );
+  void eval_zmat_gga_vxc_rks( XCDeviceData* );
 
   void eval_zmat_lda_vxc_uks( XCDeviceData* );
   void eval_zmat_gga_vxc_uks( XCDeviceData* );

@@ -116,8 +116,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC ) {
 
-  //CErr(" IncoreReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED");
-  std::cout << " IncoreReplicatedXCDeviceIntegrator<ValueType>::eval_exc_vxc_ NOT YET IMPLEMENTED" << std::endl;
   GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 }
 
@@ -215,8 +213,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->eval_xmat( &device_data );
 
     // Evaluate U/V variables
-    if( func.is_gga() ) lwd->eval_uvvar_gga( &device_data );
-    else                lwd->eval_uvvar_lda( &device_data );
+    if( func.is_gga() ) lwd->eval_uvvar_gga_rks( &device_data );
+    else                lwd->eval_uvvar_lda_rks( &device_data );
 
     // Evaluate XC functional
     if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );
@@ -227,8 +225,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->inc_nel( &device_data );
 
     // Evaluate Z matrix
-    if( func.is_gga() ) lwd->eval_zmat_gga_vxc( &device_data );
-    else                lwd->eval_zmat_lda_vxc( &device_data );
+    if( func.is_gga() ) lwd->eval_zmat_gga_vxc_rks( &device_data );
+    else                lwd->eval_zmat_lda_vxc_rks( &device_data );
 
     // Increment VXC (LT)
     lwd->inc_vxc( &device_data );
@@ -269,7 +267,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data ) {
 
-  std::cout << "NOT YET IMPLEMENTED" << std::endl;
   GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 }
 
@@ -282,7 +279,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data ) {
 
-  std::cout << "NOT YET IMPLEMENTED" << std::endl;
   GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
 }
 

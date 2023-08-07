@@ -145,7 +145,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
     // Evaluate density on grid
-    lwd->eval_uvvar_lda( npts, nbe, basis_eval, zmat, nbe, den_eval );
+    lwd->eval_uvvar_lda_rks( npts, nbe, basis_eval, zmat, nbe, den_eval );
 
     // Scalar integrations
     for( int32_t i = 0; i < npts; ++i ) {

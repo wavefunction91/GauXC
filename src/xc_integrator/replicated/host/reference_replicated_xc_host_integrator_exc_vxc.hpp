@@ -252,11 +252,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Evaluate U and V variables
     if( func.is_gga() )
-      lwd->eval_uvvar_gga( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
+      lwd->eval_uvvar_gga_rks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
         dbasis_z_eval, zmat, nbe, den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
         gamma );
      else
-      lwd->eval_uvvar_lda( npts, nbe, basis_eval, zmat, nbe, den_eval );
+      lwd->eval_uvvar_lda_rks( npts, nbe, basis_eval, zmat, nbe, den_eval );
 
     // Evaluate XC functional
     if( func.is_gga() )
@@ -278,11 +278,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Evaluate Z matrix for VXC
     if( func.is_gga() )
-      lwd->eval_zmat_gga_vxc( npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
+      lwd->eval_zmat_gga_vxc_rks( npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
                               dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval,
                               dden_z_eval, zmat, nbe); 
     else
-      lwd->eval_zmat_lda_vxc( npts, nbe, vrho, basis_eval, zmat, nbe ); 
+      lwd->eval_zmat_lda_vxc_rks( npts, nbe, vrho, basis_eval, zmat, nbe ); 
 
 
     // Incremeta LT of VXC
