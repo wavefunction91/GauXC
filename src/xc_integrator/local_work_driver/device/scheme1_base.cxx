@@ -278,13 +278,13 @@ void AoSScheme1Base::eval_zmat_gga_vxc_rks( XCDeviceData* _data){
 
 void AoSScheme1Base::eval_zmat_lda_vxc_uks( XCDeviceData* _data){
 
-  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 
 }
 
 void AoSScheme1Base::eval_zmat_gga_vxc_uks( XCDeviceData* _data){
 
-  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 
 }
 
@@ -478,13 +478,13 @@ void AoSScheme1Base::eval_uvvar_gga_rks( XCDeviceData* _data ){
 
 void AoSScheme1Base::eval_uvvar_lda_uks( XCDeviceData* _data ){
 
-  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED"); 
+  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE"); 
 
 }
 
 void AoSScheme1Base::eval_uvvar_gga_uks( XCDeviceData* _data ){
 
-  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 
 }
 

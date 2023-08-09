@@ -116,7 +116,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC ) {
 
-  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
 template <typename ValueType>
@@ -267,7 +267,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data ) {
 
-  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
 template <typename ValueType>
@@ -279,7 +279,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data ) {
 
-  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
 }
