@@ -62,8 +62,10 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     auto dims = dset.getDimensions();
     P        = matrix_type( dims[0], dims[1] );
     VXC_ref  = matrix_type( dims[0], dims[1] );
-    Pz       = matrix_type( dims[0], dims[1] );
-    VXCz_ref = matrix_type( dims[0], dims[1] );
+    if (uks) {
+      Pz       = matrix_type( dims[0], dims[1] );
+      VXCz_ref = matrix_type( dims[0], dims[1] );
+    }
 
     dset.read( P.data() );
     dset = file.getDataSet(vxc);
@@ -113,7 +115,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   mw.modify_weights(lb);
 
   // Construct XC Functional
-  ExchCXX::Spin Spin=ExchCXX::Spin::Unpolarized; if (uks) { Spin=ExchCXX::Spin::Polarized; }
+  auto Spin = uks ? ExchCXX::Spin::Polarized : ExchCXX::Spin::Unpolarized;
   functional_type func( ExchCXX::Backend::builtin, func_key, Spin );
 
   // Construct XCIntegrator
