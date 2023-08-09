@@ -261,8 +261,8 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
       const double factp = 0.5 * vrho[2*i];
       const double factm = 0.5 * vrho[2*i+1];
 
-
-      GauXC::blas::scal( nbf, 0.5*(factp + factm), z_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. " 
+      //eq. 56 https://doi.org/10.1140/epjb/e2018-90170-1
+      GauXC::blas::scal( nbf, 0.5*(factp + factm), z_col, 1 );
       GauXC::blas::scal( nbf, 0.5*(factp - factm), z_col2, 1 );
 
     }
