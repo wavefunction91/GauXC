@@ -60,6 +60,18 @@ for flexible and agile development in the field of KS-DFT.
 * [HIP](https://rocmdocs.amd.com/en/latest/Programming_Guides/HIP-GUIDE.html)/[ROCm](https://github.com/RadeonOpenCompute/ROCm) (Required only if HIP enabled)
 * [MAGMA](https://icl.utk.edu/magma/) (Optional if CUDA/HIP enabled)
 
+# Major Contributors
+
+Primary Developer and Maintainer: David Williams-Young - LBNL (dbwy at lbl dot gov) 
+
+GauXC has received major contributions from the following developers (in no particular order):
+* Thom Popovici (LBNL)     - Optimized sn-K kernels for CPU and GPU architectures
+* Teri Lambros (UW)        - Unrestricted DFT 
+
+We have also receieved significant support from industry collaborators:
+* David Clark (NVIDIA)  - Optimization of critical kernels for NVIDIA architectures
+* Damon McDougall (AMD) - Optimization of critical kernels for AMDGPU architectures
+
 
 # Publications
 
