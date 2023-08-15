@@ -191,7 +191,10 @@ public:
    *  @param[out] den_eval  The total density evaluated on the grid (npts)
    *
    */
-  void eval_uvvar_lda( size_t npts, size_t nbe, const double* basis_eval,
+  void eval_uvvar_lda_rks( size_t npts, size_t nbe, const double* basis_eval,
+    const double* X, size_t ldx, double* den_eval);
+
+  void eval_uvvar_lda_uks( size_t npts, size_t nbe, const double* basis_eval,
     const double* X, size_t ldx, double* den_eval);
 
   /** Evaluate the U and V variavles for RKS GGA
@@ -216,9 +219,14 @@ public:
    *  @param[out] gamma        |grad rho|^2 (npts)
    *                        
    */
-  void eval_uvvar_gga( size_t npts, size_t nbe, const double* basis_eval,
+  void eval_uvvar_gga_rks( size_t npts, size_t nbe, const double* basis_eval,
     const double* dbasis_x_eavl, const double *dbasis_y_eval, 
     const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval, 
+    double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma );
+
+  void eval_uvvar_gga_uks( size_t npts, size_t nbe, const double* basis_eval,
+    const double* dbasis_x_eavl, const double *dbasis_y_eval,
+    const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval,
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma );
 
   /** Evaluate the VXC Z Matrix for RKS LDA
@@ -235,7 +243,10 @@ public:
    *  @param[in]  ldz        Leading dimension of Z
    *
    */
-  void eval_zmat_lda_vxc( size_t npts, size_t nbe, const double* vrho, 
+  void eval_zmat_lda_vxc_rks( size_t npts, size_t nbe, const double* vrho, 
+    const double* basis_eval, double* Z, size_t ldz );
+
+  void eval_zmat_lda_vxc_uks( size_t npts, size_t nbe, const double* vrho,
     const double* basis_eval, double* Z, size_t ldz );
 
   /** Evaluate the VXC Z Matrix for RKS LDA
@@ -260,9 +271,15 @@ public:
    *  @param[in]  ldz           Same as `eval_zmat_lda_vxc`
    *
    */
-  void eval_zmat_gga_vxc( size_t npts, size_t nbe, const double* vrho, 
+  void eval_zmat_gga_vxc_rks( size_t npts, size_t nbe, const double* vrho, 
     const double* vgamma, const double* basis_eval, const double* dbasis_x_eval,
     const double* dbasis_y_eval, const double* dbasis_z_eval, 
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
+    double* Z, size_t ldz );
+
+  void eval_zmat_gga_vxc_uks( size_t npts, size_t nbe, const double* vrho,
+    const double* vgamma, const double* basis_eval, const double* dbasis_x_eval,
+    const double* dbasis_y_eval, const double* dbasis_z_eval,
     const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
     double* Z, size_t ldz );
 

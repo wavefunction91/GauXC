@@ -66,22 +66,38 @@ struct LocalHostWorkDriverPIMPL {
     const submat_map_t& submat_map_ket, const double* G, size_t ldg, double* K, 
     size_t ldk, double* scr ) = 0;
     
-  virtual void eval_uvvar_lda( size_t npts, size_t nbe, const double* basis_eval,
+  virtual void eval_uvvar_lda_rks( size_t npts, size_t nbe, const double* basis_eval,
     const double* X, size_t ldx, double* den_eval) = 0;
-  virtual void eval_uvvar_gga( size_t npts, size_t nbe, const double* basis_eval,
+  virtual void eval_uvvar_lda_uks( size_t npts, size_t nbe, const double* basis_eval,
+    const double* X, size_t ldx, double* den_eval) = 0;
+
+  virtual void eval_uvvar_gga_rks( size_t npts, size_t nbe, const double* basis_eval,
     const double* dbasis_x_eavl, const double *dbasis_y_eval, 
     const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval, 
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, 
     double* gamma ) = 0;
+  virtual void eval_uvvar_gga_uks( size_t npts, size_t nbe, const double* basis_eval,
+    const double* dbasis_x_eavl, const double *dbasis_y_eval,
+    const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval,
+    double* dden_x_eval, double* dden_y_eval, double* dden_z_eval,
+    double* gamma ) = 0;
 
-  virtual void eval_zmat_lda_vxc( size_t npts, size_t nbe, const double* vrho, 
+
+  virtual void eval_zmat_lda_vxc_rks( size_t npts, size_t nbe, const double* vrho, 
     const double* basis_eval, double* Z, size_t ldz ) = 0;
-  virtual void eval_zmat_gga_vxc( size_t npts, size_t nbe, const double* vrho, 
+  virtual void eval_zmat_lda_vxc_uks( size_t npts, size_t nbe, const double* vrho,
+    const double* basis_eval, double* Z, size_t ldz ) = 0;
+
+  virtual void eval_zmat_gga_vxc_rks( size_t npts, size_t nbe, const double* vrho, 
     const double* vgamma, const double* basis_eval, const double* dbasis_x_eval,
     const double* dbasis_y_eval, const double* dbasis_z_eval, 
     const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
     double* Z, size_t ldz ) = 0;
-
+  virtual void eval_zmat_gga_vxc_uks( size_t npts, size_t nbe, const double* vrho,
+    const double* vgamma, const double* basis_eval, const double* dbasis_x_eval,
+    const double* dbasis_y_eval, const double* dbasis_z_eval,
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
+    double* Z, size_t ldz ) = 0;
 
   virtual void inc_vxc( size_t npts, size_t nbf, size_t nbe, 
     const double* basis_eval, const submat_map_t& submat_map, const double* Z, 

@@ -130,52 +130,96 @@ void LocalHostWorkDriver::inc_exx_k( size_t npts, size_t nbf, size_t nbe_bra,
 
 
 // U/VVar LDA (density)
-void LocalHostWorkDriver::eval_uvvar_lda( size_t npts, size_t nbe, 
+void LocalHostWorkDriver::eval_uvvar_lda_rks( size_t npts, size_t nbe, 
  const double* basis_eval, const double* X, size_t ldx, double* den_eval) {
 
   throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_uvvar_lda(npts, nbe, basis_eval, X, ldx, den_eval);
+  pimpl_->eval_uvvar_lda_rks(npts, nbe, basis_eval, X, ldx, den_eval);
+
+}
+
+void LocalHostWorkDriver::eval_uvvar_lda_uks( size_t npts, size_t nbe,
+ const double* basis_eval, const double* X, size_t ldx, double* den_eval) {
+
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_uvvar_lda_uks(npts, nbe, basis_eval, X, ldx, den_eval);
 
 }
 
 
 // U/VVar GGA (density + grad, gamma)
-void LocalHostWorkDriver::eval_uvvar_gga( size_t npts, size_t nbe, 
+void LocalHostWorkDriver::eval_uvvar_gga_rks( size_t npts, size_t nbe, 
   const double* basis_eval, const double* dbasis_x_eval, 
   const double *dbasis_y_eval, const double* dbasis_z_eval, const double* X, 
   size_t ldx, double* den_eval, double* dden_x_eval, double* dden_y_eval, 
   double* dden_z_eval, double* gamma ) {
 
   throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_uvvar_gga(npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
+  pimpl_->eval_uvvar_gga_rks(npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
+    dbasis_z_eval, X, ldx, den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
+    gamma);
+
+}
+
+
+void LocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
+  const double* basis_eval, const double* dbasis_x_eval,
+  const double *dbasis_y_eval, const double* dbasis_z_eval, const double* X,
+  size_t ldx, double* den_eval, double* dden_x_eval, double* dden_y_eval,
+  double* dden_z_eval, double* gamma ) {
+
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_uvvar_gga_uks(npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
     dbasis_z_eval, X, ldx, den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
     gamma);
 
 }
 
 // Eval Z Matrix LDA VXC
-void LocalHostWorkDriver::eval_zmat_lda_vxc( size_t npts, size_t nbe, 
+void LocalHostWorkDriver::eval_zmat_lda_vxc_rks( size_t npts, size_t nbe, 
   const double* vrho, const double* basis_eval, double* Z, size_t ldz ) {
 
   throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_zmat_lda_vxc(npts, nbe, vrho, basis_eval, Z, ldz);
+  pimpl_->eval_zmat_lda_vxc_rks(npts, nbe, vrho, basis_eval, Z, ldz);
+
+}
+
+void LocalHostWorkDriver::eval_zmat_lda_vxc_uks( size_t npts, size_t nbe,
+  const double* vrho, const double* basis_eval, double* Z, size_t ldz ) {
+
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_zmat_lda_vxc_uks(npts, nbe, vrho, basis_eval, Z, ldz);
+
 
 }
 
 // Eval Z Matrix GGA VXC
-void LocalHostWorkDriver::eval_zmat_gga_vxc( size_t npts, size_t nbe, 
+void LocalHostWorkDriver::eval_zmat_gga_vxc_rks( size_t npts, size_t nbe, 
   const double* vrho, const double* vgamma, const double* basis_eval, 
   const double* dbasis_x_eval, const double* dbasis_y_eval, 
   const double* dbasis_z_eval, const double* dden_x_eval, 
   const double* dden_y_eval, const double* dden_z_eval, double* Z, size_t ldz ) {
 
   throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_zmat_gga_vxc(npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
+  pimpl_->eval_zmat_gga_vxc_rks(npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
     dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval, dden_z_eval,
     Z, ldz);
 
 }
 
+
+void LocalHostWorkDriver::eval_zmat_gga_vxc_uks( size_t npts, size_t nbe,
+  const double* vrho, const double* vgamma, const double* basis_eval,
+  const double* dbasis_x_eval, const double* dbasis_y_eval,
+  const double* dbasis_z_eval, const double* dden_x_eval,
+  const double* dden_y_eval, const double* dden_z_eval, double* Z, size_t ldz ) {
+
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_zmat_gga_vxc_uks(npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
+    dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval, dden_z_eval,
+    Z, ldz);
+
+}
 
 // Increment VXC by Z
 void LocalHostWorkDriver::inc_vxc( size_t npts, size_t nbf, size_t nbe, 

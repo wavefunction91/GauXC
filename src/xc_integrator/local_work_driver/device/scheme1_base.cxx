@@ -234,7 +234,7 @@ AoSScheme1Base::~AoSScheme1Base() noexcept {
 #endif
 }
 
-void AoSScheme1Base::eval_zmat_lda_vxc( XCDeviceData* _data){
+void AoSScheme1Base::eval_zmat_lda_vxc_rks( XCDeviceData* _data){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -255,7 +255,7 @@ void AoSScheme1Base::eval_zmat_lda_vxc( XCDeviceData* _data){
 
 }
 
-void AoSScheme1Base::eval_zmat_gga_vxc( XCDeviceData* _data){
+void AoSScheme1Base::eval_zmat_gga_vxc_rks( XCDeviceData* _data){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -276,7 +276,17 @@ void AoSScheme1Base::eval_zmat_gga_vxc( XCDeviceData* _data){
 
 }
 
+void AoSScheme1Base::eval_zmat_lda_vxc_uks( XCDeviceData* _data){
 
+  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
+
+}
+
+void AoSScheme1Base::eval_zmat_gga_vxc_uks( XCDeviceData* _data){
+
+  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
+
+}
 
 void AoSScheme1Base::eval_collocation( XCDeviceData* _data ) {
 
@@ -405,7 +415,7 @@ void AoSScheme1Base::inc_nel( XCDeviceData* _data ){
 
 
 
-void AoSScheme1Base::eval_uvvar_lda( XCDeviceData* _data ){
+void AoSScheme1Base::eval_uvvar_lda_rks( XCDeviceData* _data ){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -435,7 +445,7 @@ void AoSScheme1Base::eval_uvvar_lda( XCDeviceData* _data ){
 
 
 
-void AoSScheme1Base::eval_uvvar_gga( XCDeviceData* _data ){
+void AoSScheme1Base::eval_uvvar_gga_rks( XCDeviceData* _data ){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -466,12 +476,17 @@ void AoSScheme1Base::eval_uvvar_gga( XCDeviceData* _data ){
 
 }
 
+void AoSScheme1Base::eval_uvvar_lda_uks( XCDeviceData* _data ){
 
+  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE"); 
 
+}
 
+void AoSScheme1Base::eval_uvvar_gga_uks( XCDeviceData* _data ){
 
+  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 
-
+}
 
 
 void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func, 

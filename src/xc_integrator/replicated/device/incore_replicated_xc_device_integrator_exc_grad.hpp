@@ -138,8 +138,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->eval_xmat( &device_data, do_xmat_grad );
 
     // Evaluate U/V variables
-    if( func.is_gga() ) lwd->eval_uvvar_gga( &device_data );
-    else                lwd->eval_uvvar_lda( &device_data );
+    if( func.is_gga() ) lwd->eval_uvvar_gga_rks( &device_data );
+    else                lwd->eval_uvvar_lda_rks( &device_data );
 
     // Evaluate XC functional (we need VXC for EXC Gradient)
     if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );

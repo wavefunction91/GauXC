@@ -105,6 +105,20 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   }
 }
 
+
+template <typename ValueType>
+void IncoreReplicatedXCDeviceIntegrator<ValueType>::
+  eval_exc_vxc_( int64_t m, int64_t n, const value_type* Pscalar,
+                      int64_t ldpscalar,
+                      const value_type* Pz,
+                      int64_t ldpz,
+                      value_type* VXCscalar, int64_t ldvxcscalar,
+                      value_type* VXCz, int64_t ldvxcz,
+                      value_type* EXC ) {
+
+  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
+}
+
 template <typename ValueType>
 void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
@@ -199,8 +213,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->eval_xmat( &device_data );
 
     // Evaluate U/V variables
-    if( func.is_gga() ) lwd->eval_uvvar_gga( &device_data );
-    else                lwd->eval_uvvar_lda( &device_data );
+    if( func.is_gga() ) lwd->eval_uvvar_gga_rks( &device_data );
+    else                lwd->eval_uvvar_lda_rks( &device_data );
 
     // Evaluate XC functional
     if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );
@@ -211,8 +225,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->inc_nel( &device_data );
 
     // Evaluate Z matrix
-    if( func.is_gga() ) lwd->eval_zmat_gga_vxc( &device_data );
-    else                lwd->eval_zmat_lda_vxc( &device_data );
+    if( func.is_gga() ) lwd->eval_zmat_gga_vxc_rks( &device_data );
+    else                lwd->eval_zmat_lda_vxc_rks( &device_data );
 
     // Increment VXC (LT)
     lwd->inc_vxc( &device_data );
@@ -244,6 +258,28 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     device_data.retrieve_exc_vxc_integrands( EXC, N_EL, VXC, ldvxc );
   });
 
+}
+
+template <typename ValueType>
+void IncoreReplicatedXCDeviceIntegrator<ValueType>::
+  exc_vxc_local_work_( const basis_type& basis, const value_type* Pscalar, int64_t ldpscalar,
+                                const value_type* Pz, int64_t ldpz,
+                            host_task_iterator task_begin, host_task_iterator task_end,
+                            XCDeviceData& device_data ) {
+
+  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
+}
+
+template <typename ValueType>
+void IncoreReplicatedXCDeviceIntegrator<ValueType>::
+  exc_vxc_local_work_( const basis_type& basis, const value_type* Pscalar, int64_t ldpscalar,
+                            const value_type* Pz, int64_t ldpz,
+                            value_type* VXCscalar, int64_t ldvxcscalar,
+                            value_type* VXCz, int64_t ldvxcz, value_type* EXC, value_type *N_EL,
+                            host_task_iterator task_begin, host_task_iterator task_end,
+                            XCDeviceData& device_data ) {
+
+  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
 }
