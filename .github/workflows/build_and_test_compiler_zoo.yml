@@ -59,48 +59,48 @@ jobs:
       shell: bash
       run: cmake --build ${{runner.workspace}}/build --target test
 
-#  nvidia_build:
-#    name: NVIDIA Build and Test
-#    runs-on: cuda
-#    #needs: release_build
-#    container:
-#        image: dbwy/chemistry-gpu
-#        options: --gpus all
-#    strategy:
-#        matrix:
-#            flags: [ {magma: OFF, cutlass: OFF}, {magma: ON, cutlass: OFF}, {magma: OFF, cutlass: ON} ]
-#
-#    steps:
-#    - uses: actions/checkout@v3
-#
-#    - name: Setup Build Type
-#      shell: bash
-#      run: echo "set(CMAKE_BUILD_TYPE Release CACHE BOOL \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
-#
-#    - name: Setup Enable CUDA
-#      shell: bash
-#      run: |
-#        echo "set(GAUXC_ENABLE_CUDA  ON  CACHE BOOL \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
-#        echo "set(CMAKE_CUDA_ARCHITECTURES  80  CACHE STRING \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
-#        echo "set(GAUXC_ENABLE_MAGMA   ${{matrix.flags.magma}}    CACHE BOOL \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
-#        echo "set(GAUXC_ENABLE_CUTLASS   ${{matrix.flags.cutlass}}    CACHE BOOL \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
-#        echo "set(GAUXC_ENABLE_MPI   OFF    CACHE BOOL \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
-#        echo "set(MAGMA_ROOT_DIR \"/usr/local/magma/2.6.2/install\" CACHE PATH \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
-#
-#    - name: Configure CMake
-#      shell: bash
-#      run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
-#                 -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/install 
-#                 -DCMAKE_PREFIX_PATH=${ENV_PREFIX_PATH}
-#                 -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
-#
-#    - name: Build
-#      shell: bash
-#      run: cmake --build ${{runner.workspace}}/build -j2 
-#
-#    - name: Test
-#      shell: bash
-#      run: cmake --build ${{runner.workspace}}/build --target test
+  nvidia_build:
+    name: NVIDIA Build (No Test)
+    runs-on: ubuntu-latest
+    #needs: release_build
+    container:
+        image: dbwy/chemistry-gpu
+        #options: --gpus all
+    strategy:
+        matrix:
+            flags: [ {magma: OFF, cutlass: OFF}, {magma: ON, cutlass: OFF}, {magma: OFF, cutlass: ON} ]
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Setup Build Type
+      shell: bash
+      run: echo "set(CMAKE_BUILD_TYPE Release CACHE BOOL \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+
+    - name: Setup Enable CUDA
+      shell: bash
+      run: |
+        echo "set(GAUXC_ENABLE_CUDA  ON  CACHE BOOL \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+        echo "set(CMAKE_CUDA_ARCHITECTURES  80  CACHE STRING \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+        echo "set(GAUXC_ENABLE_MAGMA   ${{matrix.flags.magma}}    CACHE BOOL \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+        echo "set(GAUXC_ENABLE_CUTLASS   ${{matrix.flags.cutlass}}    CACHE BOOL \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+        echo "set(GAUXC_ENABLE_MPI   OFF    CACHE BOOL \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+        echo "set(MAGMA_ROOT_DIR \"/usr/local/magma/2.6.2/install\" CACHE PATH \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+
+    - name: Configure CMake
+      shell: bash
+      run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
+                 -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/install 
+                 -DCMAKE_PREFIX_PATH=${ENV_PREFIX_PATH}
+                 -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+
+    - name: Build
+      shell: bash
+      run: cmake --build ${{runner.workspace}}/build -j2 
+
+    #- name: Test
+    #  shell: bash
+    #  run: cmake --build ${{runner.workspace}}/build --target test
 
   debug_build:
     name: Debug Build and Test
