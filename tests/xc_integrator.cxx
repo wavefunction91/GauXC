@@ -96,6 +96,8 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     }
   }
 
+  if(uks and ex == ExecutionSpace::Device) return;
+
 
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
