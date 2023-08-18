@@ -10,7 +10,7 @@
 #include <integratorxx/quadratures/lebedev_laikov.hpp>
 #include <integratorxx/quadratures/muraknowles.hpp>
 #include <integratorxx/quadratures/mhl.hpp>
-#include <integratorxx/quadratures/treutleraldrichs.hpp>
+#include <integratorxx/quadratures/treutlerahlrichs.hpp>
 #include <integratorxx/composite_quadratures/spherical_quadrature.hpp>
 #include <gauxc/exceptions.hpp>
 
@@ -32,7 +32,7 @@ Grid AtomicGridFactory::generate_unpruned_grid( RadialQuad rq, RadialSize nrad,
 
   using mk_type  = IntegratorXX::MuraKnowles<double,double>;
   using mhl_type = IntegratorXX::MurrayHandyLaming<double,double>;
-  using ta_type  = IntegratorXX::TreutlerAldrichs<double,double>;
+  using ta_type  = IntegratorXX::TreutlerAhlrichs<double,double>;
   using ll_type  = IntegratorXX::LebedevLaikov<double>;
 
   ll_type ang_quad( nang.get() );
@@ -95,7 +95,7 @@ Grid AtomicGridFactory::generate_pruned_grid( RadialQuad rq,
 
   using mk_type  = IntegratorXX::MuraKnowles<double,double>;
   using mhl_type = IntegratorXX::MurrayHandyLaming<double,double>;
-  using ta_type  = IntegratorXX::TreutlerAldrichs<double,double>;
+  using ta_type  = IntegratorXX::TreutlerAhlrichs<double,double>;
 
   switch( rq ) {
 
