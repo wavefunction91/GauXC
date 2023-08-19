@@ -5,6 +5,10 @@
 #
 # See LICENSE.txt for details
 #
+if(NOT GAUXC_HAS_HDF5)
+  message(WARNING "GauXC Tests were ENABLED but HDF5 was not FOUND/ENABLED. Please enable and ensure discovery of HDF5. Skipping Tests")
+  return()
+endif()
 message( STATUS "Building GauXC Tests" )
 add_library( gauxc_catch2 INTERFACE )
 

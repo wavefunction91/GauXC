@@ -72,12 +72,6 @@ if( GAUXC_CXX_HAS_WSHADOW )
   target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wshadow> )
 endif()
 
-
-configure_file( 
-  ${PROJECT_SOURCE_DIR}/include/gauxc/gauxc_config.hpp.in
-  ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
-)
-
 target_link_libraries( gauxc PUBLIC 
   ExchCXX::ExchCXX 
   IntegratorXX::IntegratorXX 
@@ -103,6 +97,13 @@ add_subdirectory( external )
 
 
 add_library( gauxc::gauxc ALIAS gauxc )
+
+# Generate config file
+configure_file( 
+  ${PROJECT_SOURCE_DIR}/include/gauxc/gauxc_config.hpp.in
+  ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
+)
+
 
 include( GNUInstallDirs )
 

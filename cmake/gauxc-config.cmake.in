@@ -20,7 +20,7 @@ set( GAUXC_ENABLE_CUTLASS    @GAUXC_ENABLE_CUTLASS@   )
 set( GAUXC_ENABLE_MPI        @GAUXC_ENABLE_MPI@       )
 set( GAUXC_ENABLE_OPENMP     @GAUXC_ENABLE_OPENMP@    )
 set( GAUXC_ENABLE_GAU2GRID   @GAUXC_ENABLE_GAU2GRID@  )
-set( GAUXC_ENABLE_HDF5       @GAUXC_ENABLE_HDF5@      )
+set( GAUXC_HAS_HDF5          @GAUXC_HAS_HDF5@         )
 
 
 if( GAUXC_ENABLE_HOST )
@@ -49,7 +49,7 @@ if( GAUXC_ENABLE_OPENMP )
   find_dependency( OpenMP )
 endif()
 
-if( GAUXC_ENABLE_HDF5 )
+if( GAUXC_HAS_HDF5 )
   find_dependency( HighFive )
 endif()
 
