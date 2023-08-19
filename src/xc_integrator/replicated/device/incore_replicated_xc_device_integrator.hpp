@@ -119,16 +119,6 @@ public:
     exc_vxc_local_work_( std::forward<Args>(args)... );
   }
 
-  template <typename... Args>
-  void exc_vxc_local_work(Args&&... args) {
-    exc_vxc_local_work_( std::forward<Args>(args)... );
-  }
-
-  template <typename... Args>
-  void exc_vxc_local_work(Args&&... args) {
-    exc_vxc_local_work_( std::forward<Args>(args)... );
-  }
-
 };
 
 extern template class IncoreReplicatedXCDeviceIntegrator<double>;

@@ -11,6 +11,7 @@
 #include "integrator_util/integrator_common.hpp"
 #include "host/util.hpp"
 #include <gauxc/util/misc.hpp>
+#include <gauxc/util/unused.hpp>
 
 #include <stdexcept>
 #include <fstream>
@@ -94,6 +95,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC ) {
 
+  GauXC::util::unused(m,n,Pscalar,ldpscalar,Pz,ldpz,VXCscalar,ldvxcscalar,VXCz,ldvxcz,EXC);
   GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
@@ -200,6 +202,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data ) {
 
+  GauXC::util::unused(basis,Pscalar,ldpscalar,Pz,ldpz,VXCscalar,ldvxcscalar,VXCz,ldvxcz,EXC,N_EL,task_begin,task_end,device_data);
   GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 

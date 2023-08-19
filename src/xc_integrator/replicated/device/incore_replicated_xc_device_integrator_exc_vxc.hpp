@@ -10,6 +10,7 @@
 #include "device/xc_device_aos_data.hpp"
 #include <fstream>
 #include <gauxc/exceptions.hpp>
+#include <gauxc/util/unused.hpp>
 
 namespace GauXC  {
 namespace detail {
@@ -115,7 +116,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                       value_type* VXCscalar, int64_t ldvxcscalar,
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC ) {
-
+  GauXC::util::unused(m,n,Pscalar,ldpscalar,Pz,ldpz,VXCscalar,ldvxcscalar,VXCz,ldvxcz,EXC);
   GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
@@ -266,7 +267,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                                 const value_type* Pz, int64_t ldpz,
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data ) {
-
+  GauXC::util::unused(basis,Pscalar,ldpscalar,Pz,ldpz,task_begin,task_end,device_data);
   GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
@@ -279,6 +280,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data ) {
 
+  GauXC::util::unused(basis,Pscalar,ldpscalar,Pz,ldpz,VXCscalar,ldvxcscalar,VXCz,ldvxcz,EXC,N_EL,task_begin,task_end,device_data);
   GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
