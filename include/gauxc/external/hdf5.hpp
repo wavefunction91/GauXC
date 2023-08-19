@@ -6,7 +6,7 @@
  * See LICENSE.txt for details
  */
 #include <gauxc/gauxc_config.hpp>
-#ifdef GAUXC_ENABLE_HDF5
+#ifdef GAUXC_HAS_HDF5
 #include <gauxc/shell.hpp>
 #include <gauxc/atom.hpp>
 
