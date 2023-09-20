@@ -144,7 +144,7 @@ If GauXC was used for the evaluation of exchange-correlation related
 quantities in your publication, we request that you also cite
 [Libxc](https://libxc.gitlab.io/) which provides the underlying
 implementation of the exchange-correlation functionals used in GauXC
-(via the ExchCXX library):
+via the [ExchCXX](https://github.com/wavefunction91/ExchCXX) library:
 
 ```
 % Actual Implementations of the Density Functionals
