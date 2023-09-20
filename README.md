@@ -75,6 +75,7 @@ We have also receieved significant support from industry collaborators:
 
 # Publications
 
+## GauXC
 Please cite the following publications if GauXC was used in your publication:
 ```
 % Distributed Memory Seminumerical Exact Exchange implementation
@@ -137,6 +138,26 @@ Please cite the following publications if GauXC was used in your publication:
 }
 ```
 
+## Density functionals
+
+If GauXC was used for the evaluation of exchange-correlation related
+quantities in your publication, we request that you also cite
+[Libxc](https://libxc.gitlab.io/) which provides the underlying
+implementation of the exchange-correlation functionals used in GauXC
+via the [ExchCXX](https://github.com/wavefunction91/ExchCXX) library:
+
+```
+% Actual Implementations of the Density Functionals
+@article{lehtola2018libxc,
+  author  = {Lehtola, Susi and Steigemann, Conrad and Oliveira, Micael J. T. and Marques, Miguel A. L.},
+  journal = {SoftwareX},
+  title   = {Recent developments in {LIBXC}---a comprehensive library of functionals for density functional theory},
+  year    = {2018},
+  pages   = {1--5},
+  volume  = {7},
+  doi     = {10.1016/j.softx.2017.11.002},
+}
+```
 
 # Build Instructions
 
