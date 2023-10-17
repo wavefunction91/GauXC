@@ -130,7 +130,8 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     auto N_EL_ref = std::accumulate( mol.begin(), mol.end(), 0ul,
       [](const auto& a, const auto &b) { return a + b.Z.get(); });
     auto N_EL = integrator.integrate_den( P );
-    CHECK( N_EL == Approx(N_EL_ref).epsilon(1e-6) );
+    // Factor of 2 b/c P is the alpha density for RKS
+    CHECK( N_EL == Approx(N_EL_ref/2.0).epsilon(1e-6) );
   }
 
   // Integrate EXC/VXC

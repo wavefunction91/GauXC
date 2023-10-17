@@ -85,7 +85,7 @@ namespace GauXC {
 
   // X matrix (P * B)
   void ReferenceLocalHostWorkDriver::eval_xmat( size_t npts, size_t nbf, size_t nbe, 
-						const submat_map_t& submat_map, const double* P, size_t ldp, 
+						const submat_map_t& submat_map, double fac, const double* P, size_t ldp, 
 						const double* basis_eval, size_t ldb, double* X, size_t ldx, double* scr ) {
     const auto* P_use = P;
     size_t ldp_use = ldp;
@@ -98,7 +98,7 @@ namespace GauXC {
       P_use = P + submat_map[0][0]*(ldp+1);
     }
 
-    blas::gemm( 'N', 'N', nbe, npts, nbe, 2., P_use, ldp_use, basis_eval, ldb, 
+    blas::gemm( 'N', 'N', nbe, npts, nbe, fac, P_use, ldp_use, basis_eval, ldb, 
 		0., X, ldx );
 
   }

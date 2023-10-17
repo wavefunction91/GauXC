@@ -140,7 +140,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
     // Evaluate X matrix (P * B) -> store in Z
-    lwd->eval_xmat( npts, nbf, nbe, submat_map, P, ldp, basis_eval, nbe,
+    lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, P, ldp, basis_eval, nbe,
       zmat, nbe, nbe_scr );
 
 

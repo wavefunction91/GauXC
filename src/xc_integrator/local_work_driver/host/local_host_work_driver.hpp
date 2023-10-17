@@ -136,16 +136,13 @@ public:
     double* d2basis_xz_eval, double* d2basis_yy_eval, double* d2basis_yz_eval,
     double* d2basis_zz_eval );
 
-  /** Evaluate the compressed "X" matrix = P * B
-   *
-   *  Includes a factor of 2 for total density in Libxc unpolarized input
-   *
-   *  TODO: Need to add an API for UKS/GKS
+  /** Evaluate the compressed "X" matrix = fac * P * B
    *
    *  @param[in]  npts        The number of points in the collocation matrix 
    *  @param[in]  nbf         The total number of bfns
    *  @param[in]  nbe         The number of non-negligible bfns
    *  @param[in]  submat_map  Map from the full matrix to non-negligible submatrices
+   *  @param[in]  fac         Scaling factor in front of matrix multiplication
    *  @param[in]  P           The alpha density matrix ( (nbf,nbf) col major)
    *  @param[in]  ldp         The leading dimension of P
    *  @param[in]  basis_eval  The collocation matrix ( (nbe,npts) col major)
@@ -155,7 +152,7 @@ public:
    *  @param[in/out] scr      Scratch space of at least nbe*nbe
    */
   void eval_xmat( size_t npts, size_t nbf, size_t nbe, 
-    const submat_map_t& submat_map, const double* P, size_t ldp,
+    const submat_map_t& submat_map, double fac, const double* P, size_t ldp,
     const double* basis_eval, size_t ldb, double* X, size_t ldx, 
     double* scr );
 
