@@ -753,44 +753,46 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                             value_type* VXC2z, int64_t ldvxc2z,
                             value_type* EXC, value_type *N_EL ) {
   
-  GAUXC_GENERIC_EXCEPTION("neo_exc_vxc_local_work_ RKS NYI");
-  /*
+  //GAUXC_GENERIC_EXCEPTION("neo_exc_vxc_local_work_ RKS NYI");
+  
   // Cast LWD to LocalHostWorkDriver
   auto* lwd = dynamic_cast<LocalHostWorkDriver*>(this->local_work_driver_.get());
 
   // Setup Aliases
-  const auto& func  = *this->func_;
-  const auto& basis = this->load_balancer_->basis();
-  const auto& mol   = this->load_balancer_->molecule();
+  const auto& func   = *this->func_;
+  const auto& basis1 = this->load_balancer_->basis();
+  const auto& basis2 = this->load_balancer_->basis2();
+  const auto& mol    = this->load_balancer_->molecule();
 
   // Get basis map
-  BasisSetMap basis_map(basis,mol);
+  BasisSetMap basis_map1(basis1,mol);
+  BasisSetMap basis_map2(basis2,mol);
 
-  const int32_t nbf = basis.nbf();
+  
+  const int32_t nbf1 = basis1.nbf();
+  const int32_t nbf2 = basis2.nbf();
 
   // Sort tasks on size (XXX: maybe doesnt matter?)
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
     return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
   };
 
+  
   auto& tasks = this->load_balancer_->get_tasks();
   std::sort( tasks.begin(), tasks.end(), task_comparator );
 
 
   // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
-  if( not lb_state.modified_weights_are_stored ) {
-    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified");
-  }
+  if( not lb_state.modified_weights_are_stored )  GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified");
+  
 
   // Zero out integrands
   
-  for( auto j = 0; j < nbf; ++j ) {
-  for( auto i = 0; i < nbf; ++i ) {
-    VXC[i + j*ldvxc] = 0.;
-    VXCz[i + j*ldvxc] = 0.;
-  }
-  }
+  std::fill(VXC1s, VXC1s + nbf1 * ldvxc1s, 0.0);
+  std::fill(VXC2s, VXC2s + nbf2 * ldvxc2s, 0.0);
+  std::fill(VXC2z, VXC2z + nbf2 * ldvxc2z, 0.0);
+
   *EXC = 0.;
  
     
@@ -810,157 +812,23 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const auto& task = tasks[iT];
 
     // Get tasks constants
-    const int32_t  npts    = task.points.size();
-    const int32_t  nbe     = task.bfn_screening.nbe;
-    const int32_t  nshells = task.bfn_screening.shell_list.size();
+    const int32_t  npts     = task.points.size();
+    const int32_t  nbe1     = task.bfn_screening.nbe;
+    const int32_t  nshells1 = task.bfn_screening.shell_list.size();
+
+    const int32_t  nbe2     = nbf2;
+    const int32_t  nshells2 = basis2.nshells();
 
     const auto* points      = task.points.data()->data();
     const auto* weights     = task.weights.data();
-    const int32_t* shell_list = task.bfn_screening.shell_list.data();
+    const int32_t* shell_list1 = task.bfn_screening.shell_list.data();
 
-    // Allocate enough memory for batch
-
-    // Things that every calc needs
-    host_data.nbe_scr .resize( nbe * nbe * 2 );
-    host_data.zmat    .resize( npts * nbe * 2);
-    host_data.eps     .resize( npts );
-    host_data.vrho    .resize( npts * 2);
-
-    // LDA data requirements
-    if( func.is_lda() ){
-      host_data.basis_eval .resize( npts * nbe );
-      host_data.den_scr    .resize( npts * 2);
-    }
-
-    // GGA data requirements
-    if( func.is_gga() ){
-      host_data.basis_eval .resize( 4 * npts * nbe );
-      host_data.den_scr    .resize( 2 * 4 * npts );
-      host_data.gamma      .resize( 3 * npts );
-      host_data.vgamma     .resize( 3 * npts );
-    }
-
-    // Alias/Partition out scratch memory
-    auto* basis_eval = host_data.basis_eval.data();
-    auto* den_eval   = host_data.den_scr.data();
-    auto* nbe_scr    = host_data.nbe_scr.data();
-    auto* zmat       = host_data.zmat.data();
-
-    auto* eps        = host_data.eps.data();
-    auto* gamma      = host_data.gamma.data();
-    auto* vrho       = host_data.vrho.data();
-    auto* vgamma     = host_data.vgamma.data();
-
-    value_type* dbasis_x_eval = nullptr;
-    value_type* dbasis_y_eval = nullptr;
-    value_type* dbasis_z_eval = nullptr;
-    value_type* dden_x_eval = nullptr;
-    value_type* dden_y_eval = nullptr;
-    value_type* dden_z_eval = nullptr;
-
-    if( func.is_gga() ) {
-      dbasis_x_eval = basis_eval    + npts * nbe;
-      dbasis_y_eval = dbasis_x_eval + npts * nbe;
-      dbasis_z_eval = dbasis_y_eval + npts * nbe;
-      dden_x_eval   = den_eval    + 2*npts;
-      dden_y_eval   = dden_x_eval + 2*npts;
-      dden_z_eval   = dden_y_eval + 2*npts;
-    }
-
-
-    // Get the submatrix map for batch
-    std::vector< std::array<int32_t, 3> > submat_map;
-    std::tie(submat_map, std::ignore) =
-          gen_compressed_submat_map(basis_map, task.bfn_screening.shell_list, nbf, nbf);
-
-    // Evaluate Collocation (+ Grad)
-    if( func.is_gga() )
-      lwd->eval_collocation_gradient( npts, nshells, nbe, points, basis, shell_list,
-        basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval );
-    else
-      lwd->eval_collocation( npts, nshells, nbe, points, basis, shell_list,
-        basis_eval );
-
-
-    // Evaluate X matrix (P * B) -> store in Z
-    lwd->eval_xmat( npts, nbf, nbe, submat_map, P, ldp, basis_eval, nbe,
-      zmat, nbe, nbe_scr );
-
-    lwd->eval_xmat( npts, nbf, nbe, submat_map, Pz, ldpz, basis_eval, nbe,
-      zmat + npts*nbe, nbe, nbe_scr + nbe * nbe);
-
-
-    // Evaluate U and V variables
-    if( func.is_gga() )
-      lwd->eval_uvvar_gga_uks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
-        dbasis_z_eval, zmat, nbe, den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
-        gamma );
-     else
-      lwd->eval_uvvar_lda_uks( npts, nbe, basis_eval, zmat, nbe, den_eval );
-    
-    // Evaluate XC functional
-    if( func.is_gga() )
-      func.eval_exc_vxc( npts, den_eval, gamma, eps, vrho, vgamma );
-    else
-      func.eval_exc_vxc( npts, den_eval, eps, vrho );
-
-    // Factor weights into XC results
-    for( int32_t i = 0; i < npts; ++i ) {
-      eps[i]  *= weights[i];
-      vrho[2*i] *= weights[i];
-      vrho[2*i+1] *= weights[i];
-    }
-
-    if( func.is_gga() ){
-      for( int32_t i = 0; i < npts; ++i ) {
-         vgamma[3*i] *= weights[i];
-         vgamma[3*i+1] *= weights[i];
-         vgamma[3*i+2] *= weights[i];
-      }
-    }
-
-
-
-    // Evaluate Z matrix for VXC
-    if( func.is_gga() )
-      lwd->eval_zmat_gga_vxc_uks( npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
-                              dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval,
-                              dden_z_eval, zmat, nbe);
-    else
-      lwd->eval_zmat_lda_vxc_uks( npts, nbe, vrho, basis_eval, zmat, nbe );
-
-
-    // Incremeta LT of VXC
-    #pragma omp critical
-    {
-      // Scalar integrations
-      for( int32_t i = 0; i < npts; ++i ) {
-        *N_EL += weights[i] * (den_eval[2*i] +  den_eval[2*i+1]);
-        *EXC  += eps[i]     * (den_eval[2*i] +  den_eval[2*i+1]);
-      }
-
-      // Increment VXC
-      lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, VXC, ldvxc,
-        nbe_scr );
-      lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat+ npts*nbe, nbe, VXCz, ldvxcz,
-        nbe_scr + nbe * nbe);
-
-    }
-
-  } // Loop over tasks
-
-  } // End OpenMP region
-
-  //std::cout << "N_EL = " << std::setprecision(12) << std::scientific << *N_EL << std::endl;
-
-  // Symmetrize VXC
-  for( int32_t j = 0;   j < nbf; ++j ) {
-  for( int32_t i = j+1; i < nbf; ++i ) {
-    VXC[ j + i*nbf ] = VXC[ i + j*nbf ];
-    VXCz[ j + i*nbf ] = VXCz[ i + j*nbf ];
+    std::vector<int32_t> bs2(basis2.size());
+    std::iota(bs2.begin(), bs2.end(), 0);
+    const int32_t* shell_list2 = bs2.data();
   }
-  }
-  */
+  } 
+  
 
 } 
 
