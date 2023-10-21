@@ -30,6 +30,17 @@ struct XCHostData {
   std::vector<F> nbe_scr;
   std::vector<F> den_scr;
   std::vector<F> basis_eval;
+
+  std::vector<F> eps2;
+  std::vector<F> gamma2;
+  std::vector<F> vrho2;
+  std::vector<F> vgamma2;
+ 
+  std::vector<F> zmat2;
+  std::vector<F> gmat2;
+  std::vector<F> nbe2_scr;
+  std::vector<F> den2_scr;
+  std::vector<F> basis2_eval;
    
   inline XCHostData() {}
 

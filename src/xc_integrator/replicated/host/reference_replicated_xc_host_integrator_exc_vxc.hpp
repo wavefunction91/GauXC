@@ -760,23 +760,23 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Setup Aliases
   const auto& func   = *this->func_;
-  const auto& basis1 = this->load_balancer_->basis();
-  const auto& basis2 = this->load_balancer_->basis2();
+  const auto& basis = this->load_balancer_->basis();
   const auto& mol    = this->load_balancer_->molecule();
 
   // Get basis map
-  BasisSetMap basis_map1(basis1,mol);
-  BasisSetMap basis_map2(basis2,mol);
-
+  BasisSetMap basis_map(basis,mol);
   
-  const int32_t nbf1 = basis1.nbf();
+  const int32_t nbf = basis.nbf();
+
+  //NEO
+  const auto& basis2 = this->load_balancer_->basis2();
+  BasisSetMap basis_map2(basis2,mol);
   const int32_t nbf2 = basis2.nbf();
 
   // Sort tasks on size (XXX: maybe doesnt matter?)
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
     return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
   };
-
   
   auto& tasks = this->load_balancer_->get_tasks();
   std::sort( tasks.begin(), tasks.end(), task_comparator );
@@ -789,7 +789,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Zero out integrands
   
-  std::fill(VXC1s, VXC1s + nbf1 * ldvxc1s, 0.0);
+  std::fill(VXC1s, VXC1s + nbf * ldvxc1s, 0.0);
   std::fill(VXC2s, VXC2s + nbf2 * ldvxc2s, 0.0);
   std::fill(VXC2z, VXC2z + nbf2 * ldvxc2z, 0.0);
 
@@ -813,19 +813,160 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Get tasks constants
     const int32_t  npts     = task.points.size();
-    const int32_t  nbe1     = task.bfn_screening.nbe;
-    const int32_t  nshells1 = task.bfn_screening.shell_list.size();
-
-    const int32_t  nbe2     = nbf2;
-    const int32_t  nshells2 = basis2.nshells();
+    const int32_t  nbe     = task.bfn_screening.nbe;
+    const int32_t  nshells = task.bfn_screening.shell_list.size();
 
     const auto* points      = task.points.data()->data();
     const auto* weights     = task.weights.data();
-    const int32_t* shell_list1 = task.bfn_screening.shell_list.data();
+    const int32_t* shell_list = task.bfn_screening.shell_list.data();
 
-    std::vector<int32_t> bs2(basis2.size());
-    std::iota(bs2.begin(), bs2.end(), 0);
-    const int32_t* shell_list2 = bs2.data();
+    // Allocate enough memory for batch
+
+    // Things that every calc needs
+    host_data.nbe_scr .resize( nbe * nbe );
+    host_data.zmat    .resize( npts * nbe );
+    host_data.eps     .resize( npts );
+    host_data.vrho    .resize( npts );
+
+    // LDA data requirements
+    if( func.is_lda() ){
+      host_data.basis_eval .resize( npts * nbe );
+      host_data.den_scr    .resize( npts );
+    }
+
+    // GGA data requirements
+    if( func.is_gga() ){
+      host_data.basis_eval .resize( 4 * npts * nbe );
+      host_data.den_scr    .resize( 4 * npts );
+      host_data.gamma      .resize( npts );
+      host_data.vgamma     .resize( npts );
+    }
+
+    // Alias/Partition out scratch memory
+    auto* basis_eval = host_data.basis_eval.data();
+    auto* den_eval   = host_data.den_scr.data();
+    auto* nbe_scr    = host_data.nbe_scr.data();
+    auto* zmat       = host_data.zmat.data();
+
+    auto* eps        = host_data.eps.data();
+    auto* gamma      = host_data.gamma.data();
+    auto* vrho       = host_data.vrho.data();
+    auto* vgamma     = host_data.vgamma.data();
+
+    value_type* dbasis_x_eval = nullptr;
+    value_type* dbasis_y_eval = nullptr;
+    value_type* dbasis_z_eval = nullptr;
+    value_type* dden_x_eval = nullptr;
+    value_type* dden_y_eval = nullptr;
+    value_type* dden_z_eval = nullptr;
+
+    if( func.is_gga() ) {
+      dbasis_x_eval = basis_eval    + npts * nbe;
+      dbasis_y_eval = dbasis_x_eval + npts * nbe;
+      dbasis_z_eval = dbasis_y_eval + npts * nbe;
+      dden_x_eval   = den_eval    + npts;
+      dden_y_eval   = dden_x_eval + npts;
+      dden_z_eval   = dden_y_eval + npts;
+    }
+
+    //----------------------Start Protonic System Setup------------------------
+    // Get shell info
+    const int32_t  nbe2     = nbf2;
+    const int32_t  nshells2 = basis2.nshells();
+    std::vector<int32_t> shell_list2_vector; 
+    shell_list2_vector.reserve(basis2.nshells());
+    for(auto iSh = 0ul; iSh < basis2.size(); ++iSh) shell_list2_vector.emplace_back( iSh );
+    const int32_t* shell_list2 = shell_list2_vector.data();
+
+    // Set Up Memory
+    host_data.nbe2_scr   .resize( nbe2 * nbe2 * 2);
+    host_data.zmat2      .resize( npts * nbe2 );
+    host_data.eps2       .resize( npts );
+    host_data.vrho2      .resize( npts * 2);
+    // LDA
+    host_data.basis_eval .resize( npts * nbe2 );
+    host_data.den_scr    .resize( npts * 2);
+    // No GGA for NEO yet
+    // Alias/Partition out scratch memory
+    auto* basis2_eval = host_data.basis_eval.data();
+    auto* den2_eval   = host_data.den_scr.data();
+    auto* nbe2_scr    = host_data.nbe_scr.data();
+    auto* zmat2       = host_data.zmat.data();
+    auto* eps2        = host_data.eps.data();
+    auto* vrho2       = host_data.vrho.data();
+
+    // No GGA for NEO yet
+    value_type* dbasis2_x_eval = nullptr;
+    value_type* dbasis2_y_eval = nullptr;
+    value_type* dbasis2_z_eval = nullptr;
+    value_type* dden2_x_eval = nullptr;
+    value_type* dden2_y_eval = nullptr;
+    value_type* dden2_z_eval = nullptr;
+    //----------------------End Protonic System Setup------------------------
+
+
+
+
+    //----------------------Start Electronic Density Eval------------------------
+    // Get the submatrix map for batch
+    std::vector< std::array<int32_t, 3> > submat_map;
+    std::tie(submat_map, std::ignore) =
+          gen_compressed_submat_map(basis_map, task.bfn_screening.shell_list, nbf, nbf);
+
+    // Evaluate Collocation (+ Grad)
+    if( func.is_gga() )
+      lwd->eval_collocation_gradient( npts, nshells, nbe, points, basis, shell_list, 
+        basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval );
+    else
+      lwd->eval_collocation( npts, nshells, nbe, points, basis, shell_list, 
+        basis_eval );
+    
+    // Evaluate X matrix (P * B) -> store in Z
+    lwd->eval_xmat( npts, nbf, nbe, submat_map, P1s, ldp1s, basis_eval, nbe,
+      zmat, nbe, nbe_scr );
+
+    // Evaluate U and V variables
+    if( func.is_gga() )
+      lwd->eval_uvvar_gga( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
+        dbasis_z_eval, zmat, nbe, den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
+        gamma );
+     else
+      lwd->eval_uvvar_lda( npts, nbe, basis_eval, zmat, nbe, den_eval );
+
+    // Evaluate XC functional
+    if( func.is_gga() )
+      func.eval_exc_vxc( npts, den_eval, gamma, eps, vrho, vgamma );
+    else
+      func.eval_exc_vxc( npts, den_eval, eps, vrho );
+    //----------------------End Electronic Density Eval------------------------
+
+
+
+
+    //----------------------Start Protonic Density Eval------------------------
+    // Get the submatrix map for batch
+    std::vector< std::array<int32_t, 3> > submat_map2;
+    std::tie(submat_map2, std::ignore) =
+          gen_compressed_submat_map(basis_map2, shell_list2_vector, nbf2, nbf2);
+
+    // Evaluate Collocation 
+    lwd->eval_collocation( npts, nshells2, nbe2, points, basis2, shell_list2,
+      basis2_eval );
+
+    // Evaluate X matrix (P * B) -> store in Z
+    lwd->eval_xmat( npts, nbf2, nbe2, submat_map2, P2s, ldp2s, basis2_eval, nbe2,
+      zmat2, nbe2, nbe2_scr );
+    lwd->eval_xmat( npts, nbf2, nbe2, submat_map2, P2z, ldp2z, basis2_eval, nbe2,
+      zmat2 + npts*nbe2, nbe2, nbe2_scr + nbe2 * nbe2);
+
+    lwd->eval_uvvar_lda_uks( npts, nbe2, basis2_eval, zmat2, nbe2, den2_eval );
+    //----------------------End Protonic Density Eval------------------------
+
+
+
+
+    GAUXC_GENERIC_EXCEPTION("AODONG WIP");
+
   }
   } 
   
