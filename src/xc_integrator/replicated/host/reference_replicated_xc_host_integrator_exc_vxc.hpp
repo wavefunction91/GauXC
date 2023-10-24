@@ -754,8 +754,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                             value_type* VXC2z, int64_t ldvxc2z,
                             value_type* EXC1, value_type* EXC2, value_type *N_EL ) {
   
-  //GAUXC_GENERIC_EXCEPTION("neo_exc_vxc_local_work_ RKS NYI");
-  
   // Cast LWD to LocalHostWorkDriver
   auto* lwd = dynamic_cast<LocalHostWorkDriver*>(this->local_work_driver_.get());
 
@@ -769,7 +767,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   
   const int32_t nbf = basis.nbf();
 
-  //NEO
+  //NEO basis
   const auto& basis2 = this->load_balancer_->basis2();
   BasisSetMap basis_map2(basis2,mol);
   const int32_t nbf2 = basis2.nbf();
@@ -882,28 +880,28 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Set Up Memory
     host_data.nbe2_scr   .resize( nbe2 * nbe2 * 2);
-    host_data.zmat2      .resize( npts * nbe2 );
+    host_data.zmat2      .resize( npts * nbe2 * 2);
     host_data.eps2       .resize( npts );
     host_data.vrho2      .resize( npts * 2);
     // LDA
-    host_data.basis_eval .resize( npts * nbe2 );
-    host_data.den_scr    .resize( npts * 2);
+    host_data.basis2_eval .resize( npts * nbe2 );
+    host_data.den2_scr    .resize( npts * 2);
     // No GGA for NEO yet
     // Alias/Partition out scratch memory
-    auto* basis2_eval = host_data.basis_eval.data();
-    auto* den2_eval   = host_data.den_scr.data();
-    auto* nbe2_scr    = host_data.nbe_scr.data();
-    auto* zmat2       = host_data.zmat.data();
-    auto* eps2        = host_data.eps.data();
-    auto* vrho2       = host_data.vrho.data();
+    auto* basis2_eval = host_data.basis2_eval.data();
+    auto* den2_eval   = host_data.den2_scr.data();
+    auto* nbe2_scr    = host_data.nbe2_scr.data();
+    auto* zmat2       = host_data.zmat2.data();
+    auto* eps2        = host_data.eps2.data();
+    auto* vrho2       = host_data.vrho2.data();
 
     // No GGA for NEO yet
     value_type* dbasis2_x_eval = nullptr;
     value_type* dbasis2_y_eval = nullptr;
     value_type* dbasis2_z_eval = nullptr;
-    value_type* dden2_x_eval = nullptr;
-    value_type* dden2_y_eval = nullptr;
-    value_type* dden2_z_eval = nullptr;
+    value_type* dden2_x_eval   = nullptr;
+    value_type* dden2_y_eval   = nullptr;
+    value_type* dden2_z_eval   = nullptr;
     //----------------------End Protonic System Setup------------------------
 
 
@@ -982,25 +980,25 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       
       // Skip this point if the density is too small
       if(total_erho < 1e-15 | total_prho < 1e-15){
-        eps2[iPt]     = 0.0;
+        eps2[iPt]      = 0.0;
         vrho2[2*iPt]   = 0.0;
         vrho2[2*iPt+1] = 0.0;
         continue;
       }
 
       // epc-17-2 denominator
-      value_type dn = 2.35 - 2.4 * std::sqrt(total_erho*total_prho) + 6.6 * total_erho*total_prho;
+      value_type dn = 2.35 - 2.4 * std::sqrt(total_erho*total_prho) + 6.6 * (total_erho*total_prho);
 
       // Update electronic eps and vxc
-      eps[iPt]  += -1.0 * total_prho/dn;
-      vrho[iPt] += 2 * ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
-                   + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
+      eps[iPt]      += -1.0 * total_prho/dn;
+      vrho[iPt]     +=  2 * ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
+                        + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
 
       // Assign protonic eps and vxc
-      eps[iPt]       = -1.0 * total_prho/dn;
-      vrho2[2*iPt]   = ( -1.0 * total_erho / dn + (-1.2 * std::sqrt(total_prho) * std::sqrt(total_erho) * total_erho 
-                       + 6.6 * total_erho * total_erho * total_prho ) / (dn * dn) );
-      vrho2[2*iPt+1] = 0.0;
+      eps2[iPt]      = -1.0 * total_erho/dn;
+      vrho2[2*iPt]   =  ( -1.0 * total_erho / dn + (-1.2 * std::sqrt(total_prho) * std::sqrt(total_erho) * total_erho 
+                        + 6.6 * total_erho * total_erho * total_prho ) / (dn * dn) );
+      vrho2[2*iPt+1] =  0.0;
     }
     //----------------------End epc-17-2 functional Evaluation------------------------   
 
@@ -1012,11 +1010,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Factor weights into XC results
     for( int32_t i = 0; i < npts; ++i ) {
       // Electronic
-      eps[i]  *= weights[i];
-      vrho[i] *= weights[i];
+      eps[i]       *= weights[i];
+      vrho[i]      *= weights[i];
       // Protonic
-      eps2[i]  *= weights[i];
-      vrho2[2*i] *= weights[i];
+      eps2[i]      *= weights[i];
+      vrho2[2*i]   *= weights[i];
       vrho2[2*i+1] *= weights[i];
     }
 
@@ -1044,7 +1042,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     {
       // Scalar integrations
       for( int32_t i = 0; i < npts; ++i ) {
-        *N_EL += weights[i] * den_eval[i];
+        *N_EL  += weights[i] * den_eval[i];
         // Electronic XC (VXC+EPC)
         *EXC1  += eps[i]     * den_eval[i];
         // Protonic (EPC)
@@ -1067,7 +1065,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   
   }  // End OpenMP region
 
-  //std::cout << "N_EL = " << std::setprecision(12) << std::scientific << *N_EL << std::endl;
+  std::cout << "N_EL = " << std::setprecision(12) << std::scientific << *N_EL << std::endl;
+  //std::cout << "EXC1 = " << std::setprecision(12) << std::scientific << *EXC1 << std::endl
+  //std::cout << "EXC2 = " << std::setprecision(12) << std::scientific << *EXC2 << std::endl;
 
   // Symmetrize Electronic VXC
   for( int32_t j = 0;   j < nbf; ++j )
