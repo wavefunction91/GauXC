@@ -907,7 +907,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
 
-    //----------------------Start Electronic Density Eval------------------------
+    //----------------------Start Calculating Electronic Density & UV Variable------------------------
     // Get the submatrix map for batch
     std::vector< std::array<int32_t, 3> > submat_map;
     std::tie(submat_map, std::ignore) =
@@ -938,12 +938,12 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       func.eval_exc_vxc( npts, den_eval, gamma, eps, vrho, vgamma );
     else
       func.eval_exc_vxc( npts, den_eval, eps, vrho );
-    //----------------------End Electronic Density Eval------------------------
+    //----------------------End Calculating Electronic Density & UV Variable------------------------
 
 
 
 
-    //----------------------Start Protonic Density Eval------------------------
+    //----------------------Start Calculating Protonic Density & UV Variable------------------------
     // Get the submatrix map for batch
     std::vector< std::array<int32_t, 3> > submat_map2;
     std::tie(submat_map2, std::ignore) =
@@ -959,16 +959,126 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     lwd->eval_xmat( npts, nbf2, nbe2, submat_map2, P2z, ldp2z, basis2_eval, nbe2,
       zmat2 + npts*nbe2, nbe2, nbe2_scr + nbe2 * nbe2);
 
+    // Evaluate U and V variables
     lwd->eval_uvvar_lda_uks( npts, nbe2, basis2_eval, zmat2, nbe2, den2_eval );
-    //----------------------End Protonic Density Eval------------------------
+
+    // No protonic XC functional. Fill with eps and vrho to be 0.0
+    std::fill_n(eps2,  npts,   0.);
+    std::fill_n(vrho2, npts*2, 0.);
+    //----------------------End Calculating Protonic Density & UV Variable------------------------
 
 
 
 
-    GAUXC_GENERIC_EXCEPTION("AODONG WIP");
+    //----------------------Start epc-17-2 functional Evaluation------------------------
+    for (int32_t iPt = 0; iPt < npts; iPt++ ){
+      // Get Electronic density scalar (RKS)
+      value_type total_erho = std::abs(den_eval[iPt] > 1e-15) ? den_eval[iPt] : 0.0;
+      // Get Protonic density scalar (UKS)
+      value_type total_prho = std::abs(den2_eval[2*iPt] + den2_eval[2*iPt+1]) > 1e-15? 
+          den2_eval[2*iPt]+den2_eval[2*iPt+1] : 0.0;
+      
+      // Skip this point if the density is too small
+      if(total_erho < 1e-15 | total_prho < 1e-15){
+        eps2[iPt]     = 0.0;
+        vrho2[2*iPt]   = 0.0;
+        vrho2[2*iPt+1] = 0.0;
+        continue;
+      }
 
+      // epc-17-2 denominator
+      value_type dn = 2.35 - 2.4 * std::sqrt(total_erho*total_prho) + 6.6 * total_erho*total_prho;
+
+      // Update electronic eps and vxc
+      eps[iPt]  += -1.0 * total_prho/dn;
+      vrho[iPt] += 2 * ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
+                   + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
+
+      // Assign protonic eps and vxc
+      eps[iPt]       = -1.0 * total_prho/dn;
+      vrho2[2*iPt]   = ( -1.0 * total_erho / dn + (-1.2 * std::sqrt(total_prho) * std::sqrt(total_erho) * total_erho 
+                       + 6.6 * total_erho * total_erho * total_prho ) / (dn * dn) );
+      vrho2[2*iPt+1] = 0.0;
+    }
+    //----------------------End epc-17-2 functional Evaluation------------------------   
+
+
+
+
+
+    
+    // Factor weights into XC results
+    for( int32_t i = 0; i < npts; ++i ) {
+      // Electronic
+      eps[i]  *= weights[i];
+      vrho[i] *= weights[i];
+      // Protonic
+      eps2[i]  *= weights[i];
+      vrho2[2*i] *= weights[i];
+      vrho2[2*i+1] *= weights[i];
+    }
+
+    if( func.is_gga() )
+      for( int32_t i = 0; i < npts; ++i ) vgamma[i] *= weights[i];
+      
+    
+
+
+
+    // Evaluate Z matrix for VXC 
+    // Electronic
+    if( func.is_gga() )
+      lwd->eval_zmat_gga_vxc( npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
+                              dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval,
+                              dden_z_eval, zmat, nbe); 
+    else
+      lwd->eval_zmat_lda_vxc( npts, nbe, vrho, basis_eval, zmat, nbe ); 
+    // Protonic
+    lwd->eval_zmat_lda_vxc_uks( npts, nbe2, vrho2, basis2_eval, zmat2, nbe2 );
+
+
+    // Incremeta LT of VXC
+    #pragma omp critical
+    {
+      // Scalar integrations
+      for( int32_t i = 0; i < npts; ++i ) {
+        *N_EL += weights[i] * den_eval[i];
+        // Electronic XC (VXC+EPC)
+        *EXC  += eps[i]     * den_eval[i];
+        // Protonic (EPC)
+        *EXC  += eps2[i]    * (den2_eval[2*i] +  den2_eval[2*i+1]);    
+      }
+
+      // Increment VXC
+      // Electronic 
+      lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, VXC1s, ldvxc1s,
+        nbe_scr );
+      // Protonic
+      lwd->inc_vxc( npts, nbf2, nbe2, basis2_eval, submat_map2, zmat2, nbe2, VXC2s, ldvxc2s,
+        nbe2_scr );
+      lwd->inc_vxc( npts, nbf2, nbe2, basis2_eval, submat_map2, zmat2+ npts*nbe2, nbe2, VXC2z, ldvxc2z,
+        nbe2_scr + nbe2 * nbe2);
+
+    }
+
+  } // Loop over tasks
+  
+  }  // End OpenMP region
+
+  //std::cout << "N_EL = " << std::setprecision(12) << std::scientific << *N_EL << std::endl;
+
+  // Symmetrize Electronic VXC
+  for( int32_t j = 0;   j < nbf; ++j )
+  for( int32_t i = j+1; i < nbf; ++i )
+    VXC1s[ j + i*nbf ] = VXC1s[ i + j*nbf ];
+
+  // Symmetrize Protonic VXC
+  for( int32_t j = 0;   j < nbf2; ++j ){
+  for( int32_t i = j+1; i < nbf2; ++i ){
+    VXC2s[ j + i*nbf2 ] = VXC2s[ i + j*nbf2 ];
+    VXC2z[ j + i*nbf2 ] = VXC2z[ i + j*nbf2 ];
   }
-  } 
+  }
   
 
 } 
