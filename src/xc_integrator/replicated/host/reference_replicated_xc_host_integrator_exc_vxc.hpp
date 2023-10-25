@@ -400,10 +400,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     const size_t spin_dim_scal = is_rks ? 1 : 2; 
     // Things that every calc needs
-    host_data.nbe_scr .resize( nbe  * nbe * spin_dim_scal);
-    host_data.zmat    .resize( npts * nbe * spin_dim_scal); 
-    host_data.eps     .resize( npts );
-    host_data.vrho    .resize( npts * spin_dim_scal);
+    host_data.nbe_scr .resize(nbe  * nbe);
+    host_data.zmat    .resize(npts * nbe * spin_dim_scal); 
+    host_data.eps     .resize(npts);
+    host_data.vrho    .resize(npts * spin_dim_scal);
 
     // LDA data requirements
     if( func.is_lda() ){
@@ -475,7 +475,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // X matrix for Pz
     if(not is_rks) {
       lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, Pz, ldpz, basis_eval, nbe,
-        zmat_z, nbe, nbe_scr + nbe * nbe);
+        zmat_z, nbe, nbe_scr);
     }
 
 
@@ -559,7 +559,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         nbe_scr );
       if(not is_rks) {
         lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat_z, nbe, VXCz, ldvxcz,
-          nbe_scr + nbe * nbe);
+          nbe_scr);
       }
 
     }
