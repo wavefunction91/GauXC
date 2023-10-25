@@ -227,7 +227,7 @@ struct Darray // 2D
     }
 
     template <char operation = '='>
-    Darray& op(real* buf) noexcept
+    Darray& op(const real* buf) noexcept
     {
         for(const auto& t : tiles)
             if(t.second.first == team.rank_me())
