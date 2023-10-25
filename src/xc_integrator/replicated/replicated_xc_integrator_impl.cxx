@@ -78,6 +78,16 @@ void ReplicatedXCIntegratorImpl<ValueType>::
 
 }
 
+
+template <typename ValueType>
+void ReplicatedXCIntegratorImpl<ValueType>::
+  eval_atomic_overlap( int64_t iAtom, int64_t m, int64_t n, value_type* S,
+                int64_t lds ) {
+
+    eval_atomic_overlap_(iAtom,m,n,S,lds);
+
+}
+
 template class ReplicatedXCIntegratorImpl<double>;
 
 }

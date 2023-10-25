@@ -24,6 +24,7 @@ public:
   using exc_vxc_type_uks   = typename XCIntegrator<MatrixType>::exc_vxc_type_uks;
   using exc_grad_type  = typename XCIntegrator<MatrixType>::exc_grad_type;
   using exx_type       = typename XCIntegrator<MatrixType>::exx_type;
+  using atomic_overlap_type       = typename XCIntegrator<MatrixType>::atomic_overlap_type;
 
 protected:
 
@@ -33,6 +34,8 @@ protected:
   virtual exc_grad_type eval_exc_grad_( const MatrixType& P ) = 0;
   virtual exx_type      eval_exx_     ( const MatrixType&     P, 
                                         const IntegratorSettingsEXX& settings ) = 0;
+  virtual atomic_overlap_type eval_atomic_overlap_(int64_t iAtom) = 0;
+
   virtual const util::Timer& get_timings_() const = 0;
   virtual const LoadBalancer& get_load_balancer_() const = 0;
   virtual LoadBalancer& get_load_balancer_() = 0;
@@ -56,8 +59,6 @@ public:
  }
 
   /** Integrate EXC / VXC (Mean field terms) for RKS
-   * 
-   *   TODO: add API for UKS/GKS
    *
    *  @param[in] P The alpha density matrix
    *  @returns EXC / VXC in a combined structure
@@ -90,6 +91,10 @@ public:
    */
   exx_type eval_exx( const MatrixType& P, const IntegratorSettingsEXX& settings ) {
     return eval_exx_(P,settings);
+  }
+
+  atomic_overlap_type eval_atomic_overlap(int64_t iAtom) {
+    return eval_atomic_overlap_(iAtom);
   }
 
   /** Get internal timers

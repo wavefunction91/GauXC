@@ -61,6 +61,13 @@ typename XCIntegrator<MatrixType>::exx_type
 };
 
 template <typename MatrixType>
+typename XCIntegrator<MatrixType>::atomic_overlap_type
+  XCIntegrator<MatrixType>::eval_atomic_overlap(int64_t iAtom) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_atomic_overlap(iAtom);
+};
+
+template <typename MatrixType>
 const util::Timer& XCIntegrator<MatrixType>::get_timings() const {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->get_timings();

@@ -35,6 +35,7 @@ public:
   using exc_vxc_type_uks  = std::tuple< value_type, matrix_type, matrix_type >;  
   using exc_grad_type = std::vector< value_type >;
   using exx_type      = matrix_type;
+  using atomic_overlap_type = matrix_type;
 
 private:
 
@@ -58,6 +59,7 @@ public:
   exc_grad_type eval_exc_grad( const MatrixType& );
   exx_type      eval_exx     ( const MatrixType&, 
                                const IntegratorSettingsEXX& = IntegratorSettingsEXX{} );
+  atomic_overlap_type eval_atomic_overlap(int64_t iAtom = -1);
 
 
   const util::Timer& get_timings() const;

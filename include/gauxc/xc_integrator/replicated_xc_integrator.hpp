@@ -32,6 +32,7 @@ public:
   using exc_vxc_type_uks   = typename XCIntegratorImpl<MatrixType>::exc_vxc_type_uks;
   using exc_grad_type  = typename XCIntegratorImpl<MatrixType>::exc_grad_type;
   using exx_type       = typename XCIntegratorImpl<MatrixType>::exx_type;
+  using atomic_overlap_type   = typename XCIntegratorImpl<MatrixType>::atomic_overlap_type;
 
 private:
 
@@ -43,6 +44,8 @@ private:
   exc_vxc_type_uks  eval_exc_vxc_ ( const MatrixType&, const MatrixType& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType& ) override;
   exx_type      eval_exx_     ( const MatrixType&, const IntegratorSettingsEXX& ) override;
+  atomic_overlap_type eval_atomic_overlap_(int64_t iAtom) override;
+
   const util::Timer& get_timings_() const override;
   const LoadBalancer& get_load_balancer_() const override;
   LoadBalancer& get_load_balancer_() override;

@@ -54,6 +54,9 @@ protected:
                           int64_t ldp, value_type* K, int64_t ldk,
                           const IntegratorSettingsEXX& settings ) = 0;
 
+  virtual void eval_atomic_overlap_(int64_t iAtom, int64_t m, int64_t n,
+                                    value_type* S, int64_t LDS) = 0;
+
 public:
 
   ReplicatedXCIntegratorImpl( std::shared_ptr< functional_type >   func,
@@ -85,6 +88,9 @@ public:
   void eval_exx( int64_t m, int64_t n, const value_type* P,
                  int64_t ldp, value_type* K, int64_t ldk,
                  const IntegratorSettingsEXX& settings );
+
+  void eval_atomic_overlap(int64_t iAtom, int64_t m, int64_t n,
+                           value_type* S, int64_t LDS);
 
   inline const util::Timer& get_timings() const { return timer_; }
 

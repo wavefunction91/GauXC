@@ -47,6 +47,9 @@ protected:
                   int64_t ldp, value_type* K, int64_t ldk,
                   const IntegratorSettingsEXX& settings ) override;
 
+  void eval_atomic_overlap_(int64_t iAtom, int64_t m, int64_t n,
+                            value_type* S, int64_t lds) override;
+
   void integrate_den_local_work_( const value_type* P, int64_t ldp, 
                                    value_type *N_EL );
 
@@ -60,6 +63,8 @@ protected:
   void exc_grad_local_work_( const value_type* P, int64_t ldp, value_type* EXC_GRAD );
   void exx_local_work_( const value_type* P, int64_t ldp, value_type* K, int64_t ldk,
     const IntegratorSettingsEXX& settings );
+
+  void atomic_overlap_local_work_(int64_t iAtom, value_type* S, int64_t lds);
 
 public:
 
