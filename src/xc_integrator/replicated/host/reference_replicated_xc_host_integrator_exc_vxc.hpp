@@ -486,17 +486,16 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
           dbasis_z_eval, zmat, nbe, den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
           gamma );
       } else if(is_uks) {
-        // TODO expose ZMAT + ZMAT_Z to not require contiguous storage
         lwd->eval_uvvar_gga_uks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
-          dbasis_z_eval, zmat, nbe, den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
-          gamma );
+          dbasis_z_eval, zmat, nbe, zmat_z, nbe, den_eval, dden_x_eval, 
+          dden_y_eval, dden_z_eval, gamma );
       }
      } else {
       if(is_rks) {
         lwd->eval_uvvar_lda_rks( npts, nbe, basis_eval, zmat, nbe, den_eval );
       } else if(is_uks) {
-        // TODO expose ZMAT + ZMAT_Z to not require contiguous storage
-        lwd->eval_uvvar_lda_uks( npts, nbe, basis_eval, zmat, nbe, den_eval );
+        lwd->eval_uvvar_lda_uks( npts, nbe, basis_eval, zmat, nbe, zmat_z, nbe,
+          den_eval );
       }
      }
     
@@ -532,17 +531,15 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                                 dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval,
                                 dden_z_eval, zmat, nbe);
       } else if(is_uks) {
-        // TODO expose ZMAT + ZMAT_Z to not require contiguous storage
         lwd->eval_zmat_gga_vxc_uks( npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
                                 dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval,
-                                dden_z_eval, zmat, nbe);
+                                dden_z_eval, zmat, nbe, zmat_z, nbe);
       }
     } else {
       if(is_rks) {
         lwd->eval_zmat_lda_vxc_rks( npts, nbe, vrho, basis_eval, zmat, nbe );
       } else if(is_uks) {
-        // TODO expose ZMAT + ZMAT_Z to not require contiguous storage
-        lwd->eval_zmat_lda_vxc_uks( npts, nbe, vrho, basis_eval, zmat, nbe );
+        lwd->eval_zmat_lda_vxc_uks( npts, nbe, vrho, basis_eval, zmat, nbe, zmat_z, nbe );
       }
     }
 

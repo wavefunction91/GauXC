@@ -69,9 +69,10 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
     
   void eval_uvvar_lda_rks( size_t npts, size_t nbe, const double* basis_eval,
     const double* X, size_t ldx, double* den_eval) override;
-
   void eval_uvvar_lda_uks( size_t npts, size_t nbe, const double* basis_eval,
-    const double* X, size_t ldx, double* den_eval) override;
+    const double* Xs, size_t ldxs, const double* Xz, size_t ldxz, 
+    double* den_eval) override;
+
   void eval_uvvar_gga_rks( size_t npts, size_t nbe, const double* basis_eval,
     const double* dbasis_x_eval, const double *dbasis_y_eval, 
     const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval, 
@@ -79,7 +80,8 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
     double* gamma ) override;
   void eval_uvvar_gga_uks( size_t npts, size_t nbe, const double* basis_eval,
     const double* dbasis_x_eval, const double *dbasis_y_eval,
-    const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval,
+    const double* dbasis_z_eval, const double* Xs, size_t ldxs, 
+    const double* Xz, size_t ldxz, double* den_eval,
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval,
     double* gamma ) override;
 
@@ -87,7 +89,7 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
   void eval_zmat_lda_vxc_rks( size_t npts, size_t nbe, const double* vrho, 
     const double* basis_eval, double* Z, size_t ldz ) override;
   void eval_zmat_lda_vxc_uks( size_t npts, size_t nbe, const double* vrho,
-    const double* basis_eval, double* Z, size_t ldz ) override;
+    const double* basis_eval, double* Zs, size_t ldzs, double* Zz, size_t ldzz ) override;
 
 
   void eval_zmat_gga_vxc_rks( size_t npts, size_t nbe, const double* vrho, 
@@ -99,7 +101,7 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
     const double* vgamma, const double* basis_eval, const double* dbasis_x_eval,
     const double* dbasis_y_eval, const double* dbasis_z_eval,
     const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
-    double* Z, size_t ldz ) override;
+    double* Zs, size_t ldzs, double* Zz, size_t ldzz ) override;
 
 
 
