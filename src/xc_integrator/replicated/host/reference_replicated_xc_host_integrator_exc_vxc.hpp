@@ -43,7 +43,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    exc_vxc_local_work_( P, ldp, VXC, ldvxc, EXC, &N_EL );
+    //exc_vxc_local_work_( P, ldp, VXC, ldvxc, EXC, &N_EL );
+    exc_vxc_local_work_( P, ldp, nullptr, 0, VXC, ldvxc, nullptr, 0, EXC, &N_EL );
   });
 
 
@@ -63,11 +64,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  eval_exc_vxc_( int64_t m, int64_t n, const value_type* Pscalar,
-                      int64_t ldpscalar,
+  eval_exc_vxc_( int64_t m, int64_t n, const value_type* Ps,
+                      int64_t ldps,
                       const value_type* Pz,
                       int64_t ldpz,
-                      value_type* VXCscalar, int64_t ldvxcscalar,
+                      value_type* VXCs, int64_t ldvxcs,
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC ) {
 
@@ -79,11 +80,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
   if( m != nbf )
     GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
-  if( ldpscalar < nbf )
+  if( ldps < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDPSCALAR");
   if( ldpz < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDPZ");
-  if( ldvxcscalar < nbf )
+  if( ldvxcs < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDVXCSCALAR");
   if( ldvxcz < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDVXCZ");
@@ -96,7 +97,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    exc_vxc_local_work_( Pscalar, ldpscalar, Pz, ldpz,  VXCscalar, ldvxcscalar, VXCz, ldvxcz, EXC, &N_EL );
+    exc_vxc_local_work_( Ps, ldps, Pz, ldpz, VXCs, ldvxcs, VXCz, ldvxcz, EXC, &N_EL );
   });
 
 
@@ -106,7 +107,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     if( not this->reduction_driver_->takes_host_memory() )
       GAUXC_GENERIC_EXCEPTION("This Module Only Works With Host Reductions");
 
-    this->reduction_driver_->allreduce_inplace( VXCscalar, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( VXCs, nbf*nbf, ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( VXCz, nbf*nbf, ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
@@ -116,6 +117,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 }
 
+#if 0
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
   exc_vxc_local_work_( const value_type* P, int64_t ldp, 
@@ -311,13 +313,19 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     VXC[ j + i*nbf ] = VXC[ i + j*nbf ];
 
 }
+#endif
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  exc_vxc_local_work_( const value_type* Pscalar, int64_t ldpscalar,
-                            const value_type* Pz, int64_t ldpz,
-                            value_type* VXCscalar, int64_t ldvxcscalar,
-                            value_type* VXCz, int64_t ldvxcz, value_type* EXC, value_type *N_EL ) {
+  exc_vxc_local_work_( const value_type* Ps, int64_t ldps,
+                       const value_type* Pz, int64_t ldpz,
+                       value_type* VXCs, int64_t ldvxcs,
+                       value_type* VXCz, int64_t ldvxcz, 
+                       value_type* EXC, value_type *N_EL ) {
+
+
+  const bool is_uks = (Pz != nullptr) and (VXCz != nullptr);
+  const bool is_rks = not is_uks; // TODO: GKS
 
   // Cast LWD to LocalHostWorkDriver
   auto* lwd = dynamic_cast<LocalHostWorkDriver*>(this->local_work_driver_.get());
@@ -350,10 +358,16 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Zero out integrands
   
   for( auto j = 0; j < nbf; ++j ) {
-  for( auto i = 0; i < nbf; ++i ) {
-    VXCscalar[i + j*ldvxcscalar] = 0.;
-    VXCz[i + j*ldvxcz] = 0.;
+    for( auto i = 0; i < nbf; ++i ) {
+      VXCs[i + j*ldvxcs] = 0.;
+    }
   }
+  if(is_uks) {
+    for( auto j = 0; j < nbf; ++j ) {
+      for( auto i = 0; i < nbf; ++i ) {
+        VXCz[i + j*ldvxcz] = 0.;
+      }
+    }
   }
   *EXC = 0.;
  
@@ -384,24 +398,26 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Allocate enough memory for batch
 
+    const size_t spin_dim_scal = is_rks ? 1 : 2; 
     // Things that every calc needs
-    host_data.nbe_scr .resize( nbe * nbe * 2 );
-    host_data.zmat    .resize( npts * nbe * 2);
+    host_data.nbe_scr .resize( nbe  * nbe * spin_dim_scal);
+    host_data.zmat    .resize( npts * nbe * spin_dim_scal); 
     host_data.eps     .resize( npts );
-    host_data.vrho    .resize( npts * 2);
+    host_data.vrho    .resize( npts * spin_dim_scal);
 
     // LDA data requirements
     if( func.is_lda() ){
       host_data.basis_eval .resize( npts * nbe );
-      host_data.den_scr    .resize( npts * 2);
+      host_data.den_scr    .resize( npts * spin_dim_scal);
     }
 
     // GGA data requirements
+    const size_t gga_dim_scal = is_rks ? 1 : 3;
     if( func.is_gga() ){
       host_data.basis_eval .resize( 4 * npts * nbe );
-      host_data.den_scr    .resize( 2 * 4 * npts );
-      host_data.gamma      .resize( 3 * npts );
-      host_data.vgamma     .resize( 3 * npts );
+      host_data.den_scr    .resize( spin_dim_scal * 4 * npts );
+      host_data.gamma      .resize( gga_dim_scal * npts );
+      host_data.vgamma     .resize( gga_dim_scal * npts );
     }
 
     // Alias/Partition out scratch memory
@@ -409,6 +425,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     auto* den_eval   = host_data.den_scr.data();
     auto* nbe_scr    = host_data.nbe_scr.data();
     auto* zmat       = host_data.zmat.data();
+
+    decltype(zmat) zmat_z = nullptr;
+    if(!is_rks) {
+      zmat_z = zmat + nbe * npts;
+    }
 
     auto* eps        = host_data.eps.data();
     auto* gamma      = host_data.gamma.data();
@@ -426,9 +447,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       dbasis_x_eval = basis_eval    + npts * nbe;
       dbasis_y_eval = dbasis_x_eval + npts * nbe;
       dbasis_z_eval = dbasis_y_eval + npts * nbe;
-      dden_x_eval   = den_eval    + 2*npts;
-      dden_y_eval   = dden_x_eval + 2*npts;
-      dden_z_eval   = dden_y_eval + 2*npts;
+      dden_x_eval   = den_eval    + spin_dim_scal * npts;
+      dden_y_eval   = dden_x_eval + spin_dim_scal * npts;
+      dden_z_eval   = dden_y_eval + spin_dim_scal * npts;
     }
 
 
@@ -446,21 +467,38 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         basis_eval );
 
 
-    // Evaluate X matrix (P * B) -> store in Z
-    lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, Pscalar, ldpscalar, basis_eval, nbe,
+    // Evaluate X matrix (fac * P * B) -> store in Z
+    const auto xmat_fac = is_rks ? 2.0 : 1.0; // TODO Fix for spinor RKS input
+    lwd->eval_xmat( npts, nbf, nbe, submat_map, xmat_fac, Ps, ldps, basis_eval, nbe,
       zmat, nbe, nbe_scr );
 
-    lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, Pz, ldpz, basis_eval, nbe,
-      zmat + npts*nbe, nbe, nbe_scr + nbe * nbe);
+    // X matrix for Pz
+    if(not is_rks) {
+      lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, Pz, ldpz, basis_eval, nbe,
+        zmat_z, nbe, nbe_scr + nbe * nbe);
+    }
 
 
     // Evaluate U and V variables
-    if( func.is_gga() )
-      lwd->eval_uvvar_gga_uks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
-        dbasis_z_eval, zmat, nbe, den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
-        gamma );
-     else
-      lwd->eval_uvvar_lda_uks( npts, nbe, basis_eval, zmat, nbe, den_eval );
+    if( func.is_gga() ) {
+      if(is_rks) {
+        lwd->eval_uvvar_gga_rks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
+          dbasis_z_eval, zmat, nbe, den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
+          gamma );
+      } else if(is_uks) {
+        // TODO expose ZMAT + ZMAT_Z to not require contiguous storage
+        lwd->eval_uvvar_gga_uks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
+          dbasis_z_eval, zmat, nbe, den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
+          gamma );
+      }
+     } else {
+      if(is_rks) {
+        lwd->eval_uvvar_lda_rks( npts, nbe, basis_eval, zmat, nbe, den_eval );
+      } else if(is_uks) {
+        // TODO expose ZMAT + ZMAT_Z to not require contiguous storage
+        lwd->eval_uvvar_lda_uks( npts, nbe, basis_eval, zmat, nbe, den_eval );
+      }
+     }
     
     // Evaluate XC functional
     if( func.is_gga() )
@@ -471,27 +509,42 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Factor weights into XC results
     for( int32_t i = 0; i < npts; ++i ) {
       eps[i]  *= weights[i];
-      vrho[2*i] *= weights[i];
-      vrho[2*i+1] *= weights[i];
+      vrho[spin_dim_scal*i] *= weights[i];
+      if(not is_rks) vrho[spin_dim_scal*i+1] *= weights[i];
     }
 
     if( func.is_gga() ){
       for( int32_t i = 0; i < npts; ++i ) {
-         vgamma[3*i] *= weights[i];
-         vgamma[3*i+1] *= weights[i];
-         vgamma[3*i+2] *= weights[i];
+         vgamma[gga_dim_scal*i] *= weights[i];
+         if(not is_rks) {
+           vgamma[gga_dim_scal*i+1] *= weights[i];
+           vgamma[gga_dim_scal*i+2] *= weights[i];
+         }
       }
     }
 
 
 
     // Evaluate Z matrix for VXC
-    if( func.is_gga() )
-      lwd->eval_zmat_gga_vxc_uks( npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
-                              dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval,
-                              dden_z_eval, zmat, nbe);
-    else
-      lwd->eval_zmat_lda_vxc_uks( npts, nbe, vrho, basis_eval, zmat, nbe );
+    if( func.is_gga() ) {
+      if(is_rks) {
+        lwd->eval_zmat_gga_vxc_rks( npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
+                                dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval,
+                                dden_z_eval, zmat, nbe);
+      } else if(is_uks) {
+        // TODO expose ZMAT + ZMAT_Z to not require contiguous storage
+        lwd->eval_zmat_gga_vxc_uks( npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
+                                dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval,
+                                dden_z_eval, zmat, nbe);
+      }
+    } else {
+      if(is_rks) {
+        lwd->eval_zmat_lda_vxc_rks( npts, nbe, vrho, basis_eval, zmat, nbe );
+      } else if(is_uks) {
+        // TODO expose ZMAT + ZMAT_Z to not require contiguous storage
+        lwd->eval_zmat_lda_vxc_uks( npts, nbe, vrho, basis_eval, zmat, nbe );
+      }
+    }
 
 
     // Incremeta LT of VXC
@@ -499,15 +552,18 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     {
       // Scalar integrations
       for( int32_t i = 0; i < npts; ++i ) {
-        *N_EL += weights[i] * (den_eval[2*i] +  den_eval[2*i+1]);
-        *EXC  += eps[i]     * (den_eval[2*i] +  den_eval[2*i+1]);
+        const auto den = is_rks ? den_eval[i] : (den_eval[2*i] + den_eval[2*i+1]);
+        *N_EL += weights[i] * den;
+        *EXC  += eps[i]     * den;
       }
 
       // Increment VXC
-      lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, VXCscalar, ldvxcscalar,
+      lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, VXCs, ldvxcs,
         nbe_scr );
-      lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat+ npts*nbe, nbe, VXCz, ldvxcz,
-        nbe_scr + nbe * nbe);
+      if(not is_rks) {
+        lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat_z, nbe, VXCz, ldvxcz,
+          nbe_scr + nbe * nbe);
+      }
 
     }
 
@@ -515,14 +571,18 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   } // End OpenMP region
 
-  //std::cout << "N_EL = " << std::setprecision(12) << std::scientific << *N_EL << std::endl;
-
   // Symmetrize VXC
   for( int32_t j = 0;   j < nbf; ++j ) {
-  for( int32_t i = j+1; i < nbf; ++i ) {
-    VXCscalar[ j + i*nbf ] = VXCscalar[ i + j*nbf ];
-    VXCz[ j + i*nbf ] = VXCz[ i + j*nbf ];
+    for( int32_t i = j+1; i < nbf; ++i ) {
+      VXCs[ j + i*ldvxcs ] = VXCs[ i + j*ldvxcs ];
+    }
   }
+  if(not is_rks) {
+    for( int32_t j = 0;   j < nbf; ++j ) {
+      for( int32_t i = j+1; i < nbf; ++i ) {
+        VXCz[ j + i*ldvxcz ] = VXCz[ i + j*ldvxcz ];
+      }
+    }
   }
 
 } 

@@ -165,7 +165,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
       auto VXCz1_diff_nrm = ( VXCz1 - VXCz_ref ).norm();
       CHECK( VXC1_diff_nrm / basis.nbf() < 1e-10 );
-      CHECK( VXC1_diff_nrm / basis.nbf() < 1e-10 );
+      CHECK( VXCz1_diff_nrm / basis.nbf() < 1e-10 );
     }
 
   }
