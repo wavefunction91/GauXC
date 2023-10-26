@@ -5,12 +5,15 @@
 #
 # See LICENSE.txt for details
 #
-add_subdirectory(integrator_util)
-add_subdirectory(local_work_driver)
-add_subdirectory(shell_batched)
-add_subdirectory(replicated)
-add_subdirectory(pgas_dist)
-add_subdirectory(xc_data)
+target_sources( gauxc PRIVATE 
+  pgas_dist_xc_integrator_impl.cxx 
+)
+
+add_subdirectory(host)
+
+if(GAUXC_ENABLE_DEVICE)
+  add_subdirectory(device)
+endif()
 
 target_include_directories( gauxc
   PUBLIC
