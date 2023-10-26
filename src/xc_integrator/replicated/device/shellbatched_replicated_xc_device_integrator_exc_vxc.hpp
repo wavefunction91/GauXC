@@ -110,6 +110,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   //incore_integrator.exc_vxc_local_work( basis, P, ldp, VXC, ldvxc, EXC, N_EL, task_begin, task_end, device_data );
   //return;
 
+  std::cout << "TOP SB" << std::endl;
 
   const auto nbf = basis.nbf();
   const uint32_t nbf_threshold = 8000;
@@ -125,25 +126,25 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
 
   // Task queue
-  std::queue< incore_device_task > incore_device_task_queue;
+  std::queue< incore_task_data > incore_task_data_queue;
 
   // Task queue modification mutex
   std::mutex queue_mod_ex;
 
   // Lambda for the execution of incore tasks on the device
-  auto execute_incore_device_task = [&]() {
+  auto execute_incore_task = [&]() {
 
     // Early return if there is no task to execute
-    if( incore_device_task_queue.empty() ) return;
+    if( incore_task_data_queue.empty() ) return;
 
-    incore_device_task next_task;
+    incore_task_data next_task;
     {
       std::lock_guard<std::mutex> lock(queue_mod_ex);
 
       // Move the next task into local scope and remove
       // from queue
-      next_task = std::move( incore_device_task_queue.front() );
-      incore_device_task_queue.pop();
+      next_task = std::move( incore_task_data_queue.front() );
+      incore_task_data_queue.pop();
     }
 
     // Execute task
@@ -160,23 +161,23 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   while( task_it != task_end ) {
 
     // Generate and enqueue task
-    incore_device_task_queue.emplace(
-      generate_incore_device_task( nbf_threshold, basis, task_it, task_end )
+    incore_task_data_queue.emplace(
+      generate_incore_task( nbf_threshold, basis, task_it, task_end )
     );
 
     // Update iterator for next task generation
-    task_it = incore_device_task_queue.back().task_end;
+    task_it = incore_task_data_queue.back().task_end;
 
     if( not task_future.valid() ) {
       // No device task to wait on
-      task_future = std::async( std::launch::async, execute_incore_device_task );
+      task_future = std::async( std::launch::async, execute_incore_task );
     } else {
       // Check the status of current device task
       auto status = task_future.wait_for( std::chrono::milliseconds(5) );
       if( status == std::future_status::ready ) {
         // If the status is ready - execute the next task in queue
         task_future.get();
-        task_future = std::async( std::launch::async, execute_incore_device_task ); 
+        task_future = std::async( std::launch::async, execute_incore_task ); 
       }
     }
 
@@ -188,8 +189,8 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   if( task_future.valid() ) {
     task_future.wait();
   }
-  while( not incore_device_task_queue.empty() ) {
-    execute_incore_device_task();
+  while( not incore_task_data_queue.empty() ) {
+    execute_incore_task();
   }
 }
 
@@ -206,6 +207,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
+#if 0
 template <typename ValueType>
 typename ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::incore_device_task 
   ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
@@ -351,6 +353,7 @@ typename ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::incore_device_task
   return ex_task;
 
 }
+#endif
 
 
 
@@ -365,10 +368,11 @@ typename ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::incore_device_task
 
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
-  execute_task_batch( incore_device_task& task, const basis_type& basis, const Molecule& mol, 
+  execute_task_batch( incore_task_data& task, const basis_type& basis, const Molecule& mol, 
                       const value_type* P, int64_t ldp, value_type* VXC, int64_t ldvxc, 
                       value_type* EXC, value_type *N_EL, incore_integrator_type& incore_integrator, 
                       XCDeviceData& device_data ) {
+  std::cout << "IN TASK BATCH" << std::endl;
 
   // Alias information
   auto task_begin  = task.task_begin;

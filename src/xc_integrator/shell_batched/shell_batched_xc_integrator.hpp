@@ -6,24 +6,18 @@
  * See LICENSE.txt for details
  */
 #pragma once
+#include <gauxc/basisset.hpp>
 #include <gauxc/xc_task.hpp>
 
 namespace GauXC {
 namespace detail {
 
-template <typename IncoreIntegratorType>
-class ShellBatchedXCIntegratorBase {
+struct ShellBatchedXCIntegratorBase {
 
-public:
-
-  using basis_type = typename IncoreIntegratorType::basis_type;
+  using basis_type = BasisSet<double>;
 
   using host_task_container = std::vector<XCTask>;
   using host_task_iterator  = typename host_task_container::iterator;
-
-protected:
-
-  using incore_integrator_type = IncoreIntegratorType;
 
   // Struct to manage data associated with task subset to execute in batch
   struct incore_task_data {
@@ -32,11 +26,11 @@ protected:
     std::vector<int32_t> shell_list;
   };
 
-  incore_task_data generate_incore_device_task( 
-    const uint32_t nbf_threshold, const basis_type& basis,
+  incore_task_data generate_incore_task( 
+    uint32_t nbf_threshold, const basis_type& basis,
     host_task_iterator task_begin, host_task_iterator task_end );
 
-  virtual ~ShellBatchedXCIntegratorBase() noexcept;
+  virtual ~ShellBatchedXCIntegratorBase() noexcept = default;
 
 };
 

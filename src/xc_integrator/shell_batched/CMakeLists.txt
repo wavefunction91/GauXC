@@ -5,12 +5,7 @@
 #
 # See LICENSE.txt for details
 #
-add_subdirectory(integrator_util)
-add_subdirectory(local_work_driver)
-add_subdirectory(shell_batched)
-add_subdirectory(replicated)
-add_subdirectory(xc_data)
-
+target_sources( gauxc PRIVATE shell_batched_xc_integrator.cxx )
 target_include_directories( gauxc
   PUBLIC
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>

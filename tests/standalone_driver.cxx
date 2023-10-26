@@ -185,6 +185,7 @@ int main(int argc, char** argv) {
     // Setup load balancer
     LoadBalancerFactory lb_factory( lb_exec_space, "Replicated");
     auto lb = lb_factory.get_shared_instance( rt, mol, mg, basis);
+    std::cout << "After LB" << std::endl;
 
     // Apply molecular partition weights
     MolecularWeightsFactory mw_factory( int_exec_space, "Default", 
@@ -192,6 +193,7 @@ int main(int argc, char** argv) {
     auto mw = mw_factory.get_instance();
     mw.modify_weights(*lb);
 
+    std::cout << "After Weights" << std::endl;
     // Setup XC functional
     functional_type func( Backend::builtin, functional_map.value(func_spec), 
       Spin::Unpolarized );

@@ -77,12 +77,12 @@ public:
           ex_, integrator_kernel_, func, lb, std::move(lwd), rd
         )
       );
-    else if( input_type_ == "PGAS_DIST" )
-      return std::make_shared<integrator_type>( 
-        PGASDistributedXCIntegratorFactory<MatrixType>::make_integrator_impl(
-          ex_, integrator_kernel_, func, lb, std::move(lwd)
-        )
-      );
+    //else if( input_type_ == "PGAS_DIST" )
+    //  return std::make_shared<integrator_type>( 
+    //    PGASDistributedXCIntegratorFactory<MatrixType>::make_integrator_impl(
+    //      ex_, integrator_kernel_, func, lb, std::move(lwd)
+    //    )
+    //  );
     else GAUXC_GENERIC_EXCEPTION("INTEGRATOR TYPE NOT RECOGNIZED");
 
     return nullptr;

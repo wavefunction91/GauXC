@@ -9,13 +9,15 @@
 #include <gauxc/xc_integrator/replicated/replicated_xc_device_integrator.hpp>
 #include "device/xc_device_data.hpp"
 #include "incore_replicated_xc_device_integrator.hpp"
+#include "shell_batched_xc_integrator.hpp"
 
 namespace GauXC {
 namespace detail {
 
 template <typename ValueType>
 class ShellBatchedReplicatedXCDeviceIntegrator : 
-  public ReplicatedXCDeviceIntegrator<ValueType> {
+  public ReplicatedXCDeviceIntegrator<ValueType>,
+  public ShellBatchedXCIntegratorBase {
 
   using base_type  = ReplicatedXCDeviceIntegrator<ValueType>;
 
@@ -33,11 +35,12 @@ protected:
     IncoreReplicatedXCDeviceIntegrator<ValueType>;
 
   // Struct to manage data associated with task subset to execute on the device
-  struct incore_device_task {
-    host_task_iterator   task_begin;
-    host_task_iterator   task_end;
-    std::vector<int32_t> shell_list;
-  };
+  //struct incore_device_task {
+  //  host_task_iterator   task_begin;
+  //  host_task_iterator   task_end;
+  //  std::vector<int32_t> shell_list;
+  //};
+  using incore_task_data = ShellBatchedXCIntegratorBase::incore_task_data;
 
   void integrate_den_( int64_t m, int64_t n, const value_type* P,
                        int64_t ldp, value_type* integrate_den ) override;
@@ -81,12 +84,12 @@ protected:
                                   XCDeviceData& device_data );
 
   
-  incore_device_task generate_incore_device_task( const uint32_t     nbf_threshold,
-                                                  const basis_type&  basis,
-                                                  host_task_iterator task_begin,
-                                                  host_task_iterator task_end );
+  //incore_device_task generate_incore_device_task( const uint32_t     nbf_threshold,
+  //                                                const basis_type&  basis,
+  //                                                host_task_iterator task_begin,
+  //                                                host_task_iterator task_end );
 
-  void execute_task_batch( incore_device_task& task, const basis_type& basis, const Molecule& mol, const value_type* P,
+  void execute_task_batch( incore_task_data& task, const basis_type& basis, const Molecule& mol, const value_type* P,
                            int64_t ldp, value_type* VXC, int64_t ldvxc, value_type* EXC,
                            value_type* N_EL, incore_integrator_type& incore_integrator,
                            XCDeviceData& device_data );
