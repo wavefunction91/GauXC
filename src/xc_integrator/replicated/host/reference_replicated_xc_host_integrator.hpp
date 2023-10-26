@@ -20,8 +20,11 @@ class ReferenceReplicatedXCHostIntegrator :
 
 public:
 
+  static constexpr bool is_device = false;
   using value_type = typename base_type::value_type;
   using basis_type = typename base_type::basis_type;
+  using task_container = std::vector<XCTask>;
+  using task_iterator  = typename task_container::iterator;
 
 protected:
 
@@ -50,8 +53,10 @@ protected:
   void integrate_den_local_work_( const value_type* P, int64_t ldp, 
                                    value_type *N_EL );
 
-  void exc_vxc_local_work_( const value_type* P, int64_t ldp, value_type* VXC,
-                            int64_t ldvxc, value_type* EXC, value_type *N_EL );
+  void exc_vxc_local_work_( const basis_type& basis, const value_type* P, 
+                            int64_t ldp, value_type* VXC, int64_t ldvxc, 
+                            value_type* EXC, value_type *N_EL,
+                            task_iterator task_begin, task_iterator task_end );
 
   void exc_vxc_local_work_( const value_type* Pscalar, int64_t ldpscalar,
                             const value_type* Pz, int64_t ldpz,
@@ -70,6 +75,11 @@ public:
 
   virtual ~ReferenceReplicatedXCHostIntegrator() noexcept;
 
+
+  template <typename... Args>
+  void exc_vxc_local_work(Args&&... args) {
+    exc_vxc_local_work_( std::forward<Args>(args)... );
+  }
 };
 
 extern template class ReferenceReplicatedXCHostIntegrator<double>;

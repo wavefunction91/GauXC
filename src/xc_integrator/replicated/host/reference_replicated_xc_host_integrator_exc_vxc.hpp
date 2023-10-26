@@ -36,14 +36,15 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
   // Get Tasks
-  this->load_balancer_->get_tasks();
+  auto& tasks = this->load_balancer_->get_tasks();
 
   // Temporary electron count to judge integrator accuracy
   value_type N_EL;
 
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    exc_vxc_local_work_( P, ldp, VXC, ldvxc, EXC, &N_EL );
+    exc_vxc_local_work_( basis, P, ldp, VXC, ldvxc, EXC, &N_EL,
+      tasks.begin(), tasks.end() );
   });
 
 
@@ -118,16 +119,15 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  exc_vxc_local_work_( const value_type* P, int64_t ldp, 
+  exc_vxc_local_work_(const basis_type& basis,  const value_type* P, int64_t ldp, 
     value_type* VXC, int64_t ldvxc, value_type* EXC, 
-    value_type* N_EL ) {
+    value_type* N_EL, task_iterator task_begin, task_iterator task_end ) {
 
   // Cast LWD to LocalHostWorkDriver
   auto* lwd = dynamic_cast<LocalHostWorkDriver*>(this->local_work_driver_.get());
 
   // Setup Aliases
   const auto& func  = *this->func_;
-  const auto& basis = this->load_balancer_->basis();
   const auto& mol   = this->load_balancer_->molecule();
 
   // Get basis map
@@ -140,8 +140,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
   };
 
-  auto& tasks = this->load_balancer_->get_tasks();
-  std::sort( tasks.begin(), tasks.end(), task_comparator );
+  std::sort( task_begin, task_end, task_comparator );
 
 
   // Check that Partition Weights have been calculated
@@ -158,7 +157,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
   // Loop over tasks
-  const size_t ntasks = tasks.size();
+  const size_t ntasks = std::distance(task_begin, task_end);
 
   #pragma omp parallel
   {
@@ -170,7 +169,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     //std::cout << iT << "/" << ntasks << std::endl;
     // Alias current task
-    const auto& task = tasks[iT];
+    const auto& task = *(task_begin + iT);
 
     // Get tasks constants
     const int32_t  npts    = task.points.size();

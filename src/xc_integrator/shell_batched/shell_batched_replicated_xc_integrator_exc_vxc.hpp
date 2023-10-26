@@ -52,9 +52,11 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
   // Allocate Device memory
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
   auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
-  device_data_ptr_ = 
-    this->timer_.time_op("XCIntegrator.DeviceAlloc",
-      [&](){ return lwd->create_device_data(rt); });
+  if constexpr (IncoreIntegratorType::is_device) {
+    device_data_ptr_ = 
+      this->timer_.time_op("XCIntegrator.DeviceAlloc",
+        [&](){ return lwd->create_device_data(rt); });
+  }
 
   // Generate incore integrator instance, transfer ownership of LWD
   incore_integrator_type incore_integrator( this->func_, this->load_balancer_,
@@ -262,8 +264,13 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
 
 
   // Process selected task batch
-  incore_integrator.exc_vxc_local_work( basis_subset, P_submat, nbe, VXC_submat, nbe,
-    &EXC_tmp, &NEL_tmp, task_begin, task_end, *device_data_ptr_ );
+  if constexpr (IncoreIntegratorType::is_device) {
+    incore_integrator.exc_vxc_local_work( basis_subset, P_submat, nbe, VXC_submat, nbe,
+      &EXC_tmp, &NEL_tmp, task_begin, task_end, *device_data_ptr_ );
+  } else {
+    incore_integrator.exc_vxc_local_work( basis_subset, P_submat, nbe, VXC_submat, nbe,
+      &EXC_tmp, &NEL_tmp, task_begin, task_end );
+  }
 
 
   // Update full quantities
