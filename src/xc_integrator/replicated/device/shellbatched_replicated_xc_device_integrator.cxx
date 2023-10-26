@@ -5,10 +5,11 @@
  *
  * See LICENSE.txt for details
  */
-#include "shellbatched_replicated_xc_device_integrator_integrate_den.hpp"
-#include "shellbatched_replicated_xc_device_integrator_exc_vxc.hpp"
-#include "shellbatched_replicated_xc_device_integrator_exc_grad.hpp"
-#include "shellbatched_replicated_xc_device_integrator_exx.hpp"
+#include "shellbatched_replicated_xc_device_integrator.hpp"
+#include "shell_batched_replicated_xc_integrator_integrate_den.hpp"
+#include "shell_batched_replicated_xc_integrator_exc_vxc.hpp"
+#include "shell_batched_replicated_xc_integrator_exc_grad.hpp"
+#include "shell_batched_replicated_xc_integrator_exx.hpp"
 
 namespace GauXC  {
 namespace detail {

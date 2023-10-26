@@ -6,42 +6,18 @@
  * See LICENSE.txt for details
  */
 #pragma once
-#include <gauxc/xc_integrator/replicated/replicated_xc_device_integrator.hpp>
-#include "incore_replicated_xc_device_integrator.hpp"
-#include "shell_batched_replicated_xc_integrator.hpp"
+#include "shell_batched_xc_integrator.hpp"
+#include "device/xc_device_data.hpp"
 
 namespace GauXC {
 namespace detail {
 
-#if 1
-template <typename ValueType>
-class ShellBatchedReplicatedXCDeviceIntegrator : 
-  public ShellBatchedReplicatedXCIntegrator<
-    ReplicatedXCDeviceIntegrator<ValueType>,
-    IncoreReplicatedXCDeviceIntegrator<ValueType>
-  > {
-
-  using base_type  = ShellBatchedReplicatedXCIntegrator<
-    ReplicatedXCDeviceIntegrator<ValueType>,
-    IncoreReplicatedXCDeviceIntegrator<ValueType>
-  >;
-
-public:
-
-  template <typename... Args>
-  ShellBatchedReplicatedXCDeviceIntegrator( Args&&... args ) :
-    base_type( std::forward<Args>(args)... ) { }
-
-  virtual ~ShellBatchedReplicatedXCDeviceIntegrator() noexcept;
-
-};
-#else
-template <typename ValueType>
-class ShellBatchedReplicatedXCDeviceIntegrator : 
-  public ReplicatedXCDeviceIntegrator<ValueType>,
+template <typename BaseIntegratorType, typename IncoreIntegratorType>
+class ShellBatchedReplicatedXCIntegrator : 
+  public BaseIntegratorType,
   public ShellBatchedXCIntegratorBase {
 
-  using base_type  = ReplicatedXCDeviceIntegrator<ValueType>;
+  using base_type  = BaseIntegratorType;
 
 public:
 
@@ -53,9 +29,9 @@ public:
 
 protected:
 
-  using incore_integrator_type =
-    IncoreReplicatedXCDeviceIntegrator<ValueType>;
+  std::unique_ptr<XCDeviceData> device_data_ptr_;
 
+  using incore_integrator_type = IncoreIntegratorType;
   using incore_task_data = ShellBatchedXCIntegratorBase::incore_task_data;
 
   void integrate_den_( int64_t m, int64_t n, const value_type* P,
@@ -83,39 +59,25 @@ protected:
   void exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                             value_type* VXC, int64_t ldvxc, value_type* EXC, value_type *N_EL,
                             host_task_iterator task_begin, host_task_iterator task_end,
-                            incore_integrator_type& incore_integrator,
-                            XCDeviceData& device_data );
-
-  void exc_vxc_local_work_( const basis_type& basis, const value_type* Pscalar, int64_t ldpscalar,
-                            const value_type* Pz, int64_t ldpz,
-                            value_type* VXCscalar, int64_t ldvxcscalar,
-                            value_type* VXCz, int64_t ldvxcz, value_type* EXC, value_type *N_EL,
-                            host_task_iterator task_begin, host_task_iterator task_end,
-                            XCDeviceData& device_data );
+                            incore_integrator_type& incore_integrator );
 
   void eval_exc_grad_local_work_( int64_t m, int64_t n, const value_type* P,
                                   int64_t ldp, value_type* EXC_GRAD, 
                                   host_task_iterator task_begin, host_task_iterator task_end,
-                                  incore_integrator_type& incore_integrator,
-                                  XCDeviceData& device_data );
-
+                                  incore_integrator_type& incore_integrator );
 
   void execute_task_batch( incore_task_data& task, const basis_type& basis, const Molecule& mol, const value_type* P,
                            int64_t ldp, value_type* VXC, int64_t ldvxc, value_type* EXC,
-                           value_type* N_EL, incore_integrator_type& incore_integrator,
-                           XCDeviceData& device_data );
+                           value_type* N_EL, incore_integrator_type& incore_integrator);
 public:
 
   template <typename... Args>
-  ShellBatchedReplicatedXCDeviceIntegrator( Args&&... args ) :
+  ShellBatchedReplicatedXCIntegrator( Args&&... args ) :
     base_type( std::forward<Args>(args)... ) { }
 
-  virtual ~ShellBatchedReplicatedXCDeviceIntegrator() noexcept;
+  virtual ~ShellBatchedReplicatedXCIntegrator() noexcept = default;
 
 };
-#endif
-
-extern template class ShellBatchedReplicatedXCDeviceIntegrator<double>;
 
 }
 }
