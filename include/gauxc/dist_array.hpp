@@ -69,7 +69,8 @@ struct Darray // 2D
 
     // Get a chunk of contiguous elements. e.g. a single element, a whole tile, or a contiguous
     // subset of a tile.
-    void get_contig(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, real** buf, bool copy_ok = true) const noexcept
+    template <bool copy = true>
+    void get_contig(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, real** buf) const noexcept
     {
         const auto& t = tiles.find({row_min, col_min, row_max, col_max});
 
@@ -80,7 +81,7 @@ struct Darray // 2D
             auto count = (row_max - row_min + 1) * (col_max - col_min + 1);
 
             if(remote_addr.is_local())
-                if(copy_ok)
+                if constexpr(copy)
                     std::copy_n(remote_addr.local(), count, *buf);
                 else
                     *buf = remote_addr.local();
@@ -91,7 +92,7 @@ struct Darray // 2D
 
     // Put a chunk of contiguous elements. e.g. a single element, a whole tile, or a contiguous
     // subset of a tile.
-    void put_contig(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, real* buf, bool owner_only = true) const noexcept
+    void put_contig(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, const real* buf) const noexcept
     {
         const auto& t = tiles.find({row_min, col_min, row_max, col_max});
 
@@ -101,13 +102,10 @@ struct Darray // 2D
             auto remote_addr = gptrs[t->second.first] + t->second.second + offset;
             auto count = (row_max - row_min + 1) * (col_max - col_min + 1);
 
-            if(owner_only && t->second.first == team.rank_me())
+            if(remote_addr.is_local())
                 std::copy_n(buf, count, remote_addr.local());
             else
-                if(remote_addr.is_local())
-                    std::copy_n(buf, count, remote_addr.local());
-                else
-                    upcxx::rput(buf, remote_addr, count).wait();
+                upcxx::rput(buf, remote_addr, count).wait();
         }
     }
 
@@ -145,7 +143,7 @@ struct Darray // 2D
     }
 
     // TODO: This function will be improved by using logic + rput_strided(...)
-    void put(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, real* buf, bool owner_only = true) const noexcept
+    void put(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, real* buf) const noexcept
     {
         uint64_t next = 0;
         std::unordered_map<upcxx::intrank_t, std::pair<std::vector<real*>, std::vector<upcxx::global_ptr<real>>>> all_puts;
@@ -158,32 +156,26 @@ struct Darray // 2D
                 auto remote_addr = gptrs[t->second.first] + t->second.second + offset;
                 auto local_addr = buf + next++;
 
-                if(owner_only && t->second.first == team.rank_me())
+                if(remote_addr.is_local())
                     *remote_addr.local() = *local_addr;
-                else
-                    if(remote_addr.is_local())
-                        *remote_addr.local() = *local_addr;
-                    else {
-                        all_puts[t->second.first].first.push_back(local_addr);
-                        all_puts[t->second.first].second.push_back(remote_addr);
-                    }
+                else {
+                    all_puts[t->second.first].first.push_back(local_addr);
+                    all_puts[t->second.first].second.push_back(remote_addr);
+                }
             }
 
-        if(!owner_only)
-        {
-            upcxx::promise<> p;
-            auto sz = sizeof(real);
+        upcxx::promise<> p;
+        auto sz = sizeof(real);
 
-            for(const auto& x: all_puts)
-            upcxx::rput_regular(x.second.first.begin(), x.second.first.end(), sz,
-                                x.second.second.begin(), x.second.second.end(), sz,
-                                upcxx::operation_cx::as_promise(p));
+        for(const auto& x: all_puts)
+        upcxx::rput_regular(x.second.first.begin(), x.second.first.end(), sz,
+                            x.second.second.begin(), x.second.second.end(), sz,
+                            upcxx::operation_cx::as_promise(p));
 
-            p.finalize().wait();
-        }
+        p.finalize().wait();
     }
 
-    void fill() noexcept // Let's keep it simple for now...
+    void fill() noexcept
     {
         std::mt19937 gen(team.rank_me());
         std::uniform_real_distribution<double> distribution(0.0, 1.0);
@@ -215,7 +207,7 @@ struct Darray // 2D
 
                 get_contig(t.first.row_min, t.first.col_min, t.first.row_max, t.first.col_max, (real**)&values);
                 // OR:
-                // get_contig(t.first.row_min, t.first.col_min, t.first.row_max, t.first.col_max, &values, false);
+                // get_contig<false>(t.first.row_min, t.first.col_min, t.first.row_max, t.first.col_max, &values);
 
                 uint64_t k = 0;
 
