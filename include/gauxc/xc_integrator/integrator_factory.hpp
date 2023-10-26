@@ -11,6 +11,7 @@
 
 #include <gauxc/xc_integrator/local_work_driver.hpp>
 #include <gauxc/xc_integrator/replicated/replicated_xc_integrator_factory.hpp>
+#include <gauxc/xc_integrator/pgas_dist/pgas_dist_xc_integrator_factory.hpp>
 #include <gauxc/reduction_driver.hpp>
 
 namespace GauXC {
@@ -60,6 +61,9 @@ public:
       lwd_kernel_, local_work_settings_ );
 
     // Create Reduction Driver
+    // TODO: PGAS integrators shouldn't need these persay, should
+    // either shield this for apprpriate integrators templates or
+    // allow for "undefined" to return a nullptr as unsupported
     auto rd = ReductionDriverFactory::get_shared_instance( 
       lb->runtime(), rd_kernel_ );
 
@@ -71,6 +75,12 @@ public:
       return std::make_shared<integrator_type>( 
         ReplicatedXCIntegratorFactory<MatrixType>::make_integrator_impl(
           ex_, integrator_kernel_, func, lb, std::move(lwd), rd
+        )
+      );
+    else if( input_type_ == "PGAS_DIST" )
+      return std::make_shared<integrator_type>( 
+        PGASDistributedXCIntegratorFactory<MatrixType>::make_integrator_impl(
+          ex_, integrator_kernel_, func, lb, std::move(lwd)
         )
       );
     else GAUXC_GENERIC_EXCEPTION("INTEGRATOR TYPE NOT RECOGNIZED");

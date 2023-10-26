@@ -88,6 +88,9 @@ if( GAUXC_ENABLE_MPI )
   target_link_libraries( gauxc PUBLIC MPI::MPI_C MPI::MPI_CXX )
 endif()
 
+find_package(UPCXX REQUIRED)
+target_link_libraries(gauxc PUBLIC UPCXX::upcxx)
+
 add_subdirectory( runtime_environment )
 add_subdirectory( molecular_weights )
 add_subdirectory( xc_integrator )
