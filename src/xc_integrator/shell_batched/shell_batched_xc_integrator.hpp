@@ -1,0 +1,44 @@
+/**
+ * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
+#pragma once
+#include <gauxc/xc_task.hpp>
+
+namespace GauXC {
+namespace detail {
+
+template <typename IncoreIntegratorType>
+class ShellBatchedXCIntegratorBase {
+
+public:
+
+  using basis_type = typename IncoreIntegratorType::basis_type;
+
+  using host_task_container = std::vector<XCTask>;
+  using host_task_iterator  = typename host_task_container::iterator;
+
+protected:
+
+  using incore_integrator_type = IncoreIntegratorType;
+
+  // Struct to manage data associated with task subset to execute in batch
+  struct incore_task_data {
+    host_task_iterator   task_begin;
+    host_task_iterator   task_end;
+    std::vector<int32_t> shell_list;
+  };
+
+  incore_task_data generate_incore_device_task( 
+    const uint32_t nbf_threshold, const basis_type& basis,
+    host_task_iterator task_begin, host_task_iterator task_end );
+
+  virtual ~ShellBatchedXCIntegratorBase() noexcept;
+
+};
+
+}
+}
