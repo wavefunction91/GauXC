@@ -97,6 +97,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   }
 
   if(uks and ex == ExecutionSpace::Device) return;
+  if(uks and integrator_kernel == "ShellBatched") return;
 
 
   for( auto& sh : basis ) 
@@ -197,8 +198,16 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func, Pruni
 
 #ifdef GAUXC_ENABLE_HOST
     SECTION( "Host" ) {
-      test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
-        pruning_scheme, 1, true, true, true );
+      SECTION("Default") {
+        test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
+          pruning_scheme, 1, true, true, true );
+      }
+
+      SECTION( "ShellBatched" ) {
+        test_xc_integrator( ExecutionSpace::Host, rt, 
+          reference_file, func, pruning_scheme, 1, 
+          false, false, false, "ShellBatched" );
+      }
     }
 #endif
 
