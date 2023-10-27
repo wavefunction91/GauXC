@@ -26,6 +26,7 @@ using namespace ExchCXX;
 
 int main(int argc, char** argv) {
 
+  upcxx::init();
 #ifdef GAUXC_ENABLE_MPI
   MPI_Init( NULL, NULL );
 #endif
@@ -326,10 +327,57 @@ int main(int argc, char** argv) {
       "PGAS_DIST", integrator_kernel, lwd_kernel, reduction_kernel );
     auto pgas_integrator = pgas_integrator_factory.get_instance( func, lb );
 
-    // TODO: populate dane tiles - fixed width is fine for now
-    std::vector<uint64_t> tile_heights, tile_widths;
+    // Populate sane tiles - fixed width is fine for now
+    const size_t max_tile = 64; // TODO: make configurable
+    const size_t nbf = basis.nbf();
+    const size_t ntile = (max_tile/nbf) + !!(max_tile%nbf);
+    std::vector<uint64_t> tile_heights(ntile,max_tile), 
+      tile_widths(ntile,max_tile);
+    // Last tile is smaller
+    if(max_tile % nbf) {
+      tile_heights.back() = nbf - (ntile-1)*max_tile;
+      tile_widths .back() = nbf - (ntile-1)*max_tile;
+    }
+
+
     Darray P_PGAS(tile_heights, tile_widths /*, team*/); 
-    // TODO 
+    P_PGAS.allocate(); // :(
+
+    // Populate P_PGAS
+    for(size_t i_t = 0, i_st = 0; i_t < ntile; ++i_t) {
+      size_t i_en = i_st + tile_heights[i_t] - 1; // inclusive bounds...
+      for(size_t j_t = 0, j_st = 0; j_t < ntile; ++j_t) {
+        size_t j_en = j_st + tile_widths[j_t] - 1; // inclusive bounds...
+
+        // Extract contiguous subblock of P (in RowMajor!!!)
+        // TODO: It would be desireable to make Darray local storage ColMajor
+        Eigen::Matrix<double,-1,-1,Eigen::RowMajor> P_sub;
+        P_sub = P.block(i_st, j_st, tile_heights[i_t], tile_widths[j_t]);
+
+        // Place submatrix
+        // TODO: this is locally blocking, should be made to be asyncrhonous
+        P_PGAS.put_contig(i_st,j_st,i_en,j_en,P_sub.data());
+
+        j_st += tile_heights[j_t];
+      }
+      i_st += tile_heights[i_t];
+    }
+
+    if(world_rank == 0) {
+      std::cout << "P_eigen" << std::endl;
+      for(auto i = 0; i < nbf; ++i)
+      for(auto j = 0; j < nbf; ++j) {
+        std::cout << "(" << i << "," << j << ") -> " << std::fixed << P(i,j) << std::endl;
+      }
+
+      std::cout << "P_pgas" << std::endl;
+      P_PGAS.print();
+    }
+    
+    upcxx::barrier();
+    P_PGAS.deallocate(); // :(
+
+
     auto [EXC_PGAS, VXC_PGAS] = pgas_integrator.eval_exc_vxc(P_PGAS);
 #ifdef GAUXC_ENABLE_MPI
     MPI_Barrier( MPI_COMM_WORLD );
@@ -498,5 +546,6 @@ int main(int argc, char** argv) {
 #ifdef GAUXC_ENABLE_MPI
   MPI_Finalize();
 #endif
+  upcxx::finalize();
 
 }
