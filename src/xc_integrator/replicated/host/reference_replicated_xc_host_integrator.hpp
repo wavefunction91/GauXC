@@ -32,11 +32,11 @@ protected:
                       int64_t ldp, value_type* VXC, int64_t ldvxc,
                       value_type* EXC ) override;
 
-  void eval_exc_vxc_( int64_t m, int64_t n, const value_type* Pscalar,
-                      int64_t ldpscalar,
+  void eval_exc_vxc_( int64_t m, int64_t n, const value_type* Ps,
+                      int64_t ldps,
                       const value_type* Pz,
                       int64_t ldpz,
-                      value_type* VXCscalar, int64_t ldvxcscalar,
+                      value_type* VXCs, int64_t ldvxcs,
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC ) override;
 
@@ -50,13 +50,12 @@ protected:
   void integrate_den_local_work_( const value_type* P, int64_t ldp, 
                                    value_type *N_EL );
 
-  void exc_vxc_local_work_( const value_type* P, int64_t ldp, value_type* VXC,
-                            int64_t ldvxc, value_type* EXC, value_type *N_EL );
 
-  void exc_vxc_local_work_( const value_type* Pscalar, int64_t ldpscalar,
+  void exc_vxc_local_work_( const value_type* Ps, int64_t ldps,
                             const value_type* Pz, int64_t ldpz,
-                            value_type* VXCscalar, int64_t ldvxcscalar,
-                            value_type* VXCz, int64_t ldvxcz, value_type* EXC, value_type *N_EL );
+                            value_type* VXCs, int64_t ldvxcs,
+                            value_type* VXCz, int64_t ldvxcz, 
+                            value_type* EXC, value_type *N_EL );
                             
   void exc_grad_local_work_( const value_type* P, int64_t ldp, value_type* EXC_GRAD );
   void exx_local_work_( const value_type* P, int64_t ldp, value_type* K, int64_t ldk,

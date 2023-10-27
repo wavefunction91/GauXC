@@ -178,8 +178,6 @@ public:
    *
    *  U = V = rho (total density)
    *
-   *  TODO: Need to add an API for UKS/GKS
-   *
    *  @param[in] npts       The number of points to evaluate the U/V variables
    *  @param[in] nbe        The number of basis functions in collocation matrix
    *  @param[in] basis_eval The collocation matrix ( (nbe,npts), col major, lb=nbe)
@@ -191,15 +189,28 @@ public:
   void eval_uvvar_lda_rks( size_t npts, size_t nbe, const double* basis_eval,
     const double* X, size_t ldx, double* den_eval);
 
+  /** Evaluate the U and V variavles for RKS LDA
+   *
+   *  U = rho_+ / rho_- (alpha and beta densities)
+   *  V = rho_s / rho_z (scalar and spin densities)
+   *
+   *  @param[in] npts       The number of points to evaluate the U/V variables
+   *  @param[in] nbe        The number of basis functions in collocation matrix
+   *  @param[in] basis_eval The collocation matrix ( (nbe,npts), col major, lb=nbe)
+   *  @param[in] Xs         The Xs matrix (Ps*B, (nbe,npts) col major)
+   *  @param[in] Xz         The Xz matrix (Pz*B, (nbe,npts) col major)
+   *  @param[in] ldx        The leading dimension of X
+   *  @param[out] den_eval  The total density evaluated on the grid (npts)
+   *
+   */
   void eval_uvvar_lda_uks( size_t npts, size_t nbe, const double* basis_eval,
-    const double* X, size_t ldx, double* den_eval);
+    const double* Xs, size_t ldxs, const double* Xz, size_t ldxz,
+    double* den_eval);
 
   /** Evaluate the U and V variavles for RKS GGA
    *
    *  U = rho + gradient
    *  V = rho + gamma
-   *
-   *  TODO: Need to add an API for UKS/GKS
    *
    *  @param[in] npts          Same as `eval_uvvar_lda`
    *  @param[in] nbe           Same as `eval_uvvar_lda`
@@ -223,7 +234,8 @@ public:
 
   void eval_uvvar_gga_uks( size_t npts, size_t nbe, const double* basis_eval,
     const double* dbasis_x_eavl, const double *dbasis_y_eval,
-    const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval,
+    const double* dbasis_z_eval, const double* Xs, size_t ldxs, 
+    const double* Xz, size_t ldxz, double* den_eval,
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma );
 
   /** Evaluate the VXC Z Matrix for RKS LDA
@@ -244,7 +256,8 @@ public:
     const double* basis_eval, double* Z, size_t ldz );
 
   void eval_zmat_lda_vxc_uks( size_t npts, size_t nbe, const double* vrho,
-    const double* basis_eval, double* Z, size_t ldz );
+    const double* basis_eval, double* Zs, size_t ldzs, double* Zz,
+    size_t ldzz );
 
   /** Evaluate the VXC Z Matrix for RKS LDA
    *
@@ -278,7 +291,7 @@ public:
     const double* vgamma, const double* basis_eval, const double* dbasis_x_eval,
     const double* dbasis_y_eval, const double* dbasis_z_eval,
     const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
-    double* Z, size_t ldz );
+    double* Zs, size_t ldzs, double* Zz, size_t ldzz );
 
 
   /** Increment VXC integrand given Z / Collocation (RKS LDA+GGA)

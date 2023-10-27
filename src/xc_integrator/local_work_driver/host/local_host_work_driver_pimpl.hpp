@@ -69,7 +69,8 @@ struct LocalHostWorkDriverPIMPL {
   virtual void eval_uvvar_lda_rks( size_t npts, size_t nbe, const double* basis_eval,
     const double* X, size_t ldx, double* den_eval) = 0;
   virtual void eval_uvvar_lda_uks( size_t npts, size_t nbe, const double* basis_eval,
-    const double* X, size_t ldx, double* den_eval) = 0;
+    const double* Xs, size_t ldxs, const double* Xz, size_t ldxz, 
+    double* den_eval) = 0;
 
   virtual void eval_uvvar_gga_rks( size_t npts, size_t nbe, const double* basis_eval,
     const double* dbasis_x_eavl, const double *dbasis_y_eval, 
@@ -78,7 +79,8 @@ struct LocalHostWorkDriverPIMPL {
     double* gamma ) = 0;
   virtual void eval_uvvar_gga_uks( size_t npts, size_t nbe, const double* basis_eval,
     const double* dbasis_x_eavl, const double *dbasis_y_eval,
-    const double* dbasis_z_eval, const double* X, size_t ldx, double* den_eval,
+    const double* dbasis_z_eval, const double* Xs, size_t ldxs, 
+    const double* Xz, size_t ldxz, double* den_eval,
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval,
     double* gamma ) = 0;
 
@@ -86,7 +88,7 @@ struct LocalHostWorkDriverPIMPL {
   virtual void eval_zmat_lda_vxc_rks( size_t npts, size_t nbe, const double* vrho, 
     const double* basis_eval, double* Z, size_t ldz ) = 0;
   virtual void eval_zmat_lda_vxc_uks( size_t npts, size_t nbe, const double* vrho,
-    const double* basis_eval, double* Z, size_t ldz ) = 0;
+    const double* basis_eval, double* Zs, size_t ldzs, double* Zz, size_t ldzz ) = 0;
 
   virtual void eval_zmat_gga_vxc_rks( size_t npts, size_t nbe, const double* vrho, 
     const double* vgamma, const double* basis_eval, const double* dbasis_x_eval,
@@ -97,7 +99,7 @@ struct LocalHostWorkDriverPIMPL {
     const double* vgamma, const double* basis_eval, const double* dbasis_x_eval,
     const double* dbasis_y_eval, const double* dbasis_z_eval,
     const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
-    double* Z, size_t ldz ) = 0;
+    double* Zs, size_t ldzs, double* Zz, size_t ldzz ) = 0;
 
   virtual void inc_vxc( size_t npts, size_t nbf, size_t nbe, 
     const double* basis_eval, const submat_map_t& submat_map, const double* Z, 
