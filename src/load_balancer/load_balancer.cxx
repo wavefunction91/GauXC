@@ -109,6 +109,11 @@ const LoadBalancer::shell_pair_type& LoadBalancer::shell_pairs2() {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->shell_pairs2();
 }
+const EPCFunctional& LoadBalancer::epc_functional() const{
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->epc_functional();
+
+}
 
 LoadBalancerState& LoadBalancer::state() {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();

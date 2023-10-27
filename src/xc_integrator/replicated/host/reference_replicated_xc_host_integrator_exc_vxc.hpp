@@ -759,7 +759,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Setup Aliases
   const auto& func   = *this->func_;
-  const auto& basis = this->load_balancer_->basis();
+  const auto& basis  = this->load_balancer_->basis();
   const auto& mol    = this->load_balancer_->molecule();
 
   // Get basis map
@@ -970,37 +970,42 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
 
-    //----------------------Start epc-17-2 functional Evaluation------------------------
-    for (int32_t iPt = 0; iPt < npts; iPt++ ){
-      // Get Electronic density scalar (RKS)
-      value_type total_erho = std::abs(den_eval[iPt] > 1e-15) ? den_eval[iPt] : 0.0;
-      // Get Protonic density scalar (UKS)
-      value_type total_prho = std::abs(den2_eval[2*iPt] + den2_eval[2*iPt+1]) > 1e-15? 
-          den2_eval[2*iPt]+den2_eval[2*iPt+1] : 0.0;
-      
-      // Skip this point if the density is too small
-      if(total_erho < 1e-15 | total_prho < 1e-15){
-        eps2[iPt]      = 0.0;
-        vrho2[2*iPt]   = 0.0;
-        vrho2[2*iPt+1] = 0.0;
-        continue;
+    if(this->load_balancer_->epc_functional() == EPCFunctional::EPC17){
+      //----------------------Start epc-17-2 functional Evaluation------------------------
+      for (int32_t iPt = 0; iPt < npts; iPt++ ){
+        // Get Electronic density scalar (RKS)
+        value_type total_erho = std::abs(den_eval[iPt] > 1e-15) ? den_eval[iPt] : 0.0;
+        // Get Protonic density scalar (UKS)
+        value_type total_prho = std::abs(den2_eval[2*iPt] + den2_eval[2*iPt+1]) > 1e-15? 
+            den2_eval[2*iPt]+den2_eval[2*iPt+1] : 0.0;
+        
+        // Skip this point if the density is too small
+        if(total_erho < 1e-15 | total_prho < 1e-15){
+          eps2[iPt]      = 0.0;
+          vrho2[2*iPt]   = 0.0;
+          vrho2[2*iPt+1] = 0.0;
+          continue;
+        }
+
+        // epc-17-2 denominator
+        value_type dn = 2.35 - 2.4 * std::sqrt(total_erho*total_prho) + 6.6 * (total_erho*total_prho);
+
+        // Update electronic eps and vxc
+        eps[iPt]      += -1.0 * total_prho/dn;
+        vrho[iPt]     +=  ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
+                          + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
+
+        // Assign protonic eps and vxc
+        eps2[iPt]      = -1.0 * total_erho/dn;
+        vrho2[2*iPt]   =  ( -1.0 * total_erho / dn + (-1.2 * std::sqrt(total_prho) * std::sqrt(total_erho) * total_erho 
+                          + 6.6 * total_erho * total_erho * total_prho ) / (dn * dn) );
+        vrho2[2*iPt+1] =  0.0;
       }
-
-      // epc-17-2 denominator
-      value_type dn = 2.35 - 2.4 * std::sqrt(total_erho*total_prho) + 6.6 * (total_erho*total_prho);
-
-      // Update electronic eps and vxc
-      eps[iPt]      += -1.0 * total_prho/dn;
-      vrho[iPt]     +=  ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
-                        + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
-
-      // Assign protonic eps and vxc
-      eps2[iPt]      = -1.0 * total_erho/dn;
-      vrho2[2*iPt]   =  ( -1.0 * total_erho / dn + (-1.2 * std::sqrt(total_prho) * std::sqrt(total_erho) * total_erho 
-                        + 6.6 * total_erho * total_erho * total_prho ) / (dn * dn) );
-      vrho2[2*iPt+1] =  0.0;
+      //----------------------End epc-17-2 functional Evaluation------------------------  
+    } else{
+      GAUXC_GENERIC_EXCEPTION("Only EPC17 is supported in GauXC");
     }
-    //----------------------End epc-17-2 functional Evaluation------------------------   
+ 
 
 
 

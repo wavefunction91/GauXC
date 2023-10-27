@@ -33,6 +33,7 @@ protected:
   std::shared_ptr<basis_type> basis2_;
   std::shared_ptr<basis_map_type> basis_map2_;
   std::shared_ptr<shell_pair_type> shell_pairs2_;
+  EPCFunctional epc_functional_;
 
   std::vector< XCTask >     local_tasks_;
 
@@ -54,11 +55,11 @@ public:
     const basis_type&, std::shared_ptr<MolMeta> );
   
   LoadBalancerImpl( const RuntimeEnvironment&, const Molecule&, const MolGrid& mg,  
-    const basis_type&, const basis_type& );
+    const basis_type&, const basis_type&, EPCFunctional );
   LoadBalancerImpl( const RuntimeEnvironment&, const Molecule&, const MolGrid& mg,  
-    const basis_type&, const basis_type&, const MolMeta& );
+    const basis_type&, const basis_type&, EPCFunctional, const MolMeta& );
   LoadBalancerImpl( const RuntimeEnvironment&, const Molecule&, const MolGrid& mg,  
-    const basis_type&, const basis_type&, std::shared_ptr<MolMeta> );
+    const basis_type&, const basis_type&, EPCFunctional, std::shared_ptr<MolMeta> );
 
   LoadBalancerImpl( const LoadBalancerImpl& );
   LoadBalancerImpl( LoadBalancerImpl&& ) noexcept;
@@ -89,6 +90,7 @@ public:
   const basis_map_type& basis_map2() const;
   const shell_pair_type& shell_pairs2() const;
   const shell_pair_type& shell_pairs2();
+  const EPCFunctional& epc_functional() const;
 
   LoadBalancerState& state();
 

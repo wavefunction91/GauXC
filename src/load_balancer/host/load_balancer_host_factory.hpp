@@ -20,7 +20,7 @@ struct LoadBalancerHostFactory {
   static std::shared_ptr<LoadBalancer> get_shared_instance(
     std::string kernel_name, const RuntimeEnvironment& rt,
     const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis,
-    const BasisSet<double>& basis2, size_t pv
+    const BasisSet<double>& basis2, EPCFunctional epcfunc, size_t pv
   );
 
 };
