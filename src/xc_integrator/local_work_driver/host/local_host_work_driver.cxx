@@ -78,13 +78,13 @@ void LocalHostWorkDriver::eval_collocation_hessian( size_t npts, size_t nshells,
 }
 
 
-// X matrix (P * B)
+// X matrix (fac * P * B)
 void LocalHostWorkDriver::eval_xmat( size_t npts, size_t nbf, size_t nbe, 
-  const submat_map_t& submat_map, const double* P, size_t ldp, 
+  const submat_map_t& submat_map, double fac, const double* P, size_t ldp, 
   const double* basis_eval, size_t ldb, double* X, size_t ldx, double* scr ) {
 
   throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_xmat(npts, nbf, nbe, submat_map, P, ldp, basis_eval, ldb, X, 
+  pimpl_->eval_xmat(npts, nbf, nbe, submat_map, fac, P, ldp, basis_eval, ldb, X, 
     ldx, scr);
 
 }

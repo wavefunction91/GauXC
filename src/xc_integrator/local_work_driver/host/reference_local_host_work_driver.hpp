@@ -45,7 +45,7 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
     double* d2basis_zz_eval ) override;
 
   void eval_xmat( size_t npts, size_t nbf, size_t nbe, 
-    const submat_map_t& submat_map, const double* P, size_t ldp, 
+    const submat_map_t& submat_map, double fac, const double* P, size_t ldp, 
     const double* basis_eval, size_t ldb, double* X, size_t ldx, double* scr ) 
     override;
 

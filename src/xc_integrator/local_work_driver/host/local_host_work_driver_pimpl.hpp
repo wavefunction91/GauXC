@@ -45,7 +45,7 @@ struct LocalHostWorkDriverPIMPL {
     double* d2basis_zz_eval ) = 0;
 
   virtual void eval_xmat( size_t npts, size_t nbf, size_t nbe, 
-    const submat_map_t& submat_map, const double* P, size_t ldp, 
+    const submat_map_t& submat_map, double fac, const double* P, size_t ldp, 
     const double* basis_eval, size_t ldb, double* X, size_t ldx, double* scr ) = 0;
 
   virtual void eval_exx_fmat( size_t npts, size_t nbf, size_t nbe_bra,

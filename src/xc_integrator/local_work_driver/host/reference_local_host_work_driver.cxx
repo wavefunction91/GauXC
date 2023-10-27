@@ -85,7 +85,7 @@ namespace GauXC {
 
   // X matrix (P * B)
   void ReferenceLocalHostWorkDriver::eval_xmat( size_t npts, size_t nbf, size_t nbe, 
-						const submat_map_t& submat_map, const double* P, size_t ldp, 
+						const submat_map_t& submat_map, double fac, const double* P, size_t ldp, 
 						const double* basis_eval, size_t ldb, double* X, size_t ldx, double* scr ) {
     const auto* P_use = P;
     size_t ldp_use = ldp;
@@ -98,7 +98,7 @@ namespace GauXC {
       P_use = P + submat_map[0][0]*(ldp+1);
     }
 
-    blas::gemm( 'N', 'N', nbe, npts, nbe, 2., P_use, ldp_use, basis_eval, ldb, 
+    blas::gemm( 'N', 'N', nbe, npts, nbe, fac, P_use, ldp_use, basis_eval, ldb, 
 		0., X, ldx );
 
   }
@@ -135,8 +135,8 @@ namespace GauXC {
       const double rhos = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 );
       const double rhoz = blas::dot( nbe, basis_eval + ioff, 1, X2_i, 1 );
       
-      den_eval[2*i]   = 0.5*(rhos + rhoz);
-      den_eval[2*i+1] = 0.5*(rhos - rhoz);
+      den_eval[2*i]   = 0.5*(rhos + rhoz); // rho_+
+      den_eval[2*i+1] = 0.5*(rhos - rhoz); // rho_-
 
     }
  
@@ -185,12 +185,12 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
       const auto*   X_i = X + ioff;
       const auto*   X2_i = X2 + ioff;
 
-      double tmp1 = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 ); // S density
-      double tmp2 = blas::dot( nbe, basis_eval + ioff, 1, X2_i, 1 ); // Z density
+      double rhos = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 ); // S density
+      double rhoz = blas::dot( nbe, basis_eval + ioff, 1, X2_i, 1 ); // Z density
 
 
-      den_eval[2*i]   =0.5*(tmp1 + tmp2);
-      den_eval[2*i+1] = 0.5*(tmp1 - tmp2);
+      den_eval[2*i]   = 0.5*(rhos + rhoz); // rho_+
+      den_eval[2*i+1] = 0.5*(rhos - rhoz); // rho_-
 
       const auto dndx =
         2. * blas::dot( nbe, dbasis_x_eval + ioff, 1, X_i, 1 );
@@ -206,17 +206,24 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
       const auto dMzdz =
         2. * blas::dot( nbe, dbasis_z_eval + ioff, 1, X2_i, 1 );
 
-      dden_x_eval[2*i] = dndx;
-      dden_y_eval[2*i] = dndy;
-      dden_z_eval[2*i] = dndz;
+      dden_x_eval[2*i] = dndx; // d(rho_+) / dx
+      dden_y_eval[2*i] = dndy; // d(rho_+) / dy
+      dden_z_eval[2*i] = dndz; // d(rho_+) / dz
 
-      dden_x_eval[2*i+1] = dMzdx;
-      dden_y_eval[2*i+1] = dMzdy;
-      dden_z_eval[2*i+1] = dMzdz;
+      dden_x_eval[2*i+1] = dMzdx; // d(rho_-) / dx
+      dden_y_eval[2*i+1] = dMzdy; // d(rho_-) / dy
+      dden_z_eval[2*i+1] = dMzdz; // d(rho_-) / dz
 
-      gamma[3*i  ] = 0.25*(dndx*dndx + dndy*dndy + dndz*dndz + dMzdx*dMzdx + dMzdy*dMzdy + dMzdz*dMzdz) + 0.5*(dndx*dMzdx + dndy*dMzdy + dndz*dMzdz);
-      gamma[3*i+1] = 0.25*(dndx*dndx + dndy*dndy + dndz*dndz - dMzdx*dMzdx - dMzdy*dMzdy - dMzdz*dMzdz);
-      gamma[3*i+2] = 0.25*(dndx*dndx + dndy*dndy + dndz*dndz + dMzdx*dMzdx + dMzdy*dMzdy + dMzdz*dMzdz) - 0.5*(dndx*dMzdx + dndy*dMzdy + dndz*dMzdz);
+      // (del n).(del n)
+      const auto dn_sq  = dndx*dndx + dndy*dndy + dndz*dndz;
+      // (del Mz).(del Mz)
+      const auto dMz_sq = dMzdx*dMzdx + dMzdy*dMzdy + dMzdz*dMzdz;
+      // (del n).(del Mz)
+      const auto dn_dMz = dndx*dMzdx + dndy*dMzdy + dndz*dMzdz;
+
+      gamma[3*i  ] = 0.25*(dn_sq + dMz_sq) + 0.5*dn_dMz;
+      gamma[3*i+1] = 0.25*(dn_sq - dMz_sq);
+      gamma[3*i+2] = 0.25*(dn_sq + dMz_sq) - 0.5*dn_dMz;
     }
 
 }

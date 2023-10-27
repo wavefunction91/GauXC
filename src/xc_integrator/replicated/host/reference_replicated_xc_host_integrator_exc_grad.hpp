@@ -188,13 +188,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval );
 
 
-    // Evaluate X matrix (P * B/Bx/By/Bz) -> store in Z
+    // Evaluate X matrix (2 * P * B/Bx/By/Bz) -> store in Z
     // XXX: This assumes that bfn + gradients are contiguous in memory
     if( func.is_gga() ) {
-      lwd->eval_xmat( 4*npts, nbf, nbe, submat_map, P, ldp, basis_eval, nbe,
+      lwd->eval_xmat( 4*npts, nbf, nbe, submat_map, 2.0, P, ldp, basis_eval, nbe,
         zmat, nbe, nbe_scr );
     } else {
-      lwd->eval_xmat( npts, nbf, nbe, submat_map, P, ldp, basis_eval, nbe,
+      lwd->eval_xmat( npts, nbf, nbe, submat_map, 2.0, P, ldp, basis_eval, nbe,
         zmat, nbe, nbe_scr );
     }
 
