@@ -6,8 +6,11 @@
  * See LICENSE.txt for details
  */
 #pragma once
+#include <gauxc/gauxc_config.hpp>
 #include "shell_batched_xc_integrator.hpp"
+#ifdef GAUXC_ENABLE_DEVICE
 #include "device/xc_device_data.hpp"
+#endif
 
 namespace GauXC {
 namespace detail {
@@ -30,7 +33,9 @@ public:
 
 protected:
 
+#ifdef GAUXC_ENABLE_DEVICE
   std::unique_ptr<XCDeviceData> device_data_ptr_;
+#endif
 
   using incore_integrator_type = IncoreIntegratorType;
   using incore_task_data = ShellBatchedXCIntegratorBase::incore_task_data;

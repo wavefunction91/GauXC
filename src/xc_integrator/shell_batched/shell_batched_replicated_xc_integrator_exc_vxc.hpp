@@ -7,8 +7,10 @@
  */
 #pragma once
 #include "shell_batched_replicated_xc_integrator.hpp"
+#ifdef GAUXC_ENABLE_DEVICE
 #include "device/local_device_work_driver.hpp"
 #include "device/xc_device_aos_data.hpp"
+#endif
 #include "integrator_util/integrator_common.hpp"
 #include "host/util.hpp"
 #include <gauxc/util/misc.hpp>
@@ -49,6 +51,7 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
   // Get Tasks
   auto& tasks = this->load_balancer_->get_tasks();
 
+  #ifdef GAUXC_ENABLE_DEVICE
   // Allocate Device memory
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
   auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
@@ -57,6 +60,7 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
       this->timer_.time_op("XCIntegrator.DeviceAlloc",
         [&](){ return lwd->create_device_data(rt); });
   }
+  #endif
 
   // Generate incore integrator instance, transfer ownership of LWD
   incore_integrator_type incore_integrator( this->func_, this->load_balancer_,
@@ -82,7 +86,9 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
     this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
   });
 
+  #ifdef GAUXC_ENABLE_DEVICE
   device_data_ptr_.reset();
+  #endif
 
 }
 
@@ -264,13 +270,17 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
 
 
   // Process selected task batch
+#ifdef GAUXC_ENABLE_DEVICE
   if constexpr (IncoreIntegratorType::is_device) {
     incore_integrator.exc_vxc_local_work( basis_subset, P_submat, nbe, VXC_submat, nbe,
       &EXC_tmp, &NEL_tmp, task_begin, task_end, *device_data_ptr_ );
   } else {
+#endif
     incore_integrator.exc_vxc_local_work( basis_subset, P_submat, nbe, VXC_submat, nbe,
       &EXC_tmp, &NEL_tmp, task_begin, task_end );
+#ifdef GAUXC_ENABLE_DEVICE
   }
+#endif
 
 
   // Update full quantities
