@@ -23,7 +23,7 @@ set( GAUXC_ENABLE_GAU2GRID   @GAUXC_ENABLE_GAU2GRID@  )
 set( GAUXC_HAS_HDF5          @GAUXC_HAS_HDF5@         )
 
 # Make sure C / CXX are enabled (former for BLAS discovery)
-#enable_language(C)
+enable_language(C)
 enable_language(CXX) 
 
 
