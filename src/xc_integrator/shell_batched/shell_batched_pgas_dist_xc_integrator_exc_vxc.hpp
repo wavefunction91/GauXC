@@ -85,6 +85,7 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
                        host_task_iterator task_begin, host_task_iterator task_end,
                        incore_integrator_type& incore_integrator ) {
 
+  std::cout << "***** MADE IT IN PGAS DRIVER *****" << std::endl;
 #if 0
   //incore_integrator.exc_vxc_local_work( basis, P, ldp, VXC, ldvxc, EXC, N_EL, task_begin, task_end, device_data );
   //return;

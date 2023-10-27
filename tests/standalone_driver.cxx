@@ -322,6 +322,15 @@ int main(int argc, char** argv) {
       //K = -K_tmp;
     } else { K = K_ref; }
 
+    XCIntegratorFactory<Darray> pgas_integrator_factory( int_exec_space , 
+      "PGAS_DIST", integrator_kernel, lwd_kernel, reduction_kernel );
+    auto pgas_integrator = pgas_integrator_factory.get_instance( func, lb );
+
+    // TODO: populate dane tiles - fixed width is fine for now
+    std::vector<uint64_t> tile_heights, tile_widths;
+    Darray P_PGAS(tile_heights, tile_widths /*, team*/); 
+    // TODO 
+    auto [EXC_PGAS, VXC_PGAS] = pgas_integrator.eval_exc_vxc(P_PGAS);
 #ifdef GAUXC_ENABLE_MPI
     MPI_Barrier( MPI_COMM_WORLD );
 #endif

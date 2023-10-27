@@ -69,9 +69,10 @@ typename PGASDistributedXCIntegrator<MatrixType>::exc_vxc_type_rks
   //matrix_type VXC( P.rows(), P.cols() );
   matrix_type VXC;
   value_type  EXC;
-
-  //pimpl_->eval_exc_vxc( P.rows(), P.cols(), P.data(), P.rows(),
-  //                      VXC.data(), VXC.rows(), &EXC );
+  if constexpr (std::is_convertible_v<MatrixType, Darray>)
+    pimpl_->eval_exc_vxc( P, VXC, &EXC );
+  else
+    GAUXC_GENERIC_EXCEPTION("Passed density not compatible with internal PGAS matrix");
 
   return std::make_tuple( EXC, VXC );
 
@@ -116,7 +117,6 @@ typename PGASDistributedXCIntegrator<MatrixType>::exx_type
 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   
-  //matrix_type K( P.rows(), P.cols() );
   matrix_type K;
 
   //pimpl_->eval_exx( P.rows(), P.cols(), P.data(), P.rows(),

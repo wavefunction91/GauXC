@@ -20,6 +20,8 @@ struct Tile
 
 struct Darray // 2D
 {
+    using value_type = double;
+    Darray( const upcxx::team& t = upcxx::world() ) : team(t) {} // TODO: default(ish), if we want tp preclude this behavior, then we have to add some extra logic to the drivers  
     Darray(const std::vector<uint64_t>& tile_heights, const std::vector<uint64_t>& tile_widths, const upcxx::team& team = upcxx::world()) noexcept :
         tile_heights(tile_heights), tile_widths(tile_widths), team(team)
         {

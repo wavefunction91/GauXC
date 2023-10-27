@@ -15,6 +15,29 @@
 namespace GauXC  {
 namespace detail {
 
+template <typename MatrixType, typename = void>
+struct has_member_rows : std::false_type {};
+template <typename MatrixType, typename = void>
+struct has_member_cols : std::false_type {};
+
+template <typename MatrixType>
+struct has_member_rows<MatrixType,
+  typename std::enable_if<
+    std::is_member_function_pointer_v<decltype(&MatrixType::rows)>
+  >::type> : std::true_type {};
+template <typename MatrixType>
+struct has_member_cols<MatrixType,
+  typename std::enable_if<
+    std::is_member_function_pointer_v<decltype(&MatrixType::cols)>
+  >::type> : std::true_type {};
+
+template <typename MatrixType>
+static constexpr bool is_canonical_matrix_type_v = 
+  has_member_rows<MatrixType>::value and 
+  has_member_cols<MatrixType>::value;
+  
+  
+  
 
 template <typename MatrixType>
 ReplicatedXCIntegrator<MatrixType>::
@@ -56,7 +79,10 @@ typename ReplicatedXCIntegrator<MatrixType>::value_type
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   value_type N_EL;
   
-  pimpl_->integrate_den( P.rows(), P.cols(), P.data(), P.rows(), &N_EL );
+  if constexpr (is_canonical_matrix_type_v<MatrixType>)
+    pimpl_->integrate_den( P.rows(), P.cols(), P.data(), P.rows(), &N_EL );
+  else
+    GAUXC_GENERIC_EXCEPTION("Input not of conforming type");
 
   return N_EL;
 }
@@ -66,31 +92,42 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_rks
   ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P ) {
 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-  matrix_type VXC( P.rows(), P.cols() );
-  value_type  EXC;
 
-  pimpl_->eval_exc_vxc( P.rows(), P.cols(), P.data(), P.rows(),
-                        VXC.data(), VXC.rows(), &EXC );
+  if constexpr (is_canonical_matrix_type_v<MatrixType>) {
+    matrix_type VXC( P.rows(), P.cols() );
+    value_type  EXC;
 
-  return std::make_tuple( EXC, VXC );
+    pimpl_->eval_exc_vxc( P.rows(), P.cols(), P.data(), P.rows(),
+                          VXC.data(), VXC.rows(), &EXC );
+    return std::make_tuple( EXC, VXC );
+  } else {
+    GAUXC_GENERIC_EXCEPTION("Input not of conforming type");
+    abort();
+  }
+
 
 }
 
 template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_uks
-  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& Pscalar, const MatrixType& Pz ) {
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& Ps, const MatrixType& Pz ) {
 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-  matrix_type VXCscalar( Pscalar.rows(), Pscalar.cols() );
-  matrix_type VXCz( Pz.rows(), Pz.cols() );
-  value_type  EXC;
+  if constexpr (is_canonical_matrix_type_v<MatrixType>) {
+    matrix_type VXCs( Ps.rows(), Ps.cols() );
+    matrix_type VXCz( Pz.rows(), Pz.cols() );
+    value_type  EXC;
 
-  pimpl_->eval_exc_vxc( Pscalar.rows(), Pscalar.cols(), Pscalar.data(), Pscalar.rows(),
-                        Pz.data(), Pz.rows(),
-                        VXCscalar.data(), VXCscalar.rows(),
-                        VXCz.data(), VXCz.rows(), &EXC );
+    pimpl_->eval_exc_vxc( Ps.rows(), Ps.cols(), Ps.data(), Ps.rows(),
+                          Pz.data(), Pz.rows(),
+                          VXCs.data(), VXCs.rows(),
+                          VXCz.data(), VXCz.rows(), &EXC );
+    return std::make_tuple( EXC, VXCs, VXCz );
+  } else {
+    GAUXC_GENERIC_EXCEPTION("Input not of conforming type");
+    abort();
+  }
 
-  return std::make_tuple( EXC, VXCscalar, VXCz );
 
 }
 
@@ -101,8 +138,11 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
 
   std::vector<value_type> EXC_GRAD( 3*pimpl_->load_balancer().molecule().natoms() );
-  pimpl_->eval_exc_grad( P.rows(), P.cols(), P.data(), P.rows(),
-                         EXC_GRAD.data() );
+  if constexpr (is_canonical_matrix_type_v<MatrixType>)
+    pimpl_->eval_exc_grad( P.rows(), P.cols(), P.data(), P.rows(),
+                           EXC_GRAD.data() );
+  else
+    GAUXC_GENERIC_EXCEPTION("Input not of conforming type");
 
   return EXC_GRAD;
 
@@ -114,12 +154,17 @@ typename ReplicatedXCIntegrator<MatrixType>::exx_type
 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   
-  matrix_type K( P.rows(), P.cols() );
+  if constexpr (is_canonical_matrix_type_v<MatrixType>) {
+    matrix_type K( P.rows(), P.cols() );
 
-  pimpl_->eval_exx( P.rows(), P.cols(), P.data(), P.rows(),
-                    K.data(), K.rows(), settings );
+    pimpl_->eval_exx( P.rows(), P.cols(), P.data(), P.rows(),
+                      K.data(), K.rows(), settings );
+    return K;
+  } else {
+    GAUXC_GENERIC_EXCEPTION("Input not of conforming type");
+    abort();
+  }
 
-  return K;
 
 }
 
