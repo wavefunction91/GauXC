@@ -6,7 +6,7 @@
 # See LICENSE.txt for details
 #
 cmake_minimum_required( VERSION 3.18 FATAL_ERROR )
-project( gauxc_cmake_discovery LANGUAGES C CXX )
+project( gauxc_cmake_discovery LANGUAGES CXX )
 
 find_package( gauxc REQUIRED )
 add_executable( gauxc_link_tester gauxc_link_tester.cxx )
