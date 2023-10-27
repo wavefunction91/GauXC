@@ -344,34 +344,54 @@ int main(int argc, char** argv) {
     P_PGAS.allocate(); // :(
 
     // Populate P_PGAS
+    // TODO: Ideally this would look something like 
+    //  for(auto& tile : P_PGAS.local_tiles()) {
+    //    // Get bounds and dims from tile
+    //    P_PGAS.put_contig(row_st, col_st, row_en, col_en, P.data() + row_st + col_st*nbf, nbf);
+    //  }
     for(size_t i_t = 0, i_st = 0; i_t < ntile; ++i_t) {
-      size_t i_en = i_st + tile_heights[i_t] - 1; // inclusive bounds...
+      size_t i_en = i_st + tile_heights[i_t] - 1; // inclusive bounds... :(
       for(size_t j_t = 0, j_st = 0; j_t < ntile; ++j_t) {
-        size_t j_en = j_st + tile_widths[j_t] - 1; // inclusive bounds...
+        size_t j_en = j_st + tile_widths[j_t] - 1; // inclusive bounds... :(
 
-        // Extract contiguous subblock of P (in RowMajor!!!)
-        // TODO: It would be desireable to make Darray local storage ColMajor
-        Eigen::Matrix<double,-1,-1,Eigen::RowMajor> P_sub;
-        P_sub = P.block(i_st, j_st, tile_heights[i_t], tile_widths[j_t]);
+        // TODO: This could be made cleaner through a getter that 
+        // accesses tiles via their global tile coordinate / ordinal
+        auto tile_it = P_PGAS.tiles.find({i_st,j_st,i_en,j_en});
+        const bool tile_exists = tile_it != P_PGAS.tiles.end();
+        // TODO: this could be tile_it->is_local() for clarity
+        const bool tile_is_local = tile_exists and 
+          tile_it->second.first == upcxx::rank_me();
 
-        // Place submatrix
-        // TODO: this is locally blocking, should be made to be asyncrhonous
-        P_PGAS.put_contig(i_st,j_st,i_en,j_en,P_sub.data());
+        // Skip if tile isn't local since P is replicated
+        if(tile_is_local) {
+          // Extract contiguous subblock of P (in RowMajor!!!)
+          // TODO: It would be desireable to make Darray local storage ColMajor
+          Eigen::Matrix<double,-1,-1,Eigen::RowMajor> P_sub;
+          P_sub = P.block(i_st, j_st, tile_heights[i_t], tile_widths[j_t]);
+
+          // Place submatrix
+          // TODO: this is locally blocking, should be made to be asyncrhonous.
+          //       however, this is a local insert, so it doesn't matter here
+          P_PGAS.put_contig(i_st,j_st,i_en,j_en,P_sub.data());
+        }
 
         j_st += tile_heights[j_t];
       }
       i_st += tile_heights[i_t];
     }
+    upcxx::barrier(); // Wait for insertions to complete, 
+                      // everything should be local so this may not be needed
 
     if(world_rank == 0) {
-      std::cout << "P_eigen" << std::endl;
-      for(auto i = 0; i < nbf; ++i)
-      for(auto j = 0; j < nbf; ++j) {
-        std::cout << "(" << i << "," << j << ") -> " << std::fixed << P(i,j) << std::endl;
-      }
+      //std::cout << "P_eigen" << std::endl;
+      //for(auto i = 0; i < nbf; ++i)
+      //for(auto j = 0; j < nbf; ++j) {
+      //  std::cout << "(" << i << "," << j << ") -> " << std::fixed << P(i,j) << std::endl;
+      //}
 
-      std::cout << "P_pgas" << std::endl;
-      P_PGAS.print();
+      std::ofstream pgas_file("pgas.log");
+      pgas_file << std::setprecision(12);
+      P_PGAS.print(pgas_file);
     }
     
     upcxx::barrier();

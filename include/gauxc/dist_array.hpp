@@ -196,7 +196,7 @@ struct Darray // 2D
         std::cout << std::endl;
     }
 
-    void print() const noexcept
+    void print(std::ostream& out = std::cout) const noexcept
     {
         if(!team.rank_me())
         {
@@ -215,7 +215,7 @@ struct Darray // 2D
 
                 for(uint64_t i = t.first.row_min; i <= t.first.row_max; ++i)
                     for(uint64_t j = t.first.col_min; j <= t.first.col_max; ++j)
-                        std::cout << '(' << i << ',' << j << ") -> " << std::fixed << values[k++] << std::endl;
+                        out << '(' << i << ',' << j << ") -> " << std::fixed << values[k++] << std::endl;
             }
         }
     }
