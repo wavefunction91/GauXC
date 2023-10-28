@@ -27,15 +27,16 @@ endif()
 
 
 # GauXC Options
-option( GAUXC_ENABLE_HOST     "Enable Host Integrator"      ON  )
-option( GAUXC_ENABLE_CUDA     "Enable CUDA Bindings"        OFF )
-option( GAUXC_ENABLE_HIP      "Enable HIP Bindings"         OFF )
-option( GAUXC_ENABLE_MPI      "Enable MPI Bindings"         ON  )
-option( GAUXC_ENABLE_OPENMP   "Enable OpenMP Compilation"   ON  )
-option( GAUXC_ENABLE_TESTS    "Enable Unit Tests"           ON  )
-option( GAUXC_ENABLE_GAU2GRID "Enable Gau2Grid Collocation" ON  )
-option( GAUXC_ENABLE_HDF5     "Enable HDF5 Bindings"        ON  )
-option( GAUXC_ENABLE_FAST_RSQRT "Enable Fast RSQRT"         OFF )
+option( GAUXC_ENABLE_HOST       "Enable Host Integrator"      ON  )
+option( GAUXC_ENABLE_CUDA       "Enable CUDA Bindings"        OFF )
+option( GAUXC_ENABLE_HIP        "Enable HIP Bindings"         OFF )
+option( GAUXC_ENABLE_MPI        "Enable MPI Bindings"         ON  )
+option( GAUXC_ENABLE_OPENMP     "Enable OpenMP Compilation"   ON  )
+option( GAUXC_ENABLE_TESTS      "Enable Unit Tests"           ON  )
+option( GAUXC_ENABLE_GAU2GRID   "Enable Gau2Grid Collocation" ON  )
+option( GAUXC_ENABLE_HDF5       "Enable HDF5 Bindings"        ON  )
+option( GAUXC_ENABLE_FAST_RSQRT "Enable Fast RSQRT"           OFF )
+option( GAUXC_BLAS_PREFER_ILP64 "Enable ILP64 for host BLAS"  OFF )
 
 include(CMakeDependentOption)
 cmake_dependent_option( GAUXC_ENABLE_MAGMA    
