@@ -5,7 +5,11 @@
 #
 # See LICENSE.txt for details
 #
-find_package( BLAS  REQUIRED )
+if(GAUXC_BLAS_PREFER_ILP64)
+  find_package( BLAS REQUIRED OPTIONAL_COMPONENTS ilp64 )
+else()
+  find_package( BLAS REQUIRED )
+endif()
 include( gauxc-gau2grid     )
 
 target_sources( gauxc PRIVATE 
@@ -18,6 +22,16 @@ target_sources( gauxc PRIVATE
 
   blas.cxx
 )
+
+if(BLAS_IS_LP64) 
+  message(STATUS "Discovered BLAS is LP64")
+  set_target_properties(gauxc PROPERTIES COMPILE_DEFINITIONS BLAS_IS_LP64=1)
+else()
+  message(STATUS "Discovered BLAS is ILP64")
+  set_target_properties(gauxc PROPERTIES COMPILE_DEFINITIONS BLAS_IS_LP64=0)
+endif()
+set(GAUXC_BLAS_IS_LP64 ${BLAS_IS_LP64} CACHE BOOL "BLAS used in GauXC is LP64" FORCE)
+
 
 target_link_libraries( gauxc PUBLIC BLAS::BLAS )
 
