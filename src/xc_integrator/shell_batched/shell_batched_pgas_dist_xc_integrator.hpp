@@ -53,9 +53,10 @@ protected:
                             host_task_iterator task_begin, host_task_iterator task_end,
                             incore_integrator_type& incore_integrator );
 
-  void execute_task_batch( incore_task_data& task, const basis_type& basis, const Molecule& mol, const value_type* P,
-                           int64_t ldp, value_type* VXC, int64_t ldvxc, value_type* EXC,
-                           value_type* N_EL, incore_integrator_type& incore_integrator);
+  // TODO DBWY: This will evenetually need to be refactored into three functions, for now 
+  //            we're just having the full "get + local_work + accumulate" be the packaged task
+  void execute_task_batch( incore_task_data& task, const basis_type& basis, const Molecule& mol, const matrix_type& P,
+                           matrix_type& VXC, value_type* EXC, value_type* N_EL, incore_integrator_type& incore_integrator);
 public:
 
   template <typename... Args>

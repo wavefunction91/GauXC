@@ -92,23 +92,20 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
                        incore_integrator_type& incore_integrator ) {
 
   std::cout << "***** MADE IT IN PGAS DRIVER *****" << std::endl;
-#if 0
-  //incore_integrator.exc_vxc_local_work( basis, P, ldp, VXC, ldvxc, EXC, N_EL, task_begin, task_end, device_data );
-  //return;
 
-  std::cout << "TOP SB" << std::endl;
 
   const auto nbf = basis.nbf();
-  const uint32_t nbf_threshold = 8000;
+  const uint32_t nbf_threshold = 8000; // TODO DBWY : make this configurable
   const auto& mol = this->load_balancer_->molecule();
   // Zero out integrands on host
-  this->timer_.time_op("XCIntegrator.ZeroHost", [&](){
-    *EXC  = 0.;
-    *N_EL = 0.;
-    for( auto j = 0; j < nbf; ++j )
-    for( auto i = 0; i < nbf; ++i )
-      VXC[i + j*ldvxc] = 0.;
-  });
+
+  // TODO Johnny: These may need to be global pointers
+  *EXC  = 0.;
+  *N_EL = 0.;
+  // TODO Johnny: add a function to Darray that zeros out local memory
+  //for( auto j = 0; j < nbf; ++j )
+  //for( auto i = 0; i < nbf; ++i )
+  //  VXC[i + j*ldvxc] = 0.;
 
 
   // Task queue
@@ -134,7 +131,7 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
     }
 
     // Execute task
-    execute_task_batch( next_task, basis, mol, P, ldp, VXC, ldvxc, EXC, N_EL,
+    execute_task_batch( next_task, basis, mol, P, VXC, EXC, N_EL,
       incore_integrator );
   };
 
@@ -178,7 +175,7 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
   while( not incore_task_data_queue.empty() ) {
     execute_incore_task();
   }
-#endif
+      
 }
 
 
@@ -186,10 +183,10 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
 template <typename BaseIntegratorType, typename IncoreIntegratorType>
 void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegratorType>::
   execute_task_batch( incore_task_data& task, const basis_type& basis, const Molecule& mol, 
-                      const value_type* P, int64_t ldp, value_type* VXC, int64_t ldvxc, 
-                      value_type* EXC, value_type *N_EL, incore_integrator_type& incore_integrator ) {
+                      const matrix_type& P, matrix_type& VXC, value_type* EXC, value_type *N_EL, 
+                      incore_integrator_type& incore_integrator ) {
 
-  std::cout << "IN TASK BATCH" << std::endl;
+  std::cout << "IN TASK BATCH PGAS" << std::endl;
 
   // Alias information
   auto task_begin  = task.task_begin;
@@ -244,8 +241,10 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
       basis.nbf(), basis.nbf() );
 
   this->timer_.time_op_accumulate("XCIntegrator.ExtractSubDensity",[&]() {
-    detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, P, ldp, 
-                        P_submat, nbe, union_submat_cut );
+    //TODO Johnny: this is where the GET operation needs to be injected
+    //             populate P_submat as a local column major matrix
+    //detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, P, ldp, 
+    //                    P_submat, nbe, union_submat_cut );
   } );
 
 
@@ -264,11 +263,18 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
 
 
   // Update full quantities
+  // TODO: Johnny both the scalar and matrix accumulations need to be global
+  //       and atomic here - we could potentially not have the scalar operations
+  //       be global here and just use a Allreduce at the end, but for now it 
+  //       may make things easier just to have everything be RMA to be consistent.
+  //       Should have a negligible impact on overall performance
   *EXC += EXC_tmp;
   *N_EL += NEL_tmp;
   this->timer_.time_op_accumulate("XCIntegrator.IncrementSubPotential",[&]() {
-    detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXC, ldvxc, 
-                           VXC_submat, nbe, union_submat_cut );
+    //TODO: Johnny, this is the global atomic matrix increment needs to be
+    //      injected (NYI in Darray AFAIK)
+    //detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXC, ldvxc, 
+    //                       VXC_submat, nbe, union_submat_cut );
   });
 
 
