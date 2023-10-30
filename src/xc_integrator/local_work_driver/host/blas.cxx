@@ -9,6 +9,12 @@
 #include <type_traits>
 #include <gauxc/exceptions.hpp>
 
+#if BLAS_IS_LP64
+  #define blas_int int32_t
+#else
+  #define blas_int int64_t
+#endif
+
 extern "C" {
 
 //void dlacpy_( const char* UPLO, const int* M, const int* N, const double* A, 
@@ -16,35 +22,35 @@ extern "C" {
 //void slacpy_( const char* UPLO, const int* M, const int* N, const float* A, 
 //              const int* LDA, float* B, const int* LDB );
 
-void dgemm_( const char* TA, const char* TB, const int* M, const int* N, 
-             const int* K, const double* ALPHA, const double* A, 
-             const int* LDA, const double* B, const int* LDB, 
-             const double* BETA, double* C, const int* LDC );
-void sgemm_( const char* TA, const char* TB, const int* M, const int* N, 
-             const int* K, const float* ALPHA, const float* A, 
-             const int* LDA, const float* B, const int* LDB, 
-             const float* BETA, float* C, const int* LDC );
+void dgemm_( const char* TA, const char* TB, const blas_int* M, const blas_int* N, 
+             const blas_int* K, const double* ALPHA, const double* A, 
+             const blas_int* LDA, const double* B, const blas_int* LDB, 
+             const double* BETA, double* C, const blas_int* LDC );
+void sgemm_( const char* TA, const char* TB, const blas_int* M, const blas_int* N, 
+             const blas_int* K, const float* ALPHA, const float* A, 
+             const blas_int* LDA, const float* B, const blas_int* LDB, 
+             const float* BETA, float* C, const blas_int* LDC );
 
-void dsyr2k_( const char* UPLO, const char* TRANS, const int* N, const int* K, 
-              const double* ALPHA, const double* A, const int* LDA, const double* B, 
-              const int* LDB, const double* BETA, double* C, const int* LDC ); 
-void ssyr2k_( const char* UPLO, const char* TRANS, const int* N, const int* K, 
-              const float* ALPHA, const float* A, const int* LDA, const float* B, 
-              const int* LDB, const float* BETA, float* C, const int* LDC ); 
+void dsyr2k_( const char* UPLO, const char* TRANS, const blas_int* N, const blas_int* K, 
+              const double* ALPHA, const double* A, const blas_int* LDA, const double* B, 
+              const blas_int* LDB, const double* BETA, double* C, const blas_int* LDC ); 
+void ssyr2k_( const char* UPLO, const char* TRANS, const blas_int* N, const blas_int* K, 
+              const float* ALPHA, const float* A, const blas_int* LDA, const float* B, 
+              const blas_int* LDB, const float* BETA, float* C, const blas_int* LDC ); 
 
-double ddot_( const int* N, const double* X, const int* INCX, const double* Y, 
-              const int* INCY );
-float sdot_( const int* N, const float* X, const int* INCX, const float* Y, 
-              const int* INCY );
+double ddot_( const blas_int* N, const double* X, const blas_int* INCX, const double* Y, 
+              const blas_int* INCY );
+float sdot_( const blas_int* N, const float* X, const blas_int* INCX, const float* Y, 
+              const blas_int* INCY );
 
 
-void daxpy_( const int* N, const double* ALPHA, const double* A, const int* INCX, 
-             double* Y, const int* INCY );
-void saxpy_( const int* N, const float* ALPHA, const float* A, const int* INCX, 
-             float* Y, const int* INCY );
+void daxpy_( const blas_int* N, const double* ALPHA, const double* A, const blas_int* INCX, 
+             double* Y, const blas_int* INCY );
+void saxpy_( const blas_int* N, const float* ALPHA, const float* A, const blas_int* INCX, 
+             float* Y, const blas_int* INCY );
 
-void dscal_( const int* N, const double* ALPHA, const double* X, const int* INCX );
-void sscal_( const int* N, const float* ALPHA, const float* X, const int* INCX ); 
+void dscal_( const blas_int* N, const double* ALPHA, const double* X, const blas_int* INCX );
+void sscal_( const blas_int* N, const float* ALPHA, const float* X, const blas_int* INCX ); 
 }
 
 namespace GauXC::blas {
@@ -97,10 +103,16 @@ template void lacpy( char UPLO, int M, int N, const double* A, int LDA,
 
 
 template <typename T>
-void gemm( char TA, char TB, int M, int N, int K, T ALPHA, 
-           const T* A, int LDA, const T* B, int LDB, T BETA,
-           T* C, int LDC ) {
+void gemm( char TA, char TB, int _M, int _N, int _K, T ALPHA, 
+           const T* A, int _LDA, const T* B, int _LDB, T BETA,
+           T* C, int _LDC ) {
 
+  blas_int M   = _M;
+  blas_int N   = _N;
+  blas_int K   = _K;
+  blas_int LDA = _LDA;
+  blas_int LDB = _LDB;
+  blas_int LDC = _LDC;
 
   if constexpr ( std::is_same_v<T,float> )
     sgemm_( &TA, &TB, &M, &N, &K, &ALPHA, A, &LDA, B, &LDB, &BETA, C, &LDC );
@@ -126,10 +138,15 @@ void gemm( char doubleA, char doubleB, int M, int N, int K, double ALPHA,
 
 
 template <typename T>
-void syr2k( char UPLO, char TRANS, int N, int K, T ALPHA,
-            const T* A, int LDA, const T* B, int LDB, T BETA, 
-            T* C, int LDC ) {
+void syr2k( char UPLO, char TRANS, int _N, int _K, T ALPHA,
+            const T* A, int _LDA, const T* B, int _LDB, T BETA, 
+            T* C, int _LDC ) {
 
+  blas_int N   = _N;
+  blas_int K   = _K;
+  blas_int LDA = _LDA;
+  blas_int LDB = _LDB;
+  blas_int LDC = _LDC;
 
   if constexpr ( std::is_same_v<T,float> )
     ssyr2k_( &UPLO, &TRANS, &N, &K, &ALPHA, A, &LDA, B, &LDB, &BETA, C, &LDC );
@@ -156,7 +173,11 @@ void syr2k( char UPLO, char doubleRANS, int N, int K, double ALPHA,
 
 
 template <typename T>
-T dot( int N, const T* X, int INCX, const T* Y, int INCY ) {
+T dot( int _N, const T* X, int _INCX, const T* Y, int _INCY ) {
+
+  blas_int N    = _N;
+  blas_int INCX = _INCX;
+  blas_int INCY = _INCY;
 
   if constexpr ( std::is_same_v<T,float> )
     return sdot_(&N, X, &INCX, Y, &INCY);
@@ -178,7 +199,11 @@ double dot( int N, const double* X, int INCX, const double* Y, int INCY );
 
 
 template <typename T>
-void axpy( int N, T ALPHA, const T* X, int INCX, T* Y, int INCY ) {
+void axpy( int _N, T ALPHA, const T* X, int _INCX, T* Y, int _INCY ) {
+
+  blas_int N    = _N;
+  blas_int INCX = _INCX;
+  blas_int INCY = _INCY;
 
   if constexpr ( std::is_same_v<T,float> )
     saxpy_(&N, &ALPHA, X, &INCX, Y, &INCY );
@@ -201,7 +226,10 @@ void axpy( int N, double ALPHA, const double* A, int INCX, double* Y,
 
 
 template <typename T>
-void scal( int N, T ALPHA, T* X, int INCX ) {
+void scal( int _N, T ALPHA, T* X, int _INCX ) {
+
+  blas_int N    = _N;
+  blas_int INCX = _INCX;
 
   if constexpr ( std::is_same_v<T,float> )
     sscal_(&N, &ALPHA, X, &INCX );
