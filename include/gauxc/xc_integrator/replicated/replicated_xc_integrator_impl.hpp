@@ -123,7 +123,6 @@ public:
                      value_type* VXCy, int64_t ldvxcy,
                      value_type* VXCx, int64_t ldvxcx,
                      value_type* EXC, const IntegratorSettingsXC& ks_settings );
-
   
   void neo_eval_exc_vxc( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
                          const value_type* P1s, int64_t ldp1s,

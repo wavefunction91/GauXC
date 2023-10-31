@@ -22,6 +22,34 @@ LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule
 }
 
 LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
+  const MolGrid& mg, const basis_type& basis, const basis_type& basis2, std::shared_ptr<MolMeta> molmeta ) :
+  runtime_(rt), 
+  mol_( std::make_shared<Molecule>(mol) ),
+  mg_( std::make_shared<MolGrid>(mg)  ),
+  basis_( std::make_shared<basis_type>(basis) ),
+  basis2_( std::make_shared<basis_type>(basis2) ),
+  molmeta_( molmeta ) { 
+
+  basis_map_   = std::make_shared<basis_map_type>(*basis_, mol);
+  basis_map2_   = std::make_shared<basis_map_type>(*basis2_, mol);
+
+}
+
+LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
+  const MolGrid& mg, const basis_type& basis, const basis_type& basis2, std::shared_ptr<MolMeta> molmeta ) :
+  runtime_(rt), 
+  mol_( std::make_shared<Molecule>(mol) ),
+  mg_( std::make_shared<MolGrid>(mg)  ),
+  basis_( std::make_shared<basis_type>(basis) ),
+  basis2_( std::make_shared<basis_type>(basis2) ),
+  molmeta_( molmeta ) {
+
+  basis_map_   = std::make_shared<basis_map_type>(*basis_, mol);
+  basis_map2_   = std::make_shared<basis_map_type>(*basis2_, mol);
+
+}
+
+LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
   const MolGrid& mg, const basis_type& basis, const MolMeta& molmeta ) :
   LoadBalancerImpl( rt, mol, mg, basis, std::make_shared<MolMeta>(molmeta) ) { }
 
@@ -29,6 +57,13 @@ LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule
   const MolGrid& mg, const basis_type& basis ) :
   LoadBalancerImpl( rt, mol, mg, basis, std::make_shared<MolMeta>(mol) ) { }
 
+LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
+  const MolGrid& mg, const basis_type& basis, const basis_type& basis2 ) :
+  LoadBalancerImpl( rt, mol, mg, basis, basis2, std::make_shared<MolMeta>(mol) ) { }
+
+LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
+  const MolGrid& mg, const basis_type& basis, const basis_type& basis2, const MolMeta& molmeta ) :
+  LoadBalancerImpl( rt, mol, mg, basis, basis2, std::make_shared<MolMeta>(molmeta) ) { }
 
 LoadBalancerImpl::LoadBalancerImpl( const LoadBalancerImpl& ) = default;
 LoadBalancerImpl::LoadBalancerImpl( LoadBalancerImpl&& ) noexcept = default;
