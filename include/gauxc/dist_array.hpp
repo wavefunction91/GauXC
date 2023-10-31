@@ -3,10 +3,10 @@
 #include "upcxx/upcxx.hpp"
 
 constexpr char distribution = 0; // 0 -> Cyclic, 1 -> Contiguous
-using real = double;
 
-struct Tile
+class Tile
 {
+public:
     Tile(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max)
     : row_min(row_min), col_min(col_min), row_max(row_max), col_max(col_max) {}
 
@@ -18,9 +18,11 @@ struct Tile
     uint64_t row_min, col_min, row_max, col_max;
 };
 
-struct Darray // 2D
+class Darray // 2D
 {
+public:
     using value_type = double;
+
     Darray( const upcxx::team& t = upcxx::world() ) : team(t) {} // TODO: default(ish), if we want tp preclude this behavior, then we have to add some extra logic to the drivers  
     Darray(const std::vector<uint64_t>& tile_heights, const std::vector<uint64_t>& tile_widths, const upcxx::team& team = upcxx::world()) noexcept :
         tile_heights(tile_heights), tile_widths(tile_widths), team(team)
@@ -37,7 +39,7 @@ struct Darray // 2D
         auto ranks = team.rank_n();
         uint64_t tiles_per_proc = (ntiles + ranks - 1) / ranks;
         upcxx::intrank_t owner = 0;
-        uint64_t* offsets = new uint64_t[ranks]();
+        std::vector<uint64_t> offsets(ranks, 0);
 
         for(uint64_t i = 0, ii = 0; i < nrows; i += tile_heights[ii], ++ii)
             for(uint64_t j = 0, jj = 0; j < ncols; j += tile_widths[jj], ++jj)
@@ -54,7 +56,7 @@ struct Darray // 2D
 
         local_nelems = offsets[team.rank_me()];
 
-        local_gptr = upcxx::new_array<real>(local_nelems);
+        local_gptr = upcxx::new_array<value_type>(local_nelems);
 
         gptrs.resize(ranks);
         upcxx::promise<> p(ranks);
@@ -65,14 +67,12 @@ struct Darray // 2D
                 p.fulfill_anonymous(1);
             });
         p.get_future().wait();
-
-        delete[] offsets;
     }
 
     // Get a chunk of contiguous elements. e.g. a single element, a whole tile, or a contiguous
     // subset of a tile.
     template <bool copy = true>
-    void get_contig(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, real** buf) const noexcept
+    void get_contig(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, value_type** buf) const noexcept
     {
         const auto& t = tiles.find({row_min, col_min, row_max, col_max});
 
@@ -94,7 +94,7 @@ struct Darray // 2D
 
     // Put a chunk of contiguous elements. e.g. a single element, a whole tile, or a contiguous
     // subset of a tile.
-    void put_contig(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, const real* buf) const noexcept
+    void put_contig(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, const value_type* buf) const noexcept
     {
         const auto& t = tiles.find({row_min, col_min, row_max, col_max});
 
@@ -112,11 +112,11 @@ struct Darray // 2D
     }
 
     // TODO: This function will be improved by using logic + rget_strided(...)
-    void get(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, real* buf) const noexcept
+    void get(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, value_type* buf) const noexcept
     {
         uint64_t next = 0;
         upcxx::promise<> p;
-        std::unordered_map<upcxx::intrank_t, std::pair<std::vector<upcxx::global_ptr<real>>, std::vector<real*>>> all_gets;
+        std::unordered_map<upcxx::intrank_t, std::pair<std::vector<upcxx::global_ptr<value_type>>, std::vector<value_type*>>> all_gets;
 
         for(uint64_t i = row_min; i <= row_max; ++i)
             for(uint64_t j = col_min; j <= col_max; ++j)
@@ -134,7 +134,7 @@ struct Darray // 2D
                 }
             }
 
-        auto sz = sizeof(real);
+        auto sz = sizeof(value_type);
 
         for(const auto& x: all_gets)
             upcxx::rget_regular(x.second.first.begin(), x.second.first.end(), sz,
@@ -145,10 +145,10 @@ struct Darray // 2D
     }
 
     // TODO: This function will be improved by using logic + rput_strided(...)
-    void put(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, real* buf) const noexcept
+    void put(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, value_type* buf) const noexcept
     {
         uint64_t next = 0;
-        std::unordered_map<upcxx::intrank_t, std::pair<std::vector<real*>, std::vector<upcxx::global_ptr<real>>>> all_puts;
+        std::unordered_map<upcxx::intrank_t, std::pair<std::vector<value_type*>, std::vector<upcxx::global_ptr<value_type>>>> all_puts;
 
         for(uint64_t i = row_min; i <= row_max; ++i)
             for(uint64_t j = col_min; j <= col_max; ++j)
@@ -167,7 +167,7 @@ struct Darray // 2D
             }
 
         upcxx::promise<> p;
-        auto sz = sizeof(real);
+        auto sz = sizeof(value_type);
 
         for(const auto& x: all_puts)
         upcxx::rput_regular(x.second.first.begin(), x.second.first.end(), sz,
@@ -180,7 +180,7 @@ struct Darray // 2D
     void fill() noexcept
     {
         std::mt19937 gen(team.rank_me());
-        std::uniform_real_distribution<double> distribution(0.0, 1.0);
+        std::uniform_real_distribution<value_type> distribution(0.0, 1.0);
         std::generate_n(local_gptr.local(), local_nelems, [&](){ return distribution(gen); });
         //std::fill_n(local_gptr.local(), local_nelems, team.rank_me());
     }
@@ -200,14 +200,14 @@ struct Darray // 2D
     {
         if(!team.rank_me())
         {
-            std::vector<real> values;
-            // real* values;
+            std::vector<value_type> values;
+            // value_type* values;
 
             for(const auto& t : tiles)
             {
                 values.resize((t.first.row_max - t.first.row_min + 1) * (t.first.col_max - t.first.col_min + 1));
 
-                get_contig(t.first.row_min, t.first.col_min, t.first.row_max, t.first.col_max, (real**)&values);
+                get_contig(t.first.row_min, t.first.col_min, t.first.row_max, t.first.col_max, (value_type**)&values);
                 // OR:
                 // get_contig<false>(t.first.row_min, t.first.col_min, t.first.row_max, t.first.col_max, &values);
 
@@ -221,7 +221,7 @@ struct Darray // 2D
     }
 
     template <char operation = '='>
-    Darray& op(const real* buf) noexcept
+    Darray& op(const value_type* buf) noexcept
     {
         for(const auto& t : tiles)
             if(t.second.first == team.rank_me())
@@ -260,8 +260,8 @@ struct Darray // 2D
 
     uint64_t nrows, ncols, nelems, ntiles, local_nelems;
     std::vector<uint64_t> tile_heights, tile_widths;
-    std::vector<upcxx::global_ptr<real>> gptrs;
+    std::vector<upcxx::global_ptr<value_type>> gptrs;
     std::map<Tile, std::pair<upcxx::intrank_t, uint64_t>> tiles;
-    upcxx::global_ptr<real> local_gptr;
+    upcxx::global_ptr<value_type> local_gptr;
     const upcxx::team& team;
 };
