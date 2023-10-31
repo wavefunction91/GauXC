@@ -122,6 +122,38 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
+  neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
+                    const value_type* P1s, int64_t ldp1s,
+                    const value_type* P2s, int64_t ldp2s,
+                    const value_type* P2z, int64_t ldp2z,
+                    value_type* VXC1s, int64_t ldvxc1s,
+                    value_type* VXC2s, int64_t ldvxc2s,
+                    value_type* VXC2z, int64_t ldvxc2z,
+                    value_type* EXC ) {
+
+  GauXC::util::unused(m1,n1,m2,n2,P1s,ldp1s,P2s,ldp2s,P2z,ldp2z,VXC1s,ldvxc1s,VXC2s,ldvxc2s,VXC2z,ldvxc2z,EXC);
+  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+}
+
+template <typename ValueType>
+void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
+  neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
+                    const value_type* P1s, int64_t ldp1s,
+                    const value_type* P1z, int64_t ldp1z,
+                    const value_type* P2s, int64_t ldp2s,
+                    const value_type* P2z, int64_t ldp2z,
+                    value_type* VXC1s, int64_t ldvxc1s,
+                    value_type* VXC1z, int64_t ldvxc1z,
+                    value_type* VXC2s, int64_t ldvxc2s,
+                    value_type* VXC2z, int64_t ldvxc2z,
+                    value_type* EXC ) {
+
+  GauXC::util::unused(m1,n1,m2,n2,P1s,ldp1s,P1z,ldp1z,P2s,ldp2s,P2z,ldp2z,VXC1s,ldvxc1s,VXC1z,ldvxc1z,VXC2s,ldvxc2s,VXC2z,ldvxc2z,EXC);
+  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+}
+
+template <typename ValueType>
+void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                        value_type* VXC, int64_t ldvxc, value_type* EXC, value_type *N_EL,
                        host_task_iterator task_begin, host_task_iterator task_end,

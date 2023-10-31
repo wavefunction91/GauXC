@@ -120,6 +120,57 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_gks
 }
 
 template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_neo_rks
+  ReplicatedXCIntegrator<MatrixType>::neo_eval_exc_vxc_( const MatrixType& elec_Ps, const MatrixType& prot_Ps, const MatrixType& prot_Pz,
+                                                         const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  matrix_type elec_VXCs( elec_Ps.rows(), elec_Ps.cols() );
+  matrix_type prot_VXCs( prot_Ps.rows(), prot_Ps.cols() );
+  matrix_type prot_VXCz( prot_Pz.rows(), prot_Pz.cols() );
+  value_type  EXC;
+
+  pimpl_->neo_eval_exc_vxc( elec_Ps.rows(), elec_Ps.cols(), prot_Ps.rows(), prot_Ps.cols(),
+                            elec_Ps.data(), elec_Ps.rows(),
+                            prot_Ps.data(), prot_Ps.rows(),
+                            prot_Pz.data(), prot_Pz.rows(),
+                            elec_VXCs.data(), elec_VXCs.rows(),
+                            prot_VXCs.data(), prot_VXCs.rows(),
+                            prot_VXCz.data(), prot_VXCz.rows(),
+                            &EXC);
+
+  return std::make_tuple( EXC, elec_VXCs, prot_VXCs, prot_VXCz );
+
+}
+
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_neo_uks
+  ReplicatedXCIntegrator<MatrixType>::neo_eval_exc_vxc_( const MatrixType& elec_Ps, const MatrixType& elec_Pz, const MatrixType& prot_Ps, const MatrixType& prot_Pz,
+                                                         const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  matrix_type elec_VXCs( elec_Ps.rows(), elec_Ps.cols() );
+  matrix_type elec_VXCz( elec_Pz.rows(), elec_Pz.cols() );
+  matrix_type prot_VXCs( prot_Ps.rows(), prot_Ps.cols() );
+  matrix_type prot_VXCz( prot_Pz.rows(), prot_Pz.cols() );
+  value_type  EXC;
+
+  pimpl_->neo_eval_exc_vxc( elec_Ps.rows(), elec_Ps.cols(), prot_Ps.rows(), prot_Ps.cols(),
+                            elec_Ps.data(), elec_Ps.rows(),
+                            elec_Pz.data(), elec_Pz.rows(),
+                            prot_Ps.data(), prot_Ps.rows(),
+                            prot_Pz.data(), prot_Pz.rows(),
+                            elec_VXCs.data(), elec_VXCs.rows(),
+                            elec_VXCz.data(), elec_VXCz.rows(),
+                            prot_VXCs.data(), prot_VXCs.rows(),
+                            prot_VXCz.data(), prot_VXCz.rows(),
+                            &EXC);
+
+  return std::make_tuple( EXC, elec_VXCs, elec_VXCz, prot_VXCs, prot_VXCz );
+
+}
+
+template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type 
   ReplicatedXCIntegrator<MatrixType>::eval_exc_grad_( const MatrixType& P ) {
 
