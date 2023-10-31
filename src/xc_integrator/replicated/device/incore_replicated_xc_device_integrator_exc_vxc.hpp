@@ -148,8 +148,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                     value_type* VXC1s, int64_t ldvxc1s,
                     value_type* VXC2s, int64_t ldvxc2s,
                     value_type* VXC2z, int64_t ldvxc2z,
-                    value_type* EXC, const IntegratorSettingsXC& settings ) {
-  GauXC::util::unused(m1,n1,m2,n2,P1s,ldp1s,P2s,ldp2s,P2z,ldp2z,VXC1s,ldvxc1s,VXC2s,ldvxc2s,VXC2z,ldvxc2z,EXC,settings);
+                    value_type* EXC1,  value_type* EXC2, const IntegratorSettingsXC& settings ) {
+  GauXC::util::unused(m1,n1,m2,n2,P1s,ldp1s,P2s,ldp2s,P2z,ldp2z,VXC1s,ldvxc1s,VXC2s,ldvxc2s,VXC2z,ldvxc2z,EXC1,EXC2,settings);
   GAUXC_GENERIC_EXCEPTION("NEO-RKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
@@ -164,9 +164,9 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                     value_type* VXC1z, int64_t ldvxc1z,
                     value_type* VXC2s, int64_t ldvxc2s,
                     value_type* VXC2z, int64_t ldvxc2z,
-                    value_type* EXC, const IntegratorSettingsXC& settings ) {
+                    value_type* EXC1,  value_type* EXC2, const IntegratorSettingsXC& settings ) {
 
-  GauXC::util::unused(m1,n1,m2,n2,P1s,ldp1s,P1z,ldp1z,P2s,ldp2s,P2z,ldp2z,VXC1s,ldvxc1s,VXC1z,ldvxc1z,VXC2s,ldvxc2s,VXC2z,ldvxc2z,EXC,settings);
+  GauXC::util::unused(m1,n1,m2,n2,P1s,ldp1s,P1z,ldp1z,P2s,ldp2s,P2z,ldp2z,VXC1s,ldvxc1s,VXC1z,ldvxc1z,VXC2s,ldvxc2s,VXC2z,ldvxc2z,EXC1,EXC2,settings);
   GAUXC_GENERIC_EXCEPTION("NEO-UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 

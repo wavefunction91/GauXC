@@ -95,7 +95,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
                     value_type* VXC1s, int64_t ldvxc1s,
                     value_type* VXC2s, int64_t ldvxc2s,
                     value_type* VXC2z, int64_t ldvxc2z,
-                    value_type* EXC ){
+                    value_type* EXC1,  value_type* EXC2){
 
     neo_eval_exc_vxc_(m1,n1,m2,n2, 
                       P1s,ldp1s,
@@ -104,7 +104,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
                       VXC1s,ldvxc1s,
                       VXC2s,ldvxc2s,
                       VXC2z,ldvxc2z,
-                      EXC); 
+                      EXC1, EXC2); 
 
 }
 
@@ -119,7 +119,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
                     value_type* VXC1z, int64_t ldvxc1z,
                     value_type* VXC2s, int64_t ldvxc2s,
                     value_type* VXC2z, int64_t ldvxc2z,
-                    value_type* EXC ){
+                    value_type* EXC1,  value_type* EXC2 ){
 
     neo_eval_exc_vxc_(m1,n1,m2,n2, 
                       P1s,ldp1s,
@@ -130,7 +130,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
                       VXC1z,ldvxc1z,
                       VXC2s,ldvxc2s,
                       VXC2z,ldvxc2z,
-                      EXC); 
+                      EXC1, EXC2); 
 
 }
 

@@ -128,7 +128,8 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_neo_rks
   matrix_type elec_VXCs( elec_Ps.rows(), elec_Ps.cols() );
   matrix_type prot_VXCs( prot_Ps.rows(), prot_Ps.cols() );
   matrix_type prot_VXCz( prot_Pz.rows(), prot_Pz.cols() );
-  value_type  EXC;
+  value_type  elec_EXC;
+  value_type  prot_EXC;
 
   pimpl_->neo_eval_exc_vxc( elec_Ps.rows(), elec_Ps.cols(), prot_Ps.rows(), prot_Ps.cols(),
                             elec_Ps.data(), elec_Ps.rows(),
@@ -137,9 +138,9 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_neo_rks
                             elec_VXCs.data(), elec_VXCs.rows(),
                             prot_VXCs.data(), prot_VXCs.rows(),
                             prot_VXCz.data(), prot_VXCz.rows(),
-                            &EXC);
+                            &elec_EXC, &prot_EXC);
 
-  return std::make_tuple( EXC, elec_VXCs, prot_VXCs, prot_VXCz );
+  return std::make_tuple( elec_EXC, prot_EXC, elec_VXCs, prot_VXCs, prot_VXCz );
 
 }
 
@@ -153,7 +154,8 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_neo_uks
   matrix_type elec_VXCz( elec_Pz.rows(), elec_Pz.cols() );
   matrix_type prot_VXCs( prot_Ps.rows(), prot_Ps.cols() );
   matrix_type prot_VXCz( prot_Pz.rows(), prot_Pz.cols() );
-  value_type  EXC;
+  value_type  elec_EXC;
+  value_type  prot_EXC;
 
   pimpl_->neo_eval_exc_vxc( elec_Ps.rows(), elec_Ps.cols(), prot_Ps.rows(), prot_Ps.cols(),
                             elec_Ps.data(), elec_Ps.rows(),
@@ -164,9 +166,9 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_neo_uks
                             elec_VXCz.data(), elec_VXCz.rows(),
                             prot_VXCs.data(), prot_VXCs.rows(),
                             prot_VXCz.data(), prot_VXCz.rows(),
-                            &EXC);
+                            &elec_EXC, &prot_EXC);
 
-  return std::make_tuple( EXC, elec_VXCs, elec_VXCz, prot_VXCs, prot_VXCz );
+  return std::make_tuple( elec_EXC, prot_EXC, elec_VXCs, elec_VXCz, prot_VXCs, prot_VXCz );
 
 }
 
