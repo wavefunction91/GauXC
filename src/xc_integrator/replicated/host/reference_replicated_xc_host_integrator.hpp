@@ -55,7 +55,7 @@ protected:
                       value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
 
 
-  void neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
+  void eval_neo_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
                           const value_type* P1s, int64_t ldp1s,
                           const value_type* P2s, int64_t ldp2s,
                           const value_type* P2z, int64_t ldp2z,
@@ -64,7 +64,7 @@ protected:
                           value_type* VXC2z, int64_t ldvxc2z,
                           value_type* EXC1, value_type* EXC2, const IntegratorSettingsXC& ks_settings ) override;
 
-  void neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
+  void eval_neo_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
                           const value_type* P1s, int64_t ldp1s,
                           const value_type* P1z, int64_t ldp1z,
                           const value_type* P2s, int64_t ldp2s,
@@ -104,22 +104,14 @@ protected:
                             const IntegratorSettingsXC& ks_settings );
 
   void neo_exc_vxc_local_work_( const value_type* P1s, int64_t ldp1s,
-                                 const value_type* P2s, int64_t ldp2s,
-                                 const value_type* P2z, int64_t ldp2z,
-                                 value_type* VXC1s, int64_t ldvxc1s,
-                                 value_type* VXC2s, int64_t ldvxc2s,
-                                 value_type* VXC2z, int64_t ldvxc2z,
-                                 value_type* EXC1, value_type* EXC2, value_type *N_EL );
-
-  void neo_exc_vxc_local_work_( const value_type* P1s, int64_t ldp1s,
-                                 const value_type* P1z, int64_t ldp1z,
-                                 const value_type* P2s, int64_t ldp2s,
-                                 const value_type* P2z, int64_t ldp2z,
-                                 value_type* VXC1s, int64_t ldvxc1s,
-                                 value_type* VXC1z, int64_t ldvxc1z,
-                                 value_type* VXC2s, int64_t ldvxc2s,
-                                 value_type* VXC2z, int64_t ldvxc2z,
-                                 value_type* EXC1, value_type* EXC2, value_type *N_EL );
+                                const value_type* P1z, int64_t ldp1z,
+                                const value_type* P2s, int64_t ldp2s,
+                                const value_type* P2z, int64_t ldp2z,
+                                value_type* VXC1s, int64_t ldvxc1s,
+                                value_type* VXC1z, int64_t ldvxc1z,
+                                value_type* VXC2s, int64_t ldvxc2s,
+                                value_type* VXC2z, int64_t ldvxc2z,
+                                value_type* EXC1, value_type* EXC2, value_type *N_EL );
                             
   void exc_grad_local_work_( const value_type* P, int64_t ldp, value_type* EXC_GRAD );
   void exx_local_work_( const value_type* P, int64_t ldp, value_type* K, int64_t ldk,

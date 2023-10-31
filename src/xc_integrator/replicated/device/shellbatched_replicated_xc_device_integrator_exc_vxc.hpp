@@ -122,7 +122,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
-  neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
+  eval_neo_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
                     const value_type* P1s, int64_t ldp1s,
                     const value_type* P2s, int64_t ldp2s,
                     const value_type* P2z, int64_t ldp2z,
@@ -132,12 +132,12 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
                     value_type* EXC1,  value_type* EXC2 ) {
 
   GauXC::util::unused(m1,n1,m2,n2,P1s,ldp1s,P2s,ldp2s,P2z,ldp2z,VXC1s,ldvxc1s,VXC2s,ldvxc2s,VXC2z,ldvxc2z,EXC);
-  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+  GAUXC_GENERIC_EXCEPTION("NEO RKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
-  neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
+  eval_neo_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
                     const value_type* P1s, int64_t ldp1s,
                     const value_type* P1z, int64_t ldp1z,
                     const value_type* P2s, int64_t ldp2s,
@@ -149,7 +149,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
                     value_type* EXC1,  value_type* EXC2 ) {
 
   GauXC::util::unused(m1,n1,m2,n2,P1s,ldp1s,P1z,ldp1z,P2s,ldp2s,P2z,ldp2z,VXC1s,ldvxc1s,VXC1z,ldvxc1z,VXC2s,ldvxc2s,VXC2z,ldvxc2z,EXC);
-  GAUXC_GENERIC_EXCEPTION("NOT YET IMPLEMENTED");
+  GAUXC_GENERIC_EXCEPTION("NEO UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
 template <typename ValueType>

@@ -88,7 +88,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
 
 template <typename ValueType>
 void ReplicatedXCIntegratorImpl<ValueType>::
-  neo_eval_exc_vxc( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
+  eval_neo_exc_vxc( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
                     const value_type* P1s, int64_t ldp1s,
                     const value_type* P2s, int64_t ldp2s,
                     const value_type* P2z, int64_t ldp2z,
@@ -97,7 +97,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
                     value_type* VXC2z, int64_t ldvxc2z,
                     value_type* EXC1,  value_type* EXC2){
 
-    neo_eval_exc_vxc_(m1,n1,m2,n2, 
+    eval_neo_exc_vxc_(m1,n1,m2,n2, 
                       P1s,ldp1s,
                       P2s,ldp2s,
                       P2z,ldp2z,
@@ -110,7 +110,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
 
 template <typename ValueType>
 void ReplicatedXCIntegratorImpl<ValueType>::
-  neo_eval_exc_vxc( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
+  eval_neo_exc_vxc( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
                     const value_type* P1s, int64_t ldp1s,
                     const value_type* P1z, int64_t ldp1z,
                     const value_type* P2s, int64_t ldp2s,
@@ -121,7 +121,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
                     value_type* VXC2z, int64_t ldvxc2z,
                     value_type* EXC1,  value_type* EXC2 ){
 
-    neo_eval_exc_vxc_(m1,n1,m2,n2, 
+    eval_neo_exc_vxc_(m1,n1,m2,n2, 
                       P1s,ldp1s,
                       P1z,ldp1z,
                       P2s,ldp2s,
