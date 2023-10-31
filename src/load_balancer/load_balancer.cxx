@@ -93,6 +93,23 @@ const LoadBalancer::shell_pair_type& LoadBalancer::shell_pairs() {
   return pimpl_->shell_pairs();
 }
 
+const LoadBalancer::basis_type& LoadBalancer::basis2() const {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->basis2();
+}
+const LoadBalancer::basis_map_type& LoadBalancer::basis_map2() const {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->basis_map2();
+}
+const LoadBalancer::shell_pair_type& LoadBalancer::shell_pairs2() const {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->shell_pairs2();
+}
+const LoadBalancer::shell_pair_type& LoadBalancer::shell_pairs2() {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->shell_pairs2();
+}
+
 LoadBalancerState& LoadBalancer::state() {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->state();

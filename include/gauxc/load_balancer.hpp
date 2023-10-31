@@ -102,6 +102,15 @@ public:
   const shell_pair_type& shell_pairs() const;
   const shell_pair_type& shell_pairs();
 
+  /// Return the underlying 2nd BasisSet instance used to generate this LoadBalancer 
+  const basis_type& basis2()  const;
+
+  /// Return BasisSetMap instance corresponding to 2nd basis/molecule
+  const basis_map_type& basis_map2() const;
+
+  /// Return the number of non-negligible local shell pairs for 2nd basis for this LoadBalancer
+  const shell_pair_type& shell_pairs2() const;
+
   /// Return the runtime handle used to construct this LoadBalancer
   const RuntimeEnvironment& runtime() const;
   

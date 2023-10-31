@@ -85,6 +85,10 @@ public:
   const basis_map_type& basis_map() const;
   const shell_pair_type& shell_pairs() const;
   const shell_pair_type& shell_pairs();
+  const basis_type& basis2()  const;
+  const basis_map_type& basis_map2() const;
+  const shell_pair_type& shell_pairs2() const;
+  const shell_pair_type& shell_pairs2();
 
   LoadBalancerState& state();
 

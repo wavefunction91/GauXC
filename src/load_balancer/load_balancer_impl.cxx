@@ -155,6 +155,16 @@ const LoadBalancerImpl::shell_pair_type& LoadBalancerImpl::shell_pairs() {
   return *shell_pairs_;
 }
 
+const LoadBalancerImpl::basis_type& LoadBalancerImpl::basis2() const {
+  return *basis2_;
+}
+const LoadBalancerImpl::basis_map_type& LoadBalancerImpl::basis_map2() const {
+  return *basis_map2_;
+}
+const LoadBalancerImpl::shell_pair_type& LoadBalancerImpl::shell_pairs2() const {
+  return *shell_pairs2_;
+}
+
 const RuntimeEnvironment& LoadBalancerImpl::runtime() const {
   return runtime_;
 }
