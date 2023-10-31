@@ -85,12 +85,12 @@ public:
   
   exc_vxc_type_neo_rks neo_eval_exc_vxc( const MatrixType& elec_Ps, const MatrixType& prot_Ps, const MatrixType& prot_Pz, 
                                          const IntegratorSettingsXC& ks_settings){
-    return neo_eval_exc_vxc_(elec_Ps, prot_Ps, prot_Pz);
+    return neo_eval_exc_vxc_(elec_Ps, prot_Ps, prot_Pz, ks_settings);
   }
 
   exc_vxc_type_neo_uks neo_eval_exc_vxc( const MatrixType& elec_Ps, const MatrixType& elec_Pz, const MatrixType& prot_Ps, const MatrixType& prot_Pz, 
                                          const IntegratorSettingsXC& ks_settings){
-    return neo_eval_exc_vxc_(elec_Ps, elec_Pz, prot_Ps, prot_Pz);
+    return neo_eval_exc_vxc_(elec_Ps, elec_Pz, prot_Ps, prot_Pz, ks_settings);
   }
 
   /** Integrate EXC gradient for RKS
