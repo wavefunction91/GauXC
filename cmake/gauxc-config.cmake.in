@@ -23,6 +23,10 @@ set( GAUXC_ENABLE_GAU2GRID   @GAUXC_ENABLE_GAU2GRID@  )
 set( GAUXC_HAS_HDF5          @GAUXC_HAS_HDF5@         )
 set( GAUXC_BLAS_IS_LP64      @GAUXC_BLAS_IS_LP64@     )
 
+# Make sure C / CXX are enabled (former for BLAS discovery)
+enable_language(C)
+enable_language(CXX) 
+
 
 if( GAUXC_ENABLE_HOST )
   if(GAUXC_BLAS_IS_LP64)
@@ -32,9 +36,6 @@ if( GAUXC_ENABLE_HOST )
   endif()
   find_dependency( BLAS COMPONENTS "${_blas_components}")
   unset( _blas_components )
-  #if( GAUXC_ENABLE_GAU2GRID )
-  #  find_dependency( gau2grid )
-  #endif()
 endif()
 
 if( GAUXC_ENABLE_CUDA )
