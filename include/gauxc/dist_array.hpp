@@ -248,6 +248,22 @@ public:
         return *this;
     }
 
+    //auto t = dist_array.get_tile(2); // Get tile using ordinal index
+    //auto t = dist_array.get_tile(0, 2); // Get tile using coordinate index
+    //auto t_addr = dist_array.gptrs[t.second.first] + t.second.second; // Get remote address of the tile
+    auto get_tile(uint64_t ordinal) const noexcept
+    {
+        auto it = tiles.begin();
+        std::advance(it, ordinal);
+        return *it;
+    }
+
+    auto get_tile(uint64_t idx0, uint64_t idx1) const noexcept
+    {
+        auto ordinal = idx0 * tile_widths.size() + idx1;
+        return get_tile(ordinal);
+    }
+
     void deallocate() noexcept
     {
         local_nelems = 0;
