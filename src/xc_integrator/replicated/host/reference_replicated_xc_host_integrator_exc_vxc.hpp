@@ -1121,20 +1121,12 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
  
 
 
-
-
-
-    
+    //----------------------Begin Evaluating Electronic ZMat---------------------------- 
     // Factor weights into XC results
     for( int32_t i = 0; i < npts; ++i ) {
-      // Electronic
       eps[i]  *= weights[i];
       vrho[spin_dim_scal*i] *= weights[i];
       if(not is_rks) vrho[spin_dim_scal*i+1] *= weights[i];
-      // Protonic
-      eps2[i]      *= weights[i];
-      vrho2[2*i]   *= weights[i];
-      vrho2[2*i+1] *= weights[i];
     }
 
     if( func.is_gga() ){
@@ -1147,10 +1139,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       }
     }
 
-
-
-    // Evaluate Z matrix for VXC 
-    // Electronic
+    // Evaluate Z matrix for VXC
     if( func.is_gga() ) {
       if(is_rks) {
         lwd->eval_zmat_gga_vxc_rks( npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
@@ -1168,32 +1157,52 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         lwd->eval_zmat_lda_vxc_uks( npts, nbe, vrho, basis_eval, zmat, nbe, zmat_z, nbe );
       }
     }
-    // Protonic
+    //----------------------End Evaluating Electronic ZMat----------------------------
+
+
+
+
+    //----------------------Begin Evaluating Protonic ZMat---------------------------- 
+    // Factor weights into XC results
+    for( int32_t i = 0; i < npts; ++i ) {
+      eps2[i]      *= weights[i];
+      vrho2[2*i]   *= weights[i];
+      vrho2[2*i+1] *= weights[i];
+    }
+
+    // Evaluate Z matrix for VXC
     lwd->eval_zmat_lda_vxc_uks( npts, nbe2, vrho2, basis2_eval, zmat2, nbe2, zmat2_z, nbe2 );
+    //----------------------End Evaluating Protonic ZMat----------------------------
 
 
-    // Incremeta LT of VXC
+
+    
+    // Integrate to obtain Final EXC/VXC:
     #pragma omp critical
     {
+
+      // Electronic XC (VXC+EPC)
       // Scalar integrations
       for( int32_t i = 0; i < npts; ++i ) {
-        // Electronic XC (VXC+EPC)
         const auto den = is_rks ? den_eval[i] : (den_eval[2*i] + den_eval[2*i+1]);
         *N_EL += weights[i] * den;
         *EXC1  += eps[i]    * den;
-        // Protonic (EPC)
-        const auto den2 =  den2_eval[2*i] + den2_eval[2*i+1];
-        *EXC2  += eps2[i]   * den2;    
       }
-
       // Increment VXC
-      // Electronic 
       lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, VXC1s, ldvxc1s,
         nbe_scr );
       if(not is_rks) 
         lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat_z, nbe, VXC1z, ldvxc1z,
           nbe_scr );
-      // Protonic
+
+
+      // Protonic XC (EPC)
+      // Scalar integrations
+      for( int32_t i = 0; i < npts; ++i ) {
+        const auto den2 =  den2_eval[2*i] + den2_eval[2*i+1];
+        *EXC2  += eps2[i]   * den2;    
+      }
+      // Increment VXC
       lwd->inc_vxc( npts, nbf2, nbe2, basis2_eval, submat_map2, zmat2, nbe2, VXC2s, ldvxc2s,
         nbe2_scr );
       lwd->inc_vxc( npts, nbf2, nbe2, basis2_eval, submat_map2, zmat2_z, nbe2, VXC2z, ldvxc2z,
