@@ -59,8 +59,16 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
       // Microbatch Screening
       auto [shell_list, nbe] = micro_batch_screen( (*this->basis_), lo, up );
 
+      // If there's a NEO protonic basis, then do microbatch screening on it
+      std::vector<int32_t> shell_list2;
+      size_t nbe2 = 0;
+      if (this->basis2_) 
+        std::tie(shell_list2, nbe2) = micro_batch_screen((*this->basis2_), lo, up);
+
       // Course grain screening
+      // For NEO, skip task when electronic shell list is empty
       if( not shell_list.size() ) continue; 
+      // if (shell_list.empty() && (!this->basis2_ || shell_list2.empty())) continue;
 
       // Copy task data
       XCTask task;
@@ -72,6 +80,11 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
       task.bfn_screening.shell_list = std::move(shell_list);
       task.bfn_screening.nbe        = nbe;
       task.dist_nearest = molmeta_->dist_nearest()[iCurrent];
+      if(this->basis2_){
+        task.bfn2_screening.shell_list = std::move(shell_list2);
+        task.bfn2_screening.nbe        = nbe2;
+      }
+
 
       #pragma omp critical
       temp_tasks.push_back( 
