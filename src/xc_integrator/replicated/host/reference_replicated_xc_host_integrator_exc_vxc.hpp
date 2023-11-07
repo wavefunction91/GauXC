@@ -956,13 +956,18 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     }
 
     //----------------------Start Protonic System Setup------------------------
+    //const int32_t  nbe2     = nbf2;
+    //const int32_t  nshells2 = basis2.nshells();
+    //std::vector<int32_t> shell_list2_vector; 
+    //shell_list2_vector.reserve(basis2.nshells());
+    //for(auto iSh = 0ul; iSh < basis2.size(); ++iSh) shell_list2_vector.emplace_back( iSh );
+    //const int32_t* shell_list2 = shell_list2_vector.data();
     // Get shell info
-    const int32_t  nbe2     = nbf2;
-    const int32_t  nshells2 = basis2.nshells();
-    std::vector<int32_t> shell_list2_vector; 
-    shell_list2_vector.reserve(basis2.nshells());
-    for(auto iSh = 0ul; iSh < basis2.size(); ++iSh) shell_list2_vector.emplace_back( iSh );
-    const int32_t* shell_list2 = shell_list2_vector.data();
+    const int32_t  nbe2     = task.bfn2_screening.nbe;
+    const int32_t  nshells2 = task.bfn2_screening.shell_list.size();
+    const int32_t* shell_list2 = task.bfn2_screening.shell_list.data();
+  
+    bool evalProtonic =  (nshells2 != 0);
 
     // Set Up Memory (assuming UKS)
     host_data.nbe2_scr   .resize( nbe2 * nbe2 );
@@ -972,7 +977,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // LDA
     host_data.basis2_eval .resize( npts * nbe2 );
     host_data.den2_scr    .resize( npts * 2);
-    // No GGA for NEO yet
     // Alias/Partition out scratch memory
     auto* basis2_eval = host_data.basis2_eval.data();
     auto* den2_eval   = host_data.den2_scr.data();
@@ -982,18 +986,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     
     auto* eps2        = host_data.eps2.data();
     auto* vrho2       = host_data.vrho2.data();
-
     // No GGA for NEO yet
-    value_type* dbasis2_x_eval = nullptr;
-    value_type* dbasis2_y_eval = nullptr;
-    value_type* dbasis2_z_eval = nullptr;
-    value_type* dden2_x_eval   = nullptr;
-    value_type* dden2_y_eval   = nullptr;
-    value_type* dden2_z_eval   = nullptr;
     //----------------------End Protonic System Setup------------------------
 
 
-
+    std::cout << "Task: " << iT << "/" << ntasks << std::endl;
+    std::cout << "Electronic nbe: " << nbe << std::endl;
+    std::cout << "Protonic   nbe: " << nbe2 << std::endl;
 
     //----------------------Start Calculating Electronic Density & UV Variable------------------------
     // Get the submatrix map for batch
@@ -1051,73 +1050,78 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
     //----------------------Start Calculating Protonic Density & UV Variable------------------------
-    // Get the submatrix map for batch
     std::vector< std::array<int32_t, 3> > submat_map2;
-    std::tie(submat_map2, std::ignore) =
-          gen_compressed_submat_map(basis_map2, shell_list2_vector, nbf2, nbf2);
+    if(evalProtonic){
+      //std::tie(submat_map2, std::ignore) =
+      //    gen_compressed_submat_map(basis_map2, shell_list2_vector, nbf2, nbf2);
+      std::tie(submat_map2, std::ignore) =
+            gen_compressed_submat_map(basis_map2, task.bfn2_screening.shell_list, nbf2, nbf2);
 
-    // Evaluate Collocation 
-    lwd->eval_collocation( npts, nshells2, nbe2, points, basis2, shell_list2,
-      basis2_eval );
+      // Evaluate Collocation 
+      lwd->eval_collocation( npts, nshells2, nbe2, points, basis2, shell_list2,
+        basis2_eval );
 
-    // Evaluate X matrix (P * B) -> store in Z
-    // NEED THE FACTOR OF 2 HERE!
-    lwd->eval_xmat( npts, nbf2, nbe2, submat_map2, 2.0, P2s, ldp2s, basis2_eval, nbe2,
-      zmat2, nbe2, nbe2_scr );
-    lwd->eval_xmat( npts, nbf2, nbe2, submat_map2, 2.0, P2z, ldp2z, basis2_eval, nbe2,
-      zmat2_z, nbe2, nbe2_scr );
+      // Evaluate X matrix (P * B) -> store in Z
+      // NEED THE FACTOR OF 2 HERE!
+      lwd->eval_xmat( npts, nbf2, nbe2, submat_map2, 2.0, P2s, ldp2s, basis2_eval, nbe2,
+        zmat2, nbe2, nbe2_scr );
+      lwd->eval_xmat( npts, nbf2, nbe2, submat_map2, 2.0, P2z, ldp2z, basis2_eval, nbe2,
+        zmat2_z, nbe2, nbe2_scr );
 
-    // Evaluate U and V variables
-    lwd->eval_uvvar_lda_uks( npts, nbe2, basis2_eval, zmat2, nbe2, zmat2_z, nbe2, 
-      den2_eval );
+      // Evaluate U and V variables
+      lwd->eval_uvvar_lda_uks( npts, nbe2, basis2_eval, zmat2, nbe2, zmat2_z, nbe2, 
+        den2_eval );
 
-    // No protonic XC functional. Fill with eps and vrho to be 0.0
-    std::fill_n(eps2,  npts,   0.);
-    std::fill_n(vrho2, npts*2, 0.);
+      // No protonic XC functional. Fill with eps and vrho to be 0.0
+      std::fill_n(eps2,  npts,   0.);
+      std::fill_n(vrho2, npts*2, 0.);
+    }
     //----------------------End Calculating Protonic Density & UV Variable------------------------
 
 
 
 
-    if(this->load_balancer_->epc_functional() == EPCFunctional::EPC17){
-      //----------------------Start epc-17-2 functional Evaluation------------------------
-      for (int32_t iPt = 0; iPt < npts; iPt++ ){
-        // Get Electronic density scalar (RKS)
-        const auto den = is_rks ? den_eval[iPt] : (den_eval[2*iPt] + den_eval[2*iPt+1]);
-        value_type total_erho = std::abs(den) > 1e-15? den : 0;
-        // Get Protonic density scalar (UKS)
-        const auto den2 = den2_eval[2*iPt] + den2_eval[2*iPt+1];
-        value_type total_prho = std::abs(den2) > 1e-15? den2 : 0; 
-        
-        // Skip this point if the density is too small
-        if(total_erho < 1e-15 | total_prho < 1e-15){
-          eps2[iPt]      = 0.0;
-          vrho2[2*iPt]   = 0.0;
-          vrho2[2*iPt+1] = 0.0;
-          continue;
+    //----------------------Start EPC functional Evaluation---------------------------------------
+    if(evalProtonic){
+      if(this->load_balancer_->epc_functional() == EPCFunctional::EPC17){
+        for (int32_t iPt = 0; iPt < npts; iPt++ ){
+          // Get Electronic density scalar (RKS)
+          const auto den = is_rks ? den_eval[iPt] : (den_eval[2*iPt] + den_eval[2*iPt+1]);
+          value_type total_erho = std::abs(den) > 1e-15? den : 0;
+          // Get Protonic density scalar (UKS)
+          const auto den2 = den2_eval[2*iPt] + den2_eval[2*iPt+1];
+          value_type total_prho = std::abs(den2) > 1e-15? den2 : 0; 
+          
+          // Skip this point if the density is too small
+          if(total_erho < 1e-15 | total_prho < 1e-15){
+            eps2[iPt]      = 0.0;
+            vrho2[2*iPt]   = 0.0;
+            vrho2[2*iPt+1] = 0.0;
+            continue;
+          }
+
+          // epc-17-2 denominator
+          value_type dn = 2.35 - 2.4 * std::sqrt(total_erho*total_prho) + 6.6 * (total_erho*total_prho);
+
+          // Update electronic eps and vxc
+          eps[iPt]                    += -1.0 * total_prho/dn;
+          vrho[spin_dim_scal*iPt]     +=  ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
+                                          + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
+          if(not is_rks) 
+            vrho[spin_dim_scal*iPt+1] +=  ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
+                                          + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
+
+          // Assign protonic eps and vxc
+          eps2[iPt]      = -1.0 * total_erho/dn;
+          vrho2[2*iPt]   =  ( -1.0 * total_erho / dn + (-1.2 * std::sqrt(total_prho) * std::sqrt(total_erho) * total_erho 
+                            + 6.6 * total_erho * total_erho * total_prho ) / (dn * dn) );
+          vrho2[2*iPt+1] =  0.0;
         }
-
-        // epc-17-2 denominator
-        value_type dn = 2.35 - 2.4 * std::sqrt(total_erho*total_prho) + 6.6 * (total_erho*total_prho);
-
-        // Update electronic eps and vxc
-        eps[iPt]                    += -1.0 * total_prho/dn;
-        vrho[spin_dim_scal*iPt]     +=  ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
-                                        + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
-        if(not is_rks) 
-          vrho[spin_dim_scal*iPt+1] +=  ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
-                                        + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
-
-        // Assign protonic eps and vxc
-        eps2[iPt]      = -1.0 * total_erho/dn;
-        vrho2[2*iPt]   =  ( -1.0 * total_erho / dn + (-1.2 * std::sqrt(total_prho) * std::sqrt(total_erho) * total_erho 
-                          + 6.6 * total_erho * total_erho * total_prho ) / (dn * dn) );
-        vrho2[2*iPt+1] =  0.0;
+      } else{
+        GAUXC_GENERIC_EXCEPTION("Only EPC17 is supported in GauXC");
       }
-      //----------------------End epc-17-2 functional Evaluation------------------------  
-    } else{
-      GAUXC_GENERIC_EXCEPTION("Only EPC17 is supported in GauXC");
-    }
+    } // End if(evalProtonic)
+    //----------------------End EPC functional Evaluation---------------------------------------
  
 
 
@@ -1163,15 +1167,17 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
     //----------------------Begin Evaluating Protonic ZMat---------------------------- 
-    // Factor weights into XC results
-    for( int32_t i = 0; i < npts; ++i ) {
-      eps2[i]      *= weights[i];
-      vrho2[2*i]   *= weights[i];
-      vrho2[2*i+1] *= weights[i];
-    }
+    if(evalProtonic){
+      // Factor weights into XC results
+      for( int32_t i = 0; i < npts; ++i ) {
+        eps2[i]      *= weights[i];
+        vrho2[2*i]   *= weights[i];
+        vrho2[2*i+1] *= weights[i];
+      }
 
-    // Evaluate Z matrix for VXC
-    lwd->eval_zmat_lda_vxc_uks( npts, nbe2, vrho2, basis2_eval, zmat2, nbe2, zmat2_z, nbe2 );
+      // Evaluate Z matrix for VXC
+      lwd->eval_zmat_lda_vxc_uks( npts, nbe2, vrho2, basis2_eval, zmat2, nbe2, zmat2_z, nbe2 );
+    }
     //----------------------End Evaluating Protonic ZMat----------------------------
 
 
@@ -1186,7 +1192,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       for( int32_t i = 0; i < npts; ++i ) {
         const auto den = is_rks ? den_eval[i] : (den_eval[2*i] + den_eval[2*i+1]);
         *N_EL += weights[i] * den;
-        *EXC1  += eps[i]    * den;
+        *EXC1 += eps[i]     * den;
       }
       // Increment VXC
       lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, VXC1s, ldvxc1s,
@@ -1198,15 +1204,19 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
       // Protonic XC (EPC)
       // Scalar integrations
-      for( int32_t i = 0; i < npts; ++i ) {
-        const auto den2 =  den2_eval[2*i] + den2_eval[2*i+1];
-        *EXC2  += eps2[i]   * den2;    
+      if(evalProtonic){
+        for( int32_t i = 0; i < npts; ++i ) {
+          const auto den2 =  den2_eval[2*i] + den2_eval[2*i+1];
+          *EXC2  += eps2[i]   * den2;    
+        }
+        // Increment VXC
+        lwd->inc_vxc( npts, nbf2, nbe2, basis2_eval, submat_map2, zmat2, nbe2, VXC2s, ldvxc2s,
+          nbe2_scr );
+        lwd->inc_vxc( npts, nbf2, nbe2, basis2_eval, submat_map2, zmat2_z, nbe2, VXC2z, ldvxc2z,
+          nbe2_scr );
       }
-      // Increment VXC
-      lwd->inc_vxc( npts, nbf2, nbe2, basis2_eval, submat_map2, zmat2, nbe2, VXC2s, ldvxc2s,
-        nbe2_scr );
-      lwd->inc_vxc( npts, nbf2, nbe2, basis2_eval, submat_map2, zmat2_z, nbe2, VXC2z, ldvxc2z,
-        nbe2_scr );
+      std::cout << "Electronic EXC: " << *EXC1 << std::endl;
+      std::cout << "Protonic   EXC: " << *EXC2 << std::endl;
 
     } // End #pragma omp critical
 

@@ -45,7 +45,6 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
     batcher.quadrature().recenter( center );
     const size_t nbatches = batcher.nbatches();
 
-    std::cout << "nbatches: " << nbatches << std::endl;
     #pragma omp parallel for
     for( size_t ibatch = 0; ibatch < nbatches; ++ibatch ) {
     
