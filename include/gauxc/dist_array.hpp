@@ -264,6 +264,23 @@ public:
         return get_tile(ordinal);
     }
 
+    void add_contig(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, const value_type* buf) const noexcept
+    {
+        const auto& t = tiles.find({row_min, col_min, row_max, col_max});
+
+        if(t != tiles.end())
+        {
+            auto offset = t->second.second + (row_min - t->first.row_min) * (t->first.col_max - t->first.col_min + 1) + (col_min - t->first.col_min);
+            auto count = (row_max - row_min + 1) * (col_max - col_min + 1);
+
+            upcxx::rpc(team, t->second.first, [](const auto& addr, const auto& buf)
+            {
+                std::transform(addr.local(), addr.local() + buf.size(), buf.begin(), addr.local(), std::plus<value_type>{});
+            },
+            gptrs[t->second.first] + offset, upcxx::make_view(buf, buf + count)).wait();
+        }
+    }
+
     void deallocate() noexcept
     {
         local_nelems = 0;
