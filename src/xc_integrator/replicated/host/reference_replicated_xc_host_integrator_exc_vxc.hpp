@@ -899,11 +899,23 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const auto* weights     = task.weights.data();
     const int32_t* shell_list = task.bfn_screening.shell_list.data();
 
+    const int32_t  nbe2     = task.bfn2_screening.nbe;
+    const int32_t  nshells2 = task.bfn2_screening.shell_list.size();
+    const int32_t* shell_list2 = task.bfn2_screening.shell_list.data();
+    bool evalProtonic =  (nshells2 != 0);
+
     // Allocate enough memory for batch
 
     const size_t spin_dim_scal = is_rks ? 1 : 2;
+    
     // Things that every calc needs
-    host_data.nbe_scr .resize(nbe  * nbe);
+    
+
+    // Use same scratch for both electronic and protonic
+    const int32_t scr_dim = std::max(nbe, nbe2);
+    host_data.nbe_scr .resize(scr_dim  * scr_dim);
+    
+    //----------------------Start Electronic System Setup------------------------
     host_data.zmat    .resize(npts * nbe * spin_dim_scal); 
     host_data.eps     .resize(npts);
     host_data.vrho    .resize(npts * spin_dim_scal);
@@ -954,23 +966,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       dden_y_eval   = dden_x_eval + spin_dim_scal * npts;
       dden_z_eval   = dden_y_eval + spin_dim_scal * npts;
     }
+    //----------------------End Electronic System Setup------------------------
+
 
     //----------------------Start Protonic System Setup------------------------
-    //const int32_t  nbe2     = nbf2;
-    //const int32_t  nshells2 = basis2.nshells();
-    //std::vector<int32_t> shell_list2_vector; 
-    //shell_list2_vector.reserve(basis2.nshells());
-    //for(auto iSh = 0ul; iSh < basis2.size(); ++iSh) shell_list2_vector.emplace_back( iSh );
-    //const int32_t* shell_list2 = shell_list2_vector.data();
-    // Get shell info
-    const int32_t  nbe2     = task.bfn2_screening.nbe;
-    const int32_t  nshells2 = task.bfn2_screening.shell_list.size();
-    const int32_t* shell_list2 = task.bfn2_screening.shell_list.data();
-  
-    bool evalProtonic =  (nshells2 != 0);
-
     // Set Up Memory (assuming UKS)
-    host_data.nbe2_scr   .resize( nbe2 * nbe2 );
     host_data.zmat2      .resize( npts * nbe2 * 2 );
     host_data.eps2       .resize( npts );
     host_data.vrho2      .resize( npts * 2 );
@@ -980,7 +980,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Alias/Partition out scratch memory
     auto* basis2_eval = host_data.basis2_eval.data();
     auto* den2_eval   = host_data.den2_scr.data();
-    auto* nbe2_scr    = host_data.nbe2_scr.data();
     auto* zmat2       = host_data.zmat2.data();
     decltype(zmat2) zmat2_z = zmat2 + nbe2 * npts;
     
@@ -1064,9 +1063,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       // Evaluate X matrix (P * B) -> store in Z
       // NEED THE FACTOR OF 2 HERE!
       lwd->eval_xmat( npts, nbf2, nbe2, submat_map2, 2.0, P2s, ldp2s, basis2_eval, nbe2,
-        zmat2, nbe2, nbe2_scr );
+        zmat2, nbe2, nbe_scr );
       lwd->eval_xmat( npts, nbf2, nbe2, submat_map2, 2.0, P2z, ldp2z, basis2_eval, nbe2,
-        zmat2_z, nbe2, nbe2_scr );
+        zmat2_z, nbe2, nbe_scr );
 
       // Evaluate U and V variables
       lwd->eval_uvvar_lda_uks( npts, nbe2, basis2_eval, zmat2, nbe2, zmat2_z, nbe2, 
@@ -1211,9 +1210,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         }
         // Increment VXC
         lwd->inc_vxc( npts, nbf2, nbe2, basis2_eval, submat_map2, zmat2, nbe2, VXC2s, ldvxc2s,
-          nbe2_scr );
+          nbe_scr );
         lwd->inc_vxc( npts, nbf2, nbe2, basis2_eval, submat_map2, zmat2_z, nbe2, VXC2z, ldvxc2z,
-          nbe2_scr );
+          nbe_scr );
       }
       std::cout << "Electronic EXC: " << *EXC1 << std::endl;
       std::cout << "Protonic   EXC: " << *EXC2 << std::endl;
