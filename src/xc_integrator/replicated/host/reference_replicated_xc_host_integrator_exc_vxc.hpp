@@ -989,9 +989,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     //----------------------End Protonic System Setup------------------------
 
 
-    std::cout << "Task: " << iT << "/" << ntasks << std::endl;
-    std::cout << "Electronic nbe: " << nbe << std::endl;
-    std::cout << "Protonic   nbe: " << nbe2 << std::endl;
+    //std::cout << "Task: " << iT << "/" << ntasks << std::endl;
+    //std::cout << "Electronic nbe: " << nbe << std::endl;
+    //std::cout << "Protonic   nbe: " << nbe2 << std::endl;
 
     //----------------------Start Calculating Electronic Density & UV Variable------------------------
     // Get the submatrix map for batch
@@ -1214,8 +1214,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         lwd->inc_vxc( npts, nbf2, nbe2, basis2_eval, submat_map2, zmat2_z, nbe2, VXC2z, ldvxc2z,
           nbe_scr );
       }
-      std::cout << "Electronic EXC: " << *EXC1 << std::endl;
-      std::cout << "Protonic   EXC: " << *EXC2 << std::endl;
+      //std::cout << "Electronic EXC: " << *EXC1 << std::endl;
+      //std::cout << "Protonic   EXC: " << *EXC2 << std::endl;
 
     } // End #pragma omp critical
 
