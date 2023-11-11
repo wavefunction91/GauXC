@@ -136,6 +136,46 @@ public:
     double* d2basis_xz_eval, double* d2basis_yy_eval, double* d2basis_yz_eval,
     double* d2basis_zz_eval );
 
+  /** Evaluation the collocation matrix + gradient + hessian + 3rd derivatives
+   *
+   *  @param[in] npts     Same as `eval_collocation`
+   *  @param[in] nshells  Same as `eval_collocation`
+   *  @param[in] nbe      Same as `eval_collocation`
+   *  @param[in] pts      Same as `eval_collocation`
+   *  @param[in] basis    Same as `eval_collocation`
+   *  @param[in] shell_list Same as `eval_collocation`
+   *
+   *  @param[out] basis_eval    Same as `eval_collocation`
+   *  @param[out] dbasis_x_eval Same as `eval_collocation_gradient`
+   *  @param[out] dbasis_y_eval Same as `eval_collocation_gradient`
+   *  @param[out] dbasis_z_eval Same as `eval_collocation_gradient`
+   *  @param[out] d2basis_xx_eval Derivative of `basis_eval` wrt x+x (same dimensions)
+   *  @param[out] d2basis_xy_eval Derivative of `basis_eval` wrt x+y (same dimensions)
+   *  @param[out] d2basis_xz_eval Derivative of `basis_eval` wrt x+z (same dimensions)
+   *  @param[out] d2basis_yy_eval Derivative of `basis_eval` wrt y+y (same dimensions)
+   *  @param[out] d2basis_yz_eval Derivative of `basis_eval` wrt y+z (same dimensions)
+   *  @param[out] d2basis_zz_eval Derivative of `basis_eval` wrt z+z (same dimensions)
+   *  @param[out] d3basis_xxx_eval Derivative of `basis_eval` wrt x+x+x (same dimensions)
+   *  @param[out] d3basis_xxy_eval Derivative of `basis_eval` wrt x+x+y (same dimensions)
+   *  @param[out] d3basis_xxz_eval Derivative of `basis_eval` wrt x+x+z (same dimensions)
+   *  @param[out] d3basis_xyy_eval Derivative of `basis_eval` wrt x+y+y (same dimensions)
+   *  @param[out] d3basis_xyz_eval Derivative of `basis_eval` wrt x+y+z (same dimensions)
+   *  @param[out] d3basis_xzz_eval Derivative of `basis_eval` wrt x+z+z (same dimensions)
+   *  @param[out] d3basis_yyy_eval Derivative of `basis_eval` wrt y+y+y (same dimensions)
+   *  @param[out] d3basis_yyz_eval Derivative of `basis_eval` wrt y+y+z (same dimensions)
+   *  @param[out] d3basis_yzz_eval Derivative of `basis_eval` wrt y+z+z (same dimensions)
+   *  @param[out] d3basis_zzz_eval Derivative of `basis_eval` wrt z+z+z (same dimensions)
+   */
+  void eval_collocation_der3( size_t npts, size_t nshells, size_t nbe, 
+    const double* pts, const BasisSet<double>& basis, const int32_t* shell_list, 
+    double* basis_eval, double* dbasis_x_eval, double* dbasis_y_eval, 
+    double* dbasis_z_eval, double* d2basis_xx_eval, double* d2basis_xy_eval,
+    double* d2basis_xz_eval, double* d2basis_yy_eval, double* d2basis_yz_eval,
+    double* d2basis_zz_eval, double* d3basis_xxx_eval, double* d3basis_xxy_eval,
+    double* d3basis_xxz_eval, double* d3basis_xyy_eval, double* d3basis_xyz_eval,
+    double* d3basis_xzz_eval, double* d3basis_yyy_eval, double* d3basis_yyz_eval,
+    double* d3basis_yzz_eval, double* d3basis_zzz_eval);
+
   /** Evaluate the compressed "X" matrix = fac * P * B
    *
    *  @param[in]  npts        The number of points in the collocation matrix 
@@ -154,6 +194,31 @@ public:
   void eval_xmat( size_t npts, size_t nbf, size_t nbe, 
     const submat_map_t& submat_map, double fac, const double* P, size_t ldp,
     const double* basis_eval, size_t ldb, double* X, size_t ldx, 
+    double* scr );
+
+  /** Evaluate the compressed "M" matrix = fac * P * dB
+   *
+   *  @param[in]  npts        The number of points in the collocation matrix 
+   *  @param[in]  nbf         The total number of bfns
+   *  @param[in]  nbe         The number of non-negligible bfns
+   *  @param[in]  submat_map  Map from the full matrix to non-negligible submatrices
+   *  @param[in]  fac         Scaling factor in front of matrix multiplication
+   *  @param[in]  P           The alpha density matrix ( (nbf,nbf) col major)
+   *  @param[in]  ldp         The leading dimension of P
+   *  @param[in]  dbasis_z_eval  The collocation matrix ( (nbe,npts) col major)
+   *  @param[in]  dbasis_y_eval  The collocation matrix ( (nbe,npts) col major)
+   *  @param[in]  dbasis_z_eval  The collocation matrix ( (nbe,npts) col major)
+   *  @param[in]  ldb         The leading dimension of basis_eval
+   *  @param[out] mmat_x           The M matrix ( (nbe,npts) col major)
+   *  @param[out] mmat_y           The M matrix ( (nbe,npts) col major)
+   *  @param[out] mmat_z           The M matrix ( (nbe,npts) col major)
+   *  @param[in]  ldm         The leading dimension of M
+   *  @param[in/out] scr      Scratch space of at least nbe*nbe
+   */
+  void eval_mmat( size_t npts, size_t nbf, size_t nbe, 
+    const submat_map_t& submat_map, double fac, const double* P, size_t ldp,
+    const double* dbasis_x_eval, const double* dbasis_y_eval, const double* dbasis_z_eval,
+    size_t ldb, double* mmat_x, double* mmat_y, double* mmat_z, size_t ldx, 
     double* scr );
 
   void eval_exx_fmat( size_t npts, size_t nbf, size_t nbe_bra,
@@ -238,6 +303,49 @@ public:
     const double* Xz, size_t ldxz, double* den_eval,
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma );
 
+  /** Evaluate the U and V variavles for RKS MGGA
+   *
+   *  U = rho + gradient + tau + lapl
+   *  V = rho + gamma + tau + lapl
+   *
+   *  @param[in] npts          Same as `eval_uvvar_lda`
+   *  @param[in] nbe           Same as `eval_uvvar_lda`
+   *  @param[in] basis_eval    Same as `eval_uvvar_lda`
+   *  @param[in] dbasis_x_eval Derivative of `basis_eval` wrt x (same dims)
+   *  @param[in] dbasis_y_eval Derivative of `basis_eval` wrt y (same dims)
+   *  @param[in] dbasis_z_eval Derivative of `basis_eval` wrt z (same dims)
+   *  @param[in] lbasis_eval   Laplacian of `basis_eval` (same dims)
+   *  @param[in] X             Same as `eval_uvvar_lda`
+   *  @param[in] ldx           Same as `eval_uvvar_lda`
+   *  @param[in] mmat_x
+   *  @param[in] mmat_y
+   *  @param[in] mmat_z
+   *  @param[in] ldm
+   *  @param[out] den_eval     Same as `eval_uvvar_lda`
+   *  @param[out] dden_x_eval  Derivative of `den_eval` wrt x (npts)
+   *  @param[out] dden_y_eval  Derivative of `den_eval` wrt y (npts)
+   *  @param[out] dden_z_eval  Derivative of `den_eval` wrt z (npts)
+   *  @param[out] gamma        |grad rho|^2 (npts)
+   *  @param[out] tau
+   *  @param[out] lapl
+   *                        
+   */
+  void eval_uvvar_mgga_rks( size_t npts, size_t nbe, const double* basis_eval,
+    const double* dbasis_x_eavl, const double* dbasis_y_eval, 
+    const double* dbasis_z_eval, const double* lbasis_eval,
+    const double* X, size_t ldx, const double* mmat_x,
+    const double* mmat_y, const double* mmat_z, size_t ldm, double* den_eval, 
+    double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma,
+    double* tau, double* lapl);
+  void eval_uvvar_mgga_uks( size_t npts, size_t nbe, const double* basis_eval,
+    const double* dbasis_x_eavl, const double* dbasis_y_eval, 
+    const double* dbasis_z_eval, const double* lbasis_eval,
+    const double* Xs, size_t ldxs, const double* Xz, size_t ldxz, 
+    const double* mmat_xs, const double* mmat_ys, const double* mmat_zs, size_t ldms, 
+    const double* mmat_xz, const double* mmat_yz, const double* mmat_zz, size_t ldmz, 
+    double* den_eval, double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, 
+    double* gamma, double* tau, double* lapl);
+
   /** Evaluate the VXC Z Matrix for RKS LDA
    *
    *  Z(mu,i) = 0.5 * vrho(i) * B(mu, i)
@@ -294,9 +402,57 @@ public:
     double* Zs, size_t ldzs, double* Zz, size_t ldzz );
 
 
+  /** Evaluate the VXC Z Matrix for RKS MGGA
+   *
+   *  Z(mu,i) = 0.5 * vrho(i)   * B(mu, i) +
+   *            2.0 * vgamma(i) * (grad B(mu,i)) . (grad rho(i)) +
+   *            0.5 * vlapl(i) * lapl B(mu, i)
+   *
+   *  TODO: Need to add an API for UKS/GKS
+   *
+   *  @param[in] npts           Same as `eval_zmat_lda_vxc`
+   *  @param[in] nbe            Same as `eval_zmat_lda_vxc`
+   *  @param[in] vrho           Same as `eval_zmat_lda_vxc`
+   *  @param[in] vgamma         Derivative of the XC functional wrt gamma scaled by quad weights (npts)
+   *  @param[in] basis_eval     Same as `eval_zmat_lda_vxc`
+   *  @param[in] dbasis_x_eval  Derivative of `basis_eval` wrt x (same dims)
+   *  @param[in] dbasis_y_eval  Derivative of `basis_eval` wrt y (same dims)
+   *  @param[in] dbasis_z_eval  Derivative of `basis_eval` wrt z (same dims)
+   *  @param[in] lbasis_eval    Laplacian of `basis_eval` (same dims)
+   *  @param[in] dden_x_eval    Derivative of rho wrt x (npts)
+   *  @param[in] dden_y_eval    Derivative of rho wrt y (npts)
+   *  @param[in] dden_z_eval    Derivative of rho wrt z (npts)
+   *  @param[out] Z             Same as `eval_zmat_lda_vxc`
+   *  @param[in]  ldz           Same as `eval_zmat_lda_vxc`
+   *
+   */
+  void eval_zmat_mgga_vxc_rks( size_t npts, size_t nbe, const double* vrho, 
+    const double* vgamma, const double* vlapl, const double* basis_eval, 
+    const double* dbasis_x_eval, const double* dbasis_y_eval, const double* dbasis_z_eval, 
+    const double* lbasis_eval,
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
+    double* Z, size_t ldz );
+  void eval_zmat_mgga_vxc_uks( size_t npts, size_t nbe, const double* vrho, 
+    const double* vgamma, const double* vlapl, const double* basis_eval, 
+    const double* dbasis_x_eval, const double* dbasis_y_eval, const double* dbasis_z_eval, 
+    const double* lbasis_eval,
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
+    double* Zs, size_t ldzs, double* Zz, size_t ldzz );
+  void eval_mmat_mgga_vxc_rks( size_t npts, size_t nbe, const double* vtau,
+      const double* vlapl, const double* dbasis_x_eval, const double* dbasis_y_eval,
+      const double* dbasis_z_eval, double* mmat_x, double* mmat_y, double* mmat_z,
+      size_t ldm);
+  void eval_mmat_mgga_vxc_uks( size_t npts, size_t nbe, const double* vtau,
+      const double* vlapl, const double* dbasis_x_eval, const double* dbasis_y_eval,
+      const double* dbasis_z_eval, double* mmat_xs, double* mmat_ys, double* mmat_zs,
+      size_t ldms, double* mmat_xz, double* mmat_yz, double* mmat_zz, size_t ldmz);
+
+
+
   /** Increment VXC integrand given Z / Collocation (RKS LDA+GGA)
    *
    *  VXC += Z**H * B + h.c.
+   *  VXC += M**H . dB + h.c.
    *
    *  Only updates lower triangle
    *
@@ -313,8 +469,10 @@ public:
    *
    */
   void inc_vxc( size_t npts, size_t nbf, size_t nbe, const double* basis_eval,
-    const submat_map_t& submat_map, const double* Z, size_t ldz, double* VXC, 
-    size_t ldvxc, double* scr );
+    const double* dbasis_x_eval, const double* dbasis_y_eval, const double* dbasis_z_eval,
+    const submat_map_t& submat_map, const double* Z, size_t ldz, 
+    const double* mmat_x, const double* mmat_y, const double* mmat_z, size_t ldm, 
+    double* VXC, size_t ldvxc, double* scr );
 
 private: 
 

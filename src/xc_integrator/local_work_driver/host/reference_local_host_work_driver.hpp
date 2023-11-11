@@ -43,10 +43,26 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
     double* dbasis_z_eval, double* d2basis_xx_eval, double* d2basis_xy_eval,
     double* d2basis_xz_eval, double* d2basis_yy_eval, double* d2basis_yz_eval,
     double* d2basis_zz_eval ) override;
+  void eval_collocation_der3( size_t npts, size_t nshells, size_t nbe,
+    const double* pts, const BasisSet<double>& basis, const int32_t* shell_list, 
+    double* basis_eval, double* dbasis_x_eval, double* dbasis_y_eval, 
+    double* dbasis_z_eval, double* d2basis_xx_eval, double* d2basis_xy_eval,
+    double* d2basis_xz_eval, double* d2basis_yy_eval, double* d2basis_yz_eval,
+    double* d2basis_zz_eval, double* d3basis_xxx_eval, double* d3basis_xxy_eval,
+    double* d3basis_xxz_eval, double* d3basis_xyy_eval, double* d3basis_xyz_eval,
+    double* d3basis_xzz_eval, double* d3basis_yyy_eval, double* d3basis_yyz_eval,
+    double* d3basis_yzz_eval, double* d3basis_zzz_eval) override;
+
 
   void eval_xmat( size_t npts, size_t nbf, size_t nbe, 
     const submat_map_t& submat_map, double fac, const double* P, size_t ldp, 
     const double* basis_eval, size_t ldb, double* X, size_t ldx, double* scr ) 
+    override;
+  void eval_mmat( size_t npts, size_t nbf, size_t nbe,
+    const submat_map_t& submat_map, double fac, const double* P, size_t ldp,
+    const double* dbasis_x_eval, const double* dbasis_y_eval, const double* dbasis_z_eval,
+    size_t ldb, double* mmat_x, double* mmat_y, double* mmat_z, size_t ldm,
+    double* scr )
     override;
 
   void eval_exx_gmat( size_t npts, size_t nshells, size_t nshell_pairs,
@@ -86,6 +102,24 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
     double* gamma ) override;
 
 
+  void eval_uvvar_mgga_rks( size_t npts, size_t nbe, const double* basis_eval,
+    const double* dbasis_x_eval, const double* dbasis_y_eval, 
+    const double* dbasis_z_eval, const double* lbasis_eval, 
+    const double* X, size_t ldx, const double* mmat_x, const double* mmat_y,
+    const double* mmat_z, size_t ldm, double* den_eval, 
+    double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, 
+    double* gamma, double* tau, double* lapl ) override;
+  void eval_uvvar_mgga_uks( size_t npts, size_t nbe, const double* basis_eval,
+    const double* dbasis_x_eval, const double *dbasis_y_eval,
+    const double* dbasis_z_eval, const double *lbasis_eval, 
+    const double* Xs, size_t ldxs, 
+    const double* Xz, size_t ldxz, 
+    const double* mmat_xs, const double* mmat_ys, const double* mmat_zs, size_t ldms,
+    const double* mmat_xz, const double* mmat_yz, const double* mmat_zz, size_t ldmz,
+    double* den_eval,
+    double* dden_x_eval, double* dden_y_eval, double* dden_z_eval,
+    double* gamma, double* tau, double* lapl ) override;
+
   void eval_zmat_lda_vxc_rks( size_t npts, size_t nbe, const double* vrho, 
     const double* basis_eval, double* Z, size_t ldz ) override;
   void eval_zmat_lda_vxc_uks( size_t npts, size_t nbe, const double* vrho,
@@ -104,11 +138,31 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
     double* Zs, size_t ldzs, double* Zz, size_t ldzz ) override;
 
 
+  void eval_zmat_mgga_vxc_rks( size_t npts, size_t nbe, const double* vrho, 
+    const double* vgamma, const double* vlapl, const double* basis_eval, const double* dbasis_x_eval,
+    const double* dbasis_y_eval, const double* dbasis_z_eval, const double* lbasis_eval, 
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
+    double* Z, size_t ldz ) override;
+  void eval_zmat_mgga_vxc_uks( size_t npts, size_t nbe, const double* vrho,
+    const double* vgamma, const double* vlapl, const double* basis_eval, const double* dbasis_x_eval,
+    const double* dbasis_y_eval, const double* dbasis_z_eval, const double* lbasis_eval,
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
+    double* Zs, size_t ldzs, double* Zz, size_t ldzz ) override;
+  void eval_mmat_mgga_vxc_rks( size_t npts, size_t nbe, const double* vtau,
+    const double* vlapl, const double* dbasis_x_eval, const double* dbasis_y_eval, 
+    const double* dbasis_z_eval, double* mmat_x, double* mmat_y, double* mmat_z,
+    size_t ldm ) override;
+  void eval_mmat_mgga_vxc_uks( size_t npts, size_t nbe, const double* vtau,
+    const double* vlapl, const double* dbasis_x_eval, const double* dbasis_y_eval, 
+    const double* dbasis_z_eval, double* mmat_xs, double* mmat_ys, double* mmat_zs,
+    size_t ldms, double* mmat_xz, double* mmat_yz, double* mmat_zz, size_t ldmz ) override;
 
 
   void inc_vxc( size_t npts, size_t nbf, size_t nbe, 
-    const double* basis_eval, const submat_map_t& submat_map, const double* Z, 
-    size_t ldz, double* VXC, size_t ldvxc, double* scr ) override;
+    const double* basis_eval, const double* dbasis_x_eval, const double* dbasis_y_eval,
+    const double* dbasis_z_eval, const submat_map_t& submat_map, const double* Z, 
+    size_t ldz, const double* mmat_x, const double* mmat_y, const double* mmat_z, size_t ldm,
+    double* VXC, size_t ldvxc, double* scr ) override;
 
 };
 

@@ -134,6 +134,21 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       host_data.vgamma     .resize( npts );
     }
 
+    if( func.is_mgga() ) {
+      host_data.basis_eval .resize( 10 * npts * nbe );
+      host_data.zmat       .resize(  4 * npts * nbe );
+      host_data.mmat       .resize( npts * nbe );
+      host_data.gamma      .resize( npts );
+      host_data.vgamma     .resize( npts );
+      host_data.tau        .resize( npts );
+      host_data.vtau       .resize( npts );
+      if ( false ) {
+	host_data.basis_eval.resize( 24 * npts * nbe );
+	host_data.lapl      .resize( npts );
+	host_data.vlapl     .resize( npts );
+      }
+    }
+
     // Alias/Partition out scratch memory
     auto* basis_eval = host_data.basis_eval.data();
     auto* den_eval   = host_data.den_scr.data();
@@ -149,6 +164,16 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     auto* vrho       = host_data.vrho.data();
     auto* vgamma     = host_data.vgamma.data();
 
+    auto* tau        = host_data.tau.data();
+    auto* lapl       = host_data.lapl.data();
+    auto* vtau       = host_data.vtau.data();
+    auto* vlapl      = host_data.vlapl.data();
+    auto* mmat       = host_data.mmat.data();
+
+    auto* mmat_x      = mmat;
+    auto* mmat_y      = mmat + npts * nbe;
+    auto* mmat_z      = mmat_y + npts * nbe;
+
     auto* dbasis_x_eval = basis_eval    + npts * nbe;
     auto* dbasis_y_eval = dbasis_x_eval + npts * nbe;
     auto* dbasis_z_eval = dbasis_y_eval + npts * nbe;
@@ -156,12 +181,26 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     auto* dden_y_eval   = dden_x_eval + npts;
     auto* dden_z_eval   = dden_y_eval + npts;
 
+    value_type* lbasis_eval = nullptr;
     value_type* d2basis_xx_eval = nullptr;
     value_type* d2basis_xy_eval = nullptr;
     value_type* d2basis_xz_eval = nullptr;
     value_type* d2basis_yy_eval = nullptr;
     value_type* d2basis_yz_eval = nullptr;
     value_type* d2basis_zz_eval = nullptr;
+    value_type* d3basis_xxx_eval = nullptr;
+    value_type* d3basis_xxy_eval = nullptr;
+    value_type* d3basis_xxz_eval = nullptr;
+    value_type* d3basis_xyy_eval = nullptr;
+    value_type* d3basis_xyz_eval = nullptr;
+    value_type* d3basis_xzz_eval = nullptr;
+    value_type* d3basis_yyy_eval = nullptr;
+    value_type* d3basis_yyz_eval = nullptr;
+    value_type* d3basis_yzz_eval = nullptr;
+    value_type* d3basis_zzz_eval = nullptr;
+    value_type* dlbasis_x_eval = nullptr;
+    value_type* dlbasis_y_eval = nullptr;
+    value_type* dlbasis_z_eval = nullptr;
 
     if( func.is_gga() ) {
       d2basis_xx_eval = dbasis_z_eval   + npts * nbe;
@@ -172,13 +211,47 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       d2basis_zz_eval = d2basis_yz_eval + npts * nbe;
     }
 
+    if( func.is_mgga() ) {
+      d2basis_xx_eval = dbasis_z_eval   + npts * nbe;
+      d2basis_xy_eval = d2basis_xx_eval + npts * nbe;
+      d2basis_xz_eval = d2basis_xy_eval + npts * nbe;
+      d2basis_yy_eval = d2basis_xz_eval + npts * nbe;
+      d2basis_yz_eval = d2basis_yy_eval + npts * nbe;
+      d2basis_zz_eval = d2basis_yz_eval + npts * nbe;
+      if ( false ) {
+	lbasis_eval   = d2basis_zz_eval + npts * nbe;
+	d3basis_xxx_eval = lbasis_eval + npts * nbe;
+	d3basis_xxy_eval = d3basis_xxx_eval + npts * nbe;
+	d3basis_xxz_eval = d3basis_xxy_eval + npts * nbe;
+	d3basis_xyy_eval = d3basis_xxz_eval + npts * nbe;
+	d3basis_xyz_eval = d3basis_xyy_eval + npts * nbe;
+	d3basis_xzz_eval = d3basis_xyz_eval + npts * nbe;
+	d3basis_yyy_eval = d3basis_xzz_eval + npts * nbe;
+	d3basis_yyz_eval = d3basis_yyy_eval + npts * nbe;
+	d3basis_yzz_eval = d3basis_yyz_eval + npts * nbe;
+	d3basis_zzz_eval = d3basis_yzz_eval + npts * nbe;
+        dlbasis_x_eval = d3basis_zzz_eval + npts * nbe;
+	dlbasis_y_eval = dlbasis_x_eval + npts * nbe;
+	dlbasis_z_eval = dlbasis_y_eval + npts * nbe;
+      }
+    }
+
 
     // Get the submatrix map for batch
     auto [submat_map, foo] = 
       gen_compressed_submat_map( basis_map, task.bfn_screening.shell_list, nbf, nbf );
 
     // Evaluate Collocation Gradient (+ Hessian)
-    if( func.is_gga() )
+    if( func.is_mgga() ) {
+      lwd->eval_collocation_der3( npts, nshells, nbe, points, basis, shell_list, 
+        basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval, d2basis_xx_eval,
+        d2basis_xy_eval, d2basis_xz_eval, d2basis_yy_eval, d2basis_yz_eval,
+        d2basis_zz_eval, d3basis_xxx_eval, d3basis_xxy_eval, d3basis_xxz_eval,
+	d3basis_xyy_eval, d3basis_xyz_eval, d3basis_xzz_eval, d3basis_yyy_eval,
+	d3basis_yyz_eval, d3basis_yzz_eval, d3basis_zzz_eval);
+
+    }
+    else if( func.is_gga() )
       lwd->eval_collocation_hessian( npts, nshells, nbe, points, basis, shell_list, 
         basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval, d2basis_xx_eval,
         d2basis_xy_eval, d2basis_xz_eval, d2basis_yy_eval, d2basis_yz_eval,
@@ -190,7 +263,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Evaluate X matrix (2 * P * B/Bx/By/Bz) -> store in Z
     // XXX: This assumes that bfn + gradients are contiguous in memory
-    if( func.is_gga() ) {
+    if( func.is_gga() or func.is_mgga() ) {
       lwd->eval_xmat( 4*npts, nbf, nbe, submat_map, 2.0, P, ldp, basis_eval, nbe,
         zmat, nbe, nbe_scr );
     } else {
@@ -198,9 +271,27 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         zmat, nbe, nbe_scr );
     }
 
+    if ( func.is_mgga() )
+      lwd->eval_mmat( npts, nbf, nbe, submat_map, 2.0, P, ldp, dbasis_x_eval,
+	  dbasis_y_eval, dbasis_z_eval, nbe, mmat_x, mmat_y, mmat_z, nbe, nbe_scr);
 
     // Evaluate U and V variables
-    if( func.is_gga() )
+    if( func.is_mgga() ) {
+      if ( lbasis_eval != nullptr ) {
+        for( int ipt = 0; ipt < npts; ++ipt ) {
+  	  lbasis_eval[ipt] = d2basis_xx_eval[ipt] + d2basis_yy_eval[ipt] + d2basis_zz_eval[ipt];
+  	  dlbasis_x_eval[ipt] = d3basis_xxx_eval[ipt] + d3basis_xyy_eval[ipt] + d3basis_xzz_eval[ipt];
+	  dlbasis_y_eval[ipt] = d3basis_xyy_eval[ipt] + d3basis_yyy_eval[ipt] + d3basis_yzz_eval[ipt];
+	  dlbasis_z_eval[ipt] = d3basis_xzz_eval[ipt] + d3basis_yyz_eval[ipt] + d3basis_zzz_eval[ipt];
+	}
+      }
+      lwd->eval_uvvar_mgga_rks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
+        dbasis_z_eval, lbasis_eval, zmat, nbe, mmat_x, mmat_y, mmat_z, nbe, 
+	den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
+        gamma, tau, lapl );
+    }
+
+    else if( func.is_gga() )
       lwd->eval_uvvar_gga_rks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
         dbasis_z_eval, zmat, nbe, den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
         gamma );
@@ -209,6 +300,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
     // Evaluate XC functional
+    if( func.is_mgga() )
+      func.eval_exc_vxc( npts, den_eval, gamma, lapl, tau, eps, vrho, vgamma, vlapl, vtau );
     if( func.is_gga() )
       func.eval_exc_vxc( npts, den_eval, gamma, eps, vrho, vgamma );
     else
@@ -241,7 +334,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 	      g_acc_y += vrho_ipt * z * dby;
 	      g_acc_z += vrho_ipt * z * dbz;
 
-	      if( func.is_gga() ) {
+	      if( func.is_gga() or func.is_mgga() ) {
       	  // GGA Contributions
           const double vgamma_ipt = weights[ipt] * vgamma[ipt];
 
@@ -271,6 +364,44 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 	        g_acc_x += 2 * vgamma_ipt * ( z * d2_term_x + dbx * d11_zmat_term );
 	        g_acc_y += 2 * vgamma_ipt * ( z * d2_term_y + dby * d11_zmat_term );
 	        g_acc_z += 2 * vgamma_ipt * ( z * d2_term_z + dbz * d11_zmat_term );
+	      }
+
+	      if( func.is_mgga() ) {
+
+                const double vtau_ipt = 0.5 * weights[ipt] * vtau[ipt];
+	        const double zx = zmat_x[mu_i]; // Z_x = N * B_x
+	        const double zy = zmat_y[mu_i]; // Z_y = N * B_y
+	        const double zz = zmat_z[mu_i]; // Z_z = N * B_z
+	        const double d2bxx = d2basis_xx_eval[mu_i]; // B^2_xx
+	        const double d2bxy = d2basis_xy_eval[mu_i]; // B^2_xy
+	        const double d2bxz = d2basis_xz_eval[mu_i]; // B^2_xz
+	        const double d2byy = d2basis_yy_eval[mu_i]; // B^2_yy
+	        const double d2byz = d2basis_yz_eval[mu_i]; // B^2_yz
+	        const double d2bzz = d2basis_zz_eval[mu_i]; // B^2_zz
+		double d2_term_x = d2bxx * zx + d2bxy * zy + d2bxz * zz;
+		double d2_term_y = d2bxy * zx + d2byy * zy + d2byz * zz;
+		double d2_term_z = d2bxz * zx + d2byz * zy + d2bzz * zz;
+
+		g_acc_x += vtau_ipt * d2_term_x;
+		g_acc_y += vtau_ipt * d2_term_y;
+		g_acc_z += vtau_ipt * d2_term_z;
+
+		if ( lbasis_eval != nullptr ) {
+		  const double vlapl_ipt = weights[ipt] * vlapl[ipt];
+		  const double lbf = lbasis_eval[mu_i];
+                  const double dlbx = dlbasis_x_eval[mu_i];
+                  const double dlby = dlbasis_y_eval[mu_i];
+                  const double dlbz = dlbasis_z_eval[mu_i];
+		  d2_term_x = z * dlbx + zx * lbf + 2.0*d2_term_x;
+		  d2_term_y = z * dlby + zy * lbf + 2.0*d2_term_y;
+		  d2_term_z = z * dlbz + zz * lbf + 2.0*d2_term_z;
+
+		  g_acc_x += vlapl_ipt * d2_term_x;
+		  g_acc_y += vlapl_ipt * d2_term_y;
+		  g_acc_z += vlapl_ipt * d2_term_z;
+
+		}
+
 	      }
 
       } // loop over bfns + grid points
