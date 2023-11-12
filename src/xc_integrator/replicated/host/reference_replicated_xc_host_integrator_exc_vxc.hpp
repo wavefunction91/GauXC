@@ -10,6 +10,7 @@
 #include "reference_replicated_xc_host_integrator.hpp"
 #include "integrator_util/integrator_common.hpp"
 #include "host/local_host_work_driver.hpp"
+#include "host/blas.hpp"
 #include <stdexcept>
 
 namespace GauXC  {
@@ -225,19 +226,19 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     if( func.is_mgga() ){
       // TODO: Add check for Laplacian-dependent functionals
-      if ( false ) {
+      if ( true ) {
         host_data.basis_eval .resize( 11 * npts * nbe ); // tau + lapl mgga
+	host_data.lapl       .resize( spin_dim_scal * npts );
+	host_data.vlapl      .resize( spin_dim_scal * npts );
       } else {
         host_data.basis_eval .resize( 4 * npts * nbe ); // tau-only mgga
       }
-      host_data.den_scr    .resize( spin_dim_scal * 10 * npts );
+      host_data.den_scr    .resize( spin_dim_scal * 4 * npts );
       host_data.gamma      .resize( gga_dim_scal * npts );
       host_data.vgamma     .resize( gga_dim_scal * npts );
       host_data.mmat       .resize( 3 * npts * nbe * spin_dim_scal );
       host_data.tau        .resize( npts * spin_dim_scal );
-      host_data.lapl       .resize( npts * spin_dim_scal );
       host_data.vtau       .resize( npts * spin_dim_scal );
-      host_data.vlapl      .resize( npts * spin_dim_scal );
     }
 
     // Alias/Partition out scratch memory
@@ -248,7 +249,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     auto* mmat       = host_data.mmat.data();
 
     decltype(zmat) zmat_z = nullptr;
-    decltype(mmat) mmatz = nullptr;
     if(!is_rks) {
       zmat_z = zmat + nbe * npts;
     }
@@ -301,9 +301,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       dden_z_eval   = dden_y_eval + spin_dim_scal * npts;
       mmat_x        = mmat;
       mmat_y        = mmat_x + npts * nbe;
-      mmat_z        = mmat_z + npts * nbe;
-      // TODO: Laplacian-dependent functionals
-      if ( false ) {
+      mmat_z        = mmat_y + npts * nbe;
+      // TODO: Add check for Laplacian-dependent functionals
+      if ( true ) {
 	d2basis_xx_eval = dbasis_z_eval + npts * nbe;
 	d2basis_xy_eval = d2basis_xx_eval + npts * nbe;
 	d2basis_xz_eval = d2basis_xy_eval + npts * nbe;
@@ -312,8 +312,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 	d2basis_zz_eval = d2basis_yz_eval + npts * nbe;
 	lbasis_eval     = d2basis_zz_eval + npts * nbe;
       }
-      if(!is_rks) {
-	mmat_x_z = mmatz;
+      if(is_uks) {
+	mmat_x_z = mmat_z + npts * nbe;
 	mmat_y_z = mmat_x_z + npts * nbe;
 	mmat_z_z = mmat_y_z + npts * nbe;
       }
@@ -327,14 +327,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Evaluate Collocation (+ Grad and Hessian)
     if( func.is_mgga() ) {
-      if ( false ) {
+      if ( true ) {
         lwd->eval_collocation_hessian( npts, nshells, nbe, points, basis, shell_list,
           basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval, d2basis_xx_eval,
 	  d2basis_xy_eval, d2basis_xz_eval, d2basis_yy_eval, d2basis_yz_eval,
 	  d2basis_zz_eval);
-        for( int32_t i = 0; i < npts; ++i ) {
-	  lbasis_eval[i] = d2basis_xx_eval[i] + d2basis_yy_eval[i] + d2basis_zz_eval[i];
-	}
+        blas::lacpy( 'A', nbe, npts, d2basis_xx_eval, nbe, lbasis_eval, nbe );
+        blas::axpy( nbe * npts, 1., d2basis_yy_eval, 1, lbasis_eval, 1);
+        blas::axpy( nbe * npts, 1., d2basis_zz_eval, 1, lbasis_eval, 1);
       } else {
         lwd->eval_collocation_gradient( npts, nshells, nbe, points, basis, shell_list,
           basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval );
@@ -364,7 +364,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     if( func.is_mgga() ) {
       lwd->eval_mmat( npts, nbf, nbe, submat_map, xmat_fac, Ps, ldps, dbasis_x_eval,
 	  dbasis_y_eval, dbasis_z_eval, nbe, mmat_x, mmat_y, mmat_z, nbe, nbe_scr );
-      if(not is_rks) {
+      if(is_uks) {
         lwd->eval_mmat( npts, nbf, nbe, submat_map, 1.0, Pz, ldpz, dbasis_x_eval,
 	  dbasis_y_eval, dbasis_z_eval, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe, nbe_scr );
       }
@@ -438,7 +438,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 	}
 
 	// TODO: Add checks for Lapacian-dependent functionals
-	if( false ) {
+	if( true ) {
           vlapl[spin_dim_scal*i] *= weights[i];
           if(not is_rks) {
             vlapl[spin_dim_scal*i+1] *= weights[i];

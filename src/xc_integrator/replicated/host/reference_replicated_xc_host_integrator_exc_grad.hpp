@@ -10,6 +10,7 @@
 #include "reference_replicated_xc_host_integrator.hpp"
 #include "integrator_util/integrator_common.hpp"
 #include "host/local_host_work_driver.hpp"
+#include "host/blas.hpp"
 #include <stdexcept>
 
 namespace GauXC  {
@@ -142,7 +143,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       host_data.vgamma     .resize( npts );
       host_data.tau        .resize( npts );
       host_data.vtau       .resize( npts );
-      if ( false ) {
+      if ( true ) {
 	host_data.basis_eval.resize( 24 * npts * nbe );
 	host_data.lapl      .resize( npts );
 	host_data.vlapl     .resize( npts );
@@ -171,7 +172,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     auto* mmat       = host_data.mmat.data();
 
     auto* mmat_x      = mmat;
-    auto* mmat_y      = mmat + npts * nbe;
+    auto* mmat_y      = mmat_x + npts * nbe;
     auto* mmat_z      = mmat_y + npts * nbe;
 
     auto* dbasis_x_eval = basis_eval    + npts * nbe;
@@ -218,7 +219,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       d2basis_yy_eval = d2basis_xz_eval + npts * nbe;
       d2basis_yz_eval = d2basis_yy_eval + npts * nbe;
       d2basis_zz_eval = d2basis_yz_eval + npts * nbe;
-      if ( false ) {
+      if ( true ) {
 	lbasis_eval   = d2basis_zz_eval + npts * nbe;
 	d3basis_xxx_eval = lbasis_eval + npts * nbe;
 	d3basis_xxy_eval = d3basis_xxx_eval + npts * nbe;
@@ -278,12 +279,21 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Evaluate U and V variables
     if( func.is_mgga() ) {
       if ( lbasis_eval != nullptr ) {
-        for( int ipt = 0; ipt < npts; ++ipt ) {
-  	  lbasis_eval[ipt] = d2basis_xx_eval[ipt] + d2basis_yy_eval[ipt] + d2basis_zz_eval[ipt];
-  	  dlbasis_x_eval[ipt] = d3basis_xxx_eval[ipt] + d3basis_xyy_eval[ipt] + d3basis_xzz_eval[ipt];
-	  dlbasis_y_eval[ipt] = d3basis_xyy_eval[ipt] + d3basis_yyy_eval[ipt] + d3basis_yzz_eval[ipt];
-	  dlbasis_z_eval[ipt] = d3basis_xzz_eval[ipt] + d3basis_yyz_eval[ipt] + d3basis_zzz_eval[ipt];
-	}
+        blas::lacpy( 'A', nbe, npts, d2basis_xx_eval, nbe, lbasis_eval, nbe );
+        blas::axpy( nbe * npts, 1., d2basis_yy_eval, 1, lbasis_eval, 1);
+        blas::axpy( nbe * npts, 1., d2basis_zz_eval, 1, lbasis_eval, 1);
+
+	blas::lacpy( 'A', nbe, npts, d3basis_xxx_eval, nbe, dlbasis_x_eval, nbe );
+        blas::axpy( nbe * npts, 1., d3basis_xyy_eval, 1, dlbasis_x_eval, 1);
+        blas::axpy( nbe * npts, 1., d3basis_xzz_eval, 1, dlbasis_x_eval, 1);
+
+	blas::lacpy( 'A', nbe, npts, d3basis_xxy_eval, nbe, dlbasis_y_eval, nbe );
+        blas::axpy( nbe * npts, 1., d3basis_yyy_eval, 1, dlbasis_y_eval, 1);
+        blas::axpy( nbe * npts, 1., d3basis_yzz_eval, 1, dlbasis_y_eval, 1);
+
+	blas::lacpy( 'A', nbe, npts, d3basis_xxz_eval, nbe, dlbasis_z_eval, nbe );
+        blas::axpy( nbe * npts, 1., d3basis_yyz_eval, 1, dlbasis_z_eval, 1);
+        blas::axpy( nbe * npts, 1., d3basis_zzz_eval, 1, dlbasis_z_eval, 1);
       }
       lwd->eval_uvvar_mgga_rks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
         dbasis_z_eval, lbasis_eval, zmat, nbe, mmat_x, mmat_y, mmat_z, nbe, 
