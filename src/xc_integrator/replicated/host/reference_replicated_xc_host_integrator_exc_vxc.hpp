@@ -139,6 +139,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   const auto& basis = this->load_balancer_->basis();
   const auto& mol   = this->load_balancer_->molecule();
 
+  const bool needs_laplacian = func.is_mgga() ? true : false; // TODO: Needs Laplacian Check
+  
   // Get basis map
   BasisSetMap basis_map(basis,mol);
 
@@ -203,9 +205,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Allocate enough memory for batch
 
     const size_t spin_dim_scal = is_rks ? 1 : 2; 
+    const size_t mgga_dim_scal = func.is_mgga() ? 4 : 1; // basis + d1basis
+
     // Things that every calc needs
     host_data.nbe_scr .resize(nbe  * nbe);
-    host_data.zmat    .resize(npts * nbe * spin_dim_scal); 
+    host_data.zmat    .resize(npts * nbe * spin_dim_scal * mgga_dim_scal); 
     host_data.eps     .resize(npts);
     host_data.vrho    .resize(npts * spin_dim_scal);
 
@@ -226,17 +230,17 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     if( func.is_mgga() ){
       // TODO: Add check for Laplacian-dependent functionals
-      if ( true ) {
-        host_data.basis_eval .resize( 11 * npts * nbe ); // tau + lapl mgga
+      if ( needs_laplacian ) {
+        host_data.basis_eval .resize( 11 * npts * nbe ); // basis + grad (3) + hess (6) + lapl 
 	host_data.lapl       .resize( spin_dim_scal * npts );
 	host_data.vlapl      .resize( spin_dim_scal * npts );
       } else {
-        host_data.basis_eval .resize( 4 * npts * nbe ); // tau-only mgga
+        host_data.basis_eval .resize( 4 * npts * nbe ); // basis + grad (3)
       }
+
       host_data.den_scr    .resize( spin_dim_scal * 4 * npts );
       host_data.gamma      .resize( gga_dim_scal * npts );
       host_data.vgamma     .resize( gga_dim_scal * npts );
-      host_data.mmat       .resize( 3 * npts * nbe * spin_dim_scal );
       host_data.tau        .resize( npts * spin_dim_scal );
       host_data.vtau       .resize( npts * spin_dim_scal );
     }
@@ -246,11 +250,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     auto* den_eval   = host_data.den_scr.data();
     auto* nbe_scr    = host_data.nbe_scr.data();
     auto* zmat       = host_data.zmat.data();
-    auto* mmat       = host_data.mmat.data();
 
     decltype(zmat) zmat_z = nullptr;
     if(!is_rks) {
-      zmat_z = zmat + nbe * npts;
+      zmat_z = zmat + mgga_dim_scal * nbe * npts;
     }
 
     auto* eps        = host_data.eps.data();
@@ -299,11 +302,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       dden_x_eval   = den_eval    + spin_dim_scal * npts;
       dden_y_eval   = dden_x_eval + spin_dim_scal * npts;
       dden_z_eval   = dden_y_eval + spin_dim_scal * npts;
-      mmat_x        = mmat;
+      mmat_x        = zmat + npts * nbe;
       mmat_y        = mmat_x + npts * nbe;
       mmat_z        = mmat_y + npts * nbe;
-      // TODO: Add check for Laplacian-dependent functionals
-      if ( true ) {
+      if ( needs_laplacian ) {
 	d2basis_xx_eval = dbasis_z_eval + npts * nbe;
 	d2basis_xy_eval = d2basis_xx_eval + npts * nbe;
 	d2basis_xz_eval = d2basis_xy_eval + npts * nbe;
@@ -313,7 +315,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 	lbasis_eval     = d2basis_zz_eval + npts * nbe;
       }
       if(is_uks) {
-	mmat_x_z = mmat_z + npts * nbe;
+	mmat_x_z = zmat_z + npts * nbe;
 	mmat_y_z = mmat_x_z + npts * nbe;
 	mmat_z_z = mmat_y_z + npts * nbe;
       }
@@ -327,7 +329,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Evaluate Collocation (+ Grad and Hessian)
     if( func.is_mgga() ) {
-      if ( true ) {
+      if ( needs_laplacian ) {
+	// TODO: Modify gau2grid to compute Laplacian instead of full hessian
         lwd->eval_collocation_hessian( npts, nshells, nbe, points, basis, shell_list,
           basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval, d2basis_xx_eval,
 	  d2basis_xy_eval, d2basis_xz_eval, d2basis_yy_eval, d2basis_yz_eval,
@@ -351,23 +354,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Evaluate X matrix (fac * P * B) -> store in Z
     const auto xmat_fac = is_rks ? 2.0 : 1.0; // TODO Fix for spinor RKS input
-    lwd->eval_xmat( npts, nbf, nbe, submat_map, xmat_fac, Ps, ldps, basis_eval, nbe,
+    lwd->eval_xmat( mgga_dim_scal * npts, nbf, nbe, submat_map, xmat_fac, Ps, ldps, basis_eval, nbe,
       zmat, nbe, nbe_scr );
 
     // X matrix for Pz
     if(not is_rks) {
-      lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, Pz, ldpz, basis_eval, nbe,
+      lwd->eval_xmat( mgga_dim_scal * npts, nbf, nbe, submat_map, 1.0, Pz, ldpz, basis_eval, nbe,
         zmat_z, nbe, nbe_scr);
-    }
-
-    // Evaluate (fac * P * d1B) -> store in M
-    if( func.is_mgga() ) {
-      lwd->eval_mmat( npts, nbf, nbe, submat_map, xmat_fac, Ps, ldps, dbasis_x_eval,
-	  dbasis_y_eval, dbasis_z_eval, nbe, mmat_x, mmat_y, mmat_z, nbe, nbe_scr );
-      if(is_uks) {
-        lwd->eval_mmat( npts, nbf, nbe, submat_map, 1.0, Pz, ldpz, dbasis_x_eval,
-	  dbasis_y_eval, dbasis_z_eval, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe, nbe_scr );
-      }
     }
 
 
@@ -438,7 +431,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 	}
 
 	// TODO: Add checks for Lapacian-dependent functionals
-	if( true ) {
+	if( needs_laplacian ) {
           vlapl[spin_dim_scal*i] *= weights[i];
           if(not is_rks) {
             vlapl[spin_dim_scal*i+1] *= weights[i];
@@ -495,13 +488,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       }
 
       // Increment VXC
-      lwd->inc_vxc( npts, nbf, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
-	  submat_map, zmat, nbe, mmat_x, mmat_y, mmat_z, nbe, VXCs, ldvxcs,
-        nbe_scr );
+      lwd->inc_vxc( mgga_dim_scal * npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, VXCs, ldvxcs, nbe_scr );
       if(not is_rks) {
-        lwd->inc_vxc( npts, nbf, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval, 
-	    submat_map, zmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe, VXCz, ldvxcz,
-          nbe_scr);
+        lwd->inc_vxc( mgga_dim_scal * npts, nbf, nbe, basis_eval, submat_map, zmat_z, nbe,VXCz, ldvxcz, nbe_scr);
       }
 
     }

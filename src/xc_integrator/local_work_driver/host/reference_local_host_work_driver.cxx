@@ -120,28 +120,6 @@ namespace GauXC {
 
   }
 
-  void ReferenceLocalHostWorkDriver::eval_mmat( size_t npts, size_t nbf, size_t nbe,
-                                                const submat_map_t& submat_map, double fac, const double* P, size_t ldp,
-						const double* dbasis_x_eval, const double* dbasis_y_eval, const double* dbasis_z_eval,
-						size_t ldb, double* mmat_x, double* mmat_y, double* mmat_z, size_t ldm, double* scr ) {
-    const auto* P_use = P;
-    size_t ldp_use = ldp;
-     
-    if( submat_map.size() > 1 ) {
-      detail::submat_set( nbf, nbf, nbe, nbe, P, ldp, scr, nbe, submat_map );
-      P_use = scr;
-      ldp_use = nbe;
-    } else if( nbe != nbf ) {
-      P_use = P + submat_map[0][0]*(ldp+1);
-    }
-    blas::gemm( 'N', 'N', nbe, npts, nbe, fac, P_use, ldp_use, dbasis_x_eval, ldb, 
-	0., mmat_x, ldm );
-    blas::gemm( 'N', 'N', nbe, npts, nbe, fac, P_use, ldp_use, dbasis_y_eval, ldb, 
-	0., mmat_y, ldm );
-    blas::gemm( 'N', 'N', nbe, npts, nbe, fac, P_use, ldp_use, dbasis_z_eval, ldb, 
-	0., mmat_z, ldm );
-
-  }
 
   // U/VVar LDA (density)
   void ReferenceLocalHostWorkDriver::eval_uvvar_lda_rks( size_t npts, size_t nbe, 
@@ -725,31 +703,15 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_mgga_uks( size_t npts, size_t nbe,
 
   // Increment VXC by Z
   void ReferenceLocalHostWorkDriver::inc_vxc( size_t npts, size_t nbf, size_t nbe, 
-					      const double* basis_eval, const double* dbasis_x_eval,
-					      const double* dbasis_y_eval, const double* dbasis_z_eval,
-					      const submat_map_t& submat_map, const double* Z, 
-					      size_t ldz, const double* mmat_x, const double* mmat_y, 
-					      const double* mmat_z, size_t ldm, double* VXC, size_t ldvxc, double* scr ) {
+					      const double* basis_eval, const submat_map_t& submat_map, const double* Z,
+					      size_t ldz, double* VXC, size_t ldvxc, double* scr ) {
 
     if( submat_map.size() > 1 ) {
       blas::syr2k('L', 'N', nbe, npts, 1., basis_eval, nbe, Z, ldz, 0., scr, nbe );
-      if ( mmat_x != nullptr ) {
-        blas::syr2k('L', 'N', nbe, npts, 1., dbasis_x_eval, nbe, mmat_x, ldm, 1., scr, nbe );
-        blas::syr2k('L', 'N', nbe, npts, 1., dbasis_y_eval, nbe, mmat_y, ldm, 1., scr, nbe );
-        blas::syr2k('L', 'N', nbe, npts, 1., dbasis_z_eval, nbe, mmat_z, ldm, 1., scr, nbe );
-      }
       detail::inc_by_submat( nbf, nbf, nbe, nbe, VXC, ldvxc, scr, nbe, submat_map );
     } else {
       blas::syr2k('L', 'N', nbe, npts, 1., basis_eval, nbe, Z, ldz, 1., 
 		  VXC + submat_map[0][0]*(ldvxc+1), ldvxc );
-      if ( mmat_x != nullptr ) {
-        blas::syr2k('L', 'N', nbe, npts, 1., dbasis_x_eval, nbe, mmat_x, ldm, 1., 
-	  VXC + submat_map[0][0]*(ldvxc+1), ldvxc );
-        blas::syr2k('L', 'N', nbe, npts, 1., dbasis_y_eval, nbe, mmat_y, ldm, 1.,
-	  VXC + submat_map[0][0]*(ldvxc+1), ldvxc );
-        blas::syr2k('L', 'N', nbe, npts, 1., dbasis_z_eval, nbe, mmat_z, ldm, 1.,
-	  VXC + submat_map[0][0]*(ldvxc+1), ldvxc );
-      }
     }
 
   }

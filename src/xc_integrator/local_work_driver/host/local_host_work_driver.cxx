@@ -110,17 +110,6 @@ void LocalHostWorkDriver::eval_xmat( size_t npts, size_t nbf, size_t nbe,
 
 }
 
-void LocalHostWorkDriver::eval_mmat( size_t npts, size_t nbf, size_t nbe,
-    const submat_map_t& submat_map, double fac, const double* P, size_t ldp,
-    const double* dbasis_x_eval, const double* dbasis_y_eval, const double* dbasis_z_eval,
-    size_t ldb, double* mmat_x, double* mmat_y, double* mmat_z, size_t ldm, double* scr) {
-
-  throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_mmat(npts, nbf, nbe, submat_map, fac, P, ldp, dbasis_x_eval,
-      dbasis_y_eval, dbasis_z_eval, ldb, mmat_x, mmat_y, mmat_z, ldm, scr);
-
-}
-
 void LocalHostWorkDriver::eval_exx_fmat( size_t npts, size_t nbf, size_t nbe_bra,
   size_t nbe_ket, const submat_map_t& submat_map_bra,
   const submat_map_t& submat_map_ket, const double* P, size_t ldp,
@@ -352,15 +341,11 @@ void LocalHostWorkDriver::eval_mmat_mgga_vxc_uks( size_t npts, size_t nbe,
 
 // Increment VXC by Z
 void LocalHostWorkDriver::inc_vxc( size_t npts, size_t nbf, size_t nbe, 
-  const double* basis_eval, const double* dbasis_x_eval, const double* dbasis_y_eval,
-  const double* dbasis_z_eval, const submat_map_t& submat_map, const double* Z, 
-  size_t ldz, const double* mmat_x, const double* mmat_y, const double* mmat_z, size_t ldm,
-  double* VXC, size_t ldvxc, double* scr ) {
+  const double* basis_eval, const submat_map_t& submat_map, const double* Z, 
+  size_t ldz, double* VXC, size_t ldvxc, double* scr ) {
 
   throw_if_invalid_pimpl(pimpl_);
-  pimpl_->inc_vxc(npts, nbf, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
-      submat_map, Z, ldz, mmat_x, mmat_y, mmat_z, ldm, VXC, ldvxc,
-    scr);
+  pimpl_->inc_vxc(npts, nbf, nbe, basis_eval, submat_map, Z, ldz, VXC, ldvxc, scr);
 
 }
 

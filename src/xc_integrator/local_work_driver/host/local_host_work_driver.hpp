@@ -196,31 +196,6 @@ public:
     const double* basis_eval, size_t ldb, double* X, size_t ldx, 
     double* scr );
 
-  /** Evaluate the compressed "M" matrix = fac * P * dB
-   *
-   *  @param[in]  npts        The number of points in the collocation matrix 
-   *  @param[in]  nbf         The total number of bfns
-   *  @param[in]  nbe         The number of non-negligible bfns
-   *  @param[in]  submat_map  Map from the full matrix to non-negligible submatrices
-   *  @param[in]  fac         Scaling factor in front of matrix multiplication
-   *  @param[in]  P           The alpha density matrix ( (nbf,nbf) col major)
-   *  @param[in]  ldp         The leading dimension of P
-   *  @param[in]  dbasis_z_eval  The collocation matrix ( (nbe,npts) col major)
-   *  @param[in]  dbasis_y_eval  The collocation matrix ( (nbe,npts) col major)
-   *  @param[in]  dbasis_z_eval  The collocation matrix ( (nbe,npts) col major)
-   *  @param[in]  ldb         The leading dimension of basis_eval
-   *  @param[out] mmat_x           The M matrix ( (nbe,npts) col major)
-   *  @param[out] mmat_y           The M matrix ( (nbe,npts) col major)
-   *  @param[out] mmat_z           The M matrix ( (nbe,npts) col major)
-   *  @param[in]  ldm         The leading dimension of M
-   *  @param[in/out] scr      Scratch space of at least nbe*nbe
-   */
-  void eval_mmat( size_t npts, size_t nbf, size_t nbe, 
-    const submat_map_t& submat_map, double fac, const double* P, size_t ldp,
-    const double* dbasis_x_eval, const double* dbasis_y_eval, const double* dbasis_z_eval,
-    size_t ldb, double* mmat_x, double* mmat_y, double* mmat_z, size_t ldx, 
-    double* scr );
-
   void eval_exx_fmat( size_t npts, size_t nbf, size_t nbe_bra,
     size_t nbe_ket, const submat_map_t& submat_map_bra,
     const submat_map_t& submat_map_ket, const double* P, size_t ldp,
@@ -469,9 +444,7 @@ public:
    *
    */
   void inc_vxc( size_t npts, size_t nbf, size_t nbe, const double* basis_eval,
-    const double* dbasis_x_eval, const double* dbasis_y_eval, const double* dbasis_z_eval,
     const submat_map_t& submat_map, const double* Z, size_t ldz, 
-    const double* mmat_x, const double* mmat_y, const double* mmat_z, size_t ldm, 
     double* VXC, size_t ldvxc, double* scr );
 
 private: 
