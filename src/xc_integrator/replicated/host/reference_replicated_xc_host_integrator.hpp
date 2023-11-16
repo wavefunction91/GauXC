@@ -51,7 +51,7 @@ protected:
                       value_type* VXCs, int64_t ldvxcs,
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* VXCx, int64_t ldvxcx,
-                      value_type* VXCy, int64_t ldvxcy
+                      value_type* VXCy, int64_t ldvxcy,
                       value_type* EXC ) override;
 
 

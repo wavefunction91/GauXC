@@ -101,6 +101,8 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_gks
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   matrix_type VXCscalar( Pscalar.rows(), Pscalar.cols() );
   matrix_type VXCz( Pz.rows(), Pz.cols() );
+  matrix_type VXCx( Px.rows(), Px.cols() );
+  matrix_type VXCy( Py.rows(), Py.cols() );
   value_type  EXC;
 
   pimpl_->eval_exc_vxc( Pscalar.rows(), Pscalar.cols(), Pscalar.data(), Pscalar.rows(),

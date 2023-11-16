@@ -207,7 +207,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                        value_type* EXC, value_type *N_EL ) {
 
   const bool is_gks = (Pz != nullptr) and (VXCz != nullptr) and (VXCx != nullptr) and (VXCy != nullptr);
-  const bool is_uks = (Pz != nullptr) and (VXCz != nullptr) and (VXCx = nullptr) and (VXCy = nullptr);
+  const bool is_uks = (Pz != nullptr) and (VXCz != nullptr) and (VXCx == nullptr) and (VXCy == nullptr);
   const bool is_rks = not is_uks and not is_gks;
 
   // Cast LWD to LocalHostWorkDriver

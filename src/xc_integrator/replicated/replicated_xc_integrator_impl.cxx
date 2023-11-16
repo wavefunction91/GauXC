@@ -61,6 +61,33 @@ void ReplicatedXCIntegratorImpl<ValueType>::
 
 template <typename ValueType>
 void ReplicatedXCIntegratorImpl<ValueType>::
+  eval_exc_vxc( int64_t m, int64_t n, const value_type* Pscalar,
+                      int64_t ldpscalar,
+                      const value_type* Pz,
+                      int64_t ldpz,
+                      const value_type* Px,
+                      int64_t ldpx,
+                      const value_type* Py,
+                      int64_t ldpy,
+                      value_type* VXCscalar, int64_t ldvxcscalar,
+                      value_type* VXCz, int64_t ldvxcz,
+                      value_type* VXCx, int64_t ldvxcx,
+                      value_type* VXCy, int64_t ldvxcy,
+                      value_type* EXC ) {
+
+    eval_exc_vxc_(m,n,Pscalar,ldpscalar,
+                      Pz,ldpz,
+                      Px,ldpx,
+                      Py,ldpy,
+                      VXCscalar,ldvxcscalar,
+                      VXCz,ldvxcz,
+                      VXCx,ldvxcx,
+                      VXCy,ldvxcy,EXC);
+
+}
+
+template <typename ValueType>
+void ReplicatedXCIntegratorImpl<ValueType>::
   eval_exc_grad( int64_t m, int64_t n, const value_type* P,
                 int64_t ldp, value_type* EXC_GRAD ) {
 
