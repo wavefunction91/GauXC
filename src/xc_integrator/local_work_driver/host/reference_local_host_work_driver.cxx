@@ -145,6 +145,43 @@ namespace GauXC {
     const double* Xs, size_t ldxs, const double* Xz, size_t ldxz,
     const double* Xx, size_t ldxx, const double* Xy, size_t ldxy, double* den_eval, double* K) {
 
+    for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+
+      const size_t ioffs = size_t(i) * ldxs;
+      const size_t ioffz = size_t(i) * ldxz;
+      const size_t ioffx = size_t(i) * ldxx;
+      const size_t ioffy = size_t(i) * ldxy;
+
+      const auto*   Xs_i = Xs + ioffs;
+      const auto*   Xz_i = Xz + ioffz;
+      const auto*   Xx_i = Xx + ioffx;
+      const auto*   Xy_i = Xy + ioffy;
+
+      const double rhos = blas::dot( nbe, basis_eval + ioffs, 1, Xs_i, 1 );
+      const double rhoz = blas::dot( nbe, basis_eval + ioffz, 1, Xz_i, 1 );
+      const double rhox = blas::dot( nbe, basis_eval + ioffx, 1, Xx_i, 1 );
+      const double rhoy = blas::dot( nbe, basis_eval + ioffy, 1, Xy_i, 1 );
+ 
+      double mtemp = rhoz * rhoz + rhox * rhox + rhoy * rhoy;
+      double mnorm = 0;
+
+      if (mtemp > 1.0e-24) {
+        mnorm = sqrt(mtemp);
+        K2[i] = rhoz / mnorm;
+        K3[i] = rhox / mnorm;
+        K4[i] = rhoy / mnorm;
+      } else {
+        mnorm = (1. / 3.) * (rhox + rhoy + rhoz);
+        K2[i] = 1. / 3.;
+        K3[i] = 1. / 3.;
+        K4[i] = 1. / 3.;
+      }
+
+      den_eval[2*i]   = 0.5*(rhos + mnorm); // rho_+
+      den_eval[2*i+1] = 0.5*(rhos - mnorm); // rho_-
+
+    }
+
   }
 
 
@@ -238,6 +275,121 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe, 
     const double* Xz, size_t ldxz, const double* Xx, size_t ldxx,
     const double* Xy, size_t ldxy, double* den_eval,
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma, double* K, double* H ) {
+
+   for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+
+      const size_t ioffs = size_t(i) * ldxs;
+      const size_t ioffz = size_t(i) * ldxz;
+      const size_t ioffx = size_t(i) * ldxx;
+      const size_t ioffy = size_t(i) * ldxy;
+
+      const auto*   Xs_i = Xs + ioffs;
+      const auto*   Xz_i = Xz + ioffz;
+      const auto*   Xx_i = Xx + ioffx;
+      const auto*   Xy_i = Xy + ioffy;
+
+      const double rhos = blas::dot( nbe, basis_eval + ioffs, 1, Xs_i, 1 );
+      const double rhoz = blas::dot( nbe, basis_eval + ioffz, 1, Xz_i, 1 );
+      const double rhox = blas::dot( nbe, basis_eval + ioffx, 1, Xx_i, 1 );
+      const double rhoy = blas::dot( nbe, basis_eval + ioffy, 1, Xy_i, 1 );
+
+      const auto dndx =
+        2. * blas::dot( nbe, dbasis_x_eval + ioffs, 1, Xs_i, 1 );
+      const auto dndy =
+        2. * blas::dot( nbe, dbasis_y_eval + ioffs, 1, Xs_i, 1 );
+      const auto dndz =
+        2. * blas::dot( nbe, dbasis_z_eval + ioffs, 1, Xs_i, 1 );
+
+      const auto dMzdx =
+        2. * blas::dot( nbe, dbasis_x_eval + ioffz, 1, Xz_i, 1 );
+      const auto dMzdy =
+        2. * blas::dot( nbe, dbasis_y_eval + ioffz, 1, Xz_i, 1 );
+      const auto dMzdz =
+        2. * blas::dot( nbe, dbasis_z_eval + ioffz, 1, Xz_i, 1 );
+
+      const auto dMxdx =
+        2. * blas::dot( nbe, dbasis_x_eval + ioffx, 1, Xx_i, 1 );
+      const auto dMxdy =
+        2. * blas::dot( nbe, dbasis_y_eval + ioffx, 1, Xx_i, 1 );
+      const auto dMxdz =
+        2. * blas::dot( nbe, dbasis_z_eval + ioffx, 1, Xx_i, 1 );
+
+      const auto dMydx =
+        2. * blas::dot( nbe, dbasis_x_eval + ioffy, 1, Xy_i, 1 );
+      const auto dMydy =
+        2. * blas::dot( nbe, dbasis_y_eval + ioffy, 1, Xy_i, 1 );
+      const auto dMydz =
+        2. * blas::dot( nbe, dbasis_z_eval + ioffy, 1, Xy_i, 1 );
+
+
+      dden_x_eval[4 * i] = dndx;
+      dden_y_eval[4 * i] = dndy;
+      dden_z_eval[4 * i] = dndz;
+
+      dden_x_eval[4 * i + 1] = dMzdx;
+      dden_y_eval[4 * i + 1] = dMzdy;
+      dden_z_eval[4 * i + 1] = dMzdz;
+
+      dden_x_eval[4 * i + 2] = dMxdx;
+      dden_y_eval[4 * i + 2] = dMxdy;
+      dden_z_eval[4 * i + 2] = dMxdz;
+
+      dden_x_eval[4 * i + 3] = dMydx;
+      dden_y_eval[4 * i + 3] = dMydy;
+      dden_z_eval[4 * i + 3] = dMydz;
+
+      double mtemp = rhoz * rhoz + rhox * rhox + rhoy * rhoy;
+      double mnorm = 0;
+
+      auto dels_dot_dels = dndx * dndx + dndy * dndy + dndz * dndz;
+      auto delz_dot_delz = dMzdx * dMzdx + dMzdy * dMzdy + dMzdz * dMzdz;
+      auto delx_dot_delx = dMxdx * dMxdx + dMxdy * dMxdy + dMxdz * dMxdz;
+      auto dely_dot_dely = dMydx * dMydx + dMydy * dMydy + dMydz * dMydz;
+
+      auto dels_dot_delz = dndx * dMzdx + dndy * dMzdy + dndz * dMzdz;
+      auto dels_dot_delx = dndx * dMxdx + dndy * dMxdy + dndz * dMxdz;
+      auto dels_dot_dely = dndx * dMydx + dndy * dMydy + dndz * dMydz;
+
+      auto sum = delz_dot_delz + delx_dot_delx + dely_dot_dely;
+      auto s_sum =
+          dels_dot_delz * rhoz + dels_dot_delx * rhox + dels_dot_dely * rhoy;
+
+      auto sqsum2 =
+          sqrt(dels_dot_delz * dels_dot_delz + dels_dot_delx * dels_dot_delx +
+               dels_dot_dely * dels_dot_dely);
+
+      double sign = 1.;
+      if (std::signbit(s_sum))
+        sign = -1.;
+
+      if (mtemp > 1.0e-24) {
+        mnorm = sqrt(mtemp);
+        K2[i] = rhoz / mnorm;
+        K3[i] = rhox / mnorm;
+        K4[i] = rhoy / mnorm;
+        H2[i] = sign * dels_dot_delz / sqsum2;
+        H3[i] = sign * dels_dot_delx / sqsum2;
+        H4[i] = sign * dels_dot_dely / sqsum2;
+      } else {
+        mnorm = (1. / 3.) * (rhox + rhoy + rhoz);
+        K2[i] = 1. / 3.;
+        K3[i] = 1. / 3.;
+        K4[i] = 1. / 3.;
+
+        H2[i] = sign / 3.;
+        H3[i] = sign / 3.;
+        H4[i] = sign / 3.;
+      }
+      
+      den_eval[2 * i] = 0.5 * (rhos + mnorm);
+      den_eval[2 * i + 1] = 0.5 * (rhos - mnorm);
+      
+      gamma[3 * i] = 0.25 * (dels_dot_dels + sum) + 0.5 * sign * sqsum2;
+      gamma[3 * i + 1] = 0.25 * (dels_dot_dels - sum);
+      gamma[3 * i + 2] = 0.25 * (dels_dot_dels + sum) - 0.5 * sign * sqsum2;
+
+
+    }
 
 }
 
