@@ -165,7 +165,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Temporary electron count to judge integrator accuracy
   value_type N_EL;
-
+   
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
     exc_vxc_local_work_( Ps, ldps, Pz, ldpz, Px, ldpx, Py, ldpy, 
@@ -273,7 +273,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   #pragma omp for schedule(dynamic)
   for( size_t iT = 0; iT < ntasks; ++iT ) {
-    std::cout <<  __LINE__ << " " <<  __func__ << " " <<  __FILE__ << " "  << std::endl; 
+     
     //std::cout << iT << "/" << ntasks << std::endl;
     // Alias current task
     const auto& task = tasks[iT];
@@ -288,12 +288,12 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const int32_t* shell_list = task.bfn_screening.shell_list.data();
 
     // Allocate enough memory for batch
-    std::cout <<  __LINE__ << " " <<  __func__ << " " <<  __FILE__ << " "  << std::endl; 
+     
 
     size_t spin_dim_scal_temp = is_rks ? 1 : 2;
     spin_dim_scal_temp             *= is_gks ? 2 : 1;
     const size_t spin_dim_scal = spin_dim_scal_temp;
-
+    const size_t sds          = is_rks ? 1 : 2;
     const size_t gks_mod_KH = is_gks ? 6*npts : 0; // used to store H and H
     
 // Things that every calc needs
@@ -307,7 +307,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       host_data.basis_eval .resize( npts * nbe );
       host_data.den_scr    .resize( npts * spin_dim_scal);
     }
-    std::cout <<  __LINE__ << " " <<  __func__ << " " <<  __FILE__ << " "  << std::endl; 
+     
     // GGA data requirements
     const size_t gga_dim_scal = is_rks ? 1 : 3;
     if( func.is_gga() ){
@@ -333,7 +333,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       zmat_x = zmat_z + nbe * npts;
       zmat_y = zmat_x + nbe * npts;
     }
-    std::cout <<  __LINE__ << " " <<  __func__ << " " <<  __FILE__ << " "  << std::endl; 
+     
     auto* eps        = host_data.eps.data();
     auto* gamma      = host_data.gamma.data();
     auto* vrho       = host_data.vrho.data();
@@ -347,7 +347,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     value_type* dden_z_eval = nullptr;
     value_type* K = nullptr;
     value_type* H = nullptr;
-    std::cout <<  __LINE__ << " " <<  __func__ << " " <<  __FILE__ << " "  << std::endl; 
+     
     if (is_gks) { K = zmat + npts * nbe * 4; }
 
     if( func.is_gga() ) {
@@ -365,7 +365,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     std::vector< std::array<int32_t, 3> > submat_map;
     std::tie(submat_map, std::ignore) =
           gen_compressed_submat_map(basis_map, task.bfn_screening.shell_list, nbf, nbf);
-    std::cout <<  __LINE__ << " " <<  __func__ << " " <<  __FILE__ << " "  << std::endl; 
+     
     // Evaluate Collocation (+ Grad)
     if( func.is_gga() )
       lwd->eval_collocation_gradient( npts, nshells, nbe, points, basis, shell_list,
@@ -374,7 +374,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       lwd->eval_collocation( npts, nshells, nbe, points, basis, shell_list,
         basis_eval );
 
-    std::cout <<  __LINE__ << " " <<  __func__ << " " <<  __FILE__ << " "  << std::endl; 
+     
     // Evaluate X matrix (fac * P * B) -> store in Z
     const auto xmat_fac = is_rks ? 2.0 : 1.0; // TODO Fix for spinor RKS input
     lwd->eval_xmat( npts, nbf, nbe, submat_map, xmat_fac, Ps, ldps, basis_eval, nbe,
@@ -385,14 +385,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, Pz, ldpz, basis_eval, nbe,
         zmat_z, nbe, nbe_scr);
     }
-    std::cout <<  __LINE__ << " " <<  __func__ << " " <<  __FILE__ << " "  << std::endl; 
+     
     if(is_gks) {
       lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, Px, ldpx, basis_eval, nbe,
         zmat_x, nbe, nbe_scr);
       lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, Py, ldpy, basis_eval, nbe,
         zmat_y, nbe, nbe_scr);
     }
-    std::cout <<  __LINE__ << " " <<  __func__ << " " <<  __FILE__ << " "  << std::endl; 
+     
     // Evaluate U and V variables
     if( func.is_gga() ) {
       if(is_rks) {
@@ -410,7 +410,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       } else {
         GAUXC_GENERIC_EXCEPTION("MUST BE EITHER RKS, UKS, or GKS!");     
       }
-      std::cout <<  __LINE__ << " " <<  __func__ << " " <<  __FILE__ << " "  << std::endl; 
+       
      } else {
       if(is_rks) {
         lwd->eval_uvvar_lda_rks( npts, nbe, basis_eval, zmat, nbe, den_eval );
@@ -434,10 +434,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Factor weights into XC results
     for( int32_t i = 0; i < npts; ++i ) {
       eps[i]  *= weights[i];
-      vrho[spin_dim_scal*i] *= weights[i];
-      if(not is_rks) vrho[spin_dim_scal*i+1] *= weights[i];
+      vrho[sds*i] *= weights[i];
+      if(not is_rks) vrho[sds*i+1] *= weights[i];
     }
-    std::cout <<  __LINE__ << " " <<  __func__ << " " <<  __FILE__ << " "  << std::endl; 
+     
     if( func.is_gga() ){
       for( int32_t i = 0; i < npts; ++i ) {
          vgamma[gga_dim_scal*i] *= weights[i];
@@ -448,7 +448,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       }
     }
 
-    std::cout <<  __LINE__ << " " <<  __func__ << " " <<  __FILE__ << " "  << std::endl; 
+     
 
     // Evaluate Z matrix for VXC
     if( func.is_gga() ) {
@@ -466,7 +466,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                                 dden_z_eval, zmat, nbe, zmat_z, nbe, zmat_x, nbe, zmat_y, nbe,
                                 K, H);
       }
-      std::cout <<  __LINE__ << " " <<  __func__ << " " <<  __FILE__ << " "  << std::endl; 
+       
     } else {
       if(is_rks) {
         lwd->eval_zmat_lda_vxc_rks( npts, nbe, vrho, basis_eval, zmat, nbe );
@@ -478,7 +478,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       }
     }
 
-    std::cout <<  __LINE__ << " " <<  __func__ << " " <<  __FILE__ << " "  << std::endl; 
+     
     // Incremeta LT of VXC
     #pragma omp critical
     {
@@ -502,7 +502,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat_y, nbe, VXCy, ldvxcy,
           nbe_scr);
       }
-      std::cout <<  __LINE__ << " " <<  __func__ << " " <<  __FILE__ << " "  << std::endl; 
+       
  
     }
 
