@@ -145,6 +145,11 @@ namespace GauXC {
     const double* Xs, size_t ldxs, const double* Xz, size_t ldxz,
     const double* Xx, size_t ldxx, const double* Xy, size_t ldxy, double* den_eval, double* K) {
 
+
+    auto *K2 = K; // KZ // store K in the Z matrix
+    auto *K3 = K2 + npts;
+    auto *K4 = K3 + npts;
+ 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
       const size_t ioffs = size_t(i) * ldxs;
@@ -270,11 +275,19 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
 }
 
 void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe, const double* basis_eval,
-    const double* dbasis_x_eavl, const double *dbasis_y_eval,
+    const double* dbasis_x_eval, const double *dbasis_y_eval,
     const double* dbasis_z_eval, const double* Xs, size_t ldxs,
     const double* Xz, size_t ldxz, const double* Xx, size_t ldxx,
     const double* Xy, size_t ldxy, double* den_eval,
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma, double* K, double* H ) {
+
+   auto *K2 = K; // KZ // store K in the Z matrix
+   auto *K3 = K2 + npts;
+   auto *K4 = K3 + npts;
+
+   auto *H2 = H; // KZ // store K in the Z matrix
+   auto *H3 = H2 + npts;
+   auto *H4 = H3 + npts;
 
    for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
