@@ -44,7 +44,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
     //exc_vxc_local_work_( P, ldp, VXC, ldvxc, EXC, &N_EL );
-    exc_vxc_local_work_( P, ldp, nullptr, 0, VXC, ldvxc, nullptr, 0, EXC, &N_EL );
+    exc_vxc_local_work_( P, ldp, nullptr, 0, nullptr, 0, nullptr, 0,
+                         VXC, ldvxc, nullptr, 0, nullptr, 0, nullptr, 0, EXC, &N_EL );
   });
 
 
@@ -97,7 +98,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    exc_vxc_local_work_( Ps, ldps, Pz, ldpz, VXCs, ldvxcs, VXCz, ldvxcz, EXC, &N_EL );
+    exc_vxc_local_work_( Ps, ldps, Pz, ldpz, nullptr, 0,nullptr, 0,
+                         VXCs, ldvxcs, VXCz, ldvxcz, nullptr, 0, nullptr, 0, EXC, &N_EL );
   });
 
 
@@ -117,18 +119,96 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 }
 
+template <typename ValueType>
+void ReferenceReplicatedXCHostIntegrator<ValueType>::
+  eval_exc_vxc_( int64_t m, int64_t n, const value_type* Ps,
+                      int64_t ldps,
+                      const value_type* Pz,
+                      int64_t ldpz,
+                      const value_type* Px,
+                      int64_t ldpx,
+                      const value_type* Py,
+                      int64_t ldpy,
+                      value_type* VXCs, int64_t ldvxcs,
+                      value_type* VXCz, int64_t ldvxcz,
+                      value_type* VXCx, int64_t ldvxcx,
+                      value_type* VXCy, int64_t ldvxcy,
+                      value_type* EXC ) {
+
+  const auto& basis = this->load_balancer_->basis();
+
+  // Check that P / VXC are sane
+  const int64_t nbf = basis.nbf();
+  if( m != n )
+    GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
+  if( m != nbf )
+    GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
+  if( ldps < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPSCALAR");
+  if( ldpz < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPZ");
+  if( ldpx < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPX");
+  if( ldpy < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPY");
+  if( ldvxcs < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCSCALAR");
+  if( ldvxcz < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCZ");
+  if( ldvxcx < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCX");
+  if( ldvxcy < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCY");
+
+  // Get Tasks
+  this->load_balancer_->get_tasks();
+
+  // Temporary electron count to judge integrator accuracy
+  value_type N_EL;
+
+  // Compute Local contributions to EXC / VXC
+  this->timer_.time_op("XCIntegrator.LocalWork", [&](){
+    exc_vxc_local_work_( Ps, ldps, Pz, ldpz, Px, ldpx, Py, ldpy, 
+                         VXCs, ldvxcs, VXCz, ldvxcz,
+                         VXCx, ldvxcx, VXCy, ldvxcy, EXC, &N_EL );
+  });
+
+
+  // Reduce Results
+  this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+
+    if( not this->reduction_driver_->takes_host_memory() )
+      GAUXC_GENERIC_EXCEPTION("This Module Only Works With Host Reductions");
+
+    this->reduction_driver_->allreduce_inplace( VXCs, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( VXCz, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( VXCx, nbf*nbf, ReductionOp::Sum ); 
+    this->reduction_driver_->allreduce_inplace( VXCy, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
+
+  });
+
+
+}
+
+
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
   exc_vxc_local_work_( const value_type* Ps, int64_t ldps,
                        const value_type* Pz, int64_t ldpz,
+                       const value_type* Px, int64_t ldpx,
+                       const value_type* Py, int64_t ldpy,
                        value_type* VXCs, int64_t ldvxcs,
-                       value_type* VXCz, int64_t ldvxcz, 
+                       value_type* VXCz, int64_t ldvxcz,
+                       value_type* VXCx, int64_t ldvxcx,
+                       value_type* VXCy, int64_t ldvxcy,
                        value_type* EXC, value_type *N_EL ) {
 
-
-  const bool is_uks = (Pz != nullptr) and (VXCz != nullptr);
-  const bool is_rks = not is_uks; // TODO: GKS
+  const bool is_gks = (Pz != nullptr) and (VXCz != nullptr) and (VXCx != nullptr) and (VXCy != nullptr);
+  const bool is_uks = (Pz != nullptr) and (VXCz != nullptr) and (VXCx = nullptr) and (VXCy = nullptr);
+  const bool is_rks = not is_uks and not is_gks;
 
   // Cast LWD to LocalHostWorkDriver
   auto* lwd = dynamic_cast<LocalHostWorkDriver*>(this->local_work_driver_.get());
