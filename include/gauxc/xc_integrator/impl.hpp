@@ -46,6 +46,13 @@ typename XCIntegrator<MatrixType>::exc_vxc_type_uks
 };
 
 template <typename MatrixType>
+typename XCIntegrator<MatrixType>::exc_vxc_type_gks
+  XCIntegrator<MatrixType>::eval_exc_vxc( const MatrixType& Pscalar, const MatrixType& Pz, const MatrixType& Px, const MatrixType& Py ) {
+      if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+        return pimpl_->eval_exc_vxc(Pscalar, Pz, Px, Py);
+  };
+
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_grad_type
   XCIntegrator<MatrixType>::eval_exc_grad( const MatrixType& P ) {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
