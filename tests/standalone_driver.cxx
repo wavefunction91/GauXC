@@ -382,23 +382,26 @@ int main(int argc, char** argv) {
     upcxx::barrier(); // Wait for insertions to complete, 
                       // everything should be local so this may not be needed
 
-    if(world_rank == 0) {
-      //std::cout << "P_eigen" << std::endl;
-      //for(auto i = 0; i < nbf; ++i)
-      //for(auto j = 0; j < nbf; ++j) {
-      //  std::cout << "(" << i << "," << j << ") -> " << std::fixed << P(i,j) << std::endl;
-      //}
-
-      std::ofstream pgas_file("pgas.log");
+    if(!world_rank)
+    {
+      std::ofstream pgas_file("pOut.log");
       pgas_file << std::setprecision(12);
       P_PGAS.print(pgas_file);
     }
-    
-    upcxx::barrier();
-    P_PGAS.deallocate(); // :(
-
 
     auto [EXC_PGAS, VXC_PGAS] = pgas_integrator.eval_exc_vxc(P_PGAS);
+
+    if(!world_rank)
+    {
+      std::cout << "\nEXC_PGAS>>>" << EXC_PGAS << "<<<\n";
+      std::ofstream pgas_file2("vxcOut.log");
+      pgas_file2 << std::setprecision(12);
+      VXC_PGAS.print(pgas_file2);
+    }
+
+    P_PGAS.deallocate();
+    VXC_PGAS.deallocate();
+
 #ifdef GAUXC_ENABLE_MPI
     MPI_Barrier( MPI_COMM_WORLD );
 #endif
@@ -567,5 +570,4 @@ int main(int argc, char** argv) {
   MPI_Finalize();
 #endif
   upcxx::finalize();
-
 }
