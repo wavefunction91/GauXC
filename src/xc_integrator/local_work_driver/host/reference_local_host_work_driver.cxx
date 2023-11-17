@@ -146,9 +146,9 @@ namespace GauXC {
     const double* Xx, size_t ldxx, const double* Xy, size_t ldxy, double* den_eval, double* K, const double dtol) {
 
 
-    auto *K2 = K; // KZ // store K in the Z matrix
-    auto *K3 = K2 + npts;
-    auto *K4 = K3 + npts;
+    auto *KZ = K; // KZ // store K in the Z matrix
+    auto *KY = KZ + npts;
+    auto *KX = KY + npts;
 
     double dtolsq = dtol*dtol;
  
@@ -174,14 +174,14 @@ namespace GauXC {
 
       if (mtemp > dtolsq) {
         mnorm = sqrt(mtemp);
-        K2[i] = rhoz / mnorm;
-        K3[i] = rhox / mnorm;
-        K4[i] = rhoy / mnorm;
+        KZ[i] = rhoz / mnorm;
+        KY[i] = rhoy / mnorm;
+        KX[i] = rhox / mnorm;
       } else {
         mnorm = (1. / 3.) * (rhox + rhoy + rhoz);
-        K2[i] = 1. / 3.;
-        K3[i] = 1. / 3.;
-        K4[i] = 1. / 3.;
+        KZ[i] = 1. / 3.;
+        KY[i] = 1. / 3.;
+        KX[i] = 1. / 3.;
       }
 
       den_eval[2*i]   = 0.5*(rhos + mnorm); // rho_+
@@ -283,13 +283,13 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe, 
     const double* Xy, size_t ldxy, double* den_eval,
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma, double* K, double* H, const double dtol) {
 
-   auto *K2 = K; // KZ // store K in the Z matrix
-   auto *K3 = K2 + npts;
-   auto *K4 = K3 + npts;
+   auto *KZ = K; // KZ // store K in the Z matrix
+   auto *KY = KZ + npts;
+   auto *KX = KY + npts;
 
-   auto *H2 = H; // KZ // store K in the Z matrix
-   auto *H3 = H2 + npts;
-   auto *H4 = H3 + npts;
+   auto *HZ = H; // KZ // store K in the Z matrix
+   auto *HY = HZ + npts;
+   auto *HX = HY + npts;
 
    double dtolsq = dtol*dtol;
 
@@ -347,13 +347,13 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe, 
       dden_y_eval[4 * i + 1] = dMzdy;
       dden_z_eval[4 * i + 1] = dMzdz;
 
-      dden_x_eval[4 * i + 2] = dMxdx;
-      dden_y_eval[4 * i + 2] = dMxdy;
-      dden_z_eval[4 * i + 2] = dMxdz;
+      dden_x_eval[4 * i + 2] = dMydx;
+      dden_y_eval[4 * i + 2] = dMydy;
+      dden_z_eval[4 * i + 2] = dMydz;
 
-      dden_x_eval[4 * i + 3] = dMydx;
-      dden_y_eval[4 * i + 3] = dMydy;
-      dden_z_eval[4 * i + 3] = dMydz;
+      dden_x_eval[4 * i + 3] = dMxdx;
+      dden_y_eval[4 * i + 3] = dMxdy;
+      dden_z_eval[4 * i + 3] = dMxdz;
 
       double mtemp = rhoz * rhoz + rhox * rhox + rhoy * rhoy;
       double mnorm = 0;
@@ -381,21 +381,21 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe, 
 
       if (mtemp > dtolsq) {
         mnorm = sqrt(mtemp);
-        K2[i] = rhoz / mnorm;
-        K3[i] = rhox / mnorm;
-        K4[i] = rhoy / mnorm;
-        H2[i] = sign * dels_dot_delz / sqsum2;
-        H3[i] = sign * dels_dot_delx / sqsum2;
-        H4[i] = sign * dels_dot_dely / sqsum2;
+        KZ[i] = rhoz / mnorm;
+        KY[i] = rhoy / mnorm;
+        KX[i] = rhox / mnorm;
+        HZ[i] = sign * dels_dot_delz / sqsum2;
+        HY[i] = sign * dels_dot_dely / sqsum2;
+        HX[i] = sign * dels_dot_delx / sqsum2;
       } else {
         mnorm = (1. / 3.) * (rhox + rhoy + rhoz);
-        K2[i] = 1. / 3.;
-        K3[i] = 1. / 3.;
-        K4[i] = 1. / 3.;
+        KZ[i] = 1. / 3.;
+        KY[i] = 1. / 3.;
+        KX[i] = 1. / 3.;
 
-        H2[i] = sign / 3.;
-        H3[i] = sign / 3.;
-        H4[i] = sign / 3.;
+        HZ[i] = sign / 3.;
+        HY[i] = sign / 3.;
+        HX[i] = sign / 3.;
       }
       
       den_eval[2 * i] = 0.5 * (rhos + mnorm);
@@ -459,8 +459,8 @@ void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nb
     double* Zx, size_t ldzx,double* Zy, size_t ldzy, double *K ) {
 
   auto *KZ = K; // KZ // store K in the Z matrix
-  auto *KX = KZ + npts;
-  auto *KY = KX + npts;
+  auto *KY = KZ + npts;
+  auto *KX = KY + npts;
 
     blas::lacpy( 'A', nbe, npts, basis_eval, nbe, Zs, ldzs);
     blas::lacpy( 'A', nbe, npts, basis_eval, nbe, Zz, ldzz);
@@ -587,12 +587,12 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
     double* Zy, size_t ldzy, double* K, double* H ) {
 
     auto *KZ = K; // KZ // store K in the Z matrix
-    auto *KX = KZ + npts;
-    auto *KY = KX + npts;
+    auto *KY = KZ + npts;
+    auto *KX = KY + npts;
 
     auto *HZ = H; // KZ // store K in the Z matrix
-    auto *HX = HZ + npts;
-    auto *HY = HX + npts;
+    auto *HY = HZ + npts;
+    auto *HX = HY + npts;
 
     if( ldzs != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
     if( ldzz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
@@ -637,16 +637,16 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
 
       const auto x_fact_s = gga_fact_1 * dden_x_eval[4 * i] +
                             gga_fact_2 * (HZ[i] * dden_x_eval[4 * i + 1] +
-                                          HX[i] * dden_x_eval[4 * i + 2] +
-                                          HY[i] * dden_x_eval[4 * i + 3]);
+                                          HY[i] * dden_x_eval[4 * i + 2] +
+                                          HX[i] * dden_x_eval[4 * i + 3]);
       const auto y_fact_s = gga_fact_1 * dden_y_eval[4 * i] +
                             gga_fact_2 * (HZ[i] * dden_y_eval[4 * i + 1] +
-                                          HX[i] * dden_y_eval[4 * i + 2] +
-                                          HY[i] * dden_y_eval[4 * i + 3]);
+                                          HY[i] * dden_y_eval[4 * i + 2] +
+                                          HX[i] * dden_y_eval[4 * i + 3]);
       const auto z_fact_s = gga_fact_1 * dden_z_eval[4 * i] +
                             gga_fact_2 * (HZ[i] * dden_z_eval[4 * i + 1] +
-                                          HX[i] * dden_z_eval[4 * i + 2] +
-                                          HY[i] * dden_z_eval[4 * i + 3]);
+                                          HY[i] * dden_z_eval[4 * i + 2] +
+                                          HX[i] * dden_z_eval[4 * i + 3]);
 
       const auto x_fact_z = gga_fact_3 * dden_x_eval[4 * i + 1] +
                             gga_fact_2 * HZ[i] * dden_x_eval[4 * i];
@@ -655,18 +655,18 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
       const auto z_fact_z = gga_fact_3 * dden_z_eval[4 * i + 1] +
                             gga_fact_2 * HZ[i] * dden_z_eval[4 * i];
 
-      const auto x_fact_x = gga_fact_3 * dden_x_eval[4 * i + 2] +
+      const auto x_fact_x = gga_fact_3 * dden_x_eval[4 * i + 3] +
                             gga_fact_2 * HX[i] * dden_x_eval[4 * i];
-      const auto y_fact_x = gga_fact_3 * dden_y_eval[4 * i + 2] +
+      const auto y_fact_x = gga_fact_3 * dden_y_eval[4 * i + 3] +
                             gga_fact_2 * HX[i] * dden_y_eval[4 * i];
-      const auto z_fact_x = gga_fact_3 * dden_z_eval[4 * i + 2] +
+      const auto z_fact_x = gga_fact_3 * dden_z_eval[4 * i + 3] +
                             gga_fact_2 * HX[i] * dden_z_eval[4 * i];
 
-      const auto x_fact_y = gga_fact_3 * dden_x_eval[4 * i + 3] +
+      const auto x_fact_y = gga_fact_3 * dden_x_eval[4 * i + 2] +
                             gga_fact_2 * HY[i] * dden_x_eval[4 * i];
-      const auto y_fact_y = gga_fact_3 * dden_y_eval[4 * i + 3] +
+      const auto y_fact_y = gga_fact_3 * dden_y_eval[4 * i + 2] +
                             gga_fact_2 * HY[i] * dden_y_eval[4 * i];
-      const auto z_fact_y = gga_fact_3 * dden_z_eval[4 * i + 3] +
+      const auto z_fact_y = gga_fact_3 * dden_z_eval[4 * i + 2] +
                             gga_fact_2 * HY[i] * dden_z_eval[4 * i];
 
 

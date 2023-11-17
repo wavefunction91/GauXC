@@ -47,10 +47,10 @@ typename XCIntegrator<MatrixType>::exc_vxc_type_uks
 
 template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_vxc_type_gks
-  XCIntegrator<MatrixType>::eval_exc_vxc( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Px, const MatrixType& Py, 
+  XCIntegrator<MatrixType>::eval_exc_vxc( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, 
                                           const IntegratorSettingsXC& ks_settings ) {
       if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-        return pimpl_->eval_exc_vxc(Ps, Pz, Px, Py, ks_settings);
+        return pimpl_->eval_exc_vxc(Ps, Pz, Py, Px, ks_settings);
   };
 
 template <typename MatrixType>

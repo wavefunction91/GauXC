@@ -125,14 +125,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                       int64_t ldps,
                       const value_type* Pz,
                       int64_t ldpz,
-                      const value_type* Px,
-                      int64_t ldpx,
                       const value_type* Py,
                       int64_t ldpy,
+                      const value_type* Px,
+                      int64_t ldpx,
                       value_type* VXCs, int64_t ldvxcs,
                       value_type* VXCz, int64_t ldvxcz,
-                      value_type* VXCx, int64_t ldvxcx,
                       value_type* VXCy, int64_t ldvxcy,
+                      value_type* VXCx, int64_t ldvxcx,
                       value_type* EXC, const IntegratorSettingsXC& ks_settings ) {
 
   const auto& basis = this->load_balancer_->basis();
@@ -147,17 +147,17 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     GAUXC_GENERIC_EXCEPTION("Invalid LDPSCALAR");
   if( ldpz < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDPZ");
-  if( ldpx < nbf )
-    GAUXC_GENERIC_EXCEPTION("Invalid LDPX");
   if( ldpy < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPX");
+  if( ldpx < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDPY");
   if( ldvxcs < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDVXCSCALAR");
   if( ldvxcz < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDVXCZ");
-  if( ldvxcx < nbf )
-    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCX");
   if( ldvxcy < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCX");
+  if( ldvxcx < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDVXCY");
 
   // Get Tasks
@@ -168,9 +168,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
    
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    exc_vxc_local_work_( Ps, ldps, Pz, ldpz, Px, ldpx, Py, ldpy, 
+    exc_vxc_local_work_( Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx, 
                          VXCs, ldvxcs, VXCz, ldvxcz,
-                         VXCx, ldvxcx, VXCy, ldvxcy, EXC, &N_EL, ks_settings );
+                         VXCy, ldvxcy, VXCx, ldvxcx, EXC, &N_EL, ks_settings );
   });
 
 
@@ -182,8 +182,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     this->reduction_driver_->allreduce_inplace( VXCs, nbf*nbf, ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( VXCz, nbf*nbf, ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( VXCx, nbf*nbf, ReductionOp::Sum ); 
-    this->reduction_driver_->allreduce_inplace( VXCy, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( VXCy, nbf*nbf, ReductionOp::Sum ); 
+    this->reduction_driver_->allreduce_inplace( VXCx, nbf*nbf, ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
 
@@ -198,16 +198,16 @@ template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
   exc_vxc_local_work_( const value_type* Ps, int64_t ldps,
                        const value_type* Pz, int64_t ldpz,
-                       const value_type* Px, int64_t ldpx,
                        const value_type* Py, int64_t ldpy,
+                       const value_type* Px, int64_t ldpx,
                        value_type* VXCs, int64_t ldvxcs,
                        value_type* VXCz, int64_t ldvxcz,
-                       value_type* VXCx, int64_t ldvxcx,
                        value_type* VXCy, int64_t ldvxcy,
+                       value_type* VXCx, int64_t ldvxcx,
                        value_type* EXC, value_type *N_EL, const IntegratorSettingsXC& settings) {
 
-  const bool is_gks = (Pz != nullptr) and (VXCz != nullptr) and (VXCx != nullptr) and (VXCy != nullptr);
-  const bool is_uks = (Pz != nullptr) and (VXCz != nullptr) and (VXCx == nullptr) and (VXCy == nullptr);
+  const bool is_gks = (Pz != nullptr) and (VXCz != nullptr) and (VXCy != nullptr) and (VXCx != nullptr);
+  const bool is_uks = (Pz != nullptr) and (VXCz != nullptr) and (VXCy == nullptr) and (VXCx == nullptr);
   const bool is_rks = not is_uks and not is_gks;
   if (not is_rks and not is_uks and not is_gks) {
     GAUXC_GENERIC_EXCEPTION("MUST BE EITHER RKS, UKS, or GKS!");
@@ -267,8 +267,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   if(is_gks) {
     for( auto j = 0; j < nbf; ++j ) {
       for( auto i = 0; i < nbf; ++i ) {
-        VXCx[i + j*ldvxcx] = 0.;
         VXCy[i + j*ldvxcy] = 0.;
+        VXCx[i + j*ldvxcx] = 0.;
       }
     }
   }
@@ -396,9 +396,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     }
      
     if(is_gks) {
-      lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, Px, ldpx, basis_eval, nbe,
-        zmat_x, nbe, nbe_scr);
       lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, Py, ldpy, basis_eval, nbe,
+        zmat_x, nbe, nbe_scr);
+      lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, Px, ldpx, basis_eval, nbe,
         zmat_y, nbe, nbe_scr);
     }
      
@@ -502,9 +502,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
           nbe_scr);
       }
       if(is_gks) {
-        lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat_x, nbe, VXCx, ldvxcx,
+        lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat_x, nbe, VXCy, ldvxcy,
           nbe_scr);
-        lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat_y, nbe, VXCy, ldvxcy,
+        lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat_y, nbe, VXCx, ldvxcx,
           nbe_scr);
       }
        
@@ -531,8 +531,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   if( is_gks) {
     for( int32_t j = 0;   j < nbf; ++j ) {
       for( int32_t i = j+1; i < nbf; ++i ) {
-        VXCx[ j + i*ldvxcx ] = VXCx[ i + j*ldvxcx ];
         VXCy[ j + i*ldvxcy ] = VXCy[ i + j*ldvxcy ];
+        VXCx[ j + i*ldvxcx ] = VXCx[ i + j*ldvxcx ];
       }
     }
   }

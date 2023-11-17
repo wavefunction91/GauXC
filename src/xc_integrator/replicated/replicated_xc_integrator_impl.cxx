@@ -65,24 +65,24 @@ void ReplicatedXCIntegratorImpl<ValueType>::
                       int64_t ldps,
                       const value_type* Pz,
                       int64_t ldpz,
-                      const value_type* Px,
-                      int64_t ldpx,
                       const value_type* Py,
                       int64_t ldpy,
+                      const value_type* Px,
+                      int64_t ldpx,
                       value_type* VXCs, int64_t ldvxcs,
                       value_type* VXCz, int64_t ldvxcz,
-                      value_type* VXCx, int64_t ldvxcx,
                       value_type* VXCy, int64_t ldvxcy,
+                      value_type* VXCx, int64_t ldvxcx,
                       value_type* EXC,  const IntegratorSettingsXC& ks_settings ) {
 
     eval_exc_vxc_(m,n,Ps,ldps,
                       Pz,ldpz,
-                      Px,ldpx,
                       Py,ldpy,
+                      Px,ldpx,
                       VXCs,ldvxcs,
                       VXCz,ldvxcz,
-                      VXCx,ldvxcx,
-                      VXCy,ldvxcy,EXC, ks_settings);
+                      VXCy,ldvxcy,
+                      VXCx,ldvxcx,EXC, ks_settings);
 
 }
 

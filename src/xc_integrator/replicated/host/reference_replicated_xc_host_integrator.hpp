@@ -44,14 +44,14 @@ protected:
                       int64_t ldps,
                       const value_type* Pz,
                       int64_t ldpz,
-                      const value_type* Px,
-                      int64_t ldpx,
                       const value_type* Py,
                       int64_t ldpy,
+                      const value_type* Px,
+                      int64_t ldpx,
                       value_type* VXCs, int64_t ldvxcs,
                       value_type* VXCz, int64_t ldvxcz,
-                      value_type* VXCx, int64_t ldvxcx,
                       value_type* VXCy, int64_t ldvxcy,
+                      value_type* VXCx, int64_t ldvxcx,
                       value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
 
 
@@ -74,12 +74,12 @@ protected:
 
   void exc_vxc_local_work_( const value_type* Ps, int64_t ldps,
                             const value_type* Pz, int64_t ldpz,
-                            const value_type* Px, int64_t ldpx,
                             const value_type* Py, int64_t ldpy,
+                            const value_type* Px, int64_t ldpx,
                             value_type* VXCs, int64_t ldvxcs,
                             value_type* VXCz, int64_t ldvxcz,
-                            value_type* VXCx, int64_t ldvxcx,
                             value_type* VXCy, int64_t ldvxcy,
+                            value_type* VXCx, int64_t ldvxcx,
                             value_type* EXC, value_type *N_EL, const IntegratorSettingsXC& ks_settings );
                             
   void exc_grad_local_work_( const value_type* P, int64_t ldp, value_type* EXC_GRAD );

@@ -52,14 +52,14 @@ protected:
                               int64_t ldps,
                               const value_type* Pz,
                               int64_t ldpz,
-                              const value_type* Px,
-                              int64_t ldpx,
                               const value_type* Py,
                               int64_t ldpy,
+                              const value_type* Px,
+                              int64_t ldpx,
                               value_type* VXCs, int64_t ldvxcs,
                               value_type* VXCz, int64_t ldvxcz,
-                              value_type* VXCx, int64_t ldvxcx,
                               value_type* VXCy, int64_t ldvxcy,
+                              value_type* VXCx, int64_t ldvxcx,
                               value_type* EXC, const IntegratorSettingsXC& ks_settings ) = 0;
 
   virtual void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
@@ -96,14 +96,14 @@ public:
                      int64_t ldps,
                      const value_type* Pz,
                      int64_t ldpz,
-                     const value_type* Px,
-                     int64_t ldpx,
                      const value_type* Py,
                      int64_t ldpy,
+                     const value_type* Px,
+                     int64_t ldpx,
                      value_type* VXCs, int64_t ldvxcs,
                      value_type* VXCz, int64_t ldvxcz,
-                     value_type* VXCx, int64_t ldvxcx,
                      value_type* VXCy, int64_t ldvxcy,
+                     value_type* VXCx, int64_t ldvxcx,
                      value_type* EXC, const IntegratorSettingsXC& ks_settings );
 
 
