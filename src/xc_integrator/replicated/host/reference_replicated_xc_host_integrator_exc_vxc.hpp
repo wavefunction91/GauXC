@@ -209,6 +209,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   const bool is_gks = (Pz != nullptr) and (VXCz != nullptr) and (VXCx != nullptr) and (VXCy != nullptr);
   const bool is_uks = (Pz != nullptr) and (VXCz != nullptr) and (VXCx == nullptr) and (VXCy == nullptr);
   const bool is_rks = not is_uks and not is_gks;
+  if (not is_rks and not is_uks and not is_gks) {
+    GAUXC_GENERIC_EXCEPTION("MUST BE EITHER RKS, UKS, or GKS!");
+  }
 
   // Cast LWD to LocalHostWorkDriver
   auto* lwd = dynamic_cast<LocalHostWorkDriver*>(this->local_work_driver_.get());
@@ -404,8 +407,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         lwd->eval_uvvar_gga_gks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
           dbasis_z_eval, zmat, nbe, zmat_z, nbe, zmat_x, nbe, zmat_y, nbe, den_eval, dden_x_eval,
           dden_y_eval, dden_z_eval, gamma, K, H );
-      } else {
-        GAUXC_GENERIC_EXCEPTION("MUST BE EITHER RKS, UKS, or GKS!");     
       }
        
      } else {
@@ -417,8 +418,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       } else if(is_gks) {
         lwd->eval_uvvar_lda_gks( npts, nbe, basis_eval, zmat, nbe, zmat_z, nbe,
           zmat_x, nbe, zmat_y, nbe, den_eval, K );
-      } else {
-        GAUXC_GENERIC_EXCEPTION("MUST BE EITHER RKS, UKS, or GKS!");
       }
      }
     
