@@ -36,7 +36,7 @@ template <typename ValueType>
 void ReplicatedXCIntegratorImpl<ValueType>::
   eval_exc_vxc( int64_t m, int64_t n, const value_type* P,
                 int64_t ldp, value_type* VXC, int64_t ldvxc,
-                value_type* EXC, const IntegratorSettingsEXCVXC& ks_settings ) {
+                value_type* EXC, const IntegratorSettingsXC& ks_settings ) {
 
     eval_exc_vxc_(m,n,P,ldp,VXC,ldvxc,EXC,ks_settings);
 
@@ -50,7 +50,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
                       int64_t ldpz,
                       value_type* VXCscalar, int64_t ldvxcscalar,
                       value_type* VXCz, int64_t ldvxcz,
-                      value_type* EXC, const IntegratorSettingsEXCVXC& ks_settings) {
+                      value_type* EXC, const IntegratorSettingsXC& ks_settings) {
 
     eval_exc_vxc_(m,n,Pscalar,ldpscalar,
                       Pz,ldpz,
@@ -73,7 +73,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* VXCx, int64_t ldvxcx,
                       value_type* VXCy, int64_t ldvxcy,
-                      value_type* EXC,  const IntegratorSettingsEXCVXC& ks_settings ) {
+                      value_type* EXC,  const IntegratorSettingsXC& ks_settings ) {
 
     eval_exc_vxc_(m,n,Pscalar,ldpscalar,
                       Pz,ldpz,

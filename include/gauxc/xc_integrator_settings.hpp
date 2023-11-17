@@ -16,8 +16,8 @@ struct IntegratorSettingsSNLinK : public IntegratorSettingsEXX {
   double k_tol      = 1e-10;
 };
 
-struct IntegratorSettingsEXCVXC { virtual ~IntegratorSettingsEXCVXC() noexcept = default; };
-struct IntegratorSettingsKS : public IntegratorSettingsEXCVXC {
+struct IntegratorSettingsXC { virtual ~IntegratorSettingsXC() noexcept = default; };
+struct IntegratorSettingsKS : public IntegratorSettingsXC {
   double gks_dtol = 1e-12;
 };
 

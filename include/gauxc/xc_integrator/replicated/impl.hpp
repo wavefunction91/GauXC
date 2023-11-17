@@ -63,7 +63,7 @@ typename ReplicatedXCIntegrator<MatrixType>::value_type
 
 template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_rks 
-  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P, const IntegratorSettingsEXCVXC& ks_settings ) {
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   matrix_type VXC( P.rows(), P.cols() );
@@ -78,7 +78,7 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_rks
 
 template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_uks
-  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& Pscalar, const MatrixType& Pz, const IntegratorSettingsEXCVXC& ks_settings ) {
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& Pscalar, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   matrix_type VXCscalar( Pscalar.rows(), Pscalar.cols() );
@@ -97,7 +97,7 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_uks
 template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_gks
   ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& Pscalar, const MatrixType& Pz, const MatrixType& Px, const MatrixType& Py,
-                                                     const IntegratorSettingsEXCVXC& ks_settings) {
+                                                     const IntegratorSettingsXC& ks_settings) {
 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   matrix_type VXCscalar( Pscalar.rows(), Pscalar.cols() );

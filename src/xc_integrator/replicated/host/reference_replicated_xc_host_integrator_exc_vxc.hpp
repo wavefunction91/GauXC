@@ -19,7 +19,7 @@ template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
   eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                  int64_t ldp, value_type* VXC, int64_t ldvxc,
-                 value_type* EXC, const IntegratorSettingsEXCVXC& ks_settings ) {
+                 value_type* EXC, const IntegratorSettingsXC& ks_settings ) {
 
   const auto& basis = this->load_balancer_->basis();
 
@@ -71,7 +71,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                       int64_t ldpz,
                       value_type* VXCs, int64_t ldvxcs,
                       value_type* VXCz, int64_t ldvxcz,
-                      value_type* EXC, const IntegratorSettingsEXCVXC& ks_settings) {
+                      value_type* EXC, const IntegratorSettingsXC& ks_settings) {
 
   const auto& basis = this->load_balancer_->basis();
 
@@ -133,7 +133,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* VXCx, int64_t ldvxcx,
                       value_type* VXCy, int64_t ldvxcy,
-                      value_type* EXC, const IntegratorSettingsEXCVXC& ks_settings ) {
+                      value_type* EXC, const IntegratorSettingsXC& ks_settings ) {
 
   const auto& basis = this->load_balancer_->basis();
 
@@ -204,7 +204,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                        value_type* VXCz, int64_t ldvxcz,
                        value_type* VXCx, int64_t ldvxcx,
                        value_type* VXCy, int64_t ldvxcy,
-                       value_type* EXC, value_type *N_EL, const IntegratorSettingsEXCVXC& settings) {
+                       value_type* EXC, value_type *N_EL, const IntegratorSettingsXC& settings) {
 
   const bool is_gks = (Pz != nullptr) and (VXCz != nullptr) and (VXCx != nullptr) and (VXCy != nullptr);
   const bool is_uks = (Pz != nullptr) and (VXCz != nullptr) and (VXCx == nullptr) and (VXCy == nullptr);

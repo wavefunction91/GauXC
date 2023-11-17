@@ -29,10 +29,10 @@ public:
 protected:
 
   virtual value_type    integrate_den_( const MatrixType& P ) = 0;
-  virtual exc_vxc_type_rks  eval_exc_vxc_ ( const MatrixType& P, const IntegratorSettingsEXCVXC& ks_settings ) = 0;
-  virtual exc_vxc_type_uks  eval_exc_vxc_ ( const MatrixType& Pscalar, const MatrixType& Pz, const IntegratorSettingsEXCVXC& ks_settings ) = 0;
+  virtual exc_vxc_type_rks  eval_exc_vxc_ ( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual exc_vxc_type_uks  eval_exc_vxc_ ( const MatrixType& Pscalar, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_vxc_type_gks  eval_exc_vxc_ ( const MatrixType& Pscalar, const MatrixType& Pz, const MatrixType& Px, const MatrixType& Py, 
-                                            const IntegratorSettingsEXCVXC& ks_settings ) = 0;
+                                            const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_grad_type eval_exc_grad_( const MatrixType& P ) = 0;
   virtual exx_type      eval_exx_     ( const MatrixType&     P, 
                                         const IntegratorSettingsEXX& settings ) = 0;
@@ -65,15 +65,15 @@ public:
    *  @param[in] P The alpha density matrix
    *  @returns EXC / VXC in a combined structure
    */
-  exc_vxc_type_rks eval_exc_vxc( const MatrixType& P, const IntegratorSettingsEXCVXC& ks_settings ) {
+  exc_vxc_type_rks eval_exc_vxc( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
     return eval_exc_vxc_(P, ks_settings);
   }
 
-  exc_vxc_type_uks eval_exc_vxc( const MatrixType& Pscalar, const MatrixType& Pz, const IntegratorSettingsEXCVXC& ks_settings ) {
+  exc_vxc_type_uks eval_exc_vxc( const MatrixType& Pscalar, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
     return eval_exc_vxc_(Pscalar, Pz, ks_settings);
   }
 
-  exc_vxc_type_gks eval_exc_vxc( const MatrixType& Pscalar, const MatrixType& Pz, const MatrixType& Px, const MatrixType& Py, const IntegratorSettingsEXCVXC& ks_settings ) {
+  exc_vxc_type_gks eval_exc_vxc( const MatrixType& Pscalar, const MatrixType& Pz, const MatrixType& Px, const MatrixType& Py, const IntegratorSettingsXC& ks_settings ) {
     return eval_exc_vxc_(Pscalar, Pz, Px, Py, ks_settings);
   }
 
