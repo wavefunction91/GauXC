@@ -78,44 +78,44 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_rks
 
 template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_uks
-  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& Pscalar, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-  matrix_type VXCscalar( Pscalar.rows(), Pscalar.cols() );
+  matrix_type VXCs( Ps.rows(), Ps.cols() );
   matrix_type VXCz( Pz.rows(), Pz.cols() );
   value_type  EXC;
 
-  pimpl_->eval_exc_vxc( Pscalar.rows(), Pscalar.cols(), Pscalar.data(), Pscalar.rows(),
+  pimpl_->eval_exc_vxc( Ps.rows(), Ps.cols(), Ps.data(), Ps.rows(),
                         Pz.data(), Pz.rows(),
-                        VXCscalar.data(), VXCscalar.rows(),
+                        VXCs.data(), VXCs.rows(),
                         VXCz.data(), VXCz.rows(), &EXC, ks_settings );
 
-  return std::make_tuple( EXC, VXCscalar, VXCz );
+  return std::make_tuple( EXC, VXCs, VXCz );
 
 }
 
 template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_gks
-  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& Pscalar, const MatrixType& Pz, const MatrixType& Px, const MatrixType& Py,
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Px, const MatrixType& Py,
                                                      const IntegratorSettingsXC& ks_settings) {
 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-  matrix_type VXCscalar( Pscalar.rows(), Pscalar.cols() );
+  matrix_type VXCs( Ps.rows(), Ps.cols() );
   matrix_type VXCz( Pz.rows(), Pz.cols() );
   matrix_type VXCx( Px.rows(), Px.cols() );
   matrix_type VXCy( Py.rows(), Py.cols() );
   value_type  EXC;
 
-  pimpl_->eval_exc_vxc( Pscalar.rows(), Pscalar.cols(), Pscalar.data(), Pscalar.rows(),
+  pimpl_->eval_exc_vxc( Ps.rows(), Ps.cols(), Ps.data(), Ps.rows(),
                         Pz.data(), Pz.rows(),
                         Px.data(), Px.rows(),
                         Py.data(), Py.rows(),
-                        VXCscalar.data(), VXCscalar.rows(),
+                        VXCs.data(), VXCs.rows(),
                         VXCz.data(), VXCz.rows(),
                         VXCx.data(), VXCx.rows(),
                         VXCy.data(), VXCy.rows(), &EXC, ks_settings );
 
-  return std::make_tuple( EXC, VXCscalar, VXCz, VXCx, VXCy);
+  return std::make_tuple( EXC, VXCs, VXCz, VXCx, VXCy);
 
 }
 

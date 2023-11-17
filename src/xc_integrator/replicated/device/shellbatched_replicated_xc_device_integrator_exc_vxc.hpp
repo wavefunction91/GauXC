@@ -87,15 +87,15 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
-  eval_exc_vxc_( int64_t m, int64_t n, const value_type* Pscalar,
-                      int64_t ldpscalar,
+  eval_exc_vxc_( int64_t m, int64_t n, const value_type* Ps,
+                      int64_t ldps,
                       const value_type* Pz,
                       int64_t ldpz,
-                      value_type* VXCscalar, int64_t ldvxcscalar,
+                      value_type* VXCs, int64_t ldvxcs,
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC ) {
 
-  GauXC::util::unused(m,n,Pscalar,ldpscalar,Pz,ldpz,VXCscalar,ldvxcscalar,VXCz,ldvxcz,EXC);
+  GauXC::util::unused(m,n,Ps,ldps,Pz,ldpz,VXCs,ldvxcs,VXCz,ldvxcz,EXC);
   GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
@@ -195,14 +195,14 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
-  exc_vxc_local_work_( const basis_type& basis, const value_type* Pscalar, int64_t ldpscalar,
+  exc_vxc_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
                             const value_type* Pz, int64_t ldpz,
-                            value_type* VXCscalar, int64_t ldvxcscalar,
+                            value_type* VXCs, int64_t ldvxcs,
                             value_type* VXCz, int64_t ldvxcz, value_type* EXC, value_type *N_EL,
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data ) {
 
-  GauXC::util::unused(basis,Pscalar,ldpscalar,Pz,ldpz,VXCscalar,ldvxcscalar,VXCz,ldvxcz,EXC,N_EL,task_begin,task_end,device_data);
+  GauXC::util::unused(basis,Ps,ldps,Pz,ldpz,VXCs,ldvxcs,VXCz,ldvxcz,EXC,N_EL,task_begin,task_end,device_data);
   GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
