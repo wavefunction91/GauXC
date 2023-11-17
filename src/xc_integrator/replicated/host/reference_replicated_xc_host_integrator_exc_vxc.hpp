@@ -288,15 +288,12 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const int32_t* shell_list = task.bfn_screening.shell_list.data();
 
     // Allocate enough memory for batch
-     
-
-    size_t spin_dim_scal_temp = is_rks ? 1 : 2;
-    spin_dim_scal_temp             *= is_gks ? 2 : 1;
-    const size_t spin_dim_scal = spin_dim_scal_temp;
+   
+    const size_t spin_dim_scal = is_rks ? 1 : is_uks ? 2 : 4; // last case is_gks
     const size_t sds          = is_rks ? 1 : 2;
     const size_t gks_mod_KH = is_gks ? 6*npts : 0; // used to store H and H
     
-// Things that every calc needs
+    // Things that every calc needs
     host_data.nbe_scr .resize(nbe  * nbe);
     host_data.zmat    .resize(npts * nbe * spin_dim_scal + gks_mod_KH); 
     host_data.eps     .resize(npts);
