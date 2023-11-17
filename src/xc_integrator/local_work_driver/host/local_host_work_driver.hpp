@@ -209,7 +209,7 @@ public:
 
   void eval_uvvar_lda_gks( size_t npts, size_t nbe, const double* basis_eval,
     const double* Xs, size_t ldxs, const double* Xz, size_t ldxz,
-    const double* Xx, size_t ldxx, const double* Xy, size_t ldxy, double* den_eval, double* K);
+    const double* Xx, size_t ldxx, const double* Xy, size_t ldxy, double* den_eval, double* K, const double dtol);
 
 
   /** Evaluate the U and V variavles for RKS GGA
@@ -248,7 +248,7 @@ public:
     const double* dbasis_z_eval, const double* Xs, size_t ldxs,
     const double* Xz, size_t ldxz, const double* Xx, size_t ldxx,
     const double* Xy, size_t ldxy, double* den_eval,
-    double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma, double* K, double* H );
+    double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma, double* K, double* H, const double dtol );
 
   /** Evaluate the VXC Z Matrix for RKS LDA
    *

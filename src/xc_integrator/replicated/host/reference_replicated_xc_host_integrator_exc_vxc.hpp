@@ -19,7 +19,7 @@ template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
   eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                  int64_t ldp, value_type* VXC, int64_t ldvxc,
-                 value_type* EXC ) {
+                 value_type* EXC, const IntegratorSettingsEXCVXC& ks_settings ) {
 
   const auto& basis = this->load_balancer_->basis();
 
@@ -45,7 +45,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
     //exc_vxc_local_work_( P, ldp, VXC, ldvxc, EXC, &N_EL );
     exc_vxc_local_work_( P, ldp, nullptr, 0, nullptr, 0, nullptr, 0,
-                         VXC, ldvxc, nullptr, 0, nullptr, 0, nullptr, 0, EXC, &N_EL );
+                         VXC, ldvxc, nullptr, 0, nullptr, 0, nullptr, 0, EXC, &N_EL, ks_settings );
   });
 
 
@@ -71,7 +71,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                       int64_t ldpz,
                       value_type* VXCs, int64_t ldvxcs,
                       value_type* VXCz, int64_t ldvxcz,
-                      value_type* EXC ) {
+                      value_type* EXC, const IntegratorSettingsEXCVXC& ks_settings) {
 
   const auto& basis = this->load_balancer_->basis();
 
@@ -99,7 +99,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
     exc_vxc_local_work_( Ps, ldps, Pz, ldpz, nullptr, 0,nullptr, 0,
-                         VXCs, ldvxcs, VXCz, ldvxcz, nullptr, 0, nullptr, 0, EXC, &N_EL );
+                         VXCs, ldvxcs, VXCz, ldvxcz, nullptr, 0, nullptr, 0, EXC, &N_EL, ks_settings );
   });
 
 
@@ -133,7 +133,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* VXCx, int64_t ldvxcx,
                       value_type* VXCy, int64_t ldvxcy,
-                      value_type* EXC ) {
+                      value_type* EXC, const IntegratorSettingsEXCVXC& ks_settings ) {
 
   const auto& basis = this->load_balancer_->basis();
 
@@ -170,7 +170,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
     exc_vxc_local_work_( Ps, ldps, Pz, ldpz, Px, ldpx, Py, ldpy, 
                          VXCs, ldvxcs, VXCz, ldvxcz,
-                         VXCx, ldvxcx, VXCy, ldvxcy, EXC, &N_EL );
+                         VXCx, ldvxcx, VXCy, ldvxcy, EXC, &N_EL, ks_settings );
   });
 
 
@@ -204,7 +204,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                        value_type* VXCz, int64_t ldvxcz,
                        value_type* VXCx, int64_t ldvxcx,
                        value_type* VXCy, int64_t ldvxcy,
-                       value_type* EXC, value_type *N_EL ) {
+                       value_type* EXC, value_type *N_EL, const IntegratorSettingsEXCVXC& settings) {
 
   const bool is_gks = (Pz != nullptr) and (VXCz != nullptr) and (VXCx != nullptr) and (VXCy != nullptr);
   const bool is_uks = (Pz != nullptr) and (VXCz != nullptr) and (VXCx == nullptr) and (VXCy == nullptr);
@@ -212,6 +212,15 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   if (not is_rks and not is_uks and not is_gks) {
     GAUXC_GENERIC_EXCEPTION("MUST BE EITHER RKS, UKS, or GKS!");
   }
+
+
+  // Misc KS settings
+  IntegratorSettingsKS ks_settings;
+  if( auto* tmp = dynamic_cast<const IntegratorSettingsKS*>(&settings) ) {
+    ks_settings = *tmp;
+  }
+
+  const double gks_dtol = ks_settings.gks_dtol;
 
   // Cast LWD to LocalHostWorkDriver
   auto* lwd = dynamic_cast<LocalHostWorkDriver*>(this->local_work_driver_.get());
@@ -406,7 +415,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       } else if(is_gks) {
         lwd->eval_uvvar_gga_gks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
           dbasis_z_eval, zmat, nbe, zmat_z, nbe, zmat_x, nbe, zmat_y, nbe, den_eval, dden_x_eval,
-          dden_y_eval, dden_z_eval, gamma, K, H );
+          dden_y_eval, dden_z_eval, gamma, K, H, gks_dtol );
       }
        
      } else {
@@ -417,7 +426,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
           den_eval );
       } else if(is_gks) {
         lwd->eval_uvvar_lda_gks( npts, nbe, basis_eval, zmat, nbe, zmat_z, nbe,
-          zmat_x, nbe, zmat_y, nbe, den_eval, K );
+          zmat_x, nbe, zmat_y, nbe, den_eval, K, gks_dtol );
       }
      }
     

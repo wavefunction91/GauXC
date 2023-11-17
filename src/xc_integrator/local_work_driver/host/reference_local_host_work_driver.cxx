@@ -143,12 +143,14 @@ namespace GauXC {
   
   void ReferenceLocalHostWorkDriver::eval_uvvar_lda_gks( size_t npts, size_t nbe, const double* basis_eval,
     const double* Xs, size_t ldxs, const double* Xz, size_t ldxz,
-    const double* Xx, size_t ldxx, const double* Xy, size_t ldxy, double* den_eval, double* K) {
+    const double* Xx, size_t ldxx, const double* Xy, size_t ldxy, double* den_eval, double* K, const double dtol) {
 
 
     auto *K2 = K; // KZ // store K in the Z matrix
     auto *K3 = K2 + npts;
     auto *K4 = K3 + npts;
+
+    double dtolsq = dtol*dtol;
  
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -170,7 +172,7 @@ namespace GauXC {
       double mtemp = rhoz * rhoz + rhox * rhox + rhoy * rhoy;
       double mnorm = 0;
 
-      if (mtemp > 1.0e-24) {
+      if (mtemp > dtolsq) {
         mnorm = sqrt(mtemp);
         K2[i] = rhoz / mnorm;
         K3[i] = rhox / mnorm;
@@ -279,7 +281,7 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe, 
     const double* dbasis_z_eval, const double* Xs, size_t ldxs,
     const double* Xz, size_t ldxz, const double* Xx, size_t ldxx,
     const double* Xy, size_t ldxy, double* den_eval,
-    double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma, double* K, double* H ) {
+    double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma, double* K, double* H, const double dtol) {
 
    auto *K2 = K; // KZ // store K in the Z matrix
    auto *K3 = K2 + npts;
@@ -288,6 +290,8 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe, 
    auto *H2 = H; // KZ // store K in the Z matrix
    auto *H3 = H2 + npts;
    auto *H4 = H3 + npts;
+
+   double dtolsq = dtol*dtol;
 
    for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -375,7 +379,7 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe, 
       if (std::signbit(s_sum))
         sign = -1.;
 
-      if (mtemp > 1.0e-24) {
+      if (mtemp > dtolsq) {
         mnorm = sqrt(mtemp);
         K2[i] = rhoz / mnorm;
         K3[i] = rhox / mnorm;

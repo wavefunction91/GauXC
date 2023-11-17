@@ -150,10 +150,10 @@ void LocalHostWorkDriver::eval_uvvar_lda_uks( size_t npts, size_t nbe,
 void LocalHostWorkDriver::eval_uvvar_lda_gks( size_t npts, size_t nbe,
  const double* basis_eval, const double* Xs, size_t ldxs, const double* Xz,
  size_t ldxz, const double* Xx, size_t ldxx, const double* Xy, size_t ldxy,
- double* den_eval, double* K) {
+ double* den_eval, double* K, const double dtol) {
 
   throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_uvvar_lda_gks(npts, nbe, basis_eval, Xs, ldxs, Xz, ldxz, Xx, ldxx, Xy, ldxy, den_eval, K);
+  pimpl_->eval_uvvar_lda_gks(npts, nbe, basis_eval, Xs, ldxs, Xz, ldxz, Xx, ldxx, Xy, ldxy, den_eval, K, dtol);
 
 }
 
@@ -191,12 +191,12 @@ void LocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe,
   const double *dbasis_y_eval, const double* dbasis_z_eval, const double* Xs,
   size_t ldxs, const double* Xz, size_t ldxz, const double* Xx, size_t ldxx,
   const double* Xy, size_t ldxy, double* den_eval, double* dden_x_eval, double* dden_y_eval,
-  double* dden_z_eval, double* gamma, double* K, double* H ) {
+  double* dden_z_eval, double* gamma, double* K, double* H, const double dtol ) {
 
   throw_if_invalid_pimpl(pimpl_);
   pimpl_->eval_uvvar_gga_gks(npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
     dbasis_z_eval, Xs, ldxs, Xz, ldxz, Xx, ldxx, Xy, ldxy, den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
-    gamma, K, H);
+    gamma, K, H, dtol);
 
 }
 

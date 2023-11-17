@@ -40,9 +40,9 @@ private:
   std::unique_ptr< pimpl_type > pimpl_;
 
   value_type    integrate_den_( const MatrixType& ) override;
-  exc_vxc_type_rks  eval_exc_vxc_ ( const MatrixType& ) override;
-  exc_vxc_type_uks  eval_exc_vxc_ ( const MatrixType&, const MatrixType& ) override;
-  exc_vxc_type_gks  eval_exc_vxc_ ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType& ) override;
+  exc_vxc_type_rks  eval_exc_vxc_ ( const MatrixType&, const IntegratorSettingsEXCVXC& ) override;
+  exc_vxc_type_uks  eval_exc_vxc_ ( const MatrixType&, const MatrixType&, const IntegratorSettingsEXCVXC&) override;
+  exc_vxc_type_gks  eval_exc_vxc_ ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsEXCVXC& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType& ) override;
   exx_type      eval_exx_     ( const MatrixType&, const IntegratorSettingsEXX& ) override;
   const util::Timer& get_timings_() const override;
