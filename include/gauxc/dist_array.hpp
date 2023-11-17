@@ -23,7 +23,7 @@ class Darray // 2D
 public:
     using value_type = double;
 
-    Darray( const upcxx::team& t = upcxx::world() ) : team(t) {} // TODO: default(ish), if we want tp preclude this behavior, then we have to add some extra logic to the drivers  
+    Darray(const upcxx::team& t = upcxx::world()) : team(t), local_nelems(0) {} // TODO: default(ish), if we want to preclude this behavior, then we have to add some extra logic to the drivers
     Darray(const std::vector<uint64_t>& tile_heights, const std::vector<uint64_t>& tile_widths, const upcxx::team& team = upcxx::world()) noexcept :
         tile_heights(tile_heights), tile_widths(tile_widths), team(team)
         {
@@ -33,6 +33,18 @@ public:
             ntiles = tile_heights.size() * tile_widths.size();
             local_nelems = 0;
         }
+
+    Darray& operator=(const Darray& other)
+    {
+        nrows = other.nrows;
+        ncols = other.ncols;
+        nelems = other.nelems;
+        ntiles = other.ntiles;
+        tile_heights = other.tile_heights;
+        tile_widths = other.tile_widths;
+
+        return *this;
+    }
 
     void allocate() noexcept
     {
@@ -112,18 +124,20 @@ public:
     }
 
     // TODO: This function will be improved by using logic + rget_strided(...)
-    void get(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, value_type* buf) const noexcept
+    void get(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, value_type* buf, upcxx::promise<>& p) const noexcept
     {
         uint64_t next = 0;
-        upcxx::promise<> p;
         std::unordered_map<upcxx::intrank_t, std::pair<std::vector<upcxx::global_ptr<value_type>>, std::vector<value_type*>>> all_gets;
 
         for(uint64_t i = row_min; i <= row_max; ++i)
             for(uint64_t j = col_min; j <= col_max; ++j)
             {
                 const auto& t = tiles.find({i, j, i, j});
+
                 auto offset = (i - t->first.row_min) * (t->first.col_max - t->first.col_min + 1) + (j - t->first.col_min);
+
                 auto remote_addr = gptrs[t->second.first] + t->second.second + offset;
+
                 auto local_addr = buf + next++;
 
                 if(remote_addr.is_local())
@@ -140,12 +154,10 @@ public:
             upcxx::rget_regular(x.second.first.begin(), x.second.first.end(), sz,
                                 x.second.second.begin(), x.second.second.end(), sz,
                                 upcxx::operation_cx::as_promise(p));
-
-        p.finalize().wait();
     }
 
     // TODO: This function will be improved by using logic + rput_strided(...)
-    void put(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, value_type* buf) const noexcept
+    void put(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, value_type* buf, upcxx::promise<>& p) const noexcept
     {
         uint64_t next = 0;
         std::unordered_map<upcxx::intrank_t, std::pair<std::vector<value_type*>, std::vector<upcxx::global_ptr<value_type>>>> all_puts;
@@ -166,15 +178,12 @@ public:
                 }
             }
 
-        upcxx::promise<> p;
         auto sz = sizeof(value_type);
 
         for(const auto& x: all_puts)
         upcxx::rput_regular(x.second.first.begin(), x.second.first.end(), sz,
                             x.second.second.begin(), x.second.second.end(), sz,
                             upcxx::operation_cx::as_promise(p));
-
-        p.finalize().wait();
     }
 
     void fill() noexcept
@@ -264,7 +273,8 @@ public:
         return get_tile(ordinal);
     }
 
-    void add_contig(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, const value_type* buf) const noexcept
+    // Elements in the target buffer are assumed to be contiguous
+    void add_contig(uint64_t row_min, uint64_t col_min, uint64_t row_max, uint64_t col_max, const value_type* buf) noexcept
     {
         const auto& t = tiles.find({row_min, col_min, row_max, col_max});
 
@@ -279,6 +289,42 @@ public:
             },
             gptrs[t->second.first] + offset, upcxx::make_view(buf, buf + count)).wait();
         }
+    }
+
+    void zeroize()
+    {
+        memset(local_gptr.local(), 0, sizeof(value_type) * local_nelems);
+    }
+
+    void submat_set(value_type* smaller, uint64_t smaller_ncols, const std::vector<std::array<int32_t, 3>>& submat_map_rows, const std::vector<std::array<int32_t, 3>>& submat_map_cols) const noexcept
+    {
+        uint64_t j = 0;
+        auto ptr = smaller;
+        upcxx::promise<> p;
+
+        for(uint64_t t = 0; t < submat_map_rows.size(); ++t)
+        {
+            auto& iCut = submat_map_rows[t];
+            auto& jCut = submat_map_cols[t];
+
+            get(iCut[0], jCut[0], iCut[0] + iCut[1] - 1, jCut[0] + jCut[1] - 1, ptr, p);
+
+            j += jCut[1];
+            ptr += jCut[1];
+
+            if(j == smaller_ncols)
+            {
+                j = 0;
+                ptr += smaller_ncols * (iCut[1] - 1);
+            }
+        }
+
+        p.finalize().wait();
+    }
+
+    void inc_by_submat(const value_type* smaller, uint64_t smaller_ncols, const std::vector<std::array<int32_t, 3>>& submat_map_rows, const std::vector<std::array<int32_t, 3>>& submat_map_cols) noexcept
+    {
+        //WIP
     }
 
     void deallocate() noexcept

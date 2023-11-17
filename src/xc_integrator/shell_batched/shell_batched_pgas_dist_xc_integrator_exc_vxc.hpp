@@ -26,15 +26,15 @@
 namespace GauXC  {
 namespace detail {
 
-
 template <typename BaseIntegratorType, typename IncoreIntegratorType>
 void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegratorType>::
   eval_exc_vxc_( const matrix_type& P, matrix_type& VXC, value_type* EXC ) {
 
-
   const auto& basis = this->load_balancer_->basis();
-
   // TODO: Check that P / VXC are sane
+
+  VXC = P;
+  VXC.allocate();
 
   // Get Tasks
   auto& tasks = this->load_balancer_->get_tasks();
@@ -63,16 +63,15 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
       tasks.begin(), tasks.end(), incore_integrator );
   });
 
+  *EXC = upcxx::reduce_all(*EXC, upcxx::op_fast_add).wait();
+
   // Release ownership of LWD back to this integrator instance
   this->local_work_driver_ = std::move( incore_integrator.release_local_work_driver() );
 
 #ifdef GAUXC_ENABLE_DEVICE
   device_data_ptr_.reset();
 #endif
-
 }
-
-
 
 template <typename BaseIntegratorType, typename IncoreIntegratorType>
 void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegratorType>::
@@ -87,12 +86,11 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
 template <typename BaseIntegratorType, typename IncoreIntegratorType>
 void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegratorType>::
   exc_vxc_local_work_( const basis_type& basis, const matrix_type& P, 
-                       matrix_type& VXC, value_type* EXC, value_type *N_EL,
+                       matrix_type& VXC, value_type* EXC, value_type* N_EL,
                        host_task_iterator task_begin, host_task_iterator task_end,
                        incore_integrator_type& incore_integrator ) {
 
   std::cout << "***** MADE IT IN PGAS DRIVER *****" << std::endl;
-
 
   const auto nbf = basis.nbf();
   const uint32_t nbf_threshold = 8000; // TODO DBWY : make this configurable
@@ -106,7 +104,7 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
   //for( auto j = 0; j < nbf; ++j )
   //for( auto i = 0; i < nbf; ++i )
   //  VXC[i + j*ldvxc] = 0.;
-
+  VXC.zeroize();
 
   // Task queue
   std::queue< incore_task_data > incore_task_data_queue;
@@ -142,7 +140,6 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
 
   auto task_it = task_begin;
   while( task_it != task_end ) {
-
     // Generate and enqueue task
     incore_task_data_queue.emplace(
       generate_incore_task( nbf_threshold, basis, task_it, task_end )
@@ -175,15 +172,12 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
   while( not incore_task_data_queue.empty() ) {
     execute_incore_task();
   }
-      
 }
-
-
 
 template <typename BaseIntegratorType, typename IncoreIntegratorType>
 void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegratorType>::
   execute_task_batch( incore_task_data& task, const basis_type& basis, const Molecule& mol, 
-                      const matrix_type& P, matrix_type& VXC, value_type* EXC, value_type *N_EL, 
+                      const matrix_type& P, matrix_type& VXC, value_type* EXC, value_type* N_EL,
                       incore_integrator_type& incore_integrator ) {
 
   std::cout << "IN TASK BATCH PGAS" << std::endl;
@@ -224,29 +218,22 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
     }
   } );
 
-
   // Allocate host temporaries
   std::vector<double> P_submat_host(nbe*nbe), VXC_submat_host(nbe*nbe,0.);
   double EXC_tmp, NEL_tmp;
   double* P_submat   = P_submat_host.data();
   double* VXC_submat = VXC_submat_host.data();
 
-
-
   // Extract subdensity
-  std::vector<std::array<int32_t,3>> union_submat_cut;
-  std::vector<int32_t> foo;
-  std::tie(union_submat_cut,foo) = 
-    gen_compressed_submat_map( basis_map, union_shell_list, 
-      basis.nbf(), basis.nbf() );
+  auto [union_submat_cut, foo] = gen_compressed_submat_map( basis_map, union_shell_list, basis.nbf(), basis.nbf() );
 
   this->timer_.time_op_accumulate("XCIntegrator.ExtractSubDensity",[&]() {
     //TODO Johnny: this is where the GET operation needs to be injected
     //             populate P_submat as a local column major matrix
     //detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, P, ldp, 
     //                    P_submat, nbe, union_submat_cut );
+    P.submat_set(P_submat, nbe, union_submat_cut, union_submat_cut);
   } );
-
 
   // Process selected task batch
 #ifdef GAUXC_ENABLE_DEVICE
@@ -261,7 +248,6 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
   }
 #endif
 
-
   // Update full quantities
   // TODO: Johnny both the scalar and matrix accumulations need to be global
   //       and atomic here - we could potentially not have the scalar operations
@@ -275,8 +261,8 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
     //      injected (NYI in Darray AFAIK)
     //detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXC, ldvxc, 
     //                       VXC_submat, nbe, union_submat_cut );
+    VXC.inc_by_submat(VXC_submat, nbe, union_submat_cut, union_submat_cut);
   });
-
 
   // Reset shell_list to be wrt full basis
   this->timer_.time_op_accumulate("XCIntegrator.ResetShellList",[&]() {
@@ -285,9 +271,6 @@ void ShellBatchedPGASDistributedXCIntegrator<BaseIntegratorType, IncoreIntegrato
       _it->bfn_screening.shell_list[j] = union_shell_list[_it->bfn_screening.shell_list[j]];
     }
   });
-
-}
-
 }
 }
-
+}
