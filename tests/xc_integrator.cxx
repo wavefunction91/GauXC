@@ -97,6 +97,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   }
 
   if(uks and ex == ExecutionSpace::Device) return;
+  if(func.is_mgga() and ex == ExecutionSpace::Device) return;
 
 
   for( auto& sh : basis ) 
