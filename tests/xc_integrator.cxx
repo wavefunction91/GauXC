@@ -258,6 +258,7 @@ functional_type make_functional(ExchCXX::Functional func_key, ExchCXX::Spin spin
   return functional_type(ExchCXX::Backend::builtin, func_key, spin);
 }
 
+
 TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
 
   auto pol   = ExchCXX::Spin::Polarized;
@@ -290,6 +291,26 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
         func, PruningScheme::Unpruned );
   }
 
+  // MGGA Test (TAU Only)
+  SECTION( "Cytosine / SCAN / cc-pVDZ") {
+    functional_type func({
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_X_SCAN"), unpol)},
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_C_SCAN"), unpol)},
+    });
+    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_scan_cc-pvdz_ufg_ssf_robust.hdf5", 
+        func, PruningScheme::Robust );
+  }
+
+  // MGGA Test (TAU + LAPL)
+  //SECTION( "Cytosine / R2SCANL / cc-pVDZ") {
+  //  functional_type func({
+  //    {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_X_R2SCANL"), unpol)},
+  //    {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_C_R2SCANL"), unpol)},
+  //  });
+  //  test_integrator(GAUXC_REF_DATA_PATH "/cytosine_r2scanl_cc-pvdz_ufg_ssf_robust.hdf5", 
+  //      func, PruningScheme::Robust );
+  //}
+
   //UKS LDA Test
   SECTION( "Li / SVWN5 / sto-3g" ) {
     auto func = make_functional(svwn5, pol);
@@ -302,6 +323,26 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     auto func = make_functional(blyp, pol);
     test_integrator(GAUXC_REF_DATA_PATH "/li_blyp_sto3g_uks.bin",
         func, PruningScheme::Unpruned );
+  }
+
+  // UKS MGGA Test (TAU Only)
+  SECTION( "Cytosine (doublet) / SCAN / cc-pVDZ") {
+    functional_type func({
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_X_SCAN"), pol)},
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_C_SCAN"), pol)},
+    });
+    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_scan_cc-pvdz_ufg_ssf_robust_uks.hdf5", 
+        func, PruningScheme::Robust );
+  }
+
+  // UKS MGGA Test (TAU + LAPL)
+  SECTION( "Cytosine (doublet) / R2SCANL / cc-pVDZ") {
+    functional_type func({
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_X_R2SCANL"), pol)},
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_C_R2SCANL"), pol)},
+    });
+    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_r2scanl_cc-pvdz_ufg_ssf_robust_uks.hdf5", 
+        func, PruningScheme::Robust );
   }
 
 
