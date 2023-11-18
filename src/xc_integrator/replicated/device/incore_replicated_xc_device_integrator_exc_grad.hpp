@@ -135,7 +135,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     // Evaluate X matrix
     const bool do_xmat_grad = func.is_gga();
-    lwd->eval_xmat( &device_data, do_xmat_grad );
+    lwd->eval_xmat( 2.0, &device_data, do_xmat_grad );
 
     // Evaluate U/V variables
     if( func.is_gga() ) lwd->eval_uvvar_gga_rks( &device_data );
