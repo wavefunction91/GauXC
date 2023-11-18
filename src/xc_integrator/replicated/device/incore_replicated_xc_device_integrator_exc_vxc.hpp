@@ -19,7 +19,7 @@ template <typename ValueType>
 void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                  int64_t ldp, value_type* VXC, int64_t ldvxc,
-                 value_type* EXC ) {
+                 value_type* EXC, const IntegratorSettingsEXC& settings ) {
 
 
   const auto& basis = this->load_balancer_->basis();
@@ -115,10 +115,30 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                       int64_t ldpz,
                       value_type* VXCs, int64_t ldvxcs,
                       value_type* VXCz, int64_t ldvxcz,
-                      value_type* EXC ) {
-  GauXC::util::unused(m,n,Ps,ldps,Pz,ldpz,VXCs,ldvxcs,VXCz,ldvxcz,EXC);
+                      value_type* EXC, const IntegratorSettingsEXC& settings ) {
+  GauXC::util::unused(m,n,Ps,ldps,Pz,ldpz,VXCs,ldvxcs,VXCz,ldvxcz,EXC,settings);
   GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
+
+template <typename ValueType>
+void IncoreReplicatedXCDeviceIntegrator<ValueType>::
+  eval_exc_vxc_( int64_t m, int64_t n, const value_type* Ps,
+                      int64_t ldps,
+                      const value_type* Pz,
+                      int64_t ldpz,
+                      const value_type* Py,
+                      int64_t ldpy,
+                      const value_type* Px,
+                      int64_t ldpx,
+                      value_type* VXCs, int64_t ldvxcs,
+                      value_type* VXCz, int64_t ldvxcz,
+                      value_type* VXCy, int64_t ldvxcy,
+                      value_type* VXCx, int64_t ldvxcx,
+                      value_type* EXC, const IntegratorSettingsEXC& settings ) {
+  GauXC::util::unused(m,n,Ps,ldps,Pz,ldpz,Py,ldpy,Px,ldpx,VXCs,ldvxcs,VXCz,ldvxcz,VXCy,ldvxcy,VXCx,ldvxcx,EXC,settings);
+  GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED FOR DEVICE");
+}
+
 
 template <typename ValueType>
 void IncoreReplicatedXCDeviceIntegrator<ValueType>::
@@ -283,6 +303,36 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   GauXC::util::unused(basis,Ps,ldps,Pz,ldpz,VXCs,ldvxcs,VXCz,ldvxcz,EXC,N_EL,task_begin,task_end,device_data);
   GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
 }
+
+template <typename ValueType>
+void IncoreReplicatedXCDeviceIntegrator<ValueType>::
+  exc_vxc_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
+                            const value_type* Pz, int64_t ldpz,
+                            const value_type* Py, int64_t ldpy,
+                            const value_type* Px, int64_t ldpx,
+                            host_task_iterator task_begin, host_task_iterator task_end,
+                            XCDeviceData& device_data ) {
+  GauXC::util::unused(basis,Ps,ldps,Pz,ldpz,Py,ldpy,Px,ldpx,task_begin,task_end,device_data);
+  GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED FOR DEVICE");
+}
+
+template <typename ValueType>
+void IncoreReplicatedXCDeviceIntegrator<ValueType>::
+  exc_vxc_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
+                            const value_type* Pz, int64_t ldpz,
+                            const value_type* Py, int64_t ldpy,
+                            const value_type* Px, int64_t ldpx,   
+                            value_type* VXCs, int64_t ldvxcs,
+                            value_type* VXCz, int64_t ldvxcz,
+                            value_type* VXCy, int64_t ldvxcy,
+                            value_type* VXCx, int64_t ldvxcx, value_type* EXC, value_type *N_EL,
+                            host_task_iterator task_begin, host_task_iterator task_end,
+                            XCDeviceData& device_data ) {
+
+  GauXC::util::unused(basis,Ps,ldps,Pz,ldpz,Py,ldpy,Px,ldpx,VXCs,ldvxcs,VXCz,ldvxcz,VXCy,ldvxcy,VXCx,ldvxcx,EXC,N_EL,task_begin,task_end,device_data);
+  GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED FOR DEVICE");
+}
+
 
 }
 }
