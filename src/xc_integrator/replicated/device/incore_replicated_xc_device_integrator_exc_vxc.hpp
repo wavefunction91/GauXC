@@ -211,7 +211,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     else                lwd->eval_collocation( &device_data );
 
     // Evaluate X matrix
-    lwd->eval_xmat( &device_data );
+    lwd->eval_xmat( 1.0, &device_data );
 
     // Evaluate U/V variables
     if( func.is_gga() ) lwd->eval_uvvar_gga_rks( &device_data );
