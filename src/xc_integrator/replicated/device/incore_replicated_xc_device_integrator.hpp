@@ -33,7 +33,7 @@ protected:
 
   void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp, value_type* VXC, int64_t ldvxc,
-                      value_type* EXC, const IntegratorSettingsEXC& settings) override;
+                      value_type* EXC, const IntegratorSettingsXC& settings) override;
 
   void eval_exc_vxc_( int64_t m, int64_t n, const value_type* Ps,
                       int64_t ldps,
@@ -41,7 +41,7 @@ protected:
                       int64_t ldpz,
                       value_type* VXCs, int64_t ldvxcs,
                       value_type* VXCz, int64_t ldvxcz,
-                      value_type* EXC, const IntegratorSettingsEXC& settings ) override;
+                      value_type* EXC, const IntegratorSettingsXC& settings ) override;
 
   void eval_exc_vxc_( int64_t m, int64_t n, const value_type* Ps,
                       int64_t ldps,
@@ -55,7 +55,7 @@ protected:
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* VXCy, int64_t ldvxcy,
                       value_type* VXCx, int64_t ldvxcx,
-                      value_type* EXC, const IntegratorSettingsEXC& settings ) override;
+                      value_type* EXC, const IntegratorSettingsXC& settings ) override;
 
 
   void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
