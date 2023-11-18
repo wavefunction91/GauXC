@@ -36,10 +36,10 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   using matrix_type = Eigen::MatrixXd;
   Molecule mol;
   BasisSet<double> basis;
-  matrix_type P, Pz, VXC_ref, VXCz_ref, K_ref;
+  matrix_type P, Pz, Py, Px, VXC_ref, VXCz_ref, VXCy_ref, VXCx_ref, K_ref;
   double EXC_ref;
   std::vector<double> EXC_GRAD_ref;
-  bool has_k = false, has_exc_grad = false, uks = false;
+  bool has_k = false, has_exc_grad = false, rks = true, uks = false, gks = false;
   {
     read_hdf5_record( mol,   reference_file, "/MOLECULE" );
     read_hdf5_record( basis, reference_file, "/BASIS"    );
@@ -48,36 +48,66 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     
     std::string den="/DENSITY";
     std::string den2="/DENSITY_Z";
+    std::string den3="/DENSITY_Y";
+    std::string den4="/DENSITY_X";
     std::string vxc="/VXC";
     std::string vxc2="VXC_Z";
-    
-    if (file.exist("/DENSITY_Z")) {
+    std::string vxc3="VXC_Y";
+    std::string vxc4="VXC_X";
+
+    if (file.exist("/DENSITY_Z")) { rks = false; }
+
+    if (file.exist("/DENSITY_Z") and not file.exist("/DENSITY_Y") and not file.exist("/DENSITY_X")) {
        den="/DENSITY_SCALAR";
        vxc="/VXC_SCALAR";
        uks=true;
     }
-      
+     
+    if (file.exist("/DENSITY_X") and file.exist("/DENSITY_Y") and file.exist("/DENSITY_Z")) {
+       den="/DENSITY_SCALAR";
+       vxc="/VXC_SCALAR";
+       gks=true;
+    }
+ 
     auto dset = file.getDataSet(den);
     
     auto dims = dset.getDimensions();
     P        = matrix_type( dims[0], dims[1] );
     VXC_ref  = matrix_type( dims[0], dims[1] );
-    if (uks) {
+    if (not rks) {
       Pz       = matrix_type( dims[0], dims[1] );
       VXCz_ref = matrix_type( dims[0], dims[1] );
+    } 
+    if (gks) {
+      Py       = matrix_type( dims[0], dims[1] );
+      VXCy_ref = matrix_type( dims[0], dims[1] );
+      Px       = matrix_type( dims[0], dims[1] );
+      VXCx_ref = matrix_type( dims[0], dims[1] );
     }
+
 
     dset.read( P.data() );
     dset = file.getDataSet(vxc);
     dset.read( VXC_ref.data() );
 
-    if (uks) {
+    if (not rks) {
       dset = file.getDataSet(den2);
       dset.read( Pz.data() );
       dset = file.getDataSet(vxc2);
       dset.read( VXCz_ref.data() );
     }
-    
+
+    if (gks) {
+      dset = file.getDataSet(den3);
+      dset.read( Py.data() );
+      dset = file.getDataSet(vxc3);
+      dset.read( VXCy_ref.data() );
+      dset = file.getDataSet(den4);
+      dset.read( Px.data() );
+      dset = file.getDataSet(vxc4);
+      dset.read( VXCx_ref.data() );
+    }    
+
     dset = file.getDataSet("/EXC");
     dset.read( &EXC_ref );
 
@@ -97,7 +127,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   }
 
   if(uks and ex == ExecutionSpace::Device) return;
-
+  if(gks and ex == ExecutionSpace::Device) return;
 
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
@@ -117,7 +147,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   mw.modify_weights(lb);
 
   // Construct XC Functional
-  auto Spin = uks ? ExchCXX::Spin::Polarized : ExchCXX::Spin::Unpolarized;
+  auto Spin = rks ? ExchCXX::Spin::Unpolarized : ExchCXX::Spin::Polarized;
   functional_type func( ExchCXX::Backend::builtin, func_key, Spin );
 
   // Construct XCIntegrator
@@ -126,7 +156,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   auto integrator = integrator_factory.get_instance( func, lb );
 
   // Integrate Density
-  if( check_integrate_den and not uks ) {
+  if( check_integrate_den and rks) {
     auto N_EL_ref = std::accumulate( mol.begin(), mol.end(), 0ul,
       [](const auto& a, const auto &b) { return a + b.Z.get(); });
     auto N_EL = integrator.integrate_den( P );
@@ -135,7 +165,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   }
 
   // Integrate EXC/VXC
-  if ( not uks ) {
+  if ( rks ) {
     auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
 
     // Check EXC/VXC
@@ -149,7 +179,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
       CHECK( VXC1_diff_nrm / basis.nbf() < 1e-10 ); 
     }
-  } else {
+  } else if (uks) {
     auto [ EXC, VXC, VXCz ] = integrator.eval_exc_vxc( P, Pz );
 
     // Check EXC/VXC
@@ -168,9 +198,40 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       CHECK( VXCz1_diff_nrm / basis.nbf() < 1e-10 );
     }
 
+  } else if (gks) {
+    auto [ EXC, VXC, VXCz, VXCy, VXCx ] = integrator.eval_exc_vxc( P, Pz, Py, Px );
+
+    // Check EXC/VXC
+    auto VXC_diff_nrm = ( VXC - VXC_ref ).norm();
+    auto VXCz_diff_nrm = ( VXCz - VXCz_ref ).norm();
+    auto VXCy_diff_nrm = ( VXCy - VXCy_ref ).norm();
+    auto VXCx_diff_nrm = ( VXCx - VXCx_ref ).norm();
+
+    CHECK( EXC == Approx( EXC_ref ) );
+    CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 );
+    CHECK( VXCz_diff_nrm / basis.nbf() < 1e-10 );
+    CHECK( VXCy_diff_nrm / basis.nbf() < 1e-10 );
+    CHECK( VXCx_diff_nrm / basis.nbf() < 1e-10 );
+    // Check if the integrator propagates state correctly
+    {
+      auto [ EXC1, VXC1, VXCz1, VXCy1, VXCx1] = integrator.eval_exc_vxc( P, Pz, Py, Px );
+      CHECK( EXC1 == Approx( EXC_ref ) );
+      auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
+      auto VXCz1_diff_nrm = ( VXCz1 - VXCz_ref ).norm();
+      auto VXCy1_diff_nrm = ( VXCy1 - VXCy_ref ).norm();
+      auto VXCx1_diff_nrm = ( VXCx1 - VXCx_ref ).norm();
+      CHECK( VXC1_diff_nrm / basis.nbf() < 1e-10 );
+      CHECK( VXCz1_diff_nrm / basis.nbf() < 1e-10 );
+      CHECK( VXCy1_diff_nrm / basis.nbf() < 1e-10 );
+      CHECK( VXCx1_diff_nrm / basis.nbf() < 1e-10 );
+    }
+
   }
+
+
+
   // Check EXC Grad
-  if( check_grad and has_exc_grad and not uks) {
+  if( check_grad and has_exc_grad and rks) {
     auto EXC_GRAD = integrator.eval_exc_grad( P );
     using map_type = Eigen::Map<Eigen::MatrixXd>;
     map_type EXC_GRAD_ref_map( EXC_GRAD_ref.data(), mol.size(), 3 );
@@ -180,7 +241,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   }
 
   // Check K
-  if( has_k and check_k and not uks ) {
+  if( has_k and check_k and rks ) {
     auto K = integrator.eval_exx( P );
     CHECK((K - K.transpose()).norm() < std::numeric_limits<double>::epsilon()); // Symmetric
     CHECK( (K - K_ref).norm() / basis.nbf() < 1e-7 );
@@ -290,6 +351,11 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
         ExchCXX::Functional::BLYP, PruningScheme::Unpruned );
   }
 
+  //GKS GGA Test
+  SECTION( "H3 / BLYP / cc-pvdz" ) {
+    test_integrator(GAUXC_REF_DATA_PATH "/h3_blyp_cc-pvdz_ssf_gks.bin",
+        ExchCXX::Functional::BLYP, PruningScheme::Unpruned );
+  }
 
   // sn-LinK Test
   SECTION( "Benzene / PBE0 / 6-31G(d)" ) {
