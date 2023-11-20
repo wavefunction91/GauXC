@@ -303,14 +303,14 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
   }
 
   // MGGA Test (TAU + LAPL)
-  //SECTION( "Cytosine / R2SCANL / cc-pVDZ") {
-  //  functional_type func({
-  //    {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_X_R2SCANL"), unpol)},
-  //    {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_C_R2SCANL"), unpol)},
-  //  });
-  //  test_integrator(GAUXC_REF_DATA_PATH "/cytosine_r2scanl_cc-pvdz_ufg_ssf_robust.hdf5", 
-  //      func, PruningScheme::Robust );
-  //}
+  SECTION( "Cytosine / R2SCANL / cc-pVDZ") {
+    functional_type func({
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_X_R2SCANL"), unpol)},
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_C_R2SCANL"), unpol)},
+    });
+    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_r2scanl_cc-pvdz_ufg_ssf_robust.hdf5", 
+        func, PruningScheme::Robust );
+  }
 
   //UKS LDA Test
   SECTION( "Li / SVWN5 / sto-3g" ) {
