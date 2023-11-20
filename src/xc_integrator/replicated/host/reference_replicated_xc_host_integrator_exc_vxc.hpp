@@ -233,6 +233,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   const bool needs_laplacian = func.is_mgga() ? true : false; // TODO: Needs Laplacian Check
   
+  if (func.is_mgga() and is_gks) {
+    GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED WITH mGGA FUNCTIONALS!");
+  }
+
   // Get basis map
   BasisSetMap basis_map(basis,mol);
 
@@ -334,8 +338,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       // TODO: Add check for Laplacian-dependent functionals
       if ( needs_laplacian ) {
         host_data.basis_eval .resize( 11 * npts * nbe ); // basis + grad (3) + hess (6) + lapl 
-	host_data.lapl       .resize( spin_dim_scal * npts );
-	host_data.vlapl      .resize( spin_dim_scal * npts );
+	      host_data.lapl       .resize( spin_dim_scal * npts );
+	      host_data.vlapl      .resize( spin_dim_scal * npts );
       } else {
         host_data.basis_eval .resize( 4 * npts * nbe ); // basis + grad (3)
       }
@@ -418,18 +422,18 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       mmat_y        = mmat_x + npts * nbe;
       mmat_z        = mmat_y + npts * nbe;
       if ( needs_laplacian ) {
-	d2basis_xx_eval = dbasis_z_eval + npts * nbe;
-	d2basis_xy_eval = d2basis_xx_eval + npts * nbe;
-	d2basis_xz_eval = d2basis_xy_eval + npts * nbe;
-	d2basis_yy_eval = d2basis_xz_eval + npts * nbe;
-	d2basis_yz_eval = d2basis_yy_eval + npts * nbe;
-	d2basis_zz_eval = d2basis_yz_eval + npts * nbe;
-	lbasis_eval     = d2basis_zz_eval + npts * nbe;
+	      d2basis_xx_eval = dbasis_z_eval + npts * nbe;
+	      d2basis_xy_eval = d2basis_xx_eval + npts * nbe;
+	      d2basis_xz_eval = d2basis_xy_eval + npts * nbe;
+	      d2basis_yy_eval = d2basis_xz_eval + npts * nbe;
+	      d2basis_yz_eval = d2basis_yy_eval + npts * nbe;
+	      d2basis_zz_eval = d2basis_yz_eval + npts * nbe;
+	      lbasis_eval     = d2basis_zz_eval + npts * nbe;
       }
       if(is_uks) {
-	mmat_x_z = zmat_z + npts * nbe;
-	mmat_y_z = mmat_x_z + npts * nbe;
-	mmat_z_z = mmat_y_z + npts * nbe;
+	      mmat_x_z = zmat_z + npts * nbe;
+	      mmat_y_z = mmat_x_z + npts * nbe;
+	      mmat_z_z = mmat_y_z + npts * nbe;
       }
     }
 
@@ -445,8 +449,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 	// TODO: Modify gau2grid to compute Laplacian instead of full hessian
         lwd->eval_collocation_hessian( npts, nshells, nbe, points, basis, shell_list,
           basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval, d2basis_xx_eval,
-	  d2basis_xy_eval, d2basis_xz_eval, d2basis_yy_eval, d2basis_yz_eval,
-	  d2basis_zz_eval);
+	        d2basis_xy_eval, d2basis_xz_eval, d2basis_yy_eval, d2basis_yz_eval,
+	        d2basis_zz_eval);
         blas::lacpy( 'A', nbe, npts, d2basis_xx_eval, nbe, lbasis_eval, nbe );
         blas::axpy( nbe * npts, 1., d2basis_yy_eval, 1, lbasis_eval, 1);
         blas::axpy( nbe * npts, 1., d2basis_zz_eval, 1, lbasis_eval, 1);
@@ -486,13 +490,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     if( func.is_mgga() ) {
       if (is_rks) {
         lwd->eval_uvvar_mgga_rks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
-	  dbasis_z_eval, lbasis_eval, zmat, nbe, mmat_x, mmat_y, mmat_z, 
-	  nbe, den_eval, dden_x_eval, dden_y_eval, dden_z_eval, gamma, tau, lapl);
+	        dbasis_z_eval, lbasis_eval, zmat, nbe, mmat_x, mmat_y, mmat_z, 
+	        nbe, den_eval, dden_x_eval, dden_y_eval, dden_z_eval, gamma, tau, lapl);
       } else if (is_uks) {
         lwd->eval_uvvar_mgga_uks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
-	  dbasis_z_eval, lbasis_eval, zmat, nbe, zmat_z, nbe, 
-	  mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe, 
-	  den_eval, dden_x_eval, dden_y_eval, dden_z_eval, gamma, tau, lapl);
+	        dbasis_z_eval, lbasis_eval, zmat, nbe, zmat_z, nbe, 
+	        mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe, 
+	        den_eval, dden_x_eval, dden_y_eval, dden_z_eval, gamma, tau, lapl);
       }
     } else if ( func.is_gga() ) {
       if(is_rks) {
@@ -548,21 +552,21 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     if( func.is_mgga() ){
       for( int32_t i = 0; i < npts; ++i) {
-	vtau[spin_dim_scal*i]  *= weights[i];
-	vgamma[gga_dim_scal*i] *= weights[i];
-	if(not is_rks) {
-	  vgamma[gga_dim_scal*i+1] *= weights[i];
-	  vgamma[gga_dim_scal*i+2] *= weights[i];
-	  vtau[spin_dim_scal*i+1]  *= weights[i];
-	}
+	      vtau[spin_dim_scal*i]  *= weights[i];
+	      vgamma[gga_dim_scal*i] *= weights[i];
+	      if(not is_rks) {
+	        vgamma[gga_dim_scal*i+1] *= weights[i];
+	        vgamma[gga_dim_scal*i+2] *= weights[i];
+	        vtau[spin_dim_scal*i+1]  *= weights[i];
+	      }
 
-	// TODO: Add checks for Lapacian-dependent functionals
-	if( needs_laplacian ) {
+	      // TODO: Add checks for Lapacian-dependent functionals
+	      if( needs_laplacian ) {
           vlapl[spin_dim_scal*i] *= weights[i];
           if(not is_rks) {
             vlapl[spin_dim_scal*i+1] *= weights[i];
-	  }
-	}
+	        }
+	      }
       }
     }
 
@@ -571,17 +575,17 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Evaluate Z matrix for VXC
     if( func.is_mgga() ) {
       if(is_rks) {
-	lwd->eval_zmat_mgga_vxc_rks( npts, nbe, vrho, vgamma, vlapl, basis_eval, dbasis_x_eval,
-	                        dbasis_y_eval, dbasis_z_eval, lbasis_eval,
-				dden_x_eval, dden_y_eval, dden_z_eval, zmat, nbe);
-	lwd->eval_mmat_mgga_vxc_rks( npts, nbe, vtau, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
-	                        mmat_x, mmat_y, mmat_z, nbe);
+	      lwd->eval_zmat_mgga_vxc_rks( npts, nbe, vrho, vgamma, vlapl, basis_eval, dbasis_x_eval,
+	                                   dbasis_y_eval, dbasis_z_eval, lbasis_eval,
+				                             dden_x_eval, dden_y_eval, dden_z_eval, zmat, nbe);
+	      lwd->eval_mmat_mgga_vxc_rks( npts, nbe, vtau, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
+	                                   mmat_x, mmat_y, mmat_z, nbe);
       } else if (is_uks) {
-	lwd->eval_zmat_mgga_vxc_uks( npts, nbe, vrho, vgamma, vlapl, basis_eval, dbasis_x_eval,
-	                        dbasis_y_eval, dbasis_z_eval, lbasis_eval,
-				dden_x_eval, dden_y_eval, dden_z_eval, zmat, nbe, zmat_z, nbe);
-	lwd->eval_mmat_mgga_vxc_uks( npts, nbe, vtau, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
-	                        mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe);
+	      lwd->eval_zmat_mgga_vxc_uks( npts, nbe, vrho, vgamma, vlapl, basis_eval, dbasis_x_eval,
+	                                   dbasis_y_eval, dbasis_z_eval, lbasis_eval,
+				                             dden_x_eval, dden_y_eval, dden_z_eval, zmat, nbe, zmat_z, nbe);
+	      lwd->eval_mmat_mgga_vxc_uks( npts, nbe, vtau, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
+	                                   mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe);
       }
     }
     else if( func.is_gga() ) {
