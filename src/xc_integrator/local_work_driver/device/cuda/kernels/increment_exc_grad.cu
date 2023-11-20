@@ -52,7 +52,7 @@ __global__ __launch_bounds__(1024,1) void increment_exc_grad_lda_kernel(
 
         const double vrho_i = vrho[ipt];
         for( uint32_t ibf = 0; ibf < shsz; ++ibf ) {
-          const double z_mu_i    = vrho_i * 2. * xmat[ipt + ibf*npts];
+          const double z_mu_i    = vrho_i * xmat[ipt + ibf*npts];
           const double dbfx_mu_i = basis_x_eval[ipt + ibf*npts];
           const double dbfy_mu_i = basis_y_eval[ipt + ibf*npts];
           const double dbfz_mu_i = basis_z_eval[ipt + ibf*npts];
@@ -181,7 +181,7 @@ __global__ __launch_bounds__(512,1) void increment_exc_grad_gga_kernel(
         const double deny_i = den_y[ipt];
         const double denz_i = den_z[ipt];
         for( uint32_t ibf = 0; ibf < shsz; ++ibf ) {
-          const double z_mu_i    = 2. * xmat[ipt + ibf*npts];
+          const double z_mu_i    = xmat[ipt + ibf*npts];
           const double dbfx_mu_i = basis_x_eval[ipt + ibf*npts];
           const double dbfy_mu_i = basis_y_eval[ipt + ibf*npts];
           const double dbfz_mu_i = basis_z_eval[ipt + ibf*npts];
@@ -190,9 +190,9 @@ __global__ __launch_bounds__(512,1) void increment_exc_grad_gga_kernel(
           g_acc_y += vrho_i * z_mu_i * dbfy_mu_i;
           g_acc_z += vrho_i * z_mu_i * dbfz_mu_i;
 
-          const double zx = 2. * xmat_x[ipt + ibf*npts];
-          const double zy = 2. * xmat_y[ipt + ibf*npts];
-          const double zz = 2. * xmat_z[ipt + ibf*npts];
+          const double zx = xmat_x[ipt + ibf*npts];
+          const double zy = xmat_y[ipt + ibf*npts];
+          const double zz = xmat_z[ipt + ibf*npts];
 
 	        const double d11_xmat_term = denx_i * zx + deny_i * zy + denz_i * zz;
 

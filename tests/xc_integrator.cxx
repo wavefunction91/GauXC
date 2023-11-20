@@ -22,7 +22,7 @@ using namespace GauXC;
 
 void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   std::string reference_file, 
-  ExchCXX::Functional func_key, 
+  functional_type& func, 
   PruningScheme pruning_scheme,
   size_t quad_pad_value,
   bool check_grad,
@@ -128,6 +128,8 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
   if(uks and ex == ExecutionSpace::Device) return;
   if(gks and ex == ExecutionSpace::Device) return;
+  if(func.is_mgga() and ex == ExecutionSpace::Device) return;
+
 
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
@@ -147,8 +149,8 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   mw.modify_weights(lb);
 
   // Construct XC Functional
-  auto Spin = rks ? ExchCXX::Spin::Unpolarized : ExchCXX::Spin::Polarized;
-  functional_type func( ExchCXX::Backend::builtin, func_key, Spin );
+  //auto Spin = uks ? ExchCXX::Spin::Polarized : ExchCXX::Spin::Unpolarized;
+  //functional_type func( ExchCXX::Backend::builtin, func_key, Spin );
 
   // Construct XCIntegrator
   XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", 
@@ -249,7 +251,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
 }
 
-void test_integrator(std::string reference_file, ExchCXX::Functional func, PruningScheme pruning_scheme) {
+void test_integrator(std::string reference_file, functional_type& func, PruningScheme pruning_scheme) {
 
 #ifdef GAUXC_ENABLE_DEVICE
   auto rt = DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.9);
@@ -315,51 +317,108 @@ void test_integrator(std::string reference_file, ExchCXX::Functional func, Pruni
 
 }
 
+functional_type make_functional(ExchCXX::Functional func_key, ExchCXX::Spin spin) {
+  return functional_type(ExchCXX::Backend::builtin, func_key, spin);
+}
+
 
 TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
 
+  auto pol   = ExchCXX::Spin::Polarized;
+  auto unpol = ExchCXX::Spin::Unpolarized;
+  auto svwn5 = ExchCXX::Functional::SVWN5;
+  auto pbe0  = ExchCXX::Functional::PBE0;
+  auto blyp  = ExchCXX::Functional::BLYP;
 
   // LDA Test
   SECTION( "Benzene / SVWN5 / cc-pVDZ" ) {
+    auto func = make_functional(svwn5, unpol);
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf.hdf5", 
-        ExchCXX::Functional::SVWN5, PruningScheme::Unpruned );
+        func, PruningScheme::Unpruned );
   }
   SECTION( "Benzene / SVWN5 / cc-pVDZ (Treutler)" ) {
+    auto func = make_functional(svwn5, unpol);
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf_treutler_prune.hdf5", 
-        ExchCXX::Functional::SVWN5, PruningScheme::Treutler );
+        func, PruningScheme::Treutler );
   }
   SECTION( "Benzene / SVWN5 / cc-pVDZ (Robust)" ) {
+    auto func = make_functional(svwn5, unpol);
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf_robust_prune.hdf5", 
-        ExchCXX::Functional::SVWN5, PruningScheme::Robust );
+        func, PruningScheme::Robust );
   }
 
   // GGA Test
   SECTION( "Benzene / PBE0 / cc-pVDZ" ) {
+    auto func = make_functional(pbe0, unpol);
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_pbe0_cc-pvdz_ufg_ssf.hdf5", 
-        ExchCXX::Functional::PBE0, PruningScheme::Unpruned );
+        func, PruningScheme::Unpruned );
+  }
+
+  // MGGA Test (TAU Only)
+  SECTION( "Cytosine / SCAN / cc-pVDZ") {
+    functional_type func({
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_X_SCAN"), unpol)},
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_C_SCAN"), unpol)},
+    });
+    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_scan_cc-pvdz_ufg_ssf_robust.hdf5", 
+        func, PruningScheme::Robust );
+  }
+
+  // MGGA Test (TAU + LAPL)
+  SECTION( "Cytosine / R2SCANL / cc-pVDZ") {
+    functional_type func({
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_X_R2SCANL"), unpol)},
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_C_R2SCANL"), unpol)},
+    });
+    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_r2scanl_cc-pvdz_ufg_ssf_robust.hdf5", 
+        func, PruningScheme::Robust );
   }
 
   //UKS LDA Test
   SECTION( "Li / SVWN5 / sto-3g" ) {
+    auto func = make_functional(svwn5, pol);
     test_integrator(GAUXC_REF_DATA_PATH "/li_svwn5_sto3g_uks.bin",
-        ExchCXX::Functional::SVWN5, PruningScheme::Unpruned );
+        func, PruningScheme::Unpruned );
   }
 
   //UKS GGA Test
   SECTION( "Li / BLYP / sto-3g" ) {
+    auto func = make_functional(blyp, pol);
     test_integrator(GAUXC_REF_DATA_PATH "/li_blyp_sto3g_uks.bin",
-        ExchCXX::Functional::BLYP, PruningScheme::Unpruned );
+        func, PruningScheme::Unpruned );
+  }
+
+  // UKS MGGA Test (TAU Only)
+  SECTION( "Cytosine (doublet) / SCAN / cc-pVDZ") {
+    functional_type func({
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_X_SCAN"), pol)},
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_C_SCAN"), pol)},
+    });
+    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_scan_cc-pvdz_ufg_ssf_robust_uks.hdf5", 
+        func, PruningScheme::Robust );
+  }
+
+  // UKS MGGA Test (TAU + LAPL)
+  SECTION( "Cytosine (doublet) / R2SCANL / cc-pVDZ") {
+    functional_type func({
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_X_R2SCANL"), pol)},
+      {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string("MGGA_C_R2SCANL"), pol)},
+    });
+    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_r2scanl_cc-pvdz_ufg_ssf_robust_uks.hdf5", 
+        func, PruningScheme::Robust );
   }
 
   //GKS GGA Test
   SECTION( "H3 / BLYP / cc-pvdz" ) {
+    auto func = make_functional(blyp, pol);
     test_integrator(GAUXC_REF_DATA_PATH "/h3_blyp_cc-pvdz_ssf_gks.bin",
-        ExchCXX::Functional::BLYP, PruningScheme::Unpruned );
+        func, PruningScheme::Unpruned );
   }
 
   // sn-LinK Test
   SECTION( "Benzene / PBE0 / 6-31G(d)" ) {
+    auto func = make_functional(pbe0, unpol);
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_631gd_pbe0_ufg.hdf5", 
-        ExchCXX::Functional::PBE0, PruningScheme::Unpruned );
+        func, PruningScheme::Unpruned );
   }
 }

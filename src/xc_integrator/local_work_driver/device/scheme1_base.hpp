@@ -50,7 +50,7 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
 
 
   // Overridable APIs
-  virtual void eval_xmat( XCDeviceData*, bool do_grad ) override;
+  virtual void eval_xmat( double fac, XCDeviceData*, bool do_grad ) override;
   virtual void eval_exx_fmat( XCDeviceData* ) override;
   virtual void inc_vxc( XCDeviceData* ) override;
   virtual void inc_exx_k( XCDeviceData* ) override;

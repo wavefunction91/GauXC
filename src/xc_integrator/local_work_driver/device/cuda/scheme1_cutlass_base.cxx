@@ -16,7 +16,7 @@
 
 namespace GauXC {
 
-void AoSScheme1CUTLASSBase::eval_xmat( XCDeviceData* _data, bool do_grad ){
+void AoSScheme1CUTLASSBase::eval_xmat(double fac, XCDeviceData* _data, bool do_grad ){
 
   if( do_grad ) GAUXC_GENERIC_EXCEPTION("CUTLASS + X Gradient NYI");
 
@@ -45,7 +45,7 @@ void AoSScheme1CUTLASSBase::eval_xmat( XCDeviceData* _data, bool do_grad ){
     cutlass_stack.zmat_array_device, cutlass_stack.zmat_array_device,
     cutlass_stack.ld64_bf_array_device, cutlass_stack.ld64_dmat_array_device,
     cutlass_stack.ld64_zmat_array_device, cutlass_stack.ld64_zmat_array_device,
-    1.0, 0.0,
+    fac, 0.0,
     data->device_backend_->queue()
   );
 }

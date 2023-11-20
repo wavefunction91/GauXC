@@ -70,11 +70,11 @@ FWD_TO_PIMPL(symmetrize_vxc)
 FWD_TO_PIMPL(symmetrize_exx_k)
 FWD_TO_PIMPL(eval_exx_ek_screening_bfn_stats)
 
-// X     = P * B
-// dX/dx = P * dB/dx (do_grad)
-void LocalDeviceWorkDriver::eval_xmat( XCDeviceData* device_data, bool do_grad ) {
+// X     = fac * P * B
+// dX/dx = fac * P * dB/dx (do_grad)
+void LocalDeviceWorkDriver::eval_xmat( double fac, XCDeviceData* device_data, bool do_grad ) {
   throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_xmat(device_data, do_grad);
+  pimpl_->eval_xmat(fac, device_data, do_grad);
 }
 
 void LocalDeviceWorkDriver::eval_exx_gmat( XCDeviceData* device_data, 

@@ -16,7 +16,7 @@
 
 namespace GauXC {
 
-void AoSScheme1MAGMABase::eval_xmat( XCDeviceData* _data, bool do_grad ){
+void AoSScheme1MAGMABase::eval_xmat( double fac, XCDeviceData* _data, bool do_grad ){
 
   if( do_grad ) GAUXC_GENERIC_EXCEPTION("MAGMA + X Gradient NYI");
 
@@ -42,7 +42,7 @@ void AoSScheme1MAGMABase::eval_xmat( XCDeviceData* _data, bool do_grad ){
   magmablas_dgemm_vbatched( MagmaNoTrans, MagmaNoTrans,
     magma_stack.xmat_m_array_device, magma_stack.xmat_n_array_device, 
     magma_stack.xmat_k_array_device, 
-    1., magma_stack.bf_array_device,    magma_stack.ld_bf_array_device,
+    fac, magma_stack.bf_array_device,    magma_stack.ld_bf_array_device,
         magma_stack.xdmat_array_device, magma_stack.ld_xdmat_array_device,
     0., magma_stack.zmat_array_device,  magma_stack.ld_zmat_array_device,
     ntasks, *master_queue );

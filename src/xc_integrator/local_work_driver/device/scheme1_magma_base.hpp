@@ -12,7 +12,7 @@ namespace GauXC {
 
 struct AoSScheme1MAGMABase : public AoSScheme1Base {
 
-  void eval_xmat( XCDeviceData*, bool do_grad ) override final;
+  void eval_xmat( double fac, XCDeviceData*, bool do_grad ) override final;
   void eval_exx_fmat( XCDeviceData* ) override final;
   void inc_vxc( XCDeviceData* ) override final;
   void inc_exx_k( XCDeviceData* ) override final;

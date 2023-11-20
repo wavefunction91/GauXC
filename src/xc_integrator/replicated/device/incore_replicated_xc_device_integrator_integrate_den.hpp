@@ -129,7 +129,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->eval_collocation( &device_data );
 
     // Evaluate X matrix
-    lwd->eval_xmat( &device_data );
+    lwd->eval_xmat( 1.0, &device_data );
 
     // Evaluate the density
     lwd->eval_uvvar_lda_rks( &device_data );
