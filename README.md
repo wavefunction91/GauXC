@@ -66,7 +66,7 @@ Primary Developer and Maintainer: David Williams-Young - LBNL (dbwy at lbl dot g
 
 GauXC has received major contributions from the following developers (in no particular order):
 * Thom Popovici (LBNL)          - Optimized sn-K kernels for CPU and GPU architectures
-* Teri Lambros (UW)             - Unrestricted DFT
+* Teri Lambros (UW)             - Unrestricted (UKS) and Generalized (GKS) DFT
 * Daniel Mejia-Rodriguez (PNNL) - Meta-GGA DFT
 
 We have also receieved significant support from industry collaborators:
