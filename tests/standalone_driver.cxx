@@ -27,9 +27,14 @@ using namespace ExchCXX;
 int main(int argc, char** argv) {
 
   upcxx::init();
+
 #ifdef GAUXC_ENABLE_MPI
-  MPI_Init( NULL, NULL );
+  int mpi_already_init;
+  MPI_Initialized(&mpi_already_init);
+  if(!mpi_already_init)
+    MPI_Init(&argc, &argv);
 #endif
+
   {
 
     // Set up runtimes
@@ -393,7 +398,7 @@ int main(int argc, char** argv) {
 
     if(!world_rank)
     {
-      std::cout << "\nEXC_PGAS>>>" << EXC_PGAS << "<<<\n";
+      std::cout << "\nEXC_PGAS = " << EXC_PGAS << std::endl;
       std::ofstream pgas_file2("vxcOut.log");
       pgas_file2 << std::setprecision(12);
       VXC_PGAS.print(pgas_file2);
@@ -566,8 +571,10 @@ int main(int argc, char** argv) {
     }
 
   }
+
 #ifdef GAUXC_ENABLE_MPI
-  MPI_Finalize();
+  if(!mpi_already_init)
+    MPI_Finalize();
 #endif
   upcxx::finalize();
 }
