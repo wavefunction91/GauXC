@@ -65,8 +65,9 @@ for flexible and agile development in the field of KS-DFT.
 Primary Developer and Maintainer: David Williams-Young - LBNL (dbwy at lbl dot gov) 
 
 GauXC has received major contributions from the following developers (in no particular order):
-* Thom Popovici (LBNL)     - Optimized sn-K kernels for CPU and GPU architectures
-* Teri Lambros (UW)        - Unrestricted DFT 
+* Thom Popovici (LBNL)          - Optimized sn-K kernels for CPU and GPU architectures
+* Teri Lambros (UW)             - Unrestricted (UKS) and Generalized (GKS) DFT
+* Daniel Mejia-Rodriguez (PNNL) - Meta-GGA DFT
 
 We have also receieved significant support from industry collaborators:
 * David Clark (NVIDIA)  - Optimization of critical kernels for NVIDIA architectures
