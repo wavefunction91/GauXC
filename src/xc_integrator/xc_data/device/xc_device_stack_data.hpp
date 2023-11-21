@@ -65,6 +65,11 @@ struct XCDeviceStackData : public XCDeviceData {
     int32_t* shell_to_bf_device = nullptr;
     int32_t* shell_sizes_device = nullptr;
 
+    double* dmat_s_device   = nullptr;
+    double* dmat_z_device   = nullptr;
+    double* vxc_s_device    = nullptr;
+    double* vxc_z_device    = nullptr;
+
     inline void reset() { std::memset( this, 0, sizeof(static_data) ); }
   };
 
@@ -88,12 +93,20 @@ struct XCDeviceStackData : public XCDeviceData {
     double* den_x_eval_device = nullptr; ///< d/dx density for task batch
     double* den_y_eval_device = nullptr; ///< d/dy density for task batch
     double* den_z_eval_device = nullptr; ///< d/dz density for task batch
+    
+    // U variables (UKS)
+    double* den_pos_eval_device = nullptr;
+    double* den_neg_eval_device = nullptr;
 
     // V variables / XC output
     double* gamma_eval_device  = nullptr; ///< gamma for task batch
     double* eps_eval_device    = nullptr; ///< XC energy density for task batch
     double* vrho_eval_device   = nullptr; ///< Rho XC derivative for task batch
     double* vgamma_eval_device = nullptr; ///< Gamma XC derivative for task batch
+                                          //
+    // V variables (UKS)
+    double* vrho_pos_eval_device  = nullptr;
+    double* vrho_neg_eval_device  = nullptr;
 
     inline void reset() { std::memset( this, 0, sizeof(base_stack_data) ); }
   };
@@ -114,6 +127,7 @@ struct XCDeviceStackData : public XCDeviceData {
     host_task_iterator, host_task_iterator) override final;
   void allocate_static_data_weights( int32_t natoms ) override final;
   void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) override final;
+  void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms ) override final;
   void allocate_static_data_den( int32_t nbf, int32_t nshells ) override final;
   void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) override final;
   void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, int32_t max_l ) override final;
@@ -121,11 +135,14 @@ struct XCDeviceStackData : public XCDeviceData {
   void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) override final;
   void send_static_data_density_basis( const double* P, int32_t ldp, 
     const BasisSet<double>& basis ) override final;
+  void send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz,
+    const BasisSet<double>& basis ) override final;
   void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) 
     override final;
   void send_static_data_exx_ek_screening( const double* V_max, int32_t ldv, const BasisSetMap&, const ShellPairCollection<double>& ) override final;
   void zero_den_integrands() override final;
   void zero_exc_vxc_integrands() override final;
+  void zero_exc_vxc_integrands(integrator_term_tracker t) override final;
   void zero_exc_grad_integrands() override final;
   void zero_exx_integrands() override final;
   void zero_exx_ek_screening_intermediates() override final;
@@ -138,6 +155,8 @@ struct XCDeviceStackData : public XCDeviceData {
   void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) override final;
 
   double* vxc_device_data() override;
+  double* vxc_s_device_data() override;
+  double* vxc_z_device_data() override;
   double* exc_device_data() override;
   double* nel_device_data() override;
   double* exx_k_device_data() override;

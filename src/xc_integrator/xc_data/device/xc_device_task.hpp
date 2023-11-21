@@ -58,6 +58,11 @@ struct XCDeviceTask {
   double*   gamma   = nullptr;
   double*   vrho    = nullptr;
   double*   vgamma  = nullptr;
+  
+  double* den_pos   = nullptr;
+  double* den_neg   = nullptr;
+  double* vrho_pos  = nullptr;
+  double* vrho_neg  = nullptr;
 
   int32_t iParent       = -1;
   double dist_nearest   = 0.;

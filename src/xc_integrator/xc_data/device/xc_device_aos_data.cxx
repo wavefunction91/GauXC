@@ -476,6 +476,11 @@ void XCDeviceAoSData::pack_and_send(
     buffer_adaptor vrho_mem( base_stack.vrho_eval_device, total_npts );
     buffer_adaptor vgamma_mem( base_stack.vgamma_eval_device, total_npts );
 
+    buffer_adaptor den_pos_mem( base_stack.den_pos_eval_device, total_npts );
+    buffer_adaptor den_neg_mem( base_stack.den_neg_eval_device, total_npts );
+    buffer_adaptor vrho_pos_mem( base_stack.vrho_pos_eval_device, total_npts );
+    buffer_adaptor vrho_neg_mem( base_stack.vrho_neg_eval_device, total_npts );
+
     for( auto& task : host_device_tasks ) {
       const auto npts    = task.npts;
       const auto nbe_bfn     = task.bfn_screening.nbe;
@@ -554,6 +559,17 @@ void XCDeviceAoSData::pack_and_send(
         task.ddeny = dden_y_mem.aligned_alloc<double>(npts, csl);
         task.ddenz = dden_z_mem.aligned_alloc<double>(npts, csl);
       }
+
+      if(reqt.grid_den_uks) {
+        task.den_pos    = den_pos_mem.aligned_alloc<double>( reqt.grid_den_size(npts), csl);
+        task.den_neg    = den_neg_mem.aligned_alloc<double>( reqt.grid_den_size(npts), csl);
+      }
+
+      if(reqt.grid_vrho_uks) {
+        task.vrho_pos    = vrho_pos_mem.aligned_alloc<double>( reqt.grid_vrho_size(npts), csl);
+        task.vrho_neg    = vrho_neg_mem.aligned_alloc<double>( reqt.grid_vrho_size(npts), csl);
+      }
+
 
       task.gamma = 
         gamma_mem.aligned_alloc<double>( reqt.grid_gamma_size(npts), csl);

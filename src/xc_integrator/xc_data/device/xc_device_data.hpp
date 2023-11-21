@@ -26,6 +26,20 @@ enum integrator_xc_approx : uint32_t {
   MGGA       = 3
 };
 
+enum integrator_ks_scheme : uint32_t {
+  RKS   = 0,
+  UKS   = 1,
+  GKS   = 2
+};
+
+enum density_ID : uint32_t {
+    DEN     = 0,    // RKS
+    DEN_S   = 1,    // UKS, GKS
+    DEN_Z   = 2,    // UKS, GKS
+    DEN_X   = 3,    // UKS, GKS
+    DEN_Y   = 4     // UKS, GKS
+};
+
 struct integrator_term_tracker {
   bool weights                   = false;
   bool den                       = false;
@@ -34,6 +48,7 @@ struct integrator_term_tracker {
   bool exx                       = false;
   bool exx_ek_screening          = false;
   integrator_xc_approx xc_approx = _UNDEFINED;
+  integrator_ks_scheme ks_scheme = RKS;
   inline void reset() {
     std::memset( this, 0, sizeof(integrator_term_tracker) );
   }
@@ -60,6 +75,9 @@ struct required_term_storage {
   bool grid_vrho     = false;
   bool grid_vgamma   = false;
 
+  bool grid_den_uks  = false;
+  bool grid_vrho_uks = false;
+
   inline size_t grid_den_size(size_t npts){ 
     return PRDVL(grid_den, npts);
   }
@@ -78,6 +96,14 @@ struct required_term_storage {
   inline size_t grid_vgamma_size(size_t npts){ 
     return PRDVL(grid_vgamma, npts);
   }
+  inline size_t grid_den_uks_size(size_t npts){
+    return PRDVL(grid_den_uks, 2 * npts);
+  }
+  inline size_t grid_vrho_uks_size(size_t npts){
+    return PRDVL(grid_vrho_uks, 2 * npts);
+  }
+
+
 
   // Task-local matrices
   bool task_bfn           = false;
@@ -232,12 +258,18 @@ struct required_term_storage {
       //const bool is_lda  = is_xc and tracker.xc_approx == LDA;
       const bool is_gga  = is_xc and tracker.xc_approx == GGA;
       const bool is_grad = tracker.exc_grad;
+      if( tracker.ks_scheme == RKS ){
+        grid_den      = true;
+        grid_den_grad = is_gga or is_grad;
+        grid_vrho     = true;
+      }
+      if( tracker.ks_scheme == UKS ){
+        grid_den_uks  = true;
+        grid_vrho_uks = true;
+      }
 
-      grid_den      = true;
-      grid_den_grad = is_gga or is_grad;
       grid_gamma    = is_gga;
       grid_eps      = true;
-      grid_vrho     = true;
       grid_vgamma   = is_gga;
 
       task_bfn          = true;
