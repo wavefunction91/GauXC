@@ -20,7 +20,7 @@ template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
   eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                  int64_t ldp, value_type* VXC, int64_t ldvxc,
-                 value_type* EXC ) {
+                 value_type* EXC, const IntegratorSettingsXC& ks_settings ) {
 
   const auto& basis = this->load_balancer_->basis();
 
@@ -45,7 +45,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
     //exc_vxc_local_work_( P, ldp, VXC, ldvxc, EXC, &N_EL );
-    exc_vxc_local_work_( P, ldp, nullptr, 0, VXC, ldvxc, nullptr, 0, EXC, &N_EL );
+    exc_vxc_local_work_( P, ldp, nullptr, 0, nullptr, 0, nullptr, 0,
+                         VXC, ldvxc, nullptr, 0, nullptr, 0, nullptr, 0, EXC, &N_EL, ks_settings );
   });
 
 
@@ -71,7 +72,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                       int64_t ldpz,
                       value_type* VXCs, int64_t ldvxcs,
                       value_type* VXCz, int64_t ldvxcz,
-                      value_type* EXC ) {
+                      value_type* EXC, const IntegratorSettingsXC& ks_settings) {
 
   const auto& basis = this->load_balancer_->basis();
 
@@ -98,7 +99,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    exc_vxc_local_work_( Ps, ldps, Pz, ldpz, VXCs, ldvxcs, VXCz, ldvxcz, EXC, &N_EL );
+    exc_vxc_local_work_( Ps, ldps, Pz, ldpz, nullptr, 0,nullptr, 0,
+                         VXCs, ldvxcs, VXCz, ldvxcz, nullptr, 0, nullptr, 0, EXC, &N_EL, ks_settings );
   });
 
 
@@ -118,18 +120,108 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 }
 
+template <typename ValueType>
+void ReferenceReplicatedXCHostIntegrator<ValueType>::
+  eval_exc_vxc_( int64_t m, int64_t n, const value_type* Ps,
+                      int64_t ldps,
+                      const value_type* Pz,
+                      int64_t ldpz,
+                      const value_type* Py,
+                      int64_t ldpy,
+                      const value_type* Px,
+                      int64_t ldpx,
+                      value_type* VXCs, int64_t ldvxcs,
+                      value_type* VXCz, int64_t ldvxcz,
+                      value_type* VXCy, int64_t ldvxcy,
+                      value_type* VXCx, int64_t ldvxcx,
+                      value_type* EXC, const IntegratorSettingsXC& ks_settings ) {
+
+  const auto& basis = this->load_balancer_->basis();
+
+  // Check that P / VXC are sane
+  const int64_t nbf = basis.nbf();
+  if( m != n )
+    GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
+  if( m != nbf )
+    GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
+  if( ldps < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPSCALAR");
+  if( ldpz < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPZ");
+  if( ldpy < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPX");
+  if( ldpx < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPY");
+  if( ldvxcs < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCSCALAR");
+  if( ldvxcz < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCZ");
+  if( ldvxcy < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCX");
+  if( ldvxcx < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCY");
+
+  // Get Tasks
+  this->load_balancer_->get_tasks();
+
+  // Temporary electron count to judge integrator accuracy
+  value_type N_EL;
+   
+  // Compute Local contributions to EXC / VXC
+  this->timer_.time_op("XCIntegrator.LocalWork", [&](){
+    exc_vxc_local_work_( Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx, 
+                         VXCs, ldvxcs, VXCz, ldvxcz,
+                         VXCy, ldvxcy, VXCx, ldvxcx, EXC, &N_EL, ks_settings );
+  });
+
+
+  // Reduce Results
+  this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+
+    if( not this->reduction_driver_->takes_host_memory() )
+      GAUXC_GENERIC_EXCEPTION("This Module Only Works With Host Reductions");
+
+    this->reduction_driver_->allreduce_inplace( VXCs, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( VXCz, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( VXCy, nbf*nbf, ReductionOp::Sum ); 
+    this->reduction_driver_->allreduce_inplace( VXCx, nbf*nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
+
+  });
+
+
+}
+
+
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
   exc_vxc_local_work_( const value_type* Ps, int64_t ldps,
                        const value_type* Pz, int64_t ldpz,
+                       const value_type* Py, int64_t ldpy,
+                       const value_type* Px, int64_t ldpx,
                        value_type* VXCs, int64_t ldvxcs,
-                       value_type* VXCz, int64_t ldvxcz, 
-                       value_type* EXC, value_type *N_EL ) {
+                       value_type* VXCz, int64_t ldvxcz,
+                       value_type* VXCy, int64_t ldvxcy,
+                       value_type* VXCx, int64_t ldvxcx,
+                       value_type* EXC, value_type *N_EL, const IntegratorSettingsXC& settings) {
+
+  const bool is_gks = (Pz != nullptr) and (VXCz != nullptr) and (VXCy != nullptr) and (VXCx != nullptr);
+  const bool is_uks = (Pz != nullptr) and (VXCz != nullptr) and (VXCy == nullptr) and (VXCx == nullptr);
+  const bool is_rks = not is_uks and not is_gks;
+  if (not is_rks and not is_uks and not is_gks) {
+    GAUXC_GENERIC_EXCEPTION("MUST BE EITHER RKS, UKS, or GKS!");
+  }
 
 
-  const bool is_uks = (Pz != nullptr) and (VXCz != nullptr);
-  const bool is_rks = not is_uks; // TODO: GKS
+  // Misc KS settings
+  IntegratorSettingsKS ks_settings;
+  if( auto* tmp = dynamic_cast<const IntegratorSettingsKS*>(&settings) ) {
+    ks_settings = *tmp;
+  }
+
+  const double gks_dtol = ks_settings.gks_dtol;
 
   // Cast LWD to LocalHostWorkDriver
   auto* lwd = dynamic_cast<LocalHostWorkDriver*>(this->local_work_driver_.get());
@@ -141,6 +233,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   const bool needs_laplacian = func.is_mgga() ? true : false; // TODO: Needs Laplacian Check
   
+  if (func.is_mgga() and is_gks) {
+    GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED WITH mGGA FUNCTIONALS!");
+  }
+
   // Get basis map
   BasisSetMap basis_map(basis,mol);
 
@@ -168,10 +264,18 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       VXCs[i + j*ldvxcs] = 0.;
     }
   }
-  if(is_uks) {
+  if(not is_rks) {
     for( auto j = 0; j < nbf; ++j ) {
       for( auto i = 0; i < nbf; ++i ) {
         VXCz[i + j*ldvxcz] = 0.;
+      }
+    }
+  }
+  if(is_gks) {
+    for( auto j = 0; j < nbf; ++j ) {
+      for( auto i = 0; i < nbf; ++i ) {
+        VXCy[i + j*ldvxcy] = 0.;
+        VXCx[i + j*ldvxcx] = 0.;
       }
     }
   }
@@ -188,7 +292,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   #pragma omp for schedule(dynamic)
   for( size_t iT = 0; iT < ntasks; ++iT ) {
-
+     
     //std::cout << iT << "/" << ntasks << std::endl;
     // Alias current task
     const auto& task = tasks[iT];
@@ -203,13 +307,15 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const int32_t* shell_list = task.bfn_screening.shell_list.data();
 
     // Allocate enough memory for batch
-
-    const size_t spin_dim_scal = is_rks ? 1 : 2; 
+   
+    const size_t spin_dim_scal = is_rks ? 1 : is_uks ? 2 : 4; // last case is_gks
+    const size_t sds          = is_rks ? 1 : 2;
+    const size_t gks_mod_KH = is_gks ? 6*npts : 0; // used to store H and H
     const size_t mgga_dim_scal = func.is_mgga() ? 4 : 1; // basis + d1basis
 
     // Things that every calc needs
     host_data.nbe_scr .resize(nbe  * nbe);
-    host_data.zmat    .resize(npts * nbe * spin_dim_scal * mgga_dim_scal); 
+    host_data.zmat    .resize(npts * nbe * spin_dim_scal * mgga_dim_scal + gks_mod_KH); 
     host_data.eps     .resize(npts);
     host_data.vrho    .resize(npts * spin_dim_scal);
 
@@ -218,7 +324,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       host_data.basis_eval .resize( npts * nbe );
       host_data.den_scr    .resize( npts * spin_dim_scal);
     }
-
+     
     // GGA data requirements
     const size_t gga_dim_scal = is_rks ? 1 : 3;
     if( func.is_gga() ){
@@ -232,8 +338,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       // TODO: Add check for Laplacian-dependent functionals
       if ( needs_laplacian ) {
         host_data.basis_eval .resize( 11 * npts * nbe ); // basis + grad (3) + hess (6) + lapl 
-	host_data.lapl       .resize( spin_dim_scal * npts );
-	host_data.vlapl      .resize( spin_dim_scal * npts );
+        host_data.lapl       .resize( spin_dim_scal * npts );
+        host_data.vlapl      .resize( spin_dim_scal * npts );
       } else {
         host_data.basis_eval .resize( 4 * npts * nbe ); // basis + grad (3)
       }
@@ -252,10 +358,16 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     auto* zmat       = host_data.zmat.data();
 
     decltype(zmat) zmat_z = nullptr;
+    decltype(zmat) zmat_x = nullptr;
+    decltype(zmat) zmat_y = nullptr;
     if(!is_rks) {
       zmat_z = zmat + mgga_dim_scal * nbe * npts;
     }
-
+    if(is_gks) {
+      zmat_x = zmat_z + nbe * npts;
+      zmat_y = zmat_x + nbe * npts;
+    }
+     
     auto* eps        = host_data.eps.data();
     auto* gamma      = host_data.gamma.data();
     auto* tau        = host_data.tau.data();
@@ -279,6 +391,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     value_type* dden_x_eval = nullptr;
     value_type* dden_y_eval = nullptr;
     value_type* dden_z_eval = nullptr;
+    value_type* K = nullptr;
+    value_type* H = nullptr;
+    if (is_gks) { K = zmat + npts * nbe * 4; }
     value_type* mmat_x      = nullptr;
     value_type* mmat_y      = nullptr;
     value_type* mmat_z      = nullptr;
@@ -293,6 +408,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       dden_x_eval   = den_eval    + spin_dim_scal * npts;
       dden_y_eval   = dden_x_eval + spin_dim_scal * npts;
       dden_z_eval   = dden_y_eval + spin_dim_scal * npts;
+      if (is_gks) { H = K + 3*npts;}
     }
 
     if ( func.is_mgga() ) {
@@ -306,18 +422,18 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       mmat_y        = mmat_x + npts * nbe;
       mmat_z        = mmat_y + npts * nbe;
       if ( needs_laplacian ) {
-	d2basis_xx_eval = dbasis_z_eval + npts * nbe;
-	d2basis_xy_eval = d2basis_xx_eval + npts * nbe;
-	d2basis_xz_eval = d2basis_xy_eval + npts * nbe;
-	d2basis_yy_eval = d2basis_xz_eval + npts * nbe;
-	d2basis_yz_eval = d2basis_yy_eval + npts * nbe;
-	d2basis_zz_eval = d2basis_yz_eval + npts * nbe;
-	lbasis_eval     = d2basis_zz_eval + npts * nbe;
+        d2basis_xx_eval = dbasis_z_eval + npts * nbe;
+        d2basis_xy_eval = d2basis_xx_eval + npts * nbe;
+        d2basis_xz_eval = d2basis_xy_eval + npts * nbe;
+        d2basis_yy_eval = d2basis_xz_eval + npts * nbe;
+        d2basis_yz_eval = d2basis_yy_eval + npts * nbe;
+        d2basis_zz_eval = d2basis_yz_eval + npts * nbe;
+        lbasis_eval     = d2basis_zz_eval + npts * nbe;
       }
       if(is_uks) {
-	mmat_x_z = zmat_z + npts * nbe;
-	mmat_y_z = mmat_x_z + npts * nbe;
-	mmat_z_z = mmat_y_z + npts * nbe;
+        mmat_x_z = zmat_z + npts * nbe;
+        mmat_y_z = mmat_x_z + npts * nbe;
+        mmat_z_z = mmat_y_z + npts * nbe;
       }
     }
 
@@ -330,11 +446,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Evaluate Collocation (+ Grad and Hessian)
     if( func.is_mgga() ) {
       if ( needs_laplacian ) {
-	// TODO: Modify gau2grid to compute Laplacian instead of full hessian
+  // TODO: Modify gau2grid to compute Laplacian instead of full hessian
         lwd->eval_collocation_hessian( npts, nshells, nbe, points, basis, shell_list,
           basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval, d2basis_xx_eval,
-	  d2basis_xy_eval, d2basis_xz_eval, d2basis_yy_eval, d2basis_yz_eval,
-	  d2basis_zz_eval);
+          d2basis_xy_eval, d2basis_xz_eval, d2basis_yy_eval, d2basis_yz_eval,
+          d2basis_zz_eval);
         blas::lacpy( 'A', nbe, npts, d2basis_xx_eval, nbe, lbasis_eval, nbe );
         blas::axpy( nbe * npts, 1., d2basis_yy_eval, 1, lbasis_eval, 1);
         blas::axpy( nbe * npts, 1., d2basis_zz_eval, 1, lbasis_eval, 1);
@@ -351,7 +467,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       lwd->eval_collocation( npts, nshells, nbe, points, basis, shell_list,
         basis_eval );
 
-
+     
     // Evaluate X matrix (fac * P * B) -> store in Z
     const auto xmat_fac = is_rks ? 2.0 : 1.0; // TODO Fix for spinor RKS input
     lwd->eval_xmat( mgga_dim_scal * npts, nbf, nbe, submat_map, xmat_fac, Ps, ldps, basis_eval, nbe,
@@ -362,19 +478,25 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       lwd->eval_xmat( mgga_dim_scal * npts, nbf, nbe, submat_map, 1.0, Pz, ldpz, basis_eval, nbe,
         zmat_z, nbe, nbe_scr);
     }
-
-
+     
+    if(is_gks) {
+      lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, Py, ldpy, basis_eval, nbe,
+        zmat_x, nbe, nbe_scr);
+      lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, Px, ldpx, basis_eval, nbe,
+        zmat_y, nbe, nbe_scr);
+    }
+     
     // Evaluate U and V variables
     if( func.is_mgga() ) {
       if (is_rks) {
         lwd->eval_uvvar_mgga_rks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
-	  dbasis_z_eval, lbasis_eval, zmat, nbe, mmat_x, mmat_y, mmat_z, 
-	  nbe, den_eval, dden_x_eval, dden_y_eval, dden_z_eval, gamma, tau, lapl);
+          dbasis_z_eval, lbasis_eval, zmat, nbe, mmat_x, mmat_y, mmat_z, 
+          nbe, den_eval, dden_x_eval, dden_y_eval, dden_z_eval, gamma, tau, lapl);
       } else if (is_uks) {
         lwd->eval_uvvar_mgga_uks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
-	  dbasis_z_eval, lbasis_eval, zmat, nbe, zmat_z, nbe, 
-	  mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe, 
-	  den_eval, dden_x_eval, dden_y_eval, dden_z_eval, gamma, tau, lapl);
+          dbasis_z_eval, lbasis_eval, zmat, nbe, zmat_z, nbe, 
+          mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe, 
+          den_eval, dden_x_eval, dden_y_eval, dden_z_eval, gamma, tau, lapl);
       }
     } else if ( func.is_gga() ) {
       if(is_rks) {
@@ -385,13 +507,21 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         lwd->eval_uvvar_gga_uks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
           dbasis_z_eval, zmat, nbe, zmat_z, nbe, den_eval, dden_x_eval, 
           dden_y_eval, dden_z_eval, gamma );
+      } else if(is_gks) {
+        lwd->eval_uvvar_gga_gks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
+          dbasis_z_eval, zmat, nbe, zmat_z, nbe, zmat_x, nbe, zmat_y, nbe, den_eval, dden_x_eval,
+          dden_y_eval, dden_z_eval, gamma, K, H, gks_dtol );
       }
+       
      } else {
       if(is_rks) {
         lwd->eval_uvvar_lda_rks( npts, nbe, basis_eval, zmat, nbe, den_eval );
       } else if(is_uks) {
         lwd->eval_uvvar_lda_uks( npts, nbe, basis_eval, zmat, nbe, zmat_z, nbe,
           den_eval );
+      } else if(is_gks) {
+        lwd->eval_uvvar_lda_gks( npts, nbe, basis_eval, zmat, nbe, zmat_z, nbe,
+          zmat_x, nbe, zmat_y, nbe, den_eval, K, gks_dtol );
       }
      }
     
@@ -406,10 +536,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Factor weights into XC results
     for( int32_t i = 0; i < npts; ++i ) {
       eps[i]  *= weights[i];
-      vrho[spin_dim_scal*i] *= weights[i];
-      if(not is_rks) vrho[spin_dim_scal*i+1] *= weights[i];
+      vrho[sds*i] *= weights[i];
+      if(not is_rks) vrho[sds*i+1] *= weights[i];
     }
-
+     
     if( func.is_gga() ){
       for( int32_t i = 0; i < npts; ++i ) {
          vgamma[gga_dim_scal*i] *= weights[i];
@@ -422,21 +552,21 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     if( func.is_mgga() ){
       for( int32_t i = 0; i < npts; ++i) {
-	vtau[spin_dim_scal*i]  *= weights[i];
-	vgamma[gga_dim_scal*i] *= weights[i];
-	if(not is_rks) {
-	  vgamma[gga_dim_scal*i+1] *= weights[i];
-	  vgamma[gga_dim_scal*i+2] *= weights[i];
-	  vtau[spin_dim_scal*i+1]  *= weights[i];
-	}
+        vtau[spin_dim_scal*i]  *= weights[i];
+        vgamma[gga_dim_scal*i] *= weights[i];
+        if(not is_rks) {
+          vgamma[gga_dim_scal*i+1] *= weights[i];
+          vgamma[gga_dim_scal*i+2] *= weights[i];
+          vtau[spin_dim_scal*i+1]  *= weights[i];
+        }
 
-	// TODO: Add checks for Lapacian-dependent functionals
-	if( needs_laplacian ) {
+        // TODO: Add checks for Lapacian-dependent functionals
+        if( needs_laplacian ) {
           vlapl[spin_dim_scal*i] *= weights[i];
           if(not is_rks) {
             vlapl[spin_dim_scal*i+1] *= weights[i];
-	  }
-	}
+          }
+        }
       }
     }
 
@@ -445,17 +575,17 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Evaluate Z matrix for VXC
     if( func.is_mgga() ) {
       if(is_rks) {
-	lwd->eval_zmat_mgga_vxc_rks( npts, nbe, vrho, vgamma, vlapl, basis_eval, dbasis_x_eval,
-	                        dbasis_y_eval, dbasis_z_eval, lbasis_eval,
-				dden_x_eval, dden_y_eval, dden_z_eval, zmat, nbe);
-	lwd->eval_mmat_mgga_vxc_rks( npts, nbe, vtau, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
-	                        mmat_x, mmat_y, mmat_z, nbe);
+        lwd->eval_zmat_mgga_vxc_rks( npts, nbe, vrho, vgamma, vlapl, basis_eval, dbasis_x_eval,
+                                     dbasis_y_eval, dbasis_z_eval, lbasis_eval,
+                                     dden_x_eval, dden_y_eval, dden_z_eval, zmat, nbe);
+        lwd->eval_mmat_mgga_vxc_rks( npts, nbe, vtau, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
+                                     mmat_x, mmat_y, mmat_z, nbe);
       } else if (is_uks) {
-	lwd->eval_zmat_mgga_vxc_uks( npts, nbe, vrho, vgamma, vlapl, basis_eval, dbasis_x_eval,
-	                        dbasis_y_eval, dbasis_z_eval, lbasis_eval,
-				dden_x_eval, dden_y_eval, dden_z_eval, zmat, nbe, zmat_z, nbe);
-	lwd->eval_mmat_mgga_vxc_uks( npts, nbe, vtau, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
-	                        mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe);
+        lwd->eval_zmat_mgga_vxc_uks( npts, nbe, vrho, vgamma, vlapl, basis_eval, dbasis_x_eval,
+                                     dbasis_y_eval, dbasis_z_eval, lbasis_eval,
+                                     dden_x_eval, dden_y_eval, dden_z_eval, zmat, nbe, zmat_z, nbe);
+        lwd->eval_mmat_mgga_vxc_uks( npts, nbe, vtau, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
+                                     mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe);
       }
     }
     else if( func.is_gga() ) {
@@ -467,16 +597,25 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         lwd->eval_zmat_gga_vxc_uks( npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
                                 dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval,
                                 dden_z_eval, zmat, nbe, zmat_z, nbe);
+      } else if(is_gks) {
+        lwd->eval_zmat_gga_vxc_gks( npts, nbe, vrho, vgamma, basis_eval, dbasis_x_eval,
+                                dbasis_y_eval, dbasis_z_eval, dden_x_eval, dden_y_eval,
+                                dden_z_eval, zmat, nbe, zmat_z, nbe, zmat_x, nbe, zmat_y, nbe,
+                                K, H);
       }
+       
     } else {
       if(is_rks) {
         lwd->eval_zmat_lda_vxc_rks( npts, nbe, vrho, basis_eval, zmat, nbe );
       } else if(is_uks) {
         lwd->eval_zmat_lda_vxc_uks( npts, nbe, vrho, basis_eval, zmat, nbe, zmat_z, nbe );
+      } else if(is_gks) {
+        lwd->eval_zmat_lda_vxc_gks( npts, nbe, vrho, basis_eval, zmat, nbe, zmat_z, nbe, 
+                                    zmat_x, nbe, zmat_y, nbe, K);
       }
     }
 
-
+     
     // Incremeta LT of VXC
     #pragma omp critical
     {
@@ -492,7 +631,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       if(not is_rks) {
         lwd->inc_vxc( mgga_dim_scal * npts, nbf, nbe, basis_eval, submat_map, zmat_z, nbe,VXCz, ldvxcz, nbe_scr);
       }
-
+      if(is_gks) {
+        lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat_x, nbe, VXCy, ldvxcy,
+          nbe_scr);
+        lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat_y, nbe, VXCx, ldvxcx,
+          nbe_scr);
+      }
+       
+ 
     }
 
   } // Loop over tasks
@@ -509,6 +655,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     for( int32_t j = 0;   j < nbf; ++j ) {
       for( int32_t i = j+1; i < nbf; ++i ) {
         VXCz[ j + i*ldvxcz ] = VXCz[ i + j*ldvxcz ];
+      }
+    }
+  }
+  if( is_gks) {
+    for( int32_t j = 0;   j < nbf; ++j ) {
+      for( int32_t i = j+1; i < nbf; ++i ) {
+        VXCy[ j + i*ldvxcy ] = VXCy[ i + j*ldvxcy ];
+        VXCx[ j + i*ldvxcx ] = VXCx[ i + j*ldvxcx ];
       }
     }
   }

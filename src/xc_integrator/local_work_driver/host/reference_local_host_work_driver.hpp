@@ -82,6 +82,10 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
   void eval_uvvar_lda_uks( size_t npts, size_t nbe, const double* basis_eval,
     const double* Xs, size_t ldxs, const double* Xz, size_t ldxz, 
     double* den_eval) override;
+  void eval_uvvar_lda_gks( size_t npts, size_t nbe, const double* basis_eval,
+    const double* Xs, size_t ldxs, const double* Xz, size_t ldxz,
+    const double* Xx, size_t ldxx, const double* Xy, size_t ldxy,
+    double* den_eval, double* K, const double dtol) override;
 
   void eval_uvvar_gga_rks( size_t npts, size_t nbe, const double* basis_eval,
     const double* dbasis_x_eval, const double *dbasis_y_eval, 
@@ -94,7 +98,13 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
     const double* Xz, size_t ldxz, double* den_eval,
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval,
     double* gamma ) override;
-
+  void eval_uvvar_gga_gks( size_t npts, size_t nbe, const double* basis_eval,
+    const double* dbasis_x_eavl, const double *dbasis_y_eval,
+    const double* dbasis_z_eval, const double* Xs, size_t ldxs,
+    const double* Xz, size_t ldxz, const double* Xx, size_t ldxx,
+    const double* Xy, size_t ldxy, double* den_eval,
+    double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma,
+    double* K, double* H, const double dtol ) override;
 
   void eval_uvvar_mgga_rks( size_t npts, size_t nbe, const double* basis_eval,
     const double* dbasis_x_eval, const double* dbasis_y_eval, 
@@ -118,7 +128,9 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
     const double* basis_eval, double* Z, size_t ldz ) override;
   void eval_zmat_lda_vxc_uks( size_t npts, size_t nbe, const double* vrho,
     const double* basis_eval, double* Zs, size_t ldzs, double* Zz, size_t ldzz ) override;
-
+  void eval_zmat_lda_vxc_gks( size_t npts, size_t nbe, const double* vrho,
+    const double* basis_eval, double* Zs, size_t ldzs, double* Zz, size_t ldzz,
+    double* Zx, size_t ldzx,double* Zy, size_t ldzy, double *K ) override;
 
   void eval_zmat_gga_vxc_rks( size_t npts, size_t nbe, const double* vrho, 
     const double* vgamma, const double* basis_eval, const double* dbasis_x_eval,
@@ -130,6 +142,12 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
     const double* dbasis_y_eval, const double* dbasis_z_eval,
     const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
     double* Zs, size_t ldzs, double* Zz, size_t ldzz ) override;
+  void eval_zmat_gga_vxc_gks( size_t npts, size_t nbe, const double* vrho,
+    const double* vgamma, const double* basis_eval, const double* dbasis_x_eval,
+    const double* dbasis_y_eval, const double* dbasis_z_eval,
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
+    double* Zs, size_t ldzs, double* Zz, size_t ldzz, double* Zx, size_t ldzx,
+    double* Zy, size_t ldzy, double* K, double* H ) override;
 
 
   void eval_zmat_mgga_vxc_rks( size_t npts, size_t nbe, const double* vrho, 

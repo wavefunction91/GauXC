@@ -33,17 +33,25 @@ typename XCIntegrator<MatrixType>::value_type
 
 template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_vxc_type_rks
-  XCIntegrator<MatrixType>::eval_exc_vxc( const MatrixType& P ) {
+  XCIntegrator<MatrixType>::eval_exc_vxc( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-  return pimpl_->eval_exc_vxc(P);
+  return pimpl_->eval_exc_vxc(P, ks_settings);
 };
 
 template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_vxc_type_uks
-  XCIntegrator<MatrixType>::eval_exc_vxc( const MatrixType& Pscalar, const MatrixType& Pz ) {
+  XCIntegrator<MatrixType>::eval_exc_vxc( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-  return pimpl_->eval_exc_vxc(Pscalar, Pz);
+  return pimpl_->eval_exc_vxc(Ps, Pz, ks_settings);
 };
+
+template <typename MatrixType>
+typename XCIntegrator<MatrixType>::exc_vxc_type_gks
+  XCIntegrator<MatrixType>::eval_exc_vxc( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, 
+                                          const IntegratorSettingsXC& ks_settings ) {
+      if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+        return pimpl_->eval_exc_vxc(Ps, Pz, Py, Px, ks_settings);
+  };
 
 template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_grad_type

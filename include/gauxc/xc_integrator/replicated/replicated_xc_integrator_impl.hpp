@@ -40,14 +40,28 @@ protected:
                                int64_t ldp, value_type* N_EL ) = 0;
   virtual void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                               int64_t ldp, value_type* VXC, int64_t ldvxc,
-                              value_type* EXC ) = 0;
-  virtual void eval_exc_vxc_( int64_t m, int64_t n, const value_type* Pscalar,
-                              int64_t ldpscalar,
+                              value_type* EXC, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual void eval_exc_vxc_( int64_t m, int64_t n, const value_type* Ps,
+                              int64_t ldps,
                               const value_type* Pz,
                               int64_t ldpz,
-                              value_type* VXCscalar, int64_t ldvxcscalar,
+                              value_type* VXCs, int64_t ldvxcs,
                               value_type* VXCz, int64_t ldvxcz,
-                              value_type* EXC ) = 0;
+                              value_type* EXC, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual void eval_exc_vxc_( int64_t m, int64_t n, const value_type* Ps,
+                              int64_t ldps,
+                              const value_type* Pz,
+                              int64_t ldpz,
+                              const value_type* Py,
+                              int64_t ldpy,
+                              const value_type* Px,
+                              int64_t ldpx,
+                              value_type* VXCs, int64_t ldvxcs,
+                              value_type* VXCz, int64_t ldvxcz,
+                              value_type* VXCy, int64_t ldvxcy,
+                              value_type* VXCx, int64_t ldvxcx,
+                              value_type* EXC, const IntegratorSettingsXC& ks_settings ) = 0;
+
   virtual void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
                                int64_t ldp, value_type* EXC_GRAD ) = 0;
   virtual void eval_exx_( int64_t m, int64_t n, const value_type* P,
@@ -69,15 +83,29 @@ public:
 
   void eval_exc_vxc( int64_t m, int64_t n, const value_type* P,
                      int64_t ldp, value_type* VXC, int64_t ldvxc,
-                     value_type* EXC ); 
+                     value_type* EXC, const IntegratorSettingsXC& ks_settings ); 
 
-  void eval_exc_vxc( int64_t m, int64_t n, const value_type* Pscalar,
-                     int64_t ldpscalar,
+  void eval_exc_vxc( int64_t m, int64_t n, const value_type* Ps,
+                     int64_t ldps,
                      const value_type* Pz,
                      int64_t ldpz,
-                     value_type* VXCscalar, int64_t ldvxcscalar,
+                     value_type* VXCs, int64_t ldvxcs,
                      value_type* VXCz, int64_t ldvxcz,
-                     value_type* EXC );
+                     value_type* EXC, const IntegratorSettingsXC& ks_settings );
+  void eval_exc_vxc( int64_t m, int64_t n, const value_type* Ps,
+                     int64_t ldps,
+                     const value_type* Pz,
+                     int64_t ldpz,
+                     const value_type* Py,
+                     int64_t ldpy,
+                     const value_type* Px,
+                     int64_t ldpx,
+                     value_type* VXCs, int64_t ldvxcs,
+                     value_type* VXCz, int64_t ldvxcz,
+                     value_type* VXCy, int64_t ldvxcy,
+                     value_type* VXCx, int64_t ldvxcx,
+                     value_type* EXC, const IntegratorSettingsXC& ks_settings );
+
 
   void eval_exc_grad( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp, value_type* EXC_GRAD );
