@@ -32,7 +32,7 @@ enum integrator_ks_scheme : uint32_t {
   GKS   = 2
 };
 
-enum density_ID : uint32_t {
+enum density_id : uint32_t {
     DEN     = 0,    // RKS
     DEN_S   = 1,    // UKS, GKS
     DEN_Z   = 2,    // UKS, GKS

@@ -67,8 +67,12 @@ struct XCDeviceStackData : public XCDeviceData {
 
     double* dmat_s_device   = nullptr;
     double* dmat_z_device   = nullptr;
+    double* dmat_x_device   = nullptr;
+    double* dmat_y_device   = nullptr;
     double* vxc_s_device    = nullptr;
     double* vxc_z_device    = nullptr;
+    double* vxc_x_device    = nullptr;
+    double* vxc_y_device    = nullptr;
 
     inline void reset() { std::memset( this, 0, sizeof(static_data) ); }
   };

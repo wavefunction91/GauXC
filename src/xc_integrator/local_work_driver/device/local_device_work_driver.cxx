@@ -77,6 +77,11 @@ void LocalDeviceWorkDriver::eval_xmat( double fac, XCDeviceData* device_data, bo
   pimpl_->eval_xmat(fac, device_data, do_grad);
 }
 
+void LocalDeviceWorkDriver::eval_xmat( double fac, XCDeviceData* device_data, bool do_grad, density_id den ) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_xmat(fac, device_data, do_grad, den);
+}
+
 void LocalDeviceWorkDriver::eval_exx_gmat( XCDeviceData* device_data, 
   const BasisSetMap& basis_map) {
   throw_if_invalid_pimpl(pimpl_);
