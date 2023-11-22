@@ -370,6 +370,7 @@ struct XCDeviceData {
   virtual void reset_allocations() = 0;
   virtual void allocate_static_data_weights( int32_t natoms ) = 0;
   virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) = 0;
+  virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms ) = 0;
   virtual void allocate_static_data_den( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) = 0;
   virtual void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, int32_t max_l ) = 0;
@@ -378,6 +379,7 @@ struct XCDeviceData {
   // Send persistent data from host to device
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
   virtual void send_static_data_density_basis( const double* P, int32_t ldp, const BasisSet<double>& basis ) = 0;
+  virtual void send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz, const BasisSet<double>& basis ) = 0;
   virtual void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) = 0;
   virtual void send_static_data_exx_ek_screening( const double* V_max, int32_t ldv, const BasisSetMap&, const ShellPairCollection<double>& ) = 0;
 
@@ -386,6 +388,7 @@ struct XCDeviceData {
 
   /// Zero out the EXC / VXC integrands in device memory
   virtual void zero_exc_vxc_integrands() = 0;
+  virtual void zero_exc_vxc_integrands(integrator_term_tracker enabled_terms) = 0;
 
   /// Zero out the EXC Gradient integrands in device memory
   virtual void zero_exc_grad_integrands() = 0;
@@ -424,6 +427,8 @@ struct XCDeviceData {
    */
   virtual void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
     double* VXC, int32_t ldvxc ) = 0;
+  virtual void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
+    double* VXCs, int32_t ldvxcs, double* VXCz, int32_t ldvxcz ) = 0;
 
   /** Retreive EXC Gradient integrands from device memory
    *
@@ -448,6 +453,8 @@ struct XCDeviceData {
   virtual void populate_submat_maps ( size_t, host_task_iterator begin, host_task_iterator end, const BasisSetMap& ) = 0;
 
   virtual double* vxc_device_data() = 0;
+  virtual double* vxc_z_device_data() = 0;
+  virtual double* vxc_s_device_data() = 0;
   virtual double* exc_device_data() = 0;
   virtual double* nel_device_data() = 0;
   virtual double* exx_k_device_data() = 0;
