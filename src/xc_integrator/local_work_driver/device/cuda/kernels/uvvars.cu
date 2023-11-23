@@ -277,7 +277,7 @@ __global__ void eval_den_kern( size_t        ntasks,
 
 
 
-void eval_den_uvars( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id den_select,
+void eval_u_den( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id den_select,
   XCDeviceTask* device_tasks, device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
@@ -289,10 +289,15 @@ void eval_den_uvars( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_i
   switch( den_select ){
     case DEN:
       eval_den_kern<DEN><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+      break;
     case DEN_S:
       eval_den_kern<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+      break;
     case DEN_Z:
       eval_den_kern<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+      break;
+    default:
+      GAUXC_GENERIC_EXCEPTION("eval_u_den: den_select not properly set");
   }
 
 }

@@ -401,19 +401,21 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   if( not lb_state.modified_weights_are_stored ) {
     GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
   }
+  
 
+  integrator_term_tracker enabled_terms;
+  enabled_terms.exc_vxc = true;
+  enabled_terms.ks_scheme = UKS;
+  
   // Do XC integration in task batches
   const auto nbf     = basis.nbf();
   const auto nshells = basis.nshells();
   device_data.reset_allocations();
-  device_data.allocate_static_data_exc_vxc( nbf, nshells );
+  device_data.allocate_static_data_exc_vxc( nbf, nshells, enabled_terms );
   device_data.send_static_data_density_basis( Ps, ldps, Pz, ldpz, basis );
 
 
   // Processes batches in groups that saturadate available device memory
-  integrator_term_tracker enabled_terms;
-  enabled_terms.exc_vxc = true;
-  enabled_terms.ks_scheme = UKS;
   if( func.is_lda() )      enabled_terms.xc_approx = integrator_xc_approx::LDA; 
   else if( func.is_gga() ) enabled_terms.xc_approx = integrator_xc_approx::GGA; 
   else GAUXC_GENERIC_EXCEPTION("XC Approx NYI");
@@ -437,7 +439,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->eval_collocation( &device_data );
 
     // Evaluate X matrix
-    lwd->eval_xmat( 0.5, &device_data, DEN_S );
+    lwd->eval_xmat( 0.5, &device_data, false, DEN_S );
     
     // Contact X matrix with bf -> den_eval
     lwd->eval_den( &device_data, DEN_S );

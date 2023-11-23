@@ -446,7 +446,7 @@ void AoSScheme1Base::eval_den( XCDeviceData* _data, density_id den_select ){
 
   // Evaluate U variables
   auto aos_stack     = data->aos_stack;
-  eval_den_uvars( ntasks, nbe_max, npts_max, den_select,
+  eval_u_den( ntasks, nbe_max, npts_max, den_select,
     aos_stack.device_tasks, data->device_backend_->queue() );
 
 }
@@ -657,12 +657,31 @@ void AoSScheme1Base::eval_xmat( double fac, XCDeviceData* _data, bool do_grad, d
   auto tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
 
-  // Pack density matrix 
+  // Set correct density matrix pointer on the stack
   const auto nbf = data->global_dims.nbf;
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
   auto static_stack  = data->static_stack;
   auto aos_stack     = data->aos_stack;
-  sym_pack_submat( ntasks, aos_stack.device_tasks, static_stack.dmat_device, 
+  double* dmat_ptr = nullptr;
+  switch ( den_select ) {
+    case DEN_S:
+      dmat_ptr = static_stack.dmat_s_device;
+      break;
+    case DEN_Z:
+      dmat_ptr = static_stack.dmat_z_device;
+      break;
+    case DEN_X:
+      dmat_ptr = static_stack.dmat_x_device;
+      break;
+    case DEN_Y:
+      dmat_ptr = static_stack.dmat_y_device;
+      break;
+    default:
+      GAUXC_GENERIC_EXCEPTION("eval_xmat: den_select not set");
+  }
+
+  // Pack density matrix 
+  sym_pack_submat( ntasks, aos_stack.device_tasks, dmat_ptr, 
     nbf, submat_block_size, data->device_backend_->queue() );
 
 
@@ -677,17 +696,6 @@ void AoSScheme1Base::eval_xmat( double fac, XCDeviceData* _data, bool do_grad, d
   // Launch GEMM in round-robin
   const auto n_blas_streams = data->device_backend_->blas_pool_size();
   
-  double* dmat_ptr = nullptr;
-  switch ( den_select ) {
-    case DEN_S:
-      dmat_ptr = static_stack.dmat_s_device;
-    case DEN_Z:
-      dmat_ptr = static_stack.dmat_z_device;
-    case DEN_X:
-      dmat_ptr = static_stack.dmat_x_device;
-    case DEN_Y:
-      dmat_ptr = static_stack.dmat_y_device;
-  }
    
 
   //size_t nsingle = 0;

@@ -561,8 +561,8 @@ void XCDeviceAoSData::pack_and_send(
       }
 
       if(reqt.grid_den_uks) {
-        task.den_pos    = den_pos_mem.aligned_alloc<double>( reqt.grid_den_size(npts), csl);
-        task.den_neg    = den_neg_mem.aligned_alloc<double>( reqt.grid_den_size(npts), csl);
+        task.den_pos    = den_pos_mem.aligned_alloc<double>( reqt.grid_den_s_size(npts), csl);
+        task.den_neg    = den_neg_mem.aligned_alloc<double>( reqt.grid_den_z_size(npts), csl);
       }
 
       if(reqt.grid_vrho_uks) {
