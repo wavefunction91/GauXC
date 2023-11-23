@@ -437,14 +437,15 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->eval_collocation( &device_data );
 
     // Evaluate X matrix
-    lwd->eval_xmat( 2.0, &device_data, DEN_S );
+    lwd->eval_xmat( 0.5, &device_data, DEN_S );
     
-    // eval_den
+    // Contact X matrix with bf -> den_eval
+    lwd->eval_den( &device_data, DEN_S );
 
     // Evaluate U/V variables
     /*
-    if( func.is_gga() ) lwd->eval_uvvar_gga_rks( &device_data );
-    else                lwd->eval_uvvar_lda_rks( &device_data );
+    if( func.is_gga() ) lwd->eval_uvvar_gga_uks( &device_data );
+    else                lwd->eval_uvvar_lda_uks( &device_data );
 
     // Evaluate XC functional
     if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );
@@ -455,8 +456,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->inc_nel( &device_data );
 
     // Evaluate Z matrix
-    if( func.is_gga() ) lwd->eval_zmat_gga_vxc_rks( &device_data );
-    else                lwd->eval_zmat_lda_vxc_rks( &device_data );
+    if( func.is_gga() ) lwd->eval_zmat_gga_vxc_uks( &device_data );
+    else                lwd->eval_zmat_lda_vxc_uks( &device_data );
 
     // Increment VXC (LT)
     lwd->inc_vxc( &device_data );

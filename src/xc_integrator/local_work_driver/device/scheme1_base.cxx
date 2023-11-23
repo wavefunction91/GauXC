@@ -416,14 +416,40 @@ void AoSScheme1Base::inc_nel( XCDeviceData* _data ){
 
 
 
+void AoSScheme1Base::eval_den( XCDeviceData* _data, density_id den_select ){
+  auto* data = dynamic_cast<Data*>(_data);
+  if ( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+  size_t nbe_max = 0, npts_max = 0;
+  for( auto& task : tasks ) {
+    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
+    npts_max = std::max( npts_max, task.npts );
+  }
 
+  // Zero density
+  auto base_stack    = data->base_stack;
+  double* den_eval_ptr = nullptr;
+  switch ( den_select ) {
+    case DEN:
+      den_eval_ptr = base_stack.den_eval_device;
+    case DEN_S:
+      den_eval_ptr = base_stack.den_pos_eval_device;
+    case DEN_Z:
+      den_eval_ptr = base_stack.den_neg_eval_device;
+  }
+  data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, den_eval_ptr, "Den Zero" );
+    
 
+  // Evaluate U variables
+  auto aos_stack     = data->aos_stack;
+  eval_den_uvars( ntasks, nbe_max, npts_max, den_select,
+    aos_stack.device_tasks, data->device_backend_->queue() );
 
-
-
-
+}
 
 
 
