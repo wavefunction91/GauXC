@@ -261,12 +261,10 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
 #endif
 
 #ifdef GAUXC_ENABLE_HOST
-  /*
     SECTION( "Host" ) {
       test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
         pruning_scheme, 1, true, true, true );
     }
-    */
 #endif
 
 #ifdef GAUXC_ENABLE_DEVICE

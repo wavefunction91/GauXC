@@ -49,17 +49,19 @@ struct LocalDeviceWorkDriverPIMPL {
   virtual void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* ) = 0;
   virtual void eval_zmat_lda_vxc_rks( XCDeviceData* ) = 0;
   virtual void eval_zmat_gga_vxc_rks( XCDeviceData* ) = 0;
-  virtual void eval_zmat_lda_vxc_uks( XCDeviceData* ) = 0;
+  virtual void eval_zmat_lda_vxc_uks( XCDeviceData*, density_id ) = 0;
   virtual void eval_zmat_gga_vxc_uks( XCDeviceData* ) = 0;
   virtual void eval_zmat_lda_vxc_gks( XCDeviceData* ) = 0;
   virtual void eval_zmat_gga_vxc_gks( XCDeviceData* ) = 0;
   virtual void inc_exc( XCDeviceData* ) = 0;
   virtual void inc_nel( XCDeviceData* ) = 0;
+  virtual void inc_vxc( XCDeviceData* , density_id) = 0;
   virtual void inc_vxc( XCDeviceData* ) = 0;
   virtual void inc_exc_grad_lda( XCDeviceData* ) = 0;
   virtual void inc_exc_grad_gga( XCDeviceData* ) = 0;
   virtual void inc_exx_k( XCDeviceData* ) = 0;
   virtual void symmetrize_vxc( XCDeviceData* ) = 0;
+  virtual void symmetrize_vxc( XCDeviceData*, density_id ) = 0;
   virtual void symmetrize_exx_k( XCDeviceData* ) = 0;
 
   virtual void eval_exx_ek_screening_bfn_stats( XCDeviceData* ) = 0;

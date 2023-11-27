@@ -566,8 +566,8 @@ void XCDeviceAoSData::pack_and_send(
       }
 
       if(reqt.grid_vrho_uks) {
-        task.vrho_pos    = vrho_pos_mem.aligned_alloc<double>( reqt.grid_vrho_size(npts), csl);
-        task.vrho_neg    = vrho_neg_mem.aligned_alloc<double>( reqt.grid_vrho_size(npts), csl);
+        task.vrho_pos    = vrho_pos_mem.aligned_alloc<double>( reqt.grid_vrho_pos_size(npts), csl);
+        task.vrho_neg    = vrho_neg_mem.aligned_alloc<double>( reqt.grid_vrho_neg_size(npts), csl);
       }
 
 

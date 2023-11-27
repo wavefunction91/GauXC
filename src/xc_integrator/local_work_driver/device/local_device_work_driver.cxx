@@ -31,6 +31,12 @@ void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data ) { \
   pimpl_->NAME(device_data);                                    \
 }
 
+#define FWD_TO_PIMPL_DEN_ID(NAME) \
+void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, density_id den ) { \
+  throw_if_invalid_pimpl(pimpl_);                               \
+  pimpl_->NAME(device_data, den);                               \
+}
+
 
 FWD_TO_PIMPL(partition_weights)         // Partition weights
 
@@ -50,7 +56,7 @@ FWD_TO_PIMPL(eval_uvvar_gga_gks)            // U/VVar GGA (density + grad, gamma
 FWD_TO_PIMPL(eval_zmat_lda_vxc_rks)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc_rks)         // Eval Z Matrix GGA VXC
 
-FWD_TO_PIMPL(eval_zmat_lda_vxc_uks)         // Eval Z Matrix LDA VXC
+FWD_TO_PIMPL_DEN_ID(eval_zmat_lda_vxc_uks)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc_uks)         // Eval Z Matrix GGA VXC
 
 FWD_TO_PIMPL(eval_zmat_lda_vxc_gks)         // Eval Z Matrix LDA VXC
@@ -59,14 +65,19 @@ FWD_TO_PIMPL(eval_zmat_gga_vxc_gks)         // Eval Z Matrix GGA VXC
 FWD_TO_PIMPL(eval_exx_fmat)             // Eval EXX F Matrix
 //FWD_TO_PIMPL(eval_exx_gmat)             // Eval EXX G Matrix
 
+FWD_TO_PIMPL_DEN_ID(eval_den)
+
 FWD_TO_PIMPL(inc_exc)
 FWD_TO_PIMPL(inc_nel)
 FWD_TO_PIMPL(inc_vxc)                   // Increment VXC by Z 
+FWD_TO_PIMPL_DEN_ID(inc_vxc)
+
 FWD_TO_PIMPL(inc_exx_k)     
 FWD_TO_PIMPL(inc_exc_grad_lda)
 FWD_TO_PIMPL(inc_exc_grad_gga)
 
 FWD_TO_PIMPL(symmetrize_vxc)
+FWD_TO_PIMPL_DEN_ID(symmetrize_vxc)
 FWD_TO_PIMPL(symmetrize_exx_k)
 FWD_TO_PIMPL(eval_exx_ek_screening_bfn_stats)
 
@@ -82,10 +93,6 @@ void LocalDeviceWorkDriver::eval_xmat( double fac, XCDeviceData* device_data, bo
   pimpl_->eval_xmat(fac, device_data, do_grad, den);
 }
 
-void LocalDeviceWorkDriver::eval_den(  XCDeviceData* device_data, density_id den ) {
-  throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_den( device_data, den);
-}
 
 void LocalDeviceWorkDriver::eval_exx_gmat( XCDeviceData* device_data, 
   const BasisSetMap& basis_map) {

@@ -526,6 +526,28 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
      }
     
     // Evaluate XC functional
+    std::cout << "CPU is_UKS" << is_uks << std::endl;
+    std::cout << "CPU Ps: "
+      << Ps[0] << " "
+      << Ps[1] << " "
+      << Ps[2] << " "
+      << Ps[3] << " "
+      << Ps[4] << " "
+      << Ps[5] << " " << std::endl;
+    std::cout << "CPU basis_eval: "
+      << basis_eval[0] << " "
+      << basis_eval[1] << " "
+      << basis_eval[2] << " "
+      << basis_eval[3] << " "
+      << basis_eval[4] << " "
+      << basis_eval[5] << " " << std::endl;
+    std::cout << "CPU DEN_EVAL: " 
+      << den_eval[0] << " "
+      << den_eval[1] << " "
+      << den_eval[2] << " "
+      << den_eval[3] << " "
+      << den_eval[4] << " "
+      << den_eval[5] << std::endl;
     if( func.is_mgga() )
       func.eval_exc_vxc( npts, den_eval, gamma, lapl, tau, eps, vrho, vgamma, vlapl, vtau);
     else if( func.is_gga() )

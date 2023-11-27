@@ -145,5 +145,87 @@ void zmat_gga_vxc( size_t            ntasks,
 
 
 
+
+
+
+
+
+template<int den_selector>
+__global__ void zmat_lda_vxc_kernel( size_t        ntasks,
+                                     XCDeviceTask* tasks_device ) {
+
+  const int batch_idx = blockIdx.z;
+  if( batch_idx >= ntasks ) return;
+
+  auto& task = tasks_device[ batch_idx ];
+  const auto npts            = task.npts;
+  const auto nbf             = task.bfn_screening.nbe;
+  const double* vrho_pos_device    = task.vrho_pos;
+  const double* vrho_neg_device    = task.vrho_neg;
+
+
+  const auto* basis_eval_device = task.bf;
+
+  auto* z_matrix_device = task.zmat;
+
+  const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
+  const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
+
+  if( tid_x < npts and tid_y < nbf ) {
+
+    const size_t ibfoff = tid_y * npts + tid_x;
+    const double factp = 0.5 * vrho_pos_device[tid_x];
+    const double factm = 0.5 * vrho_neg_device[tid_x];
+    switch ( den_selector ) {
+      case 1: // positive density
+        z_matrix_device[ ibfoff ] = 0.5*(factp * basis_eval_device[ ibfoff ] + factm * basis_eval_device[ ibfoff ]);
+        break;
+      case 2: // negative density
+        z_matrix_device[ ibfoff ] = 0.5*(factp * basis_eval_device[ ibfoff ] - factm * basis_eval_device[ ibfoff ]);
+        break;
+    }
+  }
+
+}
+
+
+
+void zmat_lda_vxc( size_t            ntasks,
+                   int32_t           max_nbf,
+                   int32_t           max_npts,
+                   XCDeviceTask*     tasks_device,
+                   density_id sel,
+                   device_queue queue ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
+
+
+  dim3 threads(cuda::warp_size,cuda::max_warps_per_thread_block,1);
+  dim3 blocks( util::div_ceil( max_npts, threads.x ),
+               util::div_ceil( max_nbf,  threads.y ),
+               ntasks );
+
+  if ( sel == DEN_S ) zmat_lda_vxc_kernel<1><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  if ( sel == DEN_Z ) zmat_lda_vxc_kernel<2><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+
+}
+
+template<int den_selector>
+__global__ void zmat_lda_vxc_kernel<1>( size_t        ntasks,
+                                     XCDeviceTask* tasks_device );
+template<int den_selector>
+__global__ void zmat_lda_vxc_kernel<2>( size_t        ntasks,
+                                     XCDeviceTask* tasks_device );
+
+
+
+
+
+
+
+
+
+
+
 }
 

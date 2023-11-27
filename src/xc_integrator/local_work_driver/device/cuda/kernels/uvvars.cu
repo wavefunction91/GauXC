@@ -146,6 +146,33 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
   }
 }
 
+__global__ void eval_uvars_lda_uks_kernel( size_t        ntasks,
+                                       XCDeviceTask* tasks_device ) {
+
+  const int batch_idx = blockIdx.z;
+  if( batch_idx >= ntasks ) return;
+
+  auto& task = tasks_device[ batch_idx ];
+
+  const auto npts            = task.npts;
+  const auto nbf             = task.bfn_screening.nbe;
+
+  auto* den_pos_eval_device   = task.den_pos;
+  auto* den_neg_eval_device   = task.den_neg;
+
+
+  const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
+
+
+  if( tid_y < npts ) {
+    den_pos_eval_device[ tid_y ] *= 0.5;
+    den_neg_eval_device[ tid_y ] *= 0.5;
+    den_pos_eval_device[ tid_y ] += den_neg_eval_device[ tid_y ];
+    den_neg_eval_device[ tid_y ] *= -3.0;
+    den_neg_eval_device[ tid_y ] += den_pos_eval_device[ tid_y ];
+
+  }
+}
 
 __global__ void eval_vvars_gga_kernel( 
   size_t   npts,
@@ -186,6 +213,19 @@ void eval_uvvars_lda( size_t ntasks, int32_t nbf_max, int32_t npts_max,
 
 }
 
+void eval_uvvars_lda_uks( size_t ntasks, int32_t nbf_max, int32_t npts_max,
+  XCDeviceTask* device_tasks, device_queue queue ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>();
+  dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block, 1 );
+  dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
+               util::div_ceil( npts_max, threads.y ),
+               ntasks );
+
+  eval_uvars_lda_uks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+
+}
+
 
 void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max, 
   int32_t npts_max, XCDeviceTask* device_tasks, const double* denx, 
@@ -219,7 +259,7 @@ void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max,
 
 
 
-template <density_id den_select>
+template <int den_select>
 __global__ void eval_den_kern( size_t        ntasks,
                                        XCDeviceTask* tasks_device ) {
 
@@ -233,9 +273,17 @@ __global__ void eval_den_kern( size_t        ntasks,
 
   double* den_eval_device   = nullptr;
   // use the "U" variable (+/- for UKS) even though at this point the density (S/Z) is stored
-  if constexpr ( den_select == DEN ) den_eval_device = task.den;
-  if constexpr ( den_select == DEN_S ) den_eval_device = task.den_pos; 
-  if constexpr ( den_select == DEN_Z ) den_eval_device = task.den_neg;
+  switch( den_select ) {
+    case 0:
+      den_eval_device = task.den;
+      break;
+    case 1:
+      den_eval_device = task.den_pos;
+      break;
+    case 2:
+      den_eval_device = task.den_neg;
+      break;
+  }
 
   const auto* basis_eval_device = task.bf;
 
@@ -288,13 +336,13 @@ void eval_u_den( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id de
 
   switch( den_select ){
     case DEN:
-      eval_den_kern<DEN><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+      eval_den_kern<0><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
       break;
     case DEN_S:
-      eval_den_kern<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+      eval_den_kern<1><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
       break;
     case DEN_Z:
-      eval_den_kern<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+      eval_den_kern<2><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
       break;
     default:
       GAUXC_GENERIC_EXCEPTION("eval_u_den: den_select not properly set");

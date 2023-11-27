@@ -81,7 +81,7 @@ public:
   void eval_zmat_lda_vxc_rks( XCDeviceData* );
   void eval_zmat_gga_vxc_rks( XCDeviceData* );
 
-  void eval_zmat_lda_vxc_uks( XCDeviceData* );
+  void eval_zmat_lda_vxc_uks( XCDeviceData*, density_id );
   void eval_zmat_gga_vxc_uks( XCDeviceData* );
 
   void eval_zmat_lda_vxc_gks( XCDeviceData* );
@@ -92,6 +92,7 @@ public:
 
   void inc_exc( XCDeviceData* );
   void inc_nel( XCDeviceData* );
+  void inc_vxc( XCDeviceData*, density_id );
   void inc_vxc( XCDeviceData* );
   void inc_exc_grad_lda( XCDeviceData* );
   void inc_exc_grad_gga( XCDeviceData* );
@@ -102,6 +103,7 @@ public:
     host_task_iterator, host_task_iterator, const ShellPairCollection<double>& );
 
   void symmetrize_vxc( XCDeviceData* );
+  void symmetrize_vxc( XCDeviceData*, density_id );
   void symmetrize_exx_k( XCDeviceData* );
 
   std::unique_ptr<XCDeviceData> create_device_data(const DeviceRuntimeEnvironment&);

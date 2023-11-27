@@ -438,37 +438,50 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     //else                lwd->eval_collocation( &device_data );
     lwd->eval_collocation( &device_data );
 
+    auto* data = dynamic_cast<XCDeviceStackData*>(&device_data);
+    auto base_stack = data->base_stack;
+    auto static_stack = data->static_stack;
+
     // Evaluate X matrix
-    lwd->eval_xmat( 0.5, &device_data, false, DEN_S );
+    lwd->eval_xmat( 1.0, &device_data, false, DEN_S );
     
-    // Contact X matrix with bf -> den_eval
+    // Contract X matrix with bf -> den_eval
     lwd->eval_den( &device_data, DEN_S );
 
-    // Evaluate U/V variables
-    /*
-    if( func.is_gga() ) lwd->eval_uvvar_gga_uks( &device_data );
-    else                lwd->eval_uvvar_lda_uks( &device_data );
+    lwd->eval_xmat( 1.0, &device_data, false, DEN_Z );
+    lwd->eval_den( &device_data, DEN_Z );
+    
 
+    // Evaluate U/V variables
+    //if( func.is_gga() ) lwd->eval_uvvar_gga_uks( &device_data );
+    //else                lwd->eval_uvvar_lda_uks( &device_data );
+    
+    lwd->eval_uvvar_lda_uks( &device_data );
     // Evaluate XC functional
-    if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );
-    else                lwd->eval_kern_exc_vxc_lda( func, &device_data );
+    //if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );
+    //else                lwd->eval_kern_exc_vxc_lda( func, &device_data );
+    
+    lwd->eval_kern_exc_vxc_lda( func, &device_data );
 
     // Do scalar EXC/N_EL integrations
     lwd->inc_exc( &device_data );
     lwd->inc_nel( &device_data );
 
     // Evaluate Z matrix
-    if( func.is_gga() ) lwd->eval_zmat_gga_vxc_uks( &device_data );
-    else                lwd->eval_zmat_lda_vxc_uks( &device_data );
+    //if( func.is_gga() ) lwd->eval_zmat_gga_vxc_uks( &device_data );
+    //else                lwd->eval_zmat_lda_vxc_uks( &device_data );
+    lwd->eval_zmat_lda_vxc_uks( &device_data, DEN_S );
 
-    // Increment VXC (LT)
-    lwd->inc_vxc( &device_data );
-    */
+    lwd->inc_vxc( &device_data, DEN_S );
+    lwd->eval_zmat_lda_vxc_uks( &device_data, DEN_Z );
+
+    lwd->inc_vxc( &device_data, DEN_Z );
 
   } // Loop over batches of batches 
 
   // Symmetrize VXC in device memory
-  //lwd->symmetrize_vxc( &device_data );
+  lwd->symmetrize_vxc( &device_data, DEN_S );
+  lwd->symmetrize_vxc( &device_data, DEN_Z );
 }
 
 template <typename ValueType>

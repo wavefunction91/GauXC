@@ -108,6 +108,12 @@ struct required_term_storage {
   inline size_t grid_vrho_uks_size(size_t npts){
     return PRDVL(grid_vrho_uks, 2 * npts);
   }
+  inline size_t grid_vrho_pos_size(size_t npts){ 
+    return PRDVL(grid_vrho_uks, npts);
+  }
+  inline size_t grid_vrho_neg_size(size_t npts){ 
+    return PRDVL(grid_vrho_uks, npts);
+  }
 
 
 
