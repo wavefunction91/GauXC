@@ -472,6 +472,17 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const auto xmat_fac = is_rks ? 2.0 : 1.0; // TODO Fix for spinor RKS input
     lwd->eval_xmat( mgga_dim_scal * npts, nbf, nbe, submat_map, xmat_fac, Ps, ldps, basis_eval, nbe,
       zmat, nbe, nbe_scr );
+		
+		std::cout << "CPU BEGIN " << std::endl << std::endl;
+		std::cout << "CPU xmat_fac = " << xmat_fac << std::endl;
+	  std::cout << "CPU zmat_s: " <<
+			zmat[0] << " " <<
+			zmat[1] << " " <<
+			zmat[2] << " " <<
+			zmat[3] << " " <<
+			zmat[4] << " " <<
+			zmat[5] << " " << std::endl;
+
 
     // X matrix for Pz
     if(not is_rks) {
@@ -526,7 +537,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
      }
     
     // Evaluate XC functional
-    std::cout << "CPU is_UKS" << is_uks << std::endl;
     std::cout << "CPU Ps: "
       << Ps[0] << " "
       << Ps[1] << " "

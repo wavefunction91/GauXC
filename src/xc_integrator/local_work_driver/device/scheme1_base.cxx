@@ -482,10 +482,15 @@ void AoSScheme1Base::eval_den( XCDeviceData* _data, density_id den_select ){
   switch ( den_select ) {
     case DEN:
       den_eval_ptr = base_stack.den_eval_device;
+			break;
     case DEN_S:
       den_eval_ptr = base_stack.den_pos_eval_device;
+			break;
     case DEN_Z:
       den_eval_ptr = base_stack.den_neg_eval_device;
+			break;
+		default:
+			GAUXC_GENERIC_EXCEPTION( "eval_den called without setting a density to evaluate!" );
   }
   data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, den_eval_ptr, "Den Zero" );
     

@@ -443,12 +443,12 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     auto static_stack = data->static_stack;
 
     // Evaluate X matrix
-    lwd->eval_xmat( 1.0, &device_data, false, DEN_S );
+    lwd->eval_xmat( 0.5, &device_data, false, DEN_S );
     
     // Contract X matrix with bf -> den_eval
     lwd->eval_den( &device_data, DEN_S );
 
-    lwd->eval_xmat( 1.0, &device_data, false, DEN_Z );
+    lwd->eval_xmat( 0.5, &device_data, false, DEN_Z );
     lwd->eval_den( &device_data, DEN_Z );
     
 

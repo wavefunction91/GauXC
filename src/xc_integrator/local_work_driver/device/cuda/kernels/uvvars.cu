@@ -165,10 +165,8 @@ __global__ void eval_uvars_lda_uks_kernel( size_t        ntasks,
 
 
   if( tid_y < npts ) {
-    den_pos_eval_device[ tid_y ] *= 0.5;
-    den_neg_eval_device[ tid_y ] *= 0.5;
     den_pos_eval_device[ tid_y ] += den_neg_eval_device[ tid_y ];
-    den_neg_eval_device[ tid_y ] *= -3.0;
+    den_neg_eval_device[ tid_y ] *= -2.0;
     den_neg_eval_device[ tid_y ] += den_pos_eval_device[ tid_y ];
 
   }
@@ -356,6 +354,9 @@ void eval_u_den( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id de
 
 
 
+template __global__ void eval_den_kern<0>( size_t ntasks, XCDeviceTask* tasks );
+template __global__ void eval_den_kern<1>( size_t ntasks, XCDeviceTask* tasks );
+template __global__ void eval_den_kern<2>( size_t ntasks, XCDeviceTask* tasks );
 
 
 
