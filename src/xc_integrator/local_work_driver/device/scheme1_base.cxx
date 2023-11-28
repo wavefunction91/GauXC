@@ -418,7 +418,8 @@ void AoSScheme1Base::inc_exc( XCDeviceData* _data ){
     static_stack.acc_scr_device, static_stack.exc_device );
 
   if( is_UKS ) {
-
+	
+	
   gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
     base_stack.eps_eval_device, 1, base_stack.den_pos_eval_device, 1, 
     static_stack.acc_scr_device, static_stack.exc_device );
@@ -619,13 +620,13 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
 
   auto base_stack    = data->base_stack;
 
-  double* den_eval_ptr    = nullptr;
-  double* vrho_eval_ptr   = nullptr;
+  double* den_eval_ptr    = base_stack.den_eval_device;
+  double* vrho_eval_ptr   = base_stack.vrho_eval_device;
   
   const bool is_RKS = data->allocated_terms.ks_scheme == RKS;
   const bool is_UKS = data->allocated_terms.ks_scheme == UKS;
 
-  const size_t npts = data->total_npts_task_batch;
+  const size_t npts = data->total_npts_task_batch ;
   
 
   // RKS pointer logic
@@ -639,18 +640,18 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
         auto* dynmem_ptr = data->dynmem_ptr;
         auto* device_ptr = data->device_ptr;
         auto dynmem_sz  = data->dynmem_sz;
-        buffer_adaptor mem( dynmem_ptr, dynmem_sz );
 
-        den_eval_ptr  = mem.aligned_alloc<double>( 2 * npts, csl );
-        vrho_eval_ptr = mem.aligned_alloc<double>( 2 * npts, csl );
+				den_eval_ptr = base_stack.den_eval_device;
+				vrho_eval_ptr = base_stack.vrho_eval_device;
+				
 
         // Interleave pos/neg densities before passing it to ExchCXX
         auto stat = cudaMemcpy2D(den_eval_ptr, 2 * sizeof(double), base_stack.den_pos_eval_device,
                         1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-        std::cout << "cudaMemcpy2D den_pos_eval_device IN: " << stat << std::endl;
         stat = cudaMemcpy2D(den_eval_ptr + 1, 2 * sizeof(double), base_stack.den_neg_eval_device,
                         1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-        std::cout << "cudaMemcpy2D den_neg_eval_device IN: " << stat << std::endl;
+				
+				
   }
 
   GauXC::eval_kern_exc_vxc_lda( func, npts,
@@ -662,14 +663,11 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
                     base_stack.weights_device, 1, base_stack.vrho_eval_device, 1 );
   }
   if( is_UKS ) {
+				// De-interleave pos/neg densities
         auto stat        = cudaMemcpy2D(base_stack.vrho_pos_eval_device, 1 * sizeof(double), vrho_eval_ptr,
                         2 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-        std::cout << "cudaMemcpy2D den_pos_eval_device OUT: " << stat << std::endl;
         stat             = cudaMemcpy2D(base_stack.vrho_neg_eval_device, 1 * sizeof(double), vrho_eval_ptr + 1,
                         2 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-        std::cout << "cudaMemcpy2D den_neg_eval_device OUT: " << stat << std::endl;
-
-
 
       hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
                       base_stack.weights_device, 1, base_stack.vrho_pos_eval_device, 1 );

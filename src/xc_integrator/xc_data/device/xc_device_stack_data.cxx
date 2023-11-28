@@ -726,7 +726,7 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
 
   // Grid function evaluations
 
-  if( reqt.grid_den ) { // Density 
+  if( reqt.grid_den and not reqt.grid_den_uks ) { // Density 
     base_stack.den_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
   }
 
@@ -737,6 +737,7 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   }
 
   if( reqt.grid_den_uks ) { // Density (UKS)
+		base_stack.den_eval_device			= mem.aligned_alloc<double>(2*msz, aln, csl);
     base_stack.den_pos_eval_device  = mem.aligned_alloc<double>(msz, aln, csl);
     base_stack.den_neg_eval_device  = mem.aligned_alloc<double>(msz, aln, csl);
   }
@@ -749,11 +750,12 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
     base_stack.eps_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
   }
 
-  if( reqt.grid_vrho ) { // Vrho
+  if( reqt.grid_vrho and not reqt.grid_vrho_uks) { // Vrho
     base_stack.vrho_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
   }
 
   if( reqt.grid_vrho_uks ) { // Vrho (UKS)
+    base_stack.vrho_eval_device = mem.aligned_alloc<double>(2*msz, aln, csl);
     base_stack.vrho_pos_eval_device   = mem.aligned_alloc<double>(msz, aln, csl);
     base_stack.vrho_neg_eval_device   = mem.aligned_alloc<double>(msz, aln, csl);
   }

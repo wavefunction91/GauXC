@@ -473,16 +473,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     lwd->eval_xmat( mgga_dim_scal * npts, nbf, nbe, submat_map, xmat_fac, Ps, ldps, basis_eval, nbe,
       zmat, nbe, nbe_scr );
 		
-		std::cout << "CPU BEGIN " << std::endl << std::endl;
-		std::cout << "CPU xmat_fac = " << xmat_fac << std::endl;
-	  std::cout << "CPU zmat_s: " <<
-			zmat[0] << " " <<
-			zmat[1] << " " <<
-			zmat[2] << " " <<
-			zmat[3] << " " <<
-			zmat[4] << " " <<
-			zmat[5] << " " << std::endl;
-
 
     // X matrix for Pz
     if(not is_rks) {
@@ -537,27 +527,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
      }
     
     // Evaluate XC functional
-    std::cout << "CPU Ps: "
-      << Ps[0] << " "
-      << Ps[1] << " "
-      << Ps[2] << " "
-      << Ps[3] << " "
-      << Ps[4] << " "
-      << Ps[5] << " " << std::endl;
-    std::cout << "CPU basis_eval: "
-      << basis_eval[0] << " "
-      << basis_eval[1] << " "
-      << basis_eval[2] << " "
-      << basis_eval[3] << " "
-      << basis_eval[4] << " "
-      << basis_eval[5] << " " << std::endl;
-    std::cout << "CPU DEN_EVAL: " 
-      << den_eval[0] << " "
-      << den_eval[1] << " "
-      << den_eval[2] << " "
-      << den_eval[3] << " "
-      << den_eval[4] << " "
-      << den_eval[5] << std::endl;
     if( func.is_mgga() )
       func.eval_exc_vxc( npts, den_eval, gamma, lapl, tau, eps, vrho, vgamma, vlapl, vtau);
     else if( func.is_gga() )
@@ -571,7 +540,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       vrho[sds*i] *= weights[i];
       if(not is_rks) vrho[sds*i+1] *= weights[i];
     }
-     
     if( func.is_gga() ){
       for( int32_t i = 0; i < npts; ++i ) {
          vgamma[gga_dim_scal*i] *= weights[i];

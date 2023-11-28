@@ -79,6 +79,7 @@ struct required_term_storage {
   bool grid_vrho_uks = false;
 
   inline size_t grid_den_size(size_t npts){ 
+		if ( grid_den_uks ) { return 2*npts; }
     return PRDVL(grid_den, npts);
   }
   inline size_t grid_den_grad_size(size_t npts){ 
@@ -91,13 +92,14 @@ struct required_term_storage {
     return PRDVL(grid_eps, npts);
   }
   inline size_t grid_vrho_size(size_t npts){ 
+		if ( grid_vrho_uks ) { return 2*npts; }
     return PRDVL(grid_vrho, npts);
   }
   inline size_t grid_vgamma_size(size_t npts){ 
     return PRDVL(grid_vgamma, npts);
   }
   inline size_t grid_den_uks_size(size_t npts){
-    return PRDVL(grid_den_uks, 2 * npts);
+    return PRDVL(grid_den_uks, 4 * npts); // 2*npts for the separately allocated den_pos and den_neg, 2*npts for the interleaved version. This behavior needs to be changed.
   }
   inline size_t grid_den_s_size(size_t npts){
     return PRDVL(grid_den_uks, npts);
@@ -106,7 +108,7 @@ struct required_term_storage {
     return PRDVL(grid_den_uks, npts);
   }
   inline size_t grid_vrho_uks_size(size_t npts){
-    return PRDVL(grid_vrho_uks, 2 * npts);
+    return PRDVL(grid_vrho_uks, 4 * npts);
   }
   inline size_t grid_vrho_pos_size(size_t npts){ 
     return PRDVL(grid_vrho_uks, npts);
@@ -270,12 +272,11 @@ struct required_term_storage {
       //const bool is_lda  = is_xc and tracker.xc_approx == LDA;
       const bool is_gga  = is_xc and tracker.xc_approx == GGA;
       const bool is_grad = tracker.exc_grad;
-      if( tracker.ks_scheme == RKS ){
         grid_den      = true;
         grid_den_grad = is_gga or is_grad;
         grid_vrho     = true;
-      }
       if( tracker.ks_scheme == UKS ){
+				grid_den			= true;
         grid_den_uks  = true;
         grid_vrho_uks = true;
       }
