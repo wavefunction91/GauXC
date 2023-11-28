@@ -264,7 +264,7 @@ struct required_term_storage {
       grid_to_parent_center       = true;
     }
 
-    // Allocated terms for XC aclculations
+    // Allocated terms for XC calculations
     const bool is_xc = tracker.exc_vxc or tracker.exc_grad;
     if(is_xc) {
       if( tracker.xc_approx == _UNDEFINED )

@@ -131,12 +131,16 @@ void XCDeviceStackData::allocate_static_data_exc_vxc( int32_t nbf, int32_t nshel
       static_stack.vxc_device  = mem.aligned_alloc<double>( nbf * nbf , csl);
       static_stack.dmat_device = mem.aligned_alloc<double>( nbf * nbf , csl);
       allocated_terms.ks_scheme = RKS;
+			break;
     case UKS:
       static_stack.dmat_s_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
       static_stack.dmat_z_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
       static_stack.vxc_s_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
       static_stack.vxc_z_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
       allocated_terms.ks_scheme = UKS;
+			break;
+		default:
+			GAUXC_GENERIC_EXCEPTION( "Cannot allocate static data without selecting a ks_scheme" );
   }
 
   // Get current stack location
@@ -496,9 +500,11 @@ void XCDeviceStackData::zero_exc_vxc_integrands(integrator_term_tracker enabled_
   switch( enabled_terms.ks_scheme ) {
     case RKS:
       device_backend_->set_zero( nbf*nbf, static_stack.vxc_device, "VXC Zero" );
+			break;
     case UKS:
       device_backend_->set_zero( nbf*nbf, static_stack.vxc_s_device, "VXC Zero" );
       device_backend_->set_zero( nbf*nbf, static_stack.vxc_z_device, "VXC Zero" );
+			break;
   }
   device_backend_->set_zero( 1,       static_stack.exc_device, "EXC Zero" );
   device_backend_->set_zero( 1,       static_stack.nel_device, "NEL Zero" );

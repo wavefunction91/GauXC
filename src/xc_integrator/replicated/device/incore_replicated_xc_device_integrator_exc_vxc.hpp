@@ -236,8 +236,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                        host_task_iterator task_begin, host_task_iterator task_end,
                        XCDeviceData& device_data ) {
-
-
+GAUXC_GENERIC_EXCEPTION(" not supposed to be here!");
+	/*
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
 
   // Setup Aliases
@@ -315,7 +315,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     task_it = 
       device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
 
-    /*** Process the batches ***/
 
     // Evaluate collocation
     if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
@@ -347,7 +346,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Symmetrize VXC in device memory
   lwd->symmetrize_vxc( &device_data );
-
+*/
 }
 
 
@@ -565,9 +564,13 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   device_data.allocate_static_data_exc_vxc( nbf, nshells, enabled_terms );
 	
 	if (is_rks) device_data.send_static_data_density_basis( Ps, ldps, basis );
-	if (is_uks) device_data.send_static_data_density_basis( Ps, ldps, Pz, ldpz, basis );
+	else if (is_uks) device_data.send_static_data_density_basis( Ps, ldps, Pz, ldpz, basis );
 	//if (is_gks) device_data.send_static_data_density_basis( Ps, ldps, Pz, ldpz, Px, ldpx, Py, ldpy, basis );
 
+    // for debugging
+    auto* data = dynamic_cast<XCDeviceStackData*>(&device_data);
+    auto base_stack = data->base_stack;
+    auto static_stack = data->static_stack;
 
   // Processes batches in groups that saturate available device memory
   if( func.is_lda() )      enabled_terms.xc_approx = integrator_xc_approx::LDA; 
@@ -591,22 +594,19 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
     else                lwd->eval_collocation( &device_data );
 
-    auto* data = dynamic_cast<XCDeviceStackData*>(&device_data);
-    auto base_stack = data->base_stack;
-    auto static_stack = data->static_stack;
 		
 		double xmat_fac = 1.0;
 		if (is_rks) {
 			xmat_fac = 2.0;
 			// Evaluate X matrix
-			lwd->eval_xmat( xmat_fac, &device_data, false, DEN_S );
+			lwd->eval_xmat( xmat_fac, &device_data );
 			
 			// Evaluate U/V variables
     	if( func.is_gga() ) lwd->eval_uvvar_gga_rks( &device_data );
     	else                lwd->eval_uvvar_lda_rks( &device_data );
 		}
 
-		if (is_uks) {
+		else if (is_uks) {
 			xmat_fac = 0.5;
       // Evaluate X matrix
       lwd->eval_xmat( xmat_fac, &device_data, false, DEN_S );
@@ -636,7 +636,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     	if( func.is_gga() ) lwd->eval_zmat_gga_vxc_rks( &device_data );
     	else                lwd->eval_zmat_lda_vxc_rks( &device_data );
 			// Increment VXC
-			lwd->inc_vxc( &device_data, DEN_S );
+			lwd->inc_vxc( &device_data);
 		}
 	  if (is_uks) {
     	// Evaluate Scalar Z matrix
@@ -658,7 +658,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Symmetrize VXC in device memory
   if (is_rks) {
-  	lwd->symmetrize_vxc( &device_data, DEN_S );
+  	lwd->symmetrize_vxc( &device_data );
 	}
 	if (is_uks) {
   	lwd->symmetrize_vxc( &device_data, DEN_S );

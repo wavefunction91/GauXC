@@ -629,29 +629,14 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
   const size_t npts = data->total_npts_task_batch ;
   
 
-  // RKS pointer logic
-  if ( is_RKS ) {
-    den_eval_ptr = base_stack.den_eval_device;
-    vrho_eval_ptr = base_stack.vrho_eval_device;
-  }
 
-  // UKS pointer logic
+  // UKS logic
   if ( is_UKS ) {
-        auto* dynmem_ptr = data->dynmem_ptr;
-        auto* device_ptr = data->device_ptr;
-        auto dynmem_sz  = data->dynmem_sz;
-
-				den_eval_ptr = base_stack.den_eval_device;
-				vrho_eval_ptr = base_stack.vrho_eval_device;
-				
-
         // Interleave pos/neg densities before passing it to ExchCXX
         auto stat = cudaMemcpy2D(den_eval_ptr, 2 * sizeof(double), base_stack.den_pos_eval_device,
                         1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
         stat = cudaMemcpy2D(den_eval_ptr + 1, 2 * sizeof(double), base_stack.den_neg_eval_device,
                         1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-				
-				
   }
 
   GauXC::eval_kern_exc_vxc_lda( func, npts,
