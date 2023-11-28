@@ -330,7 +330,6 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
   auto svwn5 = ExchCXX::Functional::SVWN5;
   auto pbe0  = ExchCXX::Functional::PBE0;
   auto blyp  = ExchCXX::Functional::BLYP;
-/*
   // LDA Test
   SECTION( "Benzene / SVWN5 / cc-pVDZ" ) {
     auto func = make_functional(svwn5, unpol);
@@ -374,14 +373,12 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     test_integrator(GAUXC_REF_DATA_PATH "/cytosine_r2scanl_cc-pvdz_ufg_ssf_robust.hdf5", 
         func, PruningScheme::Robust );
   }
-*/
   //UKS LDA Test
   SECTION( "Li / SVWN5 / sto-3g" ) {
     auto func = make_functional(svwn5, pol);
     test_integrator(GAUXC_REF_DATA_PATH "/li_svwn5_sto3g_uks.bin",
         func, PruningScheme::Unpruned );
   }
-/*
   //UKS GGA Test
   SECTION( "Li / BLYP / sto-3g" ) {
     auto func = make_functional(blyp, pol);
@@ -422,5 +419,4 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_631gd_pbe0_ufg.hdf5", 
         func, PruningScheme::Unpruned );
   }
-  */
 }
