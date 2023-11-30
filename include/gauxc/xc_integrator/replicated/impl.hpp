@@ -131,14 +131,14 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_neo_rks
   value_type  elec_EXC;
   value_type  prot_EXC;
 
-  pimpl_->eval_neo_exc_vxc( elec_Ps.rows(), elec_Ps.cols(), prot_Ps.rows(), prot_Ps.cols(),
+  pimpl_->neo_eval_exc_vxc( elec_Ps.rows(), elec_Ps.cols(), prot_Ps.rows(), prot_Ps.cols(),
                             elec_Ps.data(), elec_Ps.rows(),
                             prot_Ps.data(), prot_Ps.rows(),
                             prot_Pz.data(), prot_Pz.rows(),
                             elec_VXCs.data(), elec_VXCs.rows(),
                             prot_VXCs.data(), prot_VXCs.rows(),
                             prot_VXCz.data(), prot_VXCz.rows(),
-                            &elec_EXC, &prot_EXC);
+                            &elec_EXC, &prot_EXC, ks_settings );
 
   return std::make_tuple( elec_EXC, prot_EXC, elec_VXCs, prot_VXCs, prot_VXCz );
 
@@ -157,7 +157,7 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_neo_uks
   value_type  elec_EXC;
   value_type  prot_EXC;
 
-  pimpl_->eval_neo_exc_vxc( elec_Ps.rows(), elec_Ps.cols(), prot_Ps.rows(), prot_Ps.cols(),
+  pimpl_->neo_eval_exc_vxc( elec_Ps.rows(), elec_Ps.cols(), prot_Ps.rows(), prot_Ps.cols(),
                             elec_Ps.data(), elec_Ps.rows(),
                             elec_Pz.data(), elec_Pz.rows(),
                             prot_Ps.data(), prot_Ps.rows(),
@@ -166,7 +166,7 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_neo_uks
                             elec_VXCz.data(), elec_VXCz.rows(),
                             prot_VXCs.data(), prot_VXCs.rows(),
                             prot_VXCz.data(), prot_VXCz.rows(),
-                            &elec_EXC, &prot_EXC);
+                            &elec_EXC, &prot_EXC, ks_settings );
 
   return std::make_tuple( elec_EXC, prot_EXC, elec_VXCs, elec_VXCz, prot_VXCs, prot_VXCz );
 

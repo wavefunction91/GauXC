@@ -68,7 +68,7 @@ protected:
                       value_type* VXCx, int64_t ldvxcx,
                       value_type* EXC, const IntegratorSettingsXC& settings ) override;
 
-  void eval_neo_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
+  void neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
                           const value_type* P1s, int64_t ldp1s,
                           const value_type* P2s, int64_t ldp2s,
                           const value_type* P2z, int64_t ldp2z,
@@ -77,7 +77,7 @@ protected:
                           value_type* VXC2z, int64_t ldvxc2z,
                           value_type* EXC1,  value_type* EXC2 ) override;
 
-  void eval_neo_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
+  void neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
                           const value_type* P1s, int64_t ldp1s,
                           const value_type* P1z, int64_t ldp1z,
                           const value_type* P2s, int64_t ldp2s,

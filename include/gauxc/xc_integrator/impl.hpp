@@ -53,6 +53,7 @@ typename XCIntegrator<MatrixType>::exc_vxc_type_gks
   return pimpl_->eval_exc_vxc(Ps, Pz, Py, Px, ks_settings);
 };
 
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_vxc_type_neo_rks
   XCIntegrator<MatrixType>::neo_eval_exc_vxc( const MatrixType& elec_Ps, const MatrixType& prot_Ps, const MatrixType& prot_Pz,
                                               const IntegratorSettingsXC& ks_settings ){
