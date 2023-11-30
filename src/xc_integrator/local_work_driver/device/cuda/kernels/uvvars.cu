@@ -14,7 +14,7 @@
 
 namespace GauXC {
 
-__global__ void eval_uvars_lda_kernel( size_t        ntasks,
+__global__ void eval_uvars_lda_rks_kernel( size_t        ntasks,
                                        XCDeviceTask* tasks_device ) {
 
   const int batch_idx = blockIdx.z;
@@ -62,7 +62,7 @@ __global__ void eval_uvars_lda_kernel( size_t        ntasks,
 
 #define GGA_KERNEL_SM_BLOCK_Y 32
 
-__global__ void eval_uvars_gga_kernel( size_t           ntasks,
+__global__ void eval_uvars_gga_rks_kernel( size_t           ntasks,
                                        XCDeviceTask* tasks_device ) {
 
   constexpr auto warp_size = cuda::warp_size;
@@ -172,7 +172,7 @@ __global__ void eval_uvars_lda_uks_kernel( size_t        ntasks,
   }
 }
 
-__global__ void eval_vvars_gga_kernel( 
+__global__ void eval_vvars_gga_rks_kernel( 
   size_t   npts,
   const double* den_x_eval_device,
   const double* den_y_eval_device,
@@ -198,7 +198,7 @@ __global__ void eval_vvars_gga_kernel(
 
 
 
-void eval_uvvars_lda( size_t ntasks, int32_t nbf_max, int32_t npts_max,
+void eval_uvvars_lda( size_t ntasks, int32_t nbf_max, int32_t npts_max, integrator_term_tracker enabled_terms,
   XCDeviceTask* device_tasks, device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
@@ -206,27 +206,24 @@ void eval_uvvars_lda( size_t ntasks, int32_t nbf_max, int32_t npts_max,
   dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
                util::div_ceil( npts_max, threads.y ),
                ntasks );
-
-  eval_uvars_lda_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-
-}
-
-void eval_uvvars_lda_uks( size_t ntasks, int32_t nbf_max, int32_t npts_max,
-  XCDeviceTask* device_tasks, device_queue queue ) {
-
-  cudaStream_t stream = queue.queue_as<util::cuda_stream>();
-  dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block, 1 );
-  dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
-               util::div_ceil( npts_max, threads.y ),
-               ntasks );
-
-  eval_uvars_lda_uks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+	switch ( enabled_terms.ks_scheme ) {
+		case RKS:
+  		eval_uvars_lda_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+			break;
+		case UKS:
+  		eval_uvars_lda_uks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+			break;
+		default:
+			GAUXC_GENERIC_EXCEPTION( "Unexpected KS scheme when attempting to evaluate UV vars" );
+	}
+			
 
 }
+
 
 
 void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max, 
-  int32_t npts_max, XCDeviceTask* device_tasks, const double* denx, 
+  int32_t npts_max, integrator_term_tracker enabled_terms, XCDeviceTask* device_tasks, const double* denx, 
   const double* deny, const double* denz, double* gamma, device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
@@ -237,13 +234,13 @@ void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max,
   dim3 blocks( std::min(uint64_t(4), util::div_ceil( nbf_max, 4 )),
                std::min(uint64_t(16), util::div_ceil( nbf_max, 16 )),
                ntasks );
-  eval_uvars_gga_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+  eval_uvars_gga_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
   }
 
   // V variables
   dim3 threads( cuda::max_threads_per_thread_block );
   dim3 blocks( util::div_ceil( npts_total, threads.x ) );
-  eval_vvars_gga_kernel<<< blocks, threads, 0, stream >>>(
+  eval_vvars_gga_rks_kernel<<< blocks, threads, 0, stream >>>(
     npts_total, denx, deny, denz, gamma
   );
 }

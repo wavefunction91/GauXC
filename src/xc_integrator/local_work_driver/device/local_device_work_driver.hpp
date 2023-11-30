@@ -65,14 +65,9 @@ public:
   
   void eval_den( XCDeviceData*, density_id );
 
-  void eval_uvvar_lda_rks( XCDeviceData* );
-  void eval_uvvar_gga_rks( XCDeviceData* );
+  void eval_uvvar_lda( XCDeviceData*, integrator_term_tracker );
+  void eval_uvvar_gga( XCDeviceData*, integrator_term_tracker );
 
-  void eval_uvvar_lda_uks( XCDeviceData* );
-  void eval_uvvar_gga_uks( XCDeviceData* );
-
-  void eval_uvvar_lda_gks( XCDeviceData* );
-  void eval_uvvar_gga_gks( XCDeviceData* );
 
   void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* );
   void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* );

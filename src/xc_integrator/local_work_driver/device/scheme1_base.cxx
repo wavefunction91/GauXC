@@ -503,7 +503,7 @@ void AoSScheme1Base::eval_den( XCDeviceData* _data, density_id den_select ){
 
 
 
-void AoSScheme1Base::eval_uvvar_lda_rks( XCDeviceData* _data ){
+void AoSScheme1Base::eval_uvvar_lda( XCDeviceData* _data, integrator_term_tracker en_terms ){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -520,20 +520,20 @@ void AoSScheme1Base::eval_uvvar_lda_rks( XCDeviceData* _data ){
 
   // Zero density
   auto base_stack    = data->base_stack;
-  data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_eval_device, "Den Zero" );
+	if (en_terms.ks_scheme == RKS )
+  	data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_eval_device, "Den Zero" );
     
 
   // Evaluate U variables
   auto aos_stack     = data->aos_stack;
-  eval_uvvars_lda( ntasks, nbe_max, npts_max, 
+  eval_uvvars_lda( ntasks, nbe_max, npts_max, en_terms,
     aos_stack.device_tasks, data->device_backend_->queue() );
-
 }
 
 
 
 
-void AoSScheme1Base::eval_uvvar_gga_rks( XCDeviceData* _data ){
+void AoSScheme1Base::eval_uvvar_gga( XCDeviceData* _data, integrator_term_tracker en_terms ){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -557,53 +557,15 @@ void AoSScheme1Base::eval_uvvar_gga_rks( XCDeviceData* _data ){
 
   // Evaluate U variables
   auto aos_stack     = data->aos_stack;
-  eval_uvvars_gga( ntasks, data->total_npts_task_batch, nbe_max, npts_max, 
+  eval_uvvars_gga( ntasks, data->total_npts_task_batch, nbe_max, npts_max, en_terms,
     aos_stack.device_tasks, base_stack.den_x_eval_device, base_stack.den_y_eval_device,
     base_stack.den_z_eval_device, base_stack.gamma_eval_device, 
     data->device_backend_->queue() );
 
 }
 
-void AoSScheme1Base::eval_uvvar_lda_uks( XCDeviceData* _data){
-
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
-
-  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
-
-  auto& tasks = data->host_device_tasks;
-  const auto ntasks = tasks.size();
-  size_t nbe_max = 0, npts_max = 0;
-  for( auto& task : tasks ) {
-    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
-    npts_max = std::max( npts_max, task.npts );
-  }
 
 
-  // Evaluate U variables
-  auto aos_stack     = data->aos_stack;
-  eval_uvvars_lda_uks( ntasks, nbe_max, npts_max, 
-    aos_stack.device_tasks, data->device_backend_->queue() );
-}
-
-void AoSScheme1Base::eval_uvvar_gga_uks( XCDeviceData* ){
-
-  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
-
-}
-
-
-void AoSScheme1Base::eval_uvvar_lda_gks( XCDeviceData* ){
-
-    GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED FOR DEVICE");
-
-}
-
-void AoSScheme1Base::eval_uvvar_gga_gks( XCDeviceData* ){
-
-    GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED FOR DEVICE");
-
-}
 
 void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func, 
   XCDeviceData* _data ) {

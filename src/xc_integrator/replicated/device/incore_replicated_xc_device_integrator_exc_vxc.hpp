@@ -328,9 +328,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 			// Evaluate X matrix
 			lwd->eval_xmat( xmat_fac, &device_data, false, DEN_S );
 			
-			// Evaluate U/V variables
-    	if( func.is_gga() ) lwd->eval_uvvar_gga_rks( &device_data );
-    	else                lwd->eval_uvvar_lda_rks( &device_data );
 		}
 
 		else if (is_uks) {
@@ -345,8 +342,11 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
 			// Evaluate U/V variables
 			if( func.is_gga() ) GAUXC_GENERIC_EXCEPTION("Device UKS+GGA NYI!");
-			else								lwd->eval_uvvar_lda_uks( &device_data );
 		}
+	
+		// Evaluate U/V variables
+    if( func.is_gga() ) lwd->eval_uvvar_gga( &device_data, enabled_terms );
+    else                lwd->eval_uvvar_lda( &device_data, enabled_terms );
 
     // Evaluate XC functional
     if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );

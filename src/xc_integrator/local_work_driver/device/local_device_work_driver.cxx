@@ -37,6 +37,11 @@ void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, density_id den ) { 
   pimpl_->NAME(device_data, den);                               \
 }
 
+#define FWD_TO_PIMPL_INT_TRACKER(NAME) \
+void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, integrator_term_tracker track ) { \
+  throw_if_invalid_pimpl(pimpl_);                               \
+  pimpl_->NAME(device_data, track);                               \
+}
 
 FWD_TO_PIMPL(partition_weights)         // Partition weights
 
@@ -44,14 +49,9 @@ FWD_TO_PIMPL(eval_collocation)          // Collocation
 FWD_TO_PIMPL(eval_collocation_gradient) // Collocation Gradient
 FWD_TO_PIMPL(eval_collocation_hessian)  // Collocation Hessian
 
-FWD_TO_PIMPL(eval_uvvar_lda_rks)            // U/VVar LDA (density)
-FWD_TO_PIMPL(eval_uvvar_gga_rks)            // U/VVar GGA (density + grad, gamma)
 
-FWD_TO_PIMPL(eval_uvvar_lda_uks)            // U/VVar LDA (density)
-FWD_TO_PIMPL(eval_uvvar_gga_uks)            // U/VVar GGA (density + grad, gamma)
-
-FWD_TO_PIMPL(eval_uvvar_lda_gks)            // U/VVar LDA (density)
-FWD_TO_PIMPL(eval_uvvar_gga_gks)            // U/VVar GGA (density + grad, gamma)
+FWD_TO_PIMPL_INT_TRACKER(eval_uvvar_lda)            // U/VVar LDA (density)
+FWD_TO_PIMPL_INT_TRACKER(eval_uvvar_gga)            // U/VVar GGA (density + grad, gamma)
 
 FWD_TO_PIMPL(eval_zmat_lda_vxc_rks)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc_rks)         // Eval Z Matrix GGA VXC
