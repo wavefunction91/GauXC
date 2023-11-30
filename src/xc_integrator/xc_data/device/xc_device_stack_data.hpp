@@ -46,13 +46,11 @@ struct XCDeviceStackData : public XCDeviceData {
     Shell<double>* shells_device = nullptr; ///< Array of static basis shells (nshells)
     ShellPair<double>* shell_pairs_device = nullptr;
 
-    double* dmat_device   = nullptr; ///< Static density matrix storage (nbf,nbf)
     double* rab_device    = nullptr; ///< Static RAB matrix storage (*,natoms)
     double* coords_device = nullptr; ///< Static atomic positions (3 * natoms)
 
     double* exc_device     = nullptr;  ///< EXC storage (1)
     double* nel_device     = nullptr;  ///< N_EL storage (1)
-    double* vxc_device     = nullptr;  ///< VXC storage (nbf,nbf)
     double* exx_k_device   = nullptr;  ///< EXX K storage (nbf,nbf)
     double* acc_scr_device = nullptr;  ///< Accumulaion scratch (1)
     double* exc_grad_device = nullptr; ///< EXC Gradient storage (3*natoms)
@@ -65,14 +63,14 @@ struct XCDeviceStackData : public XCDeviceData {
     int32_t* shell_to_bf_device = nullptr;
     int32_t* shell_sizes_device = nullptr;
 
-    double* dmat_s_device   = nullptr;
-    double* dmat_z_device   = nullptr;
-    double* dmat_x_device   = nullptr;
+    double* dmat_s_device   = nullptr;	///< Static density matrix storage (nbf,nbf)
+    double* dmat_z_device   = nullptr;	/// Ditto for Z,Y,X densities
     double* dmat_y_device   = nullptr;
-    double* vxc_s_device    = nullptr;
-    double* vxc_z_device    = nullptr;
-    double* vxc_x_device    = nullptr;
+    double* dmat_x_device   = nullptr;
+    double* vxc_s_device    = nullptr;  ///< VXC storage (nbf, nbf)
+    double* vxc_z_device    = nullptr;	/// Ditto for Z,Y,X densities
     double* vxc_y_device    = nullptr;
+    double* vxc_x_device    = nullptr;
 
     inline void reset() { std::memset( this, 0, sizeof(static_data) ); }
   };
@@ -163,6 +161,8 @@ struct XCDeviceStackData : public XCDeviceData {
   double* vxc_device_data() override;
   double* vxc_s_device_data() override;
   double* vxc_z_device_data() override;
+  double* vxc_y_device_data() override;
+  double* vxc_x_device_data() override;
   double* exc_device_data() override;
   double* nel_device_data() override;
   double* exx_k_device_data() override;

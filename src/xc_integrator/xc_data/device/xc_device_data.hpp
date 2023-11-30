@@ -20,24 +20,24 @@
 namespace GauXC {
 
 enum integrator_xc_approx : uint32_t {
-  _UNDEFINED = 0,
-  LDA        = 1,
-  GGA        = 2,
-  MGGA       = 3
+  _UNDEF_APPROX	  = 0,
+  LDA        			= 1,
+  GGA        			= 2,
+  MGGA       			= 3
 };
 
 enum integrator_ks_scheme : uint32_t {
-  RKS   = 0,
-  UKS   = 1,
-  GKS   = 2
+	_UNDEF_SCHEME		= 0,
+  RKS   					= 1,
+  UKS   					= 2,
+  GKS   					= 3
 };
 
 enum density_id : uint32_t {
-    DEN     = 0,    // RKS
-    DEN_S   = 1,    // UKS, GKS
-    DEN_Z   = 2,    // UKS, GKS
-    DEN_X   = 3,    // UKS, GKS
-    DEN_Y   = 4     // UKS, GKS
+    DEN_S   		= 0,    // RKS, UKS, GKS
+    DEN_Z   		= 1,    // UKS, GKS
+    DEN_X   		= 2,    // GKS
+    DEN_Y   		= 3     // GKS
 };
 
 struct integrator_term_tracker {
@@ -47,8 +47,8 @@ struct integrator_term_tracker {
   bool exc_grad                  = false;
   bool exx                       = false;
   bool exx_ek_screening          = false;
-  integrator_xc_approx xc_approx = _UNDEFINED;
-  integrator_ks_scheme ks_scheme = RKS;
+  integrator_xc_approx xc_approx = _UNDEF_APPROX;
+  integrator_ks_scheme ks_scheme = _UNDEF_SCHEME;
   inline void reset() {
     std::memset( this, 0, sizeof(integrator_term_tracker) );
   }
@@ -267,7 +267,7 @@ struct required_term_storage {
     // Allocated terms for XC calculations
     const bool is_xc = tracker.exc_vxc or tracker.exc_grad;
     if(is_xc) {
-      if( tracker.xc_approx == _UNDEFINED )
+      if( tracker.xc_approx == _UNDEF_APPROX )
         GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET");
       //const bool is_lda  = is_xc and tracker.xc_approx == LDA;
       const bool is_gga  = is_xc and tracker.xc_approx == GGA;
@@ -468,6 +468,8 @@ struct XCDeviceData {
   virtual double* vxc_device_data() = 0;
   virtual double* vxc_z_device_data() = 0;
   virtual double* vxc_s_device_data() = 0;
+  virtual double* vxc_y_device_data() = 0;
+  virtual double* vxc_x_device_data() = 0;
   virtual double* exc_device_data() = 0;
   virtual double* nel_device_data() = 0;
   virtual double* exx_k_device_data() = 0;

@@ -34,9 +34,10 @@ XCDeviceStackData::XCDeviceStackData(const DeviceRuntimeEnvironment& rt) :
 XCDeviceStackData::~XCDeviceStackData() noexcept = default;
 
 
-double* XCDeviceStackData::vxc_device_data() { return static_stack.vxc_device; }
 double* XCDeviceStackData::vxc_s_device_data() { return static_stack.vxc_s_device; }
 double* XCDeviceStackData::vxc_z_device_data() { return static_stack.vxc_z_device; }
+double* XCDeviceStackData::vxc_y_device_data() { return static_stack.vxc_y_device; }
+double* XCDeviceStackData::vxc_x_device_data() { return static_stack.vxc_x_device; }
 double* XCDeviceStackData::exc_device_data() { return static_stack.exc_device; }
 double* XCDeviceStackData::nel_device_data() { return static_stack.nel_device; }
 double* XCDeviceStackData::exx_k_device_data() { return static_stack.exx_k_device; }
@@ -82,33 +83,6 @@ void XCDeviceStackData::allocate_static_data_weights( int32_t natoms ) {
   allocated_terms.weights = true;
 }
 
-void XCDeviceStackData::allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) {
-
-  if( allocated_terms.exc_vxc ) 
-    GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXC VXC");
-
-  // Save state
-  global_dims.nshells = nshells;
-  global_dims.nbf     = nbf; 
-
-  // Allocate static memory with proper alignment
-  buffer_adaptor mem( dynmem_ptr, dynmem_sz );
-
-  static_stack.shells_device     = mem.aligned_alloc<Shell<double>>( nshells , csl);
-  static_stack.exc_device        = mem.aligned_alloc<double>( 1 , csl);
-  static_stack.nel_device        = mem.aligned_alloc<double>( 1 , csl);
-  static_stack.acc_scr_device    = mem.aligned_alloc<double>( 1 , csl);
-
-  static_stack.vxc_device  = mem.aligned_alloc<double>( nbf * nbf , csl);
-  static_stack.dmat_device = mem.aligned_alloc<double>( nbf * nbf , csl);
-
-  // Get current stack location
-  dynmem_ptr = mem.stack();
-  dynmem_sz  = mem.nleft(); 
-
-  allocated_terms.exc_vxc = true;
-}
-
 void XCDeviceStackData::allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms ) {
 
   if( allocated_terms.exc_vxc ) 
@@ -128,8 +102,8 @@ void XCDeviceStackData::allocate_static_data_exc_vxc( int32_t nbf, int32_t nshel
   
   switch( enabled_terms.ks_scheme ) {
     case RKS:
-      static_stack.vxc_device  = mem.aligned_alloc<double>( nbf * nbf , csl);
-      static_stack.dmat_device = mem.aligned_alloc<double>( nbf * nbf , csl);
+      static_stack.vxc_s_device  = mem.aligned_alloc<double>( nbf * nbf , csl);
+      static_stack.dmat_s_device = mem.aligned_alloc<double>( nbf * nbf , csl);
       allocated_terms.ks_scheme = RKS;
 			break;
     case UKS:
@@ -165,7 +139,7 @@ void XCDeviceStackData::allocate_static_data_den( int32_t nbf, int32_t nshells )
   static_stack.acc_scr_device    = mem.aligned_alloc<double>( 1 , csl);
   static_stack.nel_device        = mem.aligned_alloc<double>( 1 , csl);
 
-  static_stack.dmat_device = mem.aligned_alloc<double>( nbf * nbf , csl);
+  static_stack.dmat_s_device = mem.aligned_alloc<double>( nbf * nbf , csl);
 
   // Get current stack location
   dynmem_ptr = mem.stack();
@@ -192,7 +166,7 @@ void XCDeviceStackData::allocate_static_data_exc_grad( int32_t nbf, int32_t nshe
   static_stack.nel_device        = mem.aligned_alloc<double>( 1 , csl);
   static_stack.acc_scr_device    = mem.aligned_alloc<double>( 1 , csl);
 
-  static_stack.dmat_device = mem.aligned_alloc<double>( nbf * nbf , csl);
+  static_stack.dmat_s_device = mem.aligned_alloc<double>( nbf * nbf , csl);
 
   // Get current stack location
   dynmem_ptr = mem.stack();
@@ -221,7 +195,7 @@ void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells, 
     mem.aligned_alloc<ShellPair<double>>(nshell_pairs, csl);
 
   static_stack.exx_k_device = mem.aligned_alloc<double>( nbf * nbf , csl);
-  static_stack.dmat_device  = mem.aligned_alloc<double>( nbf * nbf , csl);
+  static_stack.dmat_s_device  = mem.aligned_alloc<double>( nbf * nbf , csl);
 
   // Get current stack location
   dynmem_ptr = mem.stack();
@@ -248,7 +222,7 @@ void XCDeviceStackData::allocate_static_data_exx_ek_screening( size_t ntasks, in
   buffer_adaptor mem( dynmem_ptr, dynmem_sz );
 
   static_stack.shells_device = mem.aligned_alloc<Shell<double>>( nshells , csl);
-  static_stack.dmat_device   = mem.aligned_alloc<double>( nbf * nbf , csl);
+  static_stack.dmat_s_device   = mem.aligned_alloc<double>( nbf * nbf , csl);
   static_stack.ek_max_bfn_sum_device =
     mem.aligned_alloc<double>( ntasks , csl);
   static_stack.vshell_max_sparse_device = 
@@ -315,7 +289,7 @@ void XCDeviceStackData::send_static_data_density_basis( const double* P, int32_t
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
 
   // Copy Density
-  device_backend_->copy_async( nbf*nbf, P, static_stack.dmat_device, "P H2D" );
+  device_backend_->copy_async( nbf*nbf, P, static_stack.dmat_s_device, "P H2D" );
 
   // Copy Basis Set
   device_backend_->copy_async( basis.nshells(), basis.data(), static_stack.shells_device,
@@ -481,17 +455,6 @@ void XCDeviceStackData::zero_den_integrands() {
 }
 
 
-void XCDeviceStackData::zero_exc_vxc_integrands() {
-
-  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
-
-  const auto nbf = global_dims.nbf;
-  device_backend_->set_zero( nbf*nbf, static_stack.vxc_device, "VXC Zero" );
-  device_backend_->set_zero( 1,       static_stack.exc_device, "EXC Zero" );
-  device_backend_->set_zero( 1,       static_stack.nel_device, "NEL Zero" );
-
-}
-
 void XCDeviceStackData::zero_exc_vxc_integrands(integrator_term_tracker enabled_terms) {
 
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
@@ -499,7 +462,7 @@ void XCDeviceStackData::zero_exc_vxc_integrands(integrator_term_tracker enabled_
   const auto nbf = global_dims.nbf;
   switch( enabled_terms.ks_scheme ) {
     case RKS:
-      device_backend_->set_zero( nbf*nbf, static_stack.vxc_device, "VXC Zero" );
+      device_backend_->set_zero( nbf*nbf, static_stack.vxc_s_device, "VXC Zero" );
 			break;
     case UKS:
       device_backend_->set_zero( nbf*nbf, static_stack.vxc_s_device, "VXC Zero" );
@@ -551,7 +514,7 @@ void XCDeviceStackData::retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
   if( ldvxc != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDVXC must be NBF");
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
   
-  device_backend_->copy_async( nbf*nbf, static_stack.vxc_device, VXC,  "VXC D2H" );
+  device_backend_->copy_async( nbf*nbf, static_stack.vxc_s_device, VXC,  "VXC D2H" );
   device_backend_->copy_async( 1,       static_stack.nel_device, N_EL, "NEL D2H" );
   device_backend_->copy_async( 1,       static_stack.exc_device, EXC,  "EXC D2H" );
 
@@ -677,7 +640,7 @@ size_t XCDeviceStackData::get_mem_req(
     // U Variables
     reqt.grid_den_size(npts)      * sizeof(double) + 
     reqt.grid_den_grad_size(npts) * sizeof(double) +
-    reqt.grid_den_uks_size(npts)  * sizeof(double) +
+    reqt.grid_den_uks_size(npts)  * sizeof(double) + // TODO: UNIFY INTO GRID_DEN_SIZE
 
     // V Variables
     reqt.grid_gamma_size(npts)    * sizeof(double) +

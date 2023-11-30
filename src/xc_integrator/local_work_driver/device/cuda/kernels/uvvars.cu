@@ -257,7 +257,7 @@ void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max,
 
 
 
-template <int den_select>
+template <density_id den_select>
 __global__ void eval_den_kern( size_t        ntasks,
                                        XCDeviceTask* tasks_device ) {
 
@@ -271,17 +271,8 @@ __global__ void eval_den_kern( size_t        ntasks,
 
   double* den_eval_device   = nullptr;
   // use the "U" variable (+/- for UKS) even though at this point the density (S/Z) is stored
-  switch( den_select ) {
-    case 0:
-      den_eval_device = task.den;
-      break;
-    case 1:
-      den_eval_device = task.den_pos;
-      break;
-    case 2:
-      den_eval_device = task.den_neg;
-      break;
-  }
+	if constexpr (den_select == DEN_S) den_eval_device = task.den_pos;
+	if constexpr (den_select == DEN_Z) den_eval_device = task.den_neg;
 
   const auto* basis_eval_device = task.bf;
 
@@ -331,19 +322,15 @@ void eval_u_den( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id de
   dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
                util::div_ceil( npts_max, threads.y ),
                ntasks );
-
-  switch( den_select ){
-    case DEN:
-      eval_den_kern<0><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-      break;
-    case DEN_S:
-      eval_den_kern<1><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-      break;
-    case DEN_Z:
-      eval_den_kern<2><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-      break;
-    default:
-      GAUXC_GENERIC_EXCEPTION("eval_u_den: den_select not properly set");
+	switch( den_select ) {
+		case DEN_S:	
+      eval_den_kern<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+			break;
+		case DEN_Z:	
+      eval_den_kern<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+			break;
+		default:
+			GAUXC_GENERIC_EXCEPTION( "eval_den called with improper density selected" );
   }
 
 }
@@ -353,10 +340,6 @@ void eval_u_den( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id de
 
 
 
-
-template __global__ void eval_den_kern<0>( size_t ntasks, XCDeviceTask* tasks );
-template __global__ void eval_den_kern<1>( size_t ntasks, XCDeviceTask* tasks );
-template __global__ void eval_den_kern<2>( size_t ntasks, XCDeviceTask* tasks );
 
 
 

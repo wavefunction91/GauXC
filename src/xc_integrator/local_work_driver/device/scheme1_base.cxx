@@ -481,9 +481,6 @@ void AoSScheme1Base::eval_den( XCDeviceData* _data, density_id den_select ){
   auto base_stack    = data->base_stack;
   double* den_eval_ptr = nullptr;
   switch ( den_select ) {
-    case DEN:
-      den_eval_ptr = base_stack.den_eval_device;
-			break;
     case DEN_S:
       den_eval_ptr = base_stack.den_pos_eval_device;
 			break;
@@ -491,7 +488,7 @@ void AoSScheme1Base::eval_den( XCDeviceData* _data, density_id den_select ){
       den_eval_ptr = base_stack.den_neg_eval_device;
 			break;
 		default:
-			GAUXC_GENERIC_EXCEPTION( "eval_den called without setting a density to evaluate!" );
+			GAUXC_GENERIC_EXCEPTION( "eval_den called with invalid density selected!" );
   }
   data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, den_eval_ptr, "Den Zero" );
     
@@ -803,7 +800,7 @@ void AoSScheme1Base::inc_vxc( XCDeviceData* _data){
   auto static_stack  = data->static_stack;
   auto aos_stack     = data->aos_stack;
   sym_task_inc_potential( ntasks, aos_stack.device_tasks,
-    static_stack.vxc_device, nbf, submat_block_size,
+    static_stack.vxc_s_device, nbf, submat_block_size,
     data->device_backend_->queue() );
 }
 
@@ -817,7 +814,7 @@ void AoSScheme1Base::inc_vxc( XCDeviceData* _data){
 
 
 
-void AoSScheme1Base::inc_vxc( XCDeviceData* _data, density_id den_selector = DEN){
+void AoSScheme1Base::inc_vxc( XCDeviceData* _data, density_id den_selector){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -850,9 +847,6 @@ void AoSScheme1Base::inc_vxc( XCDeviceData* _data, density_id den_selector = DEN
   auto aos_stack     = data->aos_stack;
   double* vxc_ptr    = nullptr;
   switch( den_selector ) {
-    case DEN:
-      vxc_ptr = static_stack.vxc_device;
-      break;
     case DEN_S:
       vxc_ptr = static_stack.vxc_s_device;
       break;
@@ -885,12 +879,12 @@ void AoSScheme1Base::symmetrize_vxc( XCDeviceData* _data) {
 
   const auto nbf = data->global_dims.nbf;
   auto static_stack  = data->static_stack;
-  symmetrize_matrix( nbf, static_stack.vxc_device, nbf, 
+  symmetrize_matrix( nbf, static_stack.vxc_s_device, nbf, 
     data->device_backend_->queue() ); 
 
 }
 
-void AoSScheme1Base::symmetrize_vxc( XCDeviceData* _data, density_id den_selector = DEN) {
+void AoSScheme1Base::symmetrize_vxc( XCDeviceData* _data, density_id den_selector) {
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -900,10 +894,6 @@ void AoSScheme1Base::symmetrize_vxc( XCDeviceData* _data, density_id den_selecto
   const auto nbf = data->global_dims.nbf;
   auto static_stack  = data->static_stack;
   switch ( den_selector ) {
-    case DEN:
-      symmetrize_matrix( nbf, static_stack.vxc_device, nbf, 
-            data->device_backend_->queue() ); 
-      break;
     case DEN_S:
       symmetrize_matrix( nbf, static_stack.vxc_s_device, nbf, 
             data->device_backend_->queue() ); 
@@ -972,7 +962,7 @@ void AoSScheme1Base::eval_exx_fmat( XCDeviceData* _data ) {
   // Pack the density matrix into (bfn, cou) shape
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
   auto aos_stack     = data->aos_stack;
-  asym_pack_submat( ntasks, aos_stack.device_tasks, static_stack.dmat_device,
+  asym_pack_submat( ntasks, aos_stack.device_tasks, static_stack.dmat_s_device,
     nbf, submat_block_size, data->device_backend_->queue() );
 
   // Sync blas streams with master stream
@@ -1449,7 +1439,7 @@ void AoSScheme1Base::exx_ek_shellpair_collision( double eps_E, double eps_K,
   auto static_stack    = data->static_stack;
 
   GauXC::exx_ek_shellpair_collision( ntasks, nshells, nbf,
-    static_stack.dmat_device, nbf,
+    static_stack.dmat_s_device, nbf,
     static_stack.vshell_max_sparse_device, 
     static_stack.shpair_row_ind_device,
     static_stack.shpair_col_ind_device,
