@@ -699,56 +699,6 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
 
 
 
-void AoSScheme1Base::eval_xmat( double fac, XCDeviceData* _data, bool do_grad ){
-
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
-
-  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
-
-  auto tasks = data->host_device_tasks;
-  const auto ntasks = tasks.size();
-
-  // Pack density matrix 
-  const auto nbf = data->global_dims.nbf;
-  const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
-  auto static_stack  = data->static_stack;
-  auto aos_stack     = data->aos_stack;
-  sym_pack_submat( ntasks, aos_stack.device_tasks, static_stack.dmat_device, 
-    nbf, submat_block_size, data->device_backend_->queue() );
-
-
-  // Sync blas streams with master stream
-  data->device_backend_->sync_blas_pool_with_master();
-
-  auto do_gemm = [&]( auto& handle, size_t npts, size_t nbe, auto* bf_ptr, auto* den_ptr, int ldden, auto* x_ptr ) {
-    gemm( handle, DeviceBlasOp::NoTrans, DeviceBlasOp::NoTrans, npts, nbe, nbe, fac, bf_ptr, npts,
-      den_ptr, ldden, 0., x_ptr, npts ); 
-  };
-
-  // Launch GEMM in round-robin
-  const auto n_blas_streams = data->device_backend_->blas_pool_size();
-  //size_t nsingle = 0;
-  for( size_t iT = 0; iT < ntasks; ++iT ) {
-    auto& task = tasks[iT];
-      auto den_ptr = task.bfn_screening.ncut > 1 ? task.nbe_scr : static_stack.dmat_device + task.bfn_screening.ibf_begin*(nbf+1);
-      int  ldden   = task.bfn_screening.ncut > 1 ? task.bfn_screening.nbe : nbf;
-      auto handle = data->device_backend_->blas_pool_handle( iT % n_blas_streams );
-      do_gemm( handle, task.npts, task.bfn_screening.nbe, task.bf, den_ptr, ldden, task.zmat );
-      if( do_grad ) {
-        do_gemm( handle, task.npts, task.bfn_screening.nbe, task.dbfx, den_ptr, ldden, task.xmat_x );
-        do_gemm( handle, task.npts, task.bfn_screening.nbe, task.dbfy, den_ptr, ldden, task.xmat_y );
-        do_gemm( handle, task.npts, task.bfn_screening.nbe, task.dbfz, den_ptr, ldden, task.xmat_z );
-      }
-  }
-
-  // Record completion of BLAS ops on master stream
-  data->device_backend_->sync_master_with_blas_pool();
-
-}
-
-
-
 void AoSScheme1Base::eval_xmat( double fac, XCDeviceData* _data, bool do_grad, density_id den_select ){
 
   auto* data = dynamic_cast<Data*>(_data);

@@ -16,7 +16,7 @@
 
 namespace GauXC {
 
-void AoSScheme1MAGMABase::eval_xmat( double fac, XCDeviceData* _data, bool do_grad ){
+void AoSScheme1MAGMABase::eval_xmat( double fac, XCDeviceData* _data, bool do_grad, density_id den ){
 
   if( do_grad ) GAUXC_GENERIC_EXCEPTION("MAGMA + X Gradient NYI");
 

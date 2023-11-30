@@ -83,10 +83,6 @@ FWD_TO_PIMPL(eval_exx_ek_screening_bfn_stats)
 
 // X     = fac * P * B
 // dX/dx = fac * P * dB/dx (do_grad)
-void LocalDeviceWorkDriver::eval_xmat( double fac, XCDeviceData* device_data, bool do_grad ) {
-  throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_xmat(fac, device_data, do_grad);
-}
 
 void LocalDeviceWorkDriver::eval_xmat( double fac, XCDeviceData* device_data, bool do_grad, density_id den ) {
   throw_if_invalid_pimpl(pimpl_);
