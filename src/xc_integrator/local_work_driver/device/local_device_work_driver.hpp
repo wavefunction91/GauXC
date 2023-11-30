@@ -62,7 +62,7 @@ public:
   void eval_collocation_hessian( XCDeviceData* );
 
   void eval_xmat( double fac, XCDeviceData*, bool do_grad = false );
-  void eval_xmat( double fac, XCDeviceData*, bool do_grad , density_id den );
+  void eval_xmat( double fac, XCDeviceData*, bool do_grad = false , density_id den = DEN_S );
   
   void eval_den( XCDeviceData*, density_id );
 

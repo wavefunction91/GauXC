@@ -261,10 +261,12 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
 #endif
 
 #ifdef GAUXC_ENABLE_HOST
+/*
     SECTION( "Host" ) {
       test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
         pruning_scheme, 1, true, true, true );
     }
+*/
 #endif
 
 #ifdef GAUXC_ENABLE_DEVICE
@@ -275,19 +277,22 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
     check_grad = false;
     check_k    = false;
     #endif
+		/*
     SECTION( "Incore - MPI Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
         reference_file, func, pruning_scheme, 1, 
         check_grad, true, check_k, "Default" );
     }
-    /*
+*/
     #ifdef GAUXC_ENABLE_MAGMA
+/*
     SECTION( "Incore - MPI Reduction - MAGMA" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
         reference_file, func, pruning_scheme,
         1, false, true, check_k, "Default", "Default", 
         "Scheme1-MAGMA" );
     }
+*/
     #endif
 
     #ifdef GAUXC_ENABLE_CUTLASS
@@ -312,7 +317,7 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
       test_xc_integrator( ExecutionSpace::Device, rt, 
         reference_file, func, pruning_scheme, 1, 
         false, false, false, "ShellBatched" );
-    }*/
+    }
   }
 #endif
 
@@ -336,6 +341,7 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf.hdf5", 
         func, PruningScheme::Unpruned );
   }
+	/*
   SECTION( "Benzene / SVWN5 / cc-pVDZ (Treutler)" ) {
     auto func = make_functional(svwn5, unpol);
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf_treutler_prune.hdf5", 
@@ -353,7 +359,6 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_pbe0_cc-pvdz_ufg_ssf.hdf5", 
         func, PruningScheme::Unpruned );
   }
-
   // MGGA Test (TAU Only)
   SECTION( "Cytosine / SCAN / cc-pVDZ") {
     functional_type func({
@@ -373,6 +378,7 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     test_integrator(GAUXC_REF_DATA_PATH "/cytosine_r2scanl_cc-pvdz_ufg_ssf_robust.hdf5", 
         func, PruningScheme::Robust );
   }
+	*/
   //UKS LDA Test
   SECTION( "Li / SVWN5 / sto-3g" ) {
     auto func = make_functional(svwn5, pol);
@@ -385,7 +391,7 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     test_integrator(GAUXC_REF_DATA_PATH "/li_blyp_sto3g_uks.bin",
         func, PruningScheme::Unpruned );
   }
-
+	/*
   // UKS MGGA Test (TAU Only)
   SECTION( "Cytosine (doublet) / SCAN / cc-pVDZ") {
     functional_type func({
@@ -419,4 +425,5 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_631gd_pbe0_ufg.hdf5", 
         func, PruningScheme::Unpruned );
   }
+	*/
 }

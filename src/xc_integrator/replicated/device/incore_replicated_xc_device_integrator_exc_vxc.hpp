@@ -233,282 +233,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
 template <typename ValueType>
 void IncoreReplicatedXCDeviceIntegrator<ValueType>::
-  exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
-                       host_task_iterator task_begin, host_task_iterator task_end,
-                       XCDeviceData& device_data ) {
-GAUXC_GENERIC_EXCEPTION(" not supposed to be here!");
-	/*
-  auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
-
-  // Setup Aliases
-  const auto& func  = *this->func_;
-  const auto& mol   = this->load_balancer_->molecule();
-
-  // Get basis map
-  BasisSetMap basis_map(basis,mol);
-
-  // Populate submat maps
-  device_data.populate_submat_maps( basis.nbf(), task_begin, task_end, basis_map );
-
-
-  // Sort tasks 
-  auto task_comparator = []( const XCTask& a, const XCTask& b ) {
-    return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
-  };
-  std::sort( task_begin, task_end, task_comparator );
-
-
-  // Check that Partition Weights have been calculated
-  auto& lb_state = this->load_balancer_->state();
-  if( not lb_state.modified_weights_are_stored ) {
-    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
-  }
-
-#if 0
-  this->timer_.time_op("XCIntegrator.ScreenWeights",[&](){
-
-  constexpr double weight_thresh = std::numeric_limits<double>::epsilon();
-  for( auto it = task_begin; it != task_end; ++it ) {
-    it->max_weight = *std::max_element( it->weights.begin(), it->weights.end() );
-  }
-
-  size_t old_ntasks = std::distance( task_begin, task_end );
-  task_end = std::stable_partition(task_begin, task_end,
-    [&](const auto& a){ return a.max_weight > weight_thresh; } );
-
-  size_t new_ntasks = std::distance( task_begin, task_end );
-  std::cout << old_ntasks << ", " << new_ntasks << std::endl;
-
-  });
-#endif
-
-  // Do XC integration in task batches
-  const auto nbf     = basis.nbf();
-  const auto nshells = basis.nshells();
-  device_data.reset_allocations();
-  device_data.allocate_static_data_exc_vxc( nbf, nshells );
-  device_data.send_static_data_density_basis( P, ldp, basis );
-
-  // Zero integrands
-  device_data.zero_exc_vxc_integrands();
-
-  // Processes batches in groups that saturadate available device memory
-  integrator_term_tracker enabled_terms;
-  enabled_terms.exc_vxc = true;
-  if( func.is_lda() )      enabled_terms.xc_approx = integrator_xc_approx::LDA; 
-  else if( func.is_gga() ) enabled_terms.xc_approx = integrator_xc_approx::GGA; 
-  else GAUXC_GENERIC_EXCEPTION("XC Approx NYI");
-
-#if 0
-  std::vector<int32_t> full_shell_list(nshells);
-  std::iota(full_shell_list.begin(),full_shell_list.end(),0);
-  for( auto it = task_begin; it != task_end; ++it ) {
-    it->cou_screening.shell_list = full_shell_list;
-    it->cou_screening.nbe        = nbf;
-  }
-#endif
-
-  auto task_it = task_begin;
-  while( task_it != task_end ) {
-
-    // Determine next task batch, send relevant data to device (EXC VXC only)
-    task_it = 
-      device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
-
-
-    // Evaluate collocation
-    if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
-    else                lwd->eval_collocation( &device_data );
-
-    // Evaluate X matrix
-    lwd->eval_xmat( 2.0, &device_data );
-
-    // Evaluate U/V variables
-    if( func.is_gga() ) lwd->eval_uvvar_gga_rks( &device_data );
-    else                lwd->eval_uvvar_lda_rks( &device_data );
-
-    // Evaluate XC functional
-    if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );
-    else                lwd->eval_kern_exc_vxc_lda( func, &device_data );
-
-    // Do scalar EXC/N_EL integrations
-    lwd->inc_exc( &device_data );
-    lwd->inc_nel( &device_data );
-
-    // Evaluate Z matrix
-    if( func.is_gga() ) lwd->eval_zmat_gga_vxc_rks( &device_data );
-    else                lwd->eval_zmat_lda_vxc_rks( &device_data );
-
-    // Increment VXC (LT)
-    lwd->inc_vxc( &device_data );
-
-  } // Loop over batches of batches 
-
-  // Symmetrize VXC in device memory
-  lwd->symmetrize_vxc( &device_data );
-*/
-}
-
-
-
-template <typename ValueType>
-void IncoreReplicatedXCDeviceIntegrator<ValueType>::
-  exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
-                       value_type* VXC, int64_t ldvxc, value_type* EXC, 
-                       value_type *N_EL,
-                       host_task_iterator task_begin, host_task_iterator task_end,
-                       XCDeviceData& device_data ) {
-
-  // Get integrate and keep data on device
-  exc_vxc_local_work_( basis, P, ldp, nullptr, 0, nullptr, 0, nullptr, 0, task_begin, task_end, device_data );
-  auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
-  rt.device_backend()->master_queue_synchronize();
-
-  // Receive XC terms from host
-  this->timer_.time_op("XCIntegrator.DeviceToHostCopy_EXC_VXC",[&](){
-    device_data.retrieve_exc_vxc_integrands( EXC, N_EL, VXC, ldvxc );
-  });
-
-}
-
-template <typename ValueType>
-void IncoreReplicatedXCDeviceIntegrator<ValueType>::
-  exc_vxc_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
-                                const value_type* Pz, int64_t ldpz,
-                            host_task_iterator task_begin, host_task_iterator task_end,
-                            XCDeviceData& device_data ) {
-
-/*
-  auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
-
-  // Setup Aliases
-  const auto& func  = *this->func_;
-  const auto& mol   = this->load_balancer_->molecule();
-
-  // Get basis map
-  BasisSetMap basis_map(basis,mol);
-
-  // Populate submat maps
-  device_data.populate_submat_maps( basis.nbf(), task_begin, task_end, basis_map );
-
-
-  // Sort tasks 
-  auto task_comparator = []( const XCTask& a, const XCTask& b ) {
-    return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
-  };
-  std::sort( task_begin, task_end, task_comparator );
-
-
-  // Check that Partition Weights have been calculated
-  auto& lb_state = this->load_balancer_->state();
-  if( not lb_state.modified_weights_are_stored ) {
-    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
-  }
-  
-
-  integrator_term_tracker enabled_terms;
-  enabled_terms.exc_vxc = true;
-  enabled_terms.ks_scheme = UKS;
-  
-  // Do XC integration in task batches
-  const auto nbf     = basis.nbf();
-  const auto nshells = basis.nshells();
-  device_data.reset_allocations();
-  device_data.allocate_static_data_exc_vxc( nbf, nshells, enabled_terms );
-  device_data.send_static_data_density_basis( Ps, ldps, Pz, ldpz, basis );
-
-
-  // Processes batches in groups that saturadate available device memory
-  if( func.is_lda() )      enabled_terms.xc_approx = integrator_xc_approx::LDA; 
-  else if( func.is_gga() ) enabled_terms.xc_approx = integrator_xc_approx::GGA; 
-  else GAUXC_GENERIC_EXCEPTION("XC Approx NYI");
-
-  // Zero integrands
-  device_data.zero_exc_vxc_integrands(enabled_terms);
-
-  auto task_it = task_begin;
-  while( task_it != task_end ) {
-
-    // Determine next task batch, send relevant data to device (EXC VXC only)
-    task_it = 
-      device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
-
-    
-    if( func.is_gga() ) GAUXC_GENERIC_EXCEPTION("UKS GGA NYI");
-    // Evaluate collocation
-    //if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
-    //else                lwd->eval_collocation( &device_data );
-    lwd->eval_collocation( &device_data );
-
-    auto* data = dynamic_cast<XCDeviceStackData*>(&device_data);
-    auto base_stack = data->base_stack;
-    auto static_stack = data->static_stack;
-
-    // Evaluate X matrix
-    lwd->eval_xmat( 0.5, &device_data, false, DEN_S );
-    
-    // Contract X matrix with bf -> den_eval
-    lwd->eval_den( &device_data, DEN_S );
-
-    lwd->eval_xmat( 0.5, &device_data, false, DEN_Z );
-    lwd->eval_den( &device_data, DEN_Z );
-    
-
-    // Evaluate U/V variables
-    //if( func.is_gga() ) lwd->eval_uvvar_gga_uks( &device_data );
-    //else                lwd->eval_uvvar_lda_uks( &device_data );
-    
-    lwd->eval_uvvar_lda_uks( &device_data );
-    // Evaluate XC functional
-    //if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );
-    //else                lwd->eval_kern_exc_vxc_lda( func, &device_data );
-    
-    lwd->eval_kern_exc_vxc_lda( func, &device_data );
-
-    // Do scalar EXC/N_EL integrations
-    lwd->inc_exc( &device_data );
-    lwd->inc_nel( &device_data );
-
-    // Evaluate Z matrix
-    //if( func.is_gga() ) lwd->eval_zmat_gga_vxc_uks( &device_data );
-    //else                lwd->eval_zmat_lda_vxc_uks( &device_data );
-    lwd->eval_zmat_lda_vxc_uks( &device_data, DEN_S );
-
-    lwd->inc_vxc( &device_data, DEN_S );
-    lwd->eval_zmat_lda_vxc_uks( &device_data, DEN_Z );
-
-    lwd->inc_vxc( &device_data, DEN_Z );
-
-  } // Loop over batches of batches 
-
-  // Symmetrize VXC in device memory
-  lwd->symmetrize_vxc( &device_data, DEN_S );
-  lwd->symmetrize_vxc( &device_data, DEN_Z );
-*/
-}
-
-template <typename ValueType>
-void IncoreReplicatedXCDeviceIntegrator<ValueType>::
-  exc_vxc_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
-                            const value_type* Pz, int64_t ldpz,
-                            value_type* VXCs, int64_t ldvxcs,
-                            value_type* VXCz, int64_t ldvxcz, value_type* EXC, value_type *N_EL,
-                            host_task_iterator task_begin, host_task_iterator task_end,
-                            XCDeviceData& device_data ) {
-
-  // Get integrate and keep data on device
-  exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, nullptr, 0, nullptr, 0, task_begin, task_end, device_data );
-  auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
-  rt.device_backend()->master_queue_synchronize();
-
-  // Receive XC terms from host
-  this->timer_.time_op("XCIntegrator.DeviceToHostCopy_EXC_VXC",[&](){
-    device_data.retrieve_exc_vxc_integrands( EXC, N_EL, VXCs, ldvxcs, VXCz, ldvxcz );
-  });
-}
-
-template <typename ValueType>
-void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   exc_vxc_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
                             const value_type* Pz, int64_t ldpz,
                             const value_type* Py, int64_t ldpy,
@@ -522,6 +246,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 		GAUXC_GENERIC_EXCEPTION("MUST BE EITHER RKS, UKS, or GKS!");
 	}
 	
+	if (is_gks) GAUXC_GENERIC_EXCEPTION( "GKS DEVICE NYI!");
 
 	// Cast LWD to LocalDeviceWorkDriver
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
@@ -579,6 +304,9 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   // Zero integrands
   device_data.zero_exc_vxc_integrands(enabled_terms);
+  
+
+	if( func.is_gga() and is_uks ) GAUXC_GENERIC_EXCEPTION("UKS GGA NYI");
 
   auto task_it = task_begin;
   while( task_it != task_end ) {
@@ -589,7 +317,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     /*** Process the batches ***/
     
-    if( func.is_gga() and is_uks ) GAUXC_GENERIC_EXCEPTION("UKS GGA NYI");
     // Evaluate collocation
     if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
     else                lwd->eval_collocation( &device_data );
@@ -599,7 +326,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 		if (is_rks) {
 			xmat_fac = 2.0;
 			// Evaluate X matrix
-			lwd->eval_xmat( xmat_fac, &device_data );
+			lwd->eval_xmat( xmat_fac, &device_data, false, DEN_S );
 			
 			// Evaluate U/V variables
     	if( func.is_gga() ) lwd->eval_uvvar_gga_rks( &device_data );
@@ -689,7 +416,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 		GAUXC_GENERIC_EXCEPTION("MUST BE EITHER RKS, UKS, or GKS!");
 	}
 	
-	if (is_gks) GAUXC_GENERIC_EXCEPTION("GKS Device NYI!");
 
   // Get integrate and keep data on device
   exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx, task_begin, task_end, device_data );
