@@ -382,7 +382,6 @@ struct XCDeviceData {
   /// Allocate device memory for data that will persist on the device.
   virtual void reset_allocations() = 0;
   virtual void allocate_static_data_weights( int32_t natoms ) = 0;
-  virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms ) = 0;
   virtual void allocate_static_data_den( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) = 0;
@@ -400,7 +399,6 @@ struct XCDeviceData {
   virtual void zero_den_integrands() = 0;
 
   /// Zero out the EXC / VXC integrands in device memory
-  virtual void zero_exc_vxc_integrands() = 0;
   virtual void zero_exc_vxc_integrands(integrator_term_tracker enabled_terms) = 0;
 
   /// Zero out the EXC Gradient integrands in device memory
@@ -465,7 +463,6 @@ struct XCDeviceData {
   virtual void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) = 0;
   virtual void populate_submat_maps ( size_t, host_task_iterator begin, host_task_iterator end, const BasisSetMap& ) = 0;
 
-  virtual double* vxc_device_data() = 0;
   virtual double* vxc_z_device_data() = 0;
   virtual double* vxc_s_device_data() = 0;
   virtual double* vxc_y_device_data() = 0;

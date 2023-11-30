@@ -128,7 +128,6 @@ struct XCDeviceStackData : public XCDeviceData {
   host_task_iterator generate_buffers( integrator_term_tracker, const BasisSetMap&,
     host_task_iterator, host_task_iterator) override final;
   void allocate_static_data_weights( int32_t natoms ) override final;
-  void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) override final;
   void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms ) override final;
   void allocate_static_data_den( int32_t nbf, int32_t nshells ) override final;
   void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) override final;
@@ -143,7 +142,6 @@ struct XCDeviceStackData : public XCDeviceData {
     override final;
   void send_static_data_exx_ek_screening( const double* V_max, int32_t ldv, const BasisSetMap&, const ShellPairCollection<double>& ) override final;
   void zero_den_integrands() override final;
-  void zero_exc_vxc_integrands() override final;
   void zero_exc_vxc_integrands(integrator_term_tracker t) override final;
   void zero_exc_grad_integrands() override final;
   void zero_exx_integrands() override final;
@@ -158,7 +156,6 @@ struct XCDeviceStackData : public XCDeviceData {
   void retrieve_exx_ek_max_bfn_sum( double* MBS, int32_t nt) override final;
   void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) override final;
 
-  double* vxc_device_data() override;
   double* vxc_s_device_data() override;
   double* vxc_z_device_data() override;
   double* vxc_y_device_data() override;
