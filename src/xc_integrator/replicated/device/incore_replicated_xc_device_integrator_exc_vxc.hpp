@@ -343,7 +343,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 			// Evaluate U/V variables
 			if( func.is_gga() ) GAUXC_GENERIC_EXCEPTION("Device UKS+GGA NYI!");
 		}
-	
+
 		// Evaluate U/V variables
     if( func.is_gga() ) lwd->eval_uvvar_gga( &device_data, enabled_terms );
     else                lwd->eval_uvvar_lda( &device_data, enabled_terms );

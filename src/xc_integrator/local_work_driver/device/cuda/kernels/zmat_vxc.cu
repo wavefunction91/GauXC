@@ -13,7 +13,7 @@
 namespace GauXC {
 
 
-__global__ void zmat_lda_vxc_kernel( size_t        ntasks,
+__global__ void zmat_lda_vxc_rks_kernel( size_t        ntasks,
                                      XCDeviceTask* tasks_device ) {
 
   const int batch_idx = blockIdx.z;
@@ -45,7 +45,7 @@ __global__ void zmat_lda_vxc_kernel( size_t        ntasks,
 
 
 
-void zmat_lda_vxc( size_t            ntasks,
+void zmat_lda_vxc_rks( size_t            ntasks,
                    int32_t           max_nbf,
                    int32_t           max_npts,
                    XCDeviceTask*     tasks_device,
@@ -59,7 +59,7 @@ void zmat_lda_vxc( size_t            ntasks,
                util::div_ceil( max_nbf,  threads.y ),
                ntasks );
 
-  zmat_lda_vxc_kernel<<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  zmat_lda_vxc_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
 
 }
 
@@ -82,7 +82,7 @@ void zmat_lda_vxc( size_t            ntasks,
 
 
 
-__global__ void zmat_gga_vxc_kernel( size_t        ntasks,
+__global__ void zmat_gga_vxc_rks_kernel( size_t        ntasks,
                                      XCDeviceTask* tasks_device ) {
 
   const int batch_idx = blockIdx.z;
@@ -123,7 +123,7 @@ __global__ void zmat_gga_vxc_kernel( size_t        ntasks,
   }
 }
 
-void zmat_gga_vxc( size_t            ntasks,
+void zmat_gga_vxc_rks( size_t            ntasks,
                    int32_t           max_nbf,
                    int32_t           max_npts,
                    XCDeviceTask*     tasks_device,
@@ -137,7 +137,7 @@ void zmat_gga_vxc( size_t            ntasks,
                util::div_ceil( max_nbf,  threads.y ),
                ntasks );
 
-  zmat_gga_vxc_kernel<<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  zmat_gga_vxc_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
 
 }
               
@@ -151,7 +151,7 @@ void zmat_gga_vxc( size_t            ntasks,
 
 
 template<int den_selector>
-__global__ void zmat_lda_vxc_kernel( size_t        ntasks,
+__global__ void zmat_lda_vxc_uks_kernel( size_t        ntasks,
                                      XCDeviceTask* tasks_device ) {
 
   const int batch_idx = blockIdx.z;
@@ -176,21 +176,17 @@ __global__ void zmat_lda_vxc_kernel( size_t        ntasks,
     const size_t ibfoff = tid_y * npts + tid_x;
     const double factp = 0.5 * vrho_pos_device[tid_x];
     const double factm = 0.5 * vrho_neg_device[tid_x];
-    switch ( den_selector ) {
-      case 1: // positive density
+		if constexpr ( den_selector == DEN_S ) // positive density
         z_matrix_device[ ibfoff ] = 0.5*(factp * basis_eval_device[ ibfoff ] + factm * basis_eval_device[ ibfoff ]);
-        break;
-      case 2: // negative density
+		if constexpr ( den_selector == DEN_Z ) // negative density
         z_matrix_device[ ibfoff ] = 0.5*(factp * basis_eval_device[ ibfoff ] - factm * basis_eval_device[ ibfoff ]);
-        break;
-    }
   }
 
 }
 
 
 
-void zmat_lda_vxc( size_t            ntasks,
+void zmat_lda_vxc_uks( size_t            ntasks,
                    int32_t           max_nbf,
                    int32_t           max_npts,
                    XCDeviceTask*     tasks_device,
@@ -205,18 +201,10 @@ void zmat_lda_vxc( size_t            ntasks,
                util::div_ceil( max_nbf,  threads.y ),
                ntasks );
 
-  if ( sel == DEN_S ) zmat_lda_vxc_kernel<1><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-  if ( sel == DEN_Z ) zmat_lda_vxc_kernel<2><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  if ( sel == DEN_S ) 			zmat_lda_vxc_uks_kernel<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  else if ( sel == DEN_Z ) 	zmat_lda_vxc_uks_kernel<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
 
 }
-
-template<int den_selector>
-__global__ void zmat_lda_vxc_kernel<1>( size_t        ntasks,
-                                     XCDeviceTask* tasks_device );
-template<int den_selector>
-__global__ void zmat_lda_vxc_kernel<2>( size_t        ntasks,
-                                     XCDeviceTask* tasks_device );
-
 
 
 

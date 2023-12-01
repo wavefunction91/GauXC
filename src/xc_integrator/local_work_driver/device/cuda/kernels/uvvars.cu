@@ -165,9 +165,10 @@ __global__ void eval_uvars_lda_uks_kernel( size_t        ntasks,
 
 
   if( tid_y < npts ) {
-    den_pos_eval_device[ tid_y ] += den_neg_eval_device[ tid_y ];
-    den_neg_eval_device[ tid_y ] *= -2.0;
-    den_neg_eval_device[ tid_y ] += den_pos_eval_device[ tid_y ];
+		const auto ps = den_pos_eval_device[ tid_y ];
+		const auto pz = den_neg_eval_device[ tid_y ];
+		den_pos_eval_device[ tid_y ] = ps + pz;
+		den_neg_eval_device[ tid_y ] = ps - pz;
 
   }
 }

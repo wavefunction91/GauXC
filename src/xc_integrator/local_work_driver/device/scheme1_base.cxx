@@ -235,7 +235,7 @@ AoSScheme1Base::~AoSScheme1Base() noexcept {
 #endif
 }
 
-void AoSScheme1Base::eval_zmat_lda_vxc_rks( XCDeviceData* _data){
+void AoSScheme1Base::eval_zmat_lda_vxc_rks( XCDeviceData* _data ) {
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -251,7 +251,7 @@ void AoSScheme1Base::eval_zmat_lda_vxc_rks( XCDeviceData* _data){
   }
 
   auto aos_stack     = data->aos_stack;
-  zmat_lda_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
+  zmat_lda_vxc_rks( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
     data->device_backend_->queue() );
 
 }
@@ -272,7 +272,7 @@ void AoSScheme1Base::eval_zmat_gga_vxc_rks( XCDeviceData* _data){
   }
 
   auto aos_stack     = data->aos_stack;
-  zmat_gga_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
+  zmat_gga_vxc_rks( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
     data->device_backend_->queue() );
 
 }
@@ -293,7 +293,7 @@ void AoSScheme1Base::eval_zmat_lda_vxc_uks( XCDeviceData* _data, density_id den_
   }
 
   auto aos_stack     = data->aos_stack;
-  zmat_lda_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks, den_select, 
+  zmat_lda_vxc_uks( ntasks, nbe_max, npts_max, aos_stack.device_tasks, den_select,
     data->device_backend_->queue() );
 
 }
