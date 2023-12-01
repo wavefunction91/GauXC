@@ -99,13 +99,13 @@ protected:
                                                   host_task_iterator task_end );
 
   void execute_task_batch( incore_device_task& task, const basis_type& basis, const Molecule& mol, 
-														const value_type* Ps, int64_t ldps, const value_type* Pz, int64_t ldpz,
-														const value_type* Py, int64_t ldpy, const value_type* Px, int64_t ldpx,
-														value_type* VXCs, int64_t ldvxcs, 
-														value_type* VXCz, int64_t ldvxcz,
-														value_type* VXCy, int64_t ldvxcy,
-														value_type* VXCx, int64_t ldvxcx,
-														value_type* EXC,
+                            const value_type* Ps, int64_t ldps, const value_type* Pz, int64_t ldpz,
+                            const value_type* Py, int64_t ldpy, const value_type* Px, int64_t ldpx,
+                            value_type* VXCs, int64_t ldvxcs, 
+                            value_type* VXCz, int64_t ldvxcz,
+                            value_type* VXCy, int64_t ldvxcy,
+                            value_type* VXCx, int64_t ldvxcx,
+                            value_type* EXC,
                            value_type* N_EL, incore_integrator_type& incore_integrator,
                            XCDeviceData& device_data );
 public:

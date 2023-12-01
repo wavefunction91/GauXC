@@ -65,7 +65,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   // Compute local contributions to EXC/VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
     exc_vxc_local_work_( basis, P, ldp, nullptr, 0, nullptr, 0, nullptr, 0,
-												 VXC, ldvxc, nullptr, 0, nullptr, 0, nullptr, 0, EXC, 
+                         VXC, ldvxc, nullptr, 0, nullptr, 0, nullptr, 0, EXC, 
       &N_EL, tasks.begin(), tasks.end(), incore_integrator,
       *device_data_ptr );
   });
@@ -124,7 +124,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
     this->timer_.time_op("XCIntegrator.DeviceAlloc",
       [&](){ return lwd->create_device_data(rt); });
 
-	if(this->func_->is_gga()) GAUXC_GENERIC_EXCEPTION( "GGA+UKS NYI!" );
+  if(this->func_->is_gga()) GAUXC_GENERIC_EXCEPTION( "GGA+UKS NYI!" );
 
   // Generate incore integrator instance, transfer ownership of LWD
   incore_integrator_type incore_integrator( this->func_, this->load_balancer_,
@@ -137,9 +137,9 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   // Compute local contributions to EXC/VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
     exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, nullptr, 0, nullptr, 0,  
-															VXCs, ldvxcs, VXCz, ldvxcz, nullptr, 0, nullptr, 0, EXC, 
-      											&N_EL, tasks.begin(), tasks.end(), incore_integrator,
-      												*device_data_ptr );
+                              VXCs, ldvxcs, VXCz, ldvxcz, nullptr, 0, nullptr, 0, EXC, 
+                            &N_EL, tasks.begin(), tasks.end(), incore_integrator,
+                              *device_data_ptr );
   });
 
   // Release ownership of LWD back to this integrator instance
@@ -193,7 +193,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   const bool is_rks = not is_uks and not is_gks;
   if (not is_rks and not is_uks and not is_gks) {
     GAUXC_GENERIC_EXCEPTION("MUST BE EITHER RKS, UKS, or GKS!");
-  }	
+  } 
 
   const auto nbf = basis.nbf();
   const uint32_t nbf_threshold = 8000;
@@ -207,20 +207,20 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
     for( auto i = 0; i < nbf; ++i )
       VXCs[i + j*ldvxcs] = 0.;
 
-		if (is_uks or is_gks)
+    if (is_uks or is_gks)
     for( auto j = 0; j < nbf; ++j )
     for( auto i = 0; i < nbf; ++i )
       VXCz[i + j*ldvxcz] = 0.;
-		
-		if (is_gks) {
-    	for( auto j = 0; j < nbf; ++j ) {
-    		for( auto i = 0; i < nbf; ++i ) {
-     	 		VXCy[i + j*ldvxcy] = 0.;
-     	 		VXCx[i + j*ldvxcx] = 0.;
-				}
-			}
-		}
-			
+    
+    if (is_gks) {
+      for( auto j = 0; j < nbf; ++j ) {
+        for( auto i = 0; i < nbf; ++i ) {
+          VXCy[i + j*ldvxcy] = 0.;
+          VXCx[i + j*ldvxcx] = 0.;
+        }
+      }
+    }
+      
   });
 
 
@@ -248,9 +248,9 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
     // Execute task
     execute_task_batch( next_task, basis, mol, 
-											Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx,
-												 VXCs, ldvxcs, VXCz, ldvxcz, VXCy, ldvxcy, VXCx, ldvxcx,
-												 EXC, N_EL, incore_integrator, device_data );
+                      Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx,
+                         VXCs, ldvxcs, VXCz, ldvxcz, VXCy, ldvxcy, VXCx, ldvxcx,
+                         EXC, N_EL, incore_integrator, device_data );
   };
 
 
@@ -457,13 +457,13 @@ template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   execute_task_batch( incore_device_task& task, const basis_type& basis, const Molecule& mol, 
                       const value_type* Ps, int64_t ldps,
-											const value_type* Pz, int64_t ldpz,
+                      const value_type* Pz, int64_t ldpz,
                       const value_type* Py, int64_t ldpy,
-											const value_type* Px, int64_t ldpx,
- 											value_type* VXCs, int64_t ldvxcs,
- 											value_type* VXCz, int64_t ldvxcz,
- 											value_type* VXCy, int64_t ldvxcy,
- 											value_type* VXCx, int64_t ldvxcx,
+                      const value_type* Px, int64_t ldpx,
+                      value_type* VXCs, int64_t ldvxcs,
+                      value_type* VXCz, int64_t ldvxcz,
+                      value_type* VXCy, int64_t ldvxcy,
+                      value_type* VXCx, int64_t ldvxcx,
                       value_type* EXC, value_type *N_EL, incore_integrator_type& incore_integrator, 
                       XCDeviceData& device_data ) {
 
@@ -514,28 +514,28 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   double* Ps_submat   = Ps_submat_host.data();
   double* VXCs_submat = VXCs_submat_host.data();
 
-	std::vector<double> Pz_submat_host, Py_submat_host, Px_submat_host;
-	std::vector<double> VXCz_submat_host, VXCy_submat_host, VXCx_submat_host;
-	double* Pz_submat 	= nullptr;
-	double* Py_submat 	= nullptr;
-	double* Px_submat 	= nullptr;
-	double* VXCz_submat = nullptr;
-	double* VXCy_submat = nullptr;
-	double* VXCx_submat = nullptr;
-	
-	if (is_uks or is_gks) {
-		Pz_submat_host.resize(nbe*nbe);
-		VXCz_submat_host.resize(nbe*nbe,0.);
-		Pz_submat = Pz_submat_host.data();
-		VXCz_submat = VXCz_submat_host.data();
-	}
-	
-	if (is_gks) {
-		Py_submat_host.resize(nbe*nbe);
-		VXCy_submat_host.resize(nbe*nbe,0.);
-		Px_submat = Px_submat_host.data();
-		VXCx_submat = VXCx_submat_host.data();
-	}
+  std::vector<double> Pz_submat_host, Py_submat_host, Px_submat_host;
+  std::vector<double> VXCz_submat_host, VXCy_submat_host, VXCx_submat_host;
+  double* Pz_submat   = nullptr;
+  double* Py_submat   = nullptr;
+  double* Px_submat   = nullptr;
+  double* VXCz_submat = nullptr;
+  double* VXCy_submat = nullptr;
+  double* VXCx_submat = nullptr;
+  
+  if (is_uks or is_gks) {
+    Pz_submat_host.resize(nbe*nbe);
+    VXCz_submat_host.resize(nbe*nbe,0.);
+    Pz_submat = Pz_submat_host.data();
+    VXCz_submat = VXCz_submat_host.data();
+  }
+  
+  if (is_gks) {
+    Py_submat_host.resize(nbe*nbe);
+    VXCy_submat_host.resize(nbe*nbe,0.);
+    Px_submat = Px_submat_host.data();
+    VXCx_submat = VXCx_submat_host.data();
+  }
 
 
 
@@ -550,21 +550,21 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   this->timer_.time_op_accumulate("XCIntegrator.ExtractSubDensity",[&]() {
     detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Ps, ldps, 
                         Ps_submat, nbe, union_submat_cut );
-		if (is_uks or is_gks) {
-    	detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Pz, ldpz,
+    if (is_uks or is_gks) {
+      detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Pz, ldpz,
                         Pz_submat, nbe, union_submat_cut ); }
-		if (is_gks) {
-    	detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Py, ldpy,
+    if (is_gks) {
+      detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Py, ldpy,
                         Py_submat, nbe, union_submat_cut ); 
-    	detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Px, ldpx,
+      detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Px, ldpx,
                         Px_submat, nbe, union_submat_cut ); }
   } );
 
 
   // Process selected task batch
   incore_integrator.exc_vxc_local_work( basis_subset, 
-			Ps_submat, nbe, Pz_submat, nbe, Py_submat, nbe, Px_submat, nbe,
-			 VXCs_submat, nbe, VXCz_submat, nbe, VXCy_submat, nbe, VXCx_submat, nbe,
+      Ps_submat, nbe, Pz_submat, nbe, Py_submat, nbe, Px_submat, nbe,
+       VXCs_submat, nbe, VXCz_submat, nbe, VXCy_submat, nbe, VXCx_submat, nbe,
     &EXC_tmp, &NEL_tmp, task_begin, task_end, device_data );
 
 
@@ -574,10 +574,10 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   this->timer_.time_op_accumulate("XCIntegrator.IncrementSubPotential",[&]() {
     detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCs, ldvxcs, 
                            VXCs_submat, nbe, union_submat_cut );
-	if (is_uks or is_gks) {
+  if (is_uks or is_gks) {
     detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCz, ldvxcz, 
                            VXCz_submat, nbe, union_submat_cut ); }
-	if (is_gks) {
+  if (is_gks) {
     detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCy, ldvxcy, 
                            VXCy_submat, nbe, union_submat_cut ); 
     detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCx, ldvxcx, 

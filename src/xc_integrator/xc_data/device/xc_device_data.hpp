@@ -20,24 +20,24 @@
 namespace GauXC {
 
 enum integrator_xc_approx : uint32_t {
-  _UNDEF_APPROX	  = 0,
-  LDA        			= 1,
-  GGA        			= 2,
-  MGGA       			= 3
+  _UNDEF_APPROX         = 0,
+  LDA                   = 1,
+  GGA                   = 2,
+  MGGA                  = 3
 };
 
 enum integrator_ks_scheme : uint32_t {
-	_UNDEF_SCHEME		= 0,
-  RKS   					= 1,
-  UKS   					= 2,
-  GKS   					= 3
+  _UNDEF_SCHEME             = 0,
+  RKS                       = 1,
+  UKS                       = 2,
+  GKS                       = 3
 };
 
 enum density_id : uint32_t {
-    DEN_S   		= 0,    // RKS, UKS, GKS
-    DEN_Z   		= 1,    // UKS, GKS
-    DEN_X   		= 2,    // GKS
-    DEN_Y   		= 3     // GKS
+    DEN_S           = 0,    // RKS, UKS, GKS
+    DEN_Z           = 1,    // UKS, GKS
+    DEN_X           = 2,    // GKS
+    DEN_Y           = 3     // GKS
 };
 
 struct integrator_term_tracker {
@@ -79,7 +79,7 @@ struct required_term_storage {
   bool grid_vrho_uks = false;
 
   inline size_t grid_den_size(size_t npts){ 
-		if ( grid_den_uks ) { return 2*npts; }
+  if ( grid_den_uks ) { return 2*npts; }
     return PRDVL(grid_den, npts);
   }
   inline size_t grid_den_grad_size(size_t npts){ 
@@ -92,14 +92,14 @@ struct required_term_storage {
     return PRDVL(grid_eps, npts);
   }
   inline size_t grid_vrho_size(size_t npts){ 
-		if ( grid_vrho_uks ) { return 2*npts; }
+  if ( grid_vrho_uks ) { return 2*npts; }
     return PRDVL(grid_vrho, npts);
   }
   inline size_t grid_vgamma_size(size_t npts){ 
     return PRDVL(grid_vgamma, npts);
   }
   inline size_t grid_den_uks_size(size_t npts){
-    return PRDVL(grid_den_uks, 4 * npts); // 2*npts for the separately allocated den_pos and den_neg, 2*npts for the interleaved version. This behavior needs to be changed.
+    return PRDVL(grid_den_uks, 4 * npts); // 2*npts for the separately allocated den_pos and den_neg, 2*npts for the interleaved version. (is there a better way to do this?)
   }
   inline size_t grid_den_s_size(size_t npts){
     return PRDVL(grid_den_uks, npts);
@@ -276,7 +276,7 @@ struct required_term_storage {
         grid_den_grad = is_gga or is_grad;
         grid_vrho     = true;
       if( tracker.ks_scheme == UKS ){
-				grid_den			= true;
+        grid_den            = true;
         grid_den_uks  = true;
         grid_vrho_uks = true;
       }

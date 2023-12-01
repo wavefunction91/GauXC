@@ -176,10 +176,10 @@ __global__ void zmat_lda_vxc_uks_kernel( size_t        ntasks,
     const size_t ibfoff = tid_y * npts + tid_x;
     const double factp = 0.5 * vrho_pos_device[tid_x];
     const double factm = 0.5 * vrho_neg_device[tid_x];
-		if constexpr ( den_selector == DEN_S ) // positive density
-        z_matrix_device[ ibfoff ] = 0.5*(factp * basis_eval_device[ ibfoff ] + factm * basis_eval_device[ ibfoff ]);
-		if constexpr ( den_selector == DEN_Z ) // negative density
-        z_matrix_device[ ibfoff ] = 0.5*(factp * basis_eval_device[ ibfoff ] - factm * basis_eval_device[ ibfoff ]);
+    if constexpr ( den_selector == DEN_S ) // positive density
+      z_matrix_device[ ibfoff ] = 0.5*(factp * basis_eval_device[ ibfoff ] + factm * basis_eval_device[ ibfoff ]);
+    if constexpr ( den_selector == DEN_Z ) // negative density
+      z_matrix_device[ ibfoff ] = 0.5*(factp * basis_eval_device[ ibfoff ] - factm * basis_eval_device[ ibfoff ]);
   }
 
 }
@@ -201,8 +201,8 @@ void zmat_lda_vxc_uks( size_t            ntasks,
                util::div_ceil( max_nbf,  threads.y ),
                ntasks );
 
-  if ( sel == DEN_S ) 			zmat_lda_vxc_uks_kernel<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-  else if ( sel == DEN_Z ) 	zmat_lda_vxc_uks_kernel<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  if ( sel == DEN_S )       zmat_lda_vxc_uks_kernel<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  else if ( sel == DEN_Z )  zmat_lda_vxc_uks_kernel<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
 
 }
 

@@ -63,12 +63,12 @@ struct XCDeviceStackData : public XCDeviceData {
     int32_t* shell_to_bf_device = nullptr;
     int32_t* shell_sizes_device = nullptr;
 
-    double* dmat_s_device   = nullptr;	///< Static density matrix storage (nbf,nbf)
-    double* dmat_z_device   = nullptr;	/// Ditto for Z,Y,X densities
+    double* dmat_s_device   = nullptr;  ///< Static density matrix storage (nbf,nbf)
+    double* dmat_z_device   = nullptr;  /// Ditto for Z,Y,X densities
     double* dmat_y_device   = nullptr;
     double* dmat_x_device   = nullptr;
     double* vxc_s_device    = nullptr;  ///< VXC storage (nbf, nbf)
-    double* vxc_z_device    = nullptr;	/// Ditto for Z,Y,X densities
+    double* vxc_z_device    = nullptr;  /// Ditto for Z,Y,X densities
     double* vxc_y_device    = nullptr;
     double* vxc_x_device    = nullptr;
 

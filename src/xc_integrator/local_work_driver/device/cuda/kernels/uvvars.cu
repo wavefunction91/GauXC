@@ -165,10 +165,10 @@ __global__ void eval_uvars_lda_uks_kernel( size_t        ntasks,
 
 
   if( tid_y < npts ) {
-		const auto ps = den_pos_eval_device[ tid_y ];
-		const auto pz = den_neg_eval_device[ tid_y ];
-		den_pos_eval_device[ tid_y ] = ps + pz;
-		den_neg_eval_device[ tid_y ] = ps - pz;
+    const auto ps = den_pos_eval_device[ tid_y ];
+    const auto pz = den_neg_eval_device[ tid_y ];
+    den_pos_eval_device[ tid_y ] = ps + pz;
+    den_neg_eval_device[ tid_y ] = ps - pz;
 
   }
 }
@@ -207,17 +207,17 @@ void eval_uvvars_lda( size_t ntasks, int32_t nbf_max, int32_t npts_max, integrat
   dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
                util::div_ceil( npts_max, threads.y ),
                ntasks );
-	switch ( enabled_terms.ks_scheme ) {
-		case RKS:
-  		eval_uvars_lda_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-			break;
-		case UKS:
-  		eval_uvars_lda_uks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-			break;
-		default:
-			GAUXC_GENERIC_EXCEPTION( "Unexpected KS scheme when attempting to evaluate UV vars" );
-	}
-			
+  switch ( enabled_terms.ks_scheme ) {
+    case RKS:
+      eval_uvars_lda_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+      break;
+    case UKS:
+      eval_uvars_lda_uks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+      break;
+    default:
+      GAUXC_GENERIC_EXCEPTION( "Unexpected KS scheme when attempting to evaluate UV vars" );
+  }
+      
 
 }
 
@@ -269,8 +269,8 @@ __global__ void eval_den_kern( size_t        ntasks,
 
   double* den_eval_device   = nullptr;
   // use the "U" variable (+/- for UKS) even though at this point the density (S/Z) is stored
-	if constexpr (den_select == DEN_S) den_eval_device = task.den_pos;
-	if constexpr (den_select == DEN_Z) den_eval_device = task.den_neg;
+  if constexpr (den_select == DEN_S) den_eval_device = task.den_pos;
+  if constexpr (den_select == DEN_Z) den_eval_device = task.den_neg;
 
   const auto* basis_eval_device = task.bf;
 
@@ -320,15 +320,15 @@ void eval_u_den( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id de
   dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
                util::div_ceil( npts_max, threads.y ),
                ntasks );
-	switch( den_select ) {
-		case DEN_S:	
+  switch( den_select ) {
+    case DEN_S: 
       eval_den_kern<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-			break;
-		case DEN_Z:	
+      break;
+    case DEN_Z: 
       eval_den_kern<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-			break;
-		default:
-			GAUXC_GENERIC_EXCEPTION( "eval_den called with improper density selected" );
+      break;
+    default:
+      GAUXC_GENERIC_EXCEPTION( "eval_den called with improper density selected" );
   }
 
 }
