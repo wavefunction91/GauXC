@@ -55,7 +55,6 @@ struct LocalDeviceWorkDriverPIMPL {
   virtual void inc_exc_grad_lda( XCDeviceData* ) = 0;
   virtual void inc_exc_grad_gga( XCDeviceData* ) = 0;
   virtual void inc_exx_k( XCDeviceData* ) = 0;
-  virtual void symmetrize_vxc( XCDeviceData* ) = 0;
   virtual void symmetrize_vxc( XCDeviceData*, density_id ) = 0;
   virtual void symmetrize_exx_k( XCDeviceData* ) = 0;
 

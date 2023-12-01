@@ -363,7 +363,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     	if( func.is_gga() ) lwd->eval_zmat_gga_vxc_rks( &device_data );
     	else                lwd->eval_zmat_lda_vxc_rks( &device_data );
 			// Increment VXC
-			lwd->inc_vxc( &device_data);
+			lwd->inc_vxc( &device_data, DEN_S );
 		}
 	  if (is_uks) {
     	// Evaluate Scalar Z matrix
@@ -384,11 +384,9 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   } // Loop over batches of batches 
 
   // Symmetrize VXC in device memory
-  if (is_rks) {
-  	lwd->symmetrize_vxc( &device_data );
-	}
+
+ 	lwd->symmetrize_vxc( &device_data, DEN_S );
 	if (is_uks) {
-  	lwd->symmetrize_vxc( &device_data, DEN_S );
   	lwd->symmetrize_vxc( &device_data, DEN_Z );
 	}
 

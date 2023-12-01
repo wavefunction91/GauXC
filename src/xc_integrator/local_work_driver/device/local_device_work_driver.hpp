@@ -87,7 +87,6 @@ public:
   void inc_exc( XCDeviceData* );
   void inc_nel( XCDeviceData* );
   void inc_vxc( XCDeviceData*, density_id );
-  void inc_vxc( XCDeviceData* );
   void inc_exc_grad_lda( XCDeviceData* );
   void inc_exc_grad_gga( XCDeviceData* );
   void inc_exx_k( XCDeviceData* );
@@ -96,7 +95,6 @@ public:
   void exx_ek_shellpair_collision( double eps_E, double eps_K, XCDeviceData*, 
     host_task_iterator, host_task_iterator, const ShellPairCollection<double>& );
 
-  void symmetrize_vxc( XCDeviceData* );
   void symmetrize_vxc( XCDeviceData*, density_id );
   void symmetrize_exx_k( XCDeviceData* );
 

@@ -401,7 +401,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
 #if 1
   // Symmetrize K in device memory
-  lwd->symmetrize_exx_k( &device_data );
+  lwd->symmetrize_exx_k( &device_data);
 #endif
 
 }

@@ -69,14 +69,12 @@ FWD_TO_PIMPL_DEN_ID(eval_den)
 
 FWD_TO_PIMPL(inc_exc)
 FWD_TO_PIMPL(inc_nel)
-FWD_TO_PIMPL(inc_vxc)                   // Increment VXC by Z 
-FWD_TO_PIMPL_DEN_ID(inc_vxc)
+FWD_TO_PIMPL_DEN_ID(inc_vxc)						// Increment VXC_I by Z
 
 FWD_TO_PIMPL(inc_exx_k)     
 FWD_TO_PIMPL(inc_exc_grad_lda)
 FWD_TO_PIMPL(inc_exc_grad_gga)
 
-FWD_TO_PIMPL(symmetrize_vxc)
 FWD_TO_PIMPL_DEN_ID(symmetrize_vxc)
 FWD_TO_PIMPL(symmetrize_exx_k)
 FWD_TO_PIMPL(eval_exx_ek_screening_bfn_stats)

@@ -831,21 +831,6 @@ void AoSScheme1Base::inc_vxc( XCDeviceData* _data, density_id den_selector){
 
 
 
-
-void AoSScheme1Base::symmetrize_vxc( XCDeviceData* _data) {
-
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
-
-  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
-
-  const auto nbf = data->global_dims.nbf;
-  auto static_stack  = data->static_stack;
-  symmetrize_matrix( nbf, static_stack.vxc_s_device, nbf, 
-    data->device_backend_->queue() ); 
-
-}
-
 void AoSScheme1Base::symmetrize_vxc( XCDeviceData* _data, density_id den_selector) {
 
   auto* data = dynamic_cast<Data*>(_data);
@@ -864,6 +849,16 @@ void AoSScheme1Base::symmetrize_vxc( XCDeviceData* _data, density_id den_selecto
       symmetrize_matrix( nbf, static_stack.vxc_z_device, nbf, 
             data->device_backend_->queue() ); 
       break;
+    case DEN_Y:
+      symmetrize_matrix( nbf, static_stack.vxc_y_device, nbf, 
+            data->device_backend_->queue() ); 
+      break;
+    case DEN_X:
+      symmetrize_matrix( nbf, static_stack.vxc_x_device, nbf, 
+            data->device_backend_->queue() ); 
+      break;
+		default:
+			GAUXC_GENERIC_EXCEPTION( "symmetrize_vxc: invalid density selected" );
   }
 }
 
