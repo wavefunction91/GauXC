@@ -97,8 +97,14 @@ struct XCDeviceStackData : public XCDeviceData {
     double* den_z_eval_device = nullptr; ///< d/dz density for task batch
     
     // U variables (UKS)
-    double* den_pos_eval_device = nullptr;
-    double* den_neg_eval_device = nullptr;
+    double* den_pos_eval_device   = nullptr;
+    double* den_neg_eval_device   = nullptr;
+    double* den_pos_x_eval_device = nullptr;
+    double* den_pos_y_eval_device = nullptr;
+    double* den_pos_z_eval_device = nullptr;
+    double* den_neg_x_eval_device = nullptr;
+    double* den_neg_y_eval_device = nullptr;
+    double* den_neg_z_eval_device = nullptr;
 
     // V variables / XC output
     double* gamma_eval_device  = nullptr; ///< gamma for task batch
@@ -109,6 +115,12 @@ struct XCDeviceStackData : public XCDeviceData {
     // V variables (UKS)
     double* vrho_pos_eval_device  = nullptr;
     double* vrho_neg_eval_device  = nullptr;
+    double* gamma_pp_eval_device  = nullptr;
+    double* gamma_pm_eval_device  = nullptr;
+    double* gamma_mm_eval_device  = nullptr;
+    double* vgamma_pp_eval_device  = nullptr;
+    double* vgamma_pm_eval_device  = nullptr;
+    double* vgamma_mm_eval_device  = nullptr;
 
     inline void reset() { std::memset( this, 0, sizeof(base_stack_data) ); }
   };

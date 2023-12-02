@@ -34,10 +34,11 @@ enum integrator_ks_scheme : uint32_t {
 };
 
 enum density_id : uint32_t {
-    DEN_S           = 0,    // RKS, UKS, GKS
-    DEN_Z           = 1,    // UKS, GKS
-    DEN_X           = 2,    // GKS
-    DEN_Y           = 3     // GKS
+    _UNDEF_DEN      = 0,
+    DEN_S           = 1,    // RKS, UKS, GKS
+    DEN_Z           = 2,    // UKS, GKS
+    DEN_X           = 3,    // GKS
+    DEN_Y           = 4     // GKS
 };
 
 struct integrator_term_tracker {
@@ -75,46 +76,33 @@ struct required_term_storage {
   bool grid_vrho     = false;
   bool grid_vgamma   = false;
 
-  bool grid_den_uks  = false;
-  bool grid_vrho_uks = false;
+
+  // Reference flags for memory management use
+  integrator_ks_scheme ref    = _UNDEF_SCHEME;
 
   inline size_t grid_den_size(size_t npts){ 
-  if ( grid_den_uks ) { return 2*npts; }
-    return PRDVL(grid_den, npts);
+  // grid_den_size takes into account the size of the interleaved density sent to ExchCXX in the cases of UKS/GKS (hence the * 2)
+    return PRDVL(grid_den and ref == RKS, npts)
+         + PRDVL(grid_den and ref == UKS and not grid_den_grad, 2 * npts) // LDA
+         + PRDVL(grid_den and ref == UKS and grid_den_grad, 5 * npts); // GGA
   }
   inline size_t grid_den_grad_size(size_t npts){ 
     return PRDVL(grid_den_grad, 3 * npts);
   }
   inline size_t grid_gamma_size(size_t npts){ 
-    return PRDVL(grid_gamma, npts);
+    return PRDVL(grid_gamma and ref == RKS, npts) 
+         + PRDVL(grid_gamma and ref == UKS, 3 * npts);
   }
   inline size_t grid_eps_size(size_t npts){ 
     return PRDVL(grid_eps, npts);
   }
   inline size_t grid_vrho_size(size_t npts){ 
-  if ( grid_vrho_uks ) { return 2*npts; }
-    return PRDVL(grid_vrho, npts);
+    return PRDVL(grid_vrho and ref == RKS, npts)
+         + PRDVL(grid_vrho and ref == UKS, 2 * npts);
   }
   inline size_t grid_vgamma_size(size_t npts){ 
-    return PRDVL(grid_vgamma, npts);
-  }
-  inline size_t grid_den_uks_size(size_t npts){
-    return PRDVL(grid_den_uks, 4 * npts); // 2*npts for the separately allocated den_pos and den_neg, 2*npts for the interleaved version. (is there a better way to do this?)
-  }
-  inline size_t grid_den_s_size(size_t npts){
-    return PRDVL(grid_den_uks, npts);
-  }
-  inline size_t grid_den_z_size(size_t npts){
-    return PRDVL(grid_den_uks, npts);
-  }
-  inline size_t grid_vrho_uks_size(size_t npts){
-    return PRDVL(grid_vrho_uks, 4 * npts);
-  }
-  inline size_t grid_vrho_pos_size(size_t npts){ 
-    return PRDVL(grid_vrho_uks, npts);
-  }
-  inline size_t grid_vrho_neg_size(size_t npts){ 
-    return PRDVL(grid_vrho_uks, npts);
+    return PRDVL(grid_vgamma and ref == RKS, npts)
+         + PRDVL(grid_vgamma and ref == UKS, 3 * npts);
   }
 
 
@@ -272,14 +260,10 @@ struct required_term_storage {
       //const bool is_lda  = is_xc and tracker.xc_approx == LDA;
       const bool is_gga  = is_xc and tracker.xc_approx == GGA;
       const bool is_grad = tracker.exc_grad;
-        grid_den      = true;
-        grid_den_grad = is_gga or is_grad;
-        grid_vrho     = true;
-      if( tracker.ks_scheme == UKS ){
-        grid_den            = true;
-        grid_den_uks  = true;
-        grid_vrho_uks = true;
-      }
+
+      grid_den      = true;
+      grid_den_grad = is_gga or is_grad;
+      grid_vrho     = true;
 
       grid_gamma    = is_gga;
       grid_eps      = true;

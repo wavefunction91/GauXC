@@ -52,7 +52,7 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   virtual void inc_vxc( XCDeviceData* ) override; 
   virtual void inc_exx_k( XCDeviceData* ) override;
 
-  void eval_den( XCDeviceData*, density_id) override final;
+  void eval_den( XCDeviceData*, bool, density_id) override final;
 
   using Data = Scheme1DataBase;
 

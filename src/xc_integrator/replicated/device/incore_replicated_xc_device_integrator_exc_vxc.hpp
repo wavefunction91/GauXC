@@ -331,17 +331,15 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     }
 
     else if (is_uks) {
-      xmat_fac = 0.5;
+      xmat_fac = 1.0;
       // Evaluate X matrix
       lwd->eval_xmat( xmat_fac, &device_data, false, DEN_S );
       // Contract X matrix with bf -> den_eval
-      lwd->eval_den( &device_data, DEN_S );
+      lwd->eval_den( &device_data, func.is_gga(), DEN_S );
       // Repeat for Z density
       lwd->eval_xmat( xmat_fac, &device_data, false, DEN_Z );
-      lwd->eval_den( &device_data, DEN_Z );
+      lwd->eval_den( &device_data, func.is_gga(), DEN_Z );
 
-      // Evaluate U/V variables
-      if( func.is_gga() ) GAUXC_GENERIC_EXCEPTION("Device UKS+GGA NYI!");
     }
 
     // Evaluate U/V variables
@@ -372,8 +370,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       else                lwd->eval_zmat_lda_vxc_uks( &device_data, DEN_S );
       // Increment Scalar VXC
       lwd->inc_vxc( &device_data, DEN_S );
-      // Repeat for Z VXC
 
+      // Repeat for Z VXC
       //if( func.is_gga() ) lwd->eval_zmat_gga_vxc_uks( &device_data, DEN_Z );
       if( func.is_gga() ) GAUXC_GENERIC_EXCEPTION("UKS GGA eval_zmat NYI");
       else                lwd->eval_zmat_lda_vxc_uks( &device_data, DEN_Z );

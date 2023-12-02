@@ -640,7 +640,6 @@ size_t XCDeviceStackData::get_mem_req(
     // U Variables
     reqt.grid_den_size(npts)      * sizeof(double) + 
     reqt.grid_den_grad_size(npts) * sizeof(double) +
-    reqt.grid_den_uks_size(npts)  * sizeof(double) + // unify into GRID_DEN_SIZE?
 
     // V Variables
     reqt.grid_gamma_size(npts)    * sizeof(double) +
@@ -648,8 +647,7 @@ size_t XCDeviceStackData::get_mem_req(
     // XC output
     reqt.grid_eps_size(npts)      * sizeof(double) +
     reqt.grid_vrho_size(npts)     * sizeof(double) +
-    reqt.grid_vgamma_size(npts)   * sizeof(double) +
-    reqt.grid_vrho_uks_size(npts) * sizeof(double) ;
+    reqt.grid_vgamma_size(npts)   * sizeof(double) ;
 
   return mem_req;
 }
@@ -681,6 +679,10 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   const size_t msz = total_npts_task_batch;
   const size_t aln = 256;
 
+  const bool is_rks = terms.ks_scheme == RKS;
+  const bool is_uks = terms.ks_scheme == UKS;
+  const bool is_gks = terms.ks_scheme == GKS;
+
   // Grid Points
   if( reqt.grid_points ) {
     base_stack.points_x_device = mem.aligned_alloc<double>( msz, aln, csl);
@@ -694,43 +696,51 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   }
 
   // Grid function evaluations
-
-  if( reqt.grid_den and not reqt.grid_den_uks ) { // Density 
-    base_stack.den_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+  if( reqt.grid_den ) { // Density 
+    if( is_rks )   base_stack.den_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_uks ) { base_stack.den_pos_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.den_neg_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
+ 
   }
-
   if( reqt.grid_den_grad ) { // Density gradient
-    base_stack.den_x_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-    base_stack.den_y_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-    base_stack.den_z_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_rks ) { base_stack.den_x_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.den_y_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.den_z_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
+    if( is_uks ) { base_stack.den_pos_x_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.den_pos_y_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.den_pos_z_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+                   base_stack.den_neg_x_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.den_neg_y_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+                   base_stack.den_neg_z_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
   }
-
-  if( reqt.grid_den_uks ) { // Density (UKS)
-    base_stack.den_eval_device      = mem.aligned_alloc<double>(2*msz, aln, csl);
-    base_stack.den_pos_eval_device  = mem.aligned_alloc<double>(msz, aln, csl);
-    base_stack.den_neg_eval_device  = mem.aligned_alloc<double>(msz, aln, csl);
+  
+  if( is_uks and reqt.grid_den ) {    // Interleaved density storage
+    if( not reqt.grid_den_grad ) base_stack.den_eval_device = mem.aligned_alloc<double>(2 * msz, aln, csl);
+    else                         base_stack.den_eval_device = mem.aligned_alloc<double>(8 * msz, aln, csl); //GGA
   }
-
+    
   if( reqt.grid_gamma ) { // Gamma
-    base_stack.gamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_rks ) base_stack.gamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_uks ) {  base_stack.gamma_pp_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                    base_stack.gamma_pm_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                    base_stack.gamma_mm_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
+  }
+  if( reqt.grid_vrho ) { // Vrho
+    if( is_rks ) base_stack.vrho_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_uks ) { base_stack.vrho_eval_device = mem.aligned_alloc<double>(2 * msz, aln, csl);
+                   base_stack.vrho_pos_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.vrho_neg_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
+  }
+
+  if( reqt.grid_vgamma ) { // Vgamma
+    if( is_rks ) base_stack.vgamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_uks ) {  base_stack.vgamma_pp_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                    base_stack.vgamma_pm_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                    base_stack.vgamma_mm_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
   }
 
   if( reqt.grid_eps ) { // Energy density 
     base_stack.eps_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-  }
-
-  if( reqt.grid_vrho and not reqt.grid_vrho_uks) { // Vrho
-    base_stack.vrho_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-  }
-
-  if( reqt.grid_vrho_uks ) { // Vrho (UKS)
-    base_stack.vrho_eval_device = mem.aligned_alloc<double>(2*msz, aln, csl);
-    base_stack.vrho_pos_eval_device   = mem.aligned_alloc<double>(msz, aln, csl);
-    base_stack.vrho_neg_eval_device   = mem.aligned_alloc<double>(msz, aln, csl);
-  }
-
-  if( reqt.grid_vgamma ) { // Vgamma
-    base_stack.vgamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
   }
 
   // Update dynmem data for derived impls

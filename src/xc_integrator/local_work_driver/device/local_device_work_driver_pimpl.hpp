@@ -34,7 +34,7 @@ struct LocalDeviceWorkDriverPIMPL {
   virtual void eval_collocation_gradient( XCDeviceData* ) = 0;
   virtual void eval_collocation_hessian( XCDeviceData* ) = 0;
   virtual void eval_xmat( double fac, XCDeviceData*, bool do_grad, density_id den ) = 0;
-  virtual void eval_den( XCDeviceData*, density_id ) = 0;
+  virtual void eval_den( XCDeviceData*, bool, density_id ) = 0;
   virtual void eval_exx_fmat( XCDeviceData* ) = 0;
   //virtual void eval_exx_gmat( XCDeviceData* ) = 0;
   virtual void eval_exx_gmat( XCDeviceData*, const BasisSetMap& ) = 0;

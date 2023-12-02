@@ -19,6 +19,6 @@ void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbe_max,
   int32_t npts_max, integrator_term_tracker en_terms, XCDeviceTask* device_tasks, const double* denx, 
   const double* deny, const double* denz, double* gamma, device_queue queue );
 
-void eval_u_den( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id den_select,
+void eval_u_den( size_t ntasks, int32_t nbf_max, int32_t npts_max,  bool do_grad, density_id den_select,
   XCDeviceTask* device_tasks, device_queue queue );
 }

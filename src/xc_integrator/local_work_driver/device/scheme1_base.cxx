@@ -463,7 +463,7 @@ void AoSScheme1Base::inc_nel( XCDeviceData* _data ){
 
 
 
-void AoSScheme1Base::eval_den( XCDeviceData* _data, density_id den_select ){
+void AoSScheme1Base::eval_den( XCDeviceData* _data, bool do_grad, density_id den_select){
   auto* data = dynamic_cast<Data*>(_data);
   if ( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
@@ -479,23 +479,38 @@ void AoSScheme1Base::eval_den( XCDeviceData* _data, density_id den_select ){
 
   // Zero density
   auto base_stack    = data->base_stack;
-  double* den_eval_ptr = nullptr;
+  double* den_eval_ptr    = nullptr;
+  double* den_x_eval_ptr  = nullptr;
+  double* den_y_eval_ptr  = nullptr;
+  double* den_z_eval_ptr  = nullptr;
   switch ( den_select ) {
     case DEN_S:
       den_eval_ptr = base_stack.den_pos_eval_device;
+      if (do_grad) { den_x_eval_ptr = base_stack.den_pos_x_eval_device;
+                     den_y_eval_ptr = base_stack.den_pos_y_eval_device;
+                     den_z_eval_ptr = base_stack.den_pos_z_eval_device; }
       break;
     case DEN_Z:
       den_eval_ptr = base_stack.den_neg_eval_device;
+      if (do_grad) { den_x_eval_ptr = base_stack.den_neg_x_eval_device;
+                     den_y_eval_ptr = base_stack.den_neg_y_eval_device;
+                     den_z_eval_ptr = base_stack.den_neg_z_eval_device; }
       break;
     default:
       GAUXC_GENERIC_EXCEPTION( "eval_den called with invalid density selected!" );
   }
   data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, den_eval_ptr, "Den Zero" );
+  if (do_grad) {
+    data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, den_x_eval_ptr, "Den Zero" );
+    data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, den_y_eval_ptr, "Den Zero" );
+    data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, den_z_eval_ptr, "Den Zero" );
+  }
+  
     
 
   // Evaluate density
   auto aos_stack     = data->aos_stack;
-  eval_u_den( ntasks, nbe_max, npts_max, den_select,
+  eval_u_den( ntasks, nbe_max, npts_max, do_grad, den_select,
     aos_stack.device_tasks, data->device_backend_->queue() );
 
 }
@@ -550,10 +565,12 @@ void AoSScheme1Base::eval_uvvar_gga( XCDeviceData* _data, integrator_term_tracke
 
   // Zero density + gradient
   auto base_stack    = data->base_stack;
-  data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_eval_device, "Den Zero" );
-  data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_x_eval_device, "DenX Zero" );
-  data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_y_eval_device, "DenY Zero" );
-  data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_z_eval_device, "DenZ Zero" );
+  if (en_terms.ks_scheme == RKS) {
+    data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_eval_device, "Den Zero" );
+    data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_x_eval_device, "DenX Zero" );
+    data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_y_eval_device, "DenY Zero" );
+    data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_z_eval_device, "DenZ Zero" );
+  }
 
   // Evaluate U variables
   auto aos_stack     = data->aos_stack;
@@ -579,8 +596,6 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
 
   auto base_stack    = data->base_stack;
 
-  double* den_eval_ptr    = base_stack.den_eval_device;
-  double* vrho_eval_ptr   = base_stack.vrho_eval_device;
   
   const bool is_RKS = data->allocated_terms.ks_scheme == RKS;
   const bool is_UKS = data->allocated_terms.ks_scheme == UKS;
@@ -592,25 +607,25 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
   // UKS logic
   if ( is_UKS ) {
         // Interleave pos/neg densities before passing it to ExchCXX
-        auto stat = cudaMemcpy2D(den_eval_ptr, 2 * sizeof(double), base_stack.den_pos_eval_device,
+        auto stat = cudaMemcpy2D(base_stack.den_eval_device, 2 * sizeof(double), base_stack.den_pos_eval_device,
                         1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-        stat = cudaMemcpy2D(den_eval_ptr + 1, 2 * sizeof(double), base_stack.den_neg_eval_device,
+        stat = cudaMemcpy2D(base_stack.den_eval_device + 1, 2 * sizeof(double), base_stack.den_neg_eval_device,
                         1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
   }
 
   GauXC::eval_kern_exc_vxc_lda( func, npts,
-    den_eval_ptr, base_stack.eps_eval_device, 
-    vrho_eval_ptr, data->device_backend_->queue() );
+    base_stack.den_eval_device, base_stack.eps_eval_device, 
+    base_stack.vrho_eval_device, data->device_backend_->queue() );
 
   if( is_RKS ) {
     hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.vrho_eval_device, 1 );
   }
   if( is_UKS ) {
-        // De-interleave pos/neg densities
-        auto stat        = cudaMemcpy2D(base_stack.vrho_pos_eval_device, 1 * sizeof(double), vrho_eval_ptr,
+      // De-interleave pos/neg densities
+      auto stat        = cudaMemcpy2D(base_stack.vrho_pos_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device,
                         2 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-        stat             = cudaMemcpy2D(base_stack.vrho_neg_eval_device, 1 * sizeof(double), vrho_eval_ptr + 1,
+      stat             = cudaMemcpy2D(base_stack.vrho_neg_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device + 1,
                         2 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
 
       hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
@@ -635,17 +650,70 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
   if( !func.is_gga() ) GAUXC_GENERIC_EXCEPTION("XC Kernel not GGA!");
 
   auto base_stack    = data->base_stack;
+  
+  const bool is_RKS = data->allocated_terms.ks_scheme == RKS;
+  const bool is_UKS = data->allocated_terms.ks_scheme == UKS;
+
+  const size_t npts = data->total_npts_task_batch ;
+  
+
+  if ( is_UKS ) {
+        // Interleave pos/neg densities before passing it to ExchCXX
+        auto stat = cudaMemcpy2D(base_stack.den_eval_device, 2 * sizeof(double), base_stack.den_pos_eval_device,
+                        1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+        stat = cudaMemcpy2D(base_stack.den_eval_device + 1, 2 * sizeof(double), base_stack.den_neg_eval_device,
+                        1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+        // Interleave gamma aa, bb, ab
+        stat = cudaMemcpy2D(base_stack.gamma_eval_device    , 3 * sizeof(double), base_stack.gamma_pp_eval_device,
+                        1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+        stat = cudaMemcpy2D(base_stack.gamma_eval_device + 1, 3 * sizeof(double), base_stack.gamma_pm_eval_device,
+                        1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+        stat = cudaMemcpy2D(base_stack.gamma_eval_device + 2, 3 * sizeof(double), base_stack.gamma_mm_eval_device,
+                        1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+  }
   GauXC::eval_kern_exc_vxc_gga( func, data->total_npts_task_batch, 
     base_stack.den_eval_device, base_stack.gamma_eval_device, 
     base_stack.eps_eval_device, base_stack.vrho_eval_device, 
     base_stack.vgamma_eval_device, data->device_backend_->queue() );
 
+  if( is_RKS ) {
+    hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
+                    base_stack.weights_device, 1, base_stack.vrho_eval_device, 1 );
+    hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
+                    base_stack.weights_device, 1, base_stack.vgamma_eval_device, 1 );
+  }
+  if( is_UKS ) {
+      // De-interleave pos/neg densities
+      auto stat        = cudaMemcpy2D(base_stack.vrho_pos_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device,
+                        2 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+      stat             = cudaMemcpy2D(base_stack.vrho_neg_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device + 1,
+                        2 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+      // Multiply by weights point-by-point
+      hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
+                      base_stack.weights_device, 1, base_stack.vrho_pos_eval_device, 1 );
+      hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
+                      base_stack.weights_device, 1, base_stack.vrho_neg_eval_device, 1 );
+
+      // De-interleave vgamma
+      stat            = cudaMemcpy2D(base_stack.vgamma_pp_eval_device, 1 * sizeof(double), base_stack.vgamma_eval_device,
+                        3 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+      stat            = cudaMemcpy2D(base_stack.vgamma_pm_eval_device, 1 * sizeof(double), base_stack.vgamma_eval_device+1,
+                        3 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+      stat            = cudaMemcpy2D(base_stack.vgamma_mm_eval_device, 1 * sizeof(double), base_stack.vgamma_eval_device+2,
+                        3 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+
+      hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
+                      base_stack.weights_device, 1, base_stack.vgamma_pp_eval_device, 1 );
+      hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
+                      base_stack.weights_device, 1, base_stack.vgamma_pm_eval_device, 1 );
+      hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
+                      base_stack.weights_device, 1, base_stack.vgamma_mm_eval_device, 1 );
+      
+      
+  }
+
   hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.eps_eval_device, 1 );
-  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
-                    base_stack.weights_device, 1, base_stack.vrho_eval_device, 1 );
-  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
-                    base_stack.weights_device, 1, base_stack.vgamma_eval_device, 1 );
 
 }
 

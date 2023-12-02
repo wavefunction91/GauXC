@@ -481,10 +481,22 @@ void XCDeviceAoSData::pack_and_send(
     buffer_adaptor vrho_mem( base_stack.vrho_eval_device, den_vrho_eval_npts );
     buffer_adaptor vgamma_mem( base_stack.vgamma_eval_device, total_npts );
 
+    // UKS
     buffer_adaptor den_pos_mem( base_stack.den_pos_eval_device, total_npts );
     buffer_adaptor den_neg_mem( base_stack.den_neg_eval_device, total_npts );
     buffer_adaptor vrho_pos_mem( base_stack.vrho_pos_eval_device, total_npts );
     buffer_adaptor vrho_neg_mem( base_stack.vrho_neg_eval_device, total_npts );
+
+    // UKS GGA
+    buffer_adaptor dden_pos_x_mem( base_stack.den_pos_x_eval_device, total_npts );
+    buffer_adaptor dden_pos_y_mem( base_stack.den_pos_y_eval_device, total_npts );
+    buffer_adaptor dden_pos_z_mem( base_stack.den_pos_z_eval_device, total_npts );
+    buffer_adaptor dden_neg_x_mem( base_stack.den_neg_x_eval_device, total_npts );
+    buffer_adaptor dden_neg_y_mem( base_stack.den_neg_y_eval_device, total_npts );
+    buffer_adaptor dden_neg_z_mem( base_stack.den_neg_z_eval_device, total_npts );
+    buffer_adaptor gamma_pp_mem( base_stack.gamma_pp_eval_device, total_npts );
+    buffer_adaptor gamma_pm_mem( base_stack.gamma_pm_eval_device, total_npts );
+    buffer_adaptor gamma_mm_mem( base_stack.gamma_mm_eval_device, total_npts );
 
     for( auto& task : host_device_tasks ) {
       const auto npts    = task.npts;
@@ -560,19 +572,30 @@ void XCDeviceAoSData::pack_and_send(
       task.den = den_mem.aligned_alloc<double>(reqt.grid_den_size(npts), csl);
 
       if(reqt.grid_den_grad) {
-        task.ddenx = dden_x_mem.aligned_alloc<double>(npts, csl);
-        task.ddeny = dden_y_mem.aligned_alloc<double>(npts, csl);
-        task.ddenz = dden_z_mem.aligned_alloc<double>(npts, csl);
+        if(terms.ks_scheme == RKS) {
+          task.ddenx = dden_x_mem.aligned_alloc<double>(npts, csl);
+          task.ddeny = dden_y_mem.aligned_alloc<double>(npts, csl);
+          task.ddenz = dden_z_mem.aligned_alloc<double>(npts, csl);
+        }
+        else if(terms.ks_scheme == UKS) {
+          task.dden_posx    = dden_pos_x_mem.aligned_alloc<double>( npts, csl );
+          task.dden_posy    = dden_pos_y_mem.aligned_alloc<double>( npts, csl );
+          task.dden_posz    = dden_pos_z_mem.aligned_alloc<double>( npts, csl );
+          task.dden_negx    = dden_neg_x_mem.aligned_alloc<double>( npts, csl );
+          task.dden_negy    = dden_neg_y_mem.aligned_alloc<double>( npts, csl );
+          task.dden_negz    = dden_neg_z_mem.aligned_alloc<double>( npts, csl );
+          task.gamma_pp     = gamma_pp_mem.aligned_alloc<double>  ( npts, csl );
+          task.gamma_pm     = gamma_pm_mem.aligned_alloc<double>  ( npts, csl );
+          task.gamma_mm     = gamma_mm_mem.aligned_alloc<double>  ( npts, csl );
+        }
       }
 
-      if(reqt.grid_den_uks) {
-        task.den_pos    = den_pos_mem.aligned_alloc<double>( reqt.grid_den_s_size(npts), csl);
-        task.den_neg    = den_neg_mem.aligned_alloc<double>( reqt.grid_den_z_size(npts), csl);
-      }
-
-      if(reqt.grid_vrho_uks) {
-        task.vrho_pos    = vrho_pos_mem.aligned_alloc<double>( reqt.grid_vrho_pos_size(npts), csl);
-        task.vrho_neg    = vrho_neg_mem.aligned_alloc<double>( reqt.grid_vrho_neg_size(npts), csl);
+      // Allocate UKS specific tasks
+      if(terms.ks_scheme == UKS) {
+        task.den_pos      = den_pos_mem.aligned_alloc<double>( npts, csl);
+        task.den_neg      = den_neg_mem.aligned_alloc<double>( npts, csl);
+        task.vrho_pos     = vrho_pos_mem.aligned_alloc<double>( npts, csl);
+        task.vrho_neg     = vrho_neg_mem.aligned_alloc<double>( npts, csl); 
       }
 
 

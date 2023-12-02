@@ -63,7 +63,7 @@ public:
 
   void eval_xmat( double fac, XCDeviceData*, bool do_grad = false , density_id den = DEN_S );
   
-  void eval_den( XCDeviceData*, density_id );
+  void eval_den( XCDeviceData*, bool,  density_id );
 
   void eval_uvvar_lda( XCDeviceData*, integrator_term_tracker );
   void eval_uvvar_gga( XCDeviceData*, integrator_term_tracker );
