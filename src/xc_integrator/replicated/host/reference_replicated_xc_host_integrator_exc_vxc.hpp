@@ -1084,43 +1084,39 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     //----------------------Start EPC functional Evaluation---------------------------------------
     if(evalProtonic){
-      if(this->load_balancer_->epc_functional() == EPCFunctional::EPC17){
-        for (int32_t iPt = 0; iPt < npts; iPt++ ){
-          // Get Electronic density scalar (RKS)
-          const auto den = is_rks ? den_eval[iPt] : (den_eval[2*iPt] + den_eval[2*iPt+1]);
-          value_type total_erho = std::abs(den) > 1e-15? den : 0;
-          // Get Protonic density scalar (UKS)
-          const auto den2 = den2_eval[2*iPt] + den2_eval[2*iPt+1];
-          value_type total_prho = std::abs(den2) > 1e-15? den2 : 0; 
-          
-          // Skip this point if the density is too small
-          if(total_erho < 1e-15 | total_prho < 1e-15){
-            eps2[iPt]      = 0.0;
-            vrho2[2*iPt]   = 0.0;
-            vrho2[2*iPt+1] = 0.0;
-            continue;
-          }
-
-          // epc-17-2 denominator
-          value_type dn = 2.35 - 2.4 * std::sqrt(total_erho*total_prho) + 6.6 * (total_erho*total_prho);
-
-          // Update electronic eps and vxc
-          eps[iPt]                    += -1.0 * total_prho/dn;
-          vrho[spin_dim_scal*iPt]     +=  ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
-                                          + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
-          if(not is_rks) 
-            vrho[spin_dim_scal*iPt+1] +=  ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
-                                          + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
-
-          // Assign protonic eps and vxc
-          eps2[iPt]      = -1.0 * total_erho/dn;
-          vrho2[2*iPt]   =  ( -1.0 * total_erho / dn + (-1.2 * std::sqrt(total_prho) * std::sqrt(total_erho) * total_erho 
-                            + 6.6 * total_erho * total_erho * total_prho ) / (dn * dn) );
-          vrho2[2*iPt+1] =  0.0;
+      for (int32_t iPt = 0; iPt < npts; iPt++ ){
+        // Get Electronic density scalar (RKS)
+        const auto den = is_rks ? den_eval[iPt] : (den_eval[2*iPt] + den_eval[2*iPt+1]);
+        value_type total_erho = std::abs(den) > 1e-15? den : 0;
+        // Get Protonic density scalar (UKS)
+        const auto den2 = den2_eval[2*iPt] + den2_eval[2*iPt+1];
+        value_type total_prho = std::abs(den2) > 1e-15? den2 : 0; 
+        
+        // Skip this point if the density is too small
+        if(total_erho < 1e-15 | total_prho < 1e-15){
+          eps2[iPt]      = 0.0;
+          vrho2[2*iPt]   = 0.0;
+          vrho2[2*iPt+1] = 0.0;
+          continue;
         }
-      } else{
-        GAUXC_GENERIC_EXCEPTION("Only EPC17 is supported in GauXC");
-      }
+
+        // epc-17-2 denominator
+        value_type dn = 2.35 - 2.4 * std::sqrt(total_erho*total_prho) + 6.6 * (total_erho*total_prho);
+
+        // Update electronic eps and vxc
+        eps[iPt]                    += -1.0 * total_prho/dn;
+        vrho[spin_dim_scal*iPt]     +=  ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
+                                        + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
+        if(not is_rks) 
+          vrho[spin_dim_scal*iPt+1] +=  ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
+                                        + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
+
+        // Assign protonic eps and vxc
+        eps2[iPt]      = -1.0 * total_erho/dn;
+        vrho2[2*iPt]   =  ( -1.0 * total_erho / dn + (-1.2 * std::sqrt(total_prho) * std::sqrt(total_erho) * total_erho 
+                          + 6.6 * total_erho * total_erho * total_prho ) / (dn * dn) );
+        vrho2[2*iPt+1] =  0.0;
+      } // End looping over pts
     } // End if(evalProtonic)
     //----------------------End EPC functional Evaluation---------------------------------------
  

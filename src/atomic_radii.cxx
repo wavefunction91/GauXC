@@ -35,7 +35,10 @@ double slater_radius_64(AtomicNumber _Z) {
 
   auto Z = _Z.get();
   switch(Z) {
-    case 1:  /* H  */ return pm_to_bohr(25. );
+  //case 1:  /* H  */ return pm_to_bohr(25. );
+  // Temporarily switch to CQ's H-radius for benchmarking purposes (per https://github.com/wavefunction91/GauXC/issues/77)
+  // TODO: revert to GauXC's value when code is ready to merge
+    case 1:  /* H  */ return pm_to_bohr(52.9); 
   //case 2:  /* He */ return pm_to_bohr(120.);
     case 3:  /* Li */ return pm_to_bohr(145.);
     case 4:  /* Be */ return pm_to_bohr(105.);

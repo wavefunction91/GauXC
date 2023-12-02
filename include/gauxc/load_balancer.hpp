@@ -111,9 +111,6 @@ public:
   /// Return the number of non-negligible local shell pairs for 2nd basis for this LoadBalancer
   const shell_pair_type& shell_pairs2() const;
   
-  /// Return the EPC functional for NEO electron-protonic correlation evaluation
-  const EPCFunctional& epc_functional() const;
-
   /// Return the runtime handle used to construct this LoadBalancer
   const RuntimeEnvironment& runtime() const;
   
@@ -177,7 +174,7 @@ public:
 
   LoadBalancer get_instance( const RuntimeEnvironment& rt, 
     const Molecule& mol, const MolGrid& mg, const BasisSet<double>& bs,
-    const BasisSet<double>& bs2, EPCFunctional, size_t pad_val = 1 );
+    const BasisSet<double>& bs2, size_t pad_val = 1 );
 
   /** 
    *  @brief Generate a shared pointer to a LoadBalancer instance per kernel and 
@@ -199,7 +196,7 @@ public:
   std::shared_ptr<LoadBalancer> get_shared_instance( 
     const RuntimeEnvironment& rt,
     const Molecule& mol, const MolGrid& mg, const BasisSet<double>&,
-    const BasisSet<double>&, EPCFunctional, size_t pad_val = 1 );
+    const BasisSet<double>&, size_t pad_val = 1 );
 
 private:
 

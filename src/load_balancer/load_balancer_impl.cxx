@@ -58,13 +58,12 @@ LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule
   LoadBalancerImpl( rt, mol, mg, basis, std::make_shared<MolMeta>(mol) ) { }
 
 LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
-LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
-  const MolGrid& mg, const basis_type& basis, const basis_type& basis2, EPCFunctional epcfunc ) :
-  LoadBalancerImpl( rt, mol, mg, basis, basis2, epcfunc, std::make_shared<MolMeta>(mol) ) { }
+  const MolGrid& mg, const basis_type& basis, const basis_type& basis2 ) :
+  LoadBalancerImpl( rt, mol, mg, basis, basis2, std::make_shared<MolMeta>(mol) ) { }
 
 LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
-  const MolGrid& mg, const basis_type& basis, const basis_type& basis2, EPCFunctional epcfunc, const MolMeta& molmeta ) :
-  LoadBalancerImpl( rt, mol, mg, basis, basis2, epcfunc, std::make_shared<MolMeta>(molmeta) ) { }
+  const MolGrid& mg, const basis_type& basis, const basis_type& basis2, const MolMeta& molmeta ) :
+  LoadBalancerImpl( rt, mol, mg, basis, basis2, std::make_shared<MolMeta>(molmeta) ) { }
 
 LoadBalancerImpl::LoadBalancerImpl( const LoadBalancerImpl& ) = default;
 LoadBalancerImpl::LoadBalancerImpl( LoadBalancerImpl&& ) noexcept = default;
@@ -164,10 +163,6 @@ const LoadBalancerImpl::basis_map_type& LoadBalancerImpl::basis_map2() const {
 }
 const LoadBalancerImpl::shell_pair_type& LoadBalancerImpl::shell_pairs2() const {
   return *shell_pairs2_;
-}
-
-const EPCFunctional& LoadBalancerImpl::epc_functional() const{
-  return epc_functional_;
 }
 
 const RuntimeEnvironment& LoadBalancerImpl::runtime() const {

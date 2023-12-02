@@ -53,14 +53,14 @@ LoadBalancer LoadBalancerFactory::get_instance(
 std::shared_ptr<LoadBalancer> LoadBalancerFactory::get_shared_instance(
   const RuntimeEnvironment& rt,
   const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis,
-  const BasisSet<double>& basis2, EPCFunctional epcfunc, size_t pad_value
+  const BasisSet<double>& basis2, size_t pad_value
 ) {
 
   switch(ex_) {
     case ExecutionSpace::Host:
       using host_factory = LoadBalancerHostFactory;
       return host_factory::get_shared_instance(kernel_name_,
-        rt, mol, mg, basis, basis2, epcfunc, pad_value );
+        rt, mol, mg, basis, basis2, pad_value );
     #ifdef GAUXC_ENABLE_DEVICE
     case ExecutionSpace::Device:
       GAUXC_GENERIC_EXCEPTION("2 basis with GPU NYI");
@@ -78,10 +78,10 @@ std::shared_ptr<LoadBalancer> LoadBalancerFactory::get_shared_instance(
 LoadBalancer LoadBalancerFactory::get_instance(
   const RuntimeEnvironment& rt, 
   const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis,
-  const BasisSet<double>& basis2, EPCFunctional epcfunc, size_t pad_value
+  const BasisSet<double>& basis2, size_t pad_value
 ) {
 
-  auto ptr = get_shared_instance(rt, mol, mg, basis, basis2, epcfunc, pad_value);
+  auto ptr = get_shared_instance(rt, mol, mg, basis, basis2, pad_value);
   return LoadBalancer(std::move(*ptr));
 
 }
