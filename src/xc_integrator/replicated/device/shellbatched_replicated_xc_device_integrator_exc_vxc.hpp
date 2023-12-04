@@ -124,7 +124,6 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
     this->timer_.time_op("XCIntegrator.DeviceAlloc",
       [&](){ return lwd->create_device_data(rt); });
 
-  if(this->func_->is_gga()) GAUXC_GENERIC_EXCEPTION( "GGA+UKS NYI!" );
 
   // Generate incore integrator instance, transfer ownership of LWD
   incore_integrator_type incore_integrator( this->func_, this->load_balancer_,

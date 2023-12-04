@@ -306,7 +306,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   device_data.zero_exc_vxc_integrands(enabled_terms);
   
 
-  if( func.is_gga() and is_uks ) GAUXC_GENERIC_EXCEPTION("UKS GGA NYI");
 
   auto task_it = task_begin;
   while( task_it != task_end ) {

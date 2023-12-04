@@ -254,17 +254,24 @@ void eval_uvvars_lda( size_t ntasks, int32_t nbf_max, int32_t npts_max, integrat
   dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
                util::div_ceil( npts_max, threads.y ),
                ntasks );
-  switch ( enabled_terms.ks_scheme ) {
-    case RKS:
+  if( enabled_terms.den ) {
       eval_uvars_lda_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-      break;
-    case UKS:
-      eval_uvars_lda_uks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-      break;
-    default:
-      GAUXC_GENERIC_EXCEPTION( "Unexpected KS scheme when attempting to evaluate UV vars" );
   }
-      
+  else {
+    switch ( enabled_terms.ks_scheme ) {
+      case RKS:
+        eval_uvars_lda_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+        break;
+      case UKS:
+        eval_uvars_lda_uks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+        break;
+      case GKS:
+        GAUXC_GENERIC_EXCEPTION( "Device GKS NYI!" );
+        break;
+      default:
+        GAUXC_GENERIC_EXCEPTION( "Unexpected KS scheme when attempting to evaluate UV vars" );
+    }
+  }
 
 }
 

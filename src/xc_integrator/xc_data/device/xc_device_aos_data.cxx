@@ -467,8 +467,9 @@ void XCDeviceAoSData::pack_and_send(
     buffer_adaptor xmat_dz_mem( aos_stack.xmat_dz_device, total_nbe_bfn_npts );
         
     size_t den_vrho_eval_npts = total_npts;
-    if (terms.ks_scheme == UKS ) // Use den_eval_device to store interleaved density before eval_kern_exc_vxc
-      den_vrho_eval_npts *= 2;
+    if (terms.ks_scheme == UKS ) { 
+      // Use den_eval_device to store interleaved density before eval_kern_exc_vxc
+      den_vrho_eval_npts *= 2; }
     
     buffer_adaptor den_mem   ( base_stack.den_eval_device,  den_vrho_eval_npts );
 

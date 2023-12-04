@@ -678,10 +678,14 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   required_term_storage reqt(terms);
   const size_t msz = total_npts_task_batch;
   const size_t aln = 256;
-
+  
+  // Below is only true if terms.exc_vxc is true
   const bool is_rks = terms.ks_scheme == RKS;
   const bool is_uks = terms.ks_scheme == UKS;
   const bool is_gks = terms.ks_scheme == GKS;
+  const bool is_gga = reqt.grid_den_grad;
+
+  const bool is_den = terms.den;
 
   // Grid Points
   if( reqt.grid_points ) {
@@ -697,6 +701,7 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
 
   // Grid function evaluations
   if( reqt.grid_den ) { // Density 
+    if( is_den )   base_stack.den_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
     if( is_rks )   base_stack.den_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
     if( is_uks ) { base_stack.den_pos_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                    base_stack.den_neg_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
@@ -715,7 +720,7 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   }
   
   if( is_uks and reqt.grid_den ) {    // Interleaved density storage
-    if( not reqt.grid_den_grad ) base_stack.den_eval_device = mem.aligned_alloc<double>(2 * msz, aln, csl);
+    if( not is_gga ) base_stack.den_eval_device = mem.aligned_alloc<double>(2 * msz, aln, csl);
     else                         base_stack.den_eval_device = mem.aligned_alloc<double>(8 * msz, aln, csl); //GGA
   }
     

@@ -55,7 +55,7 @@ struct integrator_term_tracker {
   }
 };
 
-#define PRDVL(pred,val) (pred) ? (val) : 0ul;
+#define PRDVL(pred,val) (pred) ? (val) : 0ul
 
 struct required_term_storage {
   bool grid_points  = false;
@@ -78,31 +78,37 @@ struct required_term_storage {
 
 
   // Reference flags for memory management use
-  integrator_ks_scheme ref    = _UNDEF_SCHEME;
+  integrator_term_tracker ref_tracker;
 
   inline size_t grid_den_size(size_t npts){ 
   // grid_den_size takes into account the size of the interleaved density sent to ExchCXX in the cases of UKS/GKS (hence the * 2)
-    return PRDVL(grid_den and ref == RKS, npts)
-         + PRDVL(grid_den and ref == UKS and not grid_den_grad, 2 * npts) // LDA
-         + PRDVL(grid_den and ref == UKS and grid_den_grad, 5 * npts); // GGA
+    if( grid_den ) {
+      if( ref_tracker.den )
+        return npts;
+      else if (ref_tracker.ks_scheme == RKS)
+        return npts;
+      else if (ref_tracker.ks_scheme == UKS)
+        return 2 * npts;
+    }
   }
   inline size_t grid_den_grad_size(size_t npts){ 
-    return PRDVL(grid_den_grad, 3 * npts);
+    return PRDVL(grid_den_grad and ref_tracker.ks_scheme == RKS, 3 * npts)
+         + PRDVL(grid_den_grad and ref_tracker.ks_scheme == UKS, 6 * npts);
   }
   inline size_t grid_gamma_size(size_t npts){ 
-    return PRDVL(grid_gamma and ref == RKS, npts) 
-         + PRDVL(grid_gamma and ref == UKS, 3 * npts);
+    return PRDVL(grid_gamma and ref_tracker.ks_scheme == RKS, npts) 
+         + PRDVL(grid_gamma and ref_tracker.ks_scheme == UKS, 3 * npts);
   }
   inline size_t grid_eps_size(size_t npts){ 
     return PRDVL(grid_eps, npts);
   }
   inline size_t grid_vrho_size(size_t npts){ 
-    return PRDVL(grid_vrho and ref == RKS, npts)
-         + PRDVL(grid_vrho and ref == UKS, 2 * npts);
+    return PRDVL(grid_vrho and ref_tracker.ks_scheme == RKS, npts)
+         + PRDVL(grid_vrho and ref_tracker.ks_scheme == UKS, 2 * npts);
   }
   inline size_t grid_vgamma_size(size_t npts){ 
-    return PRDVL(grid_vgamma and ref == RKS, npts)
-         + PRDVL(grid_vgamma and ref == UKS, 3 * npts);
+    return PRDVL(grid_vgamma and ref_tracker.ks_scheme == RKS, npts)
+         + PRDVL(grid_vgamma and ref_tracker.ks_scheme == UKS, 3 * npts);
   }
 
 
@@ -254,9 +260,14 @@ struct required_term_storage {
 
     // Allocated terms for XC calculations
     const bool is_xc = tracker.exc_vxc or tracker.exc_grad;
+    
+    ref_tracker = tracker;
+
     if(is_xc) {
       if( tracker.xc_approx == _UNDEF_APPROX )
         GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET");
+      if( tracker.ks_scheme == _UNDEF_SCHEME )
+        GAUXC_GENERIC_EXCEPTION("NO KS SCHEME SET");
       //const bool is_lda  = is_xc and tracker.xc_approx == LDA;
       const bool is_gga  = is_xc and tracker.xc_approx == GGA;
       const bool is_grad = tracker.exc_grad;

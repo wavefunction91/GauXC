@@ -535,7 +535,7 @@ void AoSScheme1Base::eval_uvvar_lda( XCDeviceData* _data, integrator_term_tracke
 
   // Zero density
   auto base_stack    = data->base_stack;
-  if (en_terms.ks_scheme == RKS )
+  if (en_terms.ks_scheme == RKS or en_terms.den )
     data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_eval_device, "Den Zero" );
     
 

@@ -116,6 +116,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Processes batches in groups that saturadate available device memory
   integrator_term_tracker enabled_terms;
   enabled_terms.exc_grad = true;
+  enabled_terms.ks_scheme = RKS;
   if( func.is_lda() )      enabled_terms.xc_approx = integrator_xc_approx::LDA; 
   else if( func.is_gga() ) enabled_terms.xc_approx = integrator_xc_approx::GGA; 
   else GAUXC_GENERIC_EXCEPTION("XC Approx NYI");
