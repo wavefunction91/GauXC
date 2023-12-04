@@ -102,14 +102,14 @@ public:
   const shell_pair_type& shell_pairs() const;
   const shell_pair_type& shell_pairs();
 
-  /// Return the underlying 2nd BasisSet instance used to generate this LoadBalancer 
-  const basis_type& basis2()  const;
+  /// Return the underlying protonic BasisSet instance used to generate this LoadBalancer 
+  const basis_type& protonic_basis()  const;
 
-  /// Return BasisSetMap instance corresponding to 2nd basis/molecule
-  const basis_map_type& basis_map2() const;
+  /// Return the protonic BasisSetMap instance corresponding to protonic basis/molecule
+  const basis_map_type& protonic_basis_map() const;
 
-  /// Return the number of non-negligible local shell pairs for 2nd basis for this LoadBalancer
-  const shell_pair_type& shell_pairs2() const;
+  /// Return the number of non-negligible local shell pairs for the protonic basis for this LoadBalancer
+  const shell_pair_type& protonic_shell_pairs() const;
   
   /// Return the runtime handle used to construct this LoadBalancer
   const RuntimeEnvironment& runtime() const;

@@ -18,29 +18,29 @@ namespace detail {
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
-                     const value_type* P1s, int64_t ldp1s,
-                     const value_type* P2s, int64_t ldp2s,
-                     const value_type* P2z, int64_t ldp2z,
-                     value_type* VXC1s, int64_t ldvxc1s,
-                     value_type* VXC2s, int64_t ldvxc2s,
-                     value_type* VXC2z, int64_t ldvxc2z,
-                     value_type* EXC1,  value_type* EXC2, const IntegratorSettingsXC& ks_settings ){
+  neo_eval_exc_vxc_( int64_t elec_m, int64_t elec_n, int64_t prot_m, int64_t prot_n, 
+                     const value_type* elec_Ps, int64_t elec_ldps,
+                     const value_type* prot_Ps, int64_t prot_ldps,
+                     const value_type* prot_Pz, int64_t prot_ldpz,
+                     value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                     value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                     value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                     value_type* elec_EXC,  value_type* prot_EXC, const IntegratorSettingsXC& settings){
   
-  const auto& basis  = this->load_balancer_->basis();
-  const auto& basis2 = this->load_balancer_->basis2();
+  const auto& elec_basis = this->load_balancer_->basis();
+  const auto& prot_basis = this->load_balancer_->protonic_basis();
 
   // Check that P / VXC are sane
-  const int64_t nbf1 = basis.nbf();
-  const int64_t nbf2 = basis2.nbf();
+  const int64_t elec_nbf = elec_basis.nbf();
+  const int64_t prot_nbf = prot_basis.nbf();
 
-  if( m1 != n1 | m2 != n2)
+  if( elec_m != elec_n   | prot_m != prot_n)
     GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
-  if( m1 != nbf1 | m2 != nbf2)
+  if( elec_m != elec_nbf | prot_m != prot_nbf)
     GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
-  if( ldp1s < nbf1 | ldp2s < nbf2 | ldp2z < nbf2 )
+  if( elec_ldps < elec_nbf | prot_ldps < prot_nbf | prot_ldpz < prot_nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDP");
-  if( ldvxc1s < nbf1 | ldvxc2s < nbf2 | ldvxc2z < nbf2 )
+  if( elec_ldvxcs < elec_nbf | prot_ldvxcs < prot_nbf | prot_ldvxcz < prot_nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDVXC");
 
   // Get Tasks
@@ -51,15 +51,15 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    neo_exc_vxc_local_work_( P1s, ldp1s,
+    neo_exc_vxc_local_work_( elec_Ps, elec_ldps,
                              nullptr, 0,
-                             P2s, ldp2s,
-                             P2z, ldp2z,
-                             VXC1s, ldvxc1s,
-                             nullptr, 0,
-                             VXC2s, ldvxc2s,
-                             VXC2z, ldvxc2z,
-                             EXC1, EXC2, &N_EL, ks_settings  );
+                             prot_Ps, prot_ldps,
+                             prot_Pz, prot_ldpz,
+                             elec_VXCs, elec_ldvxcs,
+                             nullptr,   0,
+                             prot_VXCs, prot_ldvxcs,
+                             prot_VXCz, prot_ldvxcz,
+                             elec_EXC, prot_EXC, &N_EL, settings  );
   });
 
 
@@ -69,12 +69,12 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     if( not this->reduction_driver_->takes_host_memory() )
       GAUXC_GENERIC_EXCEPTION("This Module Only Works With Host Reductions");
 
-    this->reduction_driver_->allreduce_inplace( VXC1s, nbf1*nbf1,  ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( VXC2s, nbf2*nbf1,  ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( VXC2z, nbf2*nbf2,  ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( EXC1,  1    ,  ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( EXC2,  1    ,  ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( &N_EL, 1    ,  ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( elec_VXCs, elec_nbf*elec_nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( prot_VXCs, prot_nbf*prot_nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( prot_VXCz, prot_nbf*prot_nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( elec_EXC,  1,                 ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( prot_EXC,  1,                 ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( &N_EL,     1,                 ReductionOp::Sum );
 
   });
 
@@ -82,32 +82,31 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2,
-                     const value_type* P1s, int64_t ldp1s,
-                     const value_type* P1z, int64_t ldp1z,
-                     const value_type* P2s, int64_t ldp2s,
-                     const value_type* P2z, int64_t ldp2z,
-                     value_type* VXC1s, int64_t ldvxc1s,
-                     value_type* VXC1z, int64_t ldvxc1z,
-                     value_type* VXC2s, int64_t ldvxc2s,
-                     value_type* VXC2z, int64_t ldvxc2z,
-                     value_type* EXC1, value_type* EXC2,
-                     const IntegratorSettingsXC& ks_settings ) {
+  neo_eval_exc_vxc_( int64_t elec_m, int64_t elec_n, int64_t prot_m, int64_t prot_n, 
+                     const value_type* elec_Ps, int64_t elec_ldps,
+                     const value_type* elec_Pz, int64_t elec_ldpz,
+                     const value_type* prot_Ps, int64_t prot_ldps,
+                     const value_type* prot_Pz, int64_t prot_ldpz,
+                     value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                     value_type* elec_VXCz,     int64_t elec_ldvxcz,
+                     value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                     value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                     value_type* elec_EXC,  value_type* prot_EXC, const IntegratorSettingsXC& settings ){
   
-  const auto& basis  = this->load_balancer_->basis();
-  const auto& basis2 = this->load_balancer_->basis2();
+  const auto& elec_basis = this->load_balancer_->basis();
+  const auto& prot_basis = this->load_balancer_->protonic_basis();
 
   // Check that P / VXC are sane
-  const int64_t nbf1 = basis.nbf();
-  const int64_t nbf2 = basis2.nbf();
+  const int64_t elec_nbf = elec_basis.nbf();
+  const int64_t prot_nbf = prot_basis.nbf();
 
-  if( m1 != n1 | m2 != n2)
+  if( elec_m != elec_n   | prot_m != prot_n)
     GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
-  if( m1 != nbf1 | m2 != nbf2)
+  if( elec_m != elec_nbf | prot_m != prot_nbf)
     GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
-  if( ldp1s < nbf1 | ldp2s < nbf2 | ldp2z < nbf2 )
+  if( elec_ldps < elec_nbf | elec_ldpz < elec_nbf | prot_ldps < prot_nbf | prot_ldpz < prot_nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDP");
-  if( ldvxc1s < nbf1 | ldvxc2s < nbf2 | ldvxc2z < nbf2 )
+  if( elec_ldvxcs < elec_nbf | elec_ldvxcz < elec_nbf | prot_ldvxcs < prot_nbf | prot_ldvxcz < prot_nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDVXC");
 
   // Get Tasks
@@ -118,15 +117,15 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    neo_exc_vxc_local_work_( P1s, ldp1s,
-                             P1z, ldp1z,
-                             P2s, ldp2s,
-                             P2z, ldp2z,
-                             VXC1s, ldvxc1s,
-                             VXC1z, ldvxc1z,
-                             VXC2s, ldvxc2s,
-                             VXC2z, ldvxc2z,
-                             EXC1, EXC2, &N_EL, ks_settings);
+    neo_exc_vxc_local_work_( elec_Ps, elec_ldps,
+                             elec_Pz, elec_ldpz,
+                             prot_Ps, prot_ldps,
+                             prot_Pz, prot_ldpz,
+                             elec_VXCs, elec_ldvxcs,
+                             elec_VXCz, elec_ldvxcz,
+                             prot_VXCs, prot_ldvxcs,
+                             prot_VXCz, prot_ldvxcz,
+                             elec_EXC, prot_EXC, &N_EL, settings  );
   });
 
 
@@ -136,13 +135,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     if( not this->reduction_driver_->takes_host_memory() )
       GAUXC_GENERIC_EXCEPTION("This Module Only Works With Host Reductions");
 
-    this->reduction_driver_->allreduce_inplace( VXC1s, nbf1*nbf1,  ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( VXC1z, nbf1*nbf1,  ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( VXC2s, nbf2*nbf1,  ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( VXC2z, nbf2*nbf2,  ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( EXC1,  1    ,  ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( EXC2,  1    ,  ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( &N_EL, 1    ,  ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( elec_VXCs, elec_nbf*elec_nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( elec_VXCz, elec_nbf*elec_nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( prot_VXCs, prot_nbf*prot_nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( prot_VXCz, prot_nbf*prot_nbf, ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( elec_EXC,  1,                 ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( prot_EXC,  1,                 ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( &N_EL,     1,                 ReductionOp::Sum );
 
   });
 
@@ -151,20 +150,20 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  neo_exc_vxc_local_work_( const value_type* P1s, int64_t ldp1s,
-                           const value_type* P1z, int64_t ldp1z, 
-                           const value_type* P2s, int64_t ldp2s,
-                           const value_type* P2z, int64_t ldp2z,
-                           value_type* VXC1s, int64_t ldvxc1s,
-                           value_type* VXC1z, int64_t ldvxc1z,
-                           value_type* VXC2s, int64_t ldvxc2s,
-                           value_type* VXC2z, int64_t ldvxc2z,
-                           value_type* EXC1, value_type* EXC2, value_type *N_EL,
+  neo_exc_vxc_local_work_( const value_type* elec_Ps, int64_t elec_ldps,
+                           const value_type* elec_Pz, int64_t elec_ldpz,
+                           const value_type* prot_Ps, int64_t prot_ldps,
+                           const value_type* prot_Pz, int64_t prot_ldpz,
+                           value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                           value_type* elec_VXCz,     int64_t elec_ldvxcz,
+                           value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                           value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                           value_type* elec_EXC,  value_type* prot_EXC,  value_type *N_EL,
                            const IntegratorSettingsXC& ks_settings ) {
   
   
   // Determine is electronic subsystem is RKS or UKS
-  const bool is_uks = (P1z != nullptr) and (VXC1z != nullptr);
+  const bool is_uks = (elec_Pz != nullptr) and (elec_VXCz != nullptr);
   const bool is_rks = not is_uks; // TODO: GKS
 
   // Cast LWD to LocalHostWorkDriver
@@ -181,9 +180,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   const int32_t nbf = basis.nbf();
 
   // Get Protonic basis information
-  const auto& basis2 = this->load_balancer_->basis2();
-  BasisSetMap basis_map2(basis2,mol);
-  const int32_t nbf2 = basis2.nbf();
+  const auto& protonic_basis = this->load_balancer_->protonic_basis();
+  BasisSetMap protonic_basis_map(protonic_basis,mol);
+  const int32_t protonic_nbf = protonic_basis.nbf();
 
   // Sort tasks on size (XXX: maybe doesnt matter?)
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
@@ -201,14 +200,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Zero out integrands
   
-  std::fill(VXC1s, VXC1s + nbf * ldvxc1s, 0.0);
-  if(is_uks) std::fill(VXC1z, VXC1z + nbf * ldvxc1z, 0.0);
+  std::fill(elec_VXCs, elec_VXCs + nbf * elec_ldvxcs, 0.0);
+  if(is_uks) std::fill(elec_VXCz, elec_VXCz + nbf * elec_ldvxcz, 0.0);
 
-  std::fill(VXC2s, VXC2s + nbf2 * ldvxc2s, 0.0);
-  std::fill(VXC2z, VXC2z + nbf2 * ldvxc2z, 0.0);
+  std::fill(prot_VXCs, prot_VXCs + protonic_nbf * prot_ldvxcs, 0.0);
+  std::fill(prot_VXCz, prot_VXCz + protonic_nbf * prot_ldvxcz, 0.0);
 
-  *EXC1 = 0.;
-  *EXC2 = 0.;
+  *elec_EXC = 0.;
+  *prot_EXC = 0.;
  
     
   // Loop over tasks
@@ -228,17 +227,19 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Get tasks constants
     const int32_t  npts     = task.points.size();
-    const int32_t  nbe     = task.bfn_screening.nbe;
-    const int32_t  nshells = task.bfn_screening.shell_list.size();
+    const int32_t  nbe      = task.bfn_screening.nbe;
+    const int32_t  nshells  = task.bfn_screening.shell_list.size();
 
-    const auto* points      = task.points.data()->data();
-    const auto* weights     = task.weights.data();
+    const auto* points        = task.points.data()->data();
+    const auto* weights       = task.weights.data();
     const int32_t* shell_list = task.bfn_screening.shell_list.data();
 
-    const int32_t  nbe2     = task.bfn2_screening.nbe;
-    const int32_t  nshells2 = task.bfn2_screening.shell_list.size();
-    const int32_t* shell_list2 = task.bfn2_screening.shell_list.data();
-    bool evalProtonic =  (nshells2 != 0);
+    const int32_t  protonic_nbe        = task.protonic_bfn_screening.nbe;
+    const int32_t  protonic_nshells    = task.protonic_bfn_screening.shell_list.size();
+    const int32_t* protonic_shell_list = task.protonic_bfn_screening.shell_list.data();
+
+    // Check if there's protonic shells to evaluate. If not, only electronic EXC/VXC will be calculated
+    bool evalProtonic =  (protonic_nshells != 0);
 
     // Allocate enough memory for batch
 
@@ -248,7 +249,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     
 
     // Use same scratch for both electronic and protonic
-    const int32_t scr_dim = std::max(nbe, nbe2);
+    const int32_t scr_dim = std::max(nbe, protonic_nbe);
     host_data.nbe_scr .resize(scr_dim  * scr_dim);
     
     //----------------------Start Electronic System Setup------------------------
@@ -307,27 +308,27 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     //----------------------Start Protonic System Setup------------------------
     // Set Up Memory (assuming UKS)
-    host_data.zmat2      .resize( npts * nbe2 * 2 );
-    host_data.eps2       .resize( npts );
-    host_data.vrho2      .resize( npts * 2 );
+    host_data.protonic_zmat      .resize( npts * protonic_nbe * 2 );
+    host_data.protonic_eps       .resize( npts );
+    host_data.protonic_vrho      .resize( npts * 2 );
     // LDA
-    host_data.basis2_eval .resize( npts * nbe2 );
-    host_data.den2_scr    .resize( npts * 2);
+    host_data.protonic_basis_eval .resize( npts * protonic_nbe );
+    host_data.protonic_den_scr    .resize( npts * 2);
     // Alias/Partition out scratch memory
-    auto* basis2_eval = host_data.basis2_eval.data();
-    auto* den2_eval   = host_data.den2_scr.data();
-    auto* zmat2       = host_data.zmat2.data();
-    decltype(zmat2) zmat2_z = zmat2 + nbe2 * npts;
+    auto* protonic_basis_eval = host_data.protonic_basis_eval.data();
+    auto* protonic_den_eval   = host_data.protonic_den_scr.data();
+    auto* protonic_zmat       = host_data.protonic_zmat.data();
+    decltype(protonic_zmat) protonic_zmat_z = protonic_zmat + protonic_nbe * npts;
     
-    auto* eps2        = host_data.eps2.data();
-    auto* vrho2       = host_data.vrho2.data();
+    auto* protonic_eps       = host_data.protonic_eps.data();
+    auto* protonic_vrho      = host_data.protonic_vrho.data();
     // No GGA for NEO yet
     //----------------------End Protonic System Setup------------------------
 
 
     //std::cout << "Task: " << iT << "/" << ntasks << std::endl;
     //std::cout << "Electronic nbe: " << nbe << std::endl;
-    //std::cout << "Protonic   nbe: " << nbe2 << std::endl;
+    //std::cout << "Protonic   nbe: " << protonic_nbe << std::endl;
 
     //----------------------Start Calculating Electronic Density & UV Variable------------------------
     // Get the submatrix map for batch
@@ -345,12 +346,12 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     
     // Evaluate X matrix (fac * P * B) -> store in Z
     const auto xmat_fac = is_rks ? 2.0 : 1.0; // TODO Fix for spinor RKS input
-    lwd->eval_xmat( npts, nbf, nbe, submat_map, xmat_fac, P1s, ldp1s, basis_eval, nbe,
+    lwd->eval_xmat( npts, nbf, nbe, submat_map, xmat_fac, elec_Ps, elec_ldps, basis_eval, nbe,
       zmat, nbe, nbe_scr );
 
     // X matrix for Pz
     if(not is_rks) {
-      lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, P1z, ldp1z, basis_eval, nbe,
+      lwd->eval_xmat( npts, nbf, nbe, submat_map, 1.0, elec_Pz, elec_ldpz, basis_eval, nbe,
         zmat_z, nbe, nbe_scr );
     }
 
@@ -385,31 +386,29 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
     //----------------------Start Calculating Protonic Density & UV Variable------------------------
-    std::vector< std::array<int32_t, 3> > submat_map2;
+    std::vector< std::array<int32_t, 3> > protonic_submat_map;
     if(evalProtonic){
-      //std::tie(submat_map2, std::ignore) =
-      //    gen_compressed_submat_map(basis_map2, shell_list2_vector, nbf2, nbf2);
-      std::tie(submat_map2, std::ignore) =
-            gen_compressed_submat_map(basis_map2, task.bfn2_screening.shell_list, nbf2, nbf2);
+      std::tie(protonic_submat_map, std::ignore) =
+        gen_compressed_submat_map(protonic_basis_map, task.protonic_bfn_screening.shell_list, protonic_nbf, protonic_nbf);
 
       // Evaluate Collocation 
-      lwd->eval_collocation( npts, nshells2, nbe2, points, basis2, shell_list2,
-        basis2_eval );
+      lwd->eval_collocation( npts, protonic_nshells, protonic_nbe, points, protonic_basis, protonic_shell_list,
+        protonic_basis_eval );
 
       // Evaluate X matrix (P * B) -> store in Z
       // NEED THE FACTOR OF 2 HERE!
-      lwd->eval_xmat( npts, nbf2, nbe2, submat_map2, 2.0, P2s, ldp2s, basis2_eval, nbe2,
-        zmat2, nbe2, nbe_scr );
-      lwd->eval_xmat( npts, nbf2, nbe2, submat_map2, 2.0, P2z, ldp2z, basis2_eval, nbe2,
-        zmat2_z, nbe2, nbe_scr );
+      lwd->eval_xmat( npts, protonic_nbf, protonic_nbe, protonic_submat_map, 2.0, prot_Ps, prot_ldps, protonic_basis_eval, protonic_nbe,
+        protonic_zmat,   protonic_nbe, nbe_scr );
+      lwd->eval_xmat( npts, protonic_nbf, protonic_nbe, protonic_submat_map, 2.0, prot_Pz, prot_ldpz, protonic_basis_eval, protonic_nbe,
+        protonic_zmat_z, protonic_nbe, nbe_scr );
 
       // Evaluate U and V variables
-      lwd->eval_uvvar_lda_uks( npts, nbe2, basis2_eval, zmat2, nbe2, zmat2_z, nbe2, 
-        den2_eval );
+      lwd->eval_uvvar_lda_uks( npts, protonic_nbe, protonic_basis_eval, protonic_zmat, protonic_nbe, protonic_zmat_z, 
+        protonic_nbe, protonic_den_eval );
 
       // No protonic XC functional. Fill with eps and vrho to be 0.0
-      std::fill_n(eps2,  npts,   0.);
-      std::fill_n(vrho2, npts*2, 0.);
+      std::fill_n(protonic_eps,  npts,   0.);
+      std::fill_n(protonic_vrho, npts*2, 0.);
     }
     //----------------------End Calculating Protonic Density & UV Variable------------------------
 
@@ -423,14 +422,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         const auto den = is_rks ? den_eval[iPt] : (den_eval[2*iPt] + den_eval[2*iPt+1]);
         value_type total_erho = std::abs(den) > 1e-15? den : 0;
         // Get Protonic density scalar (UKS)
-        const auto den2 = den2_eval[2*iPt] + den2_eval[2*iPt+1];
-        value_type total_prho = std::abs(den2) > 1e-15? den2 : 0; 
+        const auto protonic_den = protonic_den_eval[2*iPt] + protonic_den_eval[2*iPt+1];
+        value_type total_prho = std::abs(protonic_den) > 1e-15? protonic_den : 0; 
         
         // Skip this point if the density is too small
         if(total_erho < 1e-15 | total_prho < 1e-15){
-          eps2[iPt]      = 0.0;
-          vrho2[2*iPt]   = 0.0;
-          vrho2[2*iPt+1] = 0.0;
+          protonic_eps[iPt]      = 0.0;
+          protonic_vrho[2*iPt]   = 0.0;
+          protonic_vrho[2*iPt+1] = 0.0;
           continue;
         }
 
@@ -446,10 +445,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                                         + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
 
         // Assign protonic eps and vxc
-        eps2[iPt]      = -1.0 * total_erho/dn;
-        vrho2[2*iPt]   =  ( -1.0 * total_erho / dn + (-1.2 * std::sqrt(total_prho) * std::sqrt(total_erho) * total_erho 
+        protonic_eps[iPt]      = -1.0 * total_erho/dn;
+        protonic_vrho[2*iPt]   =  ( -1.0 * total_erho / dn + (-1.2 * std::sqrt(total_prho) * std::sqrt(total_erho) * total_erho 
                           + 6.6 * total_erho * total_erho * total_prho ) / (dn * dn) );
-        vrho2[2*iPt+1] =  0.0;
+        protonic_vrho[2*iPt+1] =  0.0;
       } // End looping over pts
     } // End if(evalProtonic)
     //----------------------End EPC functional Evaluation---------------------------------------
@@ -501,13 +500,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     if(evalProtonic){
       // Factor weights into XC results
       for( int32_t i = 0; i < npts; ++i ) {
-        eps2[i]      *= weights[i];
-        vrho2[2*i]   *= weights[i];
-        vrho2[2*i+1] *= weights[i];
+        protonic_eps[i]      *= weights[i];
+        protonic_vrho[2*i]   *= weights[i];
+        protonic_vrho[2*i+1] *= weights[i];
       }
 
       // Evaluate Z matrix for VXC
-      lwd->eval_zmat_lda_vxc_uks( npts, nbe2, vrho2, basis2_eval, zmat2, nbe2, zmat2_z, nbe2 );
+      lwd->eval_zmat_lda_vxc_uks( npts, protonic_nbe, protonic_vrho, protonic_basis_eval, protonic_zmat, protonic_nbe, 
+        protonic_zmat_z, protonic_nbe );
     }
     //----------------------End Evaluating Protonic ZMat----------------------------
 
@@ -522,14 +522,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       // Scalar integrations
       for( int32_t i = 0; i < npts; ++i ) {
         const auto den = is_rks ? den_eval[i] : (den_eval[2*i] + den_eval[2*i+1]);
-        *N_EL += weights[i] * den;
-        *EXC1 += eps[i]     * den;
+        *N_EL     += weights[i] * den;
+        *elec_EXC += eps[i]     * den;
       }
       // Increment VXC
-      lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, VXC1s, ldvxc1s,
+      lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, elec_VXCs, elec_ldvxcs,
         nbe_scr );
       if(not is_rks) 
-        lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat_z, nbe, VXC1z, ldvxc1z,
+        lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat_z, nbe, elec_VXCz, elec_ldvxcz,
           nbe_scr );
 
 
@@ -537,17 +537,17 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       // Scalar integrations
       if(evalProtonic){
         for( int32_t i = 0; i < npts; ++i ) {
-          const auto den2 =  den2_eval[2*i] + den2_eval[2*i+1];
-          *EXC2  += eps2[i]   * den2;    
+          const auto protonic_den =  protonic_den_eval[2*i] + protonic_den_eval[2*i+1];
+          *prot_EXC  += protonic_eps[i]   * protonic_den;    
         }
         // Increment VXC
-        lwd->inc_vxc( npts, nbf2, nbe2, basis2_eval, submat_map2, zmat2, nbe2, VXC2s, ldvxc2s,
-          nbe_scr );
-        lwd->inc_vxc( npts, nbf2, nbe2, basis2_eval, submat_map2, zmat2_z, nbe2, VXC2z, ldvxc2z,
-          nbe_scr );
+        lwd->inc_vxc( npts, protonic_nbf, protonic_nbe, protonic_basis_eval, protonic_submat_map, 
+          protonic_zmat,   protonic_nbe, prot_VXCs, prot_ldvxcs, nbe_scr );
+        lwd->inc_vxc( npts, protonic_nbf, protonic_nbe, protonic_basis_eval, protonic_submat_map, 
+          protonic_zmat_z, protonic_nbe, prot_VXCz, prot_ldvxcz, nbe_scr );
       }
-      //std::cout << "Electronic EXC: " << *EXC1 << std::endl;
-      //std::cout << "Protonic   EXC: " << *EXC2 << std::endl;
+      //std::cout << "Electronic EXC: " << *elec_EXC << std::endl;
+      //std::cout << "Protonic   EXC: " << *prot_EXC << std::endl;
 
     } // End #pragma omp critical
 
@@ -556,26 +556,26 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   }  // End OpenMP region
 
   //std::cout << "N_EL = " << std::setprecision(12) << std::scientific << *N_EL << std::endl;
-  //std::cout << "EXC1 = " << std::setprecision(12) << std::scientific << *EXC1 << std::endl
-  //std::cout << "EXC2 = " << std::setprecision(12) << std::scientific << *EXC2 << std::endl;
+  //std::cout << "elec_EXC = " << std::setprecision(12) << std::scientific << *elec_EXC << std::endl
+  //std::cout << "prot_EXC = " << std::setprecision(12) << std::scientific << *prot_EXC << std::endl;
 
   // Symmetrize Electronic VXC
   for( int32_t j = 0;   j < nbf; ++j )
   for( int32_t i = j+1; i < nbf; ++i )
-    VXC1s[ j + i*ldvxc1s ] = VXC1s[ i + j*ldvxc1s ];
+    elec_VXCs[ j + i*elec_ldvxcs ] = elec_VXCs[ i + j*elec_ldvxcs ];
   if(not is_rks) {
   for( int32_t j = 0;   j < nbf; ++j ) {
   for( int32_t i = j+1; i < nbf; ++i ) {
-    VXC1z[ j + i*ldvxc1z ] = VXC1z[ i + j*ldvxc1z ];
+    elec_VXCz[ j + i*elec_ldvxcz ] = elec_VXCz[ i + j*elec_ldvxcz ];
   }
   }
   }
 
   // Symmetrize Protonic VXC
-  for( int32_t j = 0;   j < nbf2; ++j ){
-  for( int32_t i = j+1; i < nbf2; ++i ){
-    VXC2s[ j + i*ldvxc2s ] = VXC2s[ i + j*ldvxc2s ];
-    VXC2z[ j + i*ldvxc2z ] = VXC2z[ i + j*ldvxc2z ];
+  for( int32_t j = 0;   j < protonic_nbf; ++j ){
+  for( int32_t i = j+1; i < protonic_nbf; ++i ){
+    prot_VXCs[ j + i*prot_ldvxcs ] = prot_VXCs[ i + j*prot_ldvxcs ];
+    prot_VXCz[ j + i*prot_ldvxcz ] = prot_VXCz[ i + j*prot_ldvxcz ];
   }
   }
   

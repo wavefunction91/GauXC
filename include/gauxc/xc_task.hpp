@@ -55,7 +55,7 @@ struct XCTask {
   }
 
   screening_data bfn_screening;
-  screening_data bfn2_screening;
+  screening_data protonic_bfn_screening;
   screening_data cou_screening;
 
   void merge_with( const XCTask& other ) {

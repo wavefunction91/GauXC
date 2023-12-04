@@ -68,25 +68,25 @@ protected:
                       value_type* VXCx, int64_t ldvxcx,
                       value_type* EXC, const IntegratorSettingsXC& settings ) override;
 
-  void neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
-                          const value_type* P1s, int64_t ldp1s,
-                          const value_type* P2s, int64_t ldp2s,
-                          const value_type* P2z, int64_t ldp2z,
-                          value_type* VXC1s, int64_t ldvxc1s,
-                          value_type* VXC2s, int64_t ldvxc2s,
-                          value_type* VXC2z, int64_t ldvxc2z,
-                          value_type* EXC1,  value_type* EXC2 ) override;
+  void neo_eval_exc_vxc_( int64_t elec_m, int64_t elec_n, int64_t prot_m, int64_t prot_n, 
+                          const value_type* elec_Ps, int64_t elec_ldps,
+                          const value_type* prot_Ps, int64_t prot_ldps,
+                          const value_type* prot_Pz, int64_t prot_ldpz,
+                          value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                          value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                          value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                          value_type* elec_EXC,  value_type* prot_EXC, const IntegratorSettingsXC& settings  ) override;
 
-  void neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
-                          const value_type* P1s, int64_t ldp1s,
-                          const value_type* P1z, int64_t ldp1z,
-                          const value_type* P2s, int64_t ldp2s,
-                          const value_type* P2z, int64_t ldp2z,
-                          value_type* VXC1s, int64_t ldvxc1s,
-                          value_type* VXC1z, int64_t ldvxc1z,
-                          value_type* VXC2s, int64_t ldvxc2s,
-                          value_type* VXC2z, int64_t ldvxc2z,
-                          value_type* EXC1,  value_type* EXC2 ) override;
+  void neo_eval_exc_vxc_( int64_t elec_m, int64_t elec_n, int64_t prot_m, int64_t prot_n, 
+                          const value_type* elec_Ps, int64_t elec_ldps,
+                          const value_type* elec_Pz, int64_t elec_ldpz,
+                          const value_type* prot_Ps, int64_t prot_ldps,
+                          const value_type* prot_Pz, int64_t prot_ldpz,
+                          value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                          value_type* elec_VXCz,     int64_t elec_ldvxcz,
+                          value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                          value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                          value_type* elec_EXC,  value_type* prot_EXC, const IntegratorSettingsXC& settings  ) override;
 
   void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
                        int64_t ldp, value_type* EXC_GRAD ) override;

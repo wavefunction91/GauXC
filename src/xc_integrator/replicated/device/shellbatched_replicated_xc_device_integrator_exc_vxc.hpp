@@ -122,34 +122,36 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
-  neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
-                    const value_type* P1s, int64_t ldp1s,
-                    const value_type* P2s, int64_t ldp2s,
-                    const value_type* P2z, int64_t ldp2z,
-                    value_type* VXC1s, int64_t ldvxc1s,
-                    value_type* VXC2s, int64_t ldvxc2s,
-                    value_type* VXC2z, int64_t ldvxc2z,
-                    value_type* EXC1,  value_type* EXC2 ) {
+  neo_eval_exc_vxc_( int64_t elec_m, int64_t elec_n, int64_t prot_m, int64_t prot_n, 
+                     const value_type* elec_Ps, int64_t elec_ldps,
+                     const value_type* prot_Ps, int64_t prot_ldps,
+                     const value_type* prot_Pz, int64_t prot_ldpz,
+                     value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                     value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                     value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                     value_type* elec_EXC,  value_type* prot_EXC, const IntegratorSettingsXC& settings  ) {
 
-  GauXC::util::unused(m1,n1,m2,n2,P1s,ldp1s,P2s,ldp2s,P2z,ldp2z,VXC1s,ldvxc1s,VXC2s,ldvxc2s,VXC2z,ldvxc2z,EXC);
+  GauXC::util::unused(elec_m,elec_n,prot_m,prot_n,elec_Ps,elec_ldps,prot_Ps,prot_ldps,prot_Pz,prot_ldpz,
+    elec_VXCs,elec_ldvxcs,prot_VXCs,prot_ldvxcs,prot_VXCz,prot_ldvxcz,elec_EXC,prot_EXC,settings);
   GAUXC_GENERIC_EXCEPTION("NEO RKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
-  neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
-                    const value_type* P1s, int64_t ldp1s,
-                    const value_type* P1z, int64_t ldp1z,
-                    const value_type* P2s, int64_t ldp2s,
-                    const value_type* P2z, int64_t ldp2z,
-                    value_type* VXC1s, int64_t ldvxc1s,
-                    value_type* VXC1z, int64_t ldvxc1z,
-                    value_type* VXC2s, int64_t ldvxc2s,
-                    value_type* VXC2z, int64_t ldvxc2z,
-                    value_type* EXC1,  value_type* EXC2 ) {
+  neo_eval_exc_vxc_( int64_t elec_m, int64_t elec_n, int64_t prot_m, int64_t prot_n, 
+                     const value_type* elec_Ps, int64_t elec_ldps,
+                     const value_type* elec_Pz, int64_t elec_ldpz,
+                     const value_type* prot_Ps, int64_t prot_ldps,
+                     const value_type* prot_Pz, int64_t prot_ldpz,
+                     value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                     value_type* elec_VXCz,     int64_t elec_ldvxcz,
+                     value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                     value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                     value_type* elec_EXC,  value_type* prot_EXC, const IntegratorSettingsXC& settings  ) {
 
-  GauXC::util::unused(m1,n1,m2,n2,P1s,ldp1s,P1z,ldp1z,P2s,ldp2s,P2z,ldp2z,VXC1s,ldvxc1s,VXC1z,ldvxc1z,VXC2s,ldvxc2s,VXC2z,ldvxc2z,EXC);
-  GAUXC_GENERIC_EXCEPTION("NEO UKS NOT YET IMPLEMENTED FOR DEVICE");
+  GauXC::util::unused(elec_m,elec_n,prot_m,prot_n,elec_Ps,elec_ldps,elec_Pz,elec_ldpz,prot_Ps,prot_ldps,prot_Pz,prot_ldpz,
+    elec_VXCs,elec_ldvxcs,elec_VXCz,elec_ldvxcz,prot_VXCs,prot_ldvxcs,prot_VXCz,prot_ldvxcz,elec_EXC,prot_EXC,settings);
+  GAUXC_GENERIC_EXCEPTION("NEO RKS NOT YET IMPLEMENTED FOR DEVICE");
 }
 
 template <typename ValueType>
