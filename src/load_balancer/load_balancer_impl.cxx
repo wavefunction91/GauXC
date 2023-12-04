@@ -137,12 +137,16 @@ const LoadBalancerImpl::shell_pair_type& LoadBalancerImpl::shell_pairs() {
 }
 
 const LoadBalancerImpl::basis_type& LoadBalancerImpl::basis2() const {
+  if( not basis2_ ) GAUXC_GENERIC_EXCEPTION("No Protonic Basis Found in LoadBalancerImpl::basis2()");
   return *basis2_;
 }
+
 const LoadBalancerImpl::basis_map_type& LoadBalancerImpl::basis_map2() const {
+  if( not basis_map2_ ) GAUXC_GENERIC_EXCEPTION("No Protonic Basis Found in LoadBalancerImpl::basis_map2()");
   return *basis_map2_;
 }
 const LoadBalancerImpl::shell_pair_type& LoadBalancerImpl::shell_pairs2() const {
+  if( not shell_pairs2_ ) GAUXC_GENERIC_EXCEPTION("No Protonic Basis Found in LoadBalancerImpl::shell_pairs2()");
   return *shell_pairs2_;
 }
 
