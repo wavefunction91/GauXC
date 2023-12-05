@@ -314,7 +314,7 @@ void AoSScheme1Base::eval_zmat_gga_vxc_uks( XCDeviceData* _data, density_id den_
   }
 
   auto aos_stack     = data->aos_stack;
-  zmat_lda_vxc_uks( ntasks, nbe_max, npts_max, aos_stack.device_tasks, den_select,
+  zmat_gga_vxc_uks( ntasks, nbe_max, npts_max, aos_stack.device_tasks, den_select,
     data->device_backend_->queue() );
 
 }

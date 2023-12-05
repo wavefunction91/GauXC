@@ -265,9 +265,9 @@ __global__ void zmat_gga_vxc_uks_kernel( size_t        ntasks,
     const auto gga_fact_3 = 0.5*(gga_fact_pp - gga_fact_pm + gga_fact_mm);
 
     if constexpr ( den_selector == DEN_S ) {
-      const auto x_fact = gga_fact_1 * den_pos_x_eval_device[ ibfoff ] + gga_fact_2 * den_pos_x_eval_device[ ibfoff ];
-      const auto y_fact = gga_fact_1 * den_pos_y_eval_device[ ibfoff ] + gga_fact_2 * den_pos_y_eval_device[ ibfoff ];
-      const auto z_fact = gga_fact_1 * den_pos_z_eval_device[ ibfoff ] + gga_fact_2 * den_pos_z_eval_device[ ibfoff ];
+      const auto x_fact = gga_fact_1 * den_pos_x_eval_device[ tid_x ] + gga_fact_2 * den_neg_x_eval_device[ tid_x ];
+      const auto y_fact = gga_fact_1 * den_pos_y_eval_device[ tid_x ] + gga_fact_2 * den_neg_y_eval_device[ tid_x ];
+      const auto z_fact = gga_fact_1 * den_pos_z_eval_device[ tid_x ] + gga_fact_2 * den_neg_z_eval_device[ tid_x ];
       
       z_matrix_device[ ibfoff ] =   x_fact * dbasis_x_eval_device[ ibfoff ]      
                                   + y_fact * dbasis_y_eval_device[ ibfoff ]
@@ -276,9 +276,9 @@ __global__ void zmat_gga_vxc_uks_kernel( size_t        ntasks,
 
     }
     if constexpr ( den_selector == DEN_Z ) {
-      const auto x_fact = gga_fact_3 * den_neg_x_eval_device[ ibfoff ] + gga_fact_2 * den_neg_x_eval_device[ ibfoff ];
-      const auto y_fact = gga_fact_3 * den_neg_y_eval_device[ ibfoff ] + gga_fact_2 * den_neg_y_eval_device[ ibfoff ];
-      const auto z_fact = gga_fact_3 * den_neg_z_eval_device[ ibfoff ] + gga_fact_2 * den_neg_z_eval_device[ ibfoff ];
+      const auto x_fact = gga_fact_3 * den_neg_x_eval_device[ tid_x ] + gga_fact_2 * den_pos_x_eval_device[ tid_x ];
+      const auto y_fact = gga_fact_3 * den_neg_y_eval_device[ tid_x ] + gga_fact_2 * den_pos_y_eval_device[ tid_x ];
+      const auto z_fact = gga_fact_3 * den_neg_z_eval_device[ tid_x ] + gga_fact_2 * den_pos_z_eval_device[ tid_x ];
 
       z_matrix_device[ ibfoff ] =   x_fact * dbasis_x_eval_device[ ibfoff ] 
                                   + y_fact * dbasis_y_eval_device[ ibfoff ]
@@ -286,9 +286,6 @@ __global__ void zmat_gga_vxc_uks_kernel( size_t        ntasks,
                                   + (factp - factm) * basis_eval_device[ ibfoff ];
     }
       
-    
-
-
 
     
   }

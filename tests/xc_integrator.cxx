@@ -126,7 +126,6 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     }
   }
 
-  //if(uks and ex == ExecutionSpace::Device) return;
   if(gks and ex == ExecutionSpace::Device) return;
   if(func.is_mgga() and ex == ExecutionSpace::Device) return;
 
@@ -343,13 +342,12 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf_robust_prune.hdf5", 
         func, PruningScheme::Robust );
   }
-
   // GGA Test
   SECTION( "Benzene / PBE0 / cc-pVDZ" ) {
     auto func = make_functional(pbe0, unpol);
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_pbe0_cc-pvdz_ufg_ssf.hdf5", 
         func, PruningScheme::Unpruned );
-  }
+  } 
   // MGGA Test (TAU Only)
   SECTION( "Cytosine / SCAN / cc-pVDZ") {
     functional_type func({
@@ -413,5 +411,5 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     auto func = make_functional(pbe0, unpol);
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_631gd_pbe0_ufg.hdf5", 
         func, PruningScheme::Unpruned );
-  }
+  } 
 }

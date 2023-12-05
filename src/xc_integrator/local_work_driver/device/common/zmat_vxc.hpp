@@ -30,5 +30,13 @@ void zmat_gga_vxc_rks( size_t        ntasks,
                    XCDeviceTask* tasks_device,
                    device_queue queue );
 
+void zmat_gga_vxc_uks( size_t        ntasks,
+                   int32_t       max_nbf,
+                   int32_t       max_npts,
+                   XCDeviceTask* tasks_device,
+                   density_id sel,
+                   device_queue queue );
+
+
 
 }
