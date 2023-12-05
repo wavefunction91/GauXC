@@ -213,11 +213,9 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   if ( rks ) {
     double EXC, protonic_EXC;
     matrix_type VXC, protonic_VXCs, protonic_VXCz;
-    if ( neo ){
-      std::tie( EXC, protonic_EXC, VXC, protonic_VXCs, protonic_VXCz ) = integrator.neo_eval_exc_vxc( P, protonic_Ps, protonic_Pz );
-    } else{
-      std::tie( EXC, VXC ) = integrator.eval_exc_vxc( P );
-    }
+
+    if(neo) std::tie( EXC, protonic_EXC, VXC, protonic_VXCs, protonic_VXCz ) = integrator.neo_eval_exc_vxc( P, protonic_Ps, protonic_Pz );
+    else    std::tie( EXC, VXC ) = integrator.eval_exc_vxc( P );
 
     // Check EXC/VXC
     auto VXC_diff_nrm = ( VXC - VXC_ref ).norm();
@@ -232,14 +230,33 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       CHECK( protonic_VXCz_diff_nrm / basis.nbf() < 1e-10 );
     }
 
+    // Check if the integrator propagates state correctly
+    { 
+      double EXC1, protonic_EXC1;
+      matrix_type VXC1, protonic_VXCs1, protonic_VXCz1;
+
+      if(neo) std::tie( EXC1, protonic_EXC1, VXC1, protonic_VXCs1, protonic_VXCz1 ) = integrator.neo_eval_exc_vxc( P, protonic_Ps, protonic_Pz );
+      else    std::tie( EXC1, VXC1 ) = integrator.eval_exc_vxc( P );
+      
+      CHECK( EXC1 == Approx( EXC_ref ) );
+      auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
+      CHECK( VXC1_diff_nrm / basis.nbf() < 1e-10 ); 
+
+      if ( neo ) {
+        auto protonic_VXCs1_diff_nrm = ( protonic_VXCs1 - protonic_VXCs_ref ).norm();
+        auto protonic_VXCz1_diff_nrm = ( protonic_VXCz1 - protonic_VXCz_ref ).norm();
+        CHECK( protonic_EXC1 == Approx( protonic_EXC_ref ) );
+        CHECK( protonic_VXCs1_diff_nrm / basis.nbf() < 1e-10 );
+        CHECK( protonic_VXCz1_diff_nrm / basis.nbf() < 1e-10 );
+      }
+    }
+
   } else if (uks) {
     double EXC, protonic_EXC;
     matrix_type VXC, VXCz, protonic_VXCs, protonic_VXCz;
-    if ( neo ){
-      std::tie( EXC, protonic_EXC, VXC, VXCz, protonic_VXCs, protonic_VXCz ) = integrator.neo_eval_exc_vxc( P, Pz, protonic_Ps, protonic_Pz );
-    } else{
-      std::tie( EXC, VXC, VXCz ) = integrator.eval_exc_vxc( P, Pz );
-    }
+
+    if(neo) std::tie( EXC, protonic_EXC, VXC, VXCz, protonic_VXCs, protonic_VXCz ) = integrator.neo_eval_exc_vxc( P, Pz, protonic_Ps, protonic_Pz );
+    else    std::tie( EXC, VXC, VXCz ) = integrator.eval_exc_vxc( P, Pz );
 
     // Check EXC/VXC
     auto VXC_diff_nrm = ( VXC - VXC_ref ).norm();
@@ -254,6 +271,29 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       CHECK( protonic_EXC == Approx( protonic_EXC_ref ) );
       CHECK( protonic_VXCs_diff_nrm / basis.nbf() < 1e-10 );
       CHECK( protonic_VXCz_diff_nrm / basis.nbf() < 1e-10 );
+    }
+
+    // Check if the integrator propagates state correctly
+    { 
+      double EXC1, protonic_EXC1;
+      matrix_type VXC1, VXCz1, protonic_VXCs1, protonic_VXCz1;
+
+      if(neo) std::tie( EXC1, protonic_EXC1, VXC1, VXCz1, protonic_VXCs1, protonic_VXCz1 ) = integrator.neo_eval_exc_vxc( P, Pz, protonic_Ps, protonic_Pz );
+      else    std::tie( EXC1, VXC1, VXCz1 ) = integrator.eval_exc_vxc( P, Pz );
+      
+      auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
+      auto VXCz1_diff_nrm = ( VXCz1 - VXCz_ref ).norm();
+      CHECK( EXC1 == Approx( EXC_ref ) );
+      CHECK( VXC1_diff_nrm / basis.nbf() < 1e-10 );
+      CHECK( VXCz1_diff_nrm / basis.nbf() < 1e-10 );
+
+      if ( neo ) {
+        auto protonic_VXCs1_diff_nrm = ( protonic_VXCs1 - protonic_VXCs_ref ).norm();
+        auto protonic_VXCz1_diff_nrm = ( protonic_VXCz1 - protonic_VXCz_ref ).norm();
+        CHECK( protonic_EXC1 == Approx( protonic_EXC_ref ) );
+        CHECK( protonic_VXCs1_diff_nrm / basis.nbf() < 1e-10 );
+        CHECK( protonic_VXCz1_diff_nrm / basis.nbf() < 1e-10 );
+      }
     }
 
   } else if (gks) {
