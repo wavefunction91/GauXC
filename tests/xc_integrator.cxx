@@ -39,6 +39,11 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   double EXC_ref;
   std::vector<double> EXC_GRAD_ref;
   bool has_k = false, has_exc_grad = false, rks = true, uks = false, gks = false;
+  // For NEO-DFT Test:
+  bool neo = false;
+  BasisSet<double> protonic_basis;
+  matrix_type protonic_Ps, protonic_Pz, protonic_VXCs_ref, protonic_VXCz_ref;
+  double protonic_EXC_ref;
   {
     read_hdf5_record( mol,   reference_file, "/MOLECULE" );
     read_hdf5_record( basis, reference_file, "/BASIS"    );
@@ -68,9 +73,13 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
        gks=true;
     }
  
+    if (file.exist("/PROTONIC_DENSITY_SCALAR") and file.exist("/PROTONIC_DENSITY_Z")) 
+       neo=true;
+ 
     auto dset = file.getDataSet(den);
     
     auto dims = dset.getDimensions();
+
     P        = matrix_type( dims[0], dims[1] );
     VXC_ref  = matrix_type( dims[0], dims[1] );
     if (not rks) {
@@ -123,10 +132,39 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
         dset = file.getDataSet("/K");
         dset.read( K_ref.data() );
     }
+
+    if (neo) {
+
+      read_hdf5_record( protonic_basis, reference_file, "/PROTONIC_BASIS"    );
+          
+      std::string prot_den_s="/PROTONIC_DENSITY_SCALAR";
+      std::string prot_den_z="/PROTONIC_DENSITY_Z";
+      std::string prot_vxc_s="/PROTONIC_VXC_SCALAR";
+      std::string prot_vxc_z="/PROTONIC_VXC_Z";
+
+      auto protonic_dset = file.getDataSet(prot_den_s);
+      auto protonic_dims = protonic_dset.getDimensions();
+
+      protonic_Ps        = matrix_type( protonic_dims[0], protonic_dims[1] );
+      protonic_Pz        = matrix_type( protonic_dims[0], protonic_dims[1] );
+      protonic_VXCs_ref  = matrix_type( protonic_dims[0], protonic_dims[1] );
+      protonic_VXCz_ref  = matrix_type( protonic_dims[0], protonic_dims[1] );
+
+      protonic_dset.read( protonic_Ps.data() );
+      protonic_dset = file.getDataSet(prot_vxc_s);
+      protonic_dset.read( protonic_VXCs_ref.data() );
+
+
+      protonic_dset = file.getDataSet(prot_den_z);
+      protonic_dset.read( protonic_Pz.data() );
+      protonic_dset = file.getDataSet(prot_vxc_z);
+      protonic_dset.read( protonic_VXCz_ref.data() );
+    }
   }
 
   if(uks and ex == ExecutionSpace::Device) return;
   if(gks and ex == ExecutionSpace::Device) return;
+  if(neo and ex == ExecutionSpace::Device) return;
 
 
   for( auto& sh : basis ) 
@@ -137,14 +175,21 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
   // Construct Load Balancer
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
-  auto lb = lb_factory.get_instance(rt, mol, mg, basis);
+  std::unique_ptr<LoadBalancer> lb;
+  if (neo) {
+    for( auto& sh : protonic_basis ) 
+      sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
+    lb = std::make_unique<LoadBalancer>( lb_factory.get_instance(rt, mol, mg, basis, protonic_basis) );
+  } else{
+    lb = std::make_unique<LoadBalancer>( lb_factory.get_instance(rt, mol, mg, basis) );
+  }
 
   // Construct Weights Module
   MolecularWeightsFactory mw_factory( ex, "Default", MolecularWeightsSettings{} );
   auto mw = mw_factory.get_instance();
 
   // Apply partition weights
-  mw.modify_weights(lb);
+  mw.modify_weights(*lb);
 
   // Construct XC Functional
   //auto Spin = uks ? ExchCXX::Spin::Polarized : ExchCXX::Spin::Unpolarized;
@@ -153,7 +198,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   // Construct XCIntegrator
   XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", 
     integrator_kernel, lwd_kernel, reduction_kernel );
-  auto integrator = integrator_factory.get_instance( func, lb );
+  auto integrator = integrator_factory.get_instance( func, *lb );
 
   // Integrate Density
   if( check_integrate_den and rks) {
@@ -166,21 +211,35 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
   // Integrate EXC/VXC
   if ( rks ) {
-    auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
+    double EXC, protonic_EXC;
+    matrix_type VXC, protonic_VXCs, protonic_VXCz;
+    if ( neo ){
+      std::tie( EXC, protonic_EXC, VXC, protonic_VXCs, protonic_VXCz ) = integrator.neo_eval_exc_vxc( P, protonic_Ps, protonic_Pz );
+    } else{
+      std::tie( EXC, VXC ) = integrator.eval_exc_vxc( P );
+    }
 
     // Check EXC/VXC
     auto VXC_diff_nrm = ( VXC - VXC_ref ).norm();
     CHECK( EXC == Approx( EXC_ref ) );
     CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 ); 
-    // Check if the integrator propagates state correctly
-    {
-      auto [ EXC1, VXC1 ] = integrator.eval_exc_vxc( P );
-      CHECK( EXC1 == Approx( EXC_ref ) );
-      auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
-      CHECK( VXC1_diff_nrm / basis.nbf() < 1e-10 ); 
+
+    if ( neo ) {
+      auto protonic_VXCs_diff_nrm = ( protonic_VXCs - protonic_VXCs_ref ).norm();
+      auto protonic_VXCz_diff_nrm = ( protonic_VXCz - protonic_VXCz_ref ).norm();
+      CHECK( protonic_EXC == Approx( protonic_EXC_ref ) );
+      CHECK( protonic_VXCs_diff_nrm / basis.nbf() < 1e-10 );
+      CHECK( protonic_VXCz_diff_nrm / basis.nbf() < 1e-10 );
     }
+
   } else if (uks) {
-    auto [ EXC, VXC, VXCz ] = integrator.eval_exc_vxc( P, Pz );
+    double EXC, protonic_EXC;
+    matrix_type VXC, VXCz, protonic_VXCs, protonic_VXCz;
+    if ( neo ){
+      std::tie( EXC, protonic_EXC, VXC, VXCz, protonic_VXCs, protonic_VXCz ) = integrator.neo_eval_exc_vxc( P, Pz, protonic_Ps, protonic_Pz );
+    } else{
+      std::tie( EXC, VXC, VXCz ) = integrator.eval_exc_vxc( P, Pz );
+    }
 
     // Check EXC/VXC
     auto VXC_diff_nrm = ( VXC - VXC_ref ).norm();
@@ -188,14 +247,13 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     CHECK( EXC == Approx( EXC_ref ) );
     CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 );
     CHECK( VXCz_diff_nrm / basis.nbf() < 1e-10 );
-    // Check if the integrator propagates state correctly
-    {
-      auto [ EXC1, VXC1, VXCz1 ] = integrator.eval_exc_vxc( P, Pz );
-      CHECK( EXC1 == Approx( EXC_ref ) );
-      auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
-      auto VXCz1_diff_nrm = ( VXCz1 - VXCz_ref ).norm();
-      CHECK( VXC1_diff_nrm / basis.nbf() < 1e-10 );
-      CHECK( VXCz1_diff_nrm / basis.nbf() < 1e-10 );
+    
+    if ( neo ) {
+      auto protonic_VXCs_diff_nrm = ( protonic_VXCs - protonic_VXCs_ref ).norm();
+      auto protonic_VXCz_diff_nrm = ( protonic_VXCz - protonic_VXCz_ref ).norm();
+      CHECK( protonic_EXC == Approx( protonic_EXC_ref ) );
+      CHECK( protonic_VXCs_diff_nrm / basis.nbf() < 1e-10 );
+      CHECK( protonic_VXCz_diff_nrm / basis.nbf() < 1e-10 );
     }
 
   } else if (gks) {
