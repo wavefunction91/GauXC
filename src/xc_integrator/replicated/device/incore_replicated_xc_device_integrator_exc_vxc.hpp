@@ -292,10 +292,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   else if (is_uks) device_data.send_static_data_density_basis( Ps, ldps, Pz, ldpz, basis );
   //if (is_gks) device_data.send_static_data_density_basis( Ps, ldps, Pz, ldpz, Px, ldpx, Py, ldpy, basis );
 
-    // for debugging
-    auto* data = dynamic_cast<XCDeviceStackData*>(&device_data);
-    auto base_stack = data->base_stack;
-    auto static_stack = data->static_stack;
 
   // Processes batches in groups that saturate available device memory
   if( func.is_lda() )      enabled_terms.xc_approx = integrator_xc_approx::LDA; 
@@ -364,15 +360,13 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     }
     if (is_uks) {
       // Evaluate Scalar Z matrix
-      //if( func.is_gga() ) lwd->eval_zmat_gga_vxc_uks( &device_data, DEN_S );
-      if( func.is_gga() ) GAUXC_GENERIC_EXCEPTION("UKS GGA eval_zmat NYI");
+      if( func.is_gga() ) lwd->eval_zmat_gga_vxc_uks( &device_data, DEN_S );
       else                lwd->eval_zmat_lda_vxc_uks( &device_data, DEN_S );
       // Increment Scalar VXC
       lwd->inc_vxc( &device_data, DEN_S );
 
       // Repeat for Z VXC
-      //if( func.is_gga() ) lwd->eval_zmat_gga_vxc_uks( &device_data, DEN_Z );
-      if( func.is_gga() ) GAUXC_GENERIC_EXCEPTION("UKS GGA eval_zmat NYI");
+      if( func.is_gga() ) lwd->eval_zmat_gga_vxc_uks( &device_data, DEN_Z );
       else                lwd->eval_zmat_lda_vxc_uks( &device_data, DEN_Z );
       lwd->inc_vxc( &device_data, DEN_Z );
       

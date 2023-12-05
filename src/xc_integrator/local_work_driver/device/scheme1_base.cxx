@@ -298,9 +298,24 @@ void AoSScheme1Base::eval_zmat_lda_vxc_uks( XCDeviceData* _data, density_id den_
 
 }
 
-void AoSScheme1Base::eval_zmat_gga_vxc_uks( XCDeviceData* ){
+void AoSScheme1Base::eval_zmat_gga_vxc_uks( XCDeviceData* _data, density_id den_select ){
 
-  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+  size_t nbe_max = 0, npts_max = 0;
+  for( auto& task : tasks ) {
+    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
+    npts_max = std::max( npts_max, task.npts );
+  }
+
+  auto aos_stack     = data->aos_stack;
+  zmat_lda_vxc_uks( ntasks, nbe_max, npts_max, aos_stack.device_tasks, den_select,
+    data->device_backend_->queue() );
 
 }
 
@@ -442,8 +457,9 @@ void AoSScheme1Base::inc_nel( XCDeviceData* _data ){
 
   const bool is_RKS  = data->allocated_terms.ks_scheme == RKS;
   const bool is_UKS  = data->allocated_terms.ks_scheme == UKS;
+  const bool is_den  = data->allocated_terms.den;
   
-  if( is_RKS )
+  if( is_RKS or is_den )
   gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
     base_stack.weights_device, 1, base_stack.den_eval_device, 1, 
     static_stack.acc_scr_device, static_stack.nel_device );
@@ -599,6 +615,7 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
   
   const bool is_RKS = data->allocated_terms.ks_scheme == RKS;
   const bool is_UKS = data->allocated_terms.ks_scheme == UKS;
+  const bool is_excgrad = data->allocated_terms.exc_grad;
 
   const size_t npts = data->total_npts_task_batch ;
   
@@ -617,7 +634,7 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
     base_stack.den_eval_device, base_stack.eps_eval_device, 
     base_stack.vrho_eval_device, data->device_backend_->queue() );
 
-  if( is_RKS ) {
+  if( is_RKS or is_excgrad ) {
     hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.vrho_eval_device, 1 );
   }
@@ -653,6 +670,7 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
   
   const bool is_RKS = data->allocated_terms.ks_scheme == RKS;
   const bool is_UKS = data->allocated_terms.ks_scheme == UKS;
+  const bool is_excgrad = data->allocated_terms.exc_grad;
 
   const size_t npts = data->total_npts_task_batch ;
   
@@ -676,7 +694,7 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
     base_stack.eps_eval_device, base_stack.vrho_eval_device, 
     base_stack.vgamma_eval_device, data->device_backend_->queue() );
 
-  if( is_RKS ) {
+  if( is_RKS or is_excgrad ) {
     hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.vrho_eval_device, 1 );
     hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
@@ -883,6 +901,8 @@ void AoSScheme1Base::inc_vxc( XCDeviceData* _data, density_id den_selector){
     case DEN_Z:
       vxc_ptr = static_stack.vxc_z_device;
       break;
+    default:
+      GAUXC_GENERIC_EXCEPTION( "inc_vxc called with invalid density selected" );
   }
   sym_task_inc_potential( ntasks, aos_stack.device_tasks,
     vxc_ptr, nbf, submat_block_size,

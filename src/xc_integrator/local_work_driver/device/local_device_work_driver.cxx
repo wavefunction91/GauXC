@@ -57,7 +57,7 @@ FWD_TO_PIMPL(eval_zmat_lda_vxc_rks)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc_rks)         // Eval Z Matrix GGA VXC
 
 FWD_TO_PIMPL_DEN_ID(eval_zmat_lda_vxc_uks)         // Eval Z Matrix LDA VXC
-FWD_TO_PIMPL(eval_zmat_gga_vxc_uks)         // Eval Z Matrix GGA VXC
+FWD_TO_PIMPL_DEN_ID(eval_zmat_gga_vxc_uks)         // Eval Z Matrix GGA VXC
 
 FWD_TO_PIMPL(eval_zmat_lda_vxc_gks)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc_gks)         // Eval Z Matrix GGA VXC

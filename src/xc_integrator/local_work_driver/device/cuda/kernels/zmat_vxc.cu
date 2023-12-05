@@ -150,7 +150,7 @@ void zmat_gga_vxc_rks( size_t            ntasks,
 
 
 
-template<int den_selector>
+template<density_id den_selector>
 __global__ void zmat_lda_vxc_uks_kernel( size_t        ntasks,
                                      XCDeviceTask* tasks_device ) {
 
@@ -165,6 +165,7 @@ __global__ void zmat_lda_vxc_uks_kernel( size_t        ntasks,
 
 
   const auto* basis_eval_device = task.bf;
+
 
   auto* z_matrix_device = task.zmat;
 
@@ -208,6 +209,114 @@ void zmat_lda_vxc_uks( size_t            ntasks,
 
 
 
+
+
+
+
+
+
+
+
+template<density_id den_selector>
+__global__ void zmat_gga_vxc_uks_kernel( size_t        ntasks,
+                                     XCDeviceTask* tasks_device ) {
+
+  const int batch_idx = blockIdx.z;
+  if( batch_idx >= ntasks ) return;
+
+  auto& task = tasks_device[ batch_idx ];
+  const auto npts            = task.npts;
+  const auto nbf             = task.bfn_screening.nbe;
+
+  const double* vrho_pos_device    = task.vrho_pos;
+  const double* vrho_neg_device    = task.vrho_neg;
+
+  const auto* den_pos_x_eval_device = task.dden_posx;
+  const auto* den_pos_y_eval_device = task.dden_posy;
+  const auto* den_pos_z_eval_device = task.dden_posz;
+  const auto* den_neg_x_eval_device = task.dden_negx;
+  const auto* den_neg_y_eval_device = task.dden_negy;
+  const auto* den_neg_z_eval_device = task.dden_negz;
+
+
+  const auto* basis_eval_device = task.bf;
+  const auto* dbasis_x_eval_device = task.dbfx;
+  const auto* dbasis_y_eval_device = task.dbfy;
+  const auto* dbasis_z_eval_device = task.dbfz;
+
+  auto* z_matrix_device = task.zmat;
+
+  const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
+  const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
+
+  if( tid_x < npts and tid_y < nbf ) {
+
+    const size_t ibfoff = tid_y * npts + tid_x;
+
+    const double factp = 0.25 * vrho_pos_device[tid_x];
+    const double factm = 0.25 * vrho_neg_device[tid_x];
+    
+    const auto gga_fact_pp  = task.vgamma_pp[ tid_x ];
+    const auto gga_fact_pm  = task.vgamma_pm[ tid_x ];
+    const auto gga_fact_mm  = task.vgamma_mm[ tid_x ];
+    
+    const auto gga_fact_1 = 0.5*(gga_fact_pp + gga_fact_pm + gga_fact_mm);
+    const auto gga_fact_2 = 0.5*(gga_fact_pp - gga_fact_mm);
+    const auto gga_fact_3 = 0.5*(gga_fact_pp - gga_fact_pm + gga_fact_mm);
+
+    if constexpr ( den_selector == DEN_S ) {
+      const auto x_fact = gga_fact_1 * den_pos_x_eval_device[ ibfoff ] + gga_fact_2 * den_pos_x_eval_device[ ibfoff ];
+      const auto y_fact = gga_fact_1 * den_pos_y_eval_device[ ibfoff ] + gga_fact_2 * den_pos_y_eval_device[ ibfoff ];
+      const auto z_fact = gga_fact_1 * den_pos_z_eval_device[ ibfoff ] + gga_fact_2 * den_pos_z_eval_device[ ibfoff ];
+      
+      z_matrix_device[ ibfoff ] =   x_fact * dbasis_x_eval_device[ ibfoff ]      
+                                  + y_fact * dbasis_y_eval_device[ ibfoff ]
+                                  + z_fact * dbasis_z_eval_device[ ibfoff ] 
+                                  + (factp + factm) * basis_eval_device[ ibfoff ];
+
+    }
+    if constexpr ( den_selector == DEN_Z ) {
+      const auto x_fact = gga_fact_3 * den_neg_x_eval_device[ ibfoff ] + gga_fact_2 * den_neg_x_eval_device[ ibfoff ];
+      const auto y_fact = gga_fact_3 * den_neg_y_eval_device[ ibfoff ] + gga_fact_2 * den_neg_y_eval_device[ ibfoff ];
+      const auto z_fact = gga_fact_3 * den_neg_z_eval_device[ ibfoff ] + gga_fact_2 * den_neg_z_eval_device[ ibfoff ];
+
+      z_matrix_device[ ibfoff ] =   x_fact * dbasis_x_eval_device[ ibfoff ] 
+                                  + y_fact * dbasis_y_eval_device[ ibfoff ]
+                                  + z_fact * dbasis_z_eval_device[ ibfoff ]
+                                  + (factp - factm) * basis_eval_device[ ibfoff ];
+    }
+      
+    
+
+
+
+    
+  }
+
+
+}
+
+
+
+void zmat_gga_vxc_uks( size_t            ntasks,
+                   int32_t           max_nbf,
+                   int32_t           max_npts,
+                   XCDeviceTask*     tasks_device,
+                   density_id sel,
+                   device_queue queue ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
+
+
+  dim3 threads(cuda::warp_size,cuda::max_warps_per_thread_block,1);
+  dim3 blocks( util::div_ceil( max_npts, threads.x ),
+               util::div_ceil( max_nbf,  threads.y ),
+               ntasks );
+
+  if ( sel == DEN_S )       zmat_gga_vxc_uks_kernel<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  else if ( sel == DEN_Z )  zmat_gga_vxc_uks_kernel<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+
+}
 
 
 

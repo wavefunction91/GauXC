@@ -703,7 +703,8 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   if( reqt.grid_den ) { // Density 
     if( is_den )   base_stack.den_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
     if( is_rks )   base_stack.den_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
-    if( is_uks ) { base_stack.den_pos_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_uks ) { base_stack.den_eval_device     = mem.aligned_alloc<double>(2*msz, aln, csl);
+                   base_stack.den_pos_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                    base_stack.den_neg_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
  
   }
@@ -719,14 +720,11 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
                    base_stack.den_neg_z_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
   }
   
-  if( is_uks and reqt.grid_den ) {    // Interleaved density storage
-    if( not is_gga ) base_stack.den_eval_device = mem.aligned_alloc<double>(2 * msz, aln, csl);
-    else                         base_stack.den_eval_device = mem.aligned_alloc<double>(8 * msz, aln, csl); //GGA
-  }
     
   if( reqt.grid_gamma ) { // Gamma
     if( is_rks ) base_stack.gamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-    if( is_uks ) {  base_stack.gamma_pp_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_uks ) {  base_stack.gamma_eval_device    = mem.aligned_alloc<double>(3 * msz, aln, csl);
+                    base_stack.gamma_pp_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                     base_stack.gamma_pm_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                     base_stack.gamma_mm_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
   }
@@ -739,7 +737,8 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
 
   if( reqt.grid_vgamma ) { // Vgamma
     if( is_rks ) base_stack.vgamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-    if( is_uks ) {  base_stack.vgamma_pp_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_uks ) {  base_stack.vgamma_eval_device    = mem.aligned_alloc<double>(3*msz, aln, csl);
+                    base_stack.vgamma_pp_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                     base_stack.vgamma_pm_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                     base_stack.vgamma_mm_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
   }
