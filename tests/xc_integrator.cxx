@@ -154,11 +154,13 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       protonic_dset = file.getDataSet(prot_vxc_s);
       protonic_dset.read( protonic_VXCs_ref.data() );
 
-
       protonic_dset = file.getDataSet(prot_den_z);
       protonic_dset.read( protonic_Pz.data() );
       protonic_dset = file.getDataSet(prot_vxc_z);
       protonic_dset.read( protonic_VXCz_ref.data() );
+
+      protonic_dset = file.getDataSet("/PROTONIC_EXC");
+      protonic_dset.read( &protonic_EXC_ref );
     }
   }
 
@@ -226,8 +228,8 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       auto protonic_VXCs_diff_nrm = ( protonic_VXCs - protonic_VXCs_ref ).norm();
       auto protonic_VXCz_diff_nrm = ( protonic_VXCz - protonic_VXCz_ref ).norm();
       CHECK( protonic_EXC == Approx( protonic_EXC_ref ) );
-      CHECK( protonic_VXCs_diff_nrm / basis.nbf() < 1e-10 );
-      CHECK( protonic_VXCz_diff_nrm / basis.nbf() < 1e-10 );
+      CHECK( protonic_VXCs_diff_nrm / protonic_basis.nbf() < 1e-10 );
+      CHECK( protonic_VXCz_diff_nrm / protonic_basis.nbf() < 1e-10 );
     }
 
     // Check if the integrator propagates state correctly
@@ -246,8 +248,8 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
         auto protonic_VXCs1_diff_nrm = ( protonic_VXCs1 - protonic_VXCs_ref ).norm();
         auto protonic_VXCz1_diff_nrm = ( protonic_VXCz1 - protonic_VXCz_ref ).norm();
         CHECK( protonic_EXC1 == Approx( protonic_EXC_ref ) );
-        CHECK( protonic_VXCs1_diff_nrm / basis.nbf() < 1e-10 );
-        CHECK( protonic_VXCz1_diff_nrm / basis.nbf() < 1e-10 );
+        CHECK( protonic_VXCs1_diff_nrm / protonic_basis.nbf() < 1e-10 );
+        CHECK( protonic_VXCz1_diff_nrm / protonic_basis.nbf() < 1e-10 );
       }
     }
 
@@ -269,8 +271,8 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       auto protonic_VXCs_diff_nrm = ( protonic_VXCs - protonic_VXCs_ref ).norm();
       auto protonic_VXCz_diff_nrm = ( protonic_VXCz - protonic_VXCz_ref ).norm();
       CHECK( protonic_EXC == Approx( protonic_EXC_ref ) );
-      CHECK( protonic_VXCs_diff_nrm / basis.nbf() < 1e-10 );
-      CHECK( protonic_VXCz_diff_nrm / basis.nbf() < 1e-10 );
+      CHECK( protonic_VXCs_diff_nrm / protonic_basis.nbf() < 1e-10 );
+      CHECK( protonic_VXCz_diff_nrm / protonic_basis.nbf() < 1e-10 );
     }
 
     // Check if the integrator propagates state correctly
@@ -291,8 +293,8 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
         auto protonic_VXCs1_diff_nrm = ( protonic_VXCs1 - protonic_VXCs_ref ).norm();
         auto protonic_VXCz1_diff_nrm = ( protonic_VXCz1 - protonic_VXCz_ref ).norm();
         CHECK( protonic_EXC1 == Approx( protonic_EXC_ref ) );
-        CHECK( protonic_VXCs1_diff_nrm / basis.nbf() < 1e-10 );
-        CHECK( protonic_VXCz1_diff_nrm / basis.nbf() < 1e-10 );
+        CHECK( protonic_VXCs1_diff_nrm / protonic_basis.nbf() < 1e-10 );
+        CHECK( protonic_VXCz1_diff_nrm / protonic_basis.nbf() < 1e-10 );
       }
     }
 
@@ -524,6 +526,20 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
   SECTION( "H2O2 / PBE0 / def2-QZVP" ) {
     auto func = make_functional(pbe0, unpol);
     test_integrator(GAUXC_REF_DATA_PATH "/h2o2_def2-qzvp.hdf5", 
+        func, PruningScheme::Unpruned );
+  }
+
+  // NEO epc-17-2 Test (small basis)
+  SECTION( "COH2 / BLYP,EPC-17-2 / sto-3g, prot-sp" ) {
+    auto func = make_functional(blyp, unpol);
+    test_integrator(GAUXC_REF_DATA_PATH "/coh2_blyp_epc17-2_sto-3g_protsp_ssf.hdf5", 
+        func, PruningScheme::Unpruned );
+  }
+
+  // NEO epc-17-2 Test (larger basis)
+  SECTION( "COH2 / BLYP,EPC-17-2 / cc-pVDZ, prot-PB4-D" ) {
+    auto func = make_functional(blyp, unpol);
+    test_integrator(GAUXC_REF_DATA_PATH "/coh2_blyp_epc17-2_cc-pvdz_pb4d_ssf.hdf5", 
         func, PruningScheme::Unpruned );
   }
 }
