@@ -27,8 +27,8 @@ LoadBalancerImpl::LoadBalancerImpl(const RuntimeEnvironment& rt, const Molecule&
   LoadBalancerImpl(rt, mol, mg, basis, molmeta) {
     
   // Unique initializations for the second basis
-  shell_pairs2_ = std::make_shared<shell_pair_type>(*basis2_);
-  basis_map2_   = std::make_shared<basis_map_type>(*basis2_, mol);
+  protonic_basis_       = std::make_shared<basis_type>(protonic_basis);
+  protonic_basis_map_   = std::make_shared<basis_map_type>(*protonic_basis_, mol);
 }
 
 LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
@@ -147,11 +147,6 @@ const LoadBalancerImpl::basis_map_type& LoadBalancerImpl::protonic_basis_map() c
   if( not protonic_basis_map_ ) 
     GAUXC_GENERIC_EXCEPTION("No Protonic Basis Found in LoadBalancerImpl::protonic_basis_map()");
   return *protonic_basis_map_;
-}
-const LoadBalancerImpl::shell_pair_type& LoadBalancerImpl::protonic_shell_pairs() const {
-  if( not protonic_shell_pairs_ ) 
-    GAUXC_GENERIC_EXCEPTION("No Protonic Basis Found in LoadBalancerImpl::protonic_shell_pairs()");
-  return *protonic_shell_pairs_;
 }
 
 const RuntimeEnvironment& LoadBalancerImpl::runtime() const {
