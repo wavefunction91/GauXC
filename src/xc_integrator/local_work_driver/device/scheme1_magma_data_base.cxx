@@ -104,6 +104,46 @@ void AoSScheme1MAGMABase::Data::pack_and_send(
 
 }
 
+void AoSScheme1MAGMABase::send_dmat( XCDeviceData* _data, density_id den ) {
+  auto* data = dynamic_cast<Data*>(_data);
+  auto tasks = data->host_device_tasks;
+  auto static_stack = data->static_stack;
+  auto magma_stack = data->magma_stack;
+  const auto ntasks = tasks.size();
+  double* dmat_ptr = nullptr;
+  switch( den ) {
+    case DEN_S:
+      dmat_ptr = static_stack.dmat_s_device;
+      break;
+    case DEN_Z:
+      dmat_ptr = static_stack.dmat_z_device;
+      break;
+    case DEN_Y:
+      dmat_ptr = static_stack.dmat_y_device;
+      break;
+    case DEN_X:
+      dmat_ptr = static_stack.dmat_x_device;
+      break;
+  }
+  const auto nbf = data->global_dims.nbf;
+  std::vector<double*> dmat_host( ntasks);
+
+  // host_device_tasks should be populated by parent impl called at top
+  for( auto i = 0; i < ntasks; ++i ) {
+    auto& task = tasks[i];
+    if( task.bfn_screening.ncut > 1 ) {
+      dmat_host[i]    = task.nbe_scr;
+    } else {
+      dmat_host[i]    = dmat_ptr + task.bfn_screening.ibf_begin*(nbf+1);
+    }
+  }
+
+  // Send to device
+  data->device_backend_->copy_async( ntasks, dmat_host.data(), 
+    magma_stack.xdmat_array_device, "send xdmat array" );
+  
+}
+
 void AoSScheme1MAGMABase::Data::pack_and_send_xmat( 
   host_task_iterator task_begin, host_task_iterator task_end 
 ) {
@@ -115,7 +155,7 @@ void AoSScheme1MAGMABase::Data::pack_and_send_xmat(
                        ld_dmat_host( ntask ), ld_zmat_host( ntask ), 
                        ld_vmat_host( ntask ), ld_bf_host( ntask );
 
-  double* static_dmat = static_stack.dmat_device;
+  double* static_dmat = static_stack.dmat_s_device;
   const auto nbf = global_dims.nbf;
 
   // host_device_tasks should be populated by parent impl called at top

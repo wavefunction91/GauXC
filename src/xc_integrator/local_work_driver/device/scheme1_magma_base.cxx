@@ -33,9 +33,29 @@ void AoSScheme1MAGMABase::eval_xmat( double fac, XCDeviceData* _data, bool do_gr
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
   auto static_stack  = data->static_stack;
   auto aos_stack     = data->aos_stack;
-  sym_pack_submat( ntasks, aos_stack.device_tasks, static_stack.dmat_device, 
+  double* dmat_ptr   = nullptr;
+  switch( den ) {
+    case DEN_S:
+      dmat_ptr = static_stack.dmat_s_device;
+      break;
+    case DEN_Z:
+      dmat_ptr = static_stack.dmat_z_device;
+      break;
+    case DEN_Y:
+      dmat_ptr = static_stack.dmat_y_device;
+      break;
+    case DEN_X:
+      dmat_ptr = static_stack.dmat_x_device;
+      break;
+    default:
+      GAUXC_GENERIC_EXCEPTION( "eval_xmat called with invalid density specifier" );
+  }
+  sym_pack_submat( ntasks, aos_stack.device_tasks, dmat_ptr,
     nbf, submat_block_size, data->device_backend_->queue() );
-
+  
+  // Update dmat on magma_stack if required
+  //if ( magma_stack.xdmat_array_device != dmat_ptr )
+    this->send_dmat( data, den);
 
   auto master_queue = data->device_backend_->master_magma_queue();
   auto magma_stack = data->magma_stack;
@@ -66,7 +86,7 @@ void AoSScheme1MAGMABase::eval_exx_fmat( XCDeviceData* _data ) {
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
   auto static_stack  = data->static_stack;
   auto aos_stack     = data->aos_stack;
-  asym_pack_submat( ntasks, aos_stack.device_tasks, static_stack.dmat_device,
+  asym_pack_submat( ntasks, aos_stack.device_tasks, static_stack.dmat_s_device,
     nbf, submat_block_size, data->device_backend_->queue() );
 
 
@@ -82,7 +102,7 @@ void AoSScheme1MAGMABase::eval_exx_fmat( XCDeviceData* _data ) {
 #endif
 }
 
-void AoSScheme1MAGMABase::inc_vxc( XCDeviceData* _data){
+void AoSScheme1MAGMABase::inc_vxc( XCDeviceData* _data, density_id den){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -106,8 +126,25 @@ void AoSScheme1MAGMABase::inc_vxc( XCDeviceData* _data){
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
   auto static_stack  = data->static_stack;
   auto aos_stack     = data->aos_stack;
+  double* vxc_ptr    = nullptr;
+  switch (den) {
+    case DEN_S:
+      vxc_ptr = static_stack.vxc_s_device;
+      break;
+    case DEN_Z:
+      vxc_ptr = static_stack.vxc_z_device;
+      break;
+    case DEN_Y:
+      vxc_ptr = static_stack.vxc_y_device;
+      break;
+    case DEN_X:
+      vxc_ptr = static_stack.vxc_x_device;
+      break;
+    default:
+      GAUXC_GENERIC_EXCEPTION( "Inc_vxc called with invalid density specifier" );
+  }
   sym_task_inc_potential( ntasks, aos_stack.device_tasks, 
-    static_stack.vxc_device, nbf, submat_block_size, 
+    vxc_ptr, nbf, submat_block_size, 
     data->device_backend_->queue() );
 }
 
