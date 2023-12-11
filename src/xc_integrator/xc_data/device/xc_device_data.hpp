@@ -386,6 +386,7 @@ struct XCDeviceData {
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
   virtual void send_static_data_density_basis( const double* P, int32_t ldp, const BasisSet<double>& basis ) = 0;
   virtual void send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz, const BasisSet<double>& basis ) = 0;
+  virtual void send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz, const double* Py, int32_t ldpy, const double* Px, int32_t ldpx, const BasisSet<double>& basis ) = 0;
   virtual void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) = 0;
   virtual void send_static_data_exx_ek_screening( const double* V_max, int32_t ldv, const BasisSetMap&, const ShellPairCollection<double>& ) = 0;
 
@@ -434,6 +435,9 @@ struct XCDeviceData {
     double* VXC, int32_t ldvxc ) = 0;
   virtual void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
     double* VXCs, int32_t ldvxcs, double* VXCz, int32_t ldvxcz ) = 0;
+  virtual void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
+    double* VXCs, int32_t ldvxcs, double* VXCz, int32_t ldvxcz,
+    double* VXCy, int32_t ldvxcy, double* VXCx, int32_t ldvxcx ) = 0;
 
   /** Retreive EXC Gradient integrands from device memory
    *

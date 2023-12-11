@@ -113,6 +113,18 @@ void XCDeviceStackData::allocate_static_data_exc_vxc( int32_t nbf, int32_t nshel
       static_stack.vxc_z_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
       allocated_terms.ks_scheme = UKS;
       break;
+    case GKS:
+      static_stack.dmat_s_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+      static_stack.dmat_z_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+      static_stack.dmat_y_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+      static_stack.dmat_x_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+      static_stack.vxc_s_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+      static_stack.vxc_z_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+      static_stack.vxc_y_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+      static_stack.vxc_x_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+      allocated_terms.ks_scheme = GKS;
+      break;
+      
     default:
       GAUXC_GENERIC_EXCEPTION( "Cannot allocate static data without selecting a ks_scheme" );
   }
@@ -322,6 +334,33 @@ void XCDeviceStackData::send_static_data_density_basis( const double* Ps, int32_
   device_backend_->master_queue_synchronize(); 
 }
 
+void XCDeviceStackData::send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz, const double* Py, int32_t ldpy, const double* Px, int32_t ldpx,
+  const BasisSet<double>& basis ) {
+
+  if( not (allocated_terms.exx or allocated_terms.exc_vxc or allocated_terms.exc_grad or allocated_terms.den or allocated_terms.exx_ek_screening) ) 
+    GAUXC_GENERIC_EXCEPTION("Density/Basis Not Stack Allocated");
+
+  const auto nbf    = global_dims.nbf;
+  if( ldps != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPs must bf NBF");
+  if( ldpz != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPz must bf NBF");
+  if( ldpy != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPy must bf NBF");
+  if( ldpx != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPx must bf NBF");
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
+
+  // Copy Density
+  device_backend_->copy_async( nbf*nbf, Ps, static_stack.dmat_s_device, "P_scalar H2D" );
+  device_backend_->copy_async( nbf*nbf, Pz, static_stack.dmat_z_device, "P_z H2D" );
+  device_backend_->copy_async( nbf*nbf, Py, static_stack.dmat_y_device, "P_y H2D" );
+  device_backend_->copy_async( nbf*nbf, Px, static_stack.dmat_x_device, "P_x H2D" );
+
+  // Copy Basis Set
+  device_backend_->copy_async( basis.nshells(), basis.data(), static_stack.shells_device,
+    "Shells H2D" );
+
+
+  device_backend_->master_queue_synchronize(); 
+}
+
 
 void XCDeviceStackData::send_static_data_shell_pairs( 
   const BasisSet<double>& basis,
@@ -465,8 +504,14 @@ void XCDeviceStackData::zero_exc_vxc_integrands(integrator_term_tracker enabled_
       device_backend_->set_zero( nbf*nbf, static_stack.vxc_s_device, "VXC Zero" );
       break;
     case UKS:
-      device_backend_->set_zero( nbf*nbf, static_stack.vxc_s_device, "VXC Zero" );
-      device_backend_->set_zero( nbf*nbf, static_stack.vxc_z_device, "VXC Zero" );
+      device_backend_->set_zero( nbf*nbf, static_stack.vxc_s_device, "VXCs Zero" );
+      device_backend_->set_zero( nbf*nbf, static_stack.vxc_z_device, "VXCz Zero" );
+      break;
+    case GKS:
+      device_backend_->set_zero( nbf*nbf, static_stack.vxc_s_device, "VXCs Zero" );
+      device_backend_->set_zero( nbf*nbf, static_stack.vxc_z_device, "VXCz Zero" );
+      device_backend_->set_zero( nbf*nbf, static_stack.vxc_y_device, "VXCy Zero" );
+      device_backend_->set_zero( nbf*nbf, static_stack.vxc_x_device, "VXCx Zero" );
       break;
   }
   device_backend_->set_zero( 1,       static_stack.exc_device, "EXC Zero" );
@@ -530,6 +575,24 @@ void XCDeviceStackData::retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
   
   device_backend_->copy_async( nbf*nbf, static_stack.vxc_s_device, VXCs,  "VXCs D2H" );
   device_backend_->copy_async( nbf*nbf, static_stack.vxc_z_device, VXCz,  "VXCz D2H" );
+  device_backend_->copy_async( 1,       static_stack.nel_device, N_EL, "NEL D2H" );
+  device_backend_->copy_async( 1,       static_stack.exc_device, EXC,  "EXC D2H" );
+
+}
+
+void XCDeviceStackData::retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
+  double* VXCs, int32_t ldvxcs, double* VXCz, int32_t ldvxcz,
+  double* VXCy, int32_t ldvxcy, double* VXCx, int32_t ldvxcx ) {
+
+  const auto nbf = global_dims.nbf;
+  if( ldvxcs != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDVXCscalar must be NBF");
+  if( ldvxcz != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDVXCz must be NBF");
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
+  
+  device_backend_->copy_async( nbf*nbf, static_stack.vxc_s_device, VXCs,  "VXCs D2H" );
+  device_backend_->copy_async( nbf*nbf, static_stack.vxc_z_device, VXCz,  "VXCz D2H" );
+  device_backend_->copy_async( nbf*nbf, static_stack.vxc_y_device, VXCy,  "VXCy D2H" );
+  device_backend_->copy_async( nbf*nbf, static_stack.vxc_x_device, VXCx,  "VXCx D2H" );
   device_backend_->copy_async( 1,       static_stack.nel_device, N_EL, "NEL D2H" );
   device_backend_->copy_async( 1,       static_stack.exc_device, EXC,  "EXC D2H" );
 
@@ -679,10 +742,8 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   const size_t msz = total_npts_task_batch;
   const size_t aln = 256;
   
-  // Below is only true if terms.exc_vxc is true
   const bool is_rks = terms.ks_scheme == RKS;
-  const bool is_uks = terms.ks_scheme == UKS;
-  const bool is_gks = terms.ks_scheme == GKS;
+  const bool is_2C  = (terms.ks_scheme == UKS) or (terms.ks_scheme == GKS);
   const bool is_gga = reqt.grid_den_grad;
 
   const bool is_den = terms.den;
@@ -703,7 +764,7 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   if( reqt.grid_den ) { // Density 
     if( is_den )   base_stack.den_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
     if( is_rks )   base_stack.den_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
-    if( is_uks ) { base_stack.den_eval_device     = mem.aligned_alloc<double>(2*msz, aln, csl);
+    if( is_2C  ) { base_stack.den_eval_device     = mem.aligned_alloc<double>(2*msz, aln, csl);
                    base_stack.den_pos_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                    base_stack.den_neg_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
  
@@ -712,7 +773,7 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
     if( is_rks ) { base_stack.den_x_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                    base_stack.den_y_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                    base_stack.den_z_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
-    if( is_uks ) { base_stack.den_pos_x_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_2C  ) { base_stack.den_pos_x_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                    base_stack.den_pos_y_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                    base_stack.den_pos_z_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
                    base_stack.den_neg_x_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
@@ -723,21 +784,21 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
     
   if( reqt.grid_gamma ) { // Gamma
     if( is_rks ) base_stack.gamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-    if( is_uks ) {  base_stack.gamma_eval_device    = mem.aligned_alloc<double>(3 * msz, aln, csl);
+    if( is_2C  ) {  base_stack.gamma_eval_device    = mem.aligned_alloc<double>(3 * msz, aln, csl);
                     base_stack.gamma_pp_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                     base_stack.gamma_pm_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                     base_stack.gamma_mm_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
   }
   if( reqt.grid_vrho ) { // Vrho
     if( is_rks ) base_stack.vrho_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-    if( is_uks ) { base_stack.vrho_eval_device = mem.aligned_alloc<double>(2 * msz, aln, csl);
+    if( is_2C  ) { base_stack.vrho_eval_device = mem.aligned_alloc<double>(2 * msz, aln, csl);
                    base_stack.vrho_pos_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                    base_stack.vrho_neg_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
   }
 
   if( reqt.grid_vgamma ) { // Vgamma
     if( is_rks ) base_stack.vgamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-    if( is_uks ) {  base_stack.vgamma_eval_device    = mem.aligned_alloc<double>(3*msz, aln, csl);
+    if( is_2C  ) {  base_stack.vgamma_eval_device    = mem.aligned_alloc<double>(3*msz, aln, csl);
                     base_stack.vgamma_pp_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                     base_stack.vgamma_pm_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
                     base_stack.vgamma_mm_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }

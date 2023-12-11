@@ -150,6 +150,9 @@ struct XCDeviceStackData : public XCDeviceData {
     const BasisSet<double>& basis ) override final;
   void send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz,
     const BasisSet<double>& basis ) override final;
+  void send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz,
+                                        const double* Py, int32_t ldpy, const double* Px, int32_t ldpx,
+    const BasisSet<double>& basis ) override final;
   void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) 
     override final;
   void send_static_data_exx_ek_screening( const double* V_max, int32_t ldv, const BasisSetMap&, const ShellPairCollection<double>& ) override final;
@@ -162,6 +165,9 @@ struct XCDeviceStackData : public XCDeviceData {
     double* VXC, int32_t ldvxc ) override final;
   void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
     double* VXCscalar, int32_t ldvxcscalar, double* VXCz, int32_t ldvxcz ) override final;
+  void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
+    double* VXCscalar, int32_t ldvxcscalar, double* VXCz, int32_t ldvxcz,
+    double* VXCy     , int32_t ldvxcy     , double* VXCx, int32_t ldvxcx ) override final;
   void retrieve_exc_grad_integrands( double* EXC_GRAD, double* N_EL ) override final;
   void retrieve_den_integrands( double* N_EL ) override final;
   void retrieve_exx_integrands( double* K, int32_t ldk ) override final;
