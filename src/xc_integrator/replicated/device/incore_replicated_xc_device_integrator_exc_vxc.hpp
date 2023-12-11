@@ -350,7 +350,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     GAUXC_GENERIC_EXCEPTION("MUST BE EITHER RKS, UKS, or GKS!");
   }
   
-  if (is_gks) GAUXC_GENERIC_EXCEPTION( "GKS DEVICE NYI!");
 
   // Cast LWD to LocalDeviceWorkDriver
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );

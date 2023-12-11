@@ -91,20 +91,28 @@ struct XCDeviceStackData : public XCDeviceData {
     double* weights_device = nullptr; ///< Grid weights for task batch
 
     // U variables
-    double* den_eval_device   = nullptr; ///< density for task batch
-    double* den_x_eval_device = nullptr; ///< d/dx density for task batch
-    double* den_y_eval_device = nullptr; ///< d/dy density for task batch
-    double* den_z_eval_device = nullptr; ///< d/dz density for task batch
+    double* den_s_eval_device   = nullptr; ///< scalar density for task batch
+    double* dden_sx_eval_device = nullptr; ///< d/dx scalar density for task batch
+    double* dden_sy_eval_device = nullptr; ///< d/dy scalar density for task batch
+    double* dden_sz_eval_device = nullptr; ///< d/dz scalar density for task batch
     
-    // U variables (UKS)
-    double* den_pos_eval_device   = nullptr;
-    double* den_neg_eval_device   = nullptr;
-    double* den_pos_x_eval_device = nullptr;
-    double* den_pos_y_eval_device = nullptr;
-    double* den_pos_z_eval_device = nullptr;
-    double* den_neg_x_eval_device = nullptr;
-    double* den_neg_y_eval_device = nullptr;
-    double* den_neg_z_eval_device = nullptr;
+    double* den_z_eval_device   = nullptr; ///< z density for task batch
+    double* dden_zx_eval_device = nullptr; ///< d/dx z density for task batch
+    double* dden_zy_eval_device = nullptr; ///< d/dy z density for task batch
+    double* dden_zz_eval_device = nullptr; ///< d/dz z density for task batch
+
+    double* den_y_eval_device   = nullptr; ///< y density for task batch
+    double* dden_yx_eval_device = nullptr; ///< d/dx y density for task batch
+    double* dden_yy_eval_device = nullptr; ///< d/dy y density for task batch
+    double* dden_yz_eval_device = nullptr; ///< d/dz y density for task batch
+
+    double* den_x_eval_device   = nullptr; ///< x density for task batch
+    double* dden_xx_eval_device = nullptr; ///< d/dx x density for task batch
+    double* dden_xy_eval_device = nullptr; ///< d/dy x density for task batch
+    double* dden_xz_eval_device = nullptr; ///< d/dz x density for task batch
+    
+    double* den_eval_device     = nullptr; /// Storage for interleaved density (non-RKS only)
+
 
     // V variables / XC output
     double* gamma_eval_device  = nullptr; ///< gamma for task batch
@@ -112,7 +120,6 @@ struct XCDeviceStackData : public XCDeviceData {
     double* vrho_eval_device   = nullptr; ///< Rho XC derivative for task batch
     double* vgamma_eval_device = nullptr; ///< Gamma XC derivative for task batch
                                           //
-    // V variables (UKS)
     double* vrho_pos_eval_device  = nullptr;
     double* vrho_neg_eval_device  = nullptr;
     double* gamma_pp_eval_device  = nullptr;

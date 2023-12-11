@@ -25,7 +25,7 @@ __global__ void eval_uvars_lda_rks_kernel( size_t        ntasks,
   const auto npts            = task.npts;
   const auto nbf             = task.bfn_screening.nbe;
 
-  auto* den_eval_device   = task.den;
+  auto* den_eval_device   = task.den_s;
 
   const auto* basis_eval_device = task.bf;
 
@@ -76,10 +76,10 @@ __global__ void eval_uvars_gga_rks_kernel( size_t           ntasks,
   const auto npts            = task.npts;
   const auto nbf             = task.bfn_screening.nbe;
 
-  auto* den_eval_device   = task.den;
-  auto* den_x_eval_device = task.ddenx;
-  auto* den_y_eval_device = task.ddeny;
-  auto* den_z_eval_device = task.ddenz;
+  auto* den_eval_device   = task.den_s;
+  auto* den_x_eval_device = task.dden_sx;
+  auto* den_y_eval_device = task.dden_sy;
+  auto* den_z_eval_device = task.dden_sz;
 
   const auto* basis_eval_device = task.bf;
   const auto* dbasis_x_eval_device = task.dbfx;
@@ -157,8 +157,8 @@ __global__ void eval_uvars_lda_uks_kernel( size_t        ntasks,
   const auto npts            = task.npts;
   const auto nbf             = task.bfn_screening.nbe;
 
-  auto* den_pos_eval_device   = task.den_pos;
-  auto* den_neg_eval_device   = task.den_neg;
+  auto* den_pos_eval_device   = task.den_s;
+  auto* den_neg_eval_device   = task.den_z;
 
 
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
@@ -203,15 +203,15 @@ __global__ void eval_vvars_gga_uks_kernel( size_t ntasks, XCDeviceTask* tasks_de
   const auto npts            = task.npts;
   const auto nbf             = task.bfn_screening.nbe;
 
-  const auto*     den_pos_eval_device   = task.den_pos;
-  const auto*     den_pos_x_eval_device = task.dden_posx;
-  const auto*     den_pos_y_eval_device = task.dden_posy;
-  const auto*     den_pos_z_eval_device = task.dden_posz;
+  const auto*     den_pos_eval_device   = task.den_s;
+  const auto*     den_pos_x_eval_device = task.dden_sx;
+  const auto*     den_pos_y_eval_device = task.dden_sy;
+  const auto*     den_pos_z_eval_device = task.dden_sz;
 
-  const auto*     den_neg_eval_device   = task.den_neg;
-  const auto*     den_neg_x_eval_device = task.dden_negx;
-  const auto*     den_neg_y_eval_device = task.dden_negy;
-  const auto*     den_neg_z_eval_device = task.dden_negz;
+  const auto*     den_neg_eval_device   = task.den_z;
+  const auto*     den_neg_x_eval_device = task.dden_zx;
+  const auto*     den_neg_y_eval_device = task.dden_zy;
+  const auto*     den_neg_z_eval_device = task.dden_zz;
 
   auto*     gamma_pp_eval_device  = task.gamma_pp;
   auto*     gamma_pm_eval_device  = task.gamma_pm;
@@ -313,6 +313,9 @@ void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max,
       eval_vvars_gga_uks_kernel<<< blocks, threads, 0, stream >>>(ntasks, device_tasks );
       }
   }
+  else if ( enabled_terms.ks_scheme == GKS ) {
+    GAUXC_GENERIC_EXCEPTION( "eval_uvvars for GKS NYI!");
+  }
 
 }
 
@@ -346,16 +349,28 @@ __global__ void eval_den_grad_kern( size_t        ntasks,
 
   // use the "U" variable (+/- for UKS) even though at this point the density (S/Z) is stored
   if constexpr (den_select == DEN_S) {
-    den_eval_device   = task.den_pos;
-    den_x_eval_device = task.dden_posx;
-    den_y_eval_device = task.dden_posy;
-    den_z_eval_device = task.dden_posz;
+    den_eval_device   = task.den_s;
+    den_x_eval_device = task.dden_sx;
+    den_y_eval_device = task.dden_sy;
+    den_z_eval_device = task.dden_sz;
   }
   if constexpr (den_select == DEN_Z) {
-    den_eval_device   = task.den_neg;
-    den_x_eval_device = task.dden_negx;
-    den_y_eval_device = task.dden_negy;
-    den_z_eval_device = task.dden_negz;
+    den_eval_device   = task.den_z;
+    den_x_eval_device = task.dden_zx;
+    den_y_eval_device = task.dden_zy;
+    den_z_eval_device = task.dden_zz;
+  }
+  if constexpr (den_select == DEN_Y) {
+    den_eval_device   = task.den_y;
+    den_x_eval_device = task.dden_yx;
+    den_y_eval_device = task.dden_yy;
+    den_z_eval_device = task.dden_yz;
+  }
+  if constexpr (den_select == DEN_X) {
+    den_eval_device   = task.den_x;
+    den_x_eval_device = task.dden_xx;
+    den_y_eval_device = task.dden_xy;
+    den_z_eval_device = task.dden_xz;
   }
 
   const auto* basis_eval_device = task.bf;
@@ -441,8 +456,10 @@ __global__ void eval_den_kern( size_t        ntasks,
 
   double* den_eval_device   = nullptr;
   // use the "U" variable (+/- for UKS) even though at this point the density (S/Z) is stored
-  if constexpr (den_select == DEN_S) den_eval_device = task.den_pos;
-  if constexpr (den_select == DEN_Z) den_eval_device = task.den_neg;
+  if constexpr (den_select == DEN_S) den_eval_device = task.den_s;
+  if constexpr (den_select == DEN_Z) den_eval_device = task.den_z;
+  if constexpr (den_select == DEN_Y) den_eval_device = task.den_y;
+  if constexpr (den_select == DEN_X) den_eval_device = task.den_x;
 
   const auto* basis_eval_device = task.bf;
 
@@ -496,6 +513,14 @@ void eval_u_den( size_t ntasks, int32_t nbf_max, int32_t npts_max, bool do_grad,
     case DEN_Z: 
       if (do_grad)  eval_den_grad_kern<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
       else          eval_den_kern<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+      break;
+    case DEN_Y: 
+      if (do_grad)  eval_den_grad_kern<DEN_Y><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+      else          eval_den_kern<DEN_Y><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+      break;
+    case DEN_X: 
+      if (do_grad)  eval_den_grad_kern<DEN_X><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+      else          eval_den_kern<DEN_X><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
       break;
     default:
       GAUXC_GENERIC_EXCEPTION( "eval_den called with improper density selected" );

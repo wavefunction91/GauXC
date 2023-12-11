@@ -82,7 +82,7 @@ void AoSScheme1MAGMABase::eval_exx_fmat( XCDeviceData* _data ) {
 #endif
 }
 
-void AoSScheme1MAGMABase::inc_vxc( XCDeviceData* _data){
+void AoSScheme1MAGMABase::inc_vxc( XCDeviceData* _data, density_id den){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -106,8 +106,22 @@ void AoSScheme1MAGMABase::inc_vxc( XCDeviceData* _data){
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
   auto static_stack  = data->static_stack;
   auto aos_stack     = data->aos_stack;
+  switch (den) {
+    case DEN_S:
+      vxc_ptr = static_stack.vxc_s_device;
+      break;
+    case DEN_Z:
+      vxc_ptr = static_stack.vxc_z_device;
+      break;
+    case DEN_Y:
+      vxc_ptr = static_stack.vxc_y_device;
+      break;
+    case DEN_X:
+      vxc_ptr = static_stack.vxc_x_device;
+      break;
+  }
   sym_task_inc_potential( ntasks, aos_stack.device_tasks, 
-    static_stack.vxc_device, nbf, submat_block_size, 
+    vxc_ptr,  nbf, submat_block_size, 
     data->device_backend_->queue() );
 }
 

@@ -743,7 +743,9 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   const size_t aln = 256;
   
   const bool is_rks = terms.ks_scheme == RKS;
-  const bool is_2C  = (terms.ks_scheme == UKS) or (terms.ks_scheme == GKS);
+  const bool is_uks = terms.ks_scheme == UKS;
+  const bool is_gks = terms.ks_scheme == GKS;
+  const bool is_2C  = is_uks or is_gks;
   const bool is_gga = reqt.grid_den_grad;
 
   const bool is_den = terms.den;
@@ -762,23 +764,40 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
 
   // Grid function evaluations
   if( reqt.grid_den ) { // Density 
-    if( is_den )   base_stack.den_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
-    if( is_rks )   base_stack.den_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
-    if( is_2C  ) { base_stack.den_eval_device     = mem.aligned_alloc<double>(2*msz, aln, csl);
-                   base_stack.den_pos_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                   base_stack.den_neg_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
+    if( is_den )   base_stack.den_s_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_rks )   base_stack.den_s_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_uks  ) { base_stack.den_eval_device      = mem.aligned_alloc<double>(2*msz, aln, csl);
+                   base_stack.den_s_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.den_z_eval_device     = mem.aligned_alloc<double>(msz, aln, csl); }
+    if( is_gks  ) { base_stack.den_eval_device      = mem.aligned_alloc<double>(2*msz, aln, csl);
+                   base_stack.den_s_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.den_z_eval_device     = mem.aligned_alloc<double>(msz, aln, csl); 
+                   base_stack.den_y_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.den_x_eval_device     = mem.aligned_alloc<double>(msz, aln, csl); }
  
   }
   if( reqt.grid_den_grad ) { // Density gradient
-    if( is_rks ) { base_stack.den_x_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                   base_stack.den_y_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                   base_stack.den_z_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
-    if( is_2C  ) { base_stack.den_pos_x_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                   base_stack.den_pos_y_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                   base_stack.den_pos_z_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
-                   base_stack.den_neg_x_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                   base_stack.den_neg_y_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
-                   base_stack.den_neg_z_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
+    if( is_rks ) { base_stack.dden_sx_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.dden_sy_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.dden_sz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
+    if( is_uks ) { base_stack.dden_sx_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.dden_sy_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.dden_sz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+                   base_stack.dden_zx_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.dden_zy_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+                   base_stack.dden_zz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
+    if( is_gks ) { base_stack.dden_sx_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.dden_sy_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.dden_sz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+                   base_stack.dden_zx_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.dden_zy_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+                   base_stack.dden_zz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+                   base_stack.dden_yx_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.dden_yy_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+                   base_stack.dden_yz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+                   base_stack.dden_xx_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+                   base_stack.dden_xy_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+                   base_stack.dden_xz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
   }
   
     
