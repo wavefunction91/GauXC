@@ -83,7 +83,8 @@ struct required_term_storage {
   inline size_t grid_den_size(size_t npts){ 
   // grid_den_size takes into account the size of the interleaved density sent to ExchCXX in the cases of UKS/GKS (hence the * 2)
     if( grid_den ) {
-      if( ref_tracker.ks_scheme == UKS) return 2 * npts;
+      if      ( ref_tracker.ks_scheme == UKS) return 2 * npts;
+      else if ( ref_tracker.ks_scheme == GKS) return 4 * npts;
       else return npts;
     }
     else return 0ul;
@@ -101,7 +102,8 @@ struct required_term_storage {
   }
   inline size_t grid_vrho_size(size_t npts){ 
     return PRDVL(grid_vrho and ref_tracker.ks_scheme == RKS, npts)
-         + PRDVL(grid_vrho and ref_tracker.ks_scheme == UKS, 2 * npts);
+         + PRDVL(grid_vrho and ref_tracker.ks_scheme == UKS, 2 * npts)
+         + PRDVL(grid_vrho and ref_tracker.ks_scheme == GKS, 4 * npts);
   }
   inline size_t grid_vgamma_size(size_t npts){ 
     return PRDVL(grid_vgamma and ref_tracker.ks_scheme == RKS, npts)
