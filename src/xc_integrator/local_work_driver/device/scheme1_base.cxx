@@ -652,6 +652,7 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
     base_stack.vrho_eval_device, data->device_backend_->queue() );
 
   if( is_RKS or is_excgrad ) {
+    // avoid superfluous memory copy ops, just use vrho_eval_device (instead of vrho_s_eval)
     hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.vrho_eval_device, 1 );
   }

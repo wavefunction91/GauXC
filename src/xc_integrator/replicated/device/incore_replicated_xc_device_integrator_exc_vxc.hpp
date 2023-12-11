@@ -485,7 +485,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       if( func.is_gga() ) lwd->eval_zmat_gga_vxc_uks( &device_data, DEN_Z );
       else                lwd->eval_zmat_lda_vxc_uks( &device_data, DEN_Z );
       lwd->inc_vxc( &device_data, DEN_Z );
-      
     }
 
   } // Loop over batches of batches 
@@ -495,6 +494,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   lwd->symmetrize_vxc( &device_data, DEN_S );
   if (is_uks) {
     lwd->symmetrize_vxc( &device_data, DEN_Z );
+  }
+  if (is_gks) {
+    lwd->symmetrize_vxc( &device_data, DEN_Y );
+    lwd->symmetrize_vxc( &device_data, DEN_X );
   }
 
 
@@ -531,7 +534,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   this->timer_.time_op("XCIntegrator.DeviceToHostCopy_EXC_VXC",[&](){
     if (is_rks)  device_data.retrieve_exc_vxc_integrands( EXC, N_EL, VXCs, ldvxcs ); 
     if (is_uks)  device_data.retrieve_exc_vxc_integrands( EXC, N_EL, VXCs, ldvxcs, VXCz, ldvxcz ); 
-    //if (is_gks)  device_data.retrieve_exc_vxc_integrands( EXC, N_EL, VXCs, ldvxcs, VXCz, ldvxcz, VXCy, ldvxcy, VXCx, ldvxcx ); 
+    if (is_gks)  device_data.retrieve_exc_vxc_integrands( EXC, N_EL, VXCs, ldvxcs, VXCz, ldvxcz, VXCy, ldvxcy, VXCx, ldvxcx ); 
   });
 
 }
