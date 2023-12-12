@@ -93,9 +93,9 @@ __global__ void zmat_gga_vxc_rks_kernel( size_t        ntasks,
   const auto nbf             = task.bfn_screening.nbe;
   const auto* vrho_device    = task.vrho;
   const auto* vgamma_device  = task.vgamma;
-  const auto* den_x_eval_device = task.ddenx;
-  const auto* den_y_eval_device = task.ddeny;
-  const auto* den_z_eval_device = task.ddenz;
+  const auto* den_x_eval_device = task.dden_sx;
+  const auto* den_y_eval_device = task.dden_sy;
+  const auto* den_z_eval_device = task.dden_sz;
 
   const auto* basis_eval_device = task.bf;
   const auto* dbasis_x_eval_device = task.dbfx;
@@ -231,12 +231,12 @@ __global__ void zmat_gga_vxc_uks_kernel( size_t        ntasks,
   const double* vrho_pos_device    = task.vrho_pos;
   const double* vrho_neg_device    = task.vrho_neg;
 
-  const auto* den_pos_x_eval_device = task.dden_posx;
-  const auto* den_pos_y_eval_device = task.dden_posy;
-  const auto* den_pos_z_eval_device = task.dden_posz;
-  const auto* den_neg_x_eval_device = task.dden_negx;
-  const auto* den_neg_y_eval_device = task.dden_negy;
-  const auto* den_neg_z_eval_device = task.dden_negz;
+  const auto* den_pos_x_eval_device = task.dden_sx;
+  const auto* den_pos_y_eval_device = task.dden_sy;
+  const auto* den_pos_z_eval_device = task.dden_sz;
+  const auto* den_neg_x_eval_device = task.dden_zx;
+  const auto* den_neg_y_eval_device = task.dden_zy;
+  const auto* den_neg_z_eval_device = task.dden_zz;
 
 
   const auto* basis_eval_device = task.bf;

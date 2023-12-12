@@ -80,32 +80,38 @@ struct required_term_storage {
   // Reference flags for memory management use
   integrator_term_tracker ref_tracker;
 
+  const bool is_RKS = ref_tracker.ks_scheme == RKS;
+  const bool is_UKS = ref_tracker.ks_scheme == UKS;
+  const bool is_GKS = ref_tracker.ks_scheme == GKS;
+  const bool is_2C  = is_UKS or is_GKS;
+
   inline size_t grid_den_size(size_t npts){ 
+
   // grid_den_size takes into account the size of the interleaved density sent to ExchCXX in the cases of UKS/GKS (hence the * 2)
-    if( grid_den ) {
-      if( ref_tracker.ks_scheme == UKS) return 2 * npts;
-      else return npts;
+  if( grid_den ) {
+      if      ( is_2C  ) return 2 * npts;
+      else if ( is_RKS ) return npts;
+      else return 0ul;
     }
-    else return 0ul;
   }
   inline size_t grid_den_grad_size(size_t npts){ 
-    return PRDVL(grid_den_grad and ref_tracker.ks_scheme == RKS, 3 * npts)
-         + PRDVL(grid_den_grad and ref_tracker.ks_scheme == UKS, 6 * npts);
+    return PRDVL(grid_den_grad and is_RKS, 3 * npts)
+         + PRDVL(grid_den_grad and is_2C , 6 * npts);
   }
   inline size_t grid_gamma_size(size_t npts){ 
-    return PRDVL(grid_gamma and ref_tracker.ks_scheme == RKS, npts) 
-         + PRDVL(grid_gamma and ref_tracker.ks_scheme == UKS, 3 * npts);
+    return PRDVL(grid_gamma and is_RKS, npts) 
+         + PRDVL(grid_gamma and is_2C , 3 * npts);
   }
   inline size_t grid_eps_size(size_t npts){ 
     return PRDVL(grid_eps, npts);
   }
   inline size_t grid_vrho_size(size_t npts){ 
-    return PRDVL(grid_vrho and ref_tracker.ks_scheme == RKS, npts)
-         + PRDVL(grid_vrho and ref_tracker.ks_scheme == UKS, 2 * npts);
+    return PRDVL(grid_vrho and is_RKS, npts)
+         + PRDVL(grid_vrho and is_2C , 2 * npts);
   }
   inline size_t grid_vgamma_size(size_t npts){ 
-    return PRDVL(grid_vgamma and ref_tracker.ks_scheme == RKS, npts)
-         + PRDVL(grid_vgamma and ref_tracker.ks_scheme == UKS, 3 * npts);
+    return PRDVL(grid_vgamma and is_RKS, npts)
+         + PRDVL(grid_vgamma and is_2C , 3 * npts);
   }
 
 
@@ -384,6 +390,7 @@ struct XCDeviceData {
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
   virtual void send_static_data_density_basis( const double* P, int32_t ldp, const BasisSet<double>& basis ) = 0;
   virtual void send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz, const BasisSet<double>& basis ) = 0;
+  virtual void send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz, const double* Py, int32_t ldpy, const double* Px, int32_t ldpx, const BasisSet<double>& basis ) = 0;
   virtual void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) = 0;
   virtual void send_static_data_exx_ek_screening( const double* V_max, int32_t ldv, const BasisSetMap&, const ShellPairCollection<double>& ) = 0;
 
@@ -432,6 +439,9 @@ struct XCDeviceData {
     double* VXC, int32_t ldvxc ) = 0;
   virtual void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
     double* VXCs, int32_t ldvxcs, double* VXCz, int32_t ldvxcz ) = 0;
+  virtual void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
+    double* VXCs, int32_t ldvxcs, double* VXCz, int32_t ldvxcz,
+    double* VXCy, int32_t ldvxcy, double* VXCx, int32_t ldvxcx ) = 0;
 
   /** Retreive EXC Gradient integrands from device memory
    *

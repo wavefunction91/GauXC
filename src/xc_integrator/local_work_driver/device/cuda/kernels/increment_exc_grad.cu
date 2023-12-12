@@ -165,9 +165,9 @@ __global__ __launch_bounds__(512,1) void increment_exc_grad_gga_kernel(
       const auto* __restrict__  vrho = task->vrho;
       const auto* __restrict__  vgamma = task->vgamma;
 
-      const auto* __restrict__ den_x = task->ddenx;
-      const auto* __restrict__ den_y = task->ddeny;
-      const auto* __restrict__ den_z = task->ddenz;
+      const auto* __restrict__ den_x = task->dden_sx;
+      const auto* __restrict__ den_y = task->dden_sy;
+      const auto* __restrict__ den_z = task->dden_sz;
 
       #pragma unroll 1
       for( uint32_t ipt = threadIdx.x % cuda::warp_size; 

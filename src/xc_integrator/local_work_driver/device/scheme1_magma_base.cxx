@@ -144,7 +144,7 @@ void AoSScheme1MAGMABase::inc_vxc( XCDeviceData* _data, density_id den){
       GAUXC_GENERIC_EXCEPTION( "Inc_vxc called with invalid density specifier" );
   }
   sym_task_inc_potential( ntasks, aos_stack.device_tasks, 
-    vxc_ptr, nbf, submat_block_size, 
+    vxc_ptr,  nbf, submat_block_size, 
     data->device_backend_->queue() );
 }
 

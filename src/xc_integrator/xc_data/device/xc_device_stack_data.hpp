@@ -91,20 +91,28 @@ struct XCDeviceStackData : public XCDeviceData {
     double* weights_device = nullptr; ///< Grid weights for task batch
 
     // U variables
-    double* den_eval_device   = nullptr; ///< density for task batch
-    double* den_x_eval_device = nullptr; ///< d/dx density for task batch
-    double* den_y_eval_device = nullptr; ///< d/dy density for task batch
-    double* den_z_eval_device = nullptr; ///< d/dz density for task batch
+    double* den_s_eval_device   = nullptr; ///< scalar density for task batch
+    double* dden_sx_eval_device = nullptr; ///< d/dx scalar density for task batch
+    double* dden_sy_eval_device = nullptr; ///< d/dy scalar density for task batch
+    double* dden_sz_eval_device = nullptr; ///< d/dz scalar density for task batch
     
-    // U variables (UKS)
-    double* den_pos_eval_device   = nullptr;
-    double* den_neg_eval_device   = nullptr;
-    double* den_pos_x_eval_device = nullptr;
-    double* den_pos_y_eval_device = nullptr;
-    double* den_pos_z_eval_device = nullptr;
-    double* den_neg_x_eval_device = nullptr;
-    double* den_neg_y_eval_device = nullptr;
-    double* den_neg_z_eval_device = nullptr;
+    double* den_z_eval_device   = nullptr; ///< z density for task batch
+    double* dden_zx_eval_device = nullptr; ///< d/dx z density for task batch
+    double* dden_zy_eval_device = nullptr; ///< d/dy z density for task batch
+    double* dden_zz_eval_device = nullptr; ///< d/dz z density for task batch
+
+    double* den_y_eval_device   = nullptr; ///< y density for task batch
+    double* dden_yx_eval_device = nullptr; ///< d/dx y density for task batch
+    double* dden_yy_eval_device = nullptr; ///< d/dy y density for task batch
+    double* dden_yz_eval_device = nullptr; ///< d/dz y density for task batch
+
+    double* den_x_eval_device   = nullptr; ///< x density for task batch
+    double* dden_xx_eval_device = nullptr; ///< d/dx x density for task batch
+    double* dden_xy_eval_device = nullptr; ///< d/dy x density for task batch
+    double* dden_xz_eval_device = nullptr; ///< d/dz x density for task batch
+    
+    double* den_eval_device     = nullptr; /// Storage for interleaved density (non-RKS only)
+
 
     // V variables / XC output
     double* gamma_eval_device  = nullptr; ///< gamma for task batch
@@ -112,7 +120,6 @@ struct XCDeviceStackData : public XCDeviceData {
     double* vrho_eval_device   = nullptr; ///< Rho XC derivative for task batch
     double* vgamma_eval_device = nullptr; ///< Gamma XC derivative for task batch
                                           //
-    // V variables (UKS)
     double* vrho_pos_eval_device  = nullptr;
     double* vrho_neg_eval_device  = nullptr;
     double* gamma_pp_eval_device  = nullptr;
@@ -121,6 +128,14 @@ struct XCDeviceStackData : public XCDeviceData {
     double* vgamma_pp_eval_device  = nullptr;
     double* vgamma_pm_eval_device  = nullptr;
     double* vgamma_mm_eval_device  = nullptr;
+
+    // GKS objects
+    double* H_x_eval_device     = nullptr;
+    double* H_y_eval_device     = nullptr;
+    double* H_z_eval_device     = nullptr;
+    double* K_x_eval_device     = nullptr;
+    double* K_y_eval_device     = nullptr;
+    double* K_z_eval_device     = nullptr;
 
     inline void reset() { std::memset( this, 0, sizeof(base_stack_data) ); }
   };
@@ -150,6 +165,9 @@ struct XCDeviceStackData : public XCDeviceData {
     const BasisSet<double>& basis ) override final;
   void send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz,
     const BasisSet<double>& basis ) override final;
+  void send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz,
+                                        const double* Py, int32_t ldpy, const double* Px, int32_t ldpx,
+    const BasisSet<double>& basis ) override final;
   void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) 
     override final;
   void send_static_data_exx_ek_screening( const double* V_max, int32_t ldv, const BasisSetMap&, const ShellPairCollection<double>& ) override final;
@@ -162,6 +180,9 @@ struct XCDeviceStackData : public XCDeviceData {
     double* VXC, int32_t ldvxc ) override final;
   void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
     double* VXCscalar, int32_t ldvxcscalar, double* VXCz, int32_t ldvxcz ) override final;
+  void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
+    double* VXCscalar, int32_t ldvxcscalar, double* VXCz, int32_t ldvxcz,
+    double* VXCy     , int32_t ldvxcy     , double* VXCx, int32_t ldvxcx ) override final;
   void retrieve_exc_grad_integrands( double* EXC_GRAD, double* N_EL ) override final;
   void retrieve_den_integrands( double* N_EL ) override final;
   void retrieve_exx_integrands( double* K, int32_t ldk ) override final;
