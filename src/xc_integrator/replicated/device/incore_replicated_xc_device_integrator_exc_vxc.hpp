@@ -54,7 +54,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // If we can do reductions on the device (e.g. NCCL)
     // Don't communicate data back to the hot before reduction
     this->timer_.time_op("XCIntegrator.LocalWork_EXC_VXC", [&](){
-      //exc_vxc_local_work_( basis, P, ldp, tasks.begin(), tasks.end(), *device_data_ptr);
       exc_vxc_local_work_( basis, P, ldp, nullptr, 0, nullptr, 0, nullptr, 0, tasks.begin(), tasks.end(), *device_data_ptr);
     });
 
@@ -421,41 +420,29 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     
     double xmat_fac = 1.0;
-    if (is_rks) {
+
+    if (is_rks) 
       xmat_fac = 2.0;
-      // Evaluate X matrix
-      lwd->eval_xmat( xmat_fac, &device_data, false, DEN_S );
-      
+
+    // Evaluate X matrix common to all KS schemes as well as the Vvar (density)
+    lwd->eval_xmat( xmat_fac, &device_data, func.is_gga(), DEN_S );
+    lwd->eval_vvar( &device_data, func.is_gga(), DEN_S );
+
+    if (not is_rks) {
+      lwd->eval_xmat( xmat_fac, &device_data, func.is_gga(), DEN_Z );
+      lwd->eval_vvar( &device_data, func.is_gga(), DEN_Z );
+      if (not is_uks) {
+        lwd->eval_xmat( xmat_fac, &device_data, func.is_gga(), DEN_Y );
+        lwd->eval_vvar( &device_data, func.is_gga(), DEN_Y );
+        lwd->eval_xmat( xmat_fac, &device_data, func.is_gga(), DEN_X );
+        lwd->eval_vvar( &device_data, func.is_gga(), DEN_X );
+      }
     }
 
-    else if (is_uks) {
-      xmat_fac = 1.0;
-      // Evaluate X matrix
-      lwd->eval_xmat( xmat_fac, &device_data, false, DEN_S );
-      // Contract X matrix with bf -> den_eval
-      lwd->eval_den( &device_data, func.is_gga(), DEN_S );
-      // Repeat for Z density
-      lwd->eval_xmat( xmat_fac, &device_data, false, DEN_Z );
-      lwd->eval_den( &device_data, func.is_gga(), DEN_Z );
 
-    }
-
-    else if(is_gks) {
-      xmat_fac = 1.0;
-      // Evaluate X matrix and density for each (S,Z,Y,X)
-      lwd->eval_xmat( xmat_fac, &device_data, false, DEN_S );
-      lwd->eval_den( &device_data,    func.is_gga(), DEN_S );
-      lwd->eval_xmat( xmat_fac, &device_data, false, DEN_Z );
-      lwd->eval_den( &device_data,    func.is_gga(), DEN_Z );
-      lwd->eval_xmat( xmat_fac, &device_data, false, DEN_Y );
-      lwd->eval_den( &device_data,    func.is_gga(), DEN_Y );
-      lwd->eval_xmat( xmat_fac, &device_data, false, DEN_X );
-      lwd->eval_den( &device_data,    func.is_gga(), DEN_X );
-    }
-
-    // Evaluate U/V variables
-    if( func.is_gga() ) lwd->eval_uvvar_gga( &device_data, enabled_terms );
-    else                lwd->eval_uvvar_lda( &device_data, enabled_terms );
+    // Evaluate U variables
+    if( func.is_gga() ) lwd->eval_uvars_gga( &device_data, enabled_terms.ks_scheme );
+    else                lwd->eval_uvars_lda( &device_data, enabled_terms.ks_scheme );
 
     // Evaluate XC functional
     if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );
@@ -516,7 +503,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data ) {
   
-  //GauXC::util::unused(basis,Ps,ldps,Pz,ldpz,Py,ldpy,Px,ldpx,VXCs,ldvxcs,VXCz,ldvxcz,VXCy,ldvxcy,VXCx,ldvxcx,EXC,N_EL,task_begin,task_end,device_data);
   const bool is_gks = (Pz != nullptr) and (Py != nullptr) and (Px != nullptr);
   const bool is_uks = (Pz != nullptr) and (Py == nullptr) and (Px == nullptr);
   const bool is_rks = not is_uks and not is_gks;

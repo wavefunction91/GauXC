@@ -137,10 +137,13 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // Evaluate X matrix
     const bool do_xmat_grad = func.is_gga();
     lwd->eval_xmat( 2.0, &device_data, do_xmat_grad );
+    
+    // Evaluate V variable
+    lwd->eval_vvar( &device_data, do_xmat_grad, DEN_S );
 
-    // Evaluate U/V variables
-    if( func.is_gga() ) lwd->eval_uvvar_gga( &device_data, enabled_terms );
-    else                lwd->eval_uvvar_lda( &device_data, enabled_terms );
+    // Evaluate U variables
+    if( func.is_gga() ) lwd->eval_uvars_gga( &device_data, enabled_terms.ks_scheme );
+    else                lwd->eval_uvars_gga( &device_data, enabled_terms.ks_scheme );
 
     // Evaluate XC functional (we need VXC for EXC Gradient)
     if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );

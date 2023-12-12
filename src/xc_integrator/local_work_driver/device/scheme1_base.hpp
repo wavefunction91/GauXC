@@ -20,8 +20,9 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   void eval_zmat_lda_vxc_rks( XCDeviceData* ) override final;
   void eval_zmat_gga_vxc_rks( XCDeviceData* ) override final;
 
-  void eval_uvvar_lda( XCDeviceData*, integrator_term_tracker ) override final;
-  void eval_uvvar_gga( XCDeviceData*, integrator_term_tracker ) override final;
+  void eval_uvars_lda( XCDeviceData*, integrator_ks_scheme ) override final;
+  void eval_uvars_gga( XCDeviceData*, integrator_ks_scheme ) override final;
+  void eval_vvar( XCDeviceData*, bool, density_id ) override final;
   void eval_zmat_lda_vxc_uks( XCDeviceData*, density_id ) override final;
   void eval_zmat_gga_vxc_uks( XCDeviceData*, density_id ) override final;
 
@@ -46,12 +47,11 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
 
 
   // Overridable APIs
-  virtual void eval_xmat( double fac, XCDeviceData*, bool do_grad, density_id den_sel ) override;
+  virtual void eval_xmat( double fac, XCDeviceData*, bool , density_id ) override;
   virtual void eval_exx_fmat( XCDeviceData* ) override;
   virtual void inc_vxc( XCDeviceData*, density_id) override;
   virtual void inc_exx_k( XCDeviceData* ) override;
 
-  void eval_den( XCDeviceData*, bool, density_id) override final;
 
   using Data = Scheme1DataBase;
 

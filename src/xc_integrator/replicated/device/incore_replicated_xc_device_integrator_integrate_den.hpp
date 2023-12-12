@@ -132,7 +132,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->eval_xmat( 1.0, &device_data );
 
     // Evaluate the density
-    lwd->eval_uvvar_lda( &device_data, enabled_terms );
+    lwd->eval_vvar( &device_data, false, DEN_S );
 
     // Do scalar N_EL integration
     lwd->inc_nel( &device_data );

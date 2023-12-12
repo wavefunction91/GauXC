@@ -428,16 +428,11 @@ void AoSScheme1Base::inc_exc( XCDeviceData* _data ){
   const bool is_UKS  = data->allocated_terms.ks_scheme == UKS;
   const bool is_GKS  = data->allocated_terms.ks_scheme == GKS;
   
-  if( is_RKS )
   gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
     base_stack.eps_eval_device, 1, base_stack.den_s_eval_device, 1, 
     static_stack.acc_scr_device, static_stack.exc_device );
 
-  if( is_UKS or is_GKS ) {
-  
-  gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
-    base_stack.eps_eval_device, 1, base_stack.den_s_eval_device, 1, 
-    static_stack.acc_scr_device, static_stack.exc_device );
+  if( not is_RKS ) {
 
   gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
     base_stack.eps_eval_device, 1, base_stack.den_z_eval_device, 1, 
@@ -460,16 +455,11 @@ void AoSScheme1Base::inc_nel( XCDeviceData* _data ){
   const bool is_GKS  = data->allocated_terms.ks_scheme == GKS;
   const bool is_den  = data->allocated_terms.den;
   
-  if( is_RKS or is_den )
   gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
     base_stack.weights_device, 1, base_stack.den_s_eval_device, 1, 
     static_stack.acc_scr_device, static_stack.nel_device );
 
-  if( is_UKS or is_GKS ) {
-
-  gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
-    base_stack.weights_device, 1, base_stack.den_s_eval_device, 1, 
-    static_stack.acc_scr_device, static_stack.nel_device );
+  if( not is_RKS and not is_den ) {
 
   gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
     base_stack.weights_device, 1, base_stack.den_z_eval_device, 1, 
@@ -479,8 +469,54 @@ void AoSScheme1Base::inc_nel( XCDeviceData* _data ){
 }
 
 
+void AoSScheme1Base::eval_uvars_lda( XCDeviceData* _data, integrator_ks_scheme ks_scheme){
+  auto* data = dynamic_cast<Data*>(_data);
+  if ( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
-void AoSScheme1Base::eval_den( XCDeviceData* _data, bool do_grad, density_id den_select){
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+  size_t nbe_max = 0, npts_max = 0;
+  for( auto& task : tasks ) {
+    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
+    npts_max = std::max( npts_max, task.npts );
+  }
+
+  auto base_stack    = data->base_stack;
+  
+  // Evaluate V variable
+  auto aos_stack     = data->aos_stack;
+  eval_uvars_lda_( ntasks, nbe_max, npts_max, ks_scheme,
+    aos_stack.device_tasks, data->device_backend_->queue() );
+
+}
+
+void AoSScheme1Base::eval_uvars_gga( XCDeviceData* _data, integrator_ks_scheme ks_scheme){
+  auto* data = dynamic_cast<Data*>(_data);
+  if ( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+  size_t nbe_max = 0, npts_max = 0;
+  for( auto& task : tasks ) {
+    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
+    npts_max = std::max( npts_max, task.npts );
+  }
+
+  auto base_stack    = data->base_stack;
+  
+  // Evaluate V variable
+  auto aos_stack     = data->aos_stack;
+  eval_uvars_gga_( ntasks, nbe_max, npts_max, ks_scheme,
+    aos_stack.device_tasks, data->device_backend_->queue() );
+
+}
+
+
+void AoSScheme1Base::eval_vvar( XCDeviceData* _data, bool do_grad, density_id den_select){
   auto* data = dynamic_cast<Data*>(_data);
   if ( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
@@ -526,92 +562,23 @@ void AoSScheme1Base::eval_den( XCDeviceData* _data, bool do_grad, density_id den
                      den_z_eval_ptr = base_stack.dden_xz_eval_device; }
       break;
     default:
-      GAUXC_GENERIC_EXCEPTION( "eval_den called with invalid density selected!" );
+      GAUXC_GENERIC_EXCEPTION( "eval_vvar called with invalid density selected!" );
   }
+
   data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, den_eval_ptr, "Den Zero" );
+
   if (do_grad) {
     data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, den_x_eval_ptr, "Den Zero" );
     data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, den_y_eval_ptr, "Den Zero" );
     data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, den_z_eval_ptr, "Den Zero" );
   }
   
-    
-
-  // Evaluate density
+  // Evaluate V variable
   auto aos_stack     = data->aos_stack;
-  eval_u_den( ntasks, nbe_max, npts_max, do_grad, den_select,
+  eval_vvar_( ntasks, nbe_max, npts_max, do_grad, den_select,
     aos_stack.device_tasks, data->device_backend_->queue() );
 
 }
-
-
-
-
-void AoSScheme1Base::eval_uvvar_lda( XCDeviceData* _data, integrator_term_tracker en_terms ){
-
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
-
-  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
-
-  auto& tasks = data->host_device_tasks;
-  const auto ntasks = tasks.size();
-  size_t nbe_max = 0, npts_max = 0;
-  for( auto& task : tasks ) {
-    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
-    npts_max = std::max( npts_max, task.npts );
-  }
-
-  // Zero density
-  auto base_stack    = data->base_stack;
-  if (en_terms.ks_scheme == RKS or en_terms.den ) //since eval_den is not called for RKS or Density job
-    data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_s_eval_device, "Den Zero" );
-    
-
-  // Evaluate U variables
-  auto aos_stack     = data->aos_stack;
-  eval_uvvars_lda( ntasks, nbe_max, npts_max, en_terms,
-    aos_stack.device_tasks, data->device_backend_->queue() );
-}
-
-
-
-
-void AoSScheme1Base::eval_uvvar_gga( XCDeviceData* _data, integrator_term_tracker en_terms ){
-
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
-
-  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
-
-  auto& tasks = data->host_device_tasks;
-  const auto ntasks = tasks.size();
-  size_t nbe_max = 0, npts_max = 0;
-  for( auto& task : tasks ) {
-    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
-    npts_max = std::max( npts_max, task.npts );
-  }
-
-  // Zero density + gradient
-  auto base_stack    = data->base_stack;
-  if (en_terms.ks_scheme == RKS) {
-    data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_s_eval_device, "Den Zero" );
-    data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.dden_sx_eval_device, "DenX Zero" );
-    data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.dden_sy_eval_device, "DenY Zero" );
-    data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.dden_sz_eval_device, "DenZ Zero" );
-  }
-
-  // Evaluate U variables
-  // TODO: clean up arguments
-  auto aos_stack     = data->aos_stack;
-  eval_uvvars_gga( ntasks, data->total_npts_task_batch, nbe_max, npts_max, en_terms,
-    aos_stack.device_tasks, base_stack.dden_sx_eval_device, base_stack.dden_sy_eval_device,
-    base_stack.dden_sz_eval_device, base_stack.gamma_eval_device, 
-    data->device_backend_->queue() );
-
-}
-
-
 
 
 void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func, 
@@ -707,7 +674,7 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
                         1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
         stat = cudaMemcpy2D(base_stack.den_eval_device + 1, 2 * sizeof(double), base_stack.den_z_eval_device,
                         1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-        // Interleave gamma aa, bb, ab
+        // Interleave gamma pp, pm, mm
         stat = cudaMemcpy2D(base_stack.gamma_eval_device    , 3 * sizeof(double), base_stack.gamma_pp_eval_device,
                         1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
         stat = cudaMemcpy2D(base_stack.gamma_eval_device + 1, 3 * sizeof(double), base_stack.gamma_pm_eval_device,
@@ -715,6 +682,7 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
         stat = cudaMemcpy2D(base_stack.gamma_eval_device + 2, 3 * sizeof(double), base_stack.gamma_mm_eval_device,
                         1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
   }
+
   GauXC::eval_kern_exc_vxc_gga( func, data->total_npts_task_batch, 
     den_eval_ptr, base_stack.gamma_eval_device, 
     base_stack.eps_eval_device, base_stack.vrho_eval_device, 

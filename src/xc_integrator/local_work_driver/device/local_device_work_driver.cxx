@@ -42,6 +42,11 @@ void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, integrator_term_tra
   throw_if_invalid_pimpl(pimpl_);                               \
   pimpl_->NAME(device_data, track);                               \
 }
+#define FWD_TO_PIMPL_KS_SCHEME(NAME) \
+void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, integrator_ks_scheme track ) { \
+  throw_if_invalid_pimpl(pimpl_);                               \
+  pimpl_->NAME(device_data, track);                               \
+}
 
 FWD_TO_PIMPL(partition_weights)         // Partition weights
 
@@ -50,8 +55,8 @@ FWD_TO_PIMPL(eval_collocation_gradient) // Collocation Gradient
 FWD_TO_PIMPL(eval_collocation_hessian)  // Collocation Hessian
 
 
-FWD_TO_PIMPL_INT_TRACKER(eval_uvvar_lda)            // U/VVar LDA (density)
-FWD_TO_PIMPL_INT_TRACKER(eval_uvvar_gga)            // U/VVar GGA (density + grad, gamma)
+FWD_TO_PIMPL_KS_SCHEME(eval_uvars_lda)            // U/VVar LDA (density)
+FWD_TO_PIMPL_KS_SCHEME(eval_uvars_gga)            // U/VVar GGA (density + grad, gamma)
 
 FWD_TO_PIMPL(eval_zmat_lda_vxc_rks)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc_rks)         // Eval Z Matrix GGA VXC
@@ -86,10 +91,11 @@ void LocalDeviceWorkDriver::eval_xmat( double fac, XCDeviceData* device_data, bo
   pimpl_->eval_xmat(fac, device_data, do_grad, den);
 }
 
-void LocalDeviceWorkDriver::eval_den(  XCDeviceData* device_data, bool do_grad,  density_id den ) {
+void LocalDeviceWorkDriver::eval_vvar( XCDeviceData* device_data, bool do_grad, density_id den ) {
   throw_if_invalid_pimpl(pimpl_);
-  pimpl_->eval_den(device_data, do_grad, den);
+  pimpl_->eval_vvar( device_data, do_grad, den);
 }
+
 
 void LocalDeviceWorkDriver::eval_exx_gmat( XCDeviceData* device_data, 
   const BasisSetMap& basis_map) {

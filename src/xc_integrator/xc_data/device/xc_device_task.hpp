@@ -51,11 +51,11 @@ struct XCDeviceTask {
   double*   d2bfyz    = nullptr;
   double*   d2bfzz    = nullptr;
   double*   eps     = nullptr;
-  double*   gamma   = nullptr;
-  double*   vrho    = nullptr;
-  double*   vgamma  = nullptr;
 
   double* den       = nullptr;
+  double* gamma     = nullptr;
+  double*   vrho    = nullptr;
+  double*   vgamma  = nullptr;
     
   // (S,Z,Y,X) densities
   double* den_s     = nullptr;
@@ -75,7 +75,8 @@ struct XCDeviceTask {
   double* dden_xx   = nullptr;
   double* dden_xy   = nullptr;
   double* dden_xz   = nullptr;
-
+  
+  // 2C U vars
   double* vrho_pos  = nullptr;
   double* vrho_neg  = nullptr;
   double* gamma_pp  = nullptr;

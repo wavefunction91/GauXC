@@ -37,8 +37,8 @@ enum density_id : uint32_t {
     _UNDEF_DEN      = 0,
     DEN_S           = 1,    // RKS, UKS, GKS
     DEN_Z           = 2,    // UKS, GKS
-    DEN_X           = 3,    // GKS
-    DEN_Y           = 4     // GKS
+    DEN_Y           = 3,    // GKS
+    DEN_X           = 4     // GKS
 };
 
 struct integrator_term_tracker {

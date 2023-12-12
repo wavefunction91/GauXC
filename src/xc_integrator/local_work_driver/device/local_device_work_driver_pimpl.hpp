@@ -34,12 +34,12 @@ struct LocalDeviceWorkDriverPIMPL {
   virtual void eval_collocation_gradient( XCDeviceData* ) = 0;
   virtual void eval_collocation_hessian( XCDeviceData* ) = 0;
   virtual void eval_xmat( double fac, XCDeviceData*, bool do_grad, density_id den ) = 0;
-  virtual void eval_den( XCDeviceData*, bool, density_id ) = 0;
   virtual void eval_exx_fmat( XCDeviceData* ) = 0;
   //virtual void eval_exx_gmat( XCDeviceData* ) = 0;
   virtual void eval_exx_gmat( XCDeviceData*, const BasisSetMap& ) = 0;
-  virtual void eval_uvvar_lda( XCDeviceData*, integrator_term_tracker ) = 0;
-  virtual void eval_uvvar_gga( XCDeviceData*, integrator_term_tracker ) = 0;
+  virtual void eval_uvars_lda( XCDeviceData*, integrator_ks_scheme ) = 0;
+  virtual void eval_uvars_gga( XCDeviceData*, integrator_ks_scheme ) = 0;
+  virtual void eval_vvar( XCDeviceData*, bool, density_id ) = 0;
   virtual void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* ) = 0;
   virtual void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* ) = 0;
   virtual void eval_zmat_lda_vxc_rks( XCDeviceData* ) = 0;
