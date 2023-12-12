@@ -129,6 +129,14 @@ struct XCDeviceStackData : public XCDeviceData {
     double* vgamma_pm_eval_device  = nullptr;
     double* vgamma_mm_eval_device  = nullptr;
 
+    // GKS objects
+    double* H_x_eval_device     = nullptr;
+    double* H_y_eval_device     = nullptr;
+    double* H_z_eval_device     = nullptr;
+    double* K_x_eval_device     = nullptr;
+    double* K_y_eval_device     = nullptr;
+    double* K_z_eval_device     = nullptr;
+
     inline void reset() { std::memset( this, 0, sizeof(base_stack_data) ); }
   };
 

@@ -85,6 +85,14 @@ struct XCDeviceTask {
   double* vgamma_pm  = nullptr;
   double* vgamma_mm  = nullptr;
 
+  // GKS objects
+  double* K_z        = nullptr;
+  double* K_y        = nullptr;
+  double* K_x        = nullptr;
+  double* H_z        = nullptr;
+  double* H_y        = nullptr;
+  double* H_x        = nullptr;
+
   int32_t iParent       = -1;
   double dist_nearest   = 0.;
   double * dist_scratch = nullptr;

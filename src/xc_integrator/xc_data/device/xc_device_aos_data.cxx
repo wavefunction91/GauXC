@@ -491,6 +491,12 @@ void XCDeviceAoSData::pack_and_send(
     buffer_adaptor den_x_mem  ( base_stack.den_x_eval_device,     total_npts  );
     buffer_adaptor vrho_pos_mem( base_stack.vrho_pos_eval_device, total_npts );
     buffer_adaptor vrho_neg_mem( base_stack.vrho_neg_eval_device, total_npts );
+    buffer_adaptor K_z_mem    ( base_stack.K_z_eval_device,       total_npts );
+    buffer_adaptor K_y_mem    ( base_stack.K_y_eval_device,       total_npts );
+    buffer_adaptor K_x_mem    ( base_stack.K_x_eval_device,       total_npts );
+    buffer_adaptor H_z_mem    ( base_stack.H_z_eval_device,       total_npts );
+    buffer_adaptor H_y_mem    ( base_stack.H_y_eval_device,       total_npts );
+    buffer_adaptor H_x_mem    ( base_stack.H_x_eval_device,       total_npts );
 
     // Gradients
     buffer_adaptor dden_sx_mem( base_stack.dden_sx_eval_device,     total_npts );
@@ -639,6 +645,15 @@ void XCDeviceAoSData::pack_and_send(
           task.gamma_pm     = gamma_pm_mem.aligned_alloc<double>  ( npts, csl );
           task.gamma_mm     = gamma_mm_mem.aligned_alloc<double>  ( npts, csl );
         }
+      }
+
+      if(is_gks) {
+        task.H_x    = H_x_mem.aligned_alloc<double>( npts, csl );
+        task.H_y    = H_y_mem.aligned_alloc<double>( npts, csl );
+        task.H_z    = H_z_mem.aligned_alloc<double>( npts, csl );
+        task.K_x    = K_x_mem.aligned_alloc<double>( npts, csl );
+        task.K_y    = K_y_mem.aligned_alloc<double>( npts, csl );
+        task.K_z    = K_z_mem.aligned_alloc<double>( npts, csl );
       }
 
 

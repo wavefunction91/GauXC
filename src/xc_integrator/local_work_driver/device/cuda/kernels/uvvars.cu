@@ -173,6 +173,60 @@ __global__ void eval_uvars_lda_uks_kernel( size_t        ntasks,
   }
 }
 
+__global__ void eval_uvars_lda_gks_kernel( size_t        ntasks,
+                                       XCDeviceTask* tasks_device ) {
+
+  const int batch_idx = blockIdx.z;
+  if( batch_idx >= ntasks ) return;
+
+  auto& task = tasks_device[ batch_idx ];
+
+  const auto npts            = task.npts;
+  const auto nbf             = task.bfn_screening.nbe;
+
+  auto* den_z_eval_device   = task.den_s;
+  auto* den_s_eval_device   = task.den_z;
+  auto* den_y_eval_device   = task.den_y;
+  auto* den_x_eval_device   = task.den_x;
+  auto* K_z_eval_device     = task.K_z;
+  auto* K_y_eval_device     = task.K_y;
+  auto* K_x_eval_device     = task.K_x;
+  auto* H_z_eval_device     = task.H_z;
+  auto* H_y_eval_device     = task.H_y;
+  auto* H_x_eval_device     = task.H_x;
+  double dtolsq = 1e-12;
+
+  const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
+
+
+  if( tid_y < npts ) {
+    const auto ps = den_s_eval_device[ tid_y ];
+    const auto pz = den_z_eval_device[ tid_y ];
+    const auto py = den_y_eval_device[ tid_y ];
+    const auto px = den_x_eval_device[ tid_y ];
+    const auto mtemp = pz*pz + px*px + py*py;
+    double mnorm = 0.;
+  
+    if (mtemp > dtolsq) {
+      mnorm = sqrt(mtemp);
+      K_z_eval_device[ tid_y ] = pz / mnorm;
+      K_y_eval_device[ tid_y ] = py / mnorm;
+      K_x_eval_device[ tid_y ] = px / mnorm;
+    }
+    else {
+      mnorm = (1. / 3.) * (px + py + pz);
+      K_z_eval_device[ tid_y ] = 1. / 3.;
+      K_y_eval_device[ tid_y ] = 1. / 3.;
+      K_x_eval_device[ tid_y ] = 1. / 3.;
+    }
+
+
+    den_s_eval_device[ tid_y ] = 0.5*(ps + pz);
+    den_z_eval_device[ tid_y ] = 0.5*(ps - pz);
+
+  }
+}
+
 __global__ void eval_vvars_gga_rks_kernel( 
   size_t   npts,
   const double* den_x_eval_device,
@@ -243,6 +297,124 @@ __global__ void eval_vvars_gga_uks_kernel( size_t ntasks, XCDeviceTask* tasks_de
 
 }
 
+__global__ void eval_vvars_gga_gks_kernel( size_t ntasks, XCDeviceTask* tasks_device) {
+
+  const int batch_idx = blockIdx.z;
+  if( batch_idx >= ntasks ) return;
+
+  const auto& task = tasks_device[ batch_idx ];
+  const auto npts            = task.npts;
+  const auto nbf             = task.bfn_screening.nbe;
+
+  const auto*     den_s_eval_device   = task.den_s;
+  const auto*     dden_sx_eval_device = task.dden_sx;
+  const auto*     dden_sy_eval_device = task.dden_sy;
+  const auto*     dden_sz_eval_device = task.dden_sz;
+
+  const auto*     den_z_eval_device   = task.den_z;
+  const auto*     dden_zx_eval_device = task.dden_zx;
+  const auto*     dden_zy_eval_device = task.dden_zy;
+  const auto*     dden_zz_eval_device = task.dden_zz;
+
+  const auto*     den_y_eval_device   = task.den_y;
+  const auto*     dden_yx_eval_device = task.dden_yx;
+  const auto*     dden_yy_eval_device = task.dden_yy;
+  const auto*     dden_yz_eval_device = task.dden_yz;
+
+  const auto*     den_x_eval_device   = task.den_x;
+  const auto*     dden_xx_eval_device = task.dden_xx;
+  const auto*     dden_xy_eval_device = task.dden_xy;
+  const auto*     dden_xz_eval_device = task.dden_xz;
+
+  auto*     gamma_pp_eval_device  = task.gamma_pp;
+  auto*     gamma_pm_eval_device  = task.gamma_pm;
+  auto*     gamma_mm_eval_device  = task.gamma_mm;
+
+  auto*     H_z_eval_device = task.H_z;
+  auto*     H_y_eval_device = task.H_y;
+  auto*     H_x_eval_device = task.H_x;
+  auto*     K_z_eval_device = task.K_z;
+  auto*     K_y_eval_device = task.K_y;
+  auto*     K_x_eval_device = task.K_x;
+
+  double dtolsq = 1e-12;
+
+  const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
+
+  if( tid_y < npts ) {
+    const double dndz = dden_sz_eval_device[ tid_y ];
+    const double dndy = dden_sy_eval_device[ tid_y ];
+    const double dndx = dden_sx_eval_device[ tid_y ];
+
+    const double dMzdz = dden_zz_eval_device[ tid_y ];
+    const double dMzdy = dden_zy_eval_device[ tid_y ];
+    const double dMzdx = dden_zx_eval_device[ tid_y ];
+
+    const double dMydz = dden_yz_eval_device[ tid_y ];
+    const double dMydy = dden_yy_eval_device[ tid_y ];
+    const double dMydx = dden_yx_eval_device[ tid_y ];
+
+    const double dMxdz = dden_xz_eval_device[ tid_y ];
+    const double dMxdy = dden_xy_eval_device[ tid_y ];
+    const double dMxdx = dden_xx_eval_device[ tid_y ];
+
+    const auto ps = den_s_eval_device[ tid_y ];
+    const auto pz = den_z_eval_device[ tid_y ];
+    const auto py = den_y_eval_device[ tid_y ];
+    const auto px = den_x_eval_device[ tid_y ];
+
+    const auto mtemp = pz*pz + px*px + py*py;
+    double mnorm = 0.;
+
+    auto dels_dot_dels = dndx * dndx + dndy * dndy + dndz * dndz;
+    auto delz_dot_delz = dMzdx * dMzdx + dMzdy * dMzdy + dMzdz * dMzdz;
+    auto delx_dot_delx = dMxdx * dMxdx + dMxdy * dMxdy + dMxdz * dMxdz;
+    auto dely_dot_dely = dMydx * dMydx + dMydy * dMydy + dMydz * dMydz;
+
+    auto dels_dot_delz = dndx * dMzdx + dndy * dMzdy + dndz * dMzdz;
+    auto dels_dot_delx = dndx * dMxdx + dndy * dMxdy + dndz * dMxdz;
+    auto dels_dot_dely = dndx * dMydx + dndy * dMydy + dndz * dMydz;
+
+    auto sum = delz_dot_delz + delx_dot_delx + dely_dot_dely;
+    auto s_sum =
+        dels_dot_delz * pz + dels_dot_delx * px + dels_dot_dely * py;
+
+    auto sqsum2 =
+        sqrt(dels_dot_delz * dels_dot_delz + dels_dot_delx * dels_dot_delx +
+             dels_dot_dely * dels_dot_dely);
+
+    double sign = 1.;
+    if( signbit(s_sum)) 
+      sign = -1.;
+
+    if (mtemp > dtolsq) {
+      mnorm = sqrt(mtemp);
+      K_z_eval_device[ tid_y ] = pz / mnorm;
+      K_y_eval_device[ tid_y ] = py / mnorm;
+      K_x_eval_device[ tid_y ] = px / mnorm;
+      H_z_eval_device[ tid_y ] = sign * dels_dot_delz / sqsum2;
+      H_y_eval_device[ tid_y ] = sign * dels_dot_dely / sqsum2;
+      H_x_eval_device[ tid_y ] = sign * dels_dot_delx / sqsum2;
+    }
+    else {
+      mnorm = (1. / 3.) * (px + py + pz);
+      K_z_eval_device[ tid_y ] = 1. / 3.;
+      K_y_eval_device[ tid_y ] = 1. / 3.;
+      K_x_eval_device[ tid_y ] = 1. / 3.;
+
+      H_z_eval_device[ tid_y ] = sign / 3.;
+      H_y_eval_device[ tid_y ] = sign / 3.;
+      H_x_eval_device[ tid_y ] = sign / 3.;
+    }
+
+    gamma_pp_eval_device[ tid_y ] = 0.25*(dels_dot_dels + sum) + 0.5*sign*sqsum2;
+    gamma_pm_eval_device[ tid_y ] = 0.25*(dels_dot_dels - sum);
+    gamma_mm_eval_device[ tid_y ] = 0.25*(dels_dot_dels + sum) - 0.5*sign*sqsum2;
+
+  }
+
+}
+
 
 
 
@@ -266,7 +438,7 @@ void eval_uvvars_lda( size_t ntasks, int32_t nbf_max, int32_t npts_max, integrat
         eval_uvars_lda_uks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
         break;
       case GKS:
-        GAUXC_GENERIC_EXCEPTION( "Device GKS NYI!" );
+        eval_uvars_lda_gks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
         break;
       default:
         GAUXC_GENERIC_EXCEPTION( "Unexpected KS scheme when attempting to evaluate UV vars" );
@@ -314,7 +486,18 @@ void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max,
       }
   }
   else if ( enabled_terms.ks_scheme == GKS ) {
-    GAUXC_GENERIC_EXCEPTION( "eval_uvvars for GKS NYI!");
+      {
+      // U Variables
+      dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block, 1 );
+      dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
+                 util::div_ceil( npts_max, threads.y ),
+                 ntasks );
+      // LDA/GGA U variables are the same
+      eval_uvars_lda_gks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+
+      // V variables
+      eval_vvars_gga_gks_kernel<<< blocks, threads, 0, stream >>>(ntasks, device_tasks );
+      }
   }
 
 }
@@ -347,7 +530,6 @@ __global__ void eval_den_grad_kern( size_t        ntasks,
 
   constexpr auto warp_size = cuda::warp_size;
 
-  // use the "U" variable (+/- for UKS) even though at this point the density (S/Z) is stored
   if constexpr (den_select == DEN_S) {
     den_eval_device   = task.den_s;
     den_x_eval_device = task.dden_sx;
