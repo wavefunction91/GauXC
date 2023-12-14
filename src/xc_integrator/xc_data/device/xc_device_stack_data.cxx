@@ -813,6 +813,17 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
     else            base_stack.vgamma_eval_device    = mem.aligned_alloc<double>(msz, aln, csl);
   }
 
+  if( is_gks ) {       // H, K matrices
+    base_stack.K_x_eval_device   = mem.aligned_alloc<double>(msz, aln, csl);
+    base_stack.K_y_eval_device   = mem.aligned_alloc<double>(msz, aln, csl);
+    base_stack.K_z_eval_device   = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_gga ) {
+      base_stack.H_x_eval_device   = mem.aligned_alloc<double>(msz, aln, csl);
+      base_stack.H_y_eval_device   = mem.aligned_alloc<double>(msz, aln, csl);
+      base_stack.H_z_eval_device   = mem.aligned_alloc<double>(msz, aln, csl);
+    }
+  }
+
   if( reqt.grid_eps ) { // Energy density 
     base_stack.eps_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
   }

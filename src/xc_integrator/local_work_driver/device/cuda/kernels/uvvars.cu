@@ -81,10 +81,7 @@ __global__ void eval_uvars_lda_gks_kernel( size_t        ntasks,
   auto* K_z_eval_device     = task.K_z;
   auto* K_y_eval_device     = task.K_y;
   auto* K_x_eval_device     = task.K_x;
-  auto* H_z_eval_device     = task.H_z;
-  auto* H_y_eval_device     = task.H_y;
-  auto* H_x_eval_device     = task.H_x;
-  double dtolsq = 1e-12;
+  const double dtolsq = 1e-24;  // TODO: make variable
 
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -111,8 +108,8 @@ __global__ void eval_uvars_lda_gks_kernel( size_t        ntasks,
     }
 
 
-    den_s_eval_device[ tid_y ] = 0.5*(ps + pz);
-    den_z_eval_device[ tid_y ] = 0.5*(ps - pz);
+    den_s_eval_device[ tid_y ] = 0.5*(ps + mnorm);
+    den_z_eval_device[ tid_y ] = 0.5*(ps - mnorm);
 
   }
 }
@@ -239,7 +236,7 @@ __global__ void eval_uvars_gga_gks_kernel( size_t ntasks, XCDeviceTask* tasks_de
   auto*     K_y_eval_device = task.K_y;
   auto*     K_x_eval_device = task.K_x;
 
-  double dtolsq = 1e-12;
+  const double dtolsq = 1e-24;  // TODO: make variable
 
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
@@ -313,8 +310,8 @@ __global__ void eval_uvars_gga_gks_kernel( size_t ntasks, XCDeviceTask* tasks_de
     gamma_pm_eval_device[ tid_y ] = 0.25*(dels_dot_dels - sum);
     gamma_mm_eval_device[ tid_y ] = 0.25*(dels_dot_dels + sum) - 0.5*sign*sqsum2;
 
-    den_s_eval_device[ tid_y ] = 0.5*(ps + pz);
-    den_z_eval_device[ tid_y ] = 0.5*(ps - pz);
+    den_s_eval_device[ tid_y ] = 0.5*(ps + mnorm);
+    den_z_eval_device[ tid_y ] = 0.5*(ps - mnorm);
 
   }
 
