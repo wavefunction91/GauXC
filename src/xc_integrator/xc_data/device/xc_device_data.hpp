@@ -34,11 +34,11 @@ enum integrator_ks_scheme : uint32_t {
 };
 
 enum density_id : uint32_t {
-    _UNDEF_DEN      = 0,
-    DEN_S           = 1,    // RKS, UKS, GKS
-    DEN_Z           = 2,    // UKS, GKS
-    DEN_Y           = 3,    // GKS
-    DEN_X           = 4     // GKS
+  _UNDEF_DEN      = 0,
+  DEN_S           = 1,    // RKS, UKS, GKS
+  DEN_Z           = 2,    // UKS, GKS
+  DEN_Y           = 3,    // GKS
+  DEN_X           = 4     // GKS
 };
 
 struct integrator_term_tracker {
@@ -79,39 +79,43 @@ struct required_term_storage {
 
   // Reference flags for memory management use
   integrator_term_tracker ref_tracker;
-
-  const bool is_RKS = ref_tracker.ks_scheme == RKS;
-  const bool is_UKS = ref_tracker.ks_scheme == UKS;
-  const bool is_GKS = ref_tracker.ks_scheme == GKS;
-  const bool is_2C  = is_UKS or is_GKS;
+  
+  // TODO: figure out why these aren't working?
+  bool is_RKS = ref_tracker.ks_scheme == RKS;
+  bool is_UKS = ref_tracker.ks_scheme == UKS;
+  bool is_GKS = ref_tracker.ks_scheme == GKS;
+  bool is_den = ref_tracker.den;
+  bool is_2C  = is_UKS or is_GKS;
 
   inline size_t grid_den_size(size_t npts){ 
-
-  // grid_den_size takes into account the size of the interleaved density sent to ExchCXX in the cases of UKS/GKS (hence the * 2)
-  if( grid_den ) {
-      if      ( is_2C  ) return 2 * npts;
-      else if ( is_RKS ) return npts;
-      else return 0ul;
-    }
+    return  PRDVL(grid_den and ref_tracker.ks_scheme == RKS, npts)
+          + PRDVL(grid_den and ref_tracker.den, npts)
+          + PRDVL(grid_den and (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS),  2*npts);
   }
   inline size_t grid_den_grad_size(size_t npts){ 
-    return PRDVL(grid_den_grad and is_RKS, 3 * npts)
-         + PRDVL(grid_den_grad and is_2C , 6 * npts);
+    return PRDVL(grid_den_grad and ref_tracker.ks_scheme == RKS, 3 * npts)
+         + PRDVL(grid_den_grad and (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS) , 6 * npts);
   }
   inline size_t grid_gamma_size(size_t npts){ 
-    return PRDVL(grid_gamma and is_RKS, npts) 
-         + PRDVL(grid_gamma and is_2C , 3 * npts);
+    if (grid_gamma) {
+      if (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS) return 3*npts;
+      else return npts;
+    }
+    //return PRDVL(grid_gamma and ref_tracker.ks_scheme == RKS, npts) 
+    //     + PRDVL(grid_gamma and (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS) , 3 * npts);
   }
   inline size_t grid_eps_size(size_t npts){ 
     return PRDVL(grid_eps, npts);
   }
   inline size_t grid_vrho_size(size_t npts){ 
-    return PRDVL(grid_vrho and is_RKS, npts)
-         + PRDVL(grid_vrho and is_2C , 2 * npts);
+    return PRDVL(grid_vrho and ref_tracker.ks_scheme == RKS, npts)
+         + PRDVL(grid_vrho and ref_tracker.den, npts)
+         + PRDVL(grid_vrho and (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS) , 2 * npts);
   }
   inline size_t grid_vgamma_size(size_t npts){ 
-    return PRDVL(grid_vgamma and is_RKS, npts)
-         + PRDVL(grid_vgamma and is_2C , 3 * npts);
+    return PRDVL(grid_vgamma and ref_tracker.ks_scheme == RKS, npts)
+         + PRDVL(grid_vgamma and ref_tracker.den, npts)
+         + PRDVL(grid_vgamma and (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS) , 3 * npts);
   }
 
 

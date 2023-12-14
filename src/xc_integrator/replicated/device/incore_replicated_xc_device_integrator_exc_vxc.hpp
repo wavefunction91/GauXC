@@ -417,24 +417,26 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // Evaluate collocation
     if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
     else                lwd->eval_collocation( &device_data );
-
     
-    double xmat_fac = 1.0;
-
-    if (is_rks) 
-      xmat_fac = 2.0;
+    auto* data = dynamic_cast<XCDeviceAoSData*>(&device_data);
+    auto tasks = data->host_device_tasks;
+    auto& task = tasks[0];
+    auto static_stack = data->static_stack;
+    auto base_stack   = data->base_stack;
+    
+    const double xmat_fac = is_rks ? 2.0 : 1.0;
 
     // Evaluate X matrix common to all KS schemes as well as the Vvar (density)
-    lwd->eval_xmat( xmat_fac, &device_data, func.is_gga(), DEN_S );
+    lwd->eval_xmat( xmat_fac, &device_data, false, DEN_S );
     lwd->eval_vvar( &device_data, func.is_gga(), DEN_S );
 
     if (not is_rks) {
-      lwd->eval_xmat( xmat_fac, &device_data, func.is_gga(), DEN_Z );
+      lwd->eval_xmat( xmat_fac, &device_data, false, DEN_Z );
       lwd->eval_vvar( &device_data, func.is_gga(), DEN_Z );
       if (not is_uks) {
-        lwd->eval_xmat( xmat_fac, &device_data, func.is_gga(), DEN_Y );
+        lwd->eval_xmat( xmat_fac, &device_data, false, DEN_Y );
         lwd->eval_vvar( &device_data, func.is_gga(), DEN_Y );
-        lwd->eval_xmat( xmat_fac, &device_data, func.is_gga(), DEN_X );
+        lwd->eval_xmat( xmat_fac, &device_data, false, DEN_X );
         lwd->eval_vvar( &device_data, func.is_gga(), DEN_X );
       }
     }
@@ -479,12 +481,12 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Symmetrize VXC in device memory
 
   lwd->symmetrize_vxc( &device_data, DEN_S );
-  if (is_uks) {
+  if (not is_rks) {
     lwd->symmetrize_vxc( &device_data, DEN_Z );
-  }
-  if (is_gks) {
-    lwd->symmetrize_vxc( &device_data, DEN_Y );
-    lwd->symmetrize_vxc( &device_data, DEN_X );
+    if (not is_uks) {
+      lwd->symmetrize_vxc( &device_data, DEN_Y );
+      lwd->symmetrize_vxc( &device_data, DEN_X );
+    }
   }
 
 

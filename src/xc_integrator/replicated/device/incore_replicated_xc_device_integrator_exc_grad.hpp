@@ -143,7 +143,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     // Evaluate U variables
     if( func.is_gga() ) lwd->eval_uvars_gga( &device_data, enabled_terms.ks_scheme );
-    else                lwd->eval_uvars_gga( &device_data, enabled_terms.ks_scheme );
+    else                lwd->eval_uvars_lda( &device_data, enabled_terms.ks_scheme );
 
     // Evaluate XC functional (we need VXC for EXC Gradient)
     if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );

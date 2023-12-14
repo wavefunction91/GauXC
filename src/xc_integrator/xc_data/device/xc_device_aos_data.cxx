@@ -470,8 +470,8 @@ void XCDeviceAoSData::pack_and_send(
     const bool is_uks = terms.ks_scheme == UKS;
     const bool is_gks = terms.ks_scheme == GKS;
     const bool is_2C  = is_uks or is_gks;
-    int den_fac   = is_2C ? 2 : 1;
-    int gamma_fac = is_2C ? 3 : 1;
+    const int den_fac   = is_2C ? 2 : 1;
+    const int gamma_fac = is_2C ? 3 : 1;
     
 
 
@@ -497,6 +497,12 @@ void XCDeviceAoSData::pack_and_send(
     buffer_adaptor H_z_mem    ( base_stack.H_z_eval_device,       total_npts );
     buffer_adaptor H_y_mem    ( base_stack.H_y_eval_device,       total_npts );
     buffer_adaptor H_x_mem    ( base_stack.H_x_eval_device,       total_npts );
+    buffer_adaptor gamma_pp_mem( base_stack.gamma_pp_eval_device, total_npts );
+    buffer_adaptor gamma_pm_mem( base_stack.gamma_pm_eval_device, total_npts );
+    buffer_adaptor gamma_mm_mem( base_stack.gamma_mm_eval_device, total_npts );
+    buffer_adaptor vgamma_pp_mem( base_stack.vgamma_pp_eval_device, total_npts );
+    buffer_adaptor vgamma_pm_mem( base_stack.vgamma_pm_eval_device, total_npts );
+    buffer_adaptor vgamma_mm_mem( base_stack.vgamma_mm_eval_device, total_npts );
 
     // Gradients
     buffer_adaptor dden_sx_mem( base_stack.dden_sx_eval_device,     total_npts );
@@ -512,13 +518,6 @@ void XCDeviceAoSData::pack_and_send(
     buffer_adaptor dden_xy_mem( base_stack.dden_xy_eval_device,     total_npts );
     buffer_adaptor dden_xz_mem( base_stack.dden_xz_eval_device,     total_npts );
 
-    // 2C Gamma vars
-    buffer_adaptor gamma_pp_mem( base_stack.gamma_pp_eval_device, total_npts );
-    buffer_adaptor gamma_pm_mem( base_stack.gamma_pm_eval_device, total_npts );
-    buffer_adaptor gamma_mm_mem( base_stack.gamma_mm_eval_device, total_npts );
-    buffer_adaptor vgamma_pp_mem( base_stack.vgamma_pp_eval_device, total_npts );
-    buffer_adaptor vgamma_pm_mem( base_stack.vgamma_pm_eval_device, total_npts );
-    buffer_adaptor vgamma_mm_mem( base_stack.vgamma_mm_eval_device, total_npts );
 
     for( auto& task : host_device_tasks ) {
       const auto npts    = task.npts;
@@ -591,12 +590,12 @@ void XCDeviceAoSData::pack_and_send(
 
 
       // Grid function evaluations
-      // Every task needs a density here
+      // Everything needs a scalar density
       task.den_s = den_s_mem.aligned_alloc<double>( npts, csl );
       
+      task.den          = den_mem.aligned_alloc<double>(reqt.grid_den_size(npts), csl); //Interleaved memory
       
       if(is_2C) {
-        task.den          = den_mem.aligned_alloc<double>(reqt.grid_den_size(npts), csl); //Interleaved memory
         task.den_z        = den_z_mem.aligned_alloc<double>( npts, csl);
         task.vrho_pos     = vrho_pos_mem.aligned_alloc<double>( npts, csl);
         task.vrho_neg     = vrho_neg_mem.aligned_alloc<double>( npts, csl); 
@@ -658,15 +657,10 @@ void XCDeviceAoSData::pack_and_send(
 
 
 
-      task.gamma = 
-        gamma_mem.aligned_alloc<double>( reqt.grid_gamma_size(npts), csl);
-
-      task.eps  = 
-        eps_mem.aligned_alloc<double>( reqt.grid_eps_size(npts), csl);
-      task.vrho = 
-        vrho_mem.aligned_alloc<double>( reqt.grid_vrho_size(npts), csl);
-      task.vgamma = 
-        vgamma_mem.aligned_alloc<double>( reqt.grid_vgamma_size(npts), csl);
+      task.gamma =  gamma_mem.aligned_alloc<double>( reqt.grid_gamma_size(npts), csl);
+      task.eps  =   eps_mem.aligned_alloc<double>( reqt.grid_eps_size(npts), csl);
+      task.vrho =   vrho_mem.aligned_alloc<double>( reqt.grid_vrho_size(npts), csl);
+      task.vgamma = vgamma_mem.aligned_alloc<double>( reqt.grid_vgamma_size(npts), csl);
 
         
 

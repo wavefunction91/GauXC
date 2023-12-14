@@ -16,6 +16,25 @@ namespace GauXC {
 
 #define GGA_KERNEL_SM_BLOCK_Y 32
 
+__global__ void eval_uvars_lda_rks_kernel( size_t ntasks, XCDeviceTask* tasks_device) {
+  const int batch_idx = blockIdx.z;
+  if( batch_idx >= ntasks ) return;
+  
+  const auto& task = tasks_device[ batch_idx ];
+  const auto npts  = task.npts;
+  
+  auto*         den_eval_device     = task.den;
+  auto*         den_s_eval_device   = task.den_s;
+
+  const int tid = threadIdx.y + blockIdx.y * blockDim.y;
+
+  if( tid < npts ) {
+    const double ps = den_s_eval_device[ tid ];
+    den_eval_device  [ tid ] = ps;
+
+  }
+
+}
 
 __global__ void eval_uvars_lda_uks_kernel( size_t        ntasks,
                                        XCDeviceTask* tasks_device ) {
@@ -98,6 +117,7 @@ __global__ void eval_uvars_lda_gks_kernel( size_t        ntasks,
   }
 }
 
+
 __global__ void eval_uvars_gga_rks_kernel( size_t ntasks, XCDeviceTask* tasks_device) {
   const int batch_idx = blockIdx.z;
   if( batch_idx >= ntasks ) return;
@@ -109,16 +129,19 @@ __global__ void eval_uvars_gga_rks_kernel( size_t ntasks, XCDeviceTask* tasks_de
   const auto*   dden_sy_eval_device = task.dden_sy;
   const auto*   dden_sz_eval_device = task.dden_sz;
   auto*         gamma_eval_device   = task.gamma;
+  auto*         den_eval_device     = task.den;
+  const auto*   den_s_eval_device   = task.den_s;
 
-  const int tid = threadIdx.x + blockIdx.x * blockDim.x;
+  const int tid = threadIdx.y + blockIdx.y * blockDim.y;
 
   if( tid < npts ) {
-
+    const double ps = den_s_eval_device[ tid ];
     const double dx = dden_sx_eval_device[ tid ];
     const double dy = dden_sy_eval_device[ tid ];
     const double dz = dden_sz_eval_device[ tid ];
 
     gamma_eval_device[ tid ] = dx*dx + dy*dy + dz*dz;
+    den_eval_device  [ tid ] = ps;
 
   }
 
@@ -150,14 +173,14 @@ __global__ void eval_uvars_gga_uks_kernel( size_t ntasks, XCDeviceTask* tasks_de
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
   if( tid_y < npts ) {
-    const double ps   = den_pos_eval_device[ tid_y ];
-    const double pz   = den_neg_eval_device[ tid_y ];
-    const double dndx = den_pos_x_eval_device[ tid_y ];
-    const double dndy = den_pos_y_eval_device[ tid_y ];
-    const double dndz = den_pos_z_eval_device[ tid_y ];
-    const double dMzdx = den_neg_x_eval_device[ tid_y ];
-    const double dMzdy = den_neg_y_eval_device[ tid_y ];
-    const double dMzdz = den_neg_z_eval_device[ tid_y ];
+    const double ps     = den_pos_eval_device[ tid_y ];
+    const double pz     = den_neg_eval_device[ tid_y ];
+    const double dndx   = den_pos_x_eval_device[ tid_y ];
+    const double dndy   = den_pos_y_eval_device[ tid_y ];
+    const double dndz   = den_pos_z_eval_device[ tid_y ];
+    const double dMzdx  = den_neg_x_eval_device[ tid_y ];
+    const double dMzdy  = den_neg_y_eval_device[ tid_y ];
+    const double dMzdz  = den_neg_z_eval_device[ tid_y ];
 
     // (del n).(del n)
     const auto dn_sq  = dndx*dndx + dndy*dndy + dndz*dndz;
@@ -310,7 +333,7 @@ void eval_uvars_lda_( size_t ntasks, int32_t nbf_max, int32_t npts_max, integrat
                ntasks );
   switch ( ks_scheme ) {
     case RKS:
-      // For 1C (RKS, den, exc_grad, ...) uvars=vvars, no work to be done
+      eval_uvars_lda_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
       break;
     case UKS:
       eval_uvars_lda_uks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
@@ -334,7 +357,6 @@ void eval_uvars_gga_( size_t ntasks, int32_t nbf_max, int32_t npts_max, integrat
   dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
                util::div_ceil( npts_max, threads.y ),
                ntasks );
-  // For 1C (RKS, den, exc_grad, ...) uvars=vvars, no work to be done
   switch ( ks_scheme ) {
     case RKS:
       eval_uvars_gga_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
@@ -451,9 +473,9 @@ __global__ void eval_vvar_grad_kern( size_t        ntasks,
 
         // Warp blocks are stored col major
         den_reg =     cuda::warp_reduce_sum<warp_size>( den_reg );
-        dx_reg  = 2 * cuda::warp_reduce_sum<warp_size>( dx_reg );
-        dy_reg  = 2 * cuda::warp_reduce_sum<warp_size>( dy_reg );
-        dz_reg  = 2 * cuda::warp_reduce_sum<warp_size>( dz_reg );
+        dx_reg  = 2. * cuda::warp_reduce_sum<warp_size>( dx_reg );
+        dy_reg  = 2. * cuda::warp_reduce_sum<warp_size>( dy_reg );
+        dz_reg  = 2. * cuda::warp_reduce_sum<warp_size>( dz_reg );
 
 
         if( threadIdx.x == 0 and tid_y < npts ) {
