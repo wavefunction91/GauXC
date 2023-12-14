@@ -37,15 +37,15 @@ void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, density_id den ) { 
   pimpl_->NAME(device_data, den);                               \
 }
 
-#define FWD_TO_PIMPL_INT_TRACKER(NAME) \
-void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, integrator_term_tracker track ) { \
-  throw_if_invalid_pimpl(pimpl_);                               \
-  pimpl_->NAME(device_data, track);                               \
-}
 #define FWD_TO_PIMPL_KS_SCHEME(NAME) \
 void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, integrator_ks_scheme track ) { \
   throw_if_invalid_pimpl(pimpl_);                               \
   pimpl_->NAME(device_data, track);                               \
+}
+#define FWD_TO_PIMPL_KS_SCHEME_DEN_ID(NAME) \
+void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, integrator_ks_scheme track, density_id den ) { \
+  throw_if_invalid_pimpl(pimpl_);                               \
+  pimpl_->NAME(device_data, track, den);                               \
 }
 
 FWD_TO_PIMPL(partition_weights)         // Partition weights
@@ -58,14 +58,9 @@ FWD_TO_PIMPL(eval_collocation_hessian)  // Collocation Hessian
 FWD_TO_PIMPL_KS_SCHEME(eval_uvars_lda)            // U/VVar LDA (density)
 FWD_TO_PIMPL_KS_SCHEME(eval_uvars_gga)            // U/VVar GGA (density + grad, gamma)
 
-FWD_TO_PIMPL(eval_zmat_lda_vxc_rks)         // Eval Z Matrix LDA VXC
-FWD_TO_PIMPL(eval_zmat_gga_vxc_rks)         // Eval Z Matrix GGA VXC
 
-FWD_TO_PIMPL_DEN_ID(eval_zmat_lda_vxc_uks)         // Eval Z Matrix LDA VXC
-FWD_TO_PIMPL_DEN_ID(eval_zmat_gga_vxc_uks)         // Eval Z Matrix GGA VXC
-
-FWD_TO_PIMPL(eval_zmat_lda_vxc_gks)         // Eval Z Matrix LDA VXC
-FWD_TO_PIMPL(eval_zmat_gga_vxc_gks)         // Eval Z Matrix GGA VXC
+FWD_TO_PIMPL_KS_SCHEME_DEN_ID(eval_zmat_lda_vxc)         // Eval Z Matrix LDA VXC
+FWD_TO_PIMPL_KS_SCHEME_DEN_ID(eval_zmat_gga_vxc)         // Eval Z Matrix GGA VXC
 
 FWD_TO_PIMPL(eval_exx_fmat)             // Eval EXX F Matrix
 //FWD_TO_PIMPL(eval_exx_gmat)             // Eval EXX G Matrix

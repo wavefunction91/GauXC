@@ -70,14 +70,10 @@ public:
   void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* );
   void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* );
 
-  void eval_zmat_lda_vxc_rks( XCDeviceData* );
-  void eval_zmat_gga_vxc_rks( XCDeviceData* );
 
-  void eval_zmat_lda_vxc_uks( XCDeviceData*, density_id );
-  void eval_zmat_gga_vxc_uks( XCDeviceData*, density_id );
+  void eval_zmat_lda_vxc( XCDeviceData*, integrator_ks_scheme,  density_id );
+  void eval_zmat_gga_vxc( XCDeviceData*, integrator_ks_scheme,  density_id );
 
-  void eval_zmat_lda_vxc_gks( XCDeviceData* );
-  void eval_zmat_gga_vxc_gks( XCDeviceData* );
 
   void eval_exx_fmat( XCDeviceData* );
   void eval_exx_gmat( XCDeviceData*, const BasisSetMap& );

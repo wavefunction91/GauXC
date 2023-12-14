@@ -11,29 +11,19 @@
 
 namespace GauXC {
 
-void zmat_lda_vxc_rks( size_t        ntasks,
+void zmat_lda_vxc( size_t        ntasks,
                    int32_t       max_nbf,
                    int32_t       max_npts,
                    XCDeviceTask* tasks_device,
-                   device_queue queue );
-
-void zmat_lda_vxc_uks( size_t        ntasks,
-                   int32_t       max_nbf,
-                   int32_t       max_npts,
-                   XCDeviceTask* tasks_device,
+                   integrator_ks_scheme s,
                    density_id sel,
                    device_queue queue );
 
-void zmat_gga_vxc_rks( size_t        ntasks,
+void zmat_gga_vxc( size_t        ntasks,
                    int32_t       max_nbf,
                    int32_t       max_npts,
                    XCDeviceTask* tasks_device,
-                   device_queue queue );
-
-void zmat_gga_vxc_uks( size_t        ntasks,
-                   int32_t       max_nbf,
-                   int32_t       max_npts,
-                   XCDeviceTask* tasks_device,
+                   integrator_ks_scheme s,
                    density_id sel,
                    device_queue queue );
 

@@ -45,40 +45,6 @@ __global__ void zmat_lda_vxc_rks_kernel( size_t        ntasks,
 
 
 
-void zmat_lda_vxc_rks( size_t            ntasks,
-                   int32_t           max_nbf,
-                   int32_t           max_npts,
-                   XCDeviceTask*     tasks_device,
-                   device_queue queue ) {
-
-  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
-
-
-  dim3 threads(cuda::warp_size,cuda::max_warps_per_thread_block,1);
-  dim3 blocks( util::div_ceil( max_npts, threads.x ),
-               util::div_ceil( max_nbf,  threads.y ),
-               ntasks );
-
-  zmat_lda_vxc_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-
-}
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -123,26 +89,6 @@ __global__ void zmat_gga_vxc_rks_kernel( size_t        ntasks,
   }
 }
 
-void zmat_gga_vxc_rks( size_t            ntasks,
-                   int32_t           max_nbf,
-                   int32_t           max_npts,
-                   XCDeviceTask*     tasks_device,
-                   device_queue queue ) {
-
-  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
-
-
-  dim3 threads(cuda::warp_size,cuda::max_warps_per_thread_block,1);
-  dim3 blocks( util::div_ceil( max_npts, threads.x ),
-               util::div_ceil( max_nbf,  threads.y ),
-               ntasks );
-
-  zmat_gga_vxc_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-
-}
-              
-
-
 
 
 
@@ -186,26 +132,6 @@ __global__ void zmat_lda_vxc_uks_kernel( size_t        ntasks,
 }
 
 
-
-void zmat_lda_vxc_uks( size_t            ntasks,
-                   int32_t           max_nbf,
-                   int32_t           max_npts,
-                   XCDeviceTask*     tasks_device,
-                   density_id sel,
-                   device_queue queue ) {
-
-  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
-
-
-  dim3 threads(cuda::warp_size,cuda::max_warps_per_thread_block,1);
-  dim3 blocks( util::div_ceil( max_npts, threads.x ),
-               util::div_ceil( max_nbf,  threads.y ),
-               ntasks );
-
-  if ( sel == DEN_S )       zmat_lda_vxc_uks_kernel<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-  else if ( sel == DEN_Z )  zmat_lda_vxc_uks_kernel<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-
-}
 
 
 
@@ -295,10 +221,11 @@ __global__ void zmat_gga_vxc_uks_kernel( size_t        ntasks,
 
 
 
-void zmat_gga_vxc_uks( size_t            ntasks,
+void zmat_gga_vxc( size_t            ntasks,
                    int32_t           max_nbf,
                    int32_t           max_npts,
                    XCDeviceTask*     tasks_device,
+                   integrator_ks_scheme scheme,
                    density_id sel,
                    device_queue queue ) {
 
@@ -310,9 +237,52 @@ void zmat_gga_vxc_uks( size_t            ntasks,
                util::div_ceil( max_nbf,  threads.y ),
                ntasks );
 
-  if ( sel == DEN_S )       zmat_gga_vxc_uks_kernel<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-  else if ( sel == DEN_Z )  zmat_gga_vxc_uks_kernel<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  switch( scheme ) {
+    case RKS:
+      zmat_gga_vxc_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+      break;
+    case UKS:
+      if ( sel == DEN_S )       zmat_gga_vxc_uks_kernel<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+      else if ( sel == DEN_Z )  zmat_gga_vxc_uks_kernel<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+      else GAUXC_GENERIC_EXCEPTION( "zmat_gga_vxc invalid density" );
+      break;
+    case GKS:
+      GAUXC_GENERIC_EXCEPTION( "NYI" );
+      break;
+  }
+}
 
+
+
+void zmat_lda_vxc( size_t            ntasks,
+                   int32_t           max_nbf,
+                   int32_t           max_npts,
+                   XCDeviceTask*     tasks_device,
+                   integrator_ks_scheme scheme,
+                   density_id sel,
+                   device_queue queue ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
+
+
+  dim3 threads(cuda::warp_size,cuda::max_warps_per_thread_block,1);
+  dim3 blocks( util::div_ceil( max_npts, threads.x ),
+               util::div_ceil( max_nbf,  threads.y ),
+               ntasks );
+
+  switch( scheme ) {
+    case RKS:
+      zmat_lda_vxc_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+      break;
+    case UKS:
+      if ( sel == DEN_S )       zmat_lda_vxc_uks_kernel<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+      else if ( sel == DEN_Z )  zmat_lda_vxc_uks_kernel<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+      else GAUXC_GENERIC_EXCEPTION( "zmat_gga_vxc invalid density" );
+      break;
+    case GKS:
+      GAUXC_GENERIC_EXCEPTION( "NYI" );
+      break;
+  }
 }
 
 

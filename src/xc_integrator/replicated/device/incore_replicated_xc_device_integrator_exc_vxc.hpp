@@ -455,19 +455,25 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->inc_nel( &device_data );
 
     
-    if (is_rks) {
-      if( func.is_gga() ) lwd->eval_zmat_gga_vxc_rks( &device_data );
-      else                lwd->eval_zmat_lda_vxc_rks( &device_data );
-      lwd->inc_vxc( &device_data, DEN_S );
-    }
-    if (is_uks) {
-      if( func.is_gga() ) lwd->eval_zmat_gga_vxc_uks( &device_data, DEN_S );
-      else                lwd->eval_zmat_lda_vxc_uks( &device_data, DEN_S );
-      lwd->inc_vxc( &device_data, DEN_S );
+    if( func.is_gga() ) lwd->eval_zmat_gga_vxc( &device_data, enabled_terms.ks_scheme, DEN_S );
+    else                lwd->eval_zmat_lda_vxc( &device_data, enabled_terms.ks_scheme, DEN_S );
+    lwd->inc_vxc( &device_data, DEN_S );
 
-      if( func.is_gga() ) lwd->eval_zmat_gga_vxc_uks( &device_data, DEN_Z );
-      else                lwd->eval_zmat_lda_vxc_uks( &device_data, DEN_Z );
+    if (not is_rks) {
+      if( func.is_gga() ) lwd->eval_zmat_gga_vxc( &device_data, enabled_terms.ks_scheme, DEN_Z );
+      else                lwd->eval_zmat_lda_vxc( &device_data, enabled_terms.ks_scheme, DEN_Z );
       lwd->inc_vxc( &device_data, DEN_Z );
+
+      if (not is_uks) {
+        if( func.is_gga() ) lwd->eval_zmat_gga_vxc( &device_data, enabled_terms.ks_scheme, DEN_Y );
+        else                lwd->eval_zmat_lda_vxc( &device_data, enabled_terms.ks_scheme, DEN_Y );
+        lwd->inc_vxc( &device_data, DEN_Y );
+
+        if( func.is_gga() ) lwd->eval_zmat_gga_vxc( &device_data, enabled_terms.ks_scheme, DEN_X );
+        else                lwd->eval_zmat_lda_vxc( &device_data, enabled_terms.ks_scheme, DEN_X );
+        lwd->inc_vxc( &device_data, DEN_X );
+      }
+
     }
 
   } // Loop over batches of batches 

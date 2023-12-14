@@ -235,7 +235,7 @@ AoSScheme1Base::~AoSScheme1Base() noexcept {
 #endif
 }
 
-void AoSScheme1Base::eval_zmat_lda_vxc_rks( XCDeviceData* _data ) {
+void AoSScheme1Base::eval_zmat_lda_vxc( XCDeviceData* _data, integrator_ks_scheme scheme, density_id den ) {
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -251,12 +251,12 @@ void AoSScheme1Base::eval_zmat_lda_vxc_rks( XCDeviceData* _data ) {
   }
 
   auto aos_stack     = data->aos_stack;
-  zmat_lda_vxc_rks( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
+  zmat_lda_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks, scheme, den,
     data->device_backend_->queue() );
 
 }
 
-void AoSScheme1Base::eval_zmat_gga_vxc_rks( XCDeviceData* _data){
+void AoSScheme1Base::eval_zmat_gga_vxc( XCDeviceData* _data, integrator_ks_scheme scheme, density_id den ) {
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -272,62 +272,8 @@ void AoSScheme1Base::eval_zmat_gga_vxc_rks( XCDeviceData* _data){
   }
 
   auto aos_stack     = data->aos_stack;
-  zmat_gga_vxc_rks( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
+  zmat_gga_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks, scheme, den,
     data->device_backend_->queue() );
-
-}
-
-void AoSScheme1Base::eval_zmat_lda_vxc_uks( XCDeviceData* _data, density_id den_select ){
-
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
-
-  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
-
-  auto& tasks = data->host_device_tasks;
-  const auto ntasks = tasks.size();
-  size_t nbe_max = 0, npts_max = 0;
-  for( auto& task : tasks ) {
-    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
-    npts_max = std::max( npts_max, task.npts );
-  }
-
-  auto aos_stack     = data->aos_stack;
-  zmat_lda_vxc_uks( ntasks, nbe_max, npts_max, aos_stack.device_tasks, den_select,
-    data->device_backend_->queue() );
-
-}
-
-void AoSScheme1Base::eval_zmat_gga_vxc_uks( XCDeviceData* _data, density_id den_select ){
-
-  auto* data = dynamic_cast<Data*>(_data);
-  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
-
-  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
-
-  auto& tasks = data->host_device_tasks;
-  const auto ntasks = tasks.size();
-  size_t nbe_max = 0, npts_max = 0;
-  for( auto& task : tasks ) {
-    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
-    npts_max = std::max( npts_max, task.npts );
-  }
-
-  auto aos_stack     = data->aos_stack;
-  zmat_gga_vxc_uks( ntasks, nbe_max, npts_max, aos_stack.device_tasks, den_select,
-    data->device_backend_->queue() );
-
-}
-
-void AoSScheme1Base::eval_zmat_lda_vxc_gks( XCDeviceData* ){
-
-  GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED FOR DEVICE");
-
-}
-
-void AoSScheme1Base::eval_zmat_gga_vxc_gks( XCDeviceData* ){
-
-  GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED FOR DEVICE");
 
 }
 
