@@ -206,16 +206,17 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
     for( auto i = 0; i < nbf; ++i )
       VXCs[i + j*ldvxcs] = 0.;
 
-    if (is_uks or is_gks)
-    for( auto j = 0; j < nbf; ++j )
-    for( auto i = 0; i < nbf; ++i )
-      VXCz[i + j*ldvxcz] = 0.;
-    
-    if (is_gks) {
-      for( auto j = 0; j < nbf; ++j ) {
-        for( auto i = 0; i < nbf; ++i ) {
-          VXCy[i + j*ldvxcy] = 0.;
-          VXCx[i + j*ldvxcx] = 0.;
+    if (not is_rks) {
+      for( auto j = 0; j < nbf; ++j )
+      for( auto i = 0; i < nbf; ++i )
+        VXCz[i + j*ldvxcz] = 0.;
+      
+      if (not is_uks) {
+        for( auto j = 0; j < nbf; ++j ) {
+          for( auto i = 0; i < nbf; ++i ) {
+            VXCy[i + j*ldvxcy] = 0.;
+            VXCx[i + j*ldvxcx] = 0.;
+          }
         }
       }
     }
@@ -522,18 +523,23 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   double* VXCy_submat = nullptr;
   double* VXCx_submat = nullptr;
   
-  if (is_uks or is_gks) {
+  if (not is_rks) {
     Pz_submat_host.resize(nbe*nbe);
     VXCz_submat_host.resize(nbe*nbe,0.);
     Pz_submat = Pz_submat_host.data();
     VXCz_submat = VXCz_submat_host.data();
-  }
   
-  if (is_gks) {
-    Py_submat_host.resize(nbe*nbe);
-    VXCy_submat_host.resize(nbe*nbe,0.);
-    Px_submat = Px_submat_host.data();
-    VXCx_submat = VXCx_submat_host.data();
+    if (not is_uks) {
+      Py_submat_host.resize(nbe*nbe);
+      VXCy_submat_host.resize(nbe*nbe,0.);
+      Py_submat = Py_submat_host.data();
+      VXCy_submat = VXCy_submat_host.data();
+      
+      Px_submat_host.resize(nbe*nbe);
+      VXCx_submat_host.resize(nbe*nbe,0.);
+      Px_submat = Px_submat_host.data();
+      VXCx_submat = VXCx_submat_host.data();
+    }
   }
 
 
@@ -549,14 +555,15 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   this->timer_.time_op_accumulate("XCIntegrator.ExtractSubDensity",[&]() {
     detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Ps, ldps, 
                         Ps_submat, nbe, union_submat_cut );
-    if (is_uks or is_gks) {
+    if (not is_rks) {
       detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Pz, ldpz,
-                        Pz_submat, nbe, union_submat_cut ); }
-    if (is_gks) {
-      detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Py, ldpy,
-                        Py_submat, nbe, union_submat_cut ); 
-      detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Px, ldpx,
-                        Px_submat, nbe, union_submat_cut ); }
+                        Pz_submat, nbe, union_submat_cut ); 
+      if (not is_uks) {
+        detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Py, ldpy,
+                          Py_submat, nbe, union_submat_cut ); 
+        detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Px, ldpx,
+                          Px_submat, nbe, union_submat_cut ); }
+    }
   } );
 
 
@@ -573,14 +580,15 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   this->timer_.time_op_accumulate("XCIntegrator.IncrementSubPotential",[&]() {
     detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCs, ldvxcs, 
                            VXCs_submat, nbe, union_submat_cut );
-  if (is_uks or is_gks) {
+  if (not is_rks) {
     detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCz, ldvxcz, 
-                           VXCz_submat, nbe, union_submat_cut ); }
-  if (is_gks) {
-    detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCy, ldvxcy, 
-                           VXCy_submat, nbe, union_submat_cut ); 
-    detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCx, ldvxcx, 
-                           VXCx_submat, nbe, union_submat_cut );  }
+                           VXCz_submat, nbe, union_submat_cut ); 
+    if (not is_uks) {
+      detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCy, ldvxcy, 
+                             VXCy_submat, nbe, union_submat_cut ); 
+      detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCx, ldvxcx, 
+                             VXCx_submat, nbe, union_submat_cut );  }
+  }
   });
 
 

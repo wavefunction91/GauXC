@@ -116,7 +116,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                       value_type* VXCs, int64_t ldvxcs,
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC, const IntegratorSettingsXC& settings ) {
-  //GauXC::util::unused(m,n,Ps,ldps,Pz,ldpz,VXCs,ldvxcs,VXCz,ldvxcz,EXC,settings);
 
   const auto& basis = this->load_balancer_->basis();
 
@@ -426,7 +425,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     
     const double xmat_fac = is_rks ? 2.0 : 1.0;
 
-    // Evaluate X matrix common to all KS schemes as well as the Vvar (density)
+    // Evaluate X matrix and V vars
     lwd->eval_xmat( xmat_fac, &device_data, false, DEN_S );
     lwd->eval_vvar( &device_data, func.is_gga(), DEN_S );
 
@@ -455,22 +454,17 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->inc_exc( &device_data );
     lwd->inc_nel( &device_data );
 
-
+    
     if (is_rks) {
-      // Evaluate Z matrix
       if( func.is_gga() ) lwd->eval_zmat_gga_vxc_rks( &device_data );
       else                lwd->eval_zmat_lda_vxc_rks( &device_data );
-      // Increment VXC
       lwd->inc_vxc( &device_data, DEN_S );
     }
     if (is_uks) {
-      // Evaluate Scalar Z matrix
       if( func.is_gga() ) lwd->eval_zmat_gga_vxc_uks( &device_data, DEN_S );
       else                lwd->eval_zmat_lda_vxc_uks( &device_data, DEN_S );
-      // Increment Scalar VXC
       lwd->inc_vxc( &device_data, DEN_S );
 
-      // Repeat for Z VXC
       if( func.is_gga() ) lwd->eval_zmat_gga_vxc_uks( &device_data, DEN_Z );
       else                lwd->eval_zmat_lda_vxc_uks( &device_data, DEN_Z );
       lwd->inc_vxc( &device_data, DEN_Z );

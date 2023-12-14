@@ -129,30 +129,6 @@ public:
   template <typename... Args>
   void exc_vxc_local_work(Args&&... args) {
     exc_vxc_local_work_( std::forward<Args>(args)... );
-  }
-  /*
-  void exc_vxc_local_work( const basis_type& basis, const value_type* Ps, int64_t ldps,
-                            const value_type* Pz, int64_t ldpz,
-                            const value_type* Py, int64_t ldpy,
-                            const value_type* Px, int64_t ldpx,
-                            host_task_iterator task_begin, host_task_iterator task_end,
-                            XCDeviceData& device_data ) {
-    exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx, task_begin, task_end, device_data ); }
-  void exc_vxc_local_work( const basis_type& basis, const value_type* Ps, int64_t ldps,
-                            const value_type* Pz, int64_t ldpz,
-                            const value_type* Py, int64_t ldpy,
-                            const value_type* Px, int64_t ldpx,
-                            value_type* VXC, int64_t ldvxc,
-                            value_type* VXCz, int64_t ldvxcz,
-                            value_type* VXCy, int64_t ldvxcy,
-                            value_type* VXCx, int64_t ldvxcx, value_type* EXC, value_type *N_EL,
-                            host_task_iterator task_begin, host_task_iterator task_end,
-                            XCDeviceData& device_data ) {
-    exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx,
-                              VXC, ldvxc, VXCz, ldvxcz, VXCy, ldvxcy, VXCx, ldvxcx, 
-                                    EXC, N_EL,
-                                   task_begin, task_end, device_data ); }
-  */
 
 };
 
