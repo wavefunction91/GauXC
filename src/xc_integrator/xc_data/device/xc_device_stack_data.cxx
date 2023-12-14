@@ -767,7 +767,7 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
     base_stack.den_s_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
     if( is_2C )  {  base_stack.den_eval_device       = mem.aligned_alloc<double>(2*msz, aln, csl);
                     base_stack.den_z_eval_device     = mem.aligned_alloc<double>(msz, aln, csl); 
-      if( is_gks ){ base_stack.den_y_eval_device     = mem.aligned_alloc<double>(msz, aln, csl); 
+    if( is_gks ){   base_stack.den_y_eval_device     = mem.aligned_alloc<double>(msz, aln, csl); 
                     base_stack.den_x_eval_device     = mem.aligned_alloc<double>(msz, aln, csl); }
     }
     else            base_stack.den_eval_device       = mem.aligned_alloc<double>(msz, aln, csl); 

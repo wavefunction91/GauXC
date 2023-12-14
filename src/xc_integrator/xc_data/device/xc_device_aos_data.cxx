@@ -590,8 +590,7 @@ void XCDeviceAoSData::pack_and_send(
 
 
       // Grid function evaluations
-      // Everything needs a scalar density
-      task.den_s = den_s_mem.aligned_alloc<double>( npts, csl );
+      if (reqt.grid_den) task.den_s = den_s_mem.aligned_alloc<double>( npts, csl );
       
       task.den          = den_mem.aligned_alloc<double>(reqt.grid_den_size(npts), csl); //Interleaved memory
       
