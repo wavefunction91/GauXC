@@ -134,7 +134,7 @@ public:
             {
                 const auto& t = tiles.find({i, j, i, j});
 
-                auto offset = (i - t->first.row_min) * (t->first.col_max - t->first.col_min + 1) + (j - t->first.col_min);
+                auto offset = (i - t->first.row_min) * (t->first.col_max - t->first.col_min + 1) + j - t->first.col_min;
 
                 auto remote_addr = gptrs[t->second.first] + t->second.second + offset;
 
@@ -166,7 +166,7 @@ public:
             for(uint64_t j = col_min; j <= col_max; ++j)
             {
                 const auto& t = tiles.find({i, j, i, j});
-                auto offset = (i - t->first.row_min) * (t->first.col_max - t->first.col_min + 1) + (j - t->first.col_min);
+                auto offset = (i - t->first.row_min) * (t->first.col_max - t->first.col_min + 1) + j - t->first.col_min;
                 auto remote_addr = gptrs[t->second.first] + t->second.second + offset;
                 auto local_addr = buf + next++;
 
@@ -324,7 +324,18 @@ public:
 
     void inc_by_submat(const value_type* smaller, uint64_t smaller_ncols, const std::vector<std::array<int32_t, 3>>& submat_map_rows, const std::vector<std::array<int32_t, 3>>& submat_map_cols) noexcept
     {
-        //WIP
+        /* WIP !!!!
+         * For each "chunk", where frequently chunk != tile
+         * Pack elements of the chunk that belong to the same tile into a std::vec and insert it in the unordered_map using the owner's rank as the key
+         * std::unordered_map<upcxx::intrank_t, std::vector<std::pair<std::vector<uint64_t>, std::vector<value_type>>>> map(team.rank_n());
+         * map[owner].emplace_back(limits, elements); // Where limits contains {offset, row_length, stride, row_count}
+         * In such a way that owner's [.local() + offset] will be the first element in the set of rows.
+         * End for each
+         * Lastly, for each key-value pair in the unordered_map, send the RPCs. The RPCs should be similar to the one in L286 but use a promise for the third parameter,
+         * and the std::transform should be within a for loop since we need to increment [row_count] rows of length [row_length] starting from [.local() + offset]
+         * and jumping [stride] elements each time. Don't forget to use UPC++'s view for the data being sent to minimize intermediate copies.
+         * IMPORTANT: There are a couple of reasons not to use UPC++'s atomic add for this routine, so stick to the RPC-based approach.
+        */
     }
 
     void deallocate() noexcept
