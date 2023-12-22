@@ -90,7 +90,7 @@ public:
 
         if(t != tiles.end())
         {
-            auto offset = (row_min - t->first.row_min) * (t->first.col_max - t->first.col_min + 1) + (col_min - t->first.col_min);
+            auto offset = (row_min - t->first.row_min) * (t->first.col_max - t->first.col_min + 1) + col_min - t->first.col_min;
             auto remote_addr = gptrs[t->second.first] + t->second.second + offset;
             auto count = (row_max - row_min + 1) * (col_max - col_min + 1);
 
@@ -112,7 +112,7 @@ public:
 
         if(t != tiles.end())
         {
-            auto offset = (row_min - t->first.row_min) * (t->first.col_max - t->first.col_min + 1) + (col_min - t->first.col_min);
+            auto offset = (row_min - t->first.row_min) * (t->first.col_max - t->first.col_min + 1) + col_min - t->first.col_min;
             auto remote_addr = gptrs[t->second.first] + t->second.second + offset;
             auto count = (row_max - row_min + 1) * (col_max - col_min + 1);
 
@@ -280,7 +280,7 @@ public:
 
         if(t != tiles.end())
         {
-            auto offset = t->second.second + (row_min - t->first.row_min) * (t->first.col_max - t->first.col_min + 1) + (col_min - t->first.col_min);
+            auto offset = t->second.second + (row_min - t->first.row_min) * (t->first.col_max - t->first.col_min + 1) + col_min - t->first.col_min;
             auto count = (row_max - row_min + 1) * (col_max - col_min + 1);
 
             upcxx::rpc(team, t->second.first, [](const auto& addr, const auto& buf)
