@@ -373,12 +373,13 @@ void AoSScheme1Base::inc_exc( XCDeviceData* _data ){
   const bool is_RKS  = data->allocated_terms.ks_scheme == RKS;
   const bool is_UKS  = data->allocated_terms.ks_scheme == UKS;
   const bool is_GKS  = data->allocated_terms.ks_scheme == GKS;
+  const bool is_pol  = is_UKS or is_GKS;
   
   gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
     base_stack.eps_eval_device, 1, base_stack.den_s_eval_device, 1, 
     static_stack.acc_scr_device, static_stack.exc_device );
 
-  if( not is_RKS ) {
+  if( is_pol ) {
     gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
       base_stack.eps_eval_device, 1, base_stack.den_z_eval_device, 1, 
       static_stack.acc_scr_device, static_stack.exc_device );
@@ -397,12 +398,13 @@ void AoSScheme1Base::inc_nel( XCDeviceData* _data ){
   const bool is_RKS  = data->allocated_terms.ks_scheme == RKS;
   const bool is_UKS  = data->allocated_terms.ks_scheme == UKS;
   const bool is_GKS  = data->allocated_terms.ks_scheme == GKS;
+  const bool is_pol  = is_UKS or is_GKS;
   
   gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
     base_stack.weights_device, 1, base_stack.den_s_eval_device, 1, 
     static_stack.acc_scr_device, static_stack.nel_device );
 
-  if( not is_RKS ) {
+  if( is_pol ) {
     gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
       base_stack.weights_device, 1, base_stack.den_z_eval_device, 1, 
       static_stack.acc_scr_device, static_stack.nel_device );
@@ -449,7 +451,7 @@ void AoSScheme1Base::eval_uvars_gga( XCDeviceData* _data, integrator_ks_scheme k
 
   auto base_stack    = data->base_stack;
   
-  // Evaluate V variable
+  // Evaluate U variable
   auto aos_stack     = data->aos_stack;
   eval_uvars_gga_( ntasks, nbe_max, npts_max, ks_scheme,
     aos_stack.device_tasks, data->device_backend_->queue() );
@@ -507,7 +509,6 @@ void AoSScheme1Base::eval_vvar( XCDeviceData* _data, bool do_grad, density_id de
   }
 
   data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, den_eval_ptr, "Den Zero" );
-  //cudaMemset(den_eval_ptr,0.0, data->total_npts_task_batch);
 
   if (do_grad) {
     data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, den_x_eval_ptr, "Den Zero" );
