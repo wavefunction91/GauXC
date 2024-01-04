@@ -80,12 +80,6 @@ struct required_term_storage {
   // Reference flags for memory management use
   integrator_term_tracker ref_tracker;
   
-  // TODO: figure out why these aren't working?
-  bool is_RKS = ref_tracker.ks_scheme == RKS;
-  bool is_UKS = ref_tracker.ks_scheme == UKS;
-  bool is_GKS = ref_tracker.ks_scheme == GKS;
-  bool is_den = ref_tracker.den;
-  bool is_2C  = is_UKS or is_GKS;
 
   inline size_t grid_den_size(size_t npts){ 
     return  PRDVL(grid_den and ref_tracker.ks_scheme == RKS, npts)
@@ -101,8 +95,6 @@ struct required_term_storage {
       if (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS) return 3*npts;
       else return npts;
     }
-    //return PRDVL(grid_gamma and ref_tracker.ks_scheme == RKS, npts) 
-    //     + PRDVL(grid_gamma and (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS) , 3 * npts);
   }
   inline size_t grid_eps_size(size_t npts){ 
     return PRDVL(grid_eps, npts);

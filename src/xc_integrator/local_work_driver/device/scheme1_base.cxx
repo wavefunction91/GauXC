@@ -373,13 +373,12 @@ void AoSScheme1Base::inc_exc( XCDeviceData* _data ){
   const bool is_RKS  = data->allocated_terms.ks_scheme == RKS;
   const bool is_UKS  = data->allocated_terms.ks_scheme == UKS;
   const bool is_GKS  = data->allocated_terms.ks_scheme == GKS;
-  const bool is_2C   = is_UKS or is_GKS;
   
   gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
     base_stack.eps_eval_device, 1, base_stack.den_s_eval_device, 1, 
     static_stack.acc_scr_device, static_stack.exc_device );
 
-  if( is_2C ) {
+  if( not is_RKS ) {
     gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
       base_stack.eps_eval_device, 1, base_stack.den_z_eval_device, 1, 
       static_stack.acc_scr_device, static_stack.exc_device );
@@ -398,13 +397,12 @@ void AoSScheme1Base::inc_nel( XCDeviceData* _data ){
   const bool is_RKS  = data->allocated_terms.ks_scheme == RKS;
   const bool is_UKS  = data->allocated_terms.ks_scheme == UKS;
   const bool is_GKS  = data->allocated_terms.ks_scheme == GKS;
-  const bool is_2C   = is_UKS or is_GKS;
   
   gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
     base_stack.weights_device, 1, base_stack.den_s_eval_device, 1, 
     static_stack.acc_scr_device, static_stack.nel_device );
 
-  if( is_2C ) {
+  if( not is_RKS ) {
     gdot( data->device_backend_->master_blas_handle(), data->total_npts_task_batch,
       base_stack.weights_device, 1, base_stack.den_z_eval_device, 1, 
       static_stack.acc_scr_device, static_stack.nel_device );
@@ -540,14 +538,14 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
   const bool is_RKS = data->allocated_terms.ks_scheme == RKS;
   const bool is_UKS = data->allocated_terms.ks_scheme == UKS;
   const bool is_GKS = data->allocated_terms.ks_scheme == GKS;
-  const bool is_2C  = is_UKS or is_GKS;
+  const bool is_pol = is_UKS or is_GKS;
   const bool is_excgrad = data->allocated_terms.exc_grad;
 
   const size_t npts = data->total_npts_task_batch ;
   
   auto* dep = base_stack.den_s_eval_device;
 
-  if ( is_2C ) {
+  if ( is_pol ) {
     dep = base_stack.den_eval_device;
     // Interleave pos/neg densities before passing it to ExchCXX
     auto  stat = cudaMemcpy2D(base_stack.den_eval_device, 2 * sizeof(double), base_stack.den_s_eval_device,
@@ -563,11 +561,11 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
   hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                   base_stack.weights_device, 1, base_stack.eps_eval_device, 1 );
 
-  if( not is_2C ) {
+  if( not is_pol ) {
     hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.vrho_eval_device, 1 );
   }
-  if( is_2C ) {
+  else if( is_pol ) {
       // De-interleave pos/neg densities
       auto stat        = cudaMemcpy2D(base_stack.vrho_pos_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device,
                         2 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
@@ -600,14 +598,14 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
   const bool is_RKS = data->allocated_terms.ks_scheme == RKS;
   const bool is_UKS = data->allocated_terms.ks_scheme == UKS;
   const bool is_GKS = data->allocated_terms.ks_scheme == GKS;
-  const bool is_2C  = is_UKS or is_GKS;
+  const bool is_pol  = is_UKS or is_GKS;
   const bool is_excgrad = data->allocated_terms.exc_grad;
 
   const size_t npts = data->total_npts_task_batch ;
   
   
 
-  if ( is_2C ) {
+  if ( is_pol ) {
     den_eval_ptr = base_stack.den_eval_device;
     // Interleave pos/neg densities before passing it to ExchCXX
     auto stat = cudaMemcpy2D(base_stack.den_eval_device, 2 * sizeof(double), base_stack.den_s_eval_device,
@@ -632,13 +630,13 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
   hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.eps_eval_device, 1 );
 
-  if( not is_2C ) {
+  if( not is_pol ) {
     hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.vrho_eval_device, 1 );
     hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.vgamma_eval_device, 1 );
   }
-  if( is_2C ) {
+  else if( is_pol ) {
       // De-interleave pos/neg densities
       auto stat        = cudaMemcpy2D(base_stack.vrho_pos_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device,
                         2 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);

@@ -469,9 +469,9 @@ void XCDeviceAoSData::pack_and_send(
     const bool is_rks = terms.ks_scheme == RKS;
     const bool is_uks = terms.ks_scheme == UKS;
     const bool is_gks = terms.ks_scheme == GKS;
-    const bool is_2C  = is_uks or is_gks;
-    const int den_fac   = is_2C ? 2 : 1;
-    const int gamma_fac = is_2C ? 3 : 1;
+    const bool is_pol  = is_uks or is_gks;
+    const int den_fac   = is_pol ? 2 : 1;
+    const int gamma_fac = is_pol ? 3 : 1;
     
 
 
@@ -594,7 +594,7 @@ void XCDeviceAoSData::pack_and_send(
       
       task.den          = den_mem.aligned_alloc<double>(reqt.grid_den_size(npts), csl); //Interleaved memory
       
-      if(is_2C) {
+      if(is_pol) {
         task.den_z        = den_z_mem.aligned_alloc<double>( npts, csl);
         task.vrho_pos     = vrho_pos_mem.aligned_alloc<double>( npts, csl);
         task.vrho_neg     = vrho_neg_mem.aligned_alloc<double>( npts, csl); 
