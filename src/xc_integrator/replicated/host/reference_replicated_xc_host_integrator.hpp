@@ -54,7 +54,6 @@ protected:
                       value_type* VXCx, int64_t ldvxcx,
                       value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
 
-
   void neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
                           const value_type* Ps, int64_t ldps,
                           const value_type* prot_Ps, int64_t prot_ldps,

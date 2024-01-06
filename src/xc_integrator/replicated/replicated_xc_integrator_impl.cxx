@@ -50,7 +50,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
                       int64_t ldpz,
                       value_type* VXCs, int64_t ldvxcs,
                       value_type* VXCz, int64_t ldvxcz,
-                      value_type* EXC, const IntegratorSettingsXC& ks_settings) {
+                      value_type* EXC, const IntegratorSettingsXC& ks_settings ) {
 
     eval_exc_vxc_(m,n,Ps,ldps,
                       Pz,ldpz,
@@ -96,7 +96,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
                     value_type* prot_VXCs,     int64_t prot_ldvxcs,
                     value_type* prot_VXCz,     int64_t prot_ldvxcz,
                     value_type* elec_EXC,  value_type* prot_EXC,
-                    const IntegratorSettingsXC& ks_settings){
+                    const IntegratorSettingsXC& ks_settings ){
 
     neo_eval_exc_vxc_(elec_m,elec_n,prot_m,prot_n, 
                       elec_Ps,  elec_ldps,

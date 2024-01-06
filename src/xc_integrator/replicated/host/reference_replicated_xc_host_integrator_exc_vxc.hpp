@@ -191,8 +191,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   });
 
 
-}           
-  
+}
+
+
+
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
   exc_vxc_local_work_( const value_type* Ps, int64_t ldps,
@@ -679,7 +681,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     }
   }
 
-}
+} 
 
 }
 }

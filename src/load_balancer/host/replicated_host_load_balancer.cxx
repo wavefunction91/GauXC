@@ -84,7 +84,6 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
         task.protonic_bfn_screening.nbe        = protonic_nbe;
       }
 
-
       #pragma omp critical
       temp_tasks.push_back( 
         std::pair(batch_idx,std::move( task )) 

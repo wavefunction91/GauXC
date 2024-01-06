@@ -59,4 +59,3 @@ enum class SupportedAlg {
 };
 
 } // namespace GauXC
-

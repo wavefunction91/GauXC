@@ -29,7 +29,6 @@ protected:
   std::shared_ptr<MolMeta>    molmeta_;
   std::shared_ptr<basis_map_type> basis_map_;
   std::shared_ptr<shell_pair_type> shell_pairs_;
-
   // Protonic basis information if doing Nuclear-Electronic Orbital (NEO) theory
   std::shared_ptr<basis_type> protonic_basis_;
   std::shared_ptr<basis_map_type> protonic_basis_map_;
