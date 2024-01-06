@@ -29,6 +29,9 @@ protected:
   std::shared_ptr<MolMeta>    molmeta_;
   std::shared_ptr<basis_map_type> basis_map_;
   std::shared_ptr<shell_pair_type> shell_pairs_;
+  // Protonic basis information if doing Nuclear-Electronic Orbital (NEO) theory
+  std::shared_ptr<basis_type> protonic_basis_;
+  std::shared_ptr<basis_map_type> protonic_basis_map_;
 
   std::vector< XCTask >     local_tasks_;
 
@@ -50,6 +53,13 @@ public:
     const basis_type&, const MolMeta&, size_t pv );
   LoadBalancerImpl( const RuntimeEnvironment&, const Molecule&, const MolGrid& mg,  
     const basis_type&, std::shared_ptr<MolMeta>, size_t pv );
+  
+  LoadBalancerImpl( const RuntimeEnvironment&, const Molecule&, const MolGrid& mg,  
+    const basis_type&, const basis_type&, size_t pv );
+  LoadBalancerImpl( const RuntimeEnvironment&, const Molecule&, const MolGrid& mg,  
+    const basis_type&, const basis_type&, const MolMeta&, size_t pv );
+  LoadBalancerImpl( const RuntimeEnvironment&, const Molecule&, const MolGrid& mg,  
+    const basis_type&, const basis_type&, std::shared_ptr<MolMeta>, size_t pv );
 
   LoadBalancerImpl( const LoadBalancerImpl& );
   LoadBalancerImpl( LoadBalancerImpl&& ) noexcept;
@@ -76,6 +86,8 @@ public:
   const RuntimeEnvironment& runtime() const;
   const basis_map_type& basis_map() const;
   const shell_pair_type& shell_pairs() const;
+  const basis_type& protonic_basis()  const;
+  const basis_map_type& protonic_basis_map() const;
 
   LoadBalancerState& state();
 

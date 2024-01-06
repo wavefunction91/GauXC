@@ -61,7 +61,24 @@ protected:
                               value_type* VXCy, int64_t ldvxcy,
                               value_type* VXCx, int64_t ldvxcx,
                               value_type* EXC, const IntegratorSettingsXC& ks_settings ) = 0;
-
+  virtual void neo_eval_exc_vxc_( int64_t elec_m, int64_t elec_mn, int64_t prot_m, int64_t prot_n,
+                                  const value_type* elec_Ps, int64_t elec_ldps,
+                                  const value_type* prot_Ps, int64_t prot_ldps,
+                                  const value_type* prot_Pz, int64_t prot_ldpz,
+                                  value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                                  value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                                  value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                                  value_type* elec_EXC,  value_type* prot_EXC, const IntegratorSettingsXC& ks_settings) = 0;
+  virtual void neo_eval_exc_vxc_( int64_t elec_m, int64_t elec_n, int64_t prot_m, int64_t prot_n, 
+                                  const value_type* elec_Ps, int64_t elec_ldps,
+                                  const value_type* elec_Pz, int64_t elec_ldpz,
+                                  const value_type* prot_Ps, int64_t prot_ldps,
+                                  const value_type* prot_Pz, int64_t prot_ldpz,
+                                  value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                                  value_type* elec_VXCz,     int64_t elec_ldvxcz,
+                                  value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                                  value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                                  value_type* elec_EXC,  value_type* prot_EXC, const IntegratorSettingsXC& ks_settings) = 0;
   virtual void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
                                int64_t ldp, value_type* EXC_GRAD ) = 0;
   virtual void eval_exx_( int64_t m, int64_t n, const value_type* P,
@@ -92,6 +109,7 @@ public:
                      value_type* VXCs, int64_t ldvxcs,
                      value_type* VXCz, int64_t ldvxcz,
                      value_type* EXC, const IntegratorSettingsXC& ks_settings );
+
   void eval_exc_vxc( int64_t m, int64_t n, const value_type* Ps,
                      int64_t ldps,
                      const value_type* Pz,
@@ -105,7 +123,26 @@ public:
                      value_type* VXCy, int64_t ldvxcy,
                      value_type* VXCx, int64_t ldvxcx,
                      value_type* EXC, const IntegratorSettingsXC& ks_settings );
+  
+  void neo_eval_exc_vxc( int64_t elec_m, int64_t elec_n, int64_t prot_m, int64_t prot_n,  
+                         const value_type* elec_Ps, int64_t elec_ldps,
+                         const value_type* prot_Ps, int64_t prot_ldps,
+                         const value_type* prot_Pz, int64_t prot_ldpz,
+                         value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                         value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                         value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                         value_type* elec_EXC,  value_type* prot_EXC, const IntegratorSettingsXC& ks_settings );
 
+  void neo_eval_exc_vxc( int64_t elec_m, int64_t elec_n, int64_t prot_m, int64_t prot_n, 
+                         const value_type* elec_Ps, int64_t elec_ldps,
+                         const value_type* elec_Pz, int64_t elec_ldpz,
+                         const value_type* prot_Ps, int64_t prot_ldps,
+                         const value_type* prot_Pz, int64_t prot_ldpz,
+                         value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                         value_type* elec_VXCz,     int64_t elec_ldvxcz,
+                         value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                         value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                         value_type* elec_EXC,  value_type* prot_EXC, const IntegratorSettingsXC& ks_settings );
 
   void eval_exc_grad( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp, value_type* EXC_GRAD );

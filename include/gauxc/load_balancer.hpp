@@ -104,6 +104,12 @@ public:
   /// Return the number of non-negligible local shell pairs for this LoadBalancer
   const shell_pair_type& shell_pairs() const;
 
+  /// Return the underlying protonic BasisSet instance used to generate this LoadBalancer 
+  const basis_type& protonic_basis()  const;
+
+  /// Return the protonic BasisSetMap instance corresponding to protonic basis/molecule
+  const basis_map_type& protonic_basis_map() const;
+
   /// Return the runtime handle used to construct this LoadBalancer
   const RuntimeEnvironment& runtime() const;
   
@@ -167,6 +173,10 @@ public:
     const Molecule& mol, const MolGrid& mg, const BasisSet<double>& bs,
     size_t pad_val = 1 );
 
+  LoadBalancer get_instance( const RuntimeEnvironment& rt, 
+    const Molecule& mol, const MolGrid& mg, const BasisSet<double>& bs,
+    const BasisSet<double>& bs2, size_t pad_val = 1 );
+
   /** 
    *  @brief Generate a shared pointer to a LoadBalancer instance per kernel and 
    *         execution space specfication
@@ -185,6 +195,11 @@ public:
     const RuntimeEnvironment& rt,
     const Molecule& mol, const MolGrid& mg, const BasisSet<double>&,
     size_t pad_val = 1 );
+
+  std::shared_ptr<LoadBalancer> get_shared_instance( 
+    const RuntimeEnvironment& rt,
+    const Molecule& mol, const MolGrid& mg, const BasisSet<double>&,
+    const BasisSet<double>&, size_t pad_val = 1 );
 
 private:
 

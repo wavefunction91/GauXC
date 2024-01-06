@@ -23,6 +23,16 @@ LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule
 
 }
 
+LoadBalancerImpl::LoadBalancerImpl(const RuntimeEnvironment& rt, const Molecule& mol, 
+  const MolGrid& mg, const basis_type& basis, const basis_type& protonic_basis, 
+  std::shared_ptr<MolMeta> molmeta, size_t pv) : 
+  LoadBalancerImpl(rt, mol, mg, basis, molmeta, pv) {
+    
+  // Unique initializations for the protonic basis
+  protonic_basis_       = std::make_shared<basis_type>(protonic_basis);
+  protonic_basis_map_   = std::make_shared<basis_map_type>(*protonic_basis_, mol);
+}
+
 LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
   const MolGrid& mg, const basis_type& basis, const MolMeta& molmeta, size_t pv ) :
   LoadBalancerImpl( rt, mol, mg, basis, std::make_shared<MolMeta>(molmeta), pv ) { }
@@ -31,6 +41,13 @@ LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule
   const MolGrid& mg, const basis_type& basis, size_t pv ) :
   LoadBalancerImpl( rt, mol, mg, basis, std::make_shared<MolMeta>(mol), pv ) { }
 
+LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
+  const MolGrid& mg, const basis_type& basis, const basis_type& protonic_basis, size_t pv ) :
+  LoadBalancerImpl( rt, mol, mg, basis, protonic_basis, std::make_shared<MolMeta>(mol), pv ) { }
+
+LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
+  const MolGrid& mg, const basis_type& basis, const basis_type& protonic_basis, const MolMeta& molmeta, size_t pv ) :
+  LoadBalancerImpl( rt, mol, mg, basis, protonic_basis, std::make_shared<MolMeta>(molmeta), pv ) { }
 
 LoadBalancerImpl::LoadBalancerImpl( const LoadBalancerImpl& ) = default;
 LoadBalancerImpl::LoadBalancerImpl( LoadBalancerImpl&& ) noexcept = default;
@@ -116,6 +133,18 @@ const LoadBalancerImpl::basis_map_type& LoadBalancerImpl::basis_map() const {
 }
 const LoadBalancerImpl::shell_pair_type& LoadBalancerImpl::shell_pairs() const {
   return *shell_pairs_;
+}
+
+const LoadBalancerImpl::basis_type& LoadBalancerImpl::protonic_basis() const {
+  if( not protonic_basis_ ) 
+    GAUXC_GENERIC_EXCEPTION("No Protonic Basis Found in LoadBalancerImpl::protonic_basis()");
+  return *protonic_basis_;
+}
+
+const LoadBalancerImpl::basis_map_type& LoadBalancerImpl::protonic_basis_map() const {
+  if( not protonic_basis_map_ ) 
+    GAUXC_GENERIC_EXCEPTION("No Protonic Basis Found in LoadBalancerImpl::protonic_basis_map()");
+  return *protonic_basis_map_;
 }
 
 const RuntimeEnvironment& LoadBalancerImpl::runtime() const {
