@@ -26,7 +26,7 @@ __global__ void eval_uvars_lda_rks_kernel( size_t ntasks, XCDeviceTask* tasks_de
   auto*         den_eval_device     = task.den;
   auto*         den_s_eval_device   = task.den_s;
 
-  const int tid = threadIdx.y + blockIdx.y * blockDim.y;
+  const int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
   if( tid < npts ) {
     const double ps = den_s_eval_device[ tid ];
@@ -45,13 +45,12 @@ __global__ void eval_uvars_lda_uks_kernel( size_t        ntasks,
   auto& task = tasks_device[ batch_idx ];
 
   const auto npts            = task.npts;
-  const auto nbf             = task.bfn_screening.nbe;
 
   auto* den_pos_eval_device   = task.den_s;
   auto* den_neg_eval_device   = task.den_z;
 
 
-  const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
+  const int tid_y = blockIdx.x * blockDim.x + threadIdx.x;
 
 
   if( tid_y < npts ) {
@@ -72,7 +71,6 @@ __global__ void eval_uvars_lda_gks_kernel( size_t        ntasks,
   auto& task = tasks_device[ batch_idx ];
 
   const auto npts            = task.npts;
-  const auto nbf             = task.bfn_screening.nbe;
 
   auto* den_z_eval_device   = task.den_s;
   auto* den_s_eval_device   = task.den_z;
@@ -83,33 +81,33 @@ __global__ void eval_uvars_lda_gks_kernel( size_t        ntasks,
   auto* K_x_eval_device     = task.K_x;
   const double dtolsq = 1e-24;  // TODO: make variable
 
-  const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
+  const int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
 
-  if( tid_y < npts ) {
-    const auto ps = den_s_eval_device[ tid_y ];
-    const auto pz = den_z_eval_device[ tid_y ];
-    const auto py = den_y_eval_device[ tid_y ];
-    const auto px = den_x_eval_device[ tid_y ];
+  if( tid < npts ) {
+    const auto ps = den_s_eval_device[ tid ];
+    const auto pz = den_z_eval_device[ tid ];
+    const auto py = den_y_eval_device[ tid ];
+    const auto px = den_x_eval_device[ tid ];
     const auto mtemp = pz*pz + px*px + py*py;
     double mnorm = 0.;
   
     if (mtemp > dtolsq) {
       mnorm = sqrt(mtemp);
-      K_z_eval_device[ tid_y ] = pz / mnorm;
-      K_y_eval_device[ tid_y ] = py / mnorm;
-      K_x_eval_device[ tid_y ] = px / mnorm;
+      K_z_eval_device[ tid ] = pz / mnorm;
+      K_y_eval_device[ tid ] = py / mnorm;
+      K_x_eval_device[ tid ] = px / mnorm;
     }
     else {
       mnorm = (1. / 3.) * (px + py + pz);
-      K_z_eval_device[ tid_y ] = 1. / 3.;
-      K_y_eval_device[ tid_y ] = 1. / 3.;
-      K_x_eval_device[ tid_y ] = 1. / 3.;
+      K_z_eval_device[ tid ] = 1. / 3.;
+      K_y_eval_device[ tid ] = 1. / 3.;
+      K_x_eval_device[ tid ] = 1. / 3.;
     }
 
 
-    den_s_eval_device[ tid_y ] = 0.5*(ps + mnorm);
-    den_z_eval_device[ tid_y ] = 0.5*(ps - mnorm);
+    den_s_eval_device[ tid ] = 0.5*(ps + mnorm);
+    den_z_eval_device[ tid ] = 0.5*(ps - mnorm);
 
   }
 }
@@ -126,19 +124,15 @@ __global__ void eval_uvars_gga_rks_kernel( size_t ntasks, XCDeviceTask* tasks_de
   const auto*   dden_sy_eval_device = task.dden_sy;
   const auto*   dden_sz_eval_device = task.dden_sz;
   auto*         gamma_eval_device   = task.gamma;
-  auto*         den_eval_device     = task.den;
-  const auto*   den_s_eval_device   = task.den_s;
 
-  const int tid = threadIdx.y + blockIdx.y * blockDim.y;
+  const int tid = threadIdx.x + blockIdx.x * blockDim.x;
 
   if( tid < npts ) {
-    const double ps = den_s_eval_device[ tid ];
     const double dx = dden_sx_eval_device[ tid ];
     const double dy = dden_sy_eval_device[ tid ];
     const double dz = dden_sz_eval_device[ tid ];
 
     gamma_eval_device[ tid ] = dx*dx + dy*dy + dz*dz;
-    den_eval_device  [ tid ] = ps;
 
   }
 
@@ -151,7 +145,6 @@ __global__ void eval_uvars_gga_uks_kernel( size_t ntasks, XCDeviceTask* tasks_de
 
   const auto& task = tasks_device[ batch_idx ];
   const auto npts            = task.npts;
-  const auto nbf             = task.bfn_screening.nbe;
 
   auto*           den_pos_eval_device   = task.den_s;
   const auto*     den_pos_x_eval_device = task.dden_sx;
@@ -167,17 +160,17 @@ __global__ void eval_uvars_gga_uks_kernel( size_t ntasks, XCDeviceTask* tasks_de
   auto*     gamma_pm_eval_device  = task.gamma_pm;
   auto*     gamma_mm_eval_device  = task.gamma_mm;
 
-  const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
+  const int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if( tid_y < npts ) {
-    const double ps     = den_pos_eval_device[ tid_y ];
-    const double pz     = den_neg_eval_device[ tid_y ];
-    const double dndx   = den_pos_x_eval_device[ tid_y ];
-    const double dndy   = den_pos_y_eval_device[ tid_y ];
-    const double dndz   = den_pos_z_eval_device[ tid_y ];
-    const double dMzdx  = den_neg_x_eval_device[ tid_y ];
-    const double dMzdy  = den_neg_y_eval_device[ tid_y ];
-    const double dMzdz  = den_neg_z_eval_device[ tid_y ];
+  if( tid < npts ) {
+    const double ps     = den_pos_eval_device[ tid ];
+    const double pz     = den_neg_eval_device[ tid ];
+    const double dndx   = den_pos_x_eval_device[ tid ];
+    const double dndy   = den_pos_y_eval_device[ tid ];
+    const double dndz   = den_pos_z_eval_device[ tid ];
+    const double dMzdx  = den_neg_x_eval_device[ tid ];
+    const double dMzdy  = den_neg_y_eval_device[ tid ];
+    const double dMzdz  = den_neg_z_eval_device[ tid ];
 
     // (del n).(del n)
     const auto dn_sq  = dndx*dndx + dndy*dndy + dndz*dndz;
@@ -186,12 +179,12 @@ __global__ void eval_uvars_gga_uks_kernel( size_t ntasks, XCDeviceTask* tasks_de
     // (del n).(del Mz)
     const auto dn_dMz = dndx*dMzdx + dndy*dMzdy + dndz*dMzdz;
 
-    gamma_pp_eval_device[ tid_y ] = 0.25*(dn_sq + dMz_sq) + 0.5*dn_dMz;
-    gamma_pm_eval_device[ tid_y ] = 0.25*(dn_sq - dMz_sq);
-    gamma_mm_eval_device[ tid_y ] = 0.25*(dn_sq + dMz_sq) - 0.5*dn_dMz;
+    gamma_pp_eval_device[ tid ] = 0.25*(dn_sq + dMz_sq) + 0.5*dn_dMz;
+    gamma_pm_eval_device[ tid ] = 0.25*(dn_sq - dMz_sq);
+    gamma_mm_eval_device[ tid ] = 0.25*(dn_sq + dMz_sq) - 0.5*dn_dMz;
 
-    den_pos_eval_device[ tid_y ] = 0.5*(ps + pz);
-    den_neg_eval_device[ tid_y ] = 0.5*(ps - pz);
+    den_pos_eval_device[ tid ] = 0.5*(ps + pz);
+    den_neg_eval_device[ tid ] = 0.5*(ps - pz);
   }
 
 }
@@ -203,7 +196,6 @@ __global__ void eval_uvars_gga_gks_kernel( size_t ntasks, XCDeviceTask* tasks_de
 
   const auto& task = tasks_device[ batch_idx ];
   const auto npts            = task.npts;
-  const auto nbf             = task.bfn_screening.nbe;
 
         auto*     den_s_eval_device   = task.den_s;
   const auto*     dden_sx_eval_device = task.dden_sx;
@@ -238,29 +230,29 @@ __global__ void eval_uvars_gga_gks_kernel( size_t ntasks, XCDeviceTask* tasks_de
 
   const double dtolsq = 1e-24;  // TODO: make variable
 
-  const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
+  const int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
-  if( tid_y < npts ) {
-    const double dndz = dden_sz_eval_device[ tid_y ];
-    const double dndy = dden_sy_eval_device[ tid_y ];
-    const double dndx = dden_sx_eval_device[ tid_y ];
+  if( tid < npts ) {
+    const double dndz = dden_sz_eval_device[ tid ];
+    const double dndy = dden_sy_eval_device[ tid ];
+    const double dndx = dden_sx_eval_device[ tid ];
 
-    const double dMzdz = dden_zz_eval_device[ tid_y ];
-    const double dMzdy = dden_zy_eval_device[ tid_y ];
-    const double dMzdx = dden_zx_eval_device[ tid_y ];
+    const double dMzdz = dden_zz_eval_device[ tid ];
+    const double dMzdy = dden_zy_eval_device[ tid ];
+    const double dMzdx = dden_zx_eval_device[ tid ];
 
-    const double dMydz = dden_yz_eval_device[ tid_y ];
-    const double dMydy = dden_yy_eval_device[ tid_y ];
-    const double dMydx = dden_yx_eval_device[ tid_y ];
+    const double dMydz = dden_yz_eval_device[ tid ];
+    const double dMydy = dden_yy_eval_device[ tid ];
+    const double dMydx = dden_yx_eval_device[ tid ];
 
-    const double dMxdz = dden_xz_eval_device[ tid_y ];
-    const double dMxdy = dden_xy_eval_device[ tid_y ];
-    const double dMxdx = dden_xx_eval_device[ tid_y ];
+    const double dMxdz = dden_xz_eval_device[ tid ];
+    const double dMxdy = dden_xy_eval_device[ tid ];
+    const double dMxdx = dden_xx_eval_device[ tid ];
 
-    const auto ps = den_s_eval_device[ tid_y ];
-    const auto pz = den_z_eval_device[ tid_y ];
-    const auto py = den_y_eval_device[ tid_y ];
-    const auto px = den_x_eval_device[ tid_y ];
+    const auto ps = den_s_eval_device[ tid ];
+    const auto pz = den_z_eval_device[ tid ];
+    const auto py = den_y_eval_device[ tid ];
+    const auto px = den_x_eval_device[ tid ];
 
     const auto mtemp = pz*pz + px*px + py*py;
     double mnorm = 0.;
@@ -288,30 +280,30 @@ __global__ void eval_uvars_gga_gks_kernel( size_t ntasks, XCDeviceTask* tasks_de
 
     if (mtemp > dtolsq) {
       mnorm = sqrt(mtemp);
-      K_z_eval_device[ tid_y ] = pz / mnorm;
-      K_y_eval_device[ tid_y ] = py / mnorm;
-      K_x_eval_device[ tid_y ] = px / mnorm;
-      H_z_eval_device[ tid_y ] = sign * dels_dot_delz / sqsum2;
-      H_y_eval_device[ tid_y ] = sign * dels_dot_dely / sqsum2;
-      H_x_eval_device[ tid_y ] = sign * dels_dot_delx / sqsum2;
+      K_z_eval_device[ tid ] = pz / mnorm;
+      K_y_eval_device[ tid ] = py / mnorm;
+      K_x_eval_device[ tid ] = px / mnorm;
+      H_z_eval_device[ tid ] = sign * dels_dot_delz / sqsum2;
+      H_y_eval_device[ tid ] = sign * dels_dot_dely / sqsum2;
+      H_x_eval_device[ tid ] = sign * dels_dot_delx / sqsum2;
     }
     else {
       mnorm = (1. / 3.) * (px + py + pz);
-      K_z_eval_device[ tid_y ] = 1. / 3.;
-      K_y_eval_device[ tid_y ] = 1. / 3.;
-      K_x_eval_device[ tid_y ] = 1. / 3.;
+      K_z_eval_device[ tid ] = 1. / 3.;
+      K_y_eval_device[ tid ] = 1. / 3.;
+      K_x_eval_device[ tid ] = 1. / 3.;
 
-      H_z_eval_device[ tid_y ] = sign / 3.;
-      H_y_eval_device[ tid_y ] = sign / 3.;
-      H_x_eval_device[ tid_y ] = sign / 3.;
+      H_z_eval_device[ tid ] = sign / 3.;
+      H_y_eval_device[ tid ] = sign / 3.;
+      H_x_eval_device[ tid ] = sign / 3.;
     }
 
-    gamma_pp_eval_device[ tid_y ] = 0.25*(dels_dot_dels + sum) + 0.5*sign*sqsum2;
-    gamma_pm_eval_device[ tid_y ] = 0.25*(dels_dot_dels - sum);
-    gamma_mm_eval_device[ tid_y ] = 0.25*(dels_dot_dels + sum) - 0.5*sign*sqsum2;
+    gamma_pp_eval_device[ tid ] = 0.25*(dels_dot_dels + sum) + 0.5*sign*sqsum2;
+    gamma_pm_eval_device[ tid ] = 0.25*(dels_dot_dels - sum);
+    gamma_mm_eval_device[ tid ] = 0.25*(dels_dot_dels + sum) - 0.5*sign*sqsum2;
 
-    den_s_eval_device[ tid_y ] = 0.5*(ps + mnorm);
-    den_z_eval_device[ tid_y ] = 0.5*(ps - mnorm);
+    den_s_eval_device[ tid ] = 0.5*(ps + mnorm);
+    den_z_eval_device[ tid ] = 0.5*(ps - mnorm);
 
   }
 
@@ -320,17 +312,16 @@ __global__ void eval_uvars_gga_gks_kernel( size_t ntasks, XCDeviceTask* tasks_de
 
 
 
-void eval_uvars_lda_( size_t ntasks, int32_t nbf_max, int32_t npts_max, integrator_ks_scheme ks_scheme,
+void eval_uvars_lda_( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
   XCDeviceTask* device_tasks, device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
   dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block, 1 );
-  dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
-               util::div_ceil( npts_max, threads.y ),
+  dim3 blocks( util::div_ceil( npts_max,  threads.x ),
+               1,
                ntasks );
   switch ( ks_scheme ) {
     case RKS:
-      eval_uvars_lda_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
       break;
     case UKS:
       eval_uvars_lda_uks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
@@ -346,13 +337,13 @@ void eval_uvars_lda_( size_t ntasks, int32_t nbf_max, int32_t npts_max, integrat
 
 
 
-void eval_uvars_gga_( size_t ntasks, int32_t nbf_max, int32_t npts_max, integrator_ks_scheme ks_scheme,
+void eval_uvars_gga_( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
   XCDeviceTask* device_tasks, device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
   dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block, 1 );
-  dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
-               util::div_ceil( npts_max, threads.y ),
+  dim3 blocks( util::div_ceil( npts_max,  threads.x ),
+               1,
                ntasks );
   switch ( ks_scheme ) {
     case RKS:

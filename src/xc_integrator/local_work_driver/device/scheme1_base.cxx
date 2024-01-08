@@ -422,7 +422,6 @@ void AoSScheme1Base::eval_uvars_lda( XCDeviceData* _data, integrator_ks_scheme k
   const auto ntasks = tasks.size();
   size_t nbe_max = 0, npts_max = 0;
   for( auto& task : tasks ) {
-    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
     npts_max = std::max( npts_max, task.npts );
   }
 
@@ -430,7 +429,7 @@ void AoSScheme1Base::eval_uvars_lda( XCDeviceData* _data, integrator_ks_scheme k
   
   // Evaluate V variable
   auto aos_stack     = data->aos_stack;
-  eval_uvars_lda_( ntasks, nbe_max, npts_max, ks_scheme,
+  eval_uvars_lda_( ntasks, npts_max, ks_scheme,
     aos_stack.device_tasks, data->device_backend_->queue() );
 
 }
@@ -445,7 +444,6 @@ void AoSScheme1Base::eval_uvars_gga( XCDeviceData* _data, integrator_ks_scheme k
   const auto ntasks = tasks.size();
   size_t nbe_max = 0, npts_max = 0;
   for( auto& task : tasks ) {
-    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
     npts_max = std::max( npts_max, task.npts );
   }
 
@@ -453,7 +451,7 @@ void AoSScheme1Base::eval_uvars_gga( XCDeviceData* _data, integrator_ks_scheme k
   
   // Evaluate U variable
   auto aos_stack     = data->aos_stack;
-  eval_uvars_gga_( ntasks, nbe_max, npts_max, ks_scheme,
+  eval_uvars_gga_( ntasks, npts_max, ks_scheme,
     aos_stack.device_tasks, data->device_backend_->queue() );
 
 }
