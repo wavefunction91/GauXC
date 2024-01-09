@@ -14,7 +14,9 @@
 
 namespace GauXC {
 
-#define GGA_KERNEL_SM_BLOCK_Y 32
+#define VVAR_KERNEL_SM_BLOCK 32
+#define GGA_KERNEL_SM_WARPS 16
+// TODO: Tune this value?
 
 __global__ void eval_uvars_lda_rks_kernel( size_t ntasks, XCDeviceTask* tasks_device) {
   const int batch_idx = blockIdx.z;
@@ -50,14 +52,14 @@ __global__ void eval_uvars_lda_uks_kernel( size_t        ntasks,
   auto* den_neg_eval_device   = task.den_z;
 
 
-  const int tid_y = blockIdx.x * blockDim.x + threadIdx.x;
+  const int tid = blockIdx.x * blockDim.x + threadIdx.x;
 
 
-  if( tid_y < npts ) {
-    const auto ps = den_pos_eval_device[ tid_y ];
-    const auto pz = den_neg_eval_device[ tid_y ];
-    den_pos_eval_device[ tid_y ] = 0.5*(ps + pz);
-    den_neg_eval_device[ tid_y ] = 0.5*(ps - pz);
+  if( tid < npts ) {
+    const auto ps = den_pos_eval_device[ tid ];
+    const auto pz = den_neg_eval_device[ tid ];
+    den_pos_eval_device[ tid ] = 0.5*(ps + pz);
+    den_neg_eval_device[ tid ] = 0.5*(ps - pz);
 
   }
 }
@@ -257,20 +259,20 @@ __global__ void eval_uvars_gga_gks_kernel( size_t ntasks, XCDeviceTask* tasks_de
     const auto mtemp = pz*pz + px*px + py*py;
     double mnorm = 0.;
 
-    auto dels_dot_dels = dndx * dndx + dndy * dndy + dndz * dndz;
-    auto delz_dot_delz = dMzdx * dMzdx + dMzdy * dMzdy + dMzdz * dMzdz;
-    auto delx_dot_delx = dMxdx * dMxdx + dMxdy * dMxdy + dMxdz * dMxdz;
-    auto dely_dot_dely = dMydx * dMydx + dMydy * dMydy + dMydz * dMydz;
+    const auto dels_dot_dels = dndx * dndx + dndy * dndy + dndz * dndz;
+    const auto delz_dot_delz = dMzdx * dMzdx + dMzdy * dMzdy + dMzdz * dMzdz;
+    const auto delx_dot_delx = dMxdx * dMxdx + dMxdy * dMxdy + dMxdz * dMxdz;
+    const auto dely_dot_dely = dMydx * dMydx + dMydy * dMydy + dMydz * dMydz;
 
-    auto dels_dot_delz = dndx * dMzdx + dndy * dMzdy + dndz * dMzdz;
-    auto dels_dot_delx = dndx * dMxdx + dndy * dMxdy + dndz * dMxdz;
-    auto dels_dot_dely = dndx * dMydx + dndy * dMydy + dndz * dMydz;
+    const auto dels_dot_delz = dndx * dMzdx + dndy * dMzdy + dndz * dMzdz;
+    const auto dels_dot_delx = dndx * dMxdx + dndy * dMxdy + dndz * dMxdz;
+    const auto dels_dot_dely = dndx * dMydx + dndy * dMydy + dndz * dMydz;
 
-    auto sum = delz_dot_delz + delx_dot_delx + dely_dot_dely;
-    auto s_sum =
-        dels_dot_delz * pz + dels_dot_delx * px + dels_dot_dely * py;
+    const auto sum = delz_dot_delz + delx_dot_delx + dely_dot_dely;
+    const auto s_sum =
+               dels_dot_delz * pz + dels_dot_delx * px + dels_dot_dely * py;
 
-    auto sqsum2 =
+    const auto sqsum2 =
         sqrt(dels_dot_delz * dels_dot_delz + dels_dot_delx * dels_dot_delx +
              dels_dot_dely * dels_dot_dely);
 
@@ -311,14 +313,12 @@ __global__ void eval_uvars_gga_gks_kernel( size_t ntasks, XCDeviceTask* tasks_de
 
 
 
-
 void eval_uvars_lda_( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
   XCDeviceTask* device_tasks, device_queue queue ) {
-
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
-  dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block, 1 );
+  dim3 threads( cuda::max_warps_per_thread_block * cuda::warp_size, 1, 1 );
   dim3 blocks( util::div_ceil( npts_max,  threads.x ),
-               1,
+               1, 
                ntasks );
   switch ( ks_scheme ) {
     case RKS:
@@ -341,7 +341,7 @@ void eval_uvars_gga_( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_s
   XCDeviceTask* device_tasks, device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
-  dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block, 1 );
+  dim3 threads( GGA_KERNEL_SM_WARPS * cuda::warp_size, 1, 1 );
   dim3 blocks( util::div_ceil( npts_max,  threads.x ),
                1,
                ntasks );
@@ -420,17 +420,17 @@ __global__ void eval_vvar_grad_kern( size_t        ntasks,
 
   const auto* den_basis_prod_device = task.zmat;
   
-  __shared__ double den_shared[4][warp_size][GGA_KERNEL_SM_BLOCK_Y+1];
+  __shared__ double den_shared[4][warp_size][VVAR_KERNEL_SM_BLOCK+1];
 
   for ( int bid_x = blockIdx.x * blockDim.x; 
         bid_x < nbf;
         bid_x += blockDim.x * gridDim.x ) {
     
-    for ( int bid_y = blockIdx.y * GGA_KERNEL_SM_BLOCK_Y; 
+    for ( int bid_y = blockIdx.y * VVAR_KERNEL_SM_BLOCK; 
           bid_y < npts;
-          bid_y += GGA_KERNEL_SM_BLOCK_Y * gridDim.y ) {
+          bid_y += VVAR_KERNEL_SM_BLOCK * gridDim.y ) {
         
-      for (int sm_y = threadIdx.y; sm_y < GGA_KERNEL_SM_BLOCK_Y; sm_y += blockDim.y) {
+      for (int sm_y = threadIdx.y; sm_y < VVAR_KERNEL_SM_BLOCK; sm_y += blockDim.y) {
         den_shared[0][threadIdx.x][sm_y] = 0.;
         den_shared[1][threadIdx.x][sm_y] = 0.;
         den_shared[2][threadIdx.x][sm_y] = 0.;
@@ -452,7 +452,7 @@ __global__ void eval_vvar_grad_kern( size_t        ntasks,
       __syncthreads();
 
 
-      for (int sm_y = threadIdx.y; sm_y < GGA_KERNEL_SM_BLOCK_Y; sm_y += blockDim.y) {
+      for (int sm_y = threadIdx.y; sm_y < VVAR_KERNEL_SM_BLOCK; sm_y += blockDim.y) {
         const int tid_y = bid_y + sm_y;
         register double den_reg = den_shared[0][sm_y][threadIdx.x];
         register double dx_reg  = den_shared[1][sm_y][threadIdx.x];
