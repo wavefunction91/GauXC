@@ -63,5 +63,10 @@ void syr2k( device_blas_handle handle,
             int M, int K, T ALPHA, 
             const T* A, int LDA, const T* B, int LDB,
             T BETA, T* C, int LDC );
+
+template <typename T>
+void memcpy2D( T* dst, size_t dpitch, const T* src, size_t spitch, size_t width, size_t height );
+
+
 }
 

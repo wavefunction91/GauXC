@@ -547,10 +547,10 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
   if ( is_pol ) {
     dep = base_stack.den_eval_device;
     // Interleave pos/neg densities before passing it to ExchCXX
-    auto  stat = cudaMemcpy2D(base_stack.den_eval_device, 2 * sizeof(double), base_stack.den_s_eval_device,
-                    1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-          stat = cudaMemcpy2D(base_stack.den_eval_device + 1, 2 * sizeof(double), base_stack.den_z_eval_device,
-                    1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+    memcpy2D(base_stack.den_eval_device, 2 * sizeof(double), base_stack.den_s_eval_device,
+                    1 * sizeof(double), 1 * sizeof(double), npts);
+    memcpy2D(base_stack.den_eval_device + 1, 2 * sizeof(double), base_stack.den_z_eval_device,
+                    1 * sizeof(double), 1 * sizeof(double), npts);
   }
 
   GauXC::eval_kern_exc_vxc_lda( func, npts,
@@ -566,10 +566,10 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
   }
   else if( is_pol ) {
       // De-interleave pos/neg densities
-      auto stat        = cudaMemcpy2D(base_stack.vrho_pos_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device,
-                        2 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-      stat             = cudaMemcpy2D(base_stack.vrho_neg_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device + 1,
-                        2 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+      memcpy2D(base_stack.vrho_pos_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device,
+                        2 * sizeof(double), 1 * sizeof(double), npts);
+      memcpy2D(base_stack.vrho_neg_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device + 1,
+                        2 * sizeof(double), 1 * sizeof(double), npts);
 
       // Weight results point-by-point
       hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
@@ -607,17 +607,17 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
   if ( is_pol ) {
     den_eval_ptr = base_stack.den_eval_device;
     // Interleave pos/neg densities before passing it to ExchCXX
-    auto stat = cudaMemcpy2D(base_stack.den_eval_device, 2 * sizeof(double), base_stack.den_s_eval_device,
-                    1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-    stat = cudaMemcpy2D(base_stack.den_eval_device + 1, 2 * sizeof(double), base_stack.den_z_eval_device,
-                    1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+    memcpy2D(base_stack.den_eval_device, 2 * sizeof(double), base_stack.den_s_eval_device,
+                    1 * sizeof(double), 1 * sizeof(double), npts);
+    memcpy2D(base_stack.den_eval_device + 1, 2 * sizeof(double), base_stack.den_z_eval_device,
+                    1 * sizeof(double), 1 * sizeof(double), npts);
     // Interleave gamma pp, pm, mm
-    stat = cudaMemcpy2D(base_stack.gamma_eval_device    , 3 * sizeof(double), base_stack.gamma_pp_eval_device,
-                    1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-    stat = cudaMemcpy2D(base_stack.gamma_eval_device + 1, 3 * sizeof(double), base_stack.gamma_pm_eval_device,
-                    1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-    stat = cudaMemcpy2D(base_stack.gamma_eval_device + 2, 3 * sizeof(double), base_stack.gamma_mm_eval_device,
-                    1 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+    memcpy2D(base_stack.gamma_eval_device    , 3 * sizeof(double), base_stack.gamma_pp_eval_device,
+                    1 * sizeof(double), 1 * sizeof(double), npts);
+    memcpy2D(base_stack.gamma_eval_device + 1, 3 * sizeof(double), base_stack.gamma_pm_eval_device,
+                    1 * sizeof(double), 1 * sizeof(double), npts);
+    memcpy2D(base_stack.gamma_eval_device + 2, 3 * sizeof(double), base_stack.gamma_mm_eval_device,
+                    1 * sizeof(double), 1 * sizeof(double), npts);
   }
 
   GauXC::eval_kern_exc_vxc_gga( func, data->total_npts_task_batch, 
@@ -637,10 +637,10 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
   }
   else if( is_pol ) {
       // De-interleave pos/neg densities
-      auto stat        = cudaMemcpy2D(base_stack.vrho_pos_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device,
-                        2 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-      stat             = cudaMemcpy2D(base_stack.vrho_neg_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device + 1,
-                        2 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+      memcpy2D(base_stack.vrho_pos_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device,
+                        2 * sizeof(double), 1 * sizeof(double), npts);
+      memcpy2D(base_stack.vrho_neg_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device + 1,
+                        2 * sizeof(double), 1 * sizeof(double), npts);
 
       // Multiply by weights point-by-point
       hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
@@ -649,12 +649,12 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
                       base_stack.weights_device, 1, base_stack.vrho_neg_eval_device, 1 );
 
       // De-interleave vgamma
-      stat            = cudaMemcpy2D(base_stack.vgamma_pp_eval_device, 1 * sizeof(double), base_stack.vgamma_eval_device,
-                        3 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-      stat            = cudaMemcpy2D(base_stack.vgamma_pm_eval_device, 1 * sizeof(double), base_stack.vgamma_eval_device+1,
-                        3 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
-      stat            = cudaMemcpy2D(base_stack.vgamma_mm_eval_device, 1 * sizeof(double), base_stack.vgamma_eval_device+2,
-                        3 * sizeof(double), 1 * sizeof(double), npts, cudaMemcpyDeviceToDevice);
+      memcpy2D(base_stack.vgamma_pp_eval_device, 1 * sizeof(double), base_stack.vgamma_eval_device,
+                        3 * sizeof(double), 1 * sizeof(double), npts);
+      memcpy2D(base_stack.vgamma_pm_eval_device, 1 * sizeof(double), base_stack.vgamma_eval_device+1,
+                        3 * sizeof(double), 1 * sizeof(double), npts);
+      memcpy2D(base_stack.vgamma_mm_eval_device, 1 * sizeof(double), base_stack.vgamma_eval_device+2,
+                        3 * sizeof(double), 1 * sizeof(double), npts);
 
       hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
                       base_stack.weights_device, 1, base_stack.vgamma_pp_eval_device, 1 );
