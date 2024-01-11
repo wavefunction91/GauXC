@@ -90,11 +90,9 @@ struct required_term_storage {
     return PRDVL(grid_den_grad and ref_tracker.ks_scheme == RKS, 3 * npts)
          + PRDVL(grid_den_grad and (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS) , 6 * npts);
   }
-  inline size_t grid_gamma_size(size_t npts){ 
-    if (grid_gamma) {
-      if (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS) return 3*npts;
-      else return npts;
-    }
+  inline size_t grid_gamma_size(size_t npts){
+    return PRDVL(grid_gamma and ref_tracker.ks_scheme==RKS, npts)
+         + PRDVL(grid_gamma and (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS), 3 * npts);
   }
   inline size_t grid_eps_size(size_t npts){ 
     return PRDVL(grid_eps, npts);

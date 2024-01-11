@@ -485,7 +485,7 @@ void XCDeviceAoSData::pack_and_send(
 
     buffer_adaptor den_mem    ( base_stack.den_eval_device,       total_npts * den_fac   );
 
-    // 2C
+    // Polarized KS
     buffer_adaptor den_z_mem  ( base_stack.den_z_eval_device,     total_npts  );
     buffer_adaptor den_y_mem  ( base_stack.den_y_eval_device,     total_npts  );
     buffer_adaptor den_x_mem  ( base_stack.den_x_eval_device,     total_npts  );
