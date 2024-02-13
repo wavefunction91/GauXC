@@ -80,32 +80,60 @@ struct required_term_storage {
   // Reference flags for memory management use
   integrator_term_tracker ref_tracker;
   
-
   inline size_t grid_den_size(size_t npts){ 
-    return  PRDVL(grid_den and ref_tracker.ks_scheme == RKS, npts)
-          + PRDVL(grid_den and ref_tracker.den, npts)
-          + PRDVL(grid_den and (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS),  2*npts);
+    // For RKS, only den_s_eval is used
+    if( grid_den ) {
+      if( ref_tracker.ks_scheme == RKS ) return npts; 
+      if( ref_tracker.den )              return npts; 
+      // 2*npts for S,Z densities, 2*npts for interleaved density
+      if( ref_tracker.ks_scheme == UKS ) return 4*npts;
+      // Same as above, but also X,Y densities
+      if( ref_tracker.ks_scheme == GKS ) return 6*npts;  
+    }
+    return 0ul;
   }
   inline size_t grid_den_grad_size(size_t npts){ 
-    return PRDVL(grid_den_grad and ref_tracker.ks_scheme == RKS, 3 * npts)
-         + PRDVL(grid_den_grad and (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS) , 6 * npts);
+    if( grid_den_grad ) {
+      // 3*npts for each density in play
+      if( ref_tracker.ks_scheme == RKS ) return 3*npts;
+      if( ref_tracker.ks_scheme == UKS ) return 6*npts;
+      if( ref_tracker.ks_scheme == GKS ) return 12*npts;
+    }
+    return 0ul;
   }
   inline size_t grid_gamma_size(size_t npts){
-    return PRDVL(grid_gamma and ref_tracker.ks_scheme==RKS, npts)
-         + PRDVL(grid_gamma and (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS), 3 * npts);
+    if( grid_gamma ) {
+      if(  ref_tracker.ks_scheme == RKS ) return npts;
+      if(  ref_tracker.ks_scheme == UKS 
+        or ref_tracker.ks_scheme == GKS ) return 6*npts;
+    }
+    return 0ul;
   }
   inline size_t grid_eps_size(size_t npts){ 
     return PRDVL(grid_eps, npts);
   }
   inline size_t grid_vrho_size(size_t npts){ 
-    return PRDVL(grid_vrho and ref_tracker.ks_scheme == RKS, npts)
-         + PRDVL(grid_vrho and ref_tracker.den, npts)
-         + PRDVL(grid_vrho and (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS) , 2 * npts);
+    if( grid_vrho ) {
+      if(   ref_tracker.ks_scheme == RKS ) return npts;
+      if(   ref_tracker.ks_scheme == UKS 
+        or  ref_tracker.ks_scheme == GKS ) return 4*npts;
+    }
+    return 0ul;
   }
   inline size_t grid_vgamma_size(size_t npts){ 
-    return PRDVL(grid_vgamma and ref_tracker.ks_scheme == RKS, npts)
-         + PRDVL(grid_vgamma and ref_tracker.den, npts)
-         + PRDVL(grid_vgamma and (ref_tracker.ks_scheme==UKS or ref_tracker.ks_scheme==GKS) , 3 * npts);
+    if( grid_vgamma ) {
+      if(   ref_tracker.ks_scheme == RKS ) return npts;
+      if(   ref_tracker.ks_scheme == UKS 
+        or  ref_tracker.ks_scheme == GKS ) return 6*npts;
+    }
+    return 0ul;
+  }
+  inline size_t grid_HK_size(size_t npts){
+    if( ref_tracker.ks_scheme == GKS ) {
+      if( ref_tracker.xc_approx == GGA ) return 6*npts;
+      if( ref_tracker.xc_approx == LDA ) return 3*npts;
+    }
+    return 0ul;
   }
 
 

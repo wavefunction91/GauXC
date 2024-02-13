@@ -160,13 +160,11 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
     const size_t ntask = std::distance( task_begin, task_end );
     aos_stack.device_tasks = mem.aligned_alloc<XCDeviceTask>( ntask, csl );
   }
-
   // Map packed to unpacked indices
   if(reqt.task_bfn_shell_indirection) {
     aos_stack.bfn_shell_indirection_device =
       mem.aligned_alloc<int32_t>( total_nbe_bfn_task_batch, csl );
   }
-
   // Collocation + derivatives 
   const size_t bfn_msz = total_nbe_bfn_npts_task_batch;
   if(reqt.task_bfn) {
@@ -188,12 +186,12 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
     aos_stack.d2bf_zz_eval_device = mem.aligned_alloc<double>( bfn_msz, csl );
   }
 
+
   // VXC Z Matrix
   if(reqt.task_zmat_lda_gga) {
     aos_stack.zmat_vxc_lda_gga_device = 
       mem.aligned_alloc<double>( bfn_msz, csl);
   }
-
   // X Matrix Gradient (for GGA EXC Gradient)
   if(reqt.task_xmat_grad) {
     aos_stack.xmat_dx_device = mem.aligned_alloc<double>( bfn_msz, csl);
@@ -236,7 +234,6 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
     aos_stack.submat_block_cou_device = 
       mem.aligned_alloc<int32_t>(total_nblock_cou_task_batch, csl);
   }
-
 
   // Update dynmem data for derived impls
   return device_buffer_t{ mem.stack(), mem.nleft() };
@@ -470,6 +467,7 @@ void XCDeviceAoSData::pack_and_send(
     const bool is_uks = terms.ks_scheme == UKS;
     const bool is_gks = terms.ks_scheme == GKS;
     const bool is_pol  = is_uks or is_gks;
+    const bool is_gga = terms.xc_approx == GGA;
     const int den_fac   = is_pol ? 2 : 1;
     const int gamma_fac = is_pol ? 3 : 1;
     
@@ -590,76 +588,75 @@ void XCDeviceAoSData::pack_and_send(
 
 
       // Grid function evaluations
-      if (reqt.grid_den) task.den_s = den_s_mem.aligned_alloc<double>( npts, csl );
-      
-      task.den          = den_mem.aligned_alloc<double>(reqt.grid_den_size(npts), csl); //Interleaved memory
-      
-      if(is_pol) {
-        task.den_z        = den_z_mem.aligned_alloc<double>( npts, csl);
-        task.vrho_pos     = vrho_pos_mem.aligned_alloc<double>( npts, csl);
-        task.vrho_neg     = vrho_neg_mem.aligned_alloc<double>( npts, csl); 
-        if (reqt.grid_vgamma ) {
-          task.vgamma_pp    = vgamma_pp_mem.aligned_alloc<double>( npts, csl);
-          task.vgamma_pm    = vgamma_pm_mem.aligned_alloc<double>( npts, csl);
-          task.vgamma_mm    = vgamma_mm_mem.aligned_alloc<double>( npts, csl);
+      if (reqt.grid_den) {
+        task.den_s        = den_s_mem.aligned_alloc<double>( npts, csl );
+        task.den          = den_mem.aligned_alloc<double>(npts*den_fac, csl); //Interleaved memory
+        if(is_pol) {
+          task.den_z        = den_z_mem.aligned_alloc<double>( npts, csl);
+          if ( is_gks ) {
+            task.den_y        = den_y_mem.aligned_alloc<double>( npts, csl);
+            task.den_x        = den_x_mem.aligned_alloc<double>( npts, csl);
+          }
         }
-        if ( is_gks ) {
-          task.den_y        = den_y_mem.aligned_alloc<double>( npts, csl);
-          task.den_x        = den_x_mem.aligned_alloc<double>( npts, csl);
+      }
+
+      if( reqt.grid_vrho ) {
+        task.vrho =   vrho_mem.aligned_alloc<double>( npts*den_fac, csl);
+        if( is_pol ) {
+          task.vrho_pos     = vrho_pos_mem.aligned_alloc<double>( npts, csl);
+          task.vrho_neg     = vrho_neg_mem.aligned_alloc<double>( npts, csl); 
+        }
+      }
+
+      if( reqt.grid_vgamma ) {
+        task.vgamma = vgamma_mem.aligned_alloc<double>( npts*gamma_fac, csl);
+        if( is_pol ) {
+            task.vgamma_pp    = vgamma_pp_mem.aligned_alloc<double>( npts, csl);
+            task.vgamma_pm    = vgamma_pm_mem.aligned_alloc<double>( npts, csl);
+            task.vgamma_mm    = vgamma_mm_mem.aligned_alloc<double>( npts, csl);
+        }
+      }
+      if( reqt.grid_gamma ) {
+        task.gamma = gamma_mem.aligned_alloc<double>( npts*gamma_fac, csl);
+        if( is_pol ) {
+            task.gamma_pp    = gamma_pp_mem.aligned_alloc<double>( npts, csl);
+            task.gamma_pm    = gamma_pm_mem.aligned_alloc<double>( npts, csl);
+            task.gamma_mm    = gamma_mm_mem.aligned_alloc<double>( npts, csl);
         }
       }
 
       if(reqt.grid_den_grad) {
-        if(is_rks) {
-          task.dden_sx = dden_sx_mem.aligned_alloc<double>(npts, csl);
-          task.dden_sy = dden_sy_mem.aligned_alloc<double>(npts, csl);
-          task.dden_sz = dden_sz_mem.aligned_alloc<double>(npts, csl);
-        }
-        else if(is_uks) {
-          task.dden_sx    = dden_sx_mem.aligned_alloc<double>( npts, csl );
-          task.dden_sy    = dden_sy_mem.aligned_alloc<double>( npts, csl );
-          task.dden_sz    = dden_sz_mem.aligned_alloc<double>( npts, csl );
+        task.dden_sx = dden_sx_mem.aligned_alloc<double>(npts, csl);
+        task.dden_sy = dden_sy_mem.aligned_alloc<double>(npts, csl);
+        task.dden_sz = dden_sz_mem.aligned_alloc<double>(npts, csl);
+        if( is_pol ) {
           task.dden_zx    = dden_zx_mem.aligned_alloc<double>( npts, csl );
           task.dden_zy    = dden_zy_mem.aligned_alloc<double>( npts, csl );
           task.dden_zz    = dden_zz_mem.aligned_alloc<double>( npts, csl );
-          task.gamma_pp     = gamma_pp_mem.aligned_alloc<double>  ( npts, csl );
-          task.gamma_pm     = gamma_pm_mem.aligned_alloc<double>  ( npts, csl );
-          task.gamma_mm     = gamma_mm_mem.aligned_alloc<double>  ( npts, csl );
-        }
-        else if(is_gks) {
-          task.dden_sx    = dden_sx_mem.aligned_alloc<double>( npts, csl );
-          task.dden_sy    = dden_sy_mem.aligned_alloc<double>( npts, csl );
-          task.dden_sz    = dden_sz_mem.aligned_alloc<double>( npts, csl );
-          task.dden_zx    = dden_zx_mem.aligned_alloc<double>( npts, csl );
-          task.dden_zy    = dden_zy_mem.aligned_alloc<double>( npts, csl );
-          task.dden_zz    = dden_zz_mem.aligned_alloc<double>( npts, csl );
-          task.dden_yx    = dden_yx_mem.aligned_alloc<double>( npts, csl );
-          task.dden_yy    = dden_yy_mem.aligned_alloc<double>( npts, csl );
-          task.dden_yz    = dden_yz_mem.aligned_alloc<double>( npts, csl );
-          task.dden_xx    = dden_xx_mem.aligned_alloc<double>( npts, csl );
-          task.dden_xy    = dden_xy_mem.aligned_alloc<double>( npts, csl );
-          task.dden_xz    = dden_xz_mem.aligned_alloc<double>( npts, csl );
-          task.gamma_pp     = gamma_pp_mem.aligned_alloc<double>  ( npts, csl );
-          task.gamma_pm     = gamma_pm_mem.aligned_alloc<double>  ( npts, csl );
-          task.gamma_mm     = gamma_mm_mem.aligned_alloc<double>  ( npts, csl );
+          if( is_gks ) {
+            task.dden_yx    = dden_yx_mem.aligned_alloc<double>( npts, csl );
+            task.dden_yy    = dden_yy_mem.aligned_alloc<double>( npts, csl );
+            task.dden_yz    = dden_yz_mem.aligned_alloc<double>( npts, csl );
+            task.dden_xx    = dden_xx_mem.aligned_alloc<double>( npts, csl );
+            task.dden_xy    = dden_xy_mem.aligned_alloc<double>( npts, csl );
+            task.dden_xz    = dden_xz_mem.aligned_alloc<double>( npts, csl );
+          }
         }
       }
-
-      if(is_gks) {
-        task.H_x    = H_x_mem.aligned_alloc<double>( npts, csl );
-        task.H_y    = H_y_mem.aligned_alloc<double>( npts, csl );
-        task.H_z    = H_z_mem.aligned_alloc<double>( npts, csl );
+      
+      // H, K terms (GKS)
+      if( is_gks ) {
         task.K_x    = K_x_mem.aligned_alloc<double>( npts, csl );
         task.K_y    = K_y_mem.aligned_alloc<double>( npts, csl );
         task.K_z    = K_z_mem.aligned_alloc<double>( npts, csl );
+        if( is_gga ) {
+          task.H_x    = H_x_mem.aligned_alloc<double>( npts, csl );
+          task.H_y    = H_y_mem.aligned_alloc<double>( npts, csl );
+          task.H_z    = H_z_mem.aligned_alloc<double>( npts, csl );
+        }
       }
-
-
-
-      task.gamma =  gamma_mem.aligned_alloc<double>( reqt.grid_gamma_size(npts), csl);
+      
       task.eps  =   eps_mem.aligned_alloc<double>( reqt.grid_eps_size(npts), csl);
-      task.vrho =   vrho_mem.aligned_alloc<double>( reqt.grid_vrho_size(npts), csl);
-      task.vgamma = vgamma_mem.aligned_alloc<double>( reqt.grid_vgamma_size(npts), csl);
 
         
 
