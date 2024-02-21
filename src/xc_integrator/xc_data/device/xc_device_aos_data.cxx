@@ -590,8 +590,8 @@ void XCDeviceAoSData::pack_and_send(
       // Grid function evaluations
       if (reqt.grid_den) {
         task.den_s        = den_s_mem.aligned_alloc<double>( npts, csl );
-        task.den          = den_mem.aligned_alloc<double>(npts*den_fac, csl); //Interleaved memory
         if(is_pol) {
+          task.den          = den_mem.aligned_alloc<double>(npts*den_fac, csl); //Interleaved memory
           task.den_z        = den_z_mem.aligned_alloc<double>( npts, csl);
           if ( is_gks ) {
             task.den_y        = den_y_mem.aligned_alloc<double>( npts, csl);
