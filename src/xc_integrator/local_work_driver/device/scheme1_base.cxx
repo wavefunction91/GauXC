@@ -547,10 +547,10 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
   if ( is_pol ) {
     dep = base_stack.den_eval_device;
     // Interleave pos/neg densities before passing it to ExchCXX
-    memcpy2D(base_stack.den_eval_device, 2 * sizeof(double), base_stack.den_s_eval_device,
-                    1 * sizeof(double), 1 * sizeof(double), npts);
-    memcpy2D(base_stack.den_eval_device + 1, 2 * sizeof(double), base_stack.den_z_eval_device,
-                    1 * sizeof(double), 1 * sizeof(double), npts);
+    data->device_backend_->
+      copy_async_2d( 1, npts, base_stack.den_s_eval_device, 1, base_stack.den_eval_device  , 2, "den_s -> den_eval" );
+    data->device_backend_->
+      copy_async_2d( 1, npts, base_stack.den_z_eval_device, 1, base_stack.den_eval_device+1, 2, "den_z -> den_eval" );
   }
 
   GauXC::eval_kern_exc_vxc_lda( func, npts,
@@ -565,18 +565,17 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
                     base_stack.weights_device, 1, base_stack.vrho_eval_device, 1 );
   }
   else if( is_pol ) {
-      // De-interleave pos/neg densities
-      memcpy2D(base_stack.vrho_pos_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device,
-                        2 * sizeof(double), 1 * sizeof(double), npts);
-      memcpy2D(base_stack.vrho_neg_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device + 1,
-                        2 * sizeof(double), 1 * sizeof(double), npts);
+    // De-interleave pos/neg densities
+    data->device_backend_->
+      copy_async_2d( 1, npts, base_stack.vrho_eval_device  , 2, base_stack.vrho_pos_eval_device, 1, "vrho->vrho_pos" );
+    data->device_backend_->
+      copy_async_2d( 1, npts, base_stack.vrho_eval_device+1, 2, base_stack.vrho_neg_eval_device, 1, "vrho->vrho_pos" );
 
-      // Weight results point-by-point
-      hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
-                      base_stack.weights_device, 1, base_stack.vrho_pos_eval_device, 1 );
-      hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
-                      base_stack.weights_device, 1, base_stack.vrho_neg_eval_device, 1 );
- 
+    // Weight results point-by-point
+    hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
+                    base_stack.weights_device, 1, base_stack.vrho_pos_eval_device, 1 );
+    hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
+                    base_stack.weights_device, 1, base_stack.vrho_neg_eval_device, 1 );
   }
 }
 
@@ -607,17 +606,17 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
   if ( is_pol ) {
     den_eval_ptr = base_stack.den_eval_device;
     // Interleave pos/neg densities before passing it to ExchCXX
-    memcpy2D(base_stack.den_eval_device, 2 * sizeof(double), base_stack.den_s_eval_device,
-                    1 * sizeof(double), 1 * sizeof(double), npts);
-    memcpy2D(base_stack.den_eval_device + 1, 2 * sizeof(double), base_stack.den_z_eval_device,
-                    1 * sizeof(double), 1 * sizeof(double), npts);
+    data->device_backend_->
+      copy_async_2d( 1, npts, base_stack.den_s_eval_device, 1, base_stack.den_eval_device  , 2, "den_s -> den_eval" );
+    data->device_backend_->
+      copy_async_2d( 1, npts, base_stack.den_z_eval_device, 1, base_stack.den_eval_device+1, 2, "den_z -> den_eval" );
     // Interleave gamma pp, pm, mm
-    memcpy2D(base_stack.gamma_eval_device    , 3 * sizeof(double), base_stack.gamma_pp_eval_device,
-                    1 * sizeof(double), 1 * sizeof(double), npts);
-    memcpy2D(base_stack.gamma_eval_device + 1, 3 * sizeof(double), base_stack.gamma_pm_eval_device,
-                    1 * sizeof(double), 1 * sizeof(double), npts);
-    memcpy2D(base_stack.gamma_eval_device + 2, 3 * sizeof(double), base_stack.gamma_mm_eval_device,
-                    1 * sizeof(double), 1 * sizeof(double), npts);
+    data->device_backend_->
+      copy_async_2d( 1, npts, base_stack.gamma_pp_eval_device, 1, base_stack.gamma_eval_device  , 3, "gamma_pp -> gamma_eval");
+    data->device_backend_->
+      copy_async_2d( 1, npts, base_stack.gamma_pm_eval_device, 1, base_stack.gamma_eval_device+1, 3, "gamma_pm -> gamma_eval");
+    data->device_backend_->
+      copy_async_2d( 1, npts, base_stack.gamma_mm_eval_device, 1, base_stack.gamma_eval_device+2, 3, "gamma_mm -> gamma_eval");
   }
 
   GauXC::eval_kern_exc_vxc_gga( func, data->total_npts_task_batch, 
@@ -637,10 +636,10 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
   }
   else if( is_pol ) {
       // De-interleave pos/neg densities
-      memcpy2D(base_stack.vrho_pos_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device,
-                        2 * sizeof(double), 1 * sizeof(double), npts);
-      memcpy2D(base_stack.vrho_neg_eval_device, 1 * sizeof(double), base_stack.vrho_eval_device + 1,
-                        2 * sizeof(double), 1 * sizeof(double), npts);
+      data->device_backend_->
+        copy_async_2d( 1, npts, base_stack.vrho_eval_device  , 2, base_stack.vrho_pos_eval_device, 1, "vrho->vrho_pos" );
+      data->device_backend_->
+        copy_async_2d( 1, npts, base_stack.vrho_eval_device+1, 2, base_stack.vrho_neg_eval_device, 1, "vrho->vrho_pos" );
 
       // Multiply by weights point-by-point
       hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
@@ -649,12 +648,12 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
                       base_stack.weights_device, 1, base_stack.vrho_neg_eval_device, 1 );
 
       // De-interleave vgamma
-      memcpy2D(base_stack.vgamma_pp_eval_device, 1 * sizeof(double), base_stack.vgamma_eval_device,
-                        3 * sizeof(double), 1 * sizeof(double), npts);
-      memcpy2D(base_stack.vgamma_pm_eval_device, 1 * sizeof(double), base_stack.vgamma_eval_device+1,
-                        3 * sizeof(double), 1 * sizeof(double), npts);
-      memcpy2D(base_stack.vgamma_mm_eval_device, 1 * sizeof(double), base_stack.vgamma_eval_device+2,
-                        3 * sizeof(double), 1 * sizeof(double), npts);
+      data->device_backend_->
+        copy_async_2d( 1, npts, base_stack.vgamma_eval_device  , 3, base_stack.vgamma_pp_eval_device, 1, "vgamma_eval -> vgamma_pp" );
+      data->device_backend_->
+        copy_async_2d( 1, npts, base_stack.vgamma_eval_device+1, 3, base_stack.vgamma_pm_eval_device, 1, "vgamma_eval -> vgamma_pm" );
+      data->device_backend_->
+        copy_async_2d( 1, npts, base_stack.vgamma_eval_device+2, 3, base_stack.vgamma_mm_eval_device, 1, "vgamma_eval -> vgamma_mm" );
 
       hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
                       base_stack.weights_device, 1, base_stack.vgamma_pp_eval_device, 1 );

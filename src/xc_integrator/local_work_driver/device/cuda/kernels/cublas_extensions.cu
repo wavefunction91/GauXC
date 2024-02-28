@@ -181,12 +181,6 @@ void syr2k( device_blas_handle generic_handle,
 
 }
 
-template <>
-void memcpy2D( double* dst, size_t dpitch, const double* src, size_t spitch, size_t width, size_t height ) {
-  auto stat = cudaMemcpy2D( dst, dpitch, src, spitch, width, height, cudaMemcpyDefault );
-  // cudaMemcpyDefault only works on devices with unified virtual addressing
-
-}
 
 }
 
