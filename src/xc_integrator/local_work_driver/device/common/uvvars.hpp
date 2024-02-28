@@ -13,12 +13,12 @@
 namespace GauXC {
 
 
-void eval_uvars_lda_( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
+void eval_uvars_lda( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
   XCDeviceTask* device_tasks, device_queue queue );
 
-void eval_uvars_gga_( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
+void eval_uvars_gga( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
   XCDeviceTask* device_tasks, device_queue queue );
 
-void eval_vvar_( size_t ntasks, int32_t nbf_max, int32_t npts_max, bool do_grad, density_id den_select,
+void eval_vvar( size_t ntasks, int32_t nbf_max, int32_t npts_max, bool do_grad, density_id den_select,
   XCDeviceTask* device_tasks, device_queue queue );
 }

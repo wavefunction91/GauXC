@@ -429,7 +429,7 @@ void AoSScheme1Base::eval_uvars_lda( XCDeviceData* _data, integrator_ks_scheme k
   
   // Evaluate V variable
   auto aos_stack     = data->aos_stack;
-  eval_uvars_lda_( ntasks, npts_max, ks_scheme,
+  GauXC::eval_uvars_lda( ntasks, npts_max, ks_scheme,
     aos_stack.device_tasks, data->device_backend_->queue() );
 
 }
@@ -451,7 +451,7 @@ void AoSScheme1Base::eval_uvars_gga( XCDeviceData* _data, integrator_ks_scheme k
   
   // Evaluate U variable
   auto aos_stack     = data->aos_stack;
-  eval_uvars_gga_( ntasks, npts_max, ks_scheme,
+  GauXC::eval_uvars_gga( ntasks, npts_max, ks_scheme,
     aos_stack.device_tasks, data->device_backend_->queue() );
 
 }
@@ -516,7 +516,7 @@ void AoSScheme1Base::eval_vvar( XCDeviceData* _data, bool do_grad, density_id de
   
   // Evaluate V variable
   auto aos_stack     = data->aos_stack;
-  eval_vvar_( ntasks, nbe_max, npts_max, do_grad, den_select,
+  GauXC::eval_vvar( ntasks, nbe_max, npts_max, do_grad, den_select,
     aos_stack.device_tasks, data->device_backend_->queue() );
 
 }
