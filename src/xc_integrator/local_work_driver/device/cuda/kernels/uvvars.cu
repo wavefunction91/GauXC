@@ -19,23 +19,8 @@ namespace GauXC {
 // TODO: Tune this value?
 
 __global__ void eval_uvars_lda_rks_kernel( size_t ntasks, XCDeviceTask* tasks_device) {
-  const int batch_idx = blockIdx.z;
-  if( batch_idx >= ntasks ) return;
-  
-  const auto& task = tasks_device[ batch_idx ];
-  const auto npts  = task.npts;
-  
-  auto*         den_eval_device     = task.den;
-  auto*         den_s_eval_device   = task.den_s;
-
-  const int tid = threadIdx.x + blockIdx.x * blockDim.x;
-
-  if( tid < npts ) {
-    const double ps = den_s_eval_device[ tid ];
-    den_eval_device  [ tid ] = ps;
-
-  }
-
+  // eval_vvars populated uvar storage already in the case of LDA+RKS
+  return;
 }
 
 __global__ void eval_uvars_lda_uks_kernel( size_t        ntasks,
@@ -314,54 +299,37 @@ __global__ void eval_uvars_gga_gks_kernel( size_t ntasks, XCDeviceTask* tasks_de
 
 }
 
-
+#define EVAL_UVARS_KERNEL(xc_approx) \
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>();  \
+  dim3 blocks( util::div_ceil( npts_max,  threads.x ),  \
+               1, \
+               ntasks ); \
+  switch ( ks_scheme ) { \
+    case RKS: \
+      eval_uvars_##xc_approx##_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks ); \
+      break; \
+    case UKS: \
+      eval_uvars_##xc_approx##_uks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks ); \
+      break; \
+    case GKS: \
+      eval_uvars_##xc_approx##_gks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks ); \
+      break; \
+    default: \
+      GAUXC_GENERIC_EXCEPTION( "Unexpected KS scheme when attempting to evaluate UV vars" ); \
+  } 
 
 void eval_uvars_lda( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
   XCDeviceTask* device_tasks, device_queue queue ) {
-  cudaStream_t stream = queue.queue_as<util::cuda_stream>();
   dim3 threads( cuda::max_warps_per_thread_block * cuda::warp_size, 1, 1 );
-  dim3 blocks( util::div_ceil( npts_max,  threads.x ),
-               1, 
-               ntasks );
-  switch ( ks_scheme ) {
-    case RKS:
-      break;
-    case UKS:
-      eval_uvars_lda_uks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-      break;
-    case GKS:
-      eval_uvars_lda_gks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-      break;
-    default:
-      GAUXC_GENERIC_EXCEPTION( "Unexpected KS scheme when attempting to evaluate UV vars" );
-  }
-
+  EVAL_UVARS_KERNEL(lda);
 }
 
 
 
 void eval_uvars_gga( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
   XCDeviceTask* device_tasks, device_queue queue ) {
-
-  cudaStream_t stream = queue.queue_as<util::cuda_stream>();
   dim3 threads( GGA_KERNEL_SM_WARPS * cuda::warp_size, 1, 1 );
-  dim3 blocks( util::div_ceil( npts_max,  threads.x ),
-               1,
-               ntasks );
-  switch ( ks_scheme ) {
-    case RKS:
-      eval_uvars_gga_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-      break;
-    case UKS:
-      eval_uvars_gga_uks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-      break;
-    case GKS:
-      eval_uvars_gga_gks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-      break;
-    default:
-      GAUXC_GENERIC_EXCEPTION( "Unexpected KS scheme when attempting to evaluate UV vars" );
-  }
-
+  EVAL_UVARS_KERNEL(gga);
 }
 
 
