@@ -95,10 +95,11 @@ __global__ void eval_uvars_lda_gks_kernel( size_t        ntasks,
     double mnorm = 0.;
   
     if (mtemp > dtolsq) {
-      mnorm = sqrt(mtemp);
-      K_z_eval_device[ tid ] = pz / mnorm;
-      K_y_eval_device[ tid ] = py / mnorm;
-      K_x_eval_device[ tid ] = px / mnorm;
+      const double inv_mnorm = rsqrt(mtemp);
+      mnorm = 1./inv_mnorm;
+      K_z_eval_device[ tid ] = pz * inv_mnorm;
+      K_y_eval_device[ tid ] = py * inv_mnorm;
+      K_x_eval_device[ tid ] = px * inv_mnorm;
     }
     else {
       mnorm = (1. / 3.) * (px + py + pz);
@@ -106,7 +107,6 @@ __global__ void eval_uvars_lda_gks_kernel( size_t        ntasks,
       K_y_eval_device[ tid ] = 1. / 3.;
       K_x_eval_device[ tid ] = 1. / 3.;
     }
-
 
     den_s_eval_device[ tid ] = 0.5*(ps + mnorm);
     den_z_eval_device[ tid ] = 0.5*(ps - mnorm);
@@ -272,22 +272,25 @@ __global__ void eval_uvars_gga_gks_kernel( size_t ntasks, XCDeviceTask* tasks_de
     const auto s_sum =
                dels_dot_delz * pz + dels_dot_delx * px + dels_dot_dely * py;
 
-    const auto sqsum2 =
-        sqrt(dels_dot_delz * dels_dot_delz + dels_dot_delx * dels_dot_delx +
+    const auto inv_sqsum2 =
+        rsqrt(dels_dot_delz * dels_dot_delz + dels_dot_delx * dels_dot_delx +
              dels_dot_dely * dels_dot_dely);
+    const auto sqsum2 = 1./inv_sqsum2;
 
     double sign = 1.;
     if( signbit(s_sum)) 
       sign = -1.;
 
+
     if (mtemp > dtolsq) {
-      mnorm = sqrt(mtemp);
-      K_z_eval_device[ tid ] = pz / mnorm;
-      K_y_eval_device[ tid ] = py / mnorm;
-      K_x_eval_device[ tid ] = px / mnorm;
-      H_z_eval_device[ tid ] = sign * dels_dot_delz / sqsum2;
-      H_y_eval_device[ tid ] = sign * dels_dot_dely / sqsum2;
-      H_x_eval_device[ tid ] = sign * dels_dot_delx / sqsum2;
+      const double inv_mnorm = rsqrt(mtemp);
+      mnorm = 1./inv_mnorm;
+      K_z_eval_device[ tid ] = pz * inv_mnorm;
+      K_y_eval_device[ tid ] = py * inv_mnorm;
+      K_x_eval_device[ tid ] = px * inv_mnorm;
+      H_z_eval_device[ tid ] = sign * dels_dot_delz * inv_sqsum2;
+      H_y_eval_device[ tid ] = sign * dels_dot_dely * inv_sqsum2;
+      H_x_eval_device[ tid ] = sign * dels_dot_delx * inv_sqsum2;
     }
     else {
       mnorm = (1. / 3.) * (px + py + pz);
