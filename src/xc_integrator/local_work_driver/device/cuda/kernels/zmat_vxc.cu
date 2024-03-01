@@ -81,10 +81,10 @@ __global__ void zmat_lda_vxc_uks_kernel( size_t        ntasks,
     const size_t ibfoff = tid_y * npts + tid_x;
     const double factp = 0.5 * vrho_pos_device[tid_x];
     const double factm = 0.5 * vrho_neg_device[tid_x];
-    if constexpr ( den_selector == DEN_S ) // positive density
-      z_matrix_device[ ibfoff ] = 0.5*(factp * basis_eval_device[ ibfoff ] + factm * basis_eval_device[ ibfoff ]);
-    if constexpr ( den_selector == DEN_Z ) // negative density
-      z_matrix_device[ ibfoff ] = 0.5*(factp * basis_eval_device[ ibfoff ] - factm * basis_eval_device[ ibfoff ]);
+    double sign = 1.0;
+    if constexpr ( den_selector == DEN_Z )  sign = -1.0;
+    
+    z_matrix_device[ ibfoff ] = 0.5*(factp * basis_eval_device[ ibfoff ] + sign * factm * basis_eval_device[ ibfoff ]);
   }
 
 }
@@ -101,9 +101,12 @@ __global__ void zmat_lda_vxc_gks_kernel( size_t        ntasks,
   const auto nbf             = task.bfn_screening.nbe;
   const double* vrho_pos_device    = task.vrho_pos;
   const double* vrho_neg_device    = task.vrho_neg;
-  const double* KZ_device          = task.K_z;
-  const double* KY_device          = task.K_y;
-  const double* KX_device          = task.K_x;
+
+  double* K_device;
+  if constexpr ( den_selector == DEN_Z ) K_device = task.K_z;
+  if constexpr ( den_selector == DEN_Y ) K_device = task.K_y;
+  if constexpr ( den_selector == DEN_X ) K_device = task.K_x;
+  
 
 
   const auto* basis_eval_device = task.bf;
@@ -115,20 +118,17 @@ __global__ void zmat_lda_vxc_gks_kernel( size_t        ntasks,
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
   if( tid_x < npts and tid_y < nbf ) {
-
     const size_t ibfoff = tid_y * npts + tid_x;
     const double factp = 0.5 * vrho_pos_device[tid_x];
     const double factm = 0.5 * vrho_neg_device[tid_x];
-    const double factk = 0.5 * (factp - factm);
 
-    if constexpr ( den_selector == DEN_S )
+    if constexpr ( den_selector == DEN_S ) {
       z_matrix_device[ ibfoff ] = 0.5*(factp * basis_eval_device[ ibfoff ] + factm * basis_eval_device[ ibfoff ]);
-    if constexpr ( den_selector == DEN_Z )
-      z_matrix_device[ ibfoff ] = KZ_device[ ibfoff ] * factk * basis_eval_device[ ibfoff ];
-    if constexpr ( den_selector == DEN_Y )
-      z_matrix_device[ ibfoff ] = KY_device[ ibfoff ] * factk * basis_eval_device[ ibfoff ];
-    if constexpr ( den_selector == DEN_X )
-      z_matrix_device[ ibfoff ] = KX_device[ ibfoff ] * factk * basis_eval_device[ ibfoff ];
+    }
+    else {
+      const double factk = 0.5 * (factp - factm);
+      z_matrix_device[ ibfoff ] = K_device[ ibfoff ] * factk * basis_eval_device[ ibfoff ];
+    }
   }
 
 }
@@ -239,27 +239,29 @@ __global__ void zmat_gga_vxc_uks_kernel( size_t        ntasks,
     const auto gga_fact_2 = 0.5*(gga_fact_pp - gga_fact_mm);
     const auto gga_fact_3 = 0.5*(gga_fact_pp - gga_fact_pm + gga_fact_mm);
 
+    double sign = 1.0;
+
+    double x_fact, y_fact, z_fact;
+
     if constexpr ( den_selector == DEN_S ) {
-      const auto x_fact = gga_fact_1 * den_pos_x_eval_device[ tid_x ] + gga_fact_2 * den_neg_x_eval_device[ tid_x ];
-      const auto y_fact = gga_fact_1 * den_pos_y_eval_device[ tid_x ] + gga_fact_2 * den_neg_y_eval_device[ tid_x ];
-      const auto z_fact = gga_fact_1 * den_pos_z_eval_device[ tid_x ] + gga_fact_2 * den_neg_z_eval_device[ tid_x ];
+       x_fact = gga_fact_1 * den_pos_x_eval_device[ tid_x ] + gga_fact_2 * den_neg_x_eval_device[ tid_x ];
+       y_fact = gga_fact_1 * den_pos_y_eval_device[ tid_x ] + gga_fact_2 * den_neg_y_eval_device[ tid_x ];
+       z_fact = gga_fact_1 * den_pos_z_eval_device[ tid_x ] + gga_fact_2 * den_neg_z_eval_device[ tid_x ];
       
-      z_matrix_device[ ibfoff ] =   x_fact * dbasis_x_eval_device[ ibfoff ]      
-                                  + y_fact * dbasis_y_eval_device[ ibfoff ]
-                                  + z_fact * dbasis_z_eval_device[ ibfoff ] 
-                                  + (factp + factm) * basis_eval_device[ ibfoff ];
 
     }
     if constexpr ( den_selector == DEN_Z ) {
-      const auto x_fact = gga_fact_3 * den_neg_x_eval_device[ tid_x ] + gga_fact_2 * den_pos_x_eval_device[ tid_x ];
-      const auto y_fact = gga_fact_3 * den_neg_y_eval_device[ tid_x ] + gga_fact_2 * den_pos_y_eval_device[ tid_x ];
-      const auto z_fact = gga_fact_3 * den_neg_z_eval_device[ tid_x ] + gga_fact_2 * den_pos_z_eval_device[ tid_x ];
+       sign = -1.0;
+       x_fact = gga_fact_3 * den_neg_x_eval_device[ tid_x ] + gga_fact_2 * den_pos_x_eval_device[ tid_x ];
+       y_fact = gga_fact_3 * den_neg_y_eval_device[ tid_x ] + gga_fact_2 * den_pos_y_eval_device[ tid_x ];
+       z_fact = gga_fact_3 * den_neg_z_eval_device[ tid_x ] + gga_fact_2 * den_pos_z_eval_device[ tid_x ];
 
-      z_matrix_device[ ibfoff ] =   x_fact * dbasis_x_eval_device[ ibfoff ] 
-                                  + y_fact * dbasis_y_eval_device[ ibfoff ]
-                                  + z_fact * dbasis_z_eval_device[ ibfoff ]
-                                  + (factp - factm) * basis_eval_device[ ibfoff ];
     }
+
+    z_matrix_device[ ibfoff ] =   x_fact * dbasis_x_eval_device[ ibfoff ]      
+                                + y_fact * dbasis_y_eval_device[ ibfoff ]
+                                + z_fact * dbasis_z_eval_device[ ibfoff ] 
+                                + (factp + sign * factm) * basis_eval_device[ ibfoff ];
   }
 }
 
@@ -283,12 +285,13 @@ __global__ void zmat_gga_vxc_gks_kernel( size_t        ntasks,
   const double* vgamma_pm_device   = task.vgamma_pm;
   const double* vgamma_mm_device   = task.vgamma_mm;
 
-  const double* Kz_device          = task.K_z;
-  const double* Ky_device          = task.K_y;
-  const double* Kx_device          = task.K_x;
-  const double* Hz_device          = task.H_z;
-  const double* Hy_device          = task.H_y;
-  const double* Hx_device          = task.H_x;
+  
+  // for non-DEN_S
+  double* K_device;
+  double* H_device;
+  if constexpr ( den_selector == DEN_Z ) { K_device = task.K_z; H_device = task.H_z; }
+  if constexpr ( den_selector == DEN_Y ) { K_device = task.K_y; H_device = task.H_y; }
+  if constexpr ( den_selector == DEN_X ) { K_device = task.K_x; H_device = task.H_x; }
 
   const auto* dden_sx_eval_device = task.dden_sx;
   const auto* dden_sy_eval_device = task.dden_sy;
@@ -329,68 +332,63 @@ __global__ void zmat_gga_vxc_gks_kernel( size_t        ntasks,
     const auto gga_fact_2 = 0.5*(gga_fact_pp - gga_fact_mm);
     const auto gga_fact_3 = 0.5*(gga_fact_pp - gga_fact_pm + gga_fact_mm);
 
+    double s_fact, x_fact, y_fact, z_fact;
+
     if constexpr ( den_selector == DEN_S ) {
-      const auto s_fact = 0.5 * (fact_p + fact_m);
-      const auto x_fact = gga_fact_1 * dden_sx_eval_device[ tid_x ]
-                        + gga_fact_2 * (Hz_device[ tid_x ] * dden_zx_eval_device[ tid_x ]
-                                     +  Hy_device[ tid_x ] * dden_yx_eval_device[ tid_x ]
-                                     +  Hx_device[ tid_x ] * dden_xx_eval_device[ tid_x ] );
-      const auto y_fact = gga_fact_1 * dden_sy_eval_device[ tid_x ]
-                        + gga_fact_2 * (Hz_device[ tid_x ] * dden_zy_eval_device[ tid_x ]
-                                     +  Hy_device[ tid_x ] * dden_yy_eval_device[ tid_x ]
-                                     +  Hx_device[ tid_x ] * dden_xy_eval_device[ tid_x ] );
-      const auto z_fact = gga_fact_1 * dden_sz_eval_device[ tid_x ]
+      const double* Hz_device          = task.H_z;
+      const double* Hy_device          = task.H_y;
+      const double* Hx_device          = task.H_x;
+      
+      s_fact = 0.5 * (fact_p + fact_m);
+
+      x_fact = gga_fact_1 * dden_sx_eval_device[ tid_x ]
+             + gga_fact_2 * (Hz_device[ tid_x ] * dden_zx_eval_device[ tid_x ]
+                          +  Hy_device[ tid_x ] * dden_yx_eval_device[ tid_x ]
+                          +  Hx_device[ tid_x ] * dden_xx_eval_device[ tid_x ] );
+      y_fact = gga_fact_1 * dden_sy_eval_device[ tid_x ]
+             + gga_fact_2 * (Hz_device[ tid_x ] * dden_zy_eval_device[ tid_x ]
+                          +  Hy_device[ tid_x ] * dden_yy_eval_device[ tid_x ]
+                          +  Hx_device[ tid_x ] * dden_xy_eval_device[ tid_x ] );
+      z_fact = gga_fact_1 * dden_sz_eval_device[ tid_x ]
                         + gga_fact_2 * (Hz_device[ tid_x ] * dden_zz_eval_device[ tid_x ]
                                      +  Hy_device[ tid_x ] * dden_yz_eval_device[ tid_x ]
                                      +  Hx_device[ tid_x ] * dden_xz_eval_device[ tid_x ] );
-      z_matrix_device[ ibfoff ] =   x_fact * dbasis_x_eval_device[ ibfoff ]      
-                                  + y_fact * dbasis_y_eval_device[ ibfoff ]
-                                  + z_fact * dbasis_z_eval_device[ ibfoff ] 
-                                  + s_fact * basis_eval_device[ ibfoff ];
-
     }
 
     if constexpr ( den_selector == DEN_Z ) {
-      const auto s_fact  = Kz_device[ tid_x ] * 0.5 * (fact_p - fact_m);
-      const auto x_fact  = gga_fact_3 * dden_zx_eval_device[ tid_x ]
-                        +  gga_fact_2 * Hz_device[ tid_x ] * dden_sx_eval_device[ tid_x ];
-      const auto y_fact  = gga_fact_3 * dden_zy_eval_device[ tid_x ]
-                        +  gga_fact_2 * Hz_device[ tid_x ] * dden_sy_eval_device[ tid_x ];
-      const auto z_fact  = gga_fact_3 * dden_zz_eval_device[ tid_x ]
-                        +  gga_fact_2 * Hz_device[ tid_x ] * dden_sz_eval_device[ tid_x ];
-      z_matrix_device[ ibfoff ] =   x_fact * dbasis_x_eval_device[ ibfoff ]      
-                                  + y_fact * dbasis_y_eval_device[ ibfoff ]
-                                  + z_fact * dbasis_z_eval_device[ ibfoff ] 
-                                  + s_fact *  basis_eval_device[ ibfoff ];
+      s_fact  = K_device[ tid_x ] * 0.5 * (fact_p - fact_m);
+      x_fact  = gga_fact_3 * dden_zx_eval_device[ tid_x ]
+             +  gga_fact_2 * H_device[ tid_x ] * dden_sx_eval_device[ tid_x ];
+      y_fact  = gga_fact_3 * dden_zy_eval_device[ tid_x ]
+             +  gga_fact_2 * H_device[ tid_x ] * dden_sy_eval_device[ tid_x ];
+      z_fact  = gga_fact_3 * dden_zz_eval_device[ tid_x ]
+             +  gga_fact_2 * H_device[ tid_x ] * dden_sz_eval_device[ tid_x ];
     }
 
     if constexpr ( den_selector == DEN_Y ) {
-      const auto s_fact  = Ky_device[ tid_x ] * 0.5 * (fact_p - fact_m);
-      const auto x_fact  = gga_fact_3 * dden_yx_eval_device[ tid_x ]
-                        +  gga_fact_2 * Hy_device[ tid_x ] * dden_sx_eval_device[ tid_x ];
-      const auto y_fact  = gga_fact_3 * dden_yy_eval_device[ tid_x ]
-                        +  gga_fact_2 * Hy_device[ tid_x ] * dden_sy_eval_device[ tid_x ];
-      const auto z_fact  = gga_fact_3 * dden_yz_eval_device[ tid_x ]
-                        +  gga_fact_2 * Hy_device[ tid_x ] * dden_sz_eval_device[ tid_x ];
-      z_matrix_device[ ibfoff ] =   x_fact * dbasis_x_eval_device[ ibfoff ]      
-                                  + y_fact * dbasis_y_eval_device[ ibfoff ]
-                                  + z_fact * dbasis_z_eval_device[ ibfoff ] 
-                                  + s_fact *  basis_eval_device[ ibfoff ];
+      s_fact  = K_device[ tid_x ] * 0.5 * (fact_p - fact_m);
+      x_fact  = gga_fact_3 * dden_yx_eval_device[ tid_x ]
+             +  gga_fact_2 * H_device[ tid_x ] * dden_sx_eval_device[ tid_x ];
+      y_fact  = gga_fact_3 * dden_yy_eval_device[ tid_x ]
+             +  gga_fact_2 * H_device[ tid_x ] * dden_sy_eval_device[ tid_x ];
+      z_fact  = gga_fact_3 * dden_yz_eval_device[ tid_x ]
+             +  gga_fact_2 * H_device[ tid_x ] * dden_sz_eval_device[ tid_x ];
     }
 
     if constexpr ( den_selector == DEN_X ) {
-      const auto s_fact  = Kx_device[ tid_x ] * 0.5 * (fact_p - fact_m);
-      const auto x_fact  = gga_fact_3 * dden_xx_eval_device[ tid_x ]
-                        +  gga_fact_2 * Hx_device[ tid_x ] * dden_sx_eval_device[ tid_x ];
-      const auto y_fact  = gga_fact_3 * dden_xy_eval_device[ tid_x ]
-                        +  gga_fact_2 * Hx_device[ tid_x ] * dden_sy_eval_device[ tid_x ];
-      const auto z_fact  = gga_fact_3 * dden_xz_eval_device[ tid_x ]
-                        +  gga_fact_2 * Hx_device[ tid_x ] * dden_sz_eval_device[ tid_x ];
-      z_matrix_device[ ibfoff ] =   x_fact * dbasis_x_eval_device[ ibfoff ]      
-                                  + y_fact * dbasis_y_eval_device[ ibfoff ]
-                                  + z_fact * dbasis_z_eval_device[ ibfoff ] 
-                                  + s_fact *  basis_eval_device[ ibfoff ];
+      s_fact  = K_device[ tid_x ] * 0.5 * (fact_p - fact_m);
+      x_fact  = gga_fact_3 * dden_xx_eval_device[ tid_x ]
+             +  gga_fact_2 * H_device[ tid_x ] * dden_sx_eval_device[ tid_x ];
+      y_fact  = gga_fact_3 * dden_xy_eval_device[ tid_x ]
+             +  gga_fact_2 * H_device[ tid_x ] * dden_sy_eval_device[ tid_x ];
+      z_fact  = gga_fact_3 * dden_xz_eval_device[ tid_x ]
+             +  gga_fact_2 * H_device[ tid_x ] * dden_sz_eval_device[ tid_x ];
     }
+
+    z_matrix_device[ ibfoff ] =   x_fact * dbasis_x_eval_device[ ibfoff ]      
+                                + y_fact * dbasis_y_eval_device[ ibfoff ]
+                                + z_fact * dbasis_z_eval_device[ ibfoff ] 
+                                + s_fact *  basis_eval_device[ ibfoff ];
 
   }
 }
@@ -398,7 +396,31 @@ __global__ void zmat_gga_vxc_gks_kernel( size_t        ntasks,
 
 
 
-
+#define ZMAT_VXC_KERN(xc_approx) \
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>(); \
+  dim3 threads(cuda::warp_size,cuda::max_warps_per_thread_block,1); \
+  dim3 blocks( util::div_ceil( max_npts, threads.x ), \
+               util::div_ceil( max_nbf,  threads.y ), \
+               ntasks ); \
+  switch( scheme ) { \
+    case RKS: \
+      zmat_##xc_approx##_vxc_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, tasks_device ); \
+      break; \
+    case UKS: \
+      if ( sel == DEN_S )       zmat_##xc_approx##_vxc_uks_kernel<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device ); \
+      else if ( sel == DEN_Z )  zmat_##xc_approx##_vxc_uks_kernel<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device ); \
+      else GAUXC_GENERIC_EXCEPTION( "zmat_##xc_approx##_vxc invalid density" ); \
+      break; \
+    case GKS: \
+      if ( sel == DEN_S )       zmat_##xc_approx##_vxc_gks_kernel<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device ); \
+      else if ( sel == DEN_Z )  zmat_##xc_approx##_vxc_gks_kernel<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device ); \
+      else if ( sel == DEN_Y )  zmat_##xc_approx##_vxc_gks_kernel<DEN_Y><<< blocks, threads, 0, stream >>>( ntasks, tasks_device ); \
+      else if ( sel == DEN_X )  zmat_##xc_approx##_vxc_gks_kernel<DEN_X><<< blocks, threads, 0, stream >>>( ntasks, tasks_device ); \
+      else GAUXC_GENERIC_EXCEPTION( "zmat_##xc_approx##_vxc invalid density" ); \
+      break; \
+    default: \
+      GAUXC_GENERIC_EXCEPTION( "zmat_##xc_approx##_vxc invalid KS scheme" ); \
+  }
 
 
 
@@ -409,34 +431,7 @@ void zmat_lda_vxc( size_t            ntasks,
                    integrator_ks_scheme scheme,
                    density_id sel,
                    device_queue queue ) {
-
-  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
-
-
-  dim3 threads(cuda::warp_size,cuda::max_warps_per_thread_block,1);
-  dim3 blocks( util::div_ceil( max_npts, threads.x ),
-               util::div_ceil( max_nbf,  threads.y ),
-               ntasks );
-
-  switch( scheme ) {
-    case RKS:
-      zmat_lda_vxc_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-      break;
-    case UKS:
-      if ( sel == DEN_S )       zmat_lda_vxc_uks_kernel<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-      else if ( sel == DEN_Z )  zmat_lda_vxc_uks_kernel<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-      else GAUXC_GENERIC_EXCEPTION( "zmat_lda_vxc invalid density" );
-      break;
-    case GKS:
-      if ( sel == DEN_S )       zmat_lda_vxc_gks_kernel<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-      else if ( sel == DEN_Z )  zmat_lda_vxc_gks_kernel<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-      else if ( sel == DEN_Y )  zmat_lda_vxc_gks_kernel<DEN_Y><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-      else if ( sel == DEN_X )  zmat_lda_vxc_gks_kernel<DEN_X><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-      else GAUXC_GENERIC_EXCEPTION( "zmat_lda_vxc invalid density" );
-      break;
-    default:
-      GAUXC_GENERIC_EXCEPTION( "zmat_lda_vxc invalid KS scheme" );
-  }
+ZMAT_VXC_KERN(lda)
 }
 
 
@@ -452,34 +447,7 @@ void zmat_gga_vxc( size_t            ntasks,
                    integrator_ks_scheme scheme,
                    density_id sel,
                    device_queue queue ) {
-
-  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
-
-
-  dim3 threads(cuda::warp_size,cuda::max_warps_per_thread_block,1);
-  dim3 blocks( util::div_ceil( max_npts, threads.x ),
-               util::div_ceil( max_nbf,  threads.y ),
-               ntasks );
-
-  switch( scheme ) {
-    case RKS:
-      zmat_gga_vxc_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-      break;
-    case UKS:
-      if ( sel == DEN_S )       zmat_gga_vxc_uks_kernel<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-      else if ( sel == DEN_Z )  zmat_gga_vxc_uks_kernel<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-      else GAUXC_GENERIC_EXCEPTION( "zmat_gga_vxc invalid density" );
-      break;
-    case GKS:
-      if ( sel == DEN_S )       zmat_gga_vxc_gks_kernel<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-      else if ( sel == DEN_Z )  zmat_gga_vxc_gks_kernel<DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-      else if ( sel == DEN_Y )  zmat_gga_vxc_gks_kernel<DEN_Y><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-      else if ( sel == DEN_X )  zmat_gga_vxc_gks_kernel<DEN_X><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-      else GAUXC_GENERIC_EXCEPTION( "zmat_gga_vxc invalid density" );
-      break;
-    default:
-      GAUXC_GENERIC_EXCEPTION( "zmat_gga_vxc invalid KS scheme" );
-  }
+ZMAT_VXC_KERN(gga)
 }
 
 
