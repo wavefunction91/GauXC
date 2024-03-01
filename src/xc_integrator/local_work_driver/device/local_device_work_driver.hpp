@@ -61,7 +61,7 @@ public:
   void eval_collocation_gradient( XCDeviceData* );
   void eval_collocation_hessian( XCDeviceData* );
 
-  void eval_xmat( double fac, XCDeviceData*, bool do_grad = false , density_id den = DEN_S );
+  void eval_xmat( double fac, XCDeviceData*, bool do_grad, density_id den );
   
   void eval_uvars_lda( XCDeviceData*, integrator_ks_scheme );
   void eval_uvars_gga( XCDeviceData*, integrator_ks_scheme );

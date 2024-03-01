@@ -427,7 +427,7 @@ void AoSScheme1Base::eval_uvars_lda( XCDeviceData* _data, integrator_ks_scheme k
 
   auto base_stack    = data->base_stack;
   
-  // Evaluate V variable
+  // Evaluate U variables
   auto aos_stack     = data->aos_stack;
   GauXC::eval_uvars_lda( ntasks, npts_max, ks_scheme,
     aos_stack.device_tasks, data->device_backend_->queue() );

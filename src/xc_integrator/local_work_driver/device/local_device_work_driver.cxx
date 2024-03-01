@@ -55,8 +55,8 @@ FWD_TO_PIMPL(eval_collocation_gradient) // Collocation Gradient
 FWD_TO_PIMPL(eval_collocation_hessian)  // Collocation Hessian
 
 
-FWD_TO_PIMPL_KS_SCHEME(eval_uvars_lda)            // U/VVar LDA (density)
-FWD_TO_PIMPL_KS_SCHEME(eval_uvars_gga)            // U/VVar GGA (density + grad, gamma)
+FWD_TO_PIMPL_KS_SCHEME(eval_uvars_lda)            // U variables LDA (density)
+FWD_TO_PIMPL_KS_SCHEME(eval_uvars_gga)            // U variables GGA (density + grad, gamma)
 
 
 FWD_TO_PIMPL_KS_SCHEME_DEN_ID(eval_zmat_lda_vxc)         // Eval Z Matrix LDA VXC
