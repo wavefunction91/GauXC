@@ -16,7 +16,6 @@ struct AoSScheme1MAGMABase : public AoSScheme1Base {
   void eval_exx_fmat( XCDeviceData* ) override final;
   void inc_vxc( XCDeviceData*, density_id den ) override final;
   void inc_exx_k( XCDeviceData* ) override final;
-  void send_dmat( XCDeviceData*, density_id den);
 
   struct Data;
 

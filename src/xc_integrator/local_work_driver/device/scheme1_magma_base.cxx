@@ -33,6 +33,8 @@ void AoSScheme1MAGMABase::eval_xmat( double fac, XCDeviceData* _data, bool do_gr
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
   auto static_stack  = data->static_stack;
   auto aos_stack     = data->aos_stack;
+  auto master_queue = data->device_backend_->master_magma_queue();
+  auto magma_stack = data->magma_stack;
   double* dmat_ptr   = nullptr;
   switch( den ) {
     case DEN_S:
@@ -53,12 +55,21 @@ void AoSScheme1MAGMABase::eval_xmat( double fac, XCDeviceData* _data, bool do_gr
   sym_pack_submat( ntasks, aos_stack.device_tasks, dmat_ptr,
     nbf, submat_block_size, data->device_backend_->queue() );
   
-  // Update dmat on magma_stack if required
+  // Update dmat on magma_stack 
   //if ( magma_stack.xdmat_array_device != dmat_ptr )
-    this->send_dmat( data, den);
+  std::vector<double*> dmat_host( ntasks );
 
-  auto master_queue = data->device_backend_->master_magma_queue();
-  auto magma_stack = data->magma_stack;
+  for( auto i = 0; i < ntasks; i++ ) {
+    auto& task = tasks[i];
+    if( task.bfn_screening.ncut > 1 ) {
+      dmat_host[i]  = task.nbe_scr;
+    } else {
+      dmat_host[i]  = dmat_ptr + task.bfn_screening.ibf_begin*(nbf+1);
+    }
+  }
+  data->device_backend_->copy_async( ntasks, dmat_host.data(), 
+      magma_stack.xdmat_array_device, "send xdmat array");
+
   magmablas_dgemm_vbatched( MagmaNoTrans, MagmaNoTrans,
     magma_stack.xmat_m_array_device, magma_stack.xmat_n_array_device, 
     magma_stack.xmat_k_array_device, 
