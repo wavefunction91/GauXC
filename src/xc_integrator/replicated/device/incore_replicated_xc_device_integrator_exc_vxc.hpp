@@ -306,17 +306,17 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     // Evaluate X matrix and V vars
     const bool do_xmat_grad = false;
-    lwd->eval_xmat( xmat_fac, &device_data, do_xmat_grad, DEN_S );
-    lwd->eval_vvar( &device_data, func.is_gga(), DEN_S );
+    auto do_xmat_vvar = [&](density_id den_id) {
+      lwd->eval_xmat( xmat_fac, &device_data, do_xmat_grad, den_id );
+      lwd->eval_vvar( &device_data, func.is_gga(), den_id );
+    };
 
+    do_xmat_vvar(DEN_S);
     if (not is_rks) {
-      lwd->eval_xmat( xmat_fac, &device_data, do_xmat_grad, DEN_Z );
-      lwd->eval_vvar( &device_data, func.is_gga(), DEN_Z );
+      do_xmat_vvar(DEN_Z);
       if (not is_uks) {
-        lwd->eval_xmat( xmat_fac, &device_data, do_xmat_grad, DEN_Y );
-        lwd->eval_vvar( &device_data, func.is_gga(), DEN_Y );
-        lwd->eval_xmat( xmat_fac, &device_data, do_xmat_grad, DEN_X );
-        lwd->eval_vvar( &device_data, func.is_gga(), DEN_X );
+        do_xmat_vvar(DEN_Y);
+        do_xmat_vvar(DEN_X);
       }
     }
 
@@ -334,27 +334,22 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->inc_exc( &device_data );
     lwd->inc_nel( &device_data );
 
-    
-    if( func.is_gga() ) lwd->eval_zmat_gga_vxc( &device_data, enabled_terms.ks_scheme, DEN_S );
-    else                lwd->eval_zmat_lda_vxc( &device_data, enabled_terms.ks_scheme, DEN_S );
-    lwd->inc_vxc( &device_data, DEN_S );
+   auto do_zmat_vxc = [&](density_id den_id) {
+     if( func.is_gga() ) 
+       lwd->eval_zmat_gga_vxc( &device_data, enabled_terms.ks_scheme, den_id );
+     else 
+       lwd->eval_zmat_lda_vxc( &device_data, enabled_terms.ks_scheme, den_id );
+     lwd->inc_vxc( &device_data, den_id );
+  };
 
-    if (not is_rks) {
-      if( func.is_gga() ) lwd->eval_zmat_gga_vxc( &device_data, enabled_terms.ks_scheme, DEN_Z );
-      else                lwd->eval_zmat_lda_vxc( &device_data, enabled_terms.ks_scheme, DEN_Z );
-      lwd->inc_vxc( &device_data, DEN_Z );
-
-      if (not is_uks) {
-        if( func.is_gga() ) lwd->eval_zmat_gga_vxc( &device_data, enabled_terms.ks_scheme, DEN_Y );
-        else                lwd->eval_zmat_lda_vxc( &device_data, enabled_terms.ks_scheme, DEN_Y );
-        lwd->inc_vxc( &device_data, DEN_Y );
-
-        if( func.is_gga() ) lwd->eval_zmat_gga_vxc( &device_data, enabled_terms.ks_scheme, DEN_X );
-        else                lwd->eval_zmat_lda_vxc( &device_data, enabled_terms.ks_scheme, DEN_X );
-        lwd->inc_vxc( &device_data, DEN_X );
-      }
-
+  do_zmat_vxc(DEN_S);
+  if(not is_rks) {
+    do_zmat_vxc(DEN_Z);
+    if(not is_uks) {
+      do_zmat_vxc(DEN_Y);
+      do_zmat_vxc(DEN_X);
     }
+  } 
 
   } // Loop over batches of batches 
 
