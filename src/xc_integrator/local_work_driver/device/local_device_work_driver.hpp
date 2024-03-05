@@ -61,35 +61,26 @@ public:
   void eval_collocation_gradient( XCDeviceData* );
   void eval_collocation_hessian( XCDeviceData* );
 
-  void eval_xmat( double fac, XCDeviceData*, bool do_grad = false );
-
-  void eval_uvvar_lda_rks( XCDeviceData* );
-  void eval_uvvar_gga_rks( XCDeviceData* );
-
-  void eval_uvvar_lda_uks( XCDeviceData* );
-  void eval_uvvar_gga_uks( XCDeviceData* );
-
-  void eval_uvvar_lda_gks( XCDeviceData* );
-  void eval_uvvar_gga_gks( XCDeviceData* );
+  void eval_xmat( double fac, XCDeviceData*, bool do_grad, density_id den );
+  
+  void eval_uvars_lda( XCDeviceData*, integrator_ks_scheme );
+  void eval_uvars_gga( XCDeviceData*, integrator_ks_scheme );
+  void eval_vvar( XCDeviceData*, bool, density_id );
 
   void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* );
   void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* );
 
-  void eval_zmat_lda_vxc_rks( XCDeviceData* );
-  void eval_zmat_gga_vxc_rks( XCDeviceData* );
 
-  void eval_zmat_lda_vxc_uks( XCDeviceData* );
-  void eval_zmat_gga_vxc_uks( XCDeviceData* );
+  void eval_zmat_lda_vxc( XCDeviceData*, integrator_ks_scheme,  density_id );
+  void eval_zmat_gga_vxc( XCDeviceData*, integrator_ks_scheme,  density_id );
 
-  void eval_zmat_lda_vxc_gks( XCDeviceData* );
-  void eval_zmat_gga_vxc_gks( XCDeviceData* );
 
   void eval_exx_fmat( XCDeviceData* );
   void eval_exx_gmat( XCDeviceData*, const BasisSetMap& );
 
   void inc_exc( XCDeviceData* );
   void inc_nel( XCDeviceData* );
-  void inc_vxc( XCDeviceData* );
+  void inc_vxc( XCDeviceData*, density_id );
   void inc_exc_grad_lda( XCDeviceData* );
   void inc_exc_grad_gga( XCDeviceData* );
   void inc_exx_k( XCDeviceData* );
@@ -98,7 +89,7 @@ public:
   void exx_ek_shellpair_collision( double eps_E, double eps_K, XCDeviceData*, 
     host_task_iterator, host_task_iterator, const ShellPairCollection<double>& );
 
-  void symmetrize_vxc( XCDeviceData* );
+  void symmetrize_vxc( XCDeviceData*, density_id );
   void symmetrize_exx_k( XCDeviceData* );
 
   std::unique_ptr<XCDeviceData> create_device_data(const DeviceRuntimeEnvironment&);

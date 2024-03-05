@@ -20,10 +20,25 @@
 namespace GauXC {
 
 enum integrator_xc_approx : uint32_t {
-  _UNDEFINED = 0,
-  LDA        = 1,
-  GGA        = 2,
-  MGGA       = 3
+  _UNDEF_APPROX         = 0,
+  LDA                   = 1,
+  GGA                   = 2,
+  MGGA                  = 3
+};
+
+enum integrator_ks_scheme : uint32_t {
+  _UNDEF_SCHEME             = 0,
+  RKS                       = 1,
+  UKS                       = 2,
+  GKS                       = 3
+};
+
+enum density_id : uint32_t {
+  _UNDEF_DEN      = 0,
+  DEN_S           = 1,    // RKS, UKS, GKS
+  DEN_Z           = 2,    // UKS, GKS
+  DEN_Y           = 3,    // GKS
+  DEN_X           = 4     // GKS
 };
 
 struct integrator_term_tracker {
@@ -33,13 +48,14 @@ struct integrator_term_tracker {
   bool exc_grad                  = false;
   bool exx                       = false;
   bool exx_ek_screening          = false;
-  integrator_xc_approx xc_approx = _UNDEFINED;
+  integrator_xc_approx xc_approx = _UNDEF_APPROX;
+  integrator_ks_scheme ks_scheme = _UNDEF_SCHEME;
   inline void reset() {
     std::memset( this, 0, sizeof(integrator_term_tracker) );
   }
 };
 
-#define PRDVL(pred,val) (pred) ? (val) : 0ul;
+#define PRDVL(pred,val) (pred) ? (val) : 0ul
 
 struct required_term_storage {
   bool grid_points  = false;
@@ -60,24 +76,67 @@ struct required_term_storage {
   bool grid_vrho     = false;
   bool grid_vgamma   = false;
 
+
+  // Reference flags for memory management use
+  integrator_term_tracker ref_tracker;
+  
   inline size_t grid_den_size(size_t npts){ 
-    return PRDVL(grid_den, npts);
+    // For RKS, only den_s_eval is used
+    if( grid_den ) {
+      if( ref_tracker.ks_scheme == RKS ) return npts; 
+      if( ref_tracker.den )              return npts; 
+      // 2*npts for S,Z densities, 2*npts for interleaved density
+      if( ref_tracker.ks_scheme == UKS ) return 4*npts;
+      // Same as above, but also X,Y densities
+      if( ref_tracker.ks_scheme == GKS ) return 6*npts;  
+    }
+    return 0ul;
   }
   inline size_t grid_den_grad_size(size_t npts){ 
-    return PRDVL(grid_den_grad, 3 * npts);
+    if( grid_den_grad ) {
+      // 3*npts for each density in play
+      if( ref_tracker.ks_scheme == RKS ) return 3*npts;
+      if( ref_tracker.ks_scheme == UKS ) return 6*npts;
+      if( ref_tracker.ks_scheme == GKS ) return 12*npts;
+    }
+    return 0ul;
   }
-  inline size_t grid_gamma_size(size_t npts){ 
-    return PRDVL(grid_gamma, npts);
+  inline size_t grid_gamma_size(size_t npts){
+    if( grid_gamma ) {
+      if(  ref_tracker.ks_scheme == RKS ) return npts;
+      if(  ref_tracker.ks_scheme == UKS 
+        or ref_tracker.ks_scheme == GKS ) return 6*npts;
+    }
+    return 0ul;
   }
   inline size_t grid_eps_size(size_t npts){ 
     return PRDVL(grid_eps, npts);
   }
   inline size_t grid_vrho_size(size_t npts){ 
-    return PRDVL(grid_vrho, npts);
+    if( grid_vrho ) {
+      if(   ref_tracker.ks_scheme == RKS ) return npts;
+      if(   ref_tracker.ks_scheme == UKS 
+        or  ref_tracker.ks_scheme == GKS ) return 4*npts;
+    }
+    return 0ul;
   }
   inline size_t grid_vgamma_size(size_t npts){ 
-    return PRDVL(grid_vgamma, npts);
+    if( grid_vgamma ) {
+      if(   ref_tracker.ks_scheme == RKS ) return npts;
+      if(   ref_tracker.ks_scheme == UKS 
+        or  ref_tracker.ks_scheme == GKS ) return 6*npts;
+    }
+    return 0ul;
   }
+  inline size_t grid_HK_size(size_t npts){
+    if( ref_tracker.ks_scheme == GKS ) {
+      if( ref_tracker.xc_approx == GGA ) return 6*npts;
+      if( ref_tracker.xc_approx == LDA ) return 3*npts;
+    }
+    return 0ul;
+  }
+
+
 
   // Task-local matrices
   bool task_bfn           = false;
@@ -224,20 +283,26 @@ struct required_term_storage {
       grid_to_parent_center       = true;
     }
 
-    // Allocated terms for XC aclculations
+    // Allocated terms for XC calculations
     const bool is_xc = tracker.exc_vxc or tracker.exc_grad;
+    
+    ref_tracker = tracker;
+
     if(is_xc) {
-      if( tracker.xc_approx == _UNDEFINED )
+      if( tracker.xc_approx == _UNDEF_APPROX )
         GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET");
+      if( tracker.ks_scheme == _UNDEF_SCHEME )
+        GAUXC_GENERIC_EXCEPTION("NO KS SCHEME SET");
       //const bool is_lda  = is_xc and tracker.xc_approx == LDA;
       const bool is_gga  = is_xc and tracker.xc_approx == GGA;
       const bool is_grad = tracker.exc_grad;
 
       grid_den      = true;
       grid_den_grad = is_gga or is_grad;
+      grid_vrho     = true;
+
       grid_gamma    = is_gga;
       grid_eps      = true;
-      grid_vrho     = true;
       grid_vgamma   = is_gga;
 
       task_bfn          = true;
@@ -337,7 +402,7 @@ struct XCDeviceData {
   /// Allocate device memory for data that will persist on the device.
   virtual void reset_allocations() = 0;
   virtual void allocate_static_data_weights( int32_t natoms ) = 0;
-  virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) = 0;
+  virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms ) = 0;
   virtual void allocate_static_data_den( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) = 0;
   virtual void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, int32_t max_l ) = 0;
@@ -345,7 +410,7 @@ struct XCDeviceData {
 
   // Send persistent data from host to device
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
-  virtual void send_static_data_density_basis( const double* P, int32_t ldp, const BasisSet<double>& basis ) = 0;
+  virtual void send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz, const double* Py, int32_t ldpy, const double* Px, int32_t ldpx, const BasisSet<double>& basis ) = 0;
   virtual void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) = 0;
   virtual void send_static_data_exx_ek_screening( const double* V_max, int32_t ldv, const BasisSetMap&, const ShellPairCollection<double>& ) = 0;
 
@@ -353,7 +418,7 @@ struct XCDeviceData {
   virtual void zero_den_integrands() = 0;
 
   /// Zero out the EXC / VXC integrands in device memory
-  virtual void zero_exc_vxc_integrands() = 0;
+  virtual void zero_exc_vxc_integrands(integrator_term_tracker enabled_terms) = 0;
 
   /// Zero out the EXC Gradient integrands in device memory
   virtual void zero_exc_grad_integrands() = 0;
@@ -391,7 +456,8 @@ struct XCDeviceData {
    *  @param[out[ VXC  Integrated XC potential (host) for XC queue
    */
   virtual void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
-    double* VXC, int32_t ldvxc ) = 0;
+    double* VXCs, int32_t ldvxcs, double* VXCz, int32_t ldvxcz,
+    double* VXCy, int32_t ldvxcy, double* VXCx, int32_t ldvxcx ) = 0;
 
   /** Retreive EXC Gradient integrands from device memory
    *
@@ -415,7 +481,10 @@ struct XCDeviceData {
   virtual void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) = 0;
   virtual void populate_submat_maps ( size_t, host_task_iterator begin, host_task_iterator end, const BasisSetMap& ) = 0;
 
-  virtual double* vxc_device_data() = 0;
+  virtual double* vxc_z_device_data() = 0;
+  virtual double* vxc_s_device_data() = 0;
+  virtual double* vxc_y_device_data() = 0;
+  virtual double* vxc_x_device_data() = 0;
   virtual double* exc_device_data() = 0;
   virtual double* nel_device_data() = 0;
   virtual double* exx_k_device_data() = 0;

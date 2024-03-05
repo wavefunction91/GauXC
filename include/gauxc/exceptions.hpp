@@ -34,7 +34,7 @@ class magma_exception;
 class cutlass_exception;
 #endif
 
-/// C++ Excpetion for genertic GauXC errors
+/// C++ Exception for generic GauXC errors
 class generic_gauxc_exception : public std::exception {
 
   std::string file_;
