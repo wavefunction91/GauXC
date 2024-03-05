@@ -458,10 +458,6 @@ struct XCDeviceData {
    *  @param[out[ VXC  Integrated XC potential (host) for XC queue
    */
   virtual void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
-    double* VXC, int32_t ldvxc ) = 0;
-  virtual void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
-    double* VXCs, int32_t ldvxcs, double* VXCz, int32_t ldvxcz ) = 0;
-  virtual void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
     double* VXCs, int32_t ldvxcs, double* VXCz, int32_t ldvxcz,
     double* VXCy, int32_t ldvxcy, double* VXCx, int32_t ldvxcx ) = 0;
 

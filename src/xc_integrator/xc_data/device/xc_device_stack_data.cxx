@@ -551,51 +551,33 @@ void XCDeviceStackData::zero_exx_ek_screening_intermediates() {
 }
 
 
-
-
-void XCDeviceStackData::retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
-  double* VXC, int32_t ldvxc ) {
-
-  const auto nbf = global_dims.nbf;
-  if( ldvxc != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDVXC must be NBF");
-  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
-  
-  device_backend_->copy_async( nbf*nbf, static_stack.vxc_s_device, VXC,  "VXC D2H" );
-  device_backend_->copy_async( 1,       static_stack.nel_device, N_EL, "NEL D2H" );
-  device_backend_->copy_async( 1,       static_stack.exc_device, EXC,  "EXC D2H" );
-
-}
-
-void XCDeviceStackData::retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
-  double* VXCs, int32_t ldvxcs, double* VXCz, int32_t ldvxcz ) {
-
-  const auto nbf = global_dims.nbf;
-  if( ldvxcs != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDVXCscalar must be NBF");
-  if( ldvxcz != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDVXCz must be NBF");
-  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
-  
-  device_backend_->copy_async( nbf*nbf, static_stack.vxc_s_device, VXCs,  "VXCs D2H" );
-  device_backend_->copy_async( nbf*nbf, static_stack.vxc_z_device, VXCz,  "VXCz D2H" );
-  device_backend_->copy_async( 1,       static_stack.nel_device, N_EL, "NEL D2H" );
-  device_backend_->copy_async( 1,       static_stack.exc_device, EXC,  "EXC D2H" );
-
-}
-
 void XCDeviceStackData::retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
   double* VXCs, int32_t ldvxcs, double* VXCz, int32_t ldvxcz,
   double* VXCy, int32_t ldvxcy, double* VXCx, int32_t ldvxcx ) {
+  const bool is_gks = (VXCz != nullptr) and (VXCy != nullptr) and (VXCx != nullptr);
+  const bool is_uks = (VXCz != nullptr) and (VXCy == nullptr) and (VXCx == nullptr);
+  const bool is_rks = (VXCs != nullptr) and (not is_uks and not is_gks);
 
   const auto nbf = global_dims.nbf;
-  if( ldvxcs != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDVXCscalar must be NBF");
-  if( ldvxcz != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDVXCz must be NBF");
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
-  
-  device_backend_->copy_async( nbf*nbf, static_stack.vxc_s_device, VXCs,  "VXCs D2H" );
-  device_backend_->copy_async( nbf*nbf, static_stack.vxc_z_device, VXCz,  "VXCz D2H" );
-  device_backend_->copy_async( nbf*nbf, static_stack.vxc_y_device, VXCy,  "VXCy D2H" );
-  device_backend_->copy_async( nbf*nbf, static_stack.vxc_x_device, VXCx,  "VXCx D2H" );
+
   device_backend_->copy_async( 1,       static_stack.nel_device, N_EL, "NEL D2H" );
   device_backend_->copy_async( 1,       static_stack.exc_device, EXC,  "EXC D2H" );
+
+  if( ldvxcs != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDVXCscalar must be NBF");
+  device_backend_->copy_async( nbf*nbf, static_stack.vxc_s_device, VXCs,  "VXCs D2H" );
+
+  if( not is_rks ) {
+    if( ldvxcz != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDVXCz must be NBF");
+    device_backend_->copy_async( nbf*nbf, static_stack.vxc_z_device, VXCz,  "VXCz D2H" );
+
+    if( is_gks ) {
+      if( ldvxcy != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDVXCy must be NBF");
+      if( ldvxcx != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDVXCx must be NBF");
+      device_backend_->copy_async( nbf*nbf, static_stack.vxc_y_device, VXCy,  "VXCy D2H" );
+      device_backend_->copy_async( nbf*nbf, static_stack.vxc_x_device, VXCx,  "VXCx D2H" );
+    } 
+  }
 
 }
 
