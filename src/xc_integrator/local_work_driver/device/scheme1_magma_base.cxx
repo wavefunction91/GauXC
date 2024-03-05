@@ -56,7 +56,6 @@ void AoSScheme1MAGMABase::eval_xmat( double fac, XCDeviceData* _data, bool do_gr
     nbf, submat_block_size, data->device_backend_->queue() );
   
   // Update dmat on magma_stack 
-  //if ( magma_stack.xdmat_array_device != dmat_ptr )
   std::vector<double*> dmat_host( ntasks );
 
   for( auto i = 0; i < ntasks; i++ ) {

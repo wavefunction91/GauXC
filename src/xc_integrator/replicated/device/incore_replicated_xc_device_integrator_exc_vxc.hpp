@@ -270,9 +270,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   device_data.reset_allocations();
   device_data.allocate_static_data_exc_vxc( nbf, nshells, enabled_terms );
   
-  if (is_rks) device_data.send_static_data_density_basis( Ps, ldps, basis );
-  else if (is_uks) device_data.send_static_data_density_basis( Ps, ldps, Pz, ldpz, basis );
-  else if (is_gks) device_data.send_static_data_density_basis( Ps, ldps, Pz, ldpz, Px, ldpx, Py, ldpy, basis );
+  device_data.send_static_data_density_basis( Ps, ldps, Pz, ldpz, Px, ldpx, Py, ldpy, basis );
 
 
   // Processes batches in groups that saturate available device memory

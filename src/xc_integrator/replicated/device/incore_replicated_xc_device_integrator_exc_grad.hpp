@@ -108,7 +108,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   const auto natoms  = mol.size();
   device_data.reset_allocations();
   device_data.allocate_static_data_exc_grad( nbf, nshells, natoms );
-  device_data.send_static_data_density_basis( P, ldp, basis );
+  device_data.send_static_data_density_basis( P, ldp, nullptr, 0, nullptr, 0, nullptr, 0, basis );
 
   // Zero integrands
   device_data.zero_exc_grad_integrands();

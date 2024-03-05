@@ -291,73 +291,38 @@ void XCDeviceStackData::send_static_data_weights( const Molecule& mol, const Mol
   device_backend_->master_queue_synchronize(); 
 }
 
-void XCDeviceStackData::send_static_data_density_basis( const double* P, int32_t ldp,
-  const BasisSet<double>& basis ) {
-
-  if( not (allocated_terms.exx or allocated_terms.exc_vxc or allocated_terms.exc_grad or allocated_terms.den or allocated_terms.exx_ek_screening) ) 
-    GAUXC_GENERIC_EXCEPTION("Density/Basis Not Stack Allocated");
-
-  const auto nbf    = global_dims.nbf;
-  if( ldp != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDP must bf NBF");
-  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
-
-  // Copy Density
-  device_backend_->copy_async( nbf*nbf, P, static_stack.dmat_s_device, "P H2D" );
-
-  // Copy Basis Set
-  device_backend_->copy_async( basis.nshells(), basis.data(), static_stack.shells_device,
-    "Shells H2D" );
-
-
-  device_backend_->master_queue_synchronize(); 
-}
-
-void XCDeviceStackData::send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz, 
-  const BasisSet<double>& basis ) {
-
-  if( not (allocated_terms.exx or allocated_terms.exc_vxc or allocated_terms.exc_grad or allocated_terms.den or allocated_terms.exx_ek_screening) ) 
-    GAUXC_GENERIC_EXCEPTION("Density/Basis Not Stack Allocated");
-
-  const auto nbf    = global_dims.nbf;
-  if( ldps != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPs must bf NBF");
-  if( ldpz != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPz must bf NBF");
-  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
-
-  // Copy Density
-  device_backend_->copy_async( nbf*nbf, Ps, static_stack.dmat_s_device, "P_scalar H2D" );
-  device_backend_->copy_async( nbf*nbf, Pz, static_stack.dmat_z_device, "P_z H2D" );
-
-  // Copy Basis Set
-  device_backend_->copy_async( basis.nshells(), basis.data(), static_stack.shells_device,
-    "Shells H2D" );
-
-
-  device_backend_->master_queue_synchronize(); 
-}
-
 void XCDeviceStackData::send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz, const double* Py, int32_t ldpy, const double* Px, int32_t ldpx,
   const BasisSet<double>& basis ) {
+  const bool is_gks = (Pz != nullptr) and (Py != nullptr) and (Px != nullptr);
+  const bool is_uks = (Pz != nullptr) and (Py == nullptr) and (Px == nullptr);
+  const bool is_rks = (Ps != nullptr) and (not is_uks and not is_gks);
+  if( not is_rks and not is_uks and not is_gks )
+    GAUXC_GENERIC_EXCEPTION("Densities do not match RKS, UKS, or GKS schemes");
 
   if( not (allocated_terms.exx or allocated_terms.exc_vxc or allocated_terms.exc_grad or allocated_terms.den or allocated_terms.exx_ek_screening) ) 
     GAUXC_GENERIC_EXCEPTION("Density/Basis Not Stack Allocated");
 
-  const auto nbf    = global_dims.nbf;
-  if( ldps != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPs must bf NBF");
-  if( ldpz != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPz must bf NBF");
-  if( ldpy != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPy must bf NBF");
-  if( ldpx != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPx must bf NBF");
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
 
-  // Copy Density
+
+  const auto nbf    = global_dims.nbf;
+  // Check dimensions and copy density
+  if( ldps != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPs must bf NBF");
   device_backend_->copy_async( nbf*nbf, Ps, static_stack.dmat_s_device, "P_scalar H2D" );
-  device_backend_->copy_async( nbf*nbf, Pz, static_stack.dmat_z_device, "P_z H2D" );
-  device_backend_->copy_async( nbf*nbf, Py, static_stack.dmat_y_device, "P_y H2D" );
-  device_backend_->copy_async( nbf*nbf, Px, static_stack.dmat_x_device, "P_x H2D" );
+  if( not is_rks ) {
+    if( ldpz != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPz must bf NBF");
+    device_backend_->copy_async( nbf*nbf, Pz, static_stack.dmat_z_device, "P_z H2D" );
+    if( is_gks ) {
+      if( ldpy != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPy must bf NBF");
+      if( ldpx != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPx must bf NBF");
+      device_backend_->copy_async( nbf*nbf, Py, static_stack.dmat_y_device, "P_y H2D" );
+      device_backend_->copy_async( nbf*nbf, Px, static_stack.dmat_x_device, "P_x H2D" );
+    }
+  }
 
   // Copy Basis Set
   device_backend_->copy_async( basis.nshells(), basis.data(), static_stack.shells_device,
     "Shells H2D" );
-
 
   device_backend_->master_queue_synchronize(); 
 }

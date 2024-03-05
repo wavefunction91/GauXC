@@ -355,7 +355,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Do EXX integration in task batches
   device_data.reset_allocations();
   device_data.allocate_static_data_exx( nbf, nshells, shell_pairs.npairs(), basis_map.max_l() );
-  device_data.send_static_data_density_basis( P, ldp, basis );
+  device_data.send_static_data_density_basis( P, ldp, nullptr, 0, nullptr, 0, nullptr, 0, basis );
   device_data.send_static_data_shell_pairs( basis, shell_pairs );
 
   // Zero integrands
