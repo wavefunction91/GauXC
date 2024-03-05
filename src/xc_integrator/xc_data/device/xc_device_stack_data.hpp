@@ -119,23 +119,23 @@ struct XCDeviceStackData : public XCDeviceData {
     double* eps_eval_device    = nullptr; ///< XC energy density for task batch
     double* vrho_eval_device   = nullptr; ///< Rho XC derivative for task batch
     double* vgamma_eval_device = nullptr; ///< Gamma XC derivative for task batch
-                                          //
-    double* vrho_pos_eval_device  = nullptr;
-    double* vrho_neg_eval_device  = nullptr;
-    double* gamma_pp_eval_device  = nullptr;
-    double* gamma_pm_eval_device  = nullptr;
-    double* gamma_mm_eval_device  = nullptr;
-    double* vgamma_pp_eval_device  = nullptr;
-    double* vgamma_pm_eval_device  = nullptr;
-    double* vgamma_mm_eval_device  = nullptr;
 
-    // GKS objects
-    double* H_x_eval_device     = nullptr;
-    double* H_y_eval_device     = nullptr;
-    double* H_z_eval_device     = nullptr;
-    double* K_x_eval_device     = nullptr;
-    double* K_y_eval_device     = nullptr;
-    double* K_z_eval_device     = nullptr;
+    double* vrho_pos_eval_device  = nullptr;  ///< Polarized Rho+ XC derivative for task batch
+    double* vrho_neg_eval_device  = nullptr;  ///< Polarized Rho+ XC derivative for task batch
+
+    double* gamma_pp_eval_device  = nullptr;  ///< Polarized Gamma++ for task batch
+    double* gamma_pm_eval_device  = nullptr;  ///< Polarized Gamma+- for task batch
+    double* gamma_mm_eval_device  = nullptr;  ///< Polarized Gamma-- for task batch
+    double* vgamma_pp_eval_device  = nullptr; ///< Polarized Gamma++ XC derivative for task batch
+    double* vgamma_pm_eval_device  = nullptr; ///< Polarized Gamma+- XC derivative for task batch
+    double* vgamma_mm_eval_device  = nullptr; ///< Polarized Gamma-- XC derivative for task batch
+
+    double* H_x_eval_device     = nullptr;    ///< norm(m) dependent GGA X transformation factor for task batch
+    double* H_y_eval_device     = nullptr;    ///< norm(m) dependent GGA Y transformation factor for task batch
+    double* H_z_eval_device     = nullptr;    ///< norm(m) dependent GGA Z transformation factor for task batch
+    double* K_x_eval_device     = nullptr;    ///< norm(m) dependent LDA X transformation factor for task batch
+    double* K_y_eval_device     = nullptr;    ///< norm(m) dependent LDA Y transformation factor for task batch
+    double* K_z_eval_device     = nullptr;    ///< norm(m) dependent LDA Z transformation factor for task batch
 
     inline void reset() { std::memset( this, 0, sizeof(base_stack_data) ); }
   };
