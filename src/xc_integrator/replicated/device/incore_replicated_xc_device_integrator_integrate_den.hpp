@@ -129,10 +129,12 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->eval_collocation( &device_data );
 
     // Evaluate X matrix
-    lwd->eval_xmat( 1.0, &device_data, false, DEN_S );
+    const bool do_xmat_grad = false;
+    lwd->eval_xmat( 1.0, &device_data, do_xmat_grad, DEN_S );
 
     // Evaluate the density
-    lwd->eval_vvar( &device_data, false, DEN_S );
+    const bool do_vvar_grad = false;
+    lwd->eval_vvar( &device_data, do_vvar_grad, DEN_S );
 
     // Do scalar N_EL integration
     lwd->inc_nel( &device_data );

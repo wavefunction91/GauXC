@@ -305,16 +305,17 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     const double xmat_fac = is_rks ? 2.0 : 1.0;
 
     // Evaluate X matrix and V vars
-    lwd->eval_xmat( xmat_fac, &device_data, false, DEN_S );
+    const bool do_xmat_grad = false;
+    lwd->eval_xmat( xmat_fac, &device_data, do_xmat_grad, DEN_S );
     lwd->eval_vvar( &device_data, func.is_gga(), DEN_S );
 
     if (not is_rks) {
-      lwd->eval_xmat( xmat_fac, &device_data, false, DEN_Z );
+      lwd->eval_xmat( xmat_fac, &device_data, do_xmat_grad, DEN_Z );
       lwd->eval_vvar( &device_data, func.is_gga(), DEN_Z );
       if (not is_uks) {
-        lwd->eval_xmat( xmat_fac, &device_data, false, DEN_Y );
+        lwd->eval_xmat( xmat_fac, &device_data, do_xmat_grad, DEN_Y );
         lwd->eval_vvar( &device_data, func.is_gga(), DEN_Y );
-        lwd->eval_xmat( xmat_fac, &device_data, false, DEN_X );
+        lwd->eval_xmat( xmat_fac, &device_data, do_xmat_grad, DEN_X );
         lwd->eval_vvar( &device_data, func.is_gga(), DEN_X );
       }
     }
