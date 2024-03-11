@@ -2952,7 +2952,7 @@ void integral_3_2(size_t npts,
    }
 
    for(; p_outer < npts; p_outer += NPTS_LOCAL) {
-      size_t npts_inner = MIN((size_t) NPTS_LOCAL, npts - p_outer);
+     size_t npts_inner = std::min((size_t) NPTS_LOCAL, npts - p_outer);
       double *_point_outer = (_points + p_outer);
 
       double X_AB = rA.x - rB.x;
