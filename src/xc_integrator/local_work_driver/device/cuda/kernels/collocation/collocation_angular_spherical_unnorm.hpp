@@ -187,17 +187,17 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_3_deriv1(
 
   eval_x[npts * 0] = sqrt_10*y*(6*bf*x + bf_x*(3*x*x - y*y))/4;
   eval_x[npts * 1] = sqrt_15*y*z*(bf + bf_x*x);
-  eval_x[npts * 2] = -sqrt_6*y*(2*bf*x + bf_x*(x*x + y*y - 4*z*z))/4;
-  eval_x[npts * 3] = -z*(6*bf*x + bf_x*(3*x*x + 3*y*y - 2*z*z))/2;
-  eval_x[npts * 4] = -sqrt_6*(bf*(3*x*x + y*y - 4*z*z) + bf_x*x*(x*x + y*y - 4*z*z))/4;
+  eval_x[npts * 2] = sqrt_6*y*(-2*bf*x - bf_x*(x*x + y*y - 4*z*z))/4;
+  eval_x[npts * 3] = z*(-6*bf*x - bf_x*(3*x*x + 3*y*y - 2*z*z))/2;
+  eval_x[npts * 4] = sqrt_6*(-bf*(3*x*x + y*y - 4*z*z) - bf_x*x*(x*x + y*y - 4*z*z))/4;
   eval_x[npts * 5] = sqrt_15*z*(2*bf*x + bf_x*(x*x - y*y))/2;
   eval_x[npts * 6] = sqrt_10*(3*bf*(x*x - y*y) + bf_x*x*(x*x - 3*y*y))/4;
 
   eval_y[npts * 0] = sqrt_10*(-3*bf*(-x*x + y*y) + bf_y*y*(3*x*x - y*y))/4;
   eval_y[npts * 1] = sqrt_15*x*z*(bf + bf_y*y);
-  eval_y[npts * 2] = -sqrt_6*(bf*(x*x + 3*y*y - 4*z*z) + bf_y*y*(x*x + y*y - 4*z*z))/4;
-  eval_y[npts * 3] = -z*(6*bf*y + bf_y*(3*x*x + 3*y*y - 2*z*z))/2;
-  eval_y[npts * 4] = -sqrt_6*x*(2*bf*y + bf_y*(x*x + y*y - 4*z*z))/4;
+  eval_y[npts * 2] = sqrt_6*(-bf*(x*x + 3*y*y - 4*z*z) - bf_y*y*(x*x + y*y - 4*z*z))/4;
+  eval_y[npts * 3] = z*(-6*bf*y - bf_y*(3*x*x + 3*y*y - 2*z*z))/2;
+  eval_y[npts * 4] = sqrt_6*x*(-2*bf*y - bf_y*(x*x + y*y - 4*z*z))/4;
   eval_y[npts * 5] = sqrt_15*z*(-2*bf*y + bf_y*(x*x - y*y))/2;
   eval_y[npts * 6] = sqrt_10*x*(-6*bf*y + bf_y*(x*x - 3*y*y))/4;
 
@@ -208,6 +208,75 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_3_deriv1(
   eval_z[npts * 4] = sqrt_6*x*(8*bf*z - bf_z*(x*x + y*y - 4*z*z))/4;
   eval_z[npts * 5] = sqrt_15*(bf + bf_z*z)*(x*x - y*y)/2;
   eval_z[npts * 6] = sqrt_10*bf_z*x*(x*x - 3*y*y)/4;
+
+}
+
+template <typename T>
+GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_4(
+  int32_t          npts,
+  const T          bf,
+  const T          x,
+  const T          y,
+  const T          z,
+  T* __restrict__  eval
+) {
+
+  eval[npts * 0] = sqrt_35*bf*x*y*(x*x - y*y)/2;
+  eval[npts * 1] = sqrt_70*bf*y*z*(3*x*x - y*y)/4;
+  eval[npts * 2] = sqrt_5*bf*x*y*(-x*x - y*y + 6*z*z)/2;
+  eval[npts * 3] = sqrt_10*bf*y*z*(-3*x*x - 3*y*y + 4*z*z)/4;
+  eval[npts * 4] = bf*(3*x*x*x*x + 6*x*x*y*y - 24*x*x*z*z + 3*y*y*y*y - 24*y*y*z*z + 8*z*z*z*z)/8;
+  eval[npts * 5] = sqrt_10*bf*x*z*(-3*x*x - 3*y*y + 4*z*z)/4;
+  eval[npts * 6] = sqrt_5*bf*(-x*x*x*x + 6*x*x*z*z + y*y*y*y - 6*y*y*z*z)/4;
+  eval[npts * 7] = sqrt_70*bf*x*z*(x*x - 3*y*y)/4;
+  eval[npts * 8] = sqrt_35*bf*(x*x*x*x - 6*x*x*y*y + y*y*y*y)/8;
+
+}
+
+template <typename T>
+GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_4_deriv1(
+  const int32_t   npts,
+  const T         bf,
+  const T         bf_x,
+  const T         bf_y,
+  const T         bf_z,
+  const T         x,
+  const T         y,
+  const T         z,
+  T* __restrict__ eval_x,
+  T* __restrict__ eval_y,
+  T* __restrict__ eval_z
+) {
+
+  eval_x[npts * 0] = sqrt_35*y*(bf*(3*x*x - y*y) + bf_x*x*(x*x - y*y))/2;
+  eval_x[npts * 1] = sqrt_70*y*z*(6*bf*x + bf_x*(3*x*x - y*y))/4;
+  eval_x[npts * 2] = sqrt_5*y*(-bf*(3*x*x + y*y - 6*z*z) - bf_x*x*(x*x + y*y - 6*z*z))/2;
+  eval_x[npts * 3] = sqrt_10*y*z*(-6*bf*x - bf_x*(3*x*x + 3*y*y - 4*z*z))/4;
+  eval_x[npts * 4] = 3*bf*x*(x*x + y*y - 4*z*z)/2 + bf_x*(3*x*x*x*x + 6*x*x*y*y - 24*x*x*z*z + 3*y*y*y*y - 24*y*y*z*z + 8*z*z*z*z)/8;
+  eval_x[npts * 5] = sqrt_10*z*(-bf*(9*x*x + 3*y*y - 4*z*z) - bf_x*x*(3*x*x + 3*y*y - 4*z*z))/4;
+  eval_x[npts * 6] = sqrt_5*(-bf*x*(x*x - 3*z*z) - bf_x*(x*x*x*x - 6*x*x*z*z - y*y*y*y + 6*y*y*z*z)/4);
+  eval_x[npts * 7] = sqrt_70*z*(3*bf*(x*x - y*y) + bf_x*x*(x*x - 3*y*y))/4;
+  eval_x[npts * 8] = sqrt_35*(4*bf*x*(x*x - 3*y*y) + bf_x*(x*x*x*x - 6*x*x*y*y + y*y*y*y))/8;
+
+  eval_y[npts * 0] = sqrt_35*x*(-bf*(-x*x + 3*y*y) + bf_y*y*(x*x - y*y))/2;
+  eval_y[npts * 1] = sqrt_70*z*(-3*bf*(-x*x + y*y) + bf_y*y*(3*x*x - y*y))/4;
+  eval_y[npts * 2] = sqrt_5*x*(-bf*(x*x + 3*y*y - 6*z*z) - bf_y*y*(x*x + y*y - 6*z*z))/2;
+  eval_y[npts * 3] = sqrt_10*z*(-bf*(3*x*x + 9*y*y - 4*z*z) - bf_y*y*(3*x*x + 3*y*y - 4*z*z))/4;
+  eval_y[npts * 4] = 3*bf*y*(x*x + y*y - 4*z*z)/2 + bf_y*(3*x*x*x*x + 6*x*x*y*y - 24*x*x*z*z + 3*y*y*y*y - 24*y*y*z*z + 8*z*z*z*z)/8;
+  eval_y[npts * 5] = sqrt_10*x*z*(-6*bf*y - bf_y*(3*x*x + 3*y*y - 4*z*z))/4;
+  eval_y[npts * 6] = sqrt_5*(bf*y*(y*y - 3*z*z) - bf_y*(x*x*x*x - 6*x*x*z*z - y*y*y*y + 6*y*y*z*z)/4);
+  eval_y[npts * 7] = sqrt_70*x*z*(-6*bf*y + bf_y*(x*x - 3*y*y))/4;
+  eval_y[npts * 8] = sqrt_35*(-4*bf*y*(3*x*x - y*y) + bf_y*(x*x*x*x - 6*x*x*y*y + y*y*y*y))/8;
+
+  eval_z[npts * 0] = sqrt_35*bf_z*x*y*(x*x - y*y)/2;
+  eval_z[npts * 1] = sqrt_70*y*(bf + bf_z*z)*(3*x*x - y*y)/4;
+  eval_z[npts * 2] = sqrt_5*x*y*(12*bf*z - bf_z*(x*x + y*y - 6*z*z))/2;
+  eval_z[npts * 3] = sqrt_10*y*(3*bf*(-x*x - y*y + 4*z*z) - bf_z*z*(3*x*x + 3*y*y - 4*z*z))/4;
+  eval_z[npts * 4] = -2*bf*z*(3*x*x + 3*y*y - 2*z*z) + bf_z*(3*x*x*x*x + 6*x*x*y*y - 24*x*x*z*z + 3*y*y*y*y - 24*y*y*z*z + 8*z*z*z*z)/8;
+  eval_z[npts * 5] = sqrt_10*x*(3*bf*(-x*x - y*y + 4*z*z) - bf_z*z*(3*x*x + 3*y*y - 4*z*z))/4;
+  eval_z[npts * 6] = sqrt_5*(12*bf*z*(x*x - y*y) - bf_z*(x*x*x*x - 6*x*x*z*z - y*y*y*y + 6*y*y*z*z))/4;
+  eval_z[npts * 7] = sqrt_70*x*(bf + bf_z*z)*(x*x - 3*y*y)/4;
+  eval_z[npts * 8] = sqrt_35*bf_z*(x*x*x*x - 6*x*x*y*y + y*y*y*y)/8;
 
 }
 
@@ -238,6 +307,10 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular(
       } else if( l == 3 ) {
   
         collocation_spherical_unnorm_angular_3( npts, bf, x, y, z, eval );
+
+      } else if( l == 4 ) {
+  
+        collocation_spherical_unnorm_angular_4( npts, bf, x, y, z, eval );
 
     } else {
       assert( false && "L < L_MAX" );
@@ -283,6 +356,11 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_deriv1(
   
         collocation_spherical_unnorm_angular_3( npts, bf, x, y, z, eval );
         collocation_spherical_unnorm_angular_3_deriv1( npts, bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
+
+      } else if( l == 4 ) {
+  
+        collocation_spherical_unnorm_angular_4( npts, bf, x, y, z, eval );
+        collocation_spherical_unnorm_angular_4_deriv1( npts, bf, bf_x, bf_y, bf_z, x, y, z, eval_x, eval_y, eval_z );
 
     } else {
       assert( false && "L < L_MAX" );
