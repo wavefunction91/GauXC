@@ -148,5 +148,21 @@ typename ReplicatedXCIntegrator<MatrixType>::exx_type
 
 }
 
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::atomic_overlap_type 
+  ReplicatedXCIntegrator<MatrixType>::eval_atomic_overlap_( int64_t iAtom ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  
+  const size_t nbf = get_load_balancer_().basis().nbf(); 
+  matrix_type S( nbf, nbf );
+
+  pimpl_->eval_atomic_overlap( iAtom, nbf, nbf, S.data(), nbf );
+
+  return S;
+
+}
+
+
 }
 }
