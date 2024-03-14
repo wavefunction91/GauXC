@@ -136,6 +136,11 @@ struct BasisSet : public std::vector<Shell<F>> {
     return _nbf;
   }
 
+  inline int32_t max_l() const {
+    return std::max_element(this->cbegin(), this->cend(),
+      [](const auto& a, const auto& b) { return a.l() < b.l(); })->l();
+  }
+
 }; // class BasisSet
 
 } // namespace GauXC

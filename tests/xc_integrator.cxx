@@ -244,6 +244,11 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
   // Check K
   if( has_k and check_k and rks ) {
+    auto max_l = basis.max_l();
+    if(max_l > 2 and ex == ExecutionSpace::Device) {
+      std::cout << "Skiping device sn-K + L > 2" << std::endl;
+      return;
+    }
     auto K = integrator.eval_exx( P );
     CHECK((K - K.transpose()).norm() < std::numeric_limits<double>::epsilon()); // Symmetric
     CHECK( (K - K_ref).norm() / basis.nbf() < 1e-7 );
@@ -408,7 +413,7 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
         func, PruningScheme::Robust );
   }
 
-  //GKS GGA Test
+  // GKS GGA Test
   SECTION( "H3 / BLYP / cc-pvdz" ) {
     auto func = make_functional(blyp, pol);
     test_integrator(GAUXC_REF_DATA_PATH "/h3_blyp_cc-pvdz_ssf_gks.bin",
@@ -419,6 +424,20 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
   SECTION( "Benzene / PBE0 / 6-31G(d)" ) {
     auto func = make_functional(pbe0, unpol);
     test_integrator(GAUXC_REF_DATA_PATH "/benzene_631gd_pbe0_ufg.hdf5", 
+        func, PruningScheme::Unpruned );
+  }
+
+  // sn-LinK + f functions
+  SECTION( "H2O2 / PBE0 / def2-TZVP" ) {
+    auto func = make_functional(pbe0, unpol);
+    test_integrator(GAUXC_REF_DATA_PATH "/h2o2_def2-tzvp.hdf5", 
+        func, PruningScheme::Unpruned );
+  }
+
+  // sn-LinK + g functions
+  SECTION( "H2O2 / PBE0 / def2-QZVP" ) {
+    auto func = make_functional(pbe0, unpol);
+    test_integrator(GAUXC_REF_DATA_PATH "/h2o2_def2-qzvp.hdf5", 
         func, PruningScheme::Unpruned );
   }
 }

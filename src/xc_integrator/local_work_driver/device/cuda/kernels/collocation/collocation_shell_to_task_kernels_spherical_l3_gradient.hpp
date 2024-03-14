@@ -115,18 +115,18 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       // Evaluate first derivative of bfn wrt x
       basis_x_eval[ipt + 0*npts] = sqrt_10*x*y*(6*radial_eval + radial_eval_alpha*(3*x*x - y*y))/4;
       basis_x_eval[ipt + 1*npts] = sqrt_15*y*z*(radial_eval + radial_eval_alpha*x*x);
-      basis_x_eval[ipt + 2*npts] = -sqrt_6*x*y*(2*radial_eval + radial_eval_alpha*(x*x + y*y - 4*z*z))/4;
-      basis_x_eval[ipt + 3*npts] = -x*z*(6*radial_eval + radial_eval_alpha*(3*x*x + 3*y*y - 2*z*z))/2;
-      basis_x_eval[ipt + 4*npts] = -sqrt_6*(radial_eval*(3*x*x + y*y - 4*z*z) + radial_eval_alpha*x*x*(x*x + y*y - 4*z*z))/4;
+      basis_x_eval[ipt + 2*npts] = sqrt_6*x*y*(-2*radial_eval - radial_eval_alpha*(x*x + y*y - 4*z*z))/4;
+      basis_x_eval[ipt + 3*npts] = x*z*(-6*radial_eval - radial_eval_alpha*(3*x*x + 3*y*y - 2*z*z))/2;
+      basis_x_eval[ipt + 4*npts] = sqrt_6*(-radial_eval*(3*x*x + y*y - 4*z*z) - radial_eval_alpha*x*x*(x*x + y*y - 4*z*z))/4;
       basis_x_eval[ipt + 5*npts] = sqrt_15*x*z*(2*radial_eval + radial_eval_alpha*(x*x - y*y))/2;
       basis_x_eval[ipt + 6*npts] = sqrt_10*(3*radial_eval*(x*x - y*y) + radial_eval_alpha*x*x*(x*x - 3*y*y))/4;
 
       // Evaluate first derivative of bfn wrt y
       basis_y_eval[ipt + 0*npts] = sqrt_10*(-3*radial_eval*(-x*x + y*y) + radial_eval_alpha*y*y*(3*x*x - y*y))/4;
       basis_y_eval[ipt + 1*npts] = sqrt_15*x*z*(radial_eval + radial_eval_alpha*y*y);
-      basis_y_eval[ipt + 2*npts] = -sqrt_6*(radial_eval*(x*x + 3*y*y - 4*z*z) + radial_eval_alpha*y*y*(x*x + y*y - 4*z*z))/4;
-      basis_y_eval[ipt + 3*npts] = -y*z*(6*radial_eval + radial_eval_alpha*(3*x*x + 3*y*y - 2*z*z))/2;
-      basis_y_eval[ipt + 4*npts] = -sqrt_6*x*y*(2*radial_eval + radial_eval_alpha*(x*x + y*y - 4*z*z))/4;
+      basis_y_eval[ipt + 2*npts] = sqrt_6*(-radial_eval*(x*x + 3*y*y - 4*z*z) - radial_eval_alpha*y*y*(x*x + y*y - 4*z*z))/4;
+      basis_y_eval[ipt + 3*npts] = y*z*(-6*radial_eval - radial_eval_alpha*(3*x*x + 3*y*y - 2*z*z))/2;
+      basis_y_eval[ipt + 4*npts] = sqrt_6*x*y*(-2*radial_eval - radial_eval_alpha*(x*x + y*y - 4*z*z))/4;
       basis_y_eval[ipt + 5*npts] = sqrt_15*y*z*(-2*radial_eval + radial_eval_alpha*(x*x - y*y))/2;
       basis_y_eval[ipt + 6*npts] = sqrt_10*x*y*(-6*radial_eval + radial_eval_alpha*(x*x - 3*y*y))/4;
 
@@ -182,11 +182,11 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       dang_eval_x_1 = sqrt_15*y*z*(radial_eval + radial_eval_alpha*x*x);
       dang_eval_y_1 = sqrt_15*x*z*(radial_eval + radial_eval_alpha*y*y);
       dang_eval_z_1 = sqrt_15*x*y*(radial_eval + radial_eval_alpha*z*z);
-      dang_eval_x_2 = -sqrt_6*x*y*(2*radial_eval + radial_eval_alpha*(x*x + y*y - 4*z*z))/4;
-      dang_eval_y_2 = -sqrt_6*(radial_eval*(x*x + 3*y*y - 4*z*z) + radial_eval_alpha*y*y*(x*x + y*y - 4*z*z))/4;
+      dang_eval_x_2 = sqrt_6*x*y*(-2*radial_eval - radial_eval_alpha*(x*x + y*y - 4*z*z))/4;
+      dang_eval_y_2 = sqrt_6*(-radial_eval*(x*x + 3*y*y - 4*z*z) - radial_eval_alpha*y*y*(x*x + y*y - 4*z*z))/4;
       dang_eval_z_2 = sqrt_6*y*z*(8*radial_eval - radial_eval_alpha*(x*x + y*y - 4*z*z))/4;
-      dang_eval_x_3 = -x*z*(6*radial_eval + radial_eval_alpha*(3*x*x + 3*y*y - 2*z*z))/2;
-      dang_eval_y_3 = -y*z*(6*radial_eval + radial_eval_alpha*(3*x*x + 3*y*y - 2*z*z))/2;
+      dang_eval_x_3 = x*z*(-6*radial_eval - radial_eval_alpha*(3*x*x + 3*y*y - 2*z*z))/2;
+      dang_eval_y_3 = y*z*(-6*radial_eval - radial_eval_alpha*(3*x*x + 3*y*y - 2*z*z))/2;
       dang_eval_z_3 = -3*radial_eval*(x*x + y*y - 2*z*z)/2 - radial_eval_alpha*z*z*(3*x*x + 3*y*y - 2*z*z)/2;
       basis_x_eval[ipt + 0*npts] = dang_eval_x_0;
       basis_y_eval[ipt + 0*npts] = dang_eval_y_0;
@@ -201,8 +201,8 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       basis_y_eval[ipt + 3*npts] = dang_eval_y_3;
       basis_z_eval[ipt + 3*npts] = dang_eval_z_3;
 
-      dang_eval_x_0 = -sqrt_6*(radial_eval*(3*x*x + y*y - 4*z*z) + radial_eval_alpha*x*x*(x*x + y*y - 4*z*z))/4;
-      dang_eval_y_0 = -sqrt_6*x*y*(2*radial_eval + radial_eval_alpha*(x*x + y*y - 4*z*z))/4;
+      dang_eval_x_0 = sqrt_6*(-radial_eval*(3*x*x + y*y - 4*z*z) - radial_eval_alpha*x*x*(x*x + y*y - 4*z*z))/4;
+      dang_eval_y_0 = sqrt_6*x*y*(-2*radial_eval - radial_eval_alpha*(x*x + y*y - 4*z*z))/4;
       dang_eval_z_0 = sqrt_6*x*z*(8*radial_eval - radial_eval_alpha*(x*x + y*y - 4*z*z))/4;
       dang_eval_x_1 = sqrt_15*x*z*(2*radial_eval + radial_eval_alpha*(x*x - y*y))/2;
       dang_eval_y_1 = sqrt_15*y*z*(-2*radial_eval + radial_eval_alpha*(x*x - y*y))/2;
