@@ -99,7 +99,8 @@ void task_map_kernel(
   const GauXC::TaskToShellPairDevice* task2sp,
   const int4* subtasks,
   const int32_t* nprim_pairs_device,
-  shell_pair** sp_ptr_device,
+  //shell_pair** sp_ptr_device,
+  GauXC::PrimitivePair<double>** prim_pair_ptr_device,
   double* sp_X_AB_device,
   double* sp_Y_AB_device,
   double* sp_Z_AB_device,
@@ -152,7 +153,7 @@ void task_map_kernel(
       const auto j_off = task2sp[i_task].task_shell_off_col_device[j];
 
       const auto index =  task2sp[i_task].shell_pair_linear_idx_device[j];
-      const auto* sp = sp_ptr_device[index];
+      const auto* pp = prim_pair_ptr_device[index];
       const auto nprim_pairs = nprim_pairs_device[index];
 
       const auto param = AngularMomentum::Params(
@@ -168,7 +169,7 @@ void task_map_kernel(
       AngularMomentum::compute( 
         i, point_count, nprim_pairs,
         s_task_data,
-        sp,
+        pp,
         param,
         npts,
         npts,

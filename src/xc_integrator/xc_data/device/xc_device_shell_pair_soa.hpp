@@ -12,7 +12,8 @@ namespace GauXC {
 struct XCDeviceShellPairSoA {
   using shell_pair = ShellPair<double>;
   using point      = detail::cartesian_point;
-  std::vector<shell_pair*>            shell_pair_dev_ptr;
+  //std::vector<shell_pair*>            shell_pair_dev_ptr;
+  std::vector<GauXC::PrimitivePair<double>*> prim_pair_dev_ptr;
   std::vector<int32_t>                shell_pair_nprim_pairs;
   std::vector<std::pair<int,int>>     shell_pair_shidx;
   std::vector<std::pair<int,int>>     shell_pair_ls;
@@ -23,9 +24,22 @@ struct XCDeviceShellPairSoA {
 
   inline void reset() {
     shell_pair_nprim_pairs.clear();
-    shell_pair_dev_ptr.clear();
+    prim_pair_dev_ptr.clear();
     shell_pair_ls.clear();
     shell_pair_centers.clear();
+    //shell_pair_shidx.clear(); sp_row_ptr.clear(), sp_col_ind.clear();
   }
 };
+
+//struct XCDeviceShellPairCollection {
+//  size_t nshell_pair;
+//  size_t nprim_pair_total;
+//
+//  int* nprim_pairs_device; // NSP
+//  size_t* prim_off_device; // NSP
+//
+//  PrimitivePair<double>* prim_pairs_device; // NPP
+//};
+
+
 }

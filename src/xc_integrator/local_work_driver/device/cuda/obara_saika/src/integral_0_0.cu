@@ -23,7 +23,9 @@ using namespace GauXC;
 				   const double *points_x,
 				   const double *points_y,
 				   const double *points_z,
-           const shell_pair* sp,
+                   //const shell_pair* sp,
+                   const int nprim_pairs,
+                   const GauXC::PrimitivePair<double>* prim_pairs,
 				   const double *Xi,
 				   const double *Xj,
 				   int ldX,
@@ -35,21 +37,21 @@ using namespace GauXC;
 
     double temp;
 
-    // Load PrimPairs into shared mem
-    const int nprim_pairs = sp->nprim_pairs();
-    #if 1
-    __shared__ GauXC::PrimitivePair<double> prim_pairs[GauXC::detail::nprim_pair_max];
-    __syncthreads();
-    if( threadIdx.x < 32 ) {
-      const auto pp = sp->prim_pairs();
-      for(int ij = threadIdx.x; ij < nprim_pairs; ij += 32) {
-        prim_pairs[ij] = pp[ij];
-      }
-    }
-    __syncthreads();
-    #else
-    const auto& prim_pairs = sp->prim_pairs();
-    #endif
+    //// Load PrimPairs into shared mem
+    //const int nprim_pairs = sp->nprim_pairs();
+    //#if 1
+    //__shared__ GauXC::PrimitivePair<double> prim_pairs[GauXC::detail::nprim_pair_max];
+    //__syncthreads();
+    //if( threadIdx.x < 32 ) {
+    //  const auto pp = sp->prim_pairs();
+    //  for(int ij = threadIdx.x; ij < nprim_pairs; ij += 32) {
+    //    prim_pairs[ij] = pp[ij];
+    //  }
+    //}
+    //__syncthreads();
+    //#else
+    //const auto& prim_pairs = sp->prim_pairs();
+    //#endif
 
     const int npts_int = (int) npts;
 
@@ -128,7 +130,8 @@ using namespace GauXC;
 				   double *points_x,
 				   double *points_y,
 				   double *points_z,
-           shell_pair* sp,
+                   const int nprim_pairs,
+                   const GauXC::PrimitivePair<double>* prim_pairs,
 				   double *Xi,
 				   double *Xj,
 				   int ldX,
@@ -137,7 +140,7 @@ using namespace GauXC;
 				   int ldG, 
 				   double *weights, 
 				   double *boys_table) {
-    dev_integral_0_0_driver( npts, points_x, points_y, points_z, sp, Xi, Xj, ldX,
+    dev_integral_0_0_driver( npts, points_x, points_y, points_z, nprim_pairs, prim_pairs, Xi, Xj, ldX,
       Gi, Gj, ldG, weights, boys_table );
   }
 
@@ -147,7 +150,8 @@ using namespace GauXC;
 		    double *points_x,
 		    double *points_y,
 		    double *points_z,
-        shell_pair* sp,
+            const int nprim_pairs,
+            const GauXC::PrimitivePair<double>* prim_pairs,
 		    double *Xi,
 		    double *Xj,
 		    int ldX,
@@ -163,7 +167,7 @@ using namespace GauXC;
 				   points_x,
 				   points_y,
 				   points_z,
-           sp,
+        nprim_pairs,prim_pairs,
 				   Xi,
 				   Xj,
 				   ldX,
@@ -200,7 +204,9 @@ using namespace GauXC;
         task->points_x,
         task->points_y,
         task->points_z,
-        sp2task->shell_pair_device,
+        //sp2task->shell_pair_device,
+        sp2task->nprim_pairs,
+        sp2task->prim_pairs_device,
         task->fmat + i_off,
         task->fmat + j_off,
         npts,
@@ -243,7 +249,9 @@ using namespace GauXC;
            const int32_t*                  sp2task_idx_device,
            const int32_t*                  sp2task_shell_off_row_device,
            const int32_t*                  sp2task_shell_off_col_device,
-           const GauXC::ShellPair<double>* shell_pair_device,
+           //const GauXC::ShellPair<double>* shell_pair_device,
+           const int32_t                   nprim_pairs,
+           const GauXC::PrimitivePair<double>* prim_pairs_device,
            const int32_t*                  task_npts,
            const double**                  task_points_x,
            const double**                  task_points_y,
@@ -266,7 +274,7 @@ using namespace GauXC;
         task_points_x[iT],
         task_points_y[iT],
         task_points_z[iT],
-        shell_pair_device,
+        nprim_pairs, prim_pairs_device,
         task_fmat[iT] + i_off,
         task_fmat[iT] + j_off,
         npts,
@@ -283,7 +291,8 @@ using namespace GauXC;
            const int32_t*                  sp2task_idx_device,
            const int32_t*                  sp2task_shell_off_row_device,
            const int32_t*                  sp2task_shell_off_col_device,
-           const GauXC::ShellPair<double>* shell_pair_device,
+           const int32_t                   nprim_pairs,
+           const GauXC::PrimitivePair<double>* prim_pairs_device,
            const int32_t*                  task_npts,
            const double**                   task_points_x,
            const double**                   task_points_y,
@@ -293,7 +302,8 @@ using namespace GauXC;
            double**                         task_gmat,
 				   double *boys_table) {
     dev_integral_0_0_soa_batched_driver( ntask, sp2task_idx_device, 
-      sp2task_shell_off_row_device, sp2task_shell_off_col_device, shell_pair_device,
+      sp2task_shell_off_row_device, sp2task_shell_off_col_device, nprim_pairs,
+      prim_pairs_device,
       task_npts, task_points_x, task_points_y, task_points_z, task_weights,
       task_fmat, task_gmat, boys_table );
   }
@@ -361,7 +371,8 @@ struct DeviceTask00 {
     // Point data
     double4 (&s_task_data)[points_per_subtask],
     // Shell Pair Data
-    const shell_pair* sp,
+    //const shell_pair* sp,
+    const GauXC::PrimitivePair<double>* prim_pairs,
     // Output Data
     const Params param,
     int ldX,
@@ -378,7 +389,7 @@ struct DeviceTask00 {
     const int laneId = threadIdx.x % cuda::warp_size;
     const int warpId __attribute__((unused)) = threadIdx.x / cuda::warp_size;
 
-    const auto& prim_pairs = sp->prim_pairs();
+    //const auto& prim_pairs = sp->prim_pairs();
     __shared__ GauXC::PrimitivePair<double> s_prim_pairs[prim_buffer_size] __attribute__((unused));
 
     if constexpr (use_shared) {
@@ -473,7 +484,8 @@ using AM0 = DeviceTask00<ObaraSaikaType::diag,
     const GauXC::TaskToShellPairDevice* task2sp,
     const std::array<int32_t, 4>*  subtasks,
     const int32_t* nprim_pairs_device,
-    shell_pair** sp_ptr_device,
+    //shell_pair** sp_ptr_device,
+    GauXC::PrimitivePair<double>** prim_pair_ptr_device,
     double* sp_X_AB_device,
     double* sp_Y_AB_device,
     double* sp_Z_AB_device,
@@ -490,7 +502,7 @@ using AM0 = DeviceTask00<ObaraSaikaType::diag,
       nblocks, nthreads, max_primpair, stream, 
       ntasks, nsubtask,
       device_tasks, task2sp, 
-      (int4*) subtasks, nprim_pairs_device, sp_ptr_device,
+      (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
       sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
       boys_table );
   }
@@ -502,7 +514,8 @@ using AM0 = DeviceTask00<ObaraSaikaType::diag,
     const GauXC::TaskToShellPairDevice* task2sp,
     const std::array<int32_t, 4>*  subtasks,
     const int32_t* nprim_pairs_device,
-    shell_pair** sp_ptr_device,
+    //shell_pair** sp_ptr_device,
+    GauXC::PrimitivePair<double>** prim_pair_ptr_device,
     double* sp_X_AB_device,
     double* sp_Y_AB_device,
     double* sp_Z_AB_device,
@@ -519,7 +532,7 @@ using AM0 = DeviceTask00<ObaraSaikaType::diag,
       nblocks, nthreads, max_primpair, stream, 
       ntasks, nsubtask,
       device_tasks, task2sp, 
-      (int4*) subtasks, nprim_pairs_device, sp_ptr_device,
+      (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
       sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
       boys_table );
   }

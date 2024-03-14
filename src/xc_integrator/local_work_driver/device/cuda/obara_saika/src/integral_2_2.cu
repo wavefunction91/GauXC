@@ -26,7 +26,8 @@ using namespace GauXC;
 				   double *_points_x,
 				   double *_points_y,
 				   double *_points_z,
-           shell_pair* sp,
+                   const int nprim_pairs,
+                   const GauXC::PrimitivePair<double>* prim_pairs,
 				   double *Xi,
 				   double *Xj,
 				   int ldX,
@@ -36,8 +37,8 @@ using namespace GauXC;
 				   double *weights, 
 				   double *boys_table) {
     __shared__ double temp[128 * 31];
-    const auto nprim_pairs = sp->nprim_pairs();
-    const auto prim_pairs  = sp->prim_pairs();
+    //const auto nprim_pairs = sp->nprim_pairs();
+    //const auto prim_pairs  = sp->prim_pairs();
 
     __shared__ double outBuffer[128][6];
 
@@ -2952,7 +2953,8 @@ using namespace GauXC;
 				   double *points_x,
 				   double *points_y,
 				   double *points_z,
-           shell_pair* sp,
+                   const int nprim_pairs,
+                   const GauXC::PrimitivePair<double>* prim_pairs,
 				   double *Xi,
 				   double *Xj,
 				   int ldX,
@@ -2962,7 +2964,7 @@ using namespace GauXC;
 				   double *weights, 
 				   double *boys_table) {
     dev_integral_2_2_driver( X_AB, Y_AB, Z_AB, npts, points_x, points_y, 
-      points_z, sp, Xi, Xj, ldX, Gi, Gj, ldG, weights, boys_table );
+      points_z, nprim_pairs, prim_pairs, Xi, Xj, ldX, Gi, Gj, ldG, weights, boys_table );
   }
 
   void integral_2_2(double X_AB,
@@ -2972,7 +2974,8 @@ using namespace GauXC;
 		    double *points_x,
 		    double *points_y,
 		    double *points_z,
-        shell_pair* sp,
+            const int nprim_pairs,
+            const GauXC::PrimitivePair<double>* prim_pairs,
 		    double *Xi,
 		    double *Xj,
 		    int ldX,
@@ -2989,7 +2992,7 @@ using namespace GauXC;
 				   points_x,
 				   points_y,
 				   points_z,
-           sp,
+        nprim_pairs,prim_pairs,
 				   Xi,
 				   Xj,
 				   ldX,
@@ -3026,7 +3029,9 @@ using namespace GauXC;
         task->points_x,
         task->points_y,
         task->points_z,
-        sp2task->shell_pair_device,
+        //sp2task->shell_pair_device,
+        sp2task->nprim_pairs,
+        sp2task->prim_pairs_device,
         task->fmat + i_off,
         task->fmat + j_off,
         npts,
@@ -3131,7 +3136,8 @@ struct DeviceTask22 {
     // Point data
     double4 (&s_task_data)[points_per_subtask],
     // Shell Pair Data
-    const shell_pair* sp,
+    //const shell_pair* sp,
+    const GauXC::PrimitivePair<double>* prim_pairs,
     // Output Data
     const Params param,
     int ldX,
@@ -3151,7 +3157,7 @@ struct DeviceTask22 {
     const int laneId = threadIdx.x % cuda::warp_size;
     const int warpId __attribute__((unused)) = threadIdx.x / cuda::warp_size;
 
-    const auto& prim_pairs = sp->prim_pairs();
+    //const auto& prim_pairs = sp->prim_pairs();
     __shared__ GauXC::PrimitivePair<double> s_prim_pairs[prim_buffer_size] __attribute__((unused));
 
     if constexpr (use_shared) {
@@ -4741,7 +4747,8 @@ using AM2 = DeviceTask22<ObaraSaikaType::diag,
     const GauXC::TaskToShellPairDevice* task2sp,
     const std::array<int32_t, 4>*  subtasks,
     const int32_t* nprim_pairs_device,
-    shell_pair** sp_ptr_device,
+    //shell_pair** sp_ptr_device,
+    GauXC::PrimitivePair<double>** prim_pair_ptr_device,
     double* sp_X_AB_device,
     double* sp_Y_AB_device,
     double* sp_Z_AB_device,
@@ -4758,7 +4765,7 @@ using AM2 = DeviceTask22<ObaraSaikaType::diag,
       nblocks, nthreads, max_primpair, stream, 
       ntasks, nsubtask,
       device_tasks, task2sp, 
-      (int4*) subtasks, nprim_pairs_device, sp_ptr_device,
+      (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
       sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
       boys_table );
   }
@@ -4770,7 +4777,8 @@ using AM2 = DeviceTask22<ObaraSaikaType::diag,
     const GauXC::TaskToShellPairDevice* task2sp,
     const std::array<int32_t, 4>*  subtasks,
     const int32_t* nprim_pairs_device,
-    shell_pair** sp_ptr_device,
+    //shell_pair** sp_ptr_device,
+    GauXC::PrimitivePair<double>** prim_pair_ptr_device,
     double* sp_X_AB_device,
     double* sp_Y_AB_device,
     double* sp_Z_AB_device,
@@ -4787,7 +4795,7 @@ using AM2 = DeviceTask22<ObaraSaikaType::diag,
       nblocks, nthreads, max_primpair, stream, 
       ntasks, nsubtask,
       device_tasks, task2sp, 
-      (int4*) subtasks, nprim_pairs_device, sp_ptr_device,
+      (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
       sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
       boys_table );
   }

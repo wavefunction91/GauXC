@@ -13,7 +13,8 @@ namespace XGPU {
 		    double *_points_x,
 		    double *_points_y,
 		    double *_points_z,
-        shell_pair* sp,
+          const int nprim_pairs,
+          const GauXC::PrimitivePair<double>* prim_pairs,
 		    double *Xi,
 		    double *Xj,
 		    int ldX,
@@ -40,7 +41,7 @@ namespace XGPU {
     const std::array<int32_t, 4>*  subtasks,
 
     const int32_t* nprim_pairs_device,
-    shell_pair** sp_ptr_device,
+    GauXC::PrimitivePair<double>** prim_pair_ptr_device,
     double* sp_X_AB_device,
     double* sp_Y_AB_device,
     double* sp_Z_AB_device,
