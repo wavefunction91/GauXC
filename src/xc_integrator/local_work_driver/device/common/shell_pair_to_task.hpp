@@ -36,7 +36,6 @@ struct ShellPairToTaskDevice {
   int32_t* task_idx_device;
   int32_t* task_shell_off_row_device;
   int32_t* task_shell_off_col_device;
-  //shell_pair* shell_pair_device;
   int32_t nprim_pairs;
   GauXC::PrimitivePair<double>* prim_pairs_device;
   int32_t ntask;

@@ -45,7 +45,6 @@ struct XCDeviceStackData : public XCDeviceData {
 
   struct static_data {
     Shell<double>* shells_device = nullptr; ///< Array of static basis shells (nshells)
-    //ShellPair<double>* shell_pairs_device = nullptr;
     PrimitivePair<double>* prim_pairs_device = nullptr;
 
     double* dmat_device   = nullptr; ///< Static density matrix storage (nbf,nbf)

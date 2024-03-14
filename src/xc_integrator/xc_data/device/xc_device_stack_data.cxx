@@ -176,8 +176,6 @@ void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells, 
   buffer_adaptor mem( dynmem_ptr, dynmem_sz );
 
   static_stack.shells_device = mem.aligned_alloc<Shell<double>>( nshells , csl);
-  //static_stack.shell_pairs_device = 
-  //  mem.aligned_alloc<ShellPair<double>>(nshell_pairs, csl);
   static_stack.prim_pairs_device = 
       mem.aligned_alloc<PrimitivePair<double>>(nprim_pair_total, csl);
 
@@ -304,15 +302,11 @@ void XCDeviceStackData::send_static_data_shell_pairs(
 
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
 
-  // Copy shell pairs
-  // XXX: Needs to account for dynamic memory
-  //GAUXC_GENERIC_EXCEPTION("SP FIX #2 - need to populate Primitive Pairs");
+  // Copy primitive pairs
   std::vector<GauXC::PrimitivePair<double>> pp_host;
   for(const auto& sp : shell_pairs) {
     pp_host.insert( pp_host.end(), sp.prim_pairs(), sp.prim_pairs() + sp.nprim_pairs());
   }
-  //device_backend_->copy_async( shell_pairs.npairs(), shell_pairs.shell_pairs(),
-  //  static_stack.shell_pairs_device, "ShellPairs H2D" );
   device_backend_->copy_async( global_dims.nprim_pairs, pp_host.data(),
     static_stack.prim_pairs_device, "PrimPairs H2D" );
 
@@ -332,9 +326,6 @@ void XCDeviceStackData::send_static_data_shell_pairs(
     for( auto _j = j_st; _j < j_en; ++_j, idx++ ) {
       const auto j = sp_col_ind[_j];
 
-      //shell_pair_soa.shell_pair_dev_ptr.emplace_back(
-      //  static_stack.shell_pairs_device + idx
-      //);
       const auto& sp = shell_pairs.shell_pairs()[idx];
       const auto nprim_pairs = sp.nprim_pairs();
       shell_pair_soa.prim_pair_dev_ptr.emplace_back( prim_pair_ptr );

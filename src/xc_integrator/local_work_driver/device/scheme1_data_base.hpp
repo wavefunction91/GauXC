@@ -66,7 +66,6 @@ struct Scheme1DataBase : public XCDeviceAoSData {
 
     // Reused for all tasks. Indexed by linear idx
     int32_t* nprim_pairs_device = nullptr;
-    //shell_pair** sp_ptr_device = nullptr;
     GauXC::PrimitivePair<double>** pp_ptr_device = nullptr;
     double* sp_X_AB_device = nullptr;
     double* sp_Y_AB_device = nullptr;
@@ -100,7 +99,6 @@ struct Scheme1DataBase : public XCDeviceAoSData {
 
   std::vector<std::array<int32_t, 4>> subtask;
   std::vector<int32_t> nprim_pairs_host;
-  //std::vector<shell_pair*> sp_ptr_host;
   std::vector<GauXC::PrimitivePair<double>*> pp_ptr_host;
   std::vector<double> sp_X_AB_host;
   std::vector<double> sp_Y_AB_host;
