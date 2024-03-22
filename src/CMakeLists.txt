@@ -120,6 +120,7 @@ install( TARGETS gauxc ${GAUXC_EXPORT_DEPENDENCIES}
 set_target_properties( gauxc PROPERTIES EXPORT_NAME gauxc )
 
 set(export_properties
+  # currently configurable properties 
   "GAUXC_ENABLE_TESTS"
   "GAUXC_ENABLE_HOST"
   "GAUXC_ENABLE_CUDA"
@@ -133,6 +134,10 @@ set(export_properties
   "GAUXC_ENABLE_HDF5"
   "GAUXC_ENABLE_FAST_RSQRT"
   "GAUXC_BLAS_PREFER_ILP64"
+  
+  # may become configurable in the future
+  "GAUXC_CPU_XC_MAX_AM"
+  "GAUXC_CPU_SNLINK_MAX_AM"
 )
 
 set_target_properties(gauxc
@@ -150,6 +155,8 @@ set_target_properties(gauxc
     "GAUXC_ENABLE_HDF5"       ${GAUXC_ENABLE_HDF5}
     "GAUXC_ENABLE_FAST_RSQRT" ${GAUXC_ENABLE_FAST_RSQRT}
     "GAUXC_BLAS_PREFER_ILP64" ${GAUXC_BLAS_PREFER_ILP64}
+    "GAUXC_CPU_XC_MAX_AM"     6 
+    "GAUXC_CPU_SNLINK_MAX_AM" 6
 )
 set_property(TARGET gauxc APPEND PROPERTY EXPORT_PROPERTIES "${export_properties}")
 
