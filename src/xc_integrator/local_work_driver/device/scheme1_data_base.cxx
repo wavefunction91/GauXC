@@ -33,7 +33,7 @@ void Scheme1DataBase::reset_allocations() {
   task_to_shell_pair_stack.reset();
   subtask.clear();
   nprim_pairs_host.clear();
-  sp_ptr_host.clear();
+  pp_ptr_host.clear();
 
   sp_X_AB_host.clear();
   sp_Y_AB_host.clear();
@@ -226,8 +226,8 @@ Scheme1DataBase::device_buffer_t Scheme1DataBase::allocate_dynamic_stack(
 
     task_to_shell_pair_stack.nprim_pairs_device = 
       mem.aligned_alloc<int32_t>( nsp, 16, csl );
-    task_to_shell_pair_stack.sp_ptr_device = 
-      mem.aligned_alloc<shell_pair*>( nsp, 16, csl );
+    task_to_shell_pair_stack.pp_ptr_device = 
+      mem.aligned_alloc<GauXC::PrimitivePair<double>*>( nsp, 16, csl );
     task_to_shell_pair_stack.sp_X_AB_device = 
       mem.aligned_alloc<double>( nsp, 16, csl );
     task_to_shell_pair_stack.sp_Y_AB_device = 
@@ -485,7 +485,7 @@ void Scheme1DataBase::pack_and_send(
 
     subtask.clear();
     nprim_pairs_host.clear();
-    sp_ptr_host.clear();
+    pp_ptr_host.clear();
     sp_X_AB_host.clear();
     sp_Y_AB_host.clear();
     sp_Z_AB_host.clear();
@@ -521,7 +521,7 @@ void Scheme1DataBase::pack_and_send(
 
       // Generate shell pair device buffer
       nprim_pairs_host = this->shell_pair_soa.shell_pair_nprim_pairs;
-      sp_ptr_host = this->shell_pair_soa.shell_pair_dev_ptr;
+      pp_ptr_host = this->shell_pair_soa.prim_pair_dev_ptr;
       for( auto i = 0ul; i < nsp; ++i ) {
         //nprim_pairs_host.push_back(
         //  this->shell_pair_soa.shell_pair_nprim_pairs[i]
@@ -743,10 +743,10 @@ void Scheme1DataBase::pack_and_send(
       task_to_shell_pair_stack.nprim_pairs_device,
       "nprim_pairs_device");
 
-    device_backend_->copy_async(sp_ptr_host.size(),
-      sp_ptr_host.data(),
-      task_to_shell_pair_stack.sp_ptr_device,
-      "sp_ptr_device");
+    device_backend_->copy_async(pp_ptr_host.size(),
+      pp_ptr_host.data(),
+      task_to_shell_pair_stack.pp_ptr_device,
+      "pp_ptr_device");
       
     device_backend_->copy_async(sp_X_AB_host.size(),
       sp_X_AB_host.data(),

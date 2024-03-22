@@ -21,7 +21,8 @@ using namespace GauXC;
 				 double *_points_x,
 				 double *_points_y,
 				 double *_points_z,
-         shell_pair* sp,
+                 const int nprim_pairs,
+                 const GauXC::PrimitivePair<double>* prim_pairs,
 				 double *Xi,
 				 int ldX,
 				 double *Gi,
@@ -29,8 +30,6 @@ using namespace GauXC;
 				 double *weights,
 				 double *boys_table) {
     __shared__ double temp[128 * 1];
-    const auto nprim_pairs = sp->nprim_pairs();
-    const auto prim_pairs  = sp->prim_pairs();
     
     for(size_t p_outer = blockIdx.x * blockDim.x; p_outer < npts; p_outer += gridDim.x * blockDim.x) {
       double *_point_outer_x = (_points_x + p_outer);
@@ -100,14 +99,15 @@ using namespace GauXC;
 				   double *points_x,
 				   double *points_y,
 				   double *points_z,
-           shell_pair* sp,
+                   const int nprim_pairs,
+                   const GauXC::PrimitivePair<double>* prim_pairs,
 				   double *Xi,
 				   int ldX,
 				   double *Gi,
 				   int ldG, 
 				   double *weights, 
 				   double *boys_table) {
-    dev_integral_0_driver( npts, points_x, points_y, points_z, sp, Xi, ldX,
+    dev_integral_0_driver( npts, points_x, points_y, points_z, nprim_pairs, prim_pairs, Xi, ldX,
       Gi, ldG, weights, boys_table );
   }
 
@@ -115,7 +115,8 @@ using namespace GauXC;
 		  double *_points_x,	
 		  double *_points_y,	
 		  double *_points_z,	
-      shell_pair* sp,
+          const int nprim_pairs,
+          const GauXC::PrimitivePair<double>* prim_pairs,
 		  double *Xi,
 		  int ldX,
 		  double *Gi,
@@ -127,7 +128,7 @@ using namespace GauXC;
 				 _points_x,
 				 _points_y,
 				 _points_z,
-         sp,
+         nprim_pairs, prim_pairs,
 				 Xi,
 				 ldX,
 				 Gi,
@@ -155,7 +156,8 @@ using namespace GauXC;
         task->points_x,
         task->points_y,
         task->points_z,
-        sp2task->shell_pair_device,
+        sp2task->nprim_pairs,
+        sp2task->prim_pairs_device,
         task->fmat + i_off,
         npts,
         task->gmat + i_off,
