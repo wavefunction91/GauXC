@@ -119,16 +119,13 @@ install( TARGETS gauxc ${GAUXC_EXPORT_DEPENDENCIES}
 
 set_target_properties( gauxc PROPERTIES EXPORT_NAME gauxc )
 
-# from DLP
-# manually-exported properties
-# just GPU support for now
 set(export_properties
-  "GAUXC_GPU_ENABLED"
+  "GAUXC_CUDA_ENABLED"
   )
 
 set_target_properties(gauxc
   PROPERTIES
-    "GAUXC_GPU_ENABLED" ${GAUXC_ENABLE_CUDA}
+    "GAUXC_CUDA_ENABLED" ${GAUXC_ENABLE_CUDA}
 )
 set_property(TARGET gauxc APPEND PROPERTY EXPORT_PROPERTIES "${export_properties}")
 
