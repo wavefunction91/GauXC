@@ -120,12 +120,12 @@ install( TARGETS gauxc ${GAUXC_EXPORT_DEPENDENCIES}
 set_target_properties( gauxc PROPERTIES EXPORT_NAME gauxc )
 
 set(export_properties
-  "GAUXC_CUDA_ENABLED"
+  "GAUXC_ENABLE_CUDA"
   )
 
 set_target_properties(gauxc
   PROPERTIES
-    "GAUXC_CUDA_ENABLED" ${GAUXC_ENABLE_CUDA}
+    "GAUXC_ENABLE_CUDA" ${GAUXC_ENABLE_CUDA}
 )
 set_property(TARGET gauxc APPEND PROPERTY EXPORT_PROPERTIES "${export_properties}")
 
