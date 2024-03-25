@@ -117,6 +117,41 @@ install( TARGETS gauxc ${GAUXC_EXPORT_DEPENDENCIES}
 
 set_target_properties( gauxc PROPERTIES EXPORT_NAME gauxc )
 
+set(export_properties
+  # currently configurable properties 
+  "GAUXC_ENABLE_HOST"
+  "GAUXC_ENABLE_CUDA"
+  "GAUXC_ENABLE_HIP"
+  "GAUXC_ENABLE_MAGMA"
+  "GAUXC_ENABLE_CUTLASS"
+  "GAUXC_ENABLE_NCCL"
+  "GAUXC_ENABLE_MPI"
+  "GAUXC_ENABLE_OPENMP"
+  
+  # may become configurable in the future
+  "GAUXC_CPU_XC_MAX_AM"
+  "GAUXC_CPU_SNLINK_MAX_AM"
+  "GAUXC_GPU_XC_MAX_AM"
+  "GAUXC_GPU_SNLINK_MAX_AM"
+)
+
+set_target_properties(gauxc
+  PROPERTIES
+    "GAUXC_ENABLE_HOST"       ${GAUXC_ENABLE_HOST}
+    "GAUXC_ENABLE_CUDA"       ${GAUXC_ENABLE_CUDA}
+    "GAUXC_ENABLE_HIP"        ${GAUXC_ENABLE_HIP}
+    "GAUXC_ENABLE_MAGMA"      ${GAUXC_ENABLE_MAGMA}
+    "GAUXC_ENABLE_CUTLASS"    ${GAUXC_ENABLE_CUTLASS}
+    "GAUXC_ENABLE_NCCL"       ${GAUXC_ENABLE_NCCL}
+    "GAUXC_ENABLE_MPI"        ${GAUXC_ENABLE_MPI}
+    "GAUXC_ENABLE_OPENMP"     ${GAUXC_ENABLE_OPENMP}
+    "GAUXC_CPU_XC_MAX_AM"     6 
+    "GAUXC_CPU_SNLINK_MAX_AM" 6
+    "GAUXC_GPU_XC_MAX_AM"     4 
+    "GAUXC_GPU_SNLINK_MAX_AM" 2
+)
+set_property(TARGET gauxc APPEND PROPERTY EXPORT_PROPERTIES "${export_properties}")
+
 # Export build tree
 export(EXPORT gauxc-targets
       NAMESPACE gauxc::
