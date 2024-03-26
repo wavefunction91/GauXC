@@ -5,7 +5,7 @@
  *
  * See LICENSE.txt for details
  */
-#ifdef GAUXC_ENABLE_HOST
+#ifdef GAUXC_HAS_HOST
 #include "collocation_common.hpp"
 #include "host/reference/collocation.hpp"
 

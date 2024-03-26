@@ -11,7 +11,7 @@
 #include <string>
 #include <gauxc/util/div_ceil.hpp>
 
-#ifdef GAUXC_ENABLE_HIP
+#ifdef GAUXC_HAS_HIP
 #include "device_specific/hip_util.hpp"
 #include "device/hip/hip_aos_scheme1.hpp"
 //#include "device/hip/hip_aos_scheme1_weights.hpp"

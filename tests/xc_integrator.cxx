@@ -258,24 +258,24 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
 void test_integrator(std::string reference_file, functional_type& func, PruningScheme pruning_scheme) {
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
   auto rt = DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.9);
 #else
   auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
 #endif
 
-#ifdef GAUXC_ENABLE_HOST
+#ifdef GAUXC_HAS_HOST
     SECTION( "Host" ) {
       test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
         pruning_scheme, 1, true, true, true );
     }
 #endif
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
   SECTION( "Device" ) {
     bool check_grad = true;
     bool check_k    = true;
-    #ifdef GAUXC_ENABLE_HIP
+    #ifdef GAUXC_HAS_HIP
     check_grad = false;
     check_k    = false;
     #endif
@@ -285,7 +285,7 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
         check_grad, true, check_k, "Default" );
     }
 
-    #ifdef GAUXC_ENABLE_MAGMA
+    #ifdef GAUXC_HAS_MAGMA
     SECTION( "Incore - MPI Reduction - MAGMA" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
         reference_file, func, pruning_scheme,
@@ -294,7 +294,7 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
     }
     #endif
 
-    #ifdef GAUXC_ENABLE_CUTLASS
+    #ifdef GAUXC_HAS_CUTLASS
     SECTION( "Incore - MPI Reduction - CUTLASS" ) {
       test_xc_integrator( ExecutionSpace::Device, rt, 
         reference_file, func, pruning_scheme,
@@ -304,7 +304,7 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
     #endif
 
 
-    #ifdef GAUXC_ENABLE_NCCL
+    #ifdef GAUXC_HAS_NCCL
     SECTION( "Incore - NCCL Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
         reference_file, func, pruning_scheme, 

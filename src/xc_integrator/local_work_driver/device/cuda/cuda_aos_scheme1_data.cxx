@@ -58,10 +58,10 @@ size_t CudaAoSScheme1<Base>::Data::get_submat_chunk_size(int32_t LDA,
 }
 
 template struct CudaAoSScheme1<AoSScheme1Base>::Data;
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
 template struct CudaAoSScheme1<AoSScheme1MAGMABase>::Data;
 #endif
-#ifdef GAUXC_ENABLE_CUTLASS
+#ifdef GAUXC_HAS_CUTLASS
 template struct CudaAoSScheme1<AoSScheme1CUTLASSBase>::Data;
 #endif
 

@@ -31,7 +31,7 @@ struct ref_weights_data {
 };
 
 
-#ifdef GAUXC_ENABLE_HOST
+#ifdef GAUXC_HAS_HOST
 #include "host/reference/weights.hpp"
 
 void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,

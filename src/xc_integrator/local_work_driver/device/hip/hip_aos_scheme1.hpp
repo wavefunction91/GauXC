@@ -35,7 +35,7 @@ struct HipAoSScheme1 : public Base {
 };
 
 extern template struct HipAoSScheme1<AoSScheme1Base>;
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
 extern template struct HipAoSScheme1<AoSScheme1MAGMABase>;
 #endif
 
@@ -56,7 +56,7 @@ struct HipAoSScheme1<Base>::Data : public Base::Data {
 };
 
 extern template struct HipAoSScheme1<AoSScheme1Base>::Data;
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
 extern template struct HipAoSScheme1<AoSScheme1MAGMABase>::Data;
 #endif
 

@@ -7,6 +7,6 @@
 #
 target_sources( gauxc PRIVATE molecular_weights.cxx )
 add_subdirectory( host )
-if(GAUXC_ENABLE_DEVICE)
+if(GAUXC_HAS_DEVICE)
   add_subdirectory( device )
 endif()

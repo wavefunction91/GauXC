@@ -10,7 +10,7 @@
 #include <fstream>
 #include <string>
 
-#ifdef GAUXC_ENABLE_HOST
+#ifdef GAUXC_HAS_HOST
 #include "host/reference/weights.hpp"
 using namespace GauXC;
 

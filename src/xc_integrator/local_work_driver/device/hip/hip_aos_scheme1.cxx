@@ -58,7 +58,7 @@ void HipAoSScheme1<Base>::partition_weights( XCDeviceData* _data ) {
 
 
 template struct HipAoSScheme1<AoSScheme1Base>;
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
 template struct HipAoSScheme1<AoSScheme1MAGMABase>;
 #endif
 

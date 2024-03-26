@@ -12,7 +12,7 @@
 
 namespace GauXC::detail {
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
 template <typename TaskIterator, typename CostFunctor>
 auto rebalance(TaskIterator begin, TaskIterator end, const CostFunctor& cost, MPI_Comm comm) {
 
@@ -359,7 +359,7 @@ auto rebalance(TaskIterator begin, TaskIterator end, const CostFunctor& cost, MP
 
 
 void LoadBalancerImpl::rebalance_weights() {
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
   auto& tasks = get_tasks();
   const size_t natoms = molecule().natoms();
   auto cost = [=](const auto& task){ return task.cost(1,natoms); };
@@ -369,7 +369,7 @@ void LoadBalancerImpl::rebalance_weights() {
 }
 
 void LoadBalancerImpl::rebalance_exc_vxc() {
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
   auto& tasks = get_tasks();
   const size_t natoms = molecule().natoms();
   auto cost = [=](const auto& task){ return task.cost_exc_vxc(1); };
@@ -379,7 +379,7 @@ void LoadBalancerImpl::rebalance_exc_vxc() {
 }
 
 void LoadBalancerImpl::rebalance_exx() {
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
   auto& tasks = get_tasks();
   auto cost = [=](const auto& task){ return task.cost_exx(); };
   auto new_tasks = rebalance( tasks.begin(), tasks.end(), cost, runtime_.comm());

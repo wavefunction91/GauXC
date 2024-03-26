@@ -16,21 +16,21 @@ namespace GauXC {
 
 // FWD decl all exception types for optional handling
 
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_HAS_CUDA
 class cuda_exception;
 class cublas_exception;
 #endif
 
-#ifdef GAUXC_ENABLE_HIP
+#ifdef GAUXC_HAS_HIP
 class hip_exception;
 class hipblas_exception;
 #endif
 
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
 class magma_exception;
 #endif
 
-#ifdef GAUXC_ENABLE_CUTLASS
+#ifdef GAUXC_HAS_CUTLASS
 class cutlass_exception;
 #endif
 

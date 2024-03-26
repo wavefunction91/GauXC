@@ -1,13 +1,13 @@
 #pragma once
 #include <gauxc/gauxc_config.hpp>
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
   #define GAUXC_MPI_CODE(...) __VA_ARGS__
 #else
   #define GAUXC_MPI_CODE(...) 
 #endif
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
 #include <mpi.h>
 #include <type_traits>
 #include <vector>

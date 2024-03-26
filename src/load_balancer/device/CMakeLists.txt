@@ -9,10 +9,10 @@ target_sources( gauxc PRIVATE
   load_balancer_device_factory.cxx
 )
 
-if( GAUXC_ENABLE_CUDA )
+if( GAUXC_HAS_CUDA )
   add_subdirectory( cuda )
 endif()
 
-if( GAUXC_ENABLE_HIP )
+if( GAUXC_HAS_HIP )
   add_subdirectory( hip )
 endif()

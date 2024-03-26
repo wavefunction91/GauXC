@@ -7,7 +7,7 @@
  */
 #pragma once
 #include <gauxc/gauxc_config.hpp>
-#ifdef GAUXC_ENABLE_CUTLASS
+#ifdef GAUXC_HAS_CUTLASS
 #include "device/scheme1_base.hpp"
 
 #include <cutlass/cutlass.h>

@@ -8,7 +8,7 @@
 #include "collocation.hpp"
 
 
-#ifdef GAUXC_ENABLE_GAU2GRID
+#ifdef GAUXC_HAS_GAU2GRID
   #include "gau2grid/gau2grid.h"
 #else
   #include "collocation/collocation_angular_cartesian.hpp"
@@ -26,7 +26,7 @@ void gau2grid_collocation( size_t                  npts,
                            const int32_t*          shell_mask,
                            double*                 basis_eval ) {
 
-#ifdef GAUXC_ENABLE_GAU2GRID
+#ifdef GAUXC_HAS_GAU2GRID
 
   std::allocator<double> a;
   auto* rv = a.allocate( npts * nbe );
@@ -83,7 +83,7 @@ void gau2grid_collocation_gradient( size_t                  npts,
                                     double*                 dbasis_y_eval,
                                     double*                 dbasis_z_eval ) {
 
-#ifdef GAUXC_ENABLE_GAU2GRID
+#ifdef GAUXC_HAS_GAU2GRID
 
   std::allocator<double> a;
   auto* rv = a.allocate( 4 * npts * nbe );

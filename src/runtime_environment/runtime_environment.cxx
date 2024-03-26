@@ -23,7 +23,7 @@ RuntimeEnvironment::RuntimeEnvironment(const RuntimeEnvironment& other) :
 RuntimeEnvironment::RuntimeEnvironment(RuntimeEnvironment&& other) noexcept :
   RuntimeEnvironment(std::move(other.pimpl_)) {}
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
 MPI_Comm RuntimeEnvironment::comm() const {
   return pimpl_->comm();
 }

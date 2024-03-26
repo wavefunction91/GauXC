@@ -22,7 +22,7 @@ target_include_directories( gauxc
     $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}>
 )
 
-if( GAUXC_ENABLE_DEVICE )
+if( GAUXC_HAS_DEVICE )
   add_subdirectory( device )
 endif()
 

@@ -45,7 +45,7 @@ inline constexpr T sqrt_pi_ov_2 = 0.88622692545275801364;
 }
 
 inline double rsqrt( double x ) {
-#ifdef GAUXC_ENABLE_FAST_RSQRT
+#ifdef GAUXC_USE_FAST_RSQRT
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
   double y = x;
   double x2 = y * 0.5;

@@ -39,10 +39,10 @@ void CudaAoSScheme1<Base>::partition_weights( XCDeviceData* _data ) {
 
 
 template struct CudaAoSScheme1<AoSScheme1Base>;
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
 template struct CudaAoSScheme1<AoSScheme1MAGMABase>;
 #endif
-#ifdef GAUXC_ENABLE_CUTLASS
+#ifdef GAUXC_HAS_CUTLASS
 template struct CudaAoSScheme1<AoSScheme1CUTLASSBase>;
 #endif
 

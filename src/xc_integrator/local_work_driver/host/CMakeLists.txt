@@ -35,6 +35,8 @@ set(GAUXC_BLAS_IS_LP64 ${BLAS_IS_LP64} CACHE BOOL "BLAS used in GauXC is LP64" F
 
 target_link_libraries( gauxc PUBLIC BLAS::BLAS )
 
+# XXX: Be careful, I once knew why this logic was here, now no one does... 
+#      It's needed, change it and suffer the consequences
 if( GAUXC_ENABLE_GAU2GRID AND TARGET gau2grid::gg )
   target_link_libraries( gauxc PUBLIC gau2grid::gg )
 endif()

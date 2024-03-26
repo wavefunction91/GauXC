@@ -6,7 +6,7 @@
 # See LICENSE.txt for details
 #
 add_subdirectory(host)
-if(GAUXC_ENABLE_DEVICE)
+if(GAUXC_HAS_DEVICE)
   add_subdirectory(device)
 endif()
 

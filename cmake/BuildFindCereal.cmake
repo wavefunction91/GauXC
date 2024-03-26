@@ -19,14 +19,14 @@ if( NOT cereal_FOUND )
     add_library( cereal INTERFACE IMPORTED )
     set_target_properties( cereal PROPERTIES
       INTERFACE_INCLUDE_DIRECTORIES "${cereal_SOURCE_DIR}/include"
-      INTERFACE_COMPILE_DEFINITIONS "CEREAL_THREAD_SAFE=1;GAUXC_ENABLE_CEREAL=1"
+      INTERFACE_COMPILE_DEFINITIONS "CEREAL_THREAD_SAFE=1;GAUXC_HAS_CEREAL=1"
     )
   endif()
 
 else()
 
   target_compile_definitions( cereal INTERFACE
-    "CEREAL_THREAD_SAFE=1;GAUXC_ENABLE_CEREAL=1" 
+    "CEREAL_THREAD_SAFE=1;GAUXC_HAS_CEREAL=1" 
   )
 
 endif()

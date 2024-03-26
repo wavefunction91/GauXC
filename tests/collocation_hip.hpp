@@ -5,7 +5,7 @@
  *
  * See LICENSE.txt for details
  */
-#ifdef GAUXC_ENABLE_HIP
+#ifdef GAUXC_HAS_HIP
 #include "collocation_common.hpp"
 #include "device/common/collocation_device.hpp"
 #include "device_specific/hip_util.hpp"
@@ -424,5 +424,5 @@ void test_hip_collocation_shell_to_task_hessian( const BasisSet<double>& basis,
 
 
 
-#endif // GAUXC_ENABLE_HIP
+#endif // GAUXC_HAS_HIP
 
