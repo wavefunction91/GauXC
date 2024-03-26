@@ -7,18 +7,31 @@
  */
 #pragma once
 
-#cmakedefine GAUXC_ENABLE_HOST
-#cmakedefine GAUXC_ENABLE_CUDA
-#cmakedefine GAUXC_ENABLE_HIP
-#cmakedefine GAUXC_ENABLE_MPI
-#cmakedefine GAUXC_ENABLE_MAGMA
-#cmakedefine GAUXC_ENABLE_NCCL
-#cmakedefine GAUXC_ENABLE_CUTLASS
-#cmakedefine GAUXC_ENABLE_GAU2GRID
-#cmakedefine GAUXC_HAS_HDF5
-#cmakedefine GAUXC_ENABLE_FAST_RSQRT
+//#cmakedefine GAUXC_ENABLE_HOST
+//#cmakedefine GAUXC_ENABLE_CUDA
+//#cmakedefine GAUXC_ENABLE_HIP
+//#cmakedefine GAUXC_ENABLE_MPI
+//#cmakedefine GAUXC_ENABLE_MAGMA
+//#cmakedefine GAUXC_ENABLE_NCCL
+//#cmakedefine GAUXC_ENABLE_CUTLASS
+//#cmakedefine GAUXC_ENABLE_GAU2GRID
+//#cmakedefine GAUXC_HAS_HDF5
+//#cmakedefine GAUXC_ENABLE_FAST_RSQRT
+//
+//#cmakedefine GAUXC_ENABLE_DEVICE
 
-#cmakedefine GAUXC_ENABLE_DEVICE
+#cmakedefine GAUXC_HAS_HOST
+#cmakedefine GAUXC_HAS_CUDA
+#cmakedefine GAUXC_HAS_HIP
+#cmakedefine GAUXC_HAS_MPI
+#cmakedefine GAUXC_HAS_MAGMA
+#cmakedefine GAUXC_HAS_NCCL
+#cmakedefine GAUXC_HAS_CUTLASS
+#cmakedefine GAUXC_HAS_GAU2GRID
+#cmakedefine GAUXC_HAS_HDF5
+#cmakedefine GAUXC_USE_FAST_RSQRT
+
+#cmakedefine GAUXC_HAS_DEVICE
 
 #if defined(__CUDACC__) || defined(__HIPCC__)
   #define HOST_DEVICE_ACCESSIBLE __host__ __device__

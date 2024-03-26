@@ -1,4 +1,4 @@
-if( GAUXC_ENABLE_CUDA )
+if( GAUXC_HAS_CUDA )
 
   find_package( CUDAToolkit REQUIRED )
   if( CUDAToolkit_VERSION VERSION_LESS "11.0.0" )

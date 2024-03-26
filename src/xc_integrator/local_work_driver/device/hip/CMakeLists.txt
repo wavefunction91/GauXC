@@ -25,7 +25,7 @@ target_sources(gauxc PRIVATE
 
 )
 
-if(GAUXC_ENABLE_MAGMA)
+if(GAUXC_HAS_MAGMA)
   # MAGMA requires linkage to hipSPARSE for some strange reason....
   find_package( hipsparse REQUIRED )
   target_link_libraries( gauxc PUBLIC roc::hipsparse )

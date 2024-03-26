@@ -8,7 +8,7 @@
 #include "load_balancer_impl.hpp"
 #include "host/load_balancer_host_factory.hpp"
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
 #include "device/load_balancer_device_factory.hpp"
 #endif
 
@@ -28,7 +28,7 @@ std::shared_ptr<LoadBalancer> LoadBalancerFactory::get_shared_instance(
       using host_factory = LoadBalancerHostFactory;
       return host_factory::get_shared_instance(kernel_name_,
         rt, mol, mg, basis, pad_value );
-    #ifdef GAUXC_ENABLE_DEVICE
+    #ifdef GAUXC_HAS_DEVICE
     case ExecutionSpace::Device:
       using device_factory = LoadBalancerDeviceFactory;
       return device_factory::get_shared_instance(kernel_name_,

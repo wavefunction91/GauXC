@@ -5,7 +5,7 @@
  *
  * See LICENSE.txt for details
  */
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_HAS_CUDA
 #include "collocation_common.hpp"
 #include "device/common/collocation_device.hpp"
 #include "device_specific/cuda_util.hpp"
@@ -423,5 +423,5 @@ void test_cuda_collocation_shell_to_task_hessian( const BasisSet<double>& basis,
 
 
 
-#endif // GAUXC_ENABLE_CUDA
+#endif // GAUXC_HAS_CUDA
 

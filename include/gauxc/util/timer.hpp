@@ -12,7 +12,7 @@
 #include <type_traits>
 
 #include <gauxc/gauxc_config.hpp>
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
 #include <mpi.h>
 #endif
 
@@ -162,7 +162,7 @@ public:
 };
 
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
 class MPITimer {
 
   template <class Rep, class Period>
