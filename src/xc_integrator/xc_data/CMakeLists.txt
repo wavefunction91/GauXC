@@ -5,7 +5,7 @@
 #
 # See LICENSE.txt for details
 #
-if(GAUXC_ENABLE_DEVICE)
+if(GAUXC_HAS_DEVICE)
   add_subdirectory( device )
   target_include_directories( gauxc
     PUBLIC
