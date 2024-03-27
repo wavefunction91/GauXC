@@ -17,7 +17,7 @@ LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule
   basis_( std::make_shared<basis_type>(basis) ),
   molmeta_( molmeta ) { 
 
-  shell_pairs_ = std::make_shared<shell_pair_type>(*basis_);
+  //shell_pairs_ = std::make_shared<shell_pair_type>(*basis_);
   basis_map_   = std::make_shared<basis_map_type>(*basis_, mol);
 
 }
@@ -111,6 +111,13 @@ const LoadBalancerImpl::basis_map_type& LoadBalancerImpl::basis_map() const {
   return *basis_map_;
 }
 const LoadBalancerImpl::shell_pair_type& LoadBalancerImpl::shell_pairs() const {
+  if(!shell_pairs_) GAUXC_GENERIC_EXCEPTION("ShellPairs must be pregenerated for const-context");
+  return *shell_pairs_;
+}
+const LoadBalancerImpl::shell_pair_type& LoadBalancerImpl::shell_pairs() {
+  if(!shell_pairs_) {
+    shell_pairs_ = std::make_shared<shell_pair_type>(*basis_);
+  }
   return *shell_pairs_;
 }
 

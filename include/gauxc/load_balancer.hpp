@@ -100,6 +100,7 @@ public:
 
   /// Return the number of non-negligible local shell pairs for this LoadBalancer
   const shell_pair_type& shell_pairs() const;
+  const shell_pair_type& shell_pairs();
 
   /// Return the runtime handle used to construct this LoadBalancer
   const RuntimeEnvironment& runtime() const;

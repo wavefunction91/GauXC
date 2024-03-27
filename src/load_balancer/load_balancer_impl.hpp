@@ -73,6 +73,7 @@ public:
   const RuntimeEnvironment& runtime() const;
   const basis_map_type& basis_map() const;
   const shell_pair_type& shell_pairs() const;
+  const shell_pair_type& shell_pairs();
 
   LoadBalancerState& state();
 
