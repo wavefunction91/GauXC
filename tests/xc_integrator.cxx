@@ -24,7 +24,6 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   std::string reference_file, 
   functional_type& func, 
   PruningScheme pruning_scheme,
-  size_t quad_pad_value,
   bool check_grad,
   bool check_integrate_den,
   bool check_k,
@@ -139,7 +138,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
   // Construct Load Balancer
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
-  auto lb = lb_factory.get_instance(rt, mol, mg, basis, quad_pad_value);
+  auto lb = lb_factory.get_instance(rt, mol, mg, basis);
 
   // Construct Weights Module
   MolecularWeightsFactory mw_factory( ex, "Default", MolecularWeightsSettings{} );
@@ -267,7 +266,7 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
 #ifdef GAUXC_ENABLE_HOST
     SECTION( "Host" ) {
       test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
-        pruning_scheme, 1, true, true, true );
+        pruning_scheme, true, true, true );
     }
 #endif
 
@@ -281,7 +280,7 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
     #endif
     SECTION( "Incore - MPI Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
-        reference_file, func, pruning_scheme, 1, 
+        reference_file, func, pruning_scheme,  
         check_grad, true, check_k, "Default" );
     }
 
@@ -289,7 +288,7 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
     SECTION( "Incore - MPI Reduction - MAGMA" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
         reference_file, func, pruning_scheme,
-        1, false, true, check_k, "Default", "Default", 
+        false, true, check_k, "Default", "Default", 
         "Scheme1-MAGMA" );
     }
     #endif
@@ -298,7 +297,7 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
     SECTION( "Incore - MPI Reduction - CUTLASS" ) {
       test_xc_integrator( ExecutionSpace::Device, rt, 
         reference_file, func, pruning_scheme,
-        1, false, true, false, "Default", "Default", 
+        false, true, false, "Default", "Default", 
         "Scheme1-CUTLASS" );
     }
     #endif
@@ -308,13 +307,13 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
     SECTION( "Incore - NCCL Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
         reference_file, func, pruning_scheme, 
-        1, false, false, false, "Default", "NCCL" );
+        false, false, false, "Default", "NCCL" );
     }
     #endif
 
     SECTION( "ShellBatched" ) {
       test_xc_integrator( ExecutionSpace::Device, rt, 
-        reference_file, func, pruning_scheme, 1, 
+        reference_file, func, pruning_scheme,  
         false, false, false, "ShellBatched" );
     }
   }

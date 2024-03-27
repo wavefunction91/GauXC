@@ -20,8 +20,7 @@ namespace GauXC {
 
 std::shared_ptr<LoadBalancer> LoadBalancerDeviceFactory::get_shared_instance(
   std::string kernel_name, const RuntimeEnvironment& rt,
-  const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis,
-  size_t pv
+  const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis
 ) {
 
   std::transform(kernel_name.begin(), kernel_name.end(), 
@@ -34,7 +33,7 @@ std::shared_ptr<LoadBalancer> LoadBalancerDeviceFactory::get_shared_instance(
   #ifdef GAUXC_ENABLE_DEVICE
   if( kernel_name == "REPLICATED" ) {
     ptr = std::make_unique<detail::DeviceReplicatedLoadBalancer>(
-      rt, mol, mg, basis, pv
+      rt, mol, mg, basis
     );
   }
   #endif

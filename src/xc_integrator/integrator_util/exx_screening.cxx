@@ -37,6 +37,7 @@ void exx_ek_screening(
   const size_t nshells = basis.nshells();
   const size_t ntasks  = std::distance(task_begin, task_end);
 
+  // TODO: This should be passed in to avoid recomputation
   ShellPairCollection<double> shpairs(basis);
 
   std::vector<double> task_max_bf_sum(ntasks);

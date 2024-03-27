@@ -12,14 +12,14 @@
 using namespace GauXC;
 
 
-void gen_ref_lb_data( std::vector<XCTask>& tasks, size_t pv ) {
+void gen_ref_lb_data( std::vector<XCTask>& tasks ) {
 
   auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
   int world_rank = rt.comm_rank();
   int world_size = rt.comm_size();
 
   std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_cc-pvdz_ufg_tasks_" + std::to_string(world_size) + "mpi_rank" + std::to_string(world_rank) + 
-    "_pv" + std::to_string(pv) + ".bin";
+    "_pv" + std::to_string(1) + ".bin";
 
   // Points / Weights not stored in reference data to 
   // save space
@@ -34,14 +34,14 @@ void gen_ref_lb_data( std::vector<XCTask>& tasks, size_t pv ) {
 
 }
 
-void check_lb_data( const std::vector<XCTask>& tasks, size_t pv ) {
+void check_lb_data( const std::vector<XCTask>& tasks ) {
 
   auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
   int world_rank = rt.comm_rank();
   int world_size = rt.comm_size();
 
   std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_cc-pvdz_ufg_tasks_" + std::to_string(world_size) + "mpi_rank" + std::to_string(world_rank) + 
-    "_pv" + std::to_string(pv) + ".bin";
+    "_pv" + std::to_string(1) + ".bin";
 
   std::vector<XCTask> ref_tasks;
   {
@@ -101,56 +101,34 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
 
 #ifdef GAUXC_GEN_TESTS
 
-  size_t pv = 1;
-  SECTION("PV = 1") {}
-  SECTION("PV = 32") { pv = 32; }
-
   LoadBalancerFactory lb_factory( ExecutionSpace::Host, "Default" );
-  auto lb = lb_factory.get_instance( world, mol, mg, basis, pv);
+  auto lb = lb_factory.get_instance( world, mol, mg, basis);
   auto& tasks = lb.get_tasks();
-  gen_ref_lb_data(tasks, pv);
+  gen_ref_lb_data(tasks);
 
 #else
 
   SECTION("Default Host") {
 
-    size_t pv = 1;
-    SECTION("PV = 1") {}
-    SECTION("PV = 32") { pv = 32; }
-
     LoadBalancerFactory lb_factory( ExecutionSpace::Host, "Default" );
-    auto lb = lb_factory.get_instance( world, mol, mg, basis, pv);
+    auto lb = lb_factory.get_instance( world, mol, mg, basis);
     auto& tasks = lb.get_tasks();
-    check_lb_data( tasks, pv );
-
-    for( auto&& task : tasks ) {
-      CHECK(!( task.points.size()  % pv ) );
-      CHECK(!( task.weights.size() % pv ) );
-    }
+    check_lb_data( tasks );
 
   }
 
 #ifdef GAUXC_ENABLE_DEVICE
   SECTION("Default Device") {
 
-    size_t pv = 1;
-    SECTION("PV = 1") {}
-    SECTION("PV = 32") { pv = 32; }
-
     LoadBalancerFactory lb_factory( ExecutionSpace::Device, "Default" );
-    auto lb = lb_factory.get_instance( world, mol, mg, basis, pv);
+    auto lb = lb_factory.get_instance( world, mol, mg, basis);
     auto& tasks = lb.get_tasks();
-    check_lb_data( tasks, pv );
+    check_lb_data( tasks );
 
 
-    for( auto&& task : tasks ) {
-      REQUIRE(!( task.points.size()  % pv ) );
-      REQUIRE(!( task.weights.size() % pv ) );
-    }
-    
     // Make sure Host/Device tasks are identical
     LoadBalancerFactory host_lb_factory( ExecutionSpace::Host, "Default" );
-    auto host_lb = host_lb_factory.get_instance( world, mol, mg, basis, pv);
+    auto host_lb = host_lb_factory.get_instance( world, mol, mg, basis);
     auto& host_tasks = host_lb.get_tasks();
 
     for( auto i = 0; i < host_tasks.size(); ++i ) {
