@@ -1034,16 +1034,16 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
 					      const double* basis_eval, const submat_map_t& submat_map, const double* Z,
 					      size_t ldz, double* VXC, size_t ldvxc, double* scr ) {
 
-    static std::mutex int_mux;
-    if( submat_map.size() > 1 ) {
+    //static std::mutex int_mux;
+    //if( submat_map.size() > 1 ) {
       blas::syr2k('L', 'N', nbe, npts, 1., basis_eval, nbe, Z, ldz, 0., scr, nbe );
-      std::lock_guard<std::mutex> lock(int_mux);
-      detail::inc_by_submat( nbf, nbf, nbe, nbe, VXC, ldvxc, scr, nbe, submat_map );
-    } else {
-      std::lock_guard<std::mutex> lock(int_mux);
-      blas::syr2k('L', 'N', nbe, npts, 1., basis_eval, nbe, Z, ldz, 1., 
-		  VXC + submat_map[0][0]*(ldvxc+1), ldvxc );
-    }
+      //std::lock_guard<std::mutex> lock(int_mux);
+      detail::inc_by_submat_atomic( nbf, nbf, nbe, nbe, VXC, ldvxc, scr, nbe, submat_map );
+    //} else {
+    //  std::lock_guard<std::mutex> lock(int_mux);
+    //  blas::syr2k('L', 'N', nbe, npts, 1., basis_eval, nbe, Z, ldz, 1., 
+	//	  VXC + submat_map[0][0]*(ldvxc+1), ldvxc );
+    //}
 
   }
 
