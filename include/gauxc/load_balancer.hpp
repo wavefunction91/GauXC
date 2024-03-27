@@ -86,9 +86,6 @@ public:
   /// Return the maximum npts x nde product for local tasks 
   size_t max_npts_x_nbe() const;
 
-  /// Return the quadrature point padding value for generated tasks
-  size_t pad_value()      const;
-
   /// Return the underlying molecule instance used to generate this LoadBalancer 
   const Molecule& molecule() const;
 
@@ -159,13 +156,11 @@ public:
    *  @param[in] mol     Molecule on which the quadrature is defined.
    *  @param[in] mg      The batched molecular quadrature
    *  @param[in] bs      The basis set whcih will be used for numerical integration
-   *  @param[in] pad_val Basis function padding value.
    *
    *  @returns A LoadBalancer instance constructed using the passed parameters.
    */
   LoadBalancer get_instance( const RuntimeEnvironment& rt, 
-    const Molecule& mol, const MolGrid& mg, const BasisSet<double>& bs,
-    size_t pad_val = 1 );
+    const Molecule& mol, const MolGrid& mg, const BasisSet<double>& bs);
 
   /** 
    *  @brief Generate a shared pointer to a LoadBalancer instance per kernel and 
@@ -176,15 +171,13 @@ public:
    *  @param[in] mol     Molecule on which the quadrature is defined.
    *  @param[in] mg      The batched molecular quadrature
    *  @param[in] bs      The basis set whcih will be used for numerical integration
-   *  @param[in] pad_val Basis function padding value.
    *
    *  @returns A shared pointer to a LoadBalancer instance constructed using 
    *           the passed parameters.
    */
   std::shared_ptr<LoadBalancer> get_shared_instance( 
     const RuntimeEnvironment& rt,
-    const Molecule& mol, const MolGrid& mg, const BasisSet<double>&,
-    size_t pad_val = 1 );
+    const Molecule& mol, const MolGrid& mg, const BasisSet<double>&);
 
 private:
 

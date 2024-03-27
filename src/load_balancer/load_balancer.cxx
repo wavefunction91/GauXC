@@ -63,10 +63,6 @@ size_t LoadBalancer::max_npts_x_nbe() const {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->max_npts_x_nbe();
 }
-size_t LoadBalancer::pad_value() const {
-  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-  return pimpl_->pad_value();
-}
 
 
 
