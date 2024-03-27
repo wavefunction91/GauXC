@@ -329,9 +329,9 @@ int main(int argc, char** argv) {
 
     }
     // Setup XC functional
-    auto Spin = (uks or gks) ? Spin::Polarized : Spin::Unpolarized;
+    auto polar = (uks or gks) ? Spin::Polarized : Spin::Unpolarized;
     functional_type func( Backend::builtin, functional_map.value(func_spec), 
-      Spin );
+      polar );
     // Setup Integrator
     XCIntegratorFactory<matrix_type> integrator_factory( int_exec_space , 
       "Replicated", integrator_kernel, lwd_kernel, reduction_kernel );
