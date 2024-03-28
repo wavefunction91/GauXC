@@ -63,7 +63,6 @@ class ShellPair {
     for( auto i = 0; i < np_bra; ++i )
     for( auto j = 0; j < np_ket; ++j ) {
 
-      auto& pair = prim_pairs_.emplace_back();
       const auto alpha_bra = bra.alpha()[i];
       const auto alpha_ket = ket.alpha()[j];
 
@@ -76,6 +75,7 @@ class ShellPair {
 
       // TODO Make configurable
       if(std::abs(Kab) < 1e-12) continue;
+      auto& pair = prim_pairs_.emplace_back();
 
       pair.P.x = (alpha_bra * A.x + alpha_ket * B.x) * oo_g;
       pair.P.y = (alpha_bra * A.y + alpha_ket * B.y) * oo_g;
