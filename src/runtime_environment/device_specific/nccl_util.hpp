@@ -8,9 +8,9 @@
 #pragma once
 #include <gauxc/gauxc_config.hpp>
 
-#ifdef GAUXC_ENABLE_CUDA
-#ifdef GAUXC_ENABLE_MPI
-#ifdef GAUXC_ENABLE_NCCL
+#ifdef GAUXC_HAS_CUDA
+#ifdef GAUXC_HAS_MPI
+#ifdef GAUXC_HAS_NCCL
 
 #include <nccl.h>
 

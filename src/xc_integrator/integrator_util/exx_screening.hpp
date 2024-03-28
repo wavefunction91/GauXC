@@ -8,7 +8,7 @@
 #pragma once
 #include <gauxc/xc_task.hpp>
 #include <host/local_host_work_driver.hpp>
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
 #include <device/local_device_work_driver.hpp>
 #endif
 
@@ -25,7 +25,7 @@ void exx_ek_screening(
   exx_detail::host_task_iterator task_begin,
   exx_detail::host_task_iterator task_end );
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
 void exx_ek_screening( 
   const BasisSet<double>& basis, const BasisSetMap& basis_map,
   const ShellPairCollection<double>& shpairs,

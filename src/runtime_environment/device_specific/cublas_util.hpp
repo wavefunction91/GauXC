@@ -9,7 +9,7 @@
 #include <gauxc/gauxc_config.hpp>
 #include "exceptions/cublas_exception.hpp"
 
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_HAS_CUDA
 
 namespace GauXC {
 namespace util  {

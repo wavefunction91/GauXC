@@ -14,5 +14,6 @@ if( GAUXC_ENABLE_NCCL )
   message( STATUS "NCCL Has Been Enabled" )
   find_package( NCCL REQUIRED )
   target_link_libraries( gauxc PUBLIC NCCL::nccl )
+  set(GAUXC_HAS_NCCL TRUE CACHE BOOL "GauXC has NCCL" FORCE)
 endif()
 
