@@ -17,7 +17,6 @@ LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule
   basis_( std::make_shared<basis_type>(basis) ),
   molmeta_( molmeta ) { 
 
-  //shell_pairs_ = std::make_shared<shell_pair_type>(*basis_);
   basis_map_   = std::make_shared<basis_map_type>(*basis_, mol);
 
 }
