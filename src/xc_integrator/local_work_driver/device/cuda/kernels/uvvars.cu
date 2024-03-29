@@ -145,6 +145,92 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
   }
 }
 
+__global__ void eval_uvars_mgga_kernel( size_t           ntasks,
+                                       XCDeviceTask* tasks_device ) {
+
+  constexpr auto warp_size = cuda::warp_size;
+  //constexpr auto max_warps_per_thread_block = cuda::max_warps_per_thread_block;
+
+  const int batch_idx = blockIdx.z;
+  if( batch_idx >= ntasks ) return;
+
+  auto& task = tasks_device[ batch_idx ];
+
+  const auto npts            = task.npts;
+  const auto nbf             = task.bfn_screening.nbe;
+
+  auto* tau_eval_device   = task.tau;
+  // TODO: LAPL
+
+  //const auto* basis_eval_device = task.bf;
+  const auto* dbasis_x_eval_device = task.dbfx;
+  const auto* dbasis_y_eval_device = task.dbfy;
+  const auto* dbasis_z_eval_device = task.dbfz;
+  // TODO: LAPL
+
+  //const auto* den_basis_prod_device    = task.zmat;
+  const auto* den_basis_dx_prod_device = task.xmat_x;
+  const auto* den_basis_dy_prod_device = task.xmat_y;
+  const auto* den_basis_dz_prod_device = task.xmat_z;
+  //TODO: LAPL
+
+  __shared__ double den_shared[3][warp_size][GGA_KERNEL_SM_BLOCK_Y+1];
+
+  for ( int bid_x = blockIdx.x * blockDim.x; 
+        bid_x < nbf;
+        bid_x += blockDim.x * gridDim.x ) {
+    
+    for ( int bid_y = blockIdx.y * GGA_KERNEL_SM_BLOCK_Y; 
+          bid_y < npts;
+          bid_y += GGA_KERNEL_SM_BLOCK_Y * gridDim.y ) {
+        
+      for (int sm_y = threadIdx.y; sm_y < GGA_KERNEL_SM_BLOCK_Y; sm_y += blockDim.y) {
+        den_shared[0][threadIdx.x][sm_y] = 0.;
+        den_shared[1][threadIdx.x][sm_y] = 0.;
+        den_shared[3][threadIdx.x][sm_y] = 0.;
+
+        if (bid_y + threadIdx.x < npts and bid_x + sm_y < nbf) { 
+          //const double* db_col   = den_basis_prod_device + (bid_x + sm_y)*npts;
+          const double* db_x_col = den_basis_dx_prod_device + (bid_x + sm_y)*npts;
+          const double* db_y_col = den_basis_dy_prod_device + (bid_x + sm_y)*npts;
+          const double* db_z_col = den_basis_dz_prod_device + (bid_x + sm_y)*npts;
+          //const double* bf_col   = basis_eval_device     + (bid_x + sm_y)*npts;
+          const double* bf_x_col = dbasis_x_eval_device  + (bid_x + sm_y)*npts;
+          const double* bf_y_col = dbasis_y_eval_device  + (bid_x + sm_y)*npts;
+          const double* bf_z_col = dbasis_z_eval_device  + (bid_x + sm_y)*npts;
+
+          den_shared[0][threadIdx.x][sm_y] = bf_x_col[ bid_y + threadIdx.x ] * db_x_col[ bid_y + threadIdx.x ];
+          den_shared[1][threadIdx.x][sm_y] = bf_y_col[ bid_y + threadIdx.x ] * db_y_col[ bid_y + threadIdx.x ];
+          den_shared[2][threadIdx.x][sm_y] = bf_z_col[ bid_y + threadIdx.x ] * db_z_col[ bid_y + threadIdx.x ];
+        }
+      }
+      __syncthreads();
+
+
+      for (int sm_y = threadIdx.y; sm_y < GGA_KERNEL_SM_BLOCK_Y; sm_y += blockDim.y) {
+        const int tid_y = bid_y + sm_y;
+
+        register double tx_reg  = den_shared[0][sm_y][threadIdx.x];
+        register double ty_reg  = den_shared[1][sm_y][threadIdx.x];
+        register double tz_reg  = den_shared[2][sm_y][threadIdx.x];
+        // Warp blocks are stored col major
+        register double tau_reg = 0.0;
+        tau_reg  = 0.5 * cuda::warp_reduce_sum<warp_size>( tx_reg );
+        tau_reg += 0.5 * cuda::warp_reduce_sum<warp_size>( ty_reg );
+        tau_reg += 0.5 * cuda::warp_reduce_sum<warp_size>( tz_reg );
+        // TODO: LAPL
+
+
+        if( threadIdx.x == 0 and tid_y < npts ) {
+          atomicAdd( tau_eval_device   + tid_y, tau_reg );
+          //TODO: LAPL
+        }
+      }
+      __syncthreads();
+    }
+  }
+}
+
 
 __global__ void eval_vvars_gga_kernel( 
   size_t   npts,
@@ -202,6 +288,31 @@ void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max,
   }
 
   // V variables
+  dim3 threads( cuda::max_threads_per_thread_block );
+  dim3 blocks( util::div_ceil( npts_total, threads.x ) );
+  eval_vvars_gga_kernel<<< blocks, threads, 0, stream >>>(
+    npts_total, denx, deny, denz, gamma
+  );
+}
+
+void eval_uvvars_mgga( size_t ntasks, size_t npts_total, int32_t nbf_max, 
+  int32_t npts_max, XCDeviceTask* device_tasks, const double* denx, 
+  const double* deny, const double* denz, double* gamma, double* tau,
+  double* denlapl, device_queue queue ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>();
+
+  // U Variables
+  {
+  dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block / 2, 1 );
+  dim3 blocks( std::min(uint64_t(4), util::div_ceil( nbf_max, 4 )),
+               std::min(uint64_t(16), util::div_ceil( nbf_max, 16 )),
+               ntasks );
+  eval_uvars_gga_kernel <<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+  eval_uvars_mgga_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+  }
+
+  // V variables (GAMMA)
   dim3 threads( cuda::max_threads_per_thread_block );
   dim3 blocks( util::div_ceil( npts_total, threads.x ) );
   eval_vvars_gga_kernel<<< blocks, threads, 0, stream >>>(

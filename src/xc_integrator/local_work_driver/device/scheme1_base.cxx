@@ -511,7 +511,39 @@ void AoSScheme1Base::eval_uvvar_gga_rks( XCDeviceData* _data ){
 }
 
 void AoSScheme1Base::eval_uvvar_mgga_rks( XCDeviceData* _data ){
-  GAUXC_GENERIC_EXCEPTION("RKS MGGA NOT YET IMPLEMENTED FOR DEVICE"); 
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+  size_t nbe_max = 0, npts_max = 0;
+  for( auto& task : tasks ) {
+    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
+    npts_max = std::max( npts_max, task.npts );
+  }
+
+  // Zero density + gradient
+  auto base_stack    = data->base_stack;
+  data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_eval_device, "Den Zero" );
+  data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_x_eval_device, "DenX Zero" );
+  data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_y_eval_device, "DenY Zero" );
+  data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_z_eval_device, "DenZ Zero" );
+  data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.tau_eval_device,   "Tau Zero" );
+  if(base_stack.den_lapl_eval_device)
+    data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_lapl_eval_device, "DenLapl Zero" );
+
+
+  // Evaluate U variables
+  auto aos_stack     = data->aos_stack;
+  eval_uvvars_mgga( ntasks, data->total_npts_task_batch, nbe_max, npts_max, 
+    aos_stack.device_tasks, base_stack.den_x_eval_device, base_stack.den_y_eval_device,
+    base_stack.den_z_eval_device, base_stack.gamma_eval_device, 
+    base_stack.tau_eval_device, base_stack.den_lapl_eval_device,
+    data->device_backend_->queue() );
+
 }
 
 void AoSScheme1Base::eval_uvvar_lda_uks( XCDeviceData* ){
