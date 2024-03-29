@@ -630,7 +630,33 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
 
 void AoSScheme1Base::eval_kern_exc_vxc_mgga( const functional_type& func, 
   XCDeviceData* _data ) {
-  GAUXC_GENERIC_EXCEPTION("MGGA Device NYI");
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  if( !func.is_mgga() ) GAUXC_GENERIC_EXCEPTION("XC Kernel not GGA!");
+
+  auto base_stack    = data->base_stack;
+  GauXC::eval_kern_exc_vxc_mgga( func, data->total_npts_task_batch, 
+    base_stack.den_eval_device, base_stack.gamma_eval_device, 
+    base_stack.tau_eval_device, base_stack.den_lapl_eval_device,
+    base_stack.eps_eval_device, base_stack.vrho_eval_device, 
+    base_stack.vgamma_eval_device, base_stack.vtau_eval_device,
+    base_stack.vlapl_eval_device, data->device_backend_->queue() );
+
+  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
+                    base_stack.weights_device, 1, base_stack.eps_eval_device, 1 );
+  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
+                    base_stack.weights_device, 1, base_stack.vrho_eval_device, 1 );
+  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
+                    base_stack.weights_device, 1, base_stack.vgamma_eval_device, 1 );
+  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
+                    base_stack.weights_device, 1, base_stack.vtau_eval_device, 1 );
+  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
+                    base_stack.weights_device, 1, base_stack.vlapl_eval_device, 1 );
+
 }
 
 
