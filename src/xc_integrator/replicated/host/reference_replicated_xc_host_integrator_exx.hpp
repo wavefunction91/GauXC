@@ -523,19 +523,20 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // mu runs over bfn shell list
     // nu runs over ek shells
     // i runs over all points
-    //#pragma omp critical
+    //lwd->inc_exx_k( npts, nbf, nbe_bfn, nbe_ek, basis_eval, submat_map_bfn,
+    //  ek_submat_map, gmat, nbe_ek, K_local.data(), nbf, nbe_scr );
     lwd->inc_exx_k( npts, nbf, nbe_bfn, nbe_ek, basis_eval, submat_map_bfn,
-      ek_submat_map, gmat, nbe_ek, K_local.data(), nbf, nbe_scr );
+      ek_submat_map, gmat, nbe_ek, K, ldk, nbe_scr );
 
   } // Loop over tasks 
 
-  #pragma omp critical
-  {
-  for(size_t i = 0; i < nbf; ++i ) 
-  for(size_t j = 0; j < nbf; ++j ) {
-    K[i+j*ldk] += K_local[i + j*nbf];
-  }
-  }
+  //#pragma omp critical
+  //{
+  //for(size_t i = 0; i < nbf; ++i ) 
+  //for(size_t j = 0; j < nbf; ++j ) {
+  //  K[i+j*ldk] += K_local[i + j*nbf];
+  //}
+  //}
 
   } // End OpenMP region
 
