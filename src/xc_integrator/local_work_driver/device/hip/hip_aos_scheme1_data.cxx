@@ -57,7 +57,7 @@ size_t HipAoSScheme1<Base>::Data::get_submat_chunk_size(int32_t LDA, int32_t dev
 }
 
 template struct HipAoSScheme1<AoSScheme1Base>::Data;
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
 template struct HipAoSScheme1<AoSScheme1MAGMABase>::Data;
 #endif
 

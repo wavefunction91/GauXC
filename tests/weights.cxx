@@ -48,7 +48,7 @@ TEST_CASE( "Partition Weights", "[weights]" ) {
 #else
 
 
-#ifdef GAUXC_ENABLE_HOST
+#ifdef GAUXC_HAS_HOST
   SECTION("Becke") {
   std::ifstream ref_data( GAUXC_REF_DATA_PATH "/benzene_weights_becke.bin", 
                           std::ios::binary );
@@ -67,17 +67,17 @@ TEST_CASE( "Partition Weights", "[weights]" ) {
   std::ifstream ref_data( GAUXC_REF_DATA_PATH "/benzene_weights_ssf.bin", 
                           std::ios::binary );
 
-#ifdef GAUXC_ENABLE_HOST
+#ifdef GAUXC_HAS_HOST
   SECTION( "Host Weights" ) {
     test_host_weights( ref_data, XCWeightAlg::SSF );
   }
 #endif
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
   SECTION( "Device Weights" ) {
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_HAS_CUDA
     test_cuda_weights( ref_data );
-#elif defined(GAUXC_ENABLE_HIP)
+#elif defined(GAUXC_HAS_HIP)
     test_hip_weights( ref_data );
 #endif
   }

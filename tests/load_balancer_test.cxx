@@ -117,7 +117,7 @@ TEST_CASE( "DefaultLoadBalancer", "[load_balancer]" ) {
 
   }
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
   SECTION("Default Device") {
 
     LoadBalancerFactory lb_factory( ExecutionSpace::Device, "Default" );

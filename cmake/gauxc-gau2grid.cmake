@@ -38,4 +38,6 @@ if( GAUXC_ENABLE_GAU2GRID )
     
     endif() # If not discoverable
   endif() # If target not present
+
+  set(GAUXC_HAS_GAU2GRID TRUE CACHE BOOL "GauXC has Gau2Grid and will build bindings" FORCE)
 endif() # If enabled

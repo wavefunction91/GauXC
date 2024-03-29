@@ -9,7 +9,7 @@
 #include <gauxc/gauxc_config.hpp>
 #include "exceptions/hip_exception.hpp"
 
-#ifdef GAUXC_ENABLE_HIP
+#ifdef GAUXC_HAS_HIP
 
 namespace GauXC {
 namespace util  {

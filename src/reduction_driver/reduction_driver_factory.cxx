@@ -8,7 +8,7 @@
 #include "reduction_driver_impl.hpp"
 #include "host/basic_mpi_reduction_driver.hpp"
 
-#ifdef GAUXC_ENABLE_NCCL
+#ifdef GAUXC_HAS_NCCL
 #include "device/nccl_reduction_driver.hpp"
 #endif
 
@@ -32,7 +32,7 @@ std::shared_ptr<ReductionDriver> ReductionDriverFactory::get_shared_instance(
   if( kernel_name == "BASICMPI" )
     ptr = std::make_unique<BasicMPIReductionDriver>(rt);
 
-  #ifdef GAUXC_ENABLE_NCCL
+  #ifdef GAUXC_HAS_NCCL
     if( kernel_name == "NCCL" )
       ptr = std::make_unique<NCCLReductionDriver>(rt);
   #endif

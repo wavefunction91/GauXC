@@ -10,7 +10,7 @@
 #include "device/common/inc_potential.hpp"
 #include "device/common/device_blas.hpp"
 
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_HAS_CUDA
 #define GAUXC_ENABLE_EXX
 #endif
 
