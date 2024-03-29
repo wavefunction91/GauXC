@@ -578,14 +578,18 @@ size_t XCDeviceStackData::get_mem_req(
     // U Variables
     reqt.grid_den_size(npts)      * sizeof(double) + 
     reqt.grid_den_grad_size(npts) * sizeof(double) +
+    reqt.grid_den_lapl_size(npts) * sizeof(double) +
 
     // V Variables
     reqt.grid_gamma_size(npts)  * sizeof(double) +
+    reqt.grid_tau_size(npts)    * sizeof(double) +
 
     // XC output
     reqt.grid_eps_size(npts)    * sizeof(double) +
     reqt.grid_vrho_size(npts)   * sizeof(double) +
-    reqt.grid_vgamma_size(npts) * sizeof(double) ;
+    reqt.grid_vgamma_size(npts) * sizeof(double) +
+    reqt.grid_vtau_size(npts)   * sizeof(double) +
+    reqt.grid_vlapl_size(npts)  * sizeof(double) ;
 
   return mem_req;
 }
@@ -641,8 +645,16 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
     base_stack.den_z_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
   }
 
+  if( reqt.grid_den_lapl ) { // Density Laplacian
+    base_stack.den_lapl_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+  }
+
   if( reqt.grid_gamma ) { // Gamma
     base_stack.gamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+  }
+
+  if( reqt.grid_tau ) { // Gamma
+    base_stack.tau_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
   }
 
   if( reqt.grid_eps ) { // Energy density 
@@ -655,6 +667,14 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
 
   if( reqt.grid_vgamma ) { // Vgamma
     base_stack.vgamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+  }
+
+  if( reqt.grid_vtau ) { // Vtau
+    base_stack.vtau_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+  }
+
+  if( reqt.grid_vlapl ) { // Vlapl
+    base_stack.vlapl_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
   }
 
   // Update dynmem data for derived impls
