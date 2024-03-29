@@ -193,8 +193,19 @@ int main(int argc, char** argv) {
     mw.modify_weights(*lb);
 
     // Setup XC functional
-    functional_type func( Backend::builtin, functional_map.value(func_spec), 
-      Spin::Unpolarized );
+    functional_type func;
+    if(functional_map.key_exists(func_spec)) {
+      func = functional_type( Backend::builtin, functional_map.value(func_spec), 
+        Spin::Unpolarized );
+    } else { 
+      std::vector<std::pair<double, ExchCXX::XCKernel>> funcs;
+      std::vector<std::string> libxc_names;
+      split(libxc_names, func_spec, ",");
+      for( auto n : libxc_names ) {
+        funcs.push_back( {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string(n), Spin::Unpolarized)} );
+      }
+      func = functional_type(funcs);
+    }
 
     // Setup Integrator
     using matrix_type = Eigen::MatrixXd;
