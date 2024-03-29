@@ -359,7 +359,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   for(auto& task : tasks) task.cou_screening = XCTask::screening_data();
 
   // Precompute EK shell screening
-  exx_ek_screening( basis, basis_map, P_abs.data(), nbf, V_max.data(), 
+  exx_ek_screening( basis, basis_map, shpairs, P_abs.data(), nbf, V_max.data(), 
     nshells_bf, eps_E, eps_K, lwd, tasks.begin(), tasks.end() );
 
   // Allow for merging of tasks with different iParent

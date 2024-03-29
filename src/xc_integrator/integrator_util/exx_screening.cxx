@@ -27,6 +27,7 @@ namespace GauXC {
 
 void exx_ek_screening( 
   const BasisSet<double>& basis, const BasisSetMap& basis_map,
+  const ShellPairCollection<double>& shpairs,
   const double* P_abs, size_t ldp, const double* V_shell_max, size_t ldv,
   double eps_E, double eps_K, LocalHostWorkDriver* lwd, 
   exx_detail::host_task_iterator task_begin,
@@ -36,9 +37,6 @@ void exx_ek_screening(
   const size_t nbf     = basis.nbf();
   const size_t nshells = basis.nshells();
   const size_t ntasks  = std::distance(task_begin, task_end);
-
-  // TODO: This should be passed in to avoid recomputation
-  ShellPairCollection<double> shpairs(basis);
 
   std::vector<double> task_max_bf_sum(ntasks);
   std::vector<double> task_max_bfn(nbf * ntasks);
