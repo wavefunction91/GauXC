@@ -187,7 +187,7 @@ __global__ void eval_uvars_mgga_kernel( size_t           ntasks,
       for (int sm_y = threadIdx.y; sm_y < GGA_KERNEL_SM_BLOCK_Y; sm_y += blockDim.y) {
         den_shared[0][threadIdx.x][sm_y] = 0.;
         den_shared[1][threadIdx.x][sm_y] = 0.;
-        den_shared[3][threadIdx.x][sm_y] = 0.;
+        den_shared[2][threadIdx.x][sm_y] = 0.;
 
         if (bid_y + threadIdx.x < npts and bid_x + sm_y < nbf) { 
           //const double* db_col   = den_basis_prod_device + (bid_x + sm_y)*npts;

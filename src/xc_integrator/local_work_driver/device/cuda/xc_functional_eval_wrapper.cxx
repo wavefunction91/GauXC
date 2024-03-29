@@ -33,7 +33,7 @@ void eval_kern_exc_vxc_mgga( const functional_type& func, size_t npts,
   device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
-  func.eval_exc_vxc_device( npts, rho, gamma, tau, lapl, eps, vrho, vgamma, vtau, vlapl, stream );
+  func.eval_exc_vxc_device( npts, rho, gamma, lapl, tau, eps, vrho, vgamma, vlapl, vtau,  stream );
 
 }
 

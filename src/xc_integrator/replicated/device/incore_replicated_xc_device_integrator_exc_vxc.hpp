@@ -239,7 +239,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->eval_xmat( 2.0, &device_data, need_xmat_grad );
 
     // Evaluate U/V variables
-    if( func.is_gga() )      lwd->eval_uvvar_mgga_rks( &device_data );
+    if( func.is_mgga() )     lwd->eval_uvvar_mgga_rks( &device_data );
     else if( func.is_gga() ) lwd->eval_uvvar_gga_rks( &device_data );
     else                     lwd->eval_uvvar_lda_rks( &device_data );
 

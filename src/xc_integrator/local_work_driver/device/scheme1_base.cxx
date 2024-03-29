@@ -532,8 +532,9 @@ void AoSScheme1Base::eval_uvvar_mgga_rks( XCDeviceData* _data ){
   data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_y_eval_device, "DenY Zero" );
   data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_z_eval_device, "DenZ Zero" );
   data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.tau_eval_device,   "Tau Zero" );
-  if(base_stack.den_lapl_eval_device)
+  if(base_stack.den_lapl_eval_device) {
     data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_lapl_eval_device, "DenLapl Zero" );
+  }
 
 
   // Evaluate U variables
