@@ -254,8 +254,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     // Evaluate Z (+ M) matrix
     if( func.is_mgga() ) {
-      //lwd->eval_zmat_mgga_vxc_rks( &device_data );
-      //lwd->eval_mmat_mgga_vxc_rks( &device_data );
+      lwd->eval_zmat_mgga_vxc_rks( &device_data );
+      lwd->eval_mmat_mgga_vxc_rks( &device_data );
     }
     else if( func.is_gga() ) lwd->eval_zmat_gga_vxc_rks( &device_data );
     else                     lwd->eval_zmat_lda_vxc_rks( &device_data );

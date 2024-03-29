@@ -43,7 +43,7 @@ struct XCDeviceAoSData : public XCDeviceStackData {
     double* d2bf_lapl_eval_device = nullptr; ///< Laplacian of `bf_eval_device`
 
     // VXC Z Matrix
-    double* zmat_vxc_lda_gga_device = nullptr;
+    double* zmat_vxc_device = nullptr;
       ///< Contiguous batch local Z matrix for LDA/GGA VXC for task batch
 
     // X mat gradients

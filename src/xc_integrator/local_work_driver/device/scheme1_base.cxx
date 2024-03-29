@@ -277,7 +277,24 @@ void AoSScheme1Base::eval_zmat_gga_vxc_rks( XCDeviceData* _data){
 }
 
 void AoSScheme1Base::eval_zmat_mgga_vxc_rks( XCDeviceData* _data){
-  GAUXC_GENERIC_EXCEPTION("RKS MGGA NOT YET IMPLEMENTED FOR DEVICE");
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+  size_t nbe_max = 0, npts_max = 0;
+  for( auto& task : tasks ) {
+    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
+    npts_max = std::max( npts_max, task.npts );
+  }
+
+  auto aos_stack     = data->aos_stack;
+  zmat_mgga_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
+    data->device_backend_->queue() );
+
 }
 
 void AoSScheme1Base::eval_zmat_lda_vxc_uks( XCDeviceData* ){
@@ -313,7 +330,24 @@ void AoSScheme1Base::eval_zmat_mgga_vxc_gks( XCDeviceData* _data){
 }
 
 void AoSScheme1Base::eval_mmat_mgga_vxc_rks( XCDeviceData* _data){
-  GAUXC_GENERIC_EXCEPTION("RKS MGGA NOT YET IMPLEMENTED FOR DEVICE");
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+  size_t nbe_max = 0, npts_max = 0;
+  for( auto& task : tasks ) {
+    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
+    npts_max = std::max( npts_max, task.npts );
+  }
+
+  auto aos_stack     = data->aos_stack;
+  mmat_mgga_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
+    data->device_backend_->queue() );
+
 }
 void AoSScheme1Base::eval_mmat_mgga_vxc_uks( XCDeviceData* _data){
   GAUXC_GENERIC_EXCEPTION("UKS MGGA NOT YET IMPLEMENTED FOR DEVICE");
@@ -742,14 +776,24 @@ void AoSScheme1Base::inc_vxc( XCDeviceData* _data){
   // Sync blas streams with master stream
   data->device_backend_->sync_blas_pool_with_master();
 
+  auto do_syr2k = [&]( auto& handle, size_t npts, size_t nbe, auto* bf_ptr, auto* zptr, double fac, auto* v_ptr ) {
+    syr2k( handle, DeviceBlasUplo::Lower, DeviceBlasOp::Trans, nbe, npts, 1.0, bf_ptr, npts,
+      zptr, npts, fac, v_ptr, nbe ); 
+  };
+
   // Launch SYR2K in round robin
   const auto n_blas_streams = data->device_backend_->blas_pool_size();
   for( size_t iT = 0; iT < ntasks; ++iT ) {
     auto& task = tasks[iT];
-    syr2k( data->device_backend_->blas_pool_handle(iT % n_blas_streams), 
-      DeviceBlasUplo::Lower, DeviceBlasOp::Trans, task.bfn_screening.nbe, task.npts, 1.,
-      task.bf, task.npts, task.zmat, task.npts, 0., task.nbe_scr,
-      task.bfn_screening.nbe );
+    auto handle = data->device_backend_->blas_pool_handle( iT % n_blas_streams );
+    //syr2k( data->device_backend_->blas_pool_handle(iT % n_blas_streams), 
+    //  DeviceBlasUplo::Lower, DeviceBlasOp::Trans, task.bfn_screening.nbe, task.npts, 1.,
+    //  task.bf, task.npts, task.zmat, task.npts, 0., task.nbe_scr,
+    //  task.bfn_screening.nbe );
+    do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.bf, task.zmat, 0.0, task.nbe_scr);
+    //do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfx, task.xmat_x, 1.0, task.nbe_scr);
+    //do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfy, task.xmat_y, 1.0, task.nbe_scr);
+    //do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfz, task.xmat_z, 1.0, task.nbe_scr);
   }
 
   // Record completion of BLAS ops on master stream

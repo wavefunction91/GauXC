@@ -57,7 +57,7 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
     reqt.task_bfn_lapl_size( nbe_bfn, npts ) * sizeof(double) +
 
     // LDA/GGA Z Matrix
-    reqt.task_zmat_lda_gga_size( nbe_bfn, npts ) * sizeof(double) +
+    reqt.task_zmat_size( nbe_bfn, npts ) * sizeof(double) +
 
     // X Matrix Gradient
     reqt.task_xmat_grad_size( nbe_bfn, npts ) * sizeof(double) +
@@ -194,8 +194,8 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
   }
 
   // VXC Z Matrix
-  if(reqt.task_zmat_lda_gga) {
-    aos_stack.zmat_vxc_lda_gga_device = 
+  if(reqt.task_zmat) {
+    aos_stack.zmat_vxc_device = 
       mem.aligned_alloc<double>( bfn_msz, csl);
   }
 
@@ -443,7 +443,7 @@ void XCDeviceAoSData::pack_and_send(
     const size_t total_nbe_cou_npts = 
       total_nbe_cou_npts_task_batch * sizeof(double);
     buffer_adaptor nbe_mem( aos_stack.nbe_scr_device, total_nbe_scr );
-    buffer_adaptor zmat_mem( aos_stack.zmat_vxc_lda_gga_device, 
+    buffer_adaptor zmat_mem( aos_stack.zmat_vxc_device, 
       total_nbe_bfn_npts );
 
     buffer_adaptor fmat_mem( aos_stack.fmat_exx_device, total_nbe_cou_npts );
@@ -531,7 +531,7 @@ void XCDeviceAoSData::pack_and_send(
 
       // ZMatrix LDA/GGA
       task.zmat = zmat_mem.aligned_alloc<double>( 
-        reqt.task_zmat_lda_gga_size(nbe_bfn, npts), csl);
+        reqt.task_zmat_size(nbe_bfn, npts), csl);
 
       // Collocation + derivatives
       task.bf = bf_mem.aligned_alloc<double>( 
