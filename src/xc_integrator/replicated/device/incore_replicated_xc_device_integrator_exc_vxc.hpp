@@ -206,7 +206,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   enabled_terms.exc_vxc = true;
   if( func.is_lda() )      enabled_terms.xc_approx = integrator_xc_approx::LDA; 
   else if( func.is_gga() ) enabled_terms.xc_approx = integrator_xc_approx::GGA; 
-  else GAUXC_GENERIC_EXCEPTION("XC Approx NYI");
+  else                     enabled_terms.xc_approx = integrator_xc_approx::MGGA;
 
 #if 0
   std::vector<int32_t> full_shell_list(nshells);
@@ -227,29 +227,41 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     /*** Process the batches ***/
 
     // Evaluate collocation
-    if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
-    else                lwd->eval_collocation( &device_data );
+    if( func.is_mgga() ) {
+      // TODO Handle Laplacian
+      lwd->eval_collocation_gradient( &device_data );
+    }
+    else if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
+    else                     lwd->eval_collocation( &device_data );
 
     // Evaluate X matrix
-    lwd->eval_xmat( 2.0, &device_data );
+    const bool need_xmat_grad = func.is_mgga();
+    lwd->eval_xmat( 2.0, &device_data, need_xmat_grad );
 
     // Evaluate U/V variables
-    if( func.is_gga() ) lwd->eval_uvvar_gga_rks( &device_data );
-    else                lwd->eval_uvvar_lda_rks( &device_data );
+    if( func.is_gga() )      lwd->eval_uvvar_mgga_rks( &device_data );
+    else if( func.is_gga() ) lwd->eval_uvvar_gga_rks( &device_data );
+    else                     lwd->eval_uvvar_lda_rks( &device_data );
 
     // Evaluate XC functional
-    if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );
-    else                lwd->eval_kern_exc_vxc_lda( func, &device_data );
+    if( func.is_mgga() )     lwd->eval_kern_exc_vxc_mgga( func, &device_data );
+    else if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );
+    else                     lwd->eval_kern_exc_vxc_lda( func, &device_data );
 
     // Do scalar EXC/N_EL integrations
     lwd->inc_exc( &device_data );
     lwd->inc_nel( &device_data );
 
-    // Evaluate Z matrix
-    if( func.is_gga() ) lwd->eval_zmat_gga_vxc_rks( &device_data );
-    else                lwd->eval_zmat_lda_vxc_rks( &device_data );
+    // Evaluate Z (+ M) matrix
+    if( func.is_gga() ) {
+      lwd->eval_zmat_mgga_vxc_rks( &device_data );
+      lwd->eval_mmat_mgga_vxc_rks( &device_data );
+    }
+    else if( func.is_gga() ) lwd->eval_zmat_gga_vxc_rks( &device_data );
+    else                     lwd->eval_zmat_lda_vxc_rks( &device_data );
 
     // Increment VXC (LT)
+    // XXX: This needs MGGA logic
     lwd->inc_vxc( &device_data );
 
   } // Loop over batches of batches 

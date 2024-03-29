@@ -40,21 +40,32 @@ FWD_TO_PIMPL(eval_collocation_hessian)  // Collocation Hessian
 
 FWD_TO_PIMPL(eval_uvvar_lda_rks)            // U/VVar LDA (density)
 FWD_TO_PIMPL(eval_uvvar_gga_rks)            // U/VVar GGA (density + grad, gamma)
+FWD_TO_PIMPL(eval_uvvar_mgga_rks)           // U/VVar GGA (density + grad, gamma)
 
 FWD_TO_PIMPL(eval_uvvar_lda_uks)            // U/VVar LDA (density)
 FWD_TO_PIMPL(eval_uvvar_gga_uks)            // U/VVar GGA (density + grad, gamma)
+FWD_TO_PIMPL(eval_uvvar_mgga_uks)           // U/VVar GGA (density + grad, gamma)
 
 FWD_TO_PIMPL(eval_uvvar_lda_gks)            // U/VVar LDA (density)
 FWD_TO_PIMPL(eval_uvvar_gga_gks)            // U/VVar GGA (density + grad, gamma)
+FWD_TO_PIMPL(eval_uvvar_mgga_gks)           // U/VVar GGA (density + grad, gamma)
 
 FWD_TO_PIMPL(eval_zmat_lda_vxc_rks)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc_rks)         // Eval Z Matrix GGA VXC
+FWD_TO_PIMPL(eval_zmat_mgga_vxc_rks)         // Eval Z Matrix GGA VXC
 
 FWD_TO_PIMPL(eval_zmat_lda_vxc_uks)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc_uks)         // Eval Z Matrix GGA VXC
+FWD_TO_PIMPL(eval_zmat_mgga_vxc_uks)         // Eval Z Matrix GGA VXC
 
 FWD_TO_PIMPL(eval_zmat_lda_vxc_gks)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc_gks)         // Eval Z Matrix GGA VXC
+FWD_TO_PIMPL(eval_zmat_mgga_vxc_gks)         // Eval Z Matrix GGA VXC
+
+FWD_TO_PIMPL(eval_mmat_mgga_vxc_rks)         // Eval Z Matrix GGA VXC
+FWD_TO_PIMPL(eval_mmat_mgga_vxc_uks)         // Eval Z Matrix GGA VXC
+FWD_TO_PIMPL(eval_mmat_mgga_vxc_gks)         // Eval Z Matrix GGA VXC
+
 
 FWD_TO_PIMPL(eval_exx_fmat)             // Eval EXX F Matrix
 //FWD_TO_PIMPL(eval_exx_gmat)             // Eval EXX G Matrix
@@ -93,6 +104,12 @@ void LocalDeviceWorkDriver::eval_kern_exc_vxc_gga( const functional_type& func,
   XCDeviceData* data) {
   throw_if_invalid_pimpl(pimpl_);
   pimpl_->eval_kern_exc_vxc_gga(func,data);
+}
+
+void LocalDeviceWorkDriver::eval_kern_exc_vxc_mgga( const functional_type& func,
+  XCDeviceData* data) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_kern_exc_vxc_mgga(func,data);
 }
 
 
