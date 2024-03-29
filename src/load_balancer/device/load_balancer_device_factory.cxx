@@ -8,11 +8,11 @@
 #include "load_balancer_impl.hpp"
 #include "load_balancer_device_factory.hpp"
 
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_HAS_CUDA
 #include "cuda/replicated_cuda_load_balancer.hpp"
 #endif
 
-#ifdef GAUXC_ENABLE_HIP
+#ifdef GAUXC_HAS_HIP
 #include "hip/replicated_hip_load_balancer.hpp"
 #endif
 
@@ -30,7 +30,7 @@ std::shared_ptr<LoadBalancer> LoadBalancerDeviceFactory::get_shared_instance(
   if( kernel_name == "DEFAULT" ) kernel_name = "REPLICATED";
 
   std::unique_ptr<detail::LoadBalancerImpl> ptr = nullptr;
-  #ifdef GAUXC_ENABLE_DEVICE
+  #ifdef GAUXC_HAS_DEVICE
   if( kernel_name == "REPLICATED" ) {
     ptr = std::make_unique<detail::DeviceReplicatedLoadBalancer>(
       rt, mol, mg, basis

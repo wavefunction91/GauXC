@@ -12,7 +12,7 @@
 #include <string>
 #include <sstream>
 
-#ifdef GAUXC_ENABLE_HIP
+#ifdef GAUXC_HAS_HIP
 #include "hip/hip_runtime.h"
 
 

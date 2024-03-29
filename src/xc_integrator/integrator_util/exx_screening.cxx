@@ -11,7 +11,7 @@
 #include <chrono>
 //#include <mpi.h>
 //#include <fstream>
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_HAS_CUDA
 #include "exceptions/cuda_exception.hpp"
 #endif
 
@@ -237,7 +237,7 @@ void exx_ek_screening(
 }
 
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
 void exx_ek_screening( 
   const BasisSet<double>& basis, const BasisSetMap& basis_map,
   const ShellPairCollection<double>& shpairs,

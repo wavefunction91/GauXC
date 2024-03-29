@@ -9,12 +9,12 @@
 #include "catch2/catch.hpp"
 #include <gauxc/gauxc_config.hpp>
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
 #include <mpi.h>
 #endif
 
 int main( int argc, char* argv[] ) {
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
   MPI_Init(&argc, &argv);
   int result = Catch::Session().run( argc, argv );
   MPI_Finalize();

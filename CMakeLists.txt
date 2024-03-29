@@ -35,8 +35,8 @@ option( GAUXC_ENABLE_OPENMP     "Enable OpenMP Compilation"   ON  )
 option( GAUXC_ENABLE_TESTS      "Enable Unit Tests"           ON  )
 option( GAUXC_ENABLE_GAU2GRID   "Enable Gau2Grid Collocation" ON  )
 option( GAUXC_ENABLE_HDF5       "Enable HDF5 Bindings"        ON  )
-option( GAUXC_ENABLE_FAST_RSQRT "Enable Fast RSQRT"           OFF )
-option( GAUXC_BLAS_PREFER_ILP64 "Enable ILP64 for host BLAS"  OFF )
+option( GAUXC_USE_FAST_RSQRT    "Enable Fast RSQRT"           OFF )
+option( GAUXC_BLAS_PREFER_ILP64 "Prefer ILP64 for host BLAS"  OFF )
 
 include(CMakeDependentOption)
 cmake_dependent_option( GAUXC_ENABLE_MAGMA    
@@ -58,26 +58,34 @@ if( NOT GAUXC_ENABLE_GAU2GRID )
                         will be made optional in a future release of GauXC [WIP]" ) 
 endif()
 
-# Decided if we're compiling device bindings
-if( GAUXC_ENABLE_CUDA OR GAUXC_ENABLE_HIP )
-  set( GAUXC_ENABLE_DEVICE TRUE CACHE BOOL "Enable Device Code" )
-else()
-  set( GAUXC_ENABLE_DEVICE FALSE CACHE BOOL "Enable Device Code" )
-endif()
 
-
-
-if( NOT (${GAUXC_ENABLE_HOST} OR ${GAUXC_ENABLE_DEVICE}) )
-  message( FATAL_ERROR "Neither Host nor Device Integrators have been enabled!" )
+if( GAUXC_ENABLE_HOST ) 
+  set(GAUXC_HAS_HOST TRUE CACHE BOOL "GauXC has Host Bindings" FORCE)
 endif()
 
 if( GAUXC_ENABLE_CUDA )
   enable_language( CUDA )
+  set( GAUXC_HAS_CUDA TRUE CACHE BOOL "GauXC has CUDA and will build CUDA bindings" FORCE )
 endif()
 
 if( GAUXC_ENABLE_HIP )
   enable_language( HIP )
+  set( GAUXC_HAS_HIP TRUE CACHE BOOL "GauXC has HIP and will build HIP bindings" FORCE )
 endif()
+
+# Decided if we're compiling device bindings
+if( GAUXC_HAS_CUDA OR GAUXC_HAS_HIP )
+  set( GAUXC_HAS_DEVICE TRUE CACHE BOOL "Enable Device Code" )
+else()
+  set( GAUXC_HAS_DEVICE FALSE CACHE BOOL "Enable Device Code" )
+endif()
+
+
+
+if( NOT (${GAUXC_HAS_HOST} OR ${GAUXC_HAS_DEVICE}) )
+  message( FATAL_ERROR "Neither Host nor Device Integrators have been enabled!" )
+endif()
+
 
 add_subdirectory( src )
 

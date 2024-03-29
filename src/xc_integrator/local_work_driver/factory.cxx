@@ -7,7 +7,7 @@
  */
 #include <gauxc/xc_integrator/local_work_driver.hpp>
 #include "host/reference_local_host_work_driver.hpp"
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
 #include "device/cuda/cuda_aos_scheme1.hpp"
 #include "device/hip/hip_aos_scheme1.hpp"
 #endif
@@ -36,29 +36,29 @@ LocalWorkDriverFactory::ptr_return_t
   case ExecutionSpace::Device:
     if( name == "DEFAULT" ) name = "SCHEME1";
 
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_HAS_CUDA
     using scheme1_default = CudaAoSScheme1<>;
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
     using scheme1_magma   = CudaAoSScheme1<AoSScheme1MAGMABase>;
 #endif
-#ifdef GAUXC_ENABLE_CUTLASS
+#ifdef GAUXC_HAS_CUTLASS
     using scheme1_cutlass   = CudaAoSScheme1<AoSScheme1CUTLASSBase>;
 #endif
-#elif defined(GAUXC_ENABLE_HIP)
+#elif defined(GAUXC_HAS_HIP)
     using scheme1_default = HipAoSScheme1<>;
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
     using scheme1_magma   = HipAoSScheme1<AoSScheme1MAGMABase>;
 #endif
 #endif
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
     if( name == "SCHEME1" )
       return std::make_unique<LocalDeviceWorkDriver>( std::make_unique<scheme1_default>() );
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
     else if( name == "SCHEME1-MAGMA" )
       return std::make_unique<LocalDeviceWorkDriver>( std::make_unique<scheme1_magma>() );
 #endif
-#ifdef GAUXC_ENABLE_CUTLASS
+#ifdef GAUXC_HAS_CUTLASS
     else if( name == "SCHEME1-CUTLASS" )
       return std::make_unique<LocalDeviceWorkDriver>( std::make_unique<scheme1_cutlass>() );
 #endif

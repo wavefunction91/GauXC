@@ -14,7 +14,7 @@ namespace GauXC {
 
 namespace detail {
   class RuntimeEnvironmentImpl;
-  #ifdef GAUXC_ENABLE_DEVICE
+  #ifdef GAUXC_HAS_DEVICE
   DeviceRuntimeEnvironment as_device_runtime( const RuntimeEnvironment& );
   #endif
 }
@@ -23,7 +23,7 @@ class RuntimeEnvironment {
 
 protected:
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
   friend DeviceRuntimeEnvironment 
     detail::as_device_runtime(const RuntimeEnvironment&); 
 #endif
@@ -49,7 +49,7 @@ public:
 
 };
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
 class DeviceRuntimeEnvironment : public RuntimeEnvironment {
 
 private:

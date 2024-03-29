@@ -19,7 +19,7 @@
 
 #include <gauxc/gauxc_config.hpp>
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
 #include <mpi.h>
 #endif
 
@@ -220,7 +220,7 @@ TEST_CASE("BasisSet", "[basisset]") {
 
 TEST_CASE("HDF5-BASISSET", "[basisset]") {
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
   int world_rank;
   MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
   if( world_rank ) return; // Only run on root rank
