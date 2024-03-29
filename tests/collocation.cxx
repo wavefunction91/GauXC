@@ -12,14 +12,14 @@
 
 //#define GENERATE_TESTS
 
-#if defined(GENERATE_TESTS) && !defined(GAUXC_ENABLE_HOST)
+#if defined(GENERATE_TESTS) && !defined(GAUXC_HAS_HOST)
   #error "Host Integrator Must Be Enabled to Generate Tests"
 #endif
 
 TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
 
 #ifdef GENERATE_TESTS
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
   int world_size;
   MPI_Comm_size( MPI_COMM_WORLD, &world_size );
   if( world_size > 1 ) return;
@@ -41,7 +41,7 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
   std::ifstream ref_data( GAUXC_REF_DATA_PATH "/water_cc-pVDZ_collocation.bin",
                           std::ios::binary );
 
-#ifdef GAUXC_ENABLE_HOST
+#ifdef GAUXC_HAS_HOST
   SECTION( "Host Eval" ) {
     test_host_collocation( basis, ref_data );
   }
@@ -55,7 +55,7 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
   }
 #endif
 
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_HAS_CUDA
   BasisSetMap basis_map( basis, mol );
   SECTION( "CUDA Eval" ) {
     test_cuda_collocation( basis, ref_data );
@@ -74,9 +74,9 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
   SECTION( "CUDA Shell to Task Eval Hessian" ) {
     test_cuda_collocation_shell_to_task_hessian( basis, basis_map, ref_data );
   }
-#endif // GAUXC_ENABLE_CUDA
+#endif // GAUXC_HAS_CUDA
 
-#ifdef GAUXC_ENABLE_HIP
+#ifdef GAUXC_HAS_HIP
   SECTION( "HIP Eval" ) {
     test_hip_collocation( basis, ref_data );
   }
@@ -84,7 +84,7 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
   SECTION( "HIP Eval Grad" ) {
     test_hip_collocation_deriv1( basis, ref_data );
   }
-#endif // GAUXC_ENABLE_HIP
+#endif // GAUXC_HAS_HIP
 
 
 

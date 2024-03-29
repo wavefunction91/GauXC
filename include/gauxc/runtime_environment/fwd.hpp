@@ -12,7 +12,7 @@ namespace GauXC {
 
 class RuntimeEnvironment;
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
 class DeviceRuntimeEnvironment;
 class DeviceBackend;
 #endif

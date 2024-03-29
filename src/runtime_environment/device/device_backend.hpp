@@ -14,7 +14,7 @@
 #include "device_blas_handle.hpp"
 #include <gauxc/gauxc_config.hpp>
 
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
 #include "device_specific/magma_util.hpp"
 #endif
 
@@ -40,7 +40,7 @@ public:
   virtual device_blas_handle blas_pool_handle(int32_t) = 0;
   virtual device_blas_handle master_blas_handle() = 0;
 
-  #ifdef GAUXC_ENABLE_MAGMA
+  #ifdef GAUXC_HAS_MAGMA
   inline util::magma_queue* master_magma_queue(){ return master_magma_queue_.get(); }
   #endif
 
@@ -74,7 +74,7 @@ public:
 protected:
 
 
-  #ifdef GAUXC_ENABLE_MAGMA
+  #ifdef GAUXC_HAS_MAGMA
   std::shared_ptr<util::magma_queue> master_magma_queue_;
   #endif
 

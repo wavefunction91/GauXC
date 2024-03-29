@@ -32,12 +32,12 @@ using namespace ExchCXX;
 
 int main(int argc, char** argv) {
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
   MPI_Init( NULL, NULL );
 #endif
   {
     // Set up runtimes
-    #ifdef GAUXC_ENABLE_DEVICE
+    #ifdef GAUXC_HAS_DEVICE
     auto rt = DeviceRuntimeEnvironment( GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.9 );
     #else
     auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
@@ -132,7 +132,7 @@ int main(int argc, char** argv) {
 
 
   }
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
   MPI_Finalize();
 #endif
 

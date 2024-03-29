@@ -26,13 +26,13 @@ using namespace ExchCXX;
 
 int main(int argc, char** argv) {
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
   MPI_Init( NULL, NULL );
 #endif
   {
 
     // Set up runtimes
-    #ifdef GAUXC_ENABLE_DEVICE
+    #ifdef GAUXC_HAS_DEVICE
     auto rt = DeviceRuntimeEnvironment( GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.9 );
     #else
     auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
     OPTIONAL_KEYWORD( "EXX.TOL_K", sn_link_settings.k_tol,      double );
 
 
-    #ifdef GAUXC_ENABLE_DEVICE
+    #ifdef GAUXC_HAS_DEVICE
     std::map< std::string, ExecutionSpace > exec_space_map = {
       { "HOST",   ExecutionSpace::Host },
       { "DEVICE", ExecutionSpace::Device }
@@ -273,7 +273,7 @@ int main(int argc, char** argv) {
 
     }
     
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
     MPI_Barrier( MPI_COMM_WORLD );
 #endif
     auto xc_int_start = std::chrono::high_resolution_clock::now();
@@ -320,14 +320,14 @@ int main(int argc, char** argv) {
       //K = -K_tmp;
     } else { K = K_ref; }
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
     MPI_Barrier( MPI_COMM_WORLD );
 #endif
 
     auto xc_int_end   = std::chrono::high_resolution_clock::now();
     double xc_int_dur = std::chrono::duration<double>( xc_int_end - xc_int_start ).count();
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
     util::MPITimer mpi_lb_timings( MPI_COMM_WORLD, lb->get_timings() );
     util::MPITimer mpi_xc_timings( MPI_COMM_WORLD, integrator.get_timings() );
     util::MPITimer mpi_weight_timings( MPI_COMM_WORLD, mw.get_timings() );
@@ -337,14 +337,14 @@ int main(int argc, char** argv) {
       std::cout << std::scientific << std::setprecision(5) << std::endl;
       std::cout << "Load Balancer Timings" << std::endl;
       for( const auto& [name, dur] : lb->get_timings().all_timings() ) {
-        #ifdef GAUXC_ENABLE_MPI
+        #ifdef GAUXC_HAS_MPI
         const auto avg     = mpi_lb_timings.get_avg_duration(name).count();
         const auto min     = mpi_lb_timings.get_min_duration(name).count();
         const auto max     = mpi_lb_timings.get_max_duration(name).count();
         const auto std_dev = mpi_lb_timings.get_std_dev(name).count();
         #endif
         std::cout << "  " << std::setw(30) << name << ": " 
-        #ifdef GAUXC_ENABLE_MPI
+        #ifdef GAUXC_HAS_MPI
                   << "AVG = " << std::setw(12) << avg << " ms, " 
                   << "MIN = " << std::setw(12) << min << " ms, " 
                   << "MAX = " << std::setw(12) << max << " ms, " 
@@ -356,14 +356,14 @@ int main(int argc, char** argv) {
 
       std::cout << "MolecularWeights Timings" << std::endl;
       for( const auto& [name, dur] : mw.get_timings().all_timings() ) {
-        #ifdef GAUXC_ENABLE_MPI
+        #ifdef GAUXC_HAS_MPI
         const auto avg     = mpi_weight_timings.get_avg_duration(name).count();
         const auto min     = mpi_weight_timings.get_min_duration(name).count();
         const auto max     = mpi_weight_timings.get_max_duration(name).count();
         const auto std_dev = mpi_weight_timings.get_std_dev(name).count();
         #endif
         std::cout << "  " << std::setw(30) << name << ": " 
-        #ifdef GAUXC_ENABLE_MPI
+        #ifdef GAUXC_HAS_MPI
                   << "AVG = " << std::setw(12) << avg << " ms, " 
                   << "MIN = " << std::setw(12) << min << " ms, " 
                   << "MAX = " << std::setw(12) << max << " ms, " 
@@ -376,14 +376,14 @@ int main(int argc, char** argv) {
 
       std::cout << "Integrator Timings" << std::endl;
       for( const auto& [name, dur] : integrator.get_timings().all_timings() ) {
-        #ifdef GAUXC_ENABLE_MPI
+        #ifdef GAUXC_HAS_MPI
         const auto avg     = mpi_xc_timings.get_avg_duration(name).count();
         const auto min     = mpi_xc_timings.get_min_duration(name).count();
         const auto max     = mpi_xc_timings.get_max_duration(name).count();
         const auto std_dev = mpi_xc_timings.get_std_dev(name).count();
         #endif
         std::cout << "  " << std::setw(40) << name << ": " 
-        #ifdef GAUXC_ENABLE_MPI
+        #ifdef GAUXC_HAS_MPI
                   << "AVG = " << std::setw(12) << avg << " ms, " 
                   << "MIN = " << std::setw(12) << min << " ms, " 
                   << "MAX = " << std::setw(12) << max << " ms, " 
@@ -484,7 +484,7 @@ int main(int argc, char** argv) {
     }
 
   }
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
   MPI_Finalize();
 #endif
 

@@ -12,7 +12,7 @@
 #include <string>
 #include <sstream>
 
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_HAS_CUDA
 #include <cublas_v2.h>
 #include <cuda_runtime.h>
 

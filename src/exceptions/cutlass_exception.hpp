@@ -12,7 +12,7 @@
 #include <string>
 #include <sstream>
 
-#ifdef GAUXC_ENABLE_CUTLASS
+#ifdef GAUXC_HAS_CUTLASS
 #include <cutlass/cutlass.h>
 #include <string.h>
 
