@@ -13,7 +13,6 @@
 #include "host/util.hpp"
 #include "host/blas.hpp"
 #include <stdexcept>
-#include <mutex>
 
 #include <gauxc/basisset_map.hpp>
 #include <gauxc/shell_pair.hpp>
@@ -1034,16 +1033,9 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
 					      const double* basis_eval, const submat_map_t& submat_map, const double* Z,
 					      size_t ldz, double* VXC, size_t ldvxc, double* scr ) {
 
-    //static std::mutex int_mux;
-    //if( submat_map.size() > 1 ) {
       blas::syr2k('L', 'N', nbe, npts, 1., basis_eval, nbe, Z, ldz, 0., scr, nbe );
-      //std::lock_guard<std::mutex> lock(int_mux);
+
       detail::inc_by_submat_atomic( nbf, nbf, nbe, nbe, VXC, ldvxc, scr, nbe, submat_map );
-    //} else {
-    //  std::lock_guard<std::mutex> lock(int_mux);
-    //  blas::syr2k('L', 'N', nbe, npts, 1., basis_eval, nbe, Z, ldz, 1., 
-	//	  VXC + submat_map[0][0]*(ldvxc+1), ldvxc );
-    //}
 
   }
 
@@ -1053,16 +1045,11 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
 						const submat_map_t& submat_map_bra, const submat_map_t& submat_map_ket, 
 						const double* G, size_t ldg, double* K, size_t ldk, double* scr ) {
 
-    //if( submat_map_bra.size() > 1 or submat_map_ket.size() > 1 ) {
       blas::gemm( 'N', 'T', nbe_bra, nbe_ket, npts, 1., basis_eval, nbe_bra,
 		  G, ldg, 0., scr, nbe_bra );
 
       detail::inc_by_submat_atomic( nbf, nbf, nbe_bra, nbe_ket, K, ldk, scr, nbe_bra, 
 			     submat_map_bra, submat_map_ket );
-    //} else {
-    //  blas::gemm( 'N', 'T', nbe_bra, nbe_ket, npts, 1., basis_eval, nbe_bra,
-	//	  G, ldg, 1., K + submat_map_ket[0][0]*ldk + submat_map_bra[0][0], ldk );
-    //}
 
   }
 
