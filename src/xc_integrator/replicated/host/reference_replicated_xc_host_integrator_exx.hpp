@@ -275,8 +275,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   auto* lwd = dynamic_cast<LocalHostWorkDriver*>(this->local_work_driver_.get());
 
   // Setup Aliases
-  const auto& basis = this->load_balancer_->basis();
-  const auto& mol   = this->load_balancer_->molecule();
+  const auto& basis   = this->load_balancer_->basis();
+  const auto& mol     = this->load_balancer_->molecule();
+  const auto& shpairs = this->load_balancer_->shell_pairs();
 
 
   // Get basis map
@@ -304,9 +305,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   for( auto i = 0; i < nbf; ++i ) 
     K[i + j*ldk] = 0.;
 
-
-  // Precompure Shell Pairs
-  ShellPairCollection<double> shpairs(basis);
    
   // Compute V upper bounds per shell pair
   const size_t nshells_bf = basis.size();
@@ -361,7 +359,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   for(auto& task : tasks) task.cou_screening = XCTask::screening_data();
 
   // Precompute EK shell screening
-  exx_ek_screening( basis, basis_map, P_abs.data(), nbf, V_max.data(), 
+  exx_ek_screening( basis, basis_map, shpairs, P_abs.data(), nbf, V_max.data(), 
     nshells_bf, eps_E, eps_K, lwd, tasks.begin(), tasks.end() );
 
   // Allow for merging of tasks with different iParent
@@ -525,19 +523,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // mu runs over bfn shell list
     // nu runs over ek shells
     // i runs over all points
-    //#pragma omp critical
     lwd->inc_exx_k( npts, nbf, nbe_bfn, nbe_ek, basis_eval, submat_map_bfn,
-      ek_submat_map, gmat, nbe_ek, K_local.data(), nbf, nbe_scr );
+      ek_submat_map, gmat, nbe_ek, K, ldk, nbe_scr );
 
   } // Loop over tasks 
 
-  #pragma omp critical
-  {
-  for(size_t i = 0; i < nbf; ++i ) 
-  for(size_t j = 0; j < nbf; ++j ) {
-    K[i+j*ldk] += K_local[i + j*nbf];
-  }
-  }
 
   } // End OpenMP region
 
