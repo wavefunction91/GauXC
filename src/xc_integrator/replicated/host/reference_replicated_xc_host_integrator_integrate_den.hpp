@@ -85,11 +85,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   if( not lb_state.modified_weights_are_stored ) {
     GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
   }
-  *N_EL = 0.;
 
 
   // Loop over tasks
   const size_t ntasks = tasks.size();
+  double N_EL_WORK = 0.0;
 
   #pragma omp parallel
   {
@@ -154,12 +154,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   } // Loop over tasks 
 
-  #pragma omp critical
-  {
-    *N_EL += N_EL_LOCAL;
-  }
+  #pragma omp atomic 
+  N_EL_WORK += N_EL_LOCAL;
 
   } // End OpenMP region
+
+  // Commit return value
+  *N_EL = N_EL_WORK;
 
 }
 
