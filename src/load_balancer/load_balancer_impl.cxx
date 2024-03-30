@@ -10,26 +10,24 @@
 namespace GauXC::detail {
 
 LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
-  const MolGrid& mg, const basis_type& basis, std::shared_ptr<MolMeta> molmeta, size_t pv ) :
+  const MolGrid& mg, const basis_type& basis, std::shared_ptr<MolMeta> molmeta ) :
   runtime_(rt), 
   mol_( std::make_shared<Molecule>(mol) ),
   mg_( std::make_shared<MolGrid>(mg)  ),
   basis_( std::make_shared<basis_type>(basis) ),
-  molmeta_( molmeta ),
-  pad_value_(pv) { 
+  molmeta_( molmeta ) { 
 
-  shell_pairs_ = std::make_shared<shell_pair_type>(*basis_);
   basis_map_   = std::make_shared<basis_map_type>(*basis_, mol);
 
 }
 
 LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
-  const MolGrid& mg, const basis_type& basis, const MolMeta& molmeta, size_t pv ) :
-  LoadBalancerImpl( rt, mol, mg, basis, std::make_shared<MolMeta>(molmeta), pv ) { }
+  const MolGrid& mg, const basis_type& basis, const MolMeta& molmeta ) :
+  LoadBalancerImpl( rt, mol, mg, basis, std::make_shared<MolMeta>(molmeta) ) { }
 
 LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 
-  const MolGrid& mg, const basis_type& basis, size_t pv ) :
-  LoadBalancerImpl( rt, mol, mg, basis, std::make_shared<MolMeta>(mol), pv ) { }
+  const MolGrid& mg, const basis_type& basis ) :
+  LoadBalancerImpl( rt, mol, mg, basis, std::make_shared<MolMeta>(mol) ) { }
 
 
 LoadBalancerImpl::LoadBalancerImpl( const LoadBalancerImpl& ) = default;
@@ -94,9 +92,6 @@ size_t LoadBalancerImpl::max_npts_x_nbe() const {
 
 }
 
-size_t LoadBalancerImpl::pad_value() const {
-  return pad_value_;
-}
 
 
 
@@ -115,6 +110,13 @@ const LoadBalancerImpl::basis_map_type& LoadBalancerImpl::basis_map() const {
   return *basis_map_;
 }
 const LoadBalancerImpl::shell_pair_type& LoadBalancerImpl::shell_pairs() const {
+  if(!shell_pairs_) GAUXC_GENERIC_EXCEPTION("ShellPairs must be pregenerated for const-context");
+  return *shell_pairs_;
+}
+const LoadBalancerImpl::shell_pair_type& LoadBalancerImpl::shell_pairs() {
+  if(!shell_pairs_) {
+    shell_pairs_ = std::make_shared<shell_pair_type>(*basis_);
+  }
   return *shell_pairs_;
 }
 
