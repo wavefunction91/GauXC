@@ -72,7 +72,6 @@ FWD_TO_PIMPL(eval_exx_fmat)             // Eval EXX F Matrix
 
 FWD_TO_PIMPL(inc_exc)
 FWD_TO_PIMPL(inc_nel)
-FWD_TO_PIMPL(inc_vxc)                   // Increment VXC by Z 
 FWD_TO_PIMPL(inc_exx_k)     
 FWD_TO_PIMPL(inc_exc_grad_lda)
 FWD_TO_PIMPL(inc_exc_grad_gga)
@@ -86,6 +85,12 @@ FWD_TO_PIMPL(eval_exx_ek_screening_bfn_stats)
 void LocalDeviceWorkDriver::eval_xmat( double fac, XCDeviceData* device_data, bool do_grad ) {
   throw_if_invalid_pimpl(pimpl_);
   pimpl_->eval_xmat(fac, device_data, do_grad);
+}
+
+// Increment VXC by Z (+ M{x,y,z} for MMGA)
+void LocalDeviceWorkDriver::inc_vxc( XCDeviceData* device_data, bool do_m ) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->inc_vxc(device_data, do_m);
 }
 
 void LocalDeviceWorkDriver::eval_exx_gmat( XCDeviceData* device_data, 

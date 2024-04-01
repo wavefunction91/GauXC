@@ -261,8 +261,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     else                     lwd->eval_zmat_lda_vxc_rks( &device_data );
 
     // Increment VXC (LT)
-    // XXX: This needs MGGA logic
-    lwd->inc_vxc( &device_data );
+    lwd->inc_vxc( &device_data, func.is_mgga() );
 
   } // Loop over batches of batches 
 

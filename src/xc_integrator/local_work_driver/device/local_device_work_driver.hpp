@@ -100,7 +100,7 @@ public:
 
   void inc_exc( XCDeviceData* );
   void inc_nel( XCDeviceData* );
-  void inc_vxc( XCDeviceData* );
+  void inc_vxc( XCDeviceData*, bool do_m = false );
   void inc_exc_grad_lda( XCDeviceData* );
   void inc_exc_grad_gga( XCDeviceData* );
   void inc_exx_k( XCDeviceData* );

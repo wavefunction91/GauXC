@@ -763,7 +763,7 @@ void AoSScheme1Base::eval_xmat( double fac, XCDeviceData* _data, bool do_grad ){
 
 
 
-void AoSScheme1Base::inc_vxc( XCDeviceData* _data){
+void AoSScheme1Base::inc_vxc( XCDeviceData* _data, bool do_m ){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -786,14 +786,12 @@ void AoSScheme1Base::inc_vxc( XCDeviceData* _data){
   for( size_t iT = 0; iT < ntasks; ++iT ) {
     auto& task = tasks[iT];
     auto handle = data->device_backend_->blas_pool_handle( iT % n_blas_streams );
-    //syr2k( data->device_backend_->blas_pool_handle(iT % n_blas_streams), 
-    //  DeviceBlasUplo::Lower, DeviceBlasOp::Trans, task.bfn_screening.nbe, task.npts, 1.,
-    //  task.bf, task.npts, task.zmat, task.npts, 0., task.nbe_scr,
-    //  task.bfn_screening.nbe );
     do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.bf, task.zmat, 0.0, task.nbe_scr);
-    do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfx, task.xmat_x, 1.0, task.nbe_scr);
-    do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfy, task.xmat_y, 1.0, task.nbe_scr);
-    do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfz, task.xmat_z, 1.0, task.nbe_scr);
+    if(do_m) {
+      do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfx, task.xmat_x, 1.0, task.nbe_scr);
+      do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfy, task.xmat_y, 1.0, task.nbe_scr);
+      do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfz, task.xmat_z, 1.0, task.nbe_scr);
+    }
   }
 
   // Record completion of BLAS ops on master stream
