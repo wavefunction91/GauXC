@@ -653,7 +653,7 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
     base_stack.gamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
   }
 
-  if( reqt.grid_tau ) { // Gamma
+  if( reqt.grid_tau ) { // Tau 
     base_stack.tau_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
   }
 

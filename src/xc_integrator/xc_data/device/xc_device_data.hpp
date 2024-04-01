@@ -77,7 +77,7 @@ struct required_term_storage {
     return PRDVL(grid_gamma, npts);
   }
   inline size_t grid_tau_size(size_t npts){ 
-    return PRDVL(grid_gamma, npts);
+    return PRDVL(grid_tau, npts);
   }
   inline size_t grid_eps_size(size_t npts){ 
     return PRDVL(grid_eps, npts);
