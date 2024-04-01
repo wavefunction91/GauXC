@@ -143,7 +143,7 @@ void zmat_gga_vxc( size_t            ntasks,
               
 
 
-
+template <bool need_lapl>
 __global__ void zmat_mgga_vxc_kernel( size_t        ntasks,
                                      XCDeviceTask* tasks_device ) {
 
@@ -155,6 +155,7 @@ __global__ void zmat_mgga_vxc_kernel( size_t        ntasks,
   const auto nbf             = task.bfn_screening.nbe;
   const auto* vrho_device    = task.vrho;
   const auto* vgamma_device  = task.vgamma;
+  const double* vlapl_device = need_lapl ? task.denlapl : nullptr;
   const auto* den_x_eval_device = task.ddenx;
   const auto* den_y_eval_device = task.ddeny;
   const auto* den_z_eval_device = task.ddenz;
@@ -163,6 +164,9 @@ __global__ void zmat_mgga_vxc_kernel( size_t        ntasks,
   const auto* dbasis_x_eval_device = task.dbfx;
   const auto* dbasis_y_eval_device = task.dbfy;
   const auto* dbasis_z_eval_device = task.dbfz;
+  const double* d2basis_lapl_eval_device = 
+    need_lapl ? task.d2bflapl : nullptr;
+  
 
   auto* z_matrix_device = task.zmat;
 
@@ -179,10 +183,14 @@ __global__ void zmat_mgga_vxc_kernel( size_t        ntasks,
     const double dy = den_y_eval_device[ tid_x ] * dbasis_y_eval_device[ ibfoff ];
     const double dz = den_z_eval_device[ tid_x ] * dbasis_z_eval_device[ ibfoff ];
 
-    z_matrix_device[ ibfoff ] = 
+    double val = 
       fact_1 * basis_eval_device[ ibfoff ] + fact_2 * ( dx + dy + dz ); 
 
-    // TODO: LAPL
+    if constexpr (need_lapl) {
+      val += vlapl_device[tid_x] * d2basis_lapl_eval_device[ibfoff];
+    }
+
+    z_matrix_device[ ibfoff ] = val;
   }
 }
 
@@ -200,7 +208,7 @@ void zmat_mgga_vxc( size_t            ntasks,
                util::div_ceil( max_nbf,  threads.y ),
                ntasks );
 
-  zmat_mgga_vxc_kernel<<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  zmat_mgga_vxc_kernel<false><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
 
 }
 
@@ -219,6 +227,7 @@ void zmat_mgga_vxc( size_t            ntasks,
 
 
 
+template <bool need_lapl>
 __global__ void mmat_mgga_vxc_kernel( size_t        ntasks,
                                      XCDeviceTask* tasks_device ) {
 
@@ -229,6 +238,7 @@ __global__ void mmat_mgga_vxc_kernel( size_t        ntasks,
   const auto npts            = task.npts;
   const auto nbf             = task.bfn_screening.nbe;
   const auto* vtau_device    = task.vtau;
+  const double* vlapl_device = need_lapl ? task.vlapl : nullptr;
 
   const auto* dbasis_x_eval_device = task.dbfx;
   const auto* dbasis_y_eval_device = task.dbfy;
@@ -244,13 +254,12 @@ __global__ void mmat_mgga_vxc_kernel( size_t        ntasks,
   if( tid_x < npts and tid_y < nbf ) {
 
     const size_t ibfoff = tid_y * npts + tid_x;
-    const double fact_1 = 0.25 * vtau_device[tid_x];
+    const double fact_1 = 0.25 * vtau_device[tid_x] + 
+      (need_lapl ? vlapl_device[tid_x] : 0.0);
 
     mmat_x[ ibfoff ] = fact_1 * dbasis_x_eval_device[ ibfoff ]; 
     mmat_y[ ibfoff ] = fact_1 * dbasis_y_eval_device[ ibfoff ]; 
     mmat_z[ ibfoff ] = fact_1 * dbasis_z_eval_device[ ibfoff ]; 
-
-    // TODO: LAPL
   }
 }
 
@@ -311,7 +320,7 @@ void mmat_mgga_vxc( size_t            ntasks,
                util::div_ceil( max_nbf,  threads.y ),
                ntasks );
 
-  mmat_mgga_vxc_kernel<<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  mmat_mgga_vxc_kernel<false><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
 
   //print_zmat_stats<<<1,1,0,stream>>>(ntasks,tasks_device);
 }

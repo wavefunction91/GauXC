@@ -228,8 +228,9 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     // Evaluate collocation
     if( func.is_mgga() ) {
-      // TODO Handle Laplacian
-      lwd->eval_collocation_gradient( &device_data );
+      // TODO Handle MGGA-LAPL
+      if(func.needs_laplacian()) GAUXC_GENERIC_EXCEPTION("GPU + MGGA-LAPL NYI");
+      else lwd->eval_collocation_gradient( &device_data );
     }
     else if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
     else                     lwd->eval_collocation( &device_data );
