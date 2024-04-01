@@ -84,10 +84,10 @@ struct XCDeviceStackData : public XCDeviceData {
     double* weights_device = nullptr; ///< Grid weights for task batch
 
     // U variables
-    double* den_eval_device   = nullptr; ///< density for task batch
-    double* den_x_eval_device = nullptr; ///< d/dx density for task batch
-    double* den_y_eval_device = nullptr; ///< d/dy density for task batch
-    double* den_z_eval_device = nullptr; ///< d/dz density for task batch
+    double* den_eval_device      = nullptr; ///< density for task batch
+    double* den_x_eval_device    = nullptr; ///< d/dx density for task batch
+    double* den_y_eval_device    = nullptr; ///< d/dy density for task batch
+    double* den_z_eval_device    = nullptr; ///< d/dz density for task batch
     double* den_lapl_eval_device = nullptr; ///< density Laplacian for task batch
 
     // V variables / XC output

@@ -577,7 +577,7 @@ void XCDeviceAoSData::pack_and_send(
       task.gamma = 
         gamma_mem.aligned_alloc<double>( reqt.grid_gamma_size(npts), csl);
       task.tau = 
-        tau_mem.aligned_alloc<double>( reqt.grid_gamma_size(npts), csl);
+        tau_mem.aligned_alloc<double>( reqt.grid_tau_size(npts), csl);
 
       task.eps  = 
         eps_mem.aligned_alloc<double>( reqt.grid_eps_size(npts), csl);
@@ -586,7 +586,7 @@ void XCDeviceAoSData::pack_and_send(
       task.vgamma = 
         vgamma_mem.aligned_alloc<double>( reqt.grid_vgamma_size(npts), csl);
       task.vtau = 
-        vtau_mem.aligned_alloc<double>( reqt.grid_vgamma_size(npts), csl);
+        vtau_mem.aligned_alloc<double>( reqt.grid_vtau_size(npts), csl);
       task.vlapl = 
         vlapl_mem.aligned_alloc<double>( reqt.grid_vlapl_size(npts), csl);
 
