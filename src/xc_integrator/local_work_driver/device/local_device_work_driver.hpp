@@ -60,6 +60,7 @@ public:
   void eval_collocation( XCDeviceData* );
   void eval_collocation_gradient( XCDeviceData* );
   void eval_collocation_hessian( XCDeviceData* );
+  void eval_collocation_laplacian( XCDeviceData* );
 
   void eval_xmat( double fac, XCDeviceData*, bool do_grad = false );
 

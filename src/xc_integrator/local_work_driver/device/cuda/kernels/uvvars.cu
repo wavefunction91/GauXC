@@ -333,7 +333,7 @@ void eval_uvvars_mgga( size_t ntasks, size_t npts_total, int32_t nbf_max,
                std::min(uint64_t(16), util::div_ceil( nbf_max, 16 )),
                ntasks );
   eval_uvars_gga_kernel <<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-  eval_uvars_mgga_kernel<false><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+  eval_uvars_mgga_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
   }
 
   // V variables (GAMMA)
