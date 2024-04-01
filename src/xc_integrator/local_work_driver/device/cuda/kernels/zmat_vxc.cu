@@ -254,6 +254,49 @@ __global__ void mmat_mgga_vxc_kernel( size_t        ntasks,
   }
 }
 
+//__global__ void print_zmat_stats( size_t            ntasks,
+//                    XCDeviceTask*     tasks_device) {
+//
+//  for(size_t iT = 0; iT < ntasks; ++iT) {
+//    auto& task = tasks_device[iT];
+//    const auto npts            = task.npts;
+//    const auto nbf             = task.bfn_screening.nbe;
+//
+//    const auto* zmat = task.zmat;
+//    const auto* bmat = task.bf;
+//  
+//    double znrm = 0.0, bnrm = 0.0;
+//    for(auto j = 0; j < npts*nbf; ++j) {
+//      znrm += zmat[j] * zmat[j];
+//      bnrm += bmat[j] * bmat[j];
+//    }
+//
+//    const auto* eps = task.eps;
+//    const auto* vgamma = task.vgamma;
+//    const auto* vtau   = task.vtau;
+//    const auto* vrho   = task.vrho;
+//    const auto* gamma = task.gamma;
+//    const auto* tau   = task.tau;
+//    const auto* rho   = task.den;
+//    double enrm = 0.0, gnrm = 0.0, tnrm = 0.0, rnrm = 0.0;
+//    double vgnrm = 0.0, vtnrm = 0.0, vrnrm = 0.0;
+//    for(auto j = 0; j < npts; ++j) {
+//      enrm += eps[j] * eps[j];
+//      vrnrm += vrho[j] * vrho[j];
+//      vgnrm += vgamma[j] * vgamma[j];
+//      vtnrm += vtau[j] * vtau[j];
+//
+//      rnrm += rho[j] * rho[j];
+//      gnrm += gamma[j] * gamma[j];
+//      tnrm += tau[j] * tau[j];
+//    }
+//
+//        printf("ITASK = %lu B = %.6e R = %.6e G = %.6e T = %.6e E = %.6e VR = %.6e VG = %6e VT = %.6e Z = %.6e \n", 
+//          iT, bnrm, rnrm, gnrm, tnrm, enrm, vrnrm, vgnrm, vtnrm, znrm);
+//  }
+//
+//}
+
 void mmat_mgga_vxc( size_t            ntasks,
                     int32_t           max_nbf,
                     int32_t           max_npts,
@@ -270,6 +313,7 @@ void mmat_mgga_vxc( size_t            ntasks,
 
   mmat_mgga_vxc_kernel<<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
 
+  //print_zmat_stats<<<1,1,0,stream>>>(ntasks,tasks_device);
 }
 
 }

@@ -689,8 +689,8 @@ void AoSScheme1Base::eval_kern_exc_vxc_mgga( const functional_type& func,
                     base_stack.weights_device, 1, base_stack.vgamma_eval_device, 1 );
   hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.vtau_eval_device, 1 );
-  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
-                    base_stack.weights_device, 1, base_stack.vlapl_eval_device, 1 );
+  //hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
+  //                  base_stack.weights_device, 1, base_stack.vlapl_eval_device, 1 );
 
 }
 
@@ -791,9 +791,9 @@ void AoSScheme1Base::inc_vxc( XCDeviceData* _data){
     //  task.bf, task.npts, task.zmat, task.npts, 0., task.nbe_scr,
     //  task.bfn_screening.nbe );
     do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.bf, task.zmat, 0.0, task.nbe_scr);
-    //do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfx, task.xmat_x, 1.0, task.nbe_scr);
-    //do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfy, task.xmat_y, 1.0, task.nbe_scr);
-    //do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfz, task.xmat_z, 1.0, task.nbe_scr);
+    do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfx, task.xmat_x, 1.0, task.nbe_scr);
+    do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfy, task.xmat_y, 1.0, task.nbe_scr);
+    do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfz, task.xmat_z, 1.0, task.nbe_scr);
   }
 
   // Record completion of BLAS ops on master stream
