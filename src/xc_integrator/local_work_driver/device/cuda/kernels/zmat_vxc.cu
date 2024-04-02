@@ -155,7 +155,7 @@ __global__ void zmat_mgga_vxc_kernel( size_t        ntasks,
   const auto nbf             = task.bfn_screening.nbe;
   const auto* vrho_device    = task.vrho;
   const auto* vgamma_device  = task.vgamma;
-  const double* vlapl_device = need_lapl ? task.denlapl : nullptr;
+  const double* vlapl_device = need_lapl ? task.vlapl : nullptr;
   const auto* den_x_eval_device = task.ddenx;
   const auto* den_y_eval_device = task.ddeny;
   const auto* den_z_eval_device = task.ddenz;
@@ -208,7 +208,7 @@ void zmat_mgga_vxc( size_t            ntasks,
                util::div_ceil( max_nbf,  threads.y ),
                ntasks );
 
-  zmat_mgga_vxc_kernel<false><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  zmat_mgga_vxc_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
 
 }
 
@@ -306,8 +306,8 @@ __global__ void print_zmat_stats( size_t            ntasks,
       lnrm += lapl[j] * lapl[j];
     }
 
-        printf("ITASK = %lu B = %.6e BL = %.6e R = %.6e G = %.6e T = %.6e L = %.6e E = %.6e VR = %.6e VG = %6e VT = %.6e Z = %.6e \n", 
-          iT, bnrm, blnrm, rnrm, gnrm, tnrm, lnrm, enrm, vrnrm, vgnrm, vtnrm, znrm);
+        printf("ITASK = %lu B = %.6e BL = %.6e R = %.6e G = %.6e T = %.6e L = %.6e E = %.6e VR = %.6e VG = %6e VT = %.6e VL = %.6e Z = %.6e \n", 
+          iT, bnrm, blnrm, rnrm, gnrm, tnrm, lnrm, enrm, vrnrm, vgnrm, vtnrm, vlnrm, znrm);
   }
 
 }
@@ -326,7 +326,7 @@ void mmat_mgga_vxc( size_t            ntasks,
                util::div_ceil( max_nbf,  threads.y ),
                ntasks );
 
-  mmat_mgga_vxc_kernel<false><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  mmat_mgga_vxc_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
 
   print_zmat_stats<<<1,1,0,stream>>>(ntasks,tasks_device);
 }
