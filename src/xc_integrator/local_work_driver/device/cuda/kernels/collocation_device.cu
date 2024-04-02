@@ -627,8 +627,6 @@ void eval_collocation_shell_to_task_laplacian(
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
 
-  std::cout << "HERE IN LAPL" << std::endl;
-
   for( auto l = 0u; l <= max_l; ++l ) {
     auto pure = l_batched_shell_to_task[l].pure;
     auto shell_to_task_device = l_batched_shell_to_task[l].shell_to_task_device;

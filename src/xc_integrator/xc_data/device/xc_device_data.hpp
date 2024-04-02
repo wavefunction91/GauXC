@@ -71,7 +71,7 @@ struct required_term_storage {
     return PRDVL(grid_den_grad, 3 * npts);
   }
   inline size_t grid_den_lapl_size(size_t npts){ 
-    return PRDVL(grid_den, npts);
+    return PRDVL(grid_den_lapl, npts);
   }
   inline size_t grid_gamma_size(size_t npts){ 
     return PRDVL(grid_gamma, npts);
