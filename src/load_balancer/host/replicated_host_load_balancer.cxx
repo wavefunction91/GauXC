@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -98,22 +98,6 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
         XCTask task = std::move(temp_tasks.at(ibatch).second);
         //auto& points = task.points;
         //auto  nbe    = task.nbe;
-
-        if( task.points.size() % pad_value_ ) {
-          // Pad the points with zero-weights
-          size_t npts = task.points.size();
-          size_t npts_add = pad_value_ - (npts % pad_value_);
-
-          // Copy first point to the remainder to ensure same spatially locality
-          const auto pt_to_add = task.points.front();
-          task.points.insert( task.points.end(), npts_add, pt_to_add );
-
-          // Fill weights remainder with zeros
-          task.weights.insert( task.weights.end(), npts_add, 0.0 );
-
-          // Update NPTS
-          task.npts = task.points.size();
-        }
 
         // Get rank with minimum work
         auto min_rank_it = 

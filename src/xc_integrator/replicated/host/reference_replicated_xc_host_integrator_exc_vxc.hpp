@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -279,8 +279,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       }
     }
   }
-  *EXC = 0.;
  
+  double EXC_WORK = 0.0;
+  double NEL_WORK = 0.0;
     
   // Loop over tasks
   const size_t ntasks = tasks.size();
@@ -294,6 +295,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   for( size_t iT = 0; iT < ntasks; ++iT ) {
      
     //std::cout << iT << "/" << ntasks << std::endl;
+    //printf("%lu / %lu\n", iT, ntasks);
     // Alias current task
     const auto& task = tasks[iT];
 
@@ -615,16 +617,25 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       }
     }
 
+    // Scalar integrations
+    double NEL_local = 0.0;
+    double EXC_local  = 0.0;
+    for( int32_t i = 0; i < npts; ++i ) {
+      const auto den = is_rks ? den_eval[i] : (den_eval[2*i] + den_eval[2*i+1]);
+      NEL_local += weights[i] * den;
+      EXC_local += eps[i]     * den;
+    }
+
+    // Atomic updates
+    #pragma omp atomic
+    EXC_WORK += EXC_local;
+    #pragma omp atomic
+    NEL_WORK += NEL_local;
+    
+
      
     // Incremeta LT of VXC
-    #pragma omp critical
     {
-      // Scalar integrations
-      for( int32_t i = 0; i < npts; ++i ) {
-        const auto den = is_rks ? den_eval[i] : (den_eval[2*i] + den_eval[2*i+1]);
-        *N_EL += weights[i] * den;
-        *EXC  += eps[i]     * den;
-      }
 
       // Increment VXC
       lwd->inc_vxc( mgga_dim_scal * npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, VXCs, ldvxcs, nbe_scr );
@@ -638,12 +649,16 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
           nbe_scr);
       }
        
- 
     }
 
   } // Loop over tasks
 
   } // End OpenMP region
+
+
+  // Set scalar return values
+  *EXC  = EXC_WORK;
+  *N_EL = NEL_WORK;
 
   // Symmetrize VXC
   for( int32_t j = 0;   j < nbf; ++j ) {
