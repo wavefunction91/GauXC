@@ -593,12 +593,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         double lnrm = std::accumulate(lapl,lapl + npts, 0.0, sq_acc);
         double znrm = std::accumulate(zmat, zmat + nbe*npts, 0.0, sq_acc);
         double bnrm = std::accumulate(basis_eval, basis_eval + nbe*npts, 0.0, sq_acc);
+        double blnrm = std::accumulate(lbasis_eval, lbasis_eval + nbe*npts, 0.0, sq_acc);
         double mxnrm = std::accumulate(mmat_x, mmat_x + nbe*npts, 0.0, sq_acc);
         double mynrm = std::accumulate(mmat_y, mmat_y + nbe*npts, 0.0, sq_acc);
         double mznrm = std::accumulate(mmat_z, mmat_z + nbe*npts, 0.0, sq_acc);
 
-        printf("ITASK = %lu B = %.6e R = %.6e G = %.6e T = %.6e L = %.6e E = %.6e VR = %.6e VG = %6e VT = %.6e Z = %.6e \n", 
-          iT, bnrm, rnrm, gnrm, tnrm, lnrm, enrm, vrnrm, vgnrm, vtnrm, znrm);
+        printf("ITASK = %lu B = %.6e BL = %.6e R = %.6e G = %.6e T = %.6e L = %.6e E = %.6e VR = %.6e VG = %6e VT = %.6e Z = %.6e \n", 
+          iT, bnrm, blnrm, rnrm, gnrm, tnrm, lnrm, enrm, vrnrm, vgnrm, vtnrm, znrm);
       } else if (is_uks) {
         lwd->eval_zmat_mgga_vxc_uks( npts, nbe, vrho, vgamma, vlapl, basis_eval, dbasis_x_eval,
                                      dbasis_y_eval, dbasis_z_eval, lbasis_eval,

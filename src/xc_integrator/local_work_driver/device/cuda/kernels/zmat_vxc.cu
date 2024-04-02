@@ -273,11 +273,13 @@ __global__ void print_zmat_stats( size_t            ntasks,
 
     const auto* zmat = task.zmat;
     const auto* bmat = task.bf;
+    const auto* blmat = task.d2bflapl;
   
-    double znrm = 0.0, bnrm = 0.0;
+    double znrm = 0.0, bnrm = 0.0, blnrm = 0.0;
     for(auto j = 0; j < npts*nbf; ++j) {
       znrm += zmat[j] * zmat[j];
       bnrm += bmat[j] * bmat[j];
+      blnrm += blmat[j] * blmat[j];
     }
 
     const auto* eps = task.eps;
@@ -304,8 +306,8 @@ __global__ void print_zmat_stats( size_t            ntasks,
       lnrm += lapl[j] * lapl[j];
     }
 
-        printf("ITASK = %lu B = %.6e R = %.6e G = %.6e T = %.6e L = %.6e E = %.6e VR = %.6e VG = %6e VT = %.6e Z = %.6e \n", 
-          iT, bnrm, rnrm, gnrm, tnrm, lnrm, enrm, vrnrm, vgnrm, vtnrm, znrm);
+        printf("ITASK = %lu B = %.6e BL = %.6e R = %.6e G = %.6e T = %.6e L = %.6e E = %.6e VR = %.6e VG = %6e VT = %.6e Z = %.6e \n", 
+          iT, bnrm, blnrm, rnrm, gnrm, tnrm, lnrm, enrm, vrnrm, vgnrm, vtnrm, znrm);
   }
 
 }

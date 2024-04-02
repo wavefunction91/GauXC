@@ -198,6 +198,8 @@ __global__ void eval_uvars_mgga_kernel( size_t           ntasks,
         den_shared[0][threadIdx.x][sm_y] = 0.;
         den_shared[1][threadIdx.x][sm_y] = 0.;
         den_shared[2][threadIdx.x][sm_y] = 0.;
+        if constexpr (need_lapl)
+          den_shared[3][threadIdx.x][sm_y] = 0.;
 
         if (bid_y + threadIdx.x < npts and bid_x + sm_y < nbf) { 
           const double* db_x_col = den_basis_dx_prod_device + (bid_x + sm_y)*npts;
@@ -240,7 +242,7 @@ __global__ void eval_uvars_mgga_kernel( size_t           ntasks,
         if constexpr (need_lapl) {
           lapl_reg = den_shared[3][sm_y][threadIdx.x];
           lapl_reg = cuda::warp_reduce_sum<warp_size>(lapl_reg);
-          lapl_reg = 2 * lapl_reg + 4 * tau_reg;
+          lapl_reg = 2. * lapl_reg + 4. * tau_reg;
         }
 
         if( threadIdx.x == 0 and tid_y < npts ) {
@@ -276,8 +278,6 @@ __global__ void eval_vvars_gga_kernel(
   }
 
 }
-
-
 
 
 
