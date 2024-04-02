@@ -347,17 +347,10 @@ int main(int argc, char** argv) {
 
     std::cout << std::scientific << std::setprecision(12);
     if( integrate_den ) {
-      if( rks ) {
-        N_EL = integrator.integrate_den( P );
+      if( (uks or gks) and !world_rank ) {
+        std::cout << "Warning: integrate_den will only integrate the scalar density!" << std::endl;
       }
-      else if( uks ) {
-        std::cout << "Warning: integrate_den + UKS NYI!" << std::endl;
-        //N_EL = integrator.integrate_den( P, Pz );
-      }
-      else if( gks ) {
-        std::cout << "Warning: integrate_den + GKS NYI!" << std::endl;
-        //N_EL = integrator.integrate_den( P, Pz, Py, Px );
-      }
+      N_EL = integrator.integrate_den( P );
       if(!world_rank) std::cout << "N_EL = " << N_EL << std::endl;
     } else {
       N_EL = N_EL_ref;
@@ -378,9 +371,13 @@ int main(int argc, char** argv) {
     } else {
       EXC = EXC_ref;
       VXC = VXC_ref;
-      VXCz = VXCz_ref;
-      VXCy = VXCy_ref;
-      VXCx = VXCx_ref;
+      if( not rks ) {
+        VXCz = VXCz_ref;
+        if( gks ) {
+          VXCy = VXCy_ref;
+          VXCx = VXCx_ref;
+        }
+      }
     }
 
     std::vector<double> EXC_GRAD;
