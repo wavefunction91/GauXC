@@ -192,28 +192,46 @@ int main(int argc, char** argv) {
     auto mw = mw_factory.get_instance();
     mw.modify_weights(*lb);
 
-    // Setup XC functional
-    functional_type func( Backend::builtin, functional_map.value(func_spec), 
-      Spin::Unpolarized );
 
-    // Setup Integrator
     using matrix_type = Eigen::MatrixXd;
-    XCIntegratorFactory<matrix_type> integrator_factory( int_exec_space , 
-      "Replicated", integrator_kernel, lwd_kernel, reduction_kernel );
-    auto integrator = integrator_factory.get_instance( func, lb );
-
     // Read in reference data
-    matrix_type P,VXC_ref,K_ref;
+    matrix_type P, Pz, Py, Px, VXC_ref, VXCz_ref, VXCy_ref, VXCx_ref, K_ref;
     double EXC_ref;
     std::vector<double> EXC_GRAD_ref(3*mol.size());
+    bool rks = true, uks = false, gks = false;
     size_t N_EL_ref = MolMeta(mol).sum_atomic_charges();
     {
       HighFive::File file( ref_file, HighFive::File::ReadOnly );
-      auto dset = file.getDataSet("/DENSITY");
+      std::string den_str = "/DENSITY";
+      std::string vxc_str = "/VXC";
+
+      if (file.exist("/DENSITY_Z") ) {
+        rks = false;
+        den_str = "/DENSITY_SCALAR";
+        vxc_str = "/VXC_SCALAR";
+        if (file.exist("/DENSITY_Y") and file.exist("/DENSITY_X")) {
+          gks = true;
+        } else {
+          uks = true;
+        }
+      }
+
+
+      auto dset = file.getDataSet(den_str);
       auto dims = dset.getDimensions();
       P       = matrix_type( dims[0], dims[1] );
       VXC_ref = matrix_type( dims[0], dims[1] );
       K_ref   = matrix_type( dims[0], dims[1] );
+      if (not rks) {
+        Pz        = matrix_type( dims[0], dims[1] );
+        VXCz_ref  = matrix_type( dims[0], dims[1] );
+      }
+      if (gks) {
+        Py        = matrix_type( dims[0], dims[1] );
+        VXCy_ref  = matrix_type( dims[0], dims[1] );
+        Px        = matrix_type( dims[0], dims[1] );
+        VXCx_ref  = matrix_type( dims[0], dims[1] );
+      }
 
       if( P.rows() != P.cols() ) GAUXC_GENERIC_EXCEPTION("Density Must Be Square");
       if( P.rows() != basis.nbf() ) 
@@ -221,15 +239,52 @@ int main(int argc, char** argv) {
 
       dset.read( P.data() );
 
+      if( not rks) {
+        dset = file.getDataSet("/DENSITY_Z");
+        dset.read( Pz.data() );
+      }
+      if(gks) {
+        dset = file.getDataSet("/DENSITY_Y");
+        dset.read( Py.data() );
+        dset = file.getDataSet("/DENSITY_X");
+        dset.read( Px.data() );
+      }
+        
+
       if( integrate_vxc ) {
         try {
-          dset = file.getDataSet("/VXC");
+          dset = file.getDataSet(vxc_str);
           dset.read( VXC_ref.data() );
         } catch(...) {
           if(world_rank == 0) {
             std::cout << "** Warning: Could Not Find Reference VXC" << std::endl;
           }
           VXC_ref.fill(0);
+        }
+        if( not rks ) {
+          try {
+            dset = file.getDataSet("/VXC_Z");
+            dset.read( VXCz_ref.data() );
+          } catch(...) {
+            if(world_rank == 0) {
+              std::cout << "** Warning: Could Not Find Reference VXCz" << std::endl;
+            }
+            VXCz_ref.fill(0);
+          }
+        }
+        if( gks ) {
+          try {
+            dset = file.getDataSet("/VXC_Y");
+            dset.read( VXCy_ref.data() );
+            dset = file.getDataSet("/VXC_X");
+            dset.read( VXCx_ref.data() );
+          } catch(...) {
+            if(world_rank == 0) {
+              std::cout << "** Warning: Could Not Find Reference VXCy/x" << std::endl;
+            }
+            VXCy_ref.fill(0);
+            VXCx_ref.fill(0);
+          }
         }
 
         try {
@@ -241,6 +296,7 @@ int main(int argc, char** argv) {
           }
           EXC_ref = 0.;
         }
+
       }
 
       if( integrate_exc_grad ) {
@@ -272,17 +328,28 @@ int main(int argc, char** argv) {
       }
 
     }
+    // Setup XC functional
+    auto polar = (uks or gks) ? Spin::Polarized : Spin::Unpolarized;
+    functional_type func( Backend::builtin, functional_map.value(func_spec), 
+      polar );
+    // Setup Integrator
+    XCIntegratorFactory<matrix_type> integrator_factory( int_exec_space , 
+      "Replicated", integrator_kernel, lwd_kernel, reduction_kernel );
+    auto integrator = integrator_factory.get_instance( func, lb );
     
 #ifdef GAUXC_HAS_MPI
     MPI_Barrier( MPI_COMM_WORLD );
 #endif
     auto xc_int_start = std::chrono::high_resolution_clock::now();
 
-    matrix_type VXC, K;
+    matrix_type VXC, VXCz, VXCy, VXCx, K;
     double EXC, N_EL;
 
     std::cout << std::scientific << std::setprecision(12);
     if( integrate_den ) {
+      if( (uks or gks) and !world_rank ) {
+        std::cout << "Warning: integrate_den will only integrate the scalar density!" << std::endl;
+      }
       N_EL = integrator.integrate_den( P );
       if(!world_rank) std::cout << "N_EL = " << N_EL << std::endl;
     } else {
@@ -290,17 +357,42 @@ int main(int argc, char** argv) {
     }
 
     if( integrate_vxc ) {
-      std::tie(EXC, VXC) = integrator.eval_exc_vxc( P );
+      if( rks ) {
+        std::tie(EXC, VXC) = integrator.eval_exc_vxc( P );
+      }
+      else if ( uks ) {
+        std::tie(EXC, VXC, VXCz) = integrator.eval_exc_vxc( P, Pz );
+      }
+      else if ( gks ) {
+        std::tie(EXC, VXC, VXCz, VXCy, VXCx) = integrator.eval_exc_vxc( P, Pz, Py, Px );
+      }
       std::cout << std::scientific << std::setprecision(12);
       if(!world_rank) std::cout << "EXC = " << EXC << std::endl;
     } else {
       EXC = EXC_ref;
       VXC = VXC_ref;
+      if( not rks ) {
+        VXCz = VXCz_ref;
+        if( gks ) {
+          VXCy = VXCy_ref;
+          VXCx = VXCx_ref;
+        }
+      }
     }
 
     std::vector<double> EXC_GRAD;
     if( integrate_exc_grad ) {
-      EXC_GRAD = integrator.eval_exc_grad( P );
+      if( rks ) {
+        EXC_GRAD = integrator.eval_exc_grad( P );
+      }
+      else if( uks ) {
+        std::cout << "Warning: eval_exc_grad + UKS NYI!" << std::endl;
+        //EXC_GRAD = integrator.eval_exc_grad( P, Pz );
+      }
+      else if( gks ) {
+        std::cout << "Warning: eval_exc_grad + GKS NYI!" << std::endl;
+        //EXC_GRAD = integrator.eval_exc_grad( P, Pz, Py, Px );
+      }
       if(!world_rank) {
         std::cout << "EXC Gradient:" << std::endl;
         std::cout << std::scientific << std::setprecision(6);
@@ -414,6 +506,22 @@ int main(int argc, char** argv) {
       std::cout << "| VXC (calc) |_F = " << VXC.norm() << std::endl;
       std::cout << "RMS VXC Diff     = " << (VXC_ref - VXC).norm() / basis.nbf()
                                          << std::endl;
+      if( not rks ) {
+        std::cout << "| VXCz (ref)  |_F = " << VXCz_ref.norm() << std::endl;
+        std::cout << "| VXCz (calc) |_F = " << VXCz.norm() << std::endl;
+        std::cout << "RMS VXCz Diff     = " << (VXCz_ref - VXCz).norm() / basis.nbf()
+                                           << std::endl;
+      }
+      if( gks ) {
+        std::cout << "| VXCy (ref)  |_F = " << VXCy_ref.norm() << std::endl;
+        std::cout << "| VXCy (calc) |_F = " << VXCy.norm() << std::endl;
+        std::cout << "RMS VXCy Diff     = " << (VXCy_ref - VXCy).norm() / basis.nbf()
+                                           << std::endl;
+        std::cout << "| VXCx (ref)  |_F = " << VXCx_ref.norm() << std::endl;
+        std::cout << "| VXCx (calc) |_F = " << VXCx.norm() << std::endl;
+        std::cout << "RMS VXCx Diff     = " << (VXCx_ref - VXCx).norm() / basis.nbf()
+                                           << std::endl;
+      }
       }
 
       if(integrate_exc_grad) {
@@ -463,9 +571,31 @@ int main(int argc, char** argv) {
       auto dset = file.createDataSet<double>( "/DENSITY", mat_space );
       dset.write_raw( P.data() );
 
+      if( not rks ) {
+        dset = file.createDataSet<double>( "/DENSITY_Z", mat_space );
+        dset.write_raw( Pz.data() );
+      }
+      if( gks ) {
+        dset = file.createDataSet<double>( "/DENSITY_Y", mat_space );
+        dset.write_raw( Py.data() );
+        dset = file.createDataSet<double>( "/DENSITY_X", mat_space );
+        dset.write_raw( Px.data() );
+      }
+
+
       if( integrate_vxc ) {
         dset = file.createDataSet<double>( "/VXC", mat_space );
         dset.write_raw( VXC.data() );
+        if( not rks ) {
+          dset = file.createDataSet<double>( "/VXC_Z", mat_space );
+          dset.write_raw( VXCz.data() );
+        }
+        if( gks ) {
+          dset = file.createDataSet<double>( "/VXC_Y", mat_space );
+          dset.write_raw( VXCy.data() );
+          dset = file.createDataSet<double>( "/VXC_X", mat_space );
+          dset.write_raw( VXCx.data() );
+        }
 
         dset = file.createDataSet<double>( "/EXC", sca_space );
         dset.write_raw( &EXC );
