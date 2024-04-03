@@ -14,6 +14,7 @@ find_dependency( OpenMP       )
 
 set( GAUXC_HAS_HOST       @GAUXC_HAS_HOST@      )
 set( GAUXC_HAS_CUDA       @GAUXC_HAS_CUDA@      )
+set( GAUXC_HAS_HIP        @GAUXC_HAS_HIP@       )
 set( GAUXC_HAS_MAGMA      @GAUXC_HAS_MAGMA@     )
 set( GAUXC_HAS_NCCL       @GAUXC_HAS_NCCL@      )
 set( GAUXC_HAS_CUTLASS    @GAUXC_HAS_CUTLASS@   )
