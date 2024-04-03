@@ -122,6 +122,7 @@ set_target_properties( gauxc PROPERTIES EXPORT_NAME gauxc )
 set(export_properties
   # currently configurable properties 
   "GAUXC_HAS_HOST"
+  "GAUXC_HAS_DEVICE"
   "GAUXC_HAS_CUDA"
   "GAUXC_HAS_HIP"
   "GAUXC_HAS_MAGMA"
@@ -140,6 +141,7 @@ set(export_properties
 set_target_properties(gauxc
   PROPERTIES
     "GAUXC_HAS_HOST"       ${GAUXC_HAS_HOST}
+    "GAUXC_HAS_DEVICE"     ${GAUXC_HAS_DEVICE}
     "GAUXC_HAS_CUDA"       ${GAUXC_HAS_CUDA}
     "GAUXC_HAS_HIP"        ${GAUXC_HAS_HIP}
     "GAUXC_HAS_MAGMA"      ${GAUXC_HAS_MAGMA}
