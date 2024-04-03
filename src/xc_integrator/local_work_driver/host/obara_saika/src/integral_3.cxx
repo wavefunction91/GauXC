@@ -1219,118 +1219,907 @@ void integral_3(size_t npts,
          double *Xik = (Xi + p_outer + p_inner);
          double *Gik = (Gi + p_outer + p_inner);
 
-         for(int c0 = 0; c0 <= 3; ++c0) {
-            for(int c1 = 0; c1 <= c0; ++c1) {
-               int m = 3 - c0;
-               int p = c1;
+         SIMD_TYPE tx, wg, xik, gik;
+         tx  = SIMD_ALIGNED_LOAD((temp + 46 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               int idxB = (((3 - m) * (3 - m + 1)) >> 1) + p;
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
 
-               int mv, pv;
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 47 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               SIMD_TYPE tx, wg, xik, gik;
-               mv = 3 + m; pv = 0 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 48 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
-               mv = 2 + m; pv = 0 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 49 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
-               mv = 2 + m; pv = 1 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 50 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
-               mv = 1 + m; pv = 0 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 51 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
-               mv = 1 + m; pv = 1 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 52 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
-               mv = 1 + m; pv = 2 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
-               mv = 0 + m; pv = 0 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
-               mv = 0 + m; pv = 1 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 55 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
-               mv = 0 + m; pv = 2 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 47 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
-               mv = 0 + m; pv = 3 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 49 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
-            }
-         }
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 50 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 52 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 56 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 48 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 50 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 51 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 55 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 60 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 49 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 52 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 56 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 61 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 62 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 50 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 62 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 65 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 51 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 55 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 60 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 65 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 66 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 52 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 56 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 61 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 62 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 67 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 68 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 69 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 70 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 62 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 68 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 69 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 70 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 71 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 65 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 69 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 70 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 71 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 72 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 55 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 60 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 65 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 66 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 70 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 71 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 72 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 73 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
       }
    }
 
@@ -3680,236 +4469,1814 @@ void integral_3(size_t npts,
          double *Xik = (Xi + p_outer + p_inner);
          double *Gik = (Gi + p_outer + p_inner);
 
-         for(int c0 = 0; c0 <= 3; ++c0) {
-            for(int c1 = 0; c1 <= c0; ++c1) {
-               int m = 3 - c0;
-               int p = c1;
+         SIMD_TYPE tx, wg, xik, gik;
+         tx  = SIMD_ALIGNED_LOAD((temp + 46 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               int idxB = (((3 - m) * (3 - m + 1)) >> 1) + p;
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
 
-               int mv, pv;
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 47 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               SIMD_TYPE tx, wg, xik, gik;
-               mv = 3 + m; pv = 0 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 48 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
-               mv = 2 + m; pv = 0 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 49 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
-               mv = 2 + m; pv = 1 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 50 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
-               mv = 1 + m; pv = 0 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 51 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
-               mv = 1 + m; pv = 1 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 52 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
-               mv = 1 + m; pv = 2 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
-               mv = 0 + m; pv = 0 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
-               mv = 0 + m; pv = 1 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 55 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
-               mv = 0 + m; pv = 2 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 0 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 47 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
-               mv = 0 + m; pv = 3 + p;
-               tx  = SIMD_ALIGNED_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
 
-               xik = SIMD_UNALIGNED_LOAD((Xik + idxB * ldX));
-               gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 49 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
 
-               tx = SIMD_MUL(tx, wg);
-               gik = SIMD_FMA(tx, xik, gik);
-               SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
-            }
-         }
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 50 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 52 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 56 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 1 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 48 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 50 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 51 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 55 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 60 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 2 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 49 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 52 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 56 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 61 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 62 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 3 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 50 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 62 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 65 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 4 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 51 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 55 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 60 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 65 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 66 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 5 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 52 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 56 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 61 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 62 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 67 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 68 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 69 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 70 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 6 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 62 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 68 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 69 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 70 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 71 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 7 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 65 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 69 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 70 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 71 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 72 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 8 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 55 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 0 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 0 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 1 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 1 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 60 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 2 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 2 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 3 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 3 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 65 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 4 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 4 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 66 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 5 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 5 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 70 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 6 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 6 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 71 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 7 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 7 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 72 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 8 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 8 * ldG), gik);
+         tx  = SIMD_ALIGNED_LOAD((temp + 73 * NPTS_LOCAL + p_inner));
+         wg  = SIMD_UNALIGNED_LOAD((weights + p_outer + p_inner));
+
+         xik = SIMD_UNALIGNED_LOAD((Xik + 9 * ldX));
+         gik = SIMD_UNALIGNED_LOAD((Gik + 9 * ldG));
+
+         tx = SIMD_MUL(tx, wg);
+         gik = SIMD_FMA(tx, xik, gik);
+         SIMD_UNALIGNED_STORE((Gik + 9 * ldG), gik);
       }
 
       for(; p_inner < npts_inner; p_inner += SCALAR_LENGTH) {
          double *Xik = (Xi + p_outer + p_inner);
          double *Gik = (Gi + p_outer + p_inner);
 
-         for(int c0 = 0; c0 <= 3; ++c0) {
-            for(int c1 = 0; c1 <= c0; ++c1) {
-               int m = 3 - c0;
-               int p = c1;
+         SCALAR_TYPE tx, wg, xik, gik;
+         tx  = SCALAR_LOAD((temp + 46 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
 
-               int idxB = (((3 - m) * (3 - m + 1)) >> 1) + p;
+         xik = SCALAR_LOAD((Xik + 0 * ldX));
+         gik = SCALAR_LOAD((Gik + 0 * ldG));
 
-               int mv, pv;
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 0 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 47 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
 
-               SCALAR_TYPE tx, wg, xik, gik;
-               mv = 3 + m; pv = 0 + p;
-               tx  = SCALAR_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+         xik = SCALAR_LOAD((Xik + 0 * ldX));
+         gik = SCALAR_LOAD((Gik + 1 * ldG));
 
-               xik = SCALAR_LOAD((Xik + idxB * ldX));
-               gik = SCALAR_LOAD((Gik + 0 * ldG));
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 1 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 48 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
 
-               tx = SCALAR_MUL(tx, wg);
-               gik = SCALAR_FMA(tx, xik, gik);
-               SCALAR_STORE((Gik + 0 * ldG), gik);
-               mv = 2 + m; pv = 0 + p;
-               tx  = SCALAR_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+         xik = SCALAR_LOAD((Xik + 0 * ldX));
+         gik = SCALAR_LOAD((Gik + 2 * ldG));
 
-               xik = SCALAR_LOAD((Xik + idxB * ldX));
-               gik = SCALAR_LOAD((Gik + 1 * ldG));
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 2 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 49 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
 
-               tx = SCALAR_MUL(tx, wg);
-               gik = SCALAR_FMA(tx, xik, gik);
-               SCALAR_STORE((Gik + 1 * ldG), gik);
-               mv = 2 + m; pv = 1 + p;
-               tx  = SCALAR_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+         xik = SCALAR_LOAD((Xik + 0 * ldX));
+         gik = SCALAR_LOAD((Gik + 3 * ldG));
 
-               xik = SCALAR_LOAD((Xik + idxB * ldX));
-               gik = SCALAR_LOAD((Gik + 2 * ldG));
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 3 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 50 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
 
-               tx = SCALAR_MUL(tx, wg);
-               gik = SCALAR_FMA(tx, xik, gik);
-               SCALAR_STORE((Gik + 2 * ldG), gik);
-               mv = 1 + m; pv = 0 + p;
-               tx  = SCALAR_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+         xik = SCALAR_LOAD((Xik + 0 * ldX));
+         gik = SCALAR_LOAD((Gik + 4 * ldG));
 
-               xik = SCALAR_LOAD((Xik + idxB * ldX));
-               gik = SCALAR_LOAD((Gik + 3 * ldG));
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 4 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 51 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
 
-               tx = SCALAR_MUL(tx, wg);
-               gik = SCALAR_FMA(tx, xik, gik);
-               SCALAR_STORE((Gik + 3 * ldG), gik);
-               mv = 1 + m; pv = 1 + p;
-               tx  = SCALAR_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+         xik = SCALAR_LOAD((Xik + 0 * ldX));
+         gik = SCALAR_LOAD((Gik + 5 * ldG));
 
-               xik = SCALAR_LOAD((Xik + idxB * ldX));
-               gik = SCALAR_LOAD((Gik + 4 * ldG));
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 5 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 52 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
 
-               tx = SCALAR_MUL(tx, wg);
-               gik = SCALAR_FMA(tx, xik, gik);
-               SCALAR_STORE((Gik + 4 * ldG), gik);
-               mv = 1 + m; pv = 2 + p;
-               tx  = SCALAR_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+         xik = SCALAR_LOAD((Xik + 0 * ldX));
+         gik = SCALAR_LOAD((Gik + 6 * ldG));
 
-               xik = SCALAR_LOAD((Xik + idxB * ldX));
-               gik = SCALAR_LOAD((Gik + 5 * ldG));
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 6 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
 
-               tx = SCALAR_MUL(tx, wg);
-               gik = SCALAR_FMA(tx, xik, gik);
-               SCALAR_STORE((Gik + 5 * ldG), gik);
-               mv = 0 + m; pv = 0 + p;
-               tx  = SCALAR_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+         xik = SCALAR_LOAD((Xik + 0 * ldX));
+         gik = SCALAR_LOAD((Gik + 7 * ldG));
 
-               xik = SCALAR_LOAD((Xik + idxB * ldX));
-               gik = SCALAR_LOAD((Gik + 6 * ldG));
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 7 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
 
-               tx = SCALAR_MUL(tx, wg);
-               gik = SCALAR_FMA(tx, xik, gik);
-               SCALAR_STORE((Gik + 6 * ldG), gik);
-               mv = 0 + m; pv = 1 + p;
-               tx  = SCALAR_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+         xik = SCALAR_LOAD((Xik + 0 * ldX));
+         gik = SCALAR_LOAD((Gik + 8 * ldG));
 
-               xik = SCALAR_LOAD((Xik + idxB * ldX));
-               gik = SCALAR_LOAD((Gik + 7 * ldG));
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 8 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 55 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
 
-               tx = SCALAR_MUL(tx, wg);
-               gik = SCALAR_FMA(tx, xik, gik);
-               SCALAR_STORE((Gik + 7 * ldG), gik);
-               mv = 0 + m; pv = 2 + p;
-               tx  = SCALAR_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+         xik = SCALAR_LOAD((Xik + 0 * ldX));
+         gik = SCALAR_LOAD((Gik + 9 * ldG));
 
-               xik = SCALAR_LOAD((Xik + idxB * ldX));
-               gik = SCALAR_LOAD((Gik + 8 * ldG));
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 9 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 47 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
 
-               tx = SCALAR_MUL(tx, wg);
-               gik = SCALAR_FMA(tx, xik, gik);
-               SCALAR_STORE((Gik + 8 * ldG), gik);
-               mv = 0 + m; pv = 3 + p;
-               tx  = SCALAR_LOAD((temp + (46 + (((6 - mv) * (6 - mv + 1)) >> 1) + pv) * NPTS_LOCAL + p_inner));
-               wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+         xik = SCALAR_LOAD((Xik + 1 * ldX));
+         gik = SCALAR_LOAD((Gik + 0 * ldG));
 
-               xik = SCALAR_LOAD((Xik + idxB * ldX));
-               gik = SCALAR_LOAD((Gik + 9 * ldG));
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 0 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 49 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
 
-               tx = SCALAR_MUL(tx, wg);
-               gik = SCALAR_FMA(tx, xik, gik);
-               SCALAR_STORE((Gik + 9 * ldG), gik);
-            }
-         }
+         xik = SCALAR_LOAD((Xik + 1 * ldX));
+         gik = SCALAR_LOAD((Gik + 1 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 1 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 50 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 1 * ldX));
+         gik = SCALAR_LOAD((Gik + 2 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 2 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 52 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 1 * ldX));
+         gik = SCALAR_LOAD((Gik + 3 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 3 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 1 * ldX));
+         gik = SCALAR_LOAD((Gik + 4 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 4 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 1 * ldX));
+         gik = SCALAR_LOAD((Gik + 5 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 5 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 56 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 1 * ldX));
+         gik = SCALAR_LOAD((Gik + 6 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 6 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 1 * ldX));
+         gik = SCALAR_LOAD((Gik + 7 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 7 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 1 * ldX));
+         gik = SCALAR_LOAD((Gik + 8 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 8 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 1 * ldX));
+         gik = SCALAR_LOAD((Gik + 9 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 9 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 48 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 2 * ldX));
+         gik = SCALAR_LOAD((Gik + 0 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 0 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 50 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 2 * ldX));
+         gik = SCALAR_LOAD((Gik + 1 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 1 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 51 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 2 * ldX));
+         gik = SCALAR_LOAD((Gik + 2 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 2 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 2 * ldX));
+         gik = SCALAR_LOAD((Gik + 3 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 3 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 2 * ldX));
+         gik = SCALAR_LOAD((Gik + 4 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 4 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 55 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 2 * ldX));
+         gik = SCALAR_LOAD((Gik + 5 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 5 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 2 * ldX));
+         gik = SCALAR_LOAD((Gik + 6 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 6 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 2 * ldX));
+         gik = SCALAR_LOAD((Gik + 7 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 7 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 2 * ldX));
+         gik = SCALAR_LOAD((Gik + 8 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 8 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 60 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 2 * ldX));
+         gik = SCALAR_LOAD((Gik + 9 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 9 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 49 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 3 * ldX));
+         gik = SCALAR_LOAD((Gik + 0 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 0 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 52 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 3 * ldX));
+         gik = SCALAR_LOAD((Gik + 1 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 1 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 3 * ldX));
+         gik = SCALAR_LOAD((Gik + 2 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 2 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 56 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 3 * ldX));
+         gik = SCALAR_LOAD((Gik + 3 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 3 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 3 * ldX));
+         gik = SCALAR_LOAD((Gik + 4 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 4 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 3 * ldX));
+         gik = SCALAR_LOAD((Gik + 5 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 5 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 61 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 3 * ldX));
+         gik = SCALAR_LOAD((Gik + 6 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 6 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 62 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 3 * ldX));
+         gik = SCALAR_LOAD((Gik + 7 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 7 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 3 * ldX));
+         gik = SCALAR_LOAD((Gik + 8 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 8 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 3 * ldX));
+         gik = SCALAR_LOAD((Gik + 9 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 9 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 50 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 4 * ldX));
+         gik = SCALAR_LOAD((Gik + 0 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 0 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 4 * ldX));
+         gik = SCALAR_LOAD((Gik + 1 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 1 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 4 * ldX));
+         gik = SCALAR_LOAD((Gik + 2 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 2 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 4 * ldX));
+         gik = SCALAR_LOAD((Gik + 3 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 3 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 4 * ldX));
+         gik = SCALAR_LOAD((Gik + 4 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 4 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 4 * ldX));
+         gik = SCALAR_LOAD((Gik + 5 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 5 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 62 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 4 * ldX));
+         gik = SCALAR_LOAD((Gik + 6 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 6 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 4 * ldX));
+         gik = SCALAR_LOAD((Gik + 7 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 7 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 4 * ldX));
+         gik = SCALAR_LOAD((Gik + 8 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 8 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 65 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 4 * ldX));
+         gik = SCALAR_LOAD((Gik + 9 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 9 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 51 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 5 * ldX));
+         gik = SCALAR_LOAD((Gik + 0 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 0 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 5 * ldX));
+         gik = SCALAR_LOAD((Gik + 1 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 1 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 55 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 5 * ldX));
+         gik = SCALAR_LOAD((Gik + 2 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 2 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 5 * ldX));
+         gik = SCALAR_LOAD((Gik + 3 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 3 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 5 * ldX));
+         gik = SCALAR_LOAD((Gik + 4 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 4 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 60 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 5 * ldX));
+         gik = SCALAR_LOAD((Gik + 5 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 5 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 5 * ldX));
+         gik = SCALAR_LOAD((Gik + 6 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 6 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 5 * ldX));
+         gik = SCALAR_LOAD((Gik + 7 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 7 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 65 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 5 * ldX));
+         gik = SCALAR_LOAD((Gik + 8 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 8 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 66 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 5 * ldX));
+         gik = SCALAR_LOAD((Gik + 9 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 9 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 52 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 6 * ldX));
+         gik = SCALAR_LOAD((Gik + 0 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 0 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 56 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 6 * ldX));
+         gik = SCALAR_LOAD((Gik + 1 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 1 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 6 * ldX));
+         gik = SCALAR_LOAD((Gik + 2 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 2 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 61 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 6 * ldX));
+         gik = SCALAR_LOAD((Gik + 3 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 3 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 62 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 6 * ldX));
+         gik = SCALAR_LOAD((Gik + 4 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 4 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 6 * ldX));
+         gik = SCALAR_LOAD((Gik + 5 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 5 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 67 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 6 * ldX));
+         gik = SCALAR_LOAD((Gik + 6 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 6 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 68 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 6 * ldX));
+         gik = SCALAR_LOAD((Gik + 7 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 7 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 69 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 6 * ldX));
+         gik = SCALAR_LOAD((Gik + 8 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 8 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 70 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 6 * ldX));
+         gik = SCALAR_LOAD((Gik + 9 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 9 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 53 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 7 * ldX));
+         gik = SCALAR_LOAD((Gik + 0 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 0 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 57 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 7 * ldX));
+         gik = SCALAR_LOAD((Gik + 1 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 1 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 7 * ldX));
+         gik = SCALAR_LOAD((Gik + 2 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 2 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 62 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 7 * ldX));
+         gik = SCALAR_LOAD((Gik + 3 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 3 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 7 * ldX));
+         gik = SCALAR_LOAD((Gik + 4 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 4 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 7 * ldX));
+         gik = SCALAR_LOAD((Gik + 5 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 5 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 68 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 7 * ldX));
+         gik = SCALAR_LOAD((Gik + 6 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 6 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 69 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 7 * ldX));
+         gik = SCALAR_LOAD((Gik + 7 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 7 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 70 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 7 * ldX));
+         gik = SCALAR_LOAD((Gik + 8 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 8 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 71 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 7 * ldX));
+         gik = SCALAR_LOAD((Gik + 9 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 9 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 54 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 8 * ldX));
+         gik = SCALAR_LOAD((Gik + 0 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 0 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 58 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 8 * ldX));
+         gik = SCALAR_LOAD((Gik + 1 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 1 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 8 * ldX));
+         gik = SCALAR_LOAD((Gik + 2 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 2 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 63 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 8 * ldX));
+         gik = SCALAR_LOAD((Gik + 3 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 3 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 8 * ldX));
+         gik = SCALAR_LOAD((Gik + 4 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 4 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 65 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 8 * ldX));
+         gik = SCALAR_LOAD((Gik + 5 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 5 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 69 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 8 * ldX));
+         gik = SCALAR_LOAD((Gik + 6 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 6 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 70 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 8 * ldX));
+         gik = SCALAR_LOAD((Gik + 7 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 7 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 71 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 8 * ldX));
+         gik = SCALAR_LOAD((Gik + 8 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 8 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 72 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 8 * ldX));
+         gik = SCALAR_LOAD((Gik + 9 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 9 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 55 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 9 * ldX));
+         gik = SCALAR_LOAD((Gik + 0 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 0 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 59 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 9 * ldX));
+         gik = SCALAR_LOAD((Gik + 1 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 1 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 60 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 9 * ldX));
+         gik = SCALAR_LOAD((Gik + 2 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 2 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 64 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 9 * ldX));
+         gik = SCALAR_LOAD((Gik + 3 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 3 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 65 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 9 * ldX));
+         gik = SCALAR_LOAD((Gik + 4 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 4 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 66 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 9 * ldX));
+         gik = SCALAR_LOAD((Gik + 5 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 5 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 70 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 9 * ldX));
+         gik = SCALAR_LOAD((Gik + 6 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 6 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 71 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 9 * ldX));
+         gik = SCALAR_LOAD((Gik + 7 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 7 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 72 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 9 * ldX));
+         gik = SCALAR_LOAD((Gik + 8 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 8 * ldG), gik);
+         tx  = SCALAR_LOAD((temp + 73 * NPTS_LOCAL + p_inner));
+         wg  = SCALAR_LOAD((weights + p_outer + p_inner));
+
+         xik = SCALAR_LOAD((Xik + 9 * ldX));
+         gik = SCALAR_LOAD((Gik + 9 * ldG));
+
+         tx = SCALAR_MUL(tx, wg);
+         gik = SCALAR_FMA(tx, xik, gik);
+         SCALAR_STORE((Gik + 9 * ldG), gik);
       }
    }
 }

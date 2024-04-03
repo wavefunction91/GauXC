@@ -122,14 +122,14 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       // Evaluate first derivative of bfn wrt x
       basis_x_eval[ipt + 0*npts] = sqrt_3*y*(radial_eval + radial_eval_alpha*x*x);
       basis_x_eval[ipt + 1*npts] = sqrt_3*radial_eval_alpha*x*y*z;
-      basis_x_eval[ipt + 2*npts] = -x*(2*radial_eval + radial_eval_alpha*(x*x + y*y - 2*z*z))/2;
+      basis_x_eval[ipt + 2*npts] = x*(-2*radial_eval - radial_eval_alpha*(x*x + y*y - 2*z*z))/2;
       basis_x_eval[ipt + 3*npts] = sqrt_3*z*(radial_eval + radial_eval_alpha*x*x);
       basis_x_eval[ipt + 4*npts] = sqrt_3*x*(2*radial_eval + radial_eval_alpha*(x*x - y*y))/2;
 
       // Evaluate first derivative of bfn wrt y
       basis_y_eval[ipt + 0*npts] = sqrt_3*x*(radial_eval + radial_eval_alpha*y*y);
       basis_y_eval[ipt + 1*npts] = sqrt_3*z*(radial_eval + radial_eval_alpha*y*y);
-      basis_y_eval[ipt + 2*npts] = -y*(2*radial_eval + radial_eval_alpha*(x*x + y*y - 2*z*z))/2;
+      basis_y_eval[ipt + 2*npts] = y*(-2*radial_eval - radial_eval_alpha*(x*x + y*y - 2*z*z))/2;
       basis_y_eval[ipt + 3*npts] = sqrt_3*radial_eval_alpha*x*y*z;
       basis_y_eval[ipt + 4*npts] = sqrt_3*y*(-2*radial_eval + radial_eval_alpha*(x*x - y*y))/2;
 
@@ -150,7 +150,7 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       // Evaluate second derivative of bfn wrt xy
       basis_xy_eval[ipt + 0*npts] = sqrt_3*(radial_eval + radial_eval_alpha*x*x + radial_eval_alpha*y*y + radial_eval_alpha_squared*x*x*y*y);
       basis_xy_eval[ipt + 1*npts] = sqrt_3*x*z*(radial_eval_alpha + radial_eval_alpha_squared*y*y);
-      basis_xy_eval[ipt + 2*npts] = -x*y*(4*radial_eval_alpha + radial_eval_alpha_squared*(x*x + y*y - 2*z*z))/2;
+      basis_xy_eval[ipt + 2*npts] = x*y*(-4*radial_eval_alpha - radial_eval_alpha_squared*(x*x + y*y - 2*z*z))/2;
       basis_xy_eval[ipt + 3*npts] = sqrt_3*y*z*(radial_eval_alpha + radial_eval_alpha_squared*x*x);
       basis_xy_eval[ipt + 4*npts] = sqrt_3*radial_eval_alpha_squared*x*y*(x*x - y*y)/2;
 
@@ -220,8 +220,8 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       dang_eval_x_1 = sqrt_3*radial_eval_alpha*x*y*z;
       dang_eval_y_1 = sqrt_3*z*(radial_eval + radial_eval_alpha*y*y);
       dang_eval_z_1 = sqrt_3*y*(radial_eval + radial_eval_alpha*z*z);
-      dang_eval_x_2 = -x*(2*radial_eval + radial_eval_alpha*(x*x + y*y - 2*z*z))/2;
-      dang_eval_y_2 = -y*(2*radial_eval + radial_eval_alpha*(x*x + y*y - 2*z*z))/2;
+      dang_eval_x_2 = x*(-2*radial_eval - radial_eval_alpha*(x*x + y*y - 2*z*z))/2;
+      dang_eval_y_2 = y*(-2*radial_eval - radial_eval_alpha*(x*x + y*y - 2*z*z))/2;
       dang_eval_z_2 = z*(4*radial_eval - radial_eval_alpha*(x*x + y*y - 2*z*z))/2;
       dang_eval_x_3 = sqrt_3*z*(radial_eval + radial_eval_alpha*x*x);
       dang_eval_y_3 = sqrt_3*radial_eval_alpha*x*y*z;
