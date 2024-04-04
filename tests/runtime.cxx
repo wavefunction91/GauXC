@@ -17,7 +17,7 @@ void test_basic_check(Args&&... args) {
       REQUIRE( rt.shared_usage_count() == 1 );
 
       SECTION("MPI Data") {
-        #ifdef GAUXC_ENABLE_MPI
+        #ifdef GAUXC_HAS_MPI
         REQUIRE( rt.comm() == MPI_COMM_WORLD );
         int world_rank, world_size;
         MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
@@ -56,7 +56,7 @@ TEST_CASE("Runtime", "[runtime]") {
        test_basic_check<RuntimeEnvironment>(GAUXC_MPI_CODE(MPI_COMM_WORLD)); 
     }
 
-    #ifdef GAUXC_ENABLE_DEVICE
+    #ifdef GAUXC_HAS_DEVICE
     SECTION("Device") {
 
       SECTION("Memory Wrapper") {

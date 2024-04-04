@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -57,7 +57,7 @@ size_t HipAoSScheme1<Base>::Data::get_submat_chunk_size(int32_t LDA, int32_t dev
 }
 
 template struct HipAoSScheme1<AoSScheme1Base>::Data;
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
 template struct HipAoSScheme1<AoSScheme1MAGMABase>::Data;
 #endif
 

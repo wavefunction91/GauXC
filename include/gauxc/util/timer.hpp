@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -12,7 +12,7 @@
 #include <type_traits>
 
 #include <gauxc/gauxc_config.hpp>
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
 #include <mpi.h>
 #endif
 
@@ -162,7 +162,7 @@ public:
 };
 
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
 class MPITimer {
 
   template <class Rep, class Period>

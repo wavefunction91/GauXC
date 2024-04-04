@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -8,7 +8,7 @@
 #include "collocation.hpp"
 
 
-#ifdef GAUXC_ENABLE_GAU2GRID
+#ifdef GAUXC_HAS_GAU2GRID
   #include "gau2grid/gau2grid.h"
 #else
   #include "collocation/collocation_angular_cartesian.hpp"
@@ -26,7 +26,7 @@ void gau2grid_collocation( size_t                  npts,
                            const int32_t*          shell_mask,
                            double*                 basis_eval ) {
 
-#ifdef GAUXC_ENABLE_GAU2GRID
+#ifdef GAUXC_HAS_GAU2GRID
 
   std::allocator<double> a;
   auto* rv = a.allocate( npts * nbe );
@@ -83,7 +83,7 @@ void gau2grid_collocation_gradient( size_t                  npts,
                                     double*                 dbasis_y_eval,
                                     double*                 dbasis_z_eval ) {
 
-#ifdef GAUXC_ENABLE_GAU2GRID
+#ifdef GAUXC_HAS_GAU2GRID
 
   std::allocator<double> a;
   auto* rv = a.allocate( 4 * npts * nbe );

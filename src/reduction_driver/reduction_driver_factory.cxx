@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -8,7 +8,7 @@
 #include "reduction_driver_impl.hpp"
 #include "host/basic_mpi_reduction_driver.hpp"
 
-#ifdef GAUXC_ENABLE_NCCL
+#ifdef GAUXC_HAS_NCCL
 #include "device/nccl_reduction_driver.hpp"
 #endif
 
@@ -32,7 +32,7 @@ std::shared_ptr<ReductionDriver> ReductionDriverFactory::get_shared_instance(
   if( kernel_name == "BASICMPI" )
     ptr = std::make_unique<BasicMPIReductionDriver>(rt);
 
-  #ifdef GAUXC_ENABLE_NCCL
+  #ifdef GAUXC_HAS_NCCL
     if( kernel_name == "NCCL" )
       ptr = std::make_unique<NCCLReductionDriver>(rt);
   #endif

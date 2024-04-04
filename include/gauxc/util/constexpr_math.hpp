@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -45,7 +45,7 @@ inline constexpr T sqrt_pi_ov_2 = 0.88622692545275801364;
 }
 
 inline double rsqrt( double x ) {
-#ifdef GAUXC_ENABLE_FAST_RSQRT
+#ifdef GAUXC_USE_FAST_RSQRT
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
   double y = x;
   double x2 = y * 0.5;

@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -8,7 +8,7 @@
 #include "load_balancer_impl.hpp"
 #include "host/load_balancer_host_factory.hpp"
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
 #include "device/load_balancer_device_factory.hpp"
 #endif
 
@@ -19,20 +19,19 @@ LoadBalancerFactory::LoadBalancerFactory( ExecutionSpace ex, std::string kernel_
 
 std::shared_ptr<LoadBalancer> LoadBalancerFactory::get_shared_instance(
   const RuntimeEnvironment& rt,
-  const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis,
-  size_t pad_value
+  const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis
 ) {
 
   switch(ex_) {
     case ExecutionSpace::Host:
       using host_factory = LoadBalancerHostFactory;
       return host_factory::get_shared_instance(kernel_name_,
-        rt, mol, mg, basis, pad_value );
-    #ifdef GAUXC_ENABLE_DEVICE
+        rt, mol, mg, basis );
+    #ifdef GAUXC_HAS_DEVICE
     case ExecutionSpace::Device:
       using device_factory = LoadBalancerDeviceFactory;
       return device_factory::get_shared_instance(kernel_name_,
-        rt, mol, mg, basis, pad_value );
+        rt, mol, mg, basis );
     #endif
     default:
       GAUXC_GENERIC_EXCEPTION("Unrecognized Execution Space");
@@ -43,11 +42,10 @@ std::shared_ptr<LoadBalancer> LoadBalancerFactory::get_shared_instance(
 
 LoadBalancer LoadBalancerFactory::get_instance(
   const RuntimeEnvironment& rt, 
-  const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis,
-  size_t pad_value
+  const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis
 ) {
 
-  auto ptr = get_shared_instance(rt, mol, mg, basis, pad_value);
+  auto ptr = get_shared_instance(rt, mol, mg, basis);
   return LoadBalancer(std::move(*ptr));
 
 }

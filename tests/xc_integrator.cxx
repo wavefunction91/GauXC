@@ -24,7 +24,6 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   std::string reference_file, 
   functional_type& func, 
   PruningScheme pruning_scheme,
-  size_t quad_pad_value,
   bool check_grad,
   bool check_integrate_den,
   bool check_k,
@@ -139,7 +138,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
   // Construct Load Balancer
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
-  auto lb = lb_factory.get_instance(rt, mol, mg, basis, quad_pad_value);
+  auto lb = lb_factory.get_instance(rt, mol, mg, basis);
 
   // Construct Weights Module
   MolecularWeightsFactory mw_factory( ex, "Default", MolecularWeightsSettings{} );
@@ -258,63 +257,63 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
 void test_integrator(std::string reference_file, functional_type& func, PruningScheme pruning_scheme) {
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
   auto rt = DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.9);
 #else
   auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
 #endif
 
-#ifdef GAUXC_ENABLE_HOST
+#ifdef GAUXC_HAS_HOST
     SECTION( "Host" ) {
       test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
-        pruning_scheme, 1, true, true, true );
+        pruning_scheme, true, true, true );
     }
 #endif
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
   SECTION( "Device" ) {
     bool check_grad = true;
     bool check_k    = true;
-    #ifdef GAUXC_ENABLE_HIP
+    #ifdef GAUXC_HAS_HIP
     check_grad = false;
     check_k    = false;
     #endif
     SECTION( "Incore - MPI Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
-        reference_file, func, pruning_scheme, 1, 
+        reference_file, func, pruning_scheme,  
         check_grad, true, check_k, "Default" );
     }
 
-    #ifdef GAUXC_ENABLE_MAGMA
+    #ifdef GAUXC_HAS_MAGMA
     SECTION( "Incore - MPI Reduction - MAGMA" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
         reference_file, func, pruning_scheme,
-        1, false, true, check_k, "Default", "Default", 
+        false, true, check_k, "Default", "Default", 
         "Scheme1-MAGMA" );
     }
     #endif
 
-    #ifdef GAUXC_ENABLE_CUTLASS
+    #ifdef GAUXC_HAS_CUTLASS
     SECTION( "Incore - MPI Reduction - CUTLASS" ) {
       test_xc_integrator( ExecutionSpace::Device, rt, 
         reference_file, func, pruning_scheme,
-        1, false, true, false, "Default", "Default", 
+        false, true, false, "Default", "Default", 
         "Scheme1-CUTLASS" );
     }
     #endif
 
 
-    #ifdef GAUXC_ENABLE_NCCL
+    #ifdef GAUXC_HAS_NCCL
     SECTION( "Incore - NCCL Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,
         reference_file, func, pruning_scheme, 
-        1, false, false, false, "Default", "NCCL" );
+        false, false, false, "Default", "NCCL" );
     }
     #endif
 
     SECTION( "ShellBatched" ) {
       test_xc_integrator( ExecutionSpace::Device, rt, 
-        reference_file, func, pruning_scheme, 1, 
+        reference_file, func, pruning_scheme,  
         false, false, false, "ShellBatched" );
     }
   }

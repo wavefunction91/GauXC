@@ -1,5 +1,5 @@
 #
-# GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+# GauXC Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory (subject to receipt of
 # any required approvals from the U.S. Dept. of Energy). All rights reserved.
 #
@@ -10,6 +10,7 @@
 if( GAUXC_ENABLE_OPENMP ) 
   message( STATUS "GauXC Enabling OpenMP" )
   find_package( OpenMP  REQUIRED )
+  set(GAUXC_HAS_OPENMP TRUE CACHE BOOL "GauXC Has OpenMP" FORCE)
 else()
   message( STATUS "GauXC Disabling OpenMP" )
 endif()
@@ -17,6 +18,7 @@ endif()
 if( GAUXC_ENABLE_MPI )
   message( STATUS "GauXC Enabling MPI" )
   find_package( MPI REQUIRED )
+  set(GAUXC_HAS_MPI TRUE CACHE BOOL "GauXC Has MPI" FORCE)
 else()
   message( STATUS "GauXC Disabling MPI" )
 endif()
@@ -84,7 +86,7 @@ else()
 endif()
 
 
-if( GAUXC_ENABLE_MPI )
+if( GAUXC_HAS_MPI )
   target_link_libraries( gauxc PUBLIC MPI::MPI_C MPI::MPI_CXX )
 endif()
 
@@ -116,6 +118,43 @@ install( TARGETS gauxc ${GAUXC_EXPORT_DEPENDENCIES}
 )
 
 set_target_properties( gauxc PROPERTIES EXPORT_NAME gauxc )
+
+set(export_properties
+  # currently configurable properties 
+  "GAUXC_HAS_HOST"
+  "GAUXC_HAS_DEVICE"
+  "GAUXC_HAS_CUDA"
+  "GAUXC_HAS_HIP"
+  "GAUXC_HAS_MAGMA"
+  "GAUXC_HAS_CUTLASS"
+  "GAUXC_HAS_NCCL"
+  "GAUXC_HAS_MPI"
+  "GAUXC_HAS_OPENMP"
+  
+  # may become configurable in the future
+  "GAUXC_CPU_XC_MAX_AM"
+  "GAUXC_CPU_SNLINK_MAX_AM"
+  "GAUXC_GPU_XC_MAX_AM"
+  "GAUXC_GPU_SNLINK_MAX_AM"
+)
+
+set_target_properties(gauxc
+  PROPERTIES
+    "GAUXC_HAS_HOST"       ${GAUXC_HAS_HOST}
+    "GAUXC_HAS_DEVICE"     ${GAUXC_HAS_DEVICE}
+    "GAUXC_HAS_CUDA"       ${GAUXC_HAS_CUDA}
+    "GAUXC_HAS_HIP"        ${GAUXC_HAS_HIP}
+    "GAUXC_HAS_MAGMA"      ${GAUXC_HAS_MAGMA}
+    "GAUXC_HAS_CUTLASS"    ${GAUXC_HAS_CUTLASS}
+    "GAUXC_HAS_NCCL"       ${GAUXC_HAS_NCCL}
+    "GAUXC_HAS_MPI"        ${GAUXC_HAS_MPI}
+    "GAUXC_HAS_OPENMP"     ${GAUXC_HAS_OPENMP}
+    "GAUXC_CPU_XC_MAX_AM"     6 
+    "GAUXC_CPU_SNLINK_MAX_AM" 6
+    "GAUXC_GPU_XC_MAX_AM"     4 
+    "GAUXC_GPU_SNLINK_MAX_AM" 2
+)
+set_property(TARGET gauxc APPEND PROPERTY EXPORT_PROPERTIES "${export_properties}")
 
 # Export build tree
 export(EXPORT gauxc-targets

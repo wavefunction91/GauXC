@@ -35,8 +35,8 @@ option( GAUXC_ENABLE_OPENMP     "Enable OpenMP Compilation"   ON  )
 option( GAUXC_ENABLE_TESTS      "Enable Unit Tests"           ON  )
 option( GAUXC_ENABLE_GAU2GRID   "Enable Gau2Grid Collocation" ON  )
 option( GAUXC_ENABLE_HDF5       "Enable HDF5 Bindings"        ON  )
-option( GAUXC_ENABLE_FAST_RSQRT "Enable Fast RSQRT"           OFF )
-option( GAUXC_BLAS_PREFER_ILP64 "Enable ILP64 for host BLAS"  OFF )
+option( GAUXC_USE_FAST_RSQRT    "Enable Fast RSQRT"           OFF )
+option( GAUXC_BLAS_PREFER_ILP64 "Prefer ILP64 for host BLAS"  OFF )
 
 include(CMakeDependentOption)
 cmake_dependent_option( GAUXC_ENABLE_MAGMA    
@@ -52,32 +52,67 @@ cmake_dependent_option( GAUXC_ENABLE_CUTLASS
   "GAUXC_ENABLE_CUDA"             OFF 
 )
 
+# Default the feature variables
+set( GAUXC_HAS_HOST       FALSE CACHE BOOL "" FORCE )
+set( GAUXC_HAS_CUDA       FALSE CACHE BOOL "" FORCE )
+set( GAUXC_HAS_HIP        FALSE CACHE BOOL "" FORCE )
+set( GAUXC_HAS_MPI        FALSE CACHE BOOL "" FORCE )
+set( GAUXC_HAS_OPENMP     FALSE CACHE BOOL "" FORCE )
+set( GAUXC_HAS_GAU2GRID   FALSE CACHE BOOL "" FORCE )
+set( GAUXC_HAS_HDF5       FALSE CACHE BOOL "" FORCE )
+set( GAUXC_HAS_MAGMA      FALSE CACHE BOOL "" FORCE )
+set( GAUXC_HAS_NCCL       FALSE CACHE BOOL "" FORCE )
+set( GAUXC_HAS_CUTLASS    FALSE CACHE BOOL "" FORCE )
+set( GAUXC_BLAS_IS_LP64   FALSE CACHE BOOL "" FORCE )
+
+mark_as_advanced( FORCE 
+  GAUXC_HAS_HOST     
+  GAUXC_HAS_CUDA     
+  GAUXC_HAS_HIP      
+  GAUXC_HAS_MPI      
+  GAUXC_HAS_OPENMP   
+  GAUXC_HAS_GAU2GRID 
+  GAUXC_HAS_HDF5     
+  GAUXC_HAS_MAGMA    
+  GAUXC_HAS_NCCL     
+  GAUXC_HAS_CUTLASS  
+  GAUXC_BLAS_IS_LP64 
+)
+
 
 if( NOT GAUXC_ENABLE_GAU2GRID )
   message( FATAL_ERROR "Gau2Grid is currently a required dependency which 
                         will be made optional in a future release of GauXC [WIP]" ) 
 endif()
 
-# Decided if we're compiling device bindings
-if( GAUXC_ENABLE_CUDA OR GAUXC_ENABLE_HIP )
-  set( GAUXC_ENABLE_DEVICE TRUE CACHE BOOL "Enable Device Code" )
-else()
-  set( GAUXC_ENABLE_DEVICE FALSE CACHE BOOL "Enable Device Code" )
-endif()
 
-
-
-if( NOT (${GAUXC_ENABLE_HOST} OR ${GAUXC_ENABLE_DEVICE}) )
-  message( FATAL_ERROR "Neither Host nor Device Integrators have been enabled!" )
+if( GAUXC_ENABLE_HOST ) 
+  set(GAUXC_HAS_HOST TRUE CACHE BOOL "GauXC has Host Bindings" FORCE)
 endif()
 
 if( GAUXC_ENABLE_CUDA )
   enable_language( CUDA )
+  set( GAUXC_HAS_CUDA TRUE CACHE BOOL "GauXC has CUDA and will build CUDA bindings" FORCE )
 endif()
 
 if( GAUXC_ENABLE_HIP )
   enable_language( HIP )
+  set( GAUXC_HAS_HIP TRUE CACHE BOOL "GauXC has HIP and will build HIP bindings" FORCE )
 endif()
+
+# Decided if we're compiling device bindings
+if( GAUXC_HAS_CUDA OR GAUXC_HAS_HIP )
+  set( GAUXC_HAS_DEVICE TRUE CACHE BOOL "Enable Device Code" )
+else()
+  set( GAUXC_HAS_DEVICE FALSE CACHE BOOL "Enable Device Code" )
+endif()
+
+
+
+if( NOT (${GAUXC_HAS_HOST} OR ${GAUXC_HAS_DEVICE}) )
+  message( FATAL_ERROR "Neither Host nor Device Integrators have been enabled!" )
+endif()
+
 
 add_subdirectory( src )
 

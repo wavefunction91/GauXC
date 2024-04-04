@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -39,10 +39,10 @@ void CudaAoSScheme1<Base>::partition_weights( XCDeviceData* _data ) {
 
 
 template struct CudaAoSScheme1<AoSScheme1Base>;
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
 template struct CudaAoSScheme1<AoSScheme1MAGMABase>;
 #endif
-#ifdef GAUXC_ENABLE_CUTLASS
+#ifdef GAUXC_HAS_CUTLASS
 template struct CudaAoSScheme1<AoSScheme1CUTLASSBase>;
 #endif
 

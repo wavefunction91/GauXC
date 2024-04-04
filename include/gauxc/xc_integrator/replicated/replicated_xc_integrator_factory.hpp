@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -7,7 +7,7 @@
  */
 #pragma once
 #include <gauxc/xc_integrator/replicated/replicated_xc_host_integrator.hpp>
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
 #include <gauxc/xc_integrator/replicated/replicated_xc_device_integrator.hpp>
 #endif
 #include <gauxc/xc_integrator/replicated/impl.hpp>
@@ -54,7 +54,7 @@ struct ReplicatedXCIntegratorFactory {
           )
         );
 
-      #ifdef GAUXC_ENABLE_DEVICE
+      #ifdef GAUXC_HAS_DEVICE
       using device_factory = 
         detail::ReplicatedXCDeviceIntegratorFactory<value_type>;
       case ExecutionSpace::Device:

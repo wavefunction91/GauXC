@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -14,7 +14,7 @@
 
 namespace GauXC {
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
 MPI_Datatype get_mpi_datatype( std::type_index idx ) {
 
   static std::map<std::type_index, MPI_Datatype> map {
@@ -67,7 +67,7 @@ void BasicMPIReductionDriver::allreduce_typeerased( const void* src, void* dest,
   if( world_size == 1 ) {
     std::memcpy( dest, src, size * get_dtype_size(idx)); 
   } else  {
-    #ifdef GAUXC_ENABLE_MPI 
+    #ifdef GAUXC_HAS_MPI 
     MPI_Allreduce( src, dest, size, get_mpi_datatype(idx), get_mpi_op(op), runtime_.comm() );
     #endif
   }
@@ -83,7 +83,7 @@ void BasicMPIReductionDriver::allreduce_inplace_typeerased( void* data, size_t s
   int world_size = runtime_.comm_size();
 
   if(world_size > 1) {
-    #ifdef GAUXC_ENABLE_MPI
+    #ifdef GAUXC_HAS_MPI
     // Test of communicator is an inter-communicator
     int inter_flag;
     MPI_Comm_test_inter( runtime_.comm(), &inter_flag );

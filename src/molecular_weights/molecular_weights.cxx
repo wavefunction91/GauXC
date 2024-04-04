@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -8,7 +8,7 @@
 #include <gauxc/exceptions.hpp>
 #include "molecular_weights_impl.hpp"
 #include "host/host_molecular_weights.hpp"
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
 #include "device/device_molecular_weights.hpp"
 #endif
 
@@ -55,7 +55,7 @@ std::shared_ptr<MolecularWeights>
       detail::make_host_mol_weights_impl(std::move(lwd), settings_)
     );
   } else {
-  #ifdef GAUXC_ENABLE_DEVICE
+  #ifdef GAUXC_HAS_DEVICE
     return std::make_shared<MolecularWeights>(
       detail::make_device_mol_weights_impl(std::move(lwd), settings_)
     );

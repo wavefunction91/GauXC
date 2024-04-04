@@ -1,5 +1,5 @@
 #
-# GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+# GauXC Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory (subject to receipt of
 # any required approvals from the U.S. Dept. of Energy). All rights reserved.
 #
@@ -16,6 +16,7 @@ target_sources( gauxc PRIVATE
 if( GAUXC_ENABLE_MAGMA )
   find_package( MAGMA REQUIRED )
   target_link_libraries( gauxc PUBLIC MAGMA::magma )
+  set(GAUXC_HAS_MAGMA TRUE CACHE BOOL "GauXC has MAGMA" FORCE)
 
   target_sources( gauxc PRIVATE 
     scheme1_magma_base.cxx
@@ -23,10 +24,10 @@ if( GAUXC_ENABLE_MAGMA )
   )
 endif()
 
-if(GAUXC_ENABLE_CUDA)
+if(GAUXC_HAS_CUDA)
   add_subdirectory( cuda )
 endif()
 
-if(GAUXC_ENABLE_HIP)
+if(GAUXC_HAS_HIP)
   add_subdirectory( hip )
 endif()

@@ -1,5 +1,5 @@
 #
-# GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+# GauXC Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory (subject to receipt of
 # any required approvals from the U.S. Dept. of Energy). All rights reserved.
 #
@@ -14,5 +14,6 @@ if( GAUXC_ENABLE_NCCL )
   message( STATUS "NCCL Has Been Enabled" )
   find_package( NCCL REQUIRED )
   target_link_libraries( gauxc PUBLIC NCCL::nccl )
+  set(GAUXC_HAS_NCCL TRUE CACHE BOOL "GauXC has NCCL" FORCE)
 endif()
 

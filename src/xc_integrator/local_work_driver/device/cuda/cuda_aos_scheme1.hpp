@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -41,10 +41,10 @@ struct CudaAoSScheme1 : public Base {
 };
 
 extern template struct CudaAoSScheme1<AoSScheme1Base>;
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
 extern template struct CudaAoSScheme1<AoSScheme1MAGMABase>;
 #endif
-#ifdef GAUXC_ENABLE_CUTLASS
+#ifdef GAUXC_HAS_CUTLASS
 extern template struct CudaAoSScheme1<AoSScheme1CUTLASSBase>;
 #endif
 
@@ -64,10 +64,10 @@ struct CudaAoSScheme1<Base>::Data : public Base::Data {
 };
 
 extern template struct CudaAoSScheme1<AoSScheme1Base>::Data;
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
 extern template struct CudaAoSScheme1<AoSScheme1MAGMABase>::Data;
 #endif
-#ifdef GAUXC_ENABLE_CUTLASS
+#ifdef GAUXC_HAS_CUTLASS
 extern template struct CudaAoSScheme1<AoSScheme1CUTLASSBase>::Data;
 #endif
 

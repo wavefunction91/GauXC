@@ -26,13 +26,13 @@ using namespace ExchCXX;
 
 int main(int argc, char** argv) {
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
   MPI_Init( NULL, NULL );
 #endif
   {
 
     // Set up runtimes
-    #ifdef GAUXC_ENABLE_DEVICE
+    #ifdef GAUXC_HAS_DEVICE
     auto rt = DeviceRuntimeEnvironment( GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.9 );
     #else
     auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
@@ -106,7 +106,7 @@ int main(int argc, char** argv) {
     OPTIONAL_KEYWORD( "EXX.TOL_K", sn_link_settings.k_tol,      double );
 
 
-    #ifdef GAUXC_ENABLE_DEVICE
+    #ifdef GAUXC_HAS_DEVICE
     std::map< std::string, ExecutionSpace > exec_space_map = {
       { "HOST",   ExecutionSpace::Host },
       { "DEVICE", ExecutionSpace::Device }
@@ -205,16 +205,15 @@ int main(int argc, char** argv) {
       std::string den_str = "/DENSITY";
       std::string vxc_str = "/VXC";
 
-      if (file.exist("/DENSITY_Z") ) { rks = false; }
-      if (file.exist("/DENSITY_Z") and not file.exist("/DENSITY_Y") and not file.exist("/DENSITY_X")) {
-          den_str = "/DENSITY_SCALAR";
-          vxc_str = "/VXC_SCALAR";
-          uks = true;
-      }
-      if (file.exist("/DENSITY_Z") and file.exist("/DENSITY_Y") and file.exist("/DENSITY_X")) {
-          den_str = "/DENSITY_SCALAR";
-          vxc_str = "/VXC_SCALAR";
+      if (file.exist("/DENSITY_Z") ) {
+        rks = false;
+        den_str = "/DENSITY_SCALAR";
+        vxc_str = "/VXC_SCALAR";
+        if (file.exist("/DENSITY_Y") and file.exist("/DENSITY_X")) {
           gks = true;
+        } else {
+          uks = true;
+        }
       }
 
 
@@ -330,15 +329,15 @@ int main(int argc, char** argv) {
 
     }
     // Setup XC functional
-    auto Spin = (uks or gks) ? Spin::Polarized : Spin::Unpolarized;
+    auto polar = (uks or gks) ? Spin::Polarized : Spin::Unpolarized;
     functional_type func( Backend::builtin, functional_map.value(func_spec), 
-      Spin );
+      polar );
     // Setup Integrator
     XCIntegratorFactory<matrix_type> integrator_factory( int_exec_space , 
       "Replicated", integrator_kernel, lwd_kernel, reduction_kernel );
     auto integrator = integrator_factory.get_instance( func, lb );
     
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
     MPI_Barrier( MPI_COMM_WORLD );
 #endif
     auto xc_int_start = std::chrono::high_resolution_clock::now();
@@ -348,17 +347,10 @@ int main(int argc, char** argv) {
 
     std::cout << std::scientific << std::setprecision(12);
     if( integrate_den ) {
-      if( rks ) {
-        N_EL = integrator.integrate_den( P );
+      if( (uks or gks) and !world_rank ) {
+        std::cout << "Warning: integrate_den will only integrate the scalar density!" << std::endl;
       }
-      else if( uks ) {
-        std::cout << "Warning: integrate_den + UKS NYI!" << std::endl;
-        //N_EL = integrator.integrate_den( P, Pz );
-      }
-      else if( gks ) {
-        std::cout << "Warning: integrate_den + GKS NYI!" << std::endl;
-        //N_EL = integrator.integrate_den( P, Pz, Py, Px );
-      }
+      N_EL = integrator.integrate_den( P );
       if(!world_rank) std::cout << "N_EL = " << N_EL << std::endl;
     } else {
       N_EL = N_EL_ref;
@@ -379,9 +371,13 @@ int main(int argc, char** argv) {
     } else {
       EXC = EXC_ref;
       VXC = VXC_ref;
-      VXCz = VXCz_ref;
-      VXCy = VXCy_ref;
-      VXCx = VXCx_ref;
+      if( not rks ) {
+        VXCz = VXCz_ref;
+        if( gks ) {
+          VXCy = VXCy_ref;
+          VXCx = VXCx_ref;
+        }
+      }
     }
 
     std::vector<double> EXC_GRAD;
@@ -416,14 +412,14 @@ int main(int argc, char** argv) {
       //K = -K_tmp;
     } else { K = K_ref; }
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
     MPI_Barrier( MPI_COMM_WORLD );
 #endif
 
     auto xc_int_end   = std::chrono::high_resolution_clock::now();
     double xc_int_dur = std::chrono::duration<double>( xc_int_end - xc_int_start ).count();
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
     util::MPITimer mpi_lb_timings( MPI_COMM_WORLD, lb->get_timings() );
     util::MPITimer mpi_xc_timings( MPI_COMM_WORLD, integrator.get_timings() );
     util::MPITimer mpi_weight_timings( MPI_COMM_WORLD, mw.get_timings() );
@@ -433,14 +429,14 @@ int main(int argc, char** argv) {
       std::cout << std::scientific << std::setprecision(5) << std::endl;
       std::cout << "Load Balancer Timings" << std::endl;
       for( const auto& [name, dur] : lb->get_timings().all_timings() ) {
-        #ifdef GAUXC_ENABLE_MPI
+        #ifdef GAUXC_HAS_MPI
         const auto avg     = mpi_lb_timings.get_avg_duration(name).count();
         const auto min     = mpi_lb_timings.get_min_duration(name).count();
         const auto max     = mpi_lb_timings.get_max_duration(name).count();
         const auto std_dev = mpi_lb_timings.get_std_dev(name).count();
         #endif
         std::cout << "  " << std::setw(30) << name << ": " 
-        #ifdef GAUXC_ENABLE_MPI
+        #ifdef GAUXC_HAS_MPI
                   << "AVG = " << std::setw(12) << avg << " ms, " 
                   << "MIN = " << std::setw(12) << min << " ms, " 
                   << "MAX = " << std::setw(12) << max << " ms, " 
@@ -452,14 +448,14 @@ int main(int argc, char** argv) {
 
       std::cout << "MolecularWeights Timings" << std::endl;
       for( const auto& [name, dur] : mw.get_timings().all_timings() ) {
-        #ifdef GAUXC_ENABLE_MPI
+        #ifdef GAUXC_HAS_MPI
         const auto avg     = mpi_weight_timings.get_avg_duration(name).count();
         const auto min     = mpi_weight_timings.get_min_duration(name).count();
         const auto max     = mpi_weight_timings.get_max_duration(name).count();
         const auto std_dev = mpi_weight_timings.get_std_dev(name).count();
         #endif
         std::cout << "  " << std::setw(30) << name << ": " 
-        #ifdef GAUXC_ENABLE_MPI
+        #ifdef GAUXC_HAS_MPI
                   << "AVG = " << std::setw(12) << avg << " ms, " 
                   << "MIN = " << std::setw(12) << min << " ms, " 
                   << "MAX = " << std::setw(12) << max << " ms, " 
@@ -472,14 +468,14 @@ int main(int argc, char** argv) {
 
       std::cout << "Integrator Timings" << std::endl;
       for( const auto& [name, dur] : integrator.get_timings().all_timings() ) {
-        #ifdef GAUXC_ENABLE_MPI
+        #ifdef GAUXC_HAS_MPI
         const auto avg     = mpi_xc_timings.get_avg_duration(name).count();
         const auto min     = mpi_xc_timings.get_min_duration(name).count();
         const auto max     = mpi_xc_timings.get_max_duration(name).count();
         const auto std_dev = mpi_xc_timings.get_std_dev(name).count();
         #endif
         std::cout << "  " << std::setw(40) << name << ": " 
-        #ifdef GAUXC_ENABLE_MPI
+        #ifdef GAUXC_HAS_MPI
                   << "AVG = " << std::setw(12) << avg << " ms, " 
                   << "MIN = " << std::setw(12) << min << " ms, " 
                   << "MAX = " << std::setw(12) << max << " ms, " 
@@ -618,7 +614,7 @@ int main(int argc, char** argv) {
     }
 
   }
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
   MPI_Finalize();
 #endif
 

@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -17,7 +17,7 @@ HIPBackend::HIPBackend() {
 
   hipblasSetStream( *master_handle, *master_stream );
 
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
   // Setup MAGMA queue with CUDA stream / cuBLAS handle
   master_magma_queue_ = std::make_shared< util::magma_queue >(0, *master_stream, *master_handle);
 #endif

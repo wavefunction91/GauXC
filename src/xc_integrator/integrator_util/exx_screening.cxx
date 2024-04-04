@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -11,7 +11,7 @@
 #include <chrono>
 //#include <mpi.h>
 //#include <fstream>
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_HAS_CUDA
 #include "exceptions/cuda_exception.hpp"
 #endif
 
@@ -27,6 +27,7 @@ namespace GauXC {
 
 void exx_ek_screening( 
   const BasisSet<double>& basis, const BasisSetMap& basis_map,
+  const ShellPairCollection<double>& shpairs,
   const double* P_abs, size_t ldp, const double* V_shell_max, size_t ldv,
   double eps_E, double eps_K, LocalHostWorkDriver* lwd, 
   exx_detail::host_task_iterator task_begin,
@@ -36,8 +37,6 @@ void exx_ek_screening(
   const size_t nbf     = basis.nbf();
   const size_t nshells = basis.nshells();
   const size_t ntasks  = std::distance(task_begin, task_end);
-
-  ShellPairCollection<double> shpairs(basis);
 
   std::vector<double> task_max_bf_sum(ntasks);
   std::vector<double> task_max_bfn(nbf * ntasks);
@@ -236,7 +235,7 @@ void exx_ek_screening(
 }
 
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
 void exx_ek_screening( 
   const BasisSet<double>& basis, const BasisSetMap& basis_map,
   const ShellPairCollection<double>& shpairs,

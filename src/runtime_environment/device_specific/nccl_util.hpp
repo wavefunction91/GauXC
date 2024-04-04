@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -8,9 +8,9 @@
 #pragma once
 #include <gauxc/gauxc_config.hpp>
 
-#ifdef GAUXC_ENABLE_CUDA
-#ifdef GAUXC_ENABLE_MPI
-#ifdef GAUXC_ENABLE_NCCL
+#ifdef GAUXC_HAS_CUDA
+#ifdef GAUXC_HAS_MPI
+#ifdef GAUXC_HAS_NCCL
 
 #include <nccl.h>
 

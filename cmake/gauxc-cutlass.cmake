@@ -29,3 +29,5 @@ set_target_properties( gauxc_cutlass PROPERTIES
   INTERFACE_INCLUDE_DIRECTORIES 
     "${cutlass_SOURCE_DIR}/include;${cutlass_SOURCE_DIR}/tools/util/include"
 )
+
+set(GAUXC_HAS_CUTLASS TRUE CACHE BOOL "GauXC has CUTLASS" FORCE) 

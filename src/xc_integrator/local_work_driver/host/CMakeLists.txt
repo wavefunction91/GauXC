@@ -1,5 +1,5 @@
 #
-# GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+# GauXC Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory (subject to receipt of
 # any required approvals from the U.S. Dept. of Energy). All rights reserved.
 #
@@ -35,6 +35,8 @@ set(GAUXC_BLAS_IS_LP64 ${BLAS_IS_LP64} CACHE BOOL "BLAS used in GauXC is LP64" F
 
 target_link_libraries( gauxc PUBLIC BLAS::BLAS )
 
+# XXX: Be careful, I once knew why this logic was here, now no one does... 
+#      It's needed, change it and suffer the consequences
 if( GAUXC_ENABLE_GAU2GRID AND TARGET gau2grid::gg )
   target_link_libraries( gauxc PUBLIC gau2grid::gg )
 endif()

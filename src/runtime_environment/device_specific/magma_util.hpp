@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -8,7 +8,7 @@
 #pragma once
 #include <gauxc/gauxc_config.hpp>
 
-#ifdef GAUXC_ENABLE_MAGMA
+#ifdef GAUXC_HAS_MAGMA
 #include <magma_v2.h>
 #include "exceptions/magma_exception.hpp"
 
@@ -28,14 +28,14 @@ struct magma_queue {
 
   inline magma_queue() : magma_queue(0) { }
 
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_HAS_CUDA
   inline magma_queue( magma_int_t dev, cudaStream_t stream, cublasHandle_t handle ) {
     magma_queue_create_from_cuda( dev, stream, handle, NULL, &queue );
   }
 
   inline magma_queue( cudaStream_t stream, cublasHandle_t handle ) :
     magma_queue( 0, stream, handle ) { }
-#elif defined(GAUXC_ENABLE_HIP)
+#elif defined(GAUXC_HAS_HIP)
   inline magma_queue( magma_int_t dev, hipStream_t stream, hipblasHandle_t handle ) {
     magma_queue_create_from_hip( dev, stream, handle, NULL, &queue );
   }

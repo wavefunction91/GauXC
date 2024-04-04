@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -63,10 +63,6 @@ size_t LoadBalancer::max_npts_x_nbe() const {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->max_npts_x_nbe();
 }
-size_t LoadBalancer::pad_value() const {
-  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-  return pimpl_->pad_value();
-}
 
 
 
@@ -88,6 +84,11 @@ const LoadBalancer::basis_map_type& LoadBalancer::basis_map() const {
   return pimpl_->basis_map();
 }
 const LoadBalancer::shell_pair_type& LoadBalancer::shell_pairs() const {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->shell_pairs();
+}
+
+const LoadBalancer::shell_pair_type& LoadBalancer::shell_pairs() {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->shell_pairs();
 }

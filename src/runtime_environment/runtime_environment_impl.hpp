@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -23,7 +23,7 @@ public:
     GAUXC_MPI_CODE(comm_(c),)
     comm_rank_(0), comm_size_(1) {
 
-  #ifdef GAUXC_ENABLE_MPI
+  #ifdef GAUXC_HAS_MPI
     MPI_Comm_rank( comm_, &comm_rank_ );
     MPI_Comm_size( comm_, &comm_size_ );
   #endif
@@ -32,7 +32,7 @@ public:
 
   virtual ~RuntimeEnvironmentImpl() noexcept = default;
 
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
   inline MPI_Comm comm() const { return comm_; }
 #endif
 

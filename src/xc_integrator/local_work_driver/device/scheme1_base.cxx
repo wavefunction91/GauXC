@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -20,7 +20,7 @@
 #include "buffer_adaptor.hpp"
 
 #include "device/common/shell_pair_to_task.hpp"
-#ifdef GAUXC_ENABLE_CUDA
+#ifdef GAUXC_HAS_CUDA
 #include "device_specific/cuda_util.hpp"
 #include "gpu/integral_data_types.hpp"
 #include "gpu/obara_saika_integrals.hpp"
@@ -313,7 +313,7 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
 
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
-#ifdef GAUXC_ENABLE_HIP
+#ifdef GAUXC_HAS_HIP
   auto tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
 
@@ -340,7 +340,7 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
 }
 
 void AoSScheme1Base::eval_collocation_hessian( XCDeviceData* _data ) {
-#ifdef GAUXC_ENABLE_HIP
+#ifdef GAUXC_HAS_HIP
   GAUXC_GENERIC_EXCEPTION("Hessian NYI for HIP Backends");
 #else
   auto* data = dynamic_cast<Data*>(_data);
@@ -854,7 +854,7 @@ void AoSScheme1Base::symmetrize_vxc( XCDeviceData* _data, density_id den_selecto
 
 
 void AoSScheme1Base::inc_exc_grad_lda( XCDeviceData* _data ) {
-#ifdef GAUXC_ENABLE_HIP
+#ifdef GAUXC_HAS_HIP
   GAUXC_GENERIC_EXCEPTION("LDA Grad NYI for HIP Backends");
 #else
   auto* data = dynamic_cast<Data*>(_data);
@@ -872,7 +872,7 @@ void AoSScheme1Base::inc_exc_grad_lda( XCDeviceData* _data ) {
 }
 
 void AoSScheme1Base::inc_exc_grad_gga( XCDeviceData* _data ) {
-#ifdef GAUXC_ENABLE_HIP
+#ifdef GAUXC_HAS_HIP
   GAUXC_GENERIC_EXCEPTION("GGA Grad NYI for HIP Backends");
 #else
   auto* data = dynamic_cast<Data*>(_data);
