@@ -87,6 +87,7 @@ const LoadBalancer::shell_pair_type& LoadBalancer::shell_pairs() const {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->shell_pairs();
 }
+
 const LoadBalancer::shell_pair_type& LoadBalancer::shell_pairs() {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->shell_pairs();

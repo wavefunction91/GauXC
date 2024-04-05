@@ -148,6 +148,16 @@ const LoadBalancerImpl::basis_map_type& LoadBalancerImpl::protonic_basis_map() c
     GAUXC_GENERIC_EXCEPTION("No Protonic Basis Found in LoadBalancerImpl::protonic_basis_map()");
   return *protonic_basis_map_;
 }
+const LoadBalancerImpl::shell_pair_type& LoadBalancerImpl::protonic_shell_pairs() const {
+  if(!protonic_shell_pairs_) GAUXC_GENERIC_EXCEPTION("No Protonic Basis Found in LoadBalancerImpl::protonic_shell_pairs()");
+  return *shell_pairs_;
+}
+const LoadBalancerImpl::shell_pair_type& LoadBalancerImpl::protonic_shell_pairs() {
+  if(!protonic_shell_pairs_) {
+    protonic_shell_pairs_ = std::make_shared<shell_pair_type>(*protonic_basis_);
+  }
+  return *protonic_shell_pairs_;
+}
 
 const RuntimeEnvironment& LoadBalancerImpl::runtime() const {
   return runtime_;

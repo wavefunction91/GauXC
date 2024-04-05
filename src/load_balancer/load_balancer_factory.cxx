@@ -53,20 +53,20 @@ LoadBalancer LoadBalancerFactory::get_instance(
 std::shared_ptr<LoadBalancer> LoadBalancerFactory::get_shared_instance(
   const RuntimeEnvironment& rt,
   const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis,
-  const BasisSet<double>& protonic_basis, size_t pad_value
+  const BasisSet<double>& protonic_basis
 ) {
 
   switch(ex_) {
     case ExecutionSpace::Host:
       using host_factory = LoadBalancerHostFactory;
       return host_factory::get_shared_instance(kernel_name_,
-        rt, mol, mg, basis, protonic_basis, pad_value );
+        rt, mol, mg, basis, protonic_basis );
     #ifdef GAUXC_ENABLE_DEVICE
     case ExecutionSpace::Device:
       GAUXC_GENERIC_EXCEPTION("2 basis with GPU NYI");
       //using device_factory = LoadBalancerDeviceFactory;
       //return device_factory::get_shared_instance(kernel_name_,
-      //  rt, mol, mg, basis, pad_value );
+      //  rt, mol, mg, basis );
     #endif
     default:
       GAUXC_GENERIC_EXCEPTION("Unrecognized Execution Space");
@@ -78,10 +78,10 @@ std::shared_ptr<LoadBalancer> LoadBalancerFactory::get_shared_instance(
 LoadBalancer LoadBalancerFactory::get_instance(
   const RuntimeEnvironment& rt, 
   const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis,
-  const BasisSet<double>& protonic_basis, size_t pad_value
+  const BasisSet<double>& protonic_basis
 ) {
 
-  auto ptr = get_shared_instance(rt, mol, mg, basis, protonic_basis, pad_value);
+  auto ptr = get_shared_instance(rt, mol, mg, basis, protonic_basis);
   return LoadBalancer(std::move(*ptr));
 
 }

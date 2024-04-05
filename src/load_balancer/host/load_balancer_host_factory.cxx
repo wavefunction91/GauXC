@@ -44,7 +44,7 @@ std::shared_ptr<LoadBalancer> LoadBalancerHostFactory::get_shared_instance(
 std::shared_ptr<LoadBalancer> LoadBalancerHostFactory::get_shared_instance(
   std::string kernel_name, const RuntimeEnvironment& rt,
   const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis,
-  const BasisSet<double>& protonic_basis, size_t pv
+  const BasisSet<double>& protonic_basis
 ) {
 
   std::transform(kernel_name.begin(), kernel_name.end(), 
@@ -57,12 +57,12 @@ std::shared_ptr<LoadBalancer> LoadBalancerHostFactory::get_shared_instance(
   std::unique_ptr<detail::LoadBalancerImpl> ptr = nullptr;
   if( kernel_name == "REPLICATED-PETITE" )
     ptr = std::make_unique<detail::PetiteHostReplicatedLoadBalancer>(
-      rt, mol, mg, basis, protonic_basis, pv
+      rt, mol, mg, basis, protonic_basis
     );
 
   if( kernel_name == "REPLICATED-FILLIN" )
     ptr = std::make_unique<detail::FillInHostReplicatedLoadBalancer>(
-      rt, mol, mg, basis, protonic_basis, pv
+      rt, mol, mg, basis, protonic_basis
     );
 
   if( ! ptr ) GAUXC_GENERIC_EXCEPTION("Load Balancer Kernel Not Recognized: " + kernel_name);
