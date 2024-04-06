@@ -208,6 +208,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   *elec_EXC = 0.;
   *prot_EXC = 0.;
+
+  double NEL_WORK = 0.0;
+  double ELEC_EXC_WORK = 0.0;
+  double PROT_EXC_WORK = 0.0;
  
     
   // Loop over tasks
@@ -437,18 +441,18 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         value_type dn = 2.35 - 2.4 * std::sqrt(total_erho*total_prho) + 6.6 * (total_erho*total_prho);
 
         // Update electronic eps and vxc
-        eps[iPt]                    += -1.0 * total_prho/dn;
-        vrho[spin_dim_scal*iPt]     +=  ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
+        eps[iPt]                    +=   -1.0 * total_prho/dn;
+        vrho[spin_dim_scal*iPt]     += ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
                                         + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
         if(not is_rks) 
-          vrho[spin_dim_scal*iPt+1] +=  ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
+          vrho[spin_dim_scal*iPt+1] += ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
                                         + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
 
         // Assign protonic eps and vxc
-        protonic_eps[iPt]      = -1.0 * total_erho/dn;
-        protonic_vrho[2*iPt]   =  ( -1.0 * total_erho / dn + (-1.2 * std::sqrt(total_prho) * std::sqrt(total_erho) * total_erho 
-                          + 6.6 * total_erho * total_erho * total_prho ) / (dn * dn) );
-        protonic_vrho[2*iPt+1] =  0.0;
+        protonic_eps[iPt]            =   -1.0 * total_erho/dn;
+        protonic_vrho[2*iPt]         = ( -1.0 * total_erho / dn + (-1.2 * std::sqrt(total_prho) * std::sqrt(total_erho) * total_erho 
+                                        + 6.6 * total_erho * total_erho * total_prho ) / (dn * dn) );
+        protonic_vrho[2*iPt+1]       =    0.0;
       } // End looping over pts
     } // End if(evalProtonic)
     //----------------------End EPC functional Evaluation---------------------------------------
@@ -511,21 +515,36 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     }
     //----------------------End Evaluating Protonic ZMat----------------------------
 
+    // Scalar integrations
+    double NEL_local = 0.0;
+    double ELEC_EXC_local  = 0.0;
+    double PROT_EXC_local  = 0.0;
+    for( int32_t i = 0; i < npts; ++i ) {
+      const auto den = is_rks ? den_eval[i] : (den_eval[2*i] + den_eval[2*i+1]);
+      NEL_local      += weights[i] * den;
+      ELEC_EXC_local += eps[i]     * den;
+    }
+    // Protonic XC (EPC)
+    if(evalProtonic){
+      for( int32_t i = 0; i < npts; ++i ) {
+        const auto protonic_den =  protonic_den_eval[2*i] + protonic_den_eval[2*i+1];
+        PROT_EXC_local  += protonic_eps[i]   * protonic_den;    
+      }
+    }
 
+    // Atomic updates
+    #pragma omp atomic
+    NEL_WORK += NEL_local;
+    #pragma omp atomic
+    ELEC_EXC_WORK += ELEC_EXC_local;
+    #pragma omp atomic
+    PROT_EXC_WORK += PROT_EXC_local;
 
     
-    // Integrate to obtain Final EXC/VXC:
-    #pragma omp critical
+    // Incremeta LT of VXC
     {
 
-      // Electronic XC (VXC+EPC)
-      // Scalar integrations
-      for( int32_t i = 0; i < npts; ++i ) {
-        const auto den = is_rks ? den_eval[i] : (den_eval[2*i] + den_eval[2*i+1]);
-        *N_EL     += weights[i] * den;
-        *elec_EXC += eps[i]     * den;
-      }
-      // Increment VXC
+      // Increment Electronic XC (VXC+EPC)
       lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, elec_VXCs, elec_ldvxcs,
         nbe_scr );
       if(not is_rks) 
@@ -533,27 +552,25 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
           nbe_scr );
 
 
-      // Protonic XC (EPC)
+      // Increment Protonic XC (EPC)
       // Scalar integrations
       if(evalProtonic){
-        for( int32_t i = 0; i < npts; ++i ) {
-          const auto protonic_den =  protonic_den_eval[2*i] + protonic_den_eval[2*i+1];
-          *prot_EXC  += protonic_eps[i]   * protonic_den;    
-        }
-        // Increment VXC
         lwd->inc_vxc( npts, protonic_nbf, protonic_nbe, protonic_basis_eval, protonic_submat_map, 
           protonic_zmat,   protonic_nbe, prot_VXCs, prot_ldvxcs, nbe_scr );
         lwd->inc_vxc( npts, protonic_nbf, protonic_nbe, protonic_basis_eval, protonic_submat_map, 
           protonic_zmat_z, protonic_nbe, prot_VXCz, prot_ldvxcz, nbe_scr );
       }
-      //std::cout << "Electronic EXC: " << *elec_EXC << std::endl;
-      //std::cout << "Protonic   EXC: " << *prot_EXC << std::endl;
 
-    } // End #pragma omp critical
+    }
 
   } // Loop over tasks
   
   }  // End OpenMP region
+
+  // Set scalar return values
+  *N_EL = NEL_WORK;
+  *elec_EXC  = ELEC_EXC_WORK;
+  *prot_EXC  = PROT_EXC_WORK;
 
   //std::cout << "N_EL = " << std::setprecision(12) << std::scientific << *N_EL << std::endl;
   //std::cout << "elec_EXC = " << std::setprecision(12) << std::scientific << *elec_EXC << std::endl
@@ -578,7 +595,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     prot_VXCz[ j + i*prot_ldvxcz ] = prot_VXCz[ i + j*prot_ldvxcz ];
   }
   }
-  
 
 }
 
