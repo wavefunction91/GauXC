@@ -278,7 +278,7 @@ void AoSScheme1Base::eval_zmat_gga_vxc_rks( XCDeviceData* _data){
   data->device_backend_->check_error("zmat_gga" __FILE__ ": " + std::to_string(__LINE__));
 }
 
-void AoSScheme1Base::eval_zmat_mgga_vxc_rks( XCDeviceData* _data){
+void AoSScheme1Base::eval_zmat_mgga_vxc_rks( XCDeviceData* _data, bool do_lapl){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -295,7 +295,7 @@ void AoSScheme1Base::eval_zmat_mgga_vxc_rks( XCDeviceData* _data){
 
   auto aos_stack     = data->aos_stack;
   zmat_mgga_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
-    data->device_backend_->queue() );
+    do_lapl, data->device_backend_->queue() );
 
 
   data->device_backend_->check_error("zmat_mgga" __FILE__ ": " + std::to_string(__LINE__));
@@ -313,7 +313,7 @@ void AoSScheme1Base::eval_zmat_gga_vxc_uks( XCDeviceData* ){
 
 }
 
-void AoSScheme1Base::eval_zmat_mgga_vxc_uks( XCDeviceData* _data){
+void AoSScheme1Base::eval_zmat_mgga_vxc_uks( XCDeviceData*, bool /*do_lapl*/){
   GAUXC_GENERIC_EXCEPTION("UKS MGGA NOT YET IMPLEMENTED FOR DEVICE");
 }
 
@@ -329,11 +329,11 @@ void AoSScheme1Base::eval_zmat_gga_vxc_gks( XCDeviceData* ){
 
 }
 
-void AoSScheme1Base::eval_zmat_mgga_vxc_gks( XCDeviceData* _data){
+void AoSScheme1Base::eval_zmat_mgga_vxc_gks( XCDeviceData*, bool /*do_lapl*/){
   GAUXC_GENERIC_EXCEPTION("GKS MGGA NOT YET IMPLEMENTED FOR DEVICE");
 }
 
-void AoSScheme1Base::eval_mmat_mgga_vxc_rks( XCDeviceData* _data){
+void AoSScheme1Base::eval_mmat_mgga_vxc_rks( XCDeviceData* _data, bool do_lapl){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -350,15 +350,15 @@ void AoSScheme1Base::eval_mmat_mgga_vxc_rks( XCDeviceData* _data){
 
   auto aos_stack     = data->aos_stack;
   mmat_mgga_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
-    data->device_backend_->queue() );
+    do_lapl, data->device_backend_->queue() );
 
 
   data->device_backend_->check_error("mmat_mgga" __FILE__ ": " + std::to_string(__LINE__));
 }
-void AoSScheme1Base::eval_mmat_mgga_vxc_uks( XCDeviceData* _data){
+void AoSScheme1Base::eval_mmat_mgga_vxc_uks( XCDeviceData*, bool /*do_lapl*/){
   GAUXC_GENERIC_EXCEPTION("UKS MGGA NOT YET IMPLEMENTED FOR DEVICE");
 }
-void AoSScheme1Base::eval_mmat_mgga_vxc_gks( XCDeviceData* _data){
+void AoSScheme1Base::eval_mmat_mgga_vxc_gks( XCDeviceData*, bool /*do_lapl*/){
   GAUXC_GENERIC_EXCEPTION("GKS MGGA NOT YET IMPLEMENTED FOR DEVICE");
 }
 
@@ -582,7 +582,7 @@ void AoSScheme1Base::eval_uvvar_gga_rks( XCDeviceData* _data ){
   data->device_backend_->check_error("uvvar gga" __FILE__ ": " + std::to_string(__LINE__));
 }
 
-void AoSScheme1Base::eval_uvvar_mgga_rks( XCDeviceData* _data ){
+void AoSScheme1Base::eval_uvvar_mgga_rks( XCDeviceData* _data, bool do_lapl ){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -604,8 +604,11 @@ void AoSScheme1Base::eval_uvvar_mgga_rks( XCDeviceData* _data ){
   data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_y_eval_device, "DenY Zero" );
   data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_z_eval_device, "DenZ Zero" );
   data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.tau_eval_device,   "Tau Zero" );
-  if(base_stack.den_lapl_eval_device) {
+  if(do_lapl) {
+    std::cout << "ZEROING LAPL" << std::endl;
     data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_lapl_eval_device, "DenLapl Zero" );
+  } else {
+    std::cout << "SKIPPING ZERO LAPL" << std::endl;
   }
 
 
@@ -614,8 +617,7 @@ void AoSScheme1Base::eval_uvvar_mgga_rks( XCDeviceData* _data ){
   eval_uvvars_mgga( ntasks, data->total_npts_task_batch, nbe_max, npts_max, 
     aos_stack.device_tasks, base_stack.den_x_eval_device, base_stack.den_y_eval_device,
     base_stack.den_z_eval_device, base_stack.gamma_eval_device, 
-    base_stack.tau_eval_device, base_stack.den_lapl_eval_device,
-    data->device_backend_->queue() );
+    do_lapl, data->device_backend_->queue() );
 
   
   data->device_backend_->check_error("uvvar mgga" __FILE__ ": " + std::to_string(__LINE__));
@@ -633,7 +635,7 @@ void AoSScheme1Base::eval_uvvar_gga_uks( XCDeviceData* ){
 
 }
 
-void AoSScheme1Base::eval_uvvar_mgga_uks( XCDeviceData* _data ){
+void AoSScheme1Base::eval_uvvar_mgga_uks( XCDeviceData*, bool /*do_lapl*/ ){
   GAUXC_GENERIC_EXCEPTION("UKS MGGA NOT YET IMPLEMENTED FOR DEVICE"); 
 }
 
@@ -650,7 +652,7 @@ void AoSScheme1Base::eval_uvvar_gga_gks( XCDeviceData* ){
 
 }
 
-void AoSScheme1Base::eval_uvvar_mgga_gks( XCDeviceData* _data ){
+void AoSScheme1Base::eval_uvvar_mgga_gks( XCDeviceData*, bool /*do_lapl*/ ){
   GAUXC_GENERIC_EXCEPTION("GKS MGGA NOT YET IMPLEMENTED FOR DEVICE"); 
 }
 
@@ -719,8 +721,11 @@ void AoSScheme1Base::eval_kern_exc_vxc_mgga( const functional_type& func,
 
   auto base_stack    = data->base_stack;
 
-  if(base_stack.vlapl_eval_device) {
+  if(func.needs_laplacian()) {
+    std::cout << "ZEROING VLAPL" << std::endl;
     data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.vlapl_eval_device, "VLapl Zero" );
+  } else {
+    std::cout << "SKIPPING ZERO VLAPL" << std::endl;
   }
 
   GauXC::eval_kern_exc_vxc_mgga( func, data->total_npts_task_batch, 
@@ -739,8 +744,10 @@ void AoSScheme1Base::eval_kern_exc_vxc_mgga( const functional_type& func,
                     base_stack.weights_device, 1, base_stack.vgamma_eval_device, 1 );
   hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
                     base_stack.weights_device, 1, base_stack.vtau_eval_device, 1 );
-  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
-                    base_stack.weights_device, 1, base_stack.vlapl_eval_device, 1 );
+  if(func.needs_laplacian()) {
+    hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
+                      base_stack.weights_device, 1, base_stack.vlapl_eval_device, 1 );
+  }
 
   
   data->device_backend_->check_error("exc_vxc mgga" __FILE__ ": " + std::to_string(__LINE__));

@@ -66,15 +66,15 @@ public:
 
   void eval_uvvar_lda_rks( XCDeviceData* );
   void eval_uvvar_gga_rks( XCDeviceData* );
-  void eval_uvvar_mgga_rks( XCDeviceData* );
+  void eval_uvvar_mgga_rks( XCDeviceData*, bool );
 
   void eval_uvvar_lda_uks( XCDeviceData* );
   void eval_uvvar_gga_uks( XCDeviceData* );
-  void eval_uvvar_mgga_uks( XCDeviceData* );
+  void eval_uvvar_mgga_uks( XCDeviceData*, bool );
 
   void eval_uvvar_lda_gks( XCDeviceData* );
   void eval_uvvar_gga_gks( XCDeviceData* );
-  void eval_uvvar_mgga_gks( XCDeviceData* );
+  void eval_uvvar_mgga_gks( XCDeviceData*, bool );
 
   void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* );
   void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* );
@@ -82,19 +82,19 @@ public:
 
   void eval_zmat_lda_vxc_rks( XCDeviceData* );
   void eval_zmat_gga_vxc_rks( XCDeviceData* );
-  void eval_zmat_mgga_vxc_rks( XCDeviceData* );
+  void eval_zmat_mgga_vxc_rks( XCDeviceData*, bool );
 
   void eval_zmat_lda_vxc_uks( XCDeviceData* );
   void eval_zmat_gga_vxc_uks( XCDeviceData* );
-  void eval_zmat_mgga_vxc_uks( XCDeviceData* );
+  void eval_zmat_mgga_vxc_uks( XCDeviceData*, bool );
 
   void eval_zmat_lda_vxc_gks( XCDeviceData* );
   void eval_zmat_gga_vxc_gks( XCDeviceData* );
-  void eval_zmat_mgga_vxc_gks( XCDeviceData* );
+  void eval_zmat_mgga_vxc_gks( XCDeviceData*, bool );
 
-  void eval_mmat_mgga_vxc_rks( XCDeviceData* );
-  void eval_mmat_mgga_vxc_uks( XCDeviceData* );
-  void eval_mmat_mgga_vxc_gks( XCDeviceData* );
+  void eval_mmat_mgga_vxc_rks( XCDeviceData*, bool );
+  void eval_mmat_mgga_vxc_uks( XCDeviceData*, bool );
+  void eval_mmat_mgga_vxc_gks( XCDeviceData*, bool );
 
   void eval_exx_fmat( XCDeviceData* );
   void eval_exx_gmat( XCDeviceData*, const BasisSetMap& );

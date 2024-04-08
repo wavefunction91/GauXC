@@ -23,7 +23,8 @@ enum integrator_xc_approx : uint32_t {
   _UNDEFINED = 0,
   LDA        = 1,
   GGA        = 2,
-  MGGA       = 3
+  MGGA_TAU   = 3,
+  MGGA_LAPL  = 4
 };
 
 struct integrator_term_tracker {
@@ -251,24 +252,26 @@ struct required_term_storage {
         GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET");
       //const bool is_lda  = is_xc and tracker.xc_approx == LDA;
       const bool is_gga  = is_xc and tracker.xc_approx == GGA;
-      const bool is_mgga = is_xc and tracker.xc_approx == MGGA;
+      const bool need_tau  = tracker.xc_approx == MGGA_TAU;
+      const bool need_lapl = tracker.xc_approx == MGGA_LAPL;
+      const bool is_mgga = is_xc and (need_tau or need_lapl);
       const bool is_grad = tracker.exc_grad;
 
       grid_den      = true;
       grid_den_grad = is_gga or is_mgga or is_grad;
-      grid_den_lapl = is_mgga;
+      grid_den_lapl = need_lapl;
       grid_gamma    = is_gga or is_mgga;
       grid_tau      = is_mgga;
       grid_eps      = true;
       grid_vrho     = true;
       grid_vgamma   = is_gga or is_mgga;
       grid_vtau     = is_mgga;
-      grid_vlapl    = is_mgga;
+      grid_vlapl    = need_lapl;
 
       task_bfn          = true;
       task_bfn_grad     = is_gga or  is_mgga or is_grad;
       task_bfn_hess     = is_gga and is_grad;
-      task_bfn_lapl     = is_mgga;
+      task_bfn_lapl     = need_lapl;
       task_zmat         = true;
       task_xmat         = true;
       task_xmat_grad    = is_mgga or (is_gga and is_grad);

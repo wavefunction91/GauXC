@@ -321,8 +321,8 @@ void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max,
 
 void eval_uvvars_mgga( size_t ntasks, size_t npts_total, int32_t nbf_max, 
   int32_t npts_max, XCDeviceTask* device_tasks, const double* denx, 
-  const double* deny, const double* denz, double* gamma, double* tau,
-  double* denlapl, device_queue queue ) {
+  const double* deny, const double* denz, double* gamma, bool do_lapl,
+  device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
 
@@ -333,7 +333,10 @@ void eval_uvvars_mgga( size_t ntasks, size_t npts_total, int32_t nbf_max,
                std::min(uint64_t(16), util::div_ceil( nbf_max, 16 )),
                ntasks );
   eval_uvars_gga_kernel <<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
-  eval_uvars_mgga_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+  if(do_lapl)
+    eval_uvars_mgga_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+  else
+    eval_uvars_mgga_kernel<false><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
   }
 
   // V variables (GAMMA)

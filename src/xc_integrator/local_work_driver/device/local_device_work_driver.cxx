@@ -30,6 +30,11 @@ void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data ) { \
   throw_if_invalid_pimpl(pimpl_);                               \
   pimpl_->NAME(device_data);                                    \
 }
+#define FWD_TO_PIMPL_BOOL(NAME) \
+void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, bool b ) { \
+  throw_if_invalid_pimpl(pimpl_);                                       \
+  pimpl_->NAME(device_data, b);                                         \
+}
 
 
 FWD_TO_PIMPL(partition_weights)         // Partition weights
@@ -41,32 +46,34 @@ FWD_TO_PIMPL(eval_collocation_laplacian)  // Collocation Laplacian
 
 FWD_TO_PIMPL(eval_uvvar_lda_rks)            // U/VVar LDA (density)
 FWD_TO_PIMPL(eval_uvvar_gga_rks)            // U/VVar GGA (density + grad, gamma)
-FWD_TO_PIMPL(eval_uvvar_mgga_rks)           // U/VVar GGA (density + grad, gamma)
 
 FWD_TO_PIMPL(eval_uvvar_lda_uks)            // U/VVar LDA (density)
 FWD_TO_PIMPL(eval_uvvar_gga_uks)            // U/VVar GGA (density + grad, gamma)
-FWD_TO_PIMPL(eval_uvvar_mgga_uks)           // U/VVar GGA (density + grad, gamma)
 
 FWD_TO_PIMPL(eval_uvvar_lda_gks)            // U/VVar LDA (density)
 FWD_TO_PIMPL(eval_uvvar_gga_gks)            // U/VVar GGA (density + grad, gamma)
-FWD_TO_PIMPL(eval_uvvar_mgga_gks)           // U/VVar GGA (density + grad, gamma)
 
 FWD_TO_PIMPL(eval_zmat_lda_vxc_rks)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc_rks)         // Eval Z Matrix GGA VXC
-FWD_TO_PIMPL(eval_zmat_mgga_vxc_rks)         // Eval Z Matrix GGA VXC
 
 FWD_TO_PIMPL(eval_zmat_lda_vxc_uks)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc_uks)         // Eval Z Matrix GGA VXC
-FWD_TO_PIMPL(eval_zmat_mgga_vxc_uks)         // Eval Z Matrix GGA VXC
 
 FWD_TO_PIMPL(eval_zmat_lda_vxc_gks)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc_gks)         // Eval Z Matrix GGA VXC
-FWD_TO_PIMPL(eval_zmat_mgga_vxc_gks)         // Eval Z Matrix GGA VXC
 
-FWD_TO_PIMPL(eval_mmat_mgga_vxc_rks)         // Eval Z Matrix GGA VXC
-FWD_TO_PIMPL(eval_mmat_mgga_vxc_uks)         // Eval Z Matrix GGA VXC
-FWD_TO_PIMPL(eval_mmat_mgga_vxc_gks)         // Eval Z Matrix GGA VXC
 
+FWD_TO_PIMPL_BOOL(eval_uvvar_mgga_rks)           // U/VVar MGGA (density + grad, gamma, tau, lapl)
+FWD_TO_PIMPL_BOOL(eval_uvvar_mgga_uks)           // U/VVar MGGA (density + grad, gamma, tau, lapl)
+FWD_TO_PIMPL_BOOL(eval_uvvar_mgga_gks)           // U/VVar MGGA (density + grad, gamma, tau, lapl)
+
+FWD_TO_PIMPL_BOOL(eval_zmat_mgga_vxc_rks)        // Eval Z Matrix MGGA VXC
+FWD_TO_PIMPL_BOOL(eval_zmat_mgga_vxc_uks)        // Eval Z Matrix MGGA VXC
+FWD_TO_PIMPL_BOOL(eval_zmat_mgga_vxc_gks)        // Eval Z Matrix MGGA VXC
+
+FWD_TO_PIMPL_BOOL(eval_mmat_mgga_vxc_rks)        // Eval M Matrix MGGA VXC
+FWD_TO_PIMPL_BOOL(eval_mmat_mgga_vxc_uks)        // Eval M Matrix MGGA VXC
+FWD_TO_PIMPL_BOOL(eval_mmat_mgga_vxc_gks)        // Eval M Matrix MGGA VXC
 
 FWD_TO_PIMPL(eval_exx_fmat)             // Eval EXX F Matrix
 //FWD_TO_PIMPL(eval_exx_gmat)             // Eval EXX G Matrix

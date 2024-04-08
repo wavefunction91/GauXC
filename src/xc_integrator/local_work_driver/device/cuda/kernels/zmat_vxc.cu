@@ -198,6 +198,7 @@ void zmat_mgga_vxc( size_t            ntasks,
                     int32_t           max_nbf,
                     int32_t           max_npts,
                     XCDeviceTask*     tasks_device,
+                    bool              do_lapl,
                     device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
@@ -208,7 +209,10 @@ void zmat_mgga_vxc( size_t            ntasks,
                util::div_ceil( max_nbf,  threads.y ),
                ntasks );
 
-  zmat_mgga_vxc_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  if(do_lapl)
+    zmat_mgga_vxc_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  else
+    zmat_mgga_vxc_kernel<false><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
 
 }
 
@@ -316,6 +320,7 @@ void mmat_mgga_vxc( size_t            ntasks,
                     int32_t           max_nbf,
                     int32_t           max_npts,
                     XCDeviceTask*     tasks_device,
+                    bool              do_lapl,
                     device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
@@ -326,7 +331,10 @@ void mmat_mgga_vxc( size_t            ntasks,
                util::div_ceil( max_nbf,  threads.y ),
                ntasks );
 
-  mmat_mgga_vxc_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  if(do_lapl)
+    mmat_mgga_vxc_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  else
+    mmat_mgga_vxc_kernel<false><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
 
   //print_zmat_stats<<<1,1,0,stream>>>(ntasks,tasks_device);
 }

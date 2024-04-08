@@ -20,7 +20,7 @@ void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbe_max,
 
 void eval_uvvars_mgga( size_t ntasks, size_t npts_total, int32_t nbe_max, 
   int32_t npts_max, XCDeviceTask* device_tasks, const double* denx, 
-  const double* deny, const double* denz, double* gamma, double* tau,
-  double* denlapl, device_queue queue );
+  const double* deny, const double* denz, double* gamma, bool do_lapl,
+  device_queue queue );
 
 }

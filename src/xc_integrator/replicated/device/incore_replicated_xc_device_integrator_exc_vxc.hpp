@@ -204,9 +204,14 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Processes batches in groups that saturadate available device memory
   integrator_term_tracker enabled_terms;
   enabled_terms.exc_vxc = true;
-  if( func.is_lda() )      enabled_terms.xc_approx = integrator_xc_approx::LDA; 
-  else if( func.is_gga() ) enabled_terms.xc_approx = integrator_xc_approx::GGA; 
-  else                     enabled_terms.xc_approx = integrator_xc_approx::MGGA;
+  if( func.is_lda() )      
+    enabled_terms.xc_approx = integrator_xc_approx::LDA; 
+  else if( func.is_gga() ) 
+    enabled_terms.xc_approx = integrator_xc_approx::GGA; 
+  else if( func.needs_laplacian() )                    
+    enabled_terms.xc_approx = integrator_xc_approx::MGGA_LAPL;
+  else
+    enabled_terms.xc_approx = integrator_xc_approx::MGGA_TAU;
 
 #if 0
   std::vector<int32_t> full_shell_list(nshells);
@@ -225,11 +230,12 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
 
     /*** Process the batches ***/
+    const bool need_lapl = func.needs_laplacian();
 
     // Evaluate collocation
     if( func.is_mgga() ) {
-      if(func.needs_laplacian()) lwd->eval_collocation_laplacian( &device_data );
-      else lwd->eval_collocation_gradient( &device_data );
+      if(need_lapl) lwd->eval_collocation_laplacian( &device_data );
+      else          lwd->eval_collocation_gradient( &device_data );
     }
     else if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
     else                     lwd->eval_collocation( &device_data );
@@ -239,7 +245,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->eval_xmat( 2.0, &device_data, need_xmat_grad );
 
     // Evaluate U/V variables
-    if( func.is_mgga() )     lwd->eval_uvvar_mgga_rks( &device_data );
+    if( func.is_mgga() )     lwd->eval_uvvar_mgga_rks( &device_data, need_lapl );
     else if( func.is_gga() ) lwd->eval_uvvar_gga_rks( &device_data );
     else                     lwd->eval_uvvar_lda_rks( &device_data );
 
@@ -254,8 +260,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     // Evaluate Z (+ M) matrix
     if( func.is_mgga() ) {
-      lwd->eval_zmat_mgga_vxc_rks( &device_data );
-      lwd->eval_mmat_mgga_vxc_rks( &device_data );
+      lwd->eval_zmat_mgga_vxc_rks( &device_data, need_lapl );
+      lwd->eval_mmat_mgga_vxc_rks( &device_data, need_lapl );
     }
     else if( func.is_gga() ) lwd->eval_zmat_gga_vxc_rks( &device_data );
     else                     lwd->eval_zmat_lda_vxc_rks( &device_data );
