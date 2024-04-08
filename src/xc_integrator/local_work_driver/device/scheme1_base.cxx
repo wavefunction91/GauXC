@@ -605,10 +605,7 @@ void AoSScheme1Base::eval_uvvar_mgga_rks( XCDeviceData* _data, bool do_lapl ){
   data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_z_eval_device, "DenZ Zero" );
   data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.tau_eval_device,   "Tau Zero" );
   if(do_lapl) {
-    std::cout << "ZEROING LAPL" << std::endl;
     data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_lapl_eval_device, "DenLapl Zero" );
-  } else {
-    std::cout << "SKIPPING ZERO LAPL" << std::endl;
   }
 
 
@@ -722,10 +719,7 @@ void AoSScheme1Base::eval_kern_exc_vxc_mgga( const functional_type& func,
   auto base_stack    = data->base_stack;
 
   if(func.needs_laplacian()) {
-    std::cout << "ZEROING VLAPL" << std::endl;
     data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.vlapl_eval_device, "VLapl Zero" );
-  } else {
-    std::cout << "SKIPPING ZERO VLAPL" << std::endl;
   }
 
   GauXC::eval_kern_exc_vxc_mgga( func, data->total_npts_task_batch, 
