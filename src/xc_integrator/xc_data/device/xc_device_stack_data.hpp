@@ -19,6 +19,7 @@ namespace GauXC {
 struct allocated_dims {
   size_t nshells      = 0; ///< Number of shells allocated for static data
   size_t nshell_pairs = 0; ///< Number of shell pairs allocated for static data
+  size_t nprim_pairs  = 0; ///< Total number of prim pairs allocated 
   size_t nbf          = 0; ///< Number of bfns allocated for static data
   size_t natoms       = 0; ///< Number of atoms allocated for static data
   size_t max_l        = 0; ///< Highest angular momentum value used
@@ -44,7 +45,7 @@ struct XCDeviceStackData : public XCDeviceData {
 
   struct static_data {
     Shell<double>* shells_device = nullptr; ///< Array of static basis shells (nshells)
-    ShellPair<double>* shell_pairs_device = nullptr;
+    PrimitivePair<double>* prim_pairs_device = nullptr;
 
     double* dmat_device   = nullptr; ///< Static density matrix storage (nbf,nbf)
     double* rab_device    = nullptr; ///< Static RAB matrix storage (*,natoms)
@@ -116,7 +117,7 @@ struct XCDeviceStackData : public XCDeviceData {
   void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) override final;
   void allocate_static_data_den( int32_t nbf, int32_t nshells ) override final;
   void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) override final;
-  void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, int32_t max_l ) override final;
+  void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, size_t nprim_pair_total, int32_t max_l ) override final;
   void allocate_static_data_exx_ek_screening( size_t ntasks, int32_t nbf, int32_t nshells, int nshell_pairs, int32_t max_l ) override final;
   void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) override final;
   void send_static_data_density_basis( const double* P, int32_t ldp, 
