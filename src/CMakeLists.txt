@@ -122,6 +122,7 @@ set_target_properties( gauxc PROPERTIES EXPORT_NAME gauxc )
 set(export_properties
   # currently configurable properties 
   "GAUXC_HAS_HOST"
+  "GAUXC_HAS_DEVICE"
   "GAUXC_HAS_CUDA"
   "GAUXC_HAS_HIP"
   "GAUXC_HAS_MAGMA"
@@ -129,7 +130,8 @@ set(export_properties
   "GAUXC_HAS_NCCL"
   "GAUXC_HAS_MPI"
   "GAUXC_HAS_OPENMP"
-  
+  "GAUXC_HAS_HDF5"
+ 
   # may become configurable in the future
   "GAUXC_CPU_XC_MAX_AM"
   "GAUXC_CPU_SNLINK_MAX_AM"
@@ -140,6 +142,7 @@ set(export_properties
 set_target_properties(gauxc
   PROPERTIES
     "GAUXC_HAS_HOST"       ${GAUXC_HAS_HOST}
+    "GAUXC_HAS_DEVICE"     ${GAUXC_HAS_DEVICE}
     "GAUXC_HAS_CUDA"       ${GAUXC_HAS_CUDA}
     "GAUXC_HAS_HIP"        ${GAUXC_HAS_HIP}
     "GAUXC_HAS_MAGMA"      ${GAUXC_HAS_MAGMA}
@@ -147,6 +150,7 @@ set_target_properties(gauxc
     "GAUXC_HAS_NCCL"       ${GAUXC_HAS_NCCL}
     "GAUXC_HAS_MPI"        ${GAUXC_HAS_MPI}
     "GAUXC_HAS_OPENMP"     ${GAUXC_HAS_OPENMP}
+    "GAUXC_HAS_HDF5"       ${GAUXC_HAS_HDF5}
     "GAUXC_CPU_XC_MAX_AM"     6 
     "GAUXC_CPU_SNLINK_MAX_AM" 6
     "GAUXC_GPU_XC_MAX_AM"     4 
