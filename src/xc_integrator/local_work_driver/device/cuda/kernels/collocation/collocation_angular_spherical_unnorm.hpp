@@ -13,7 +13,9 @@
 #  define GPGAUEVAL_INLINE __noinline__
 #endif
 
-namespace GauXC {
+namespace GauXC      {
+namespace integrator {
+namespace cuda       {
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_0(
@@ -369,5 +371,7 @@ GPGAUEVAL_INLINE __device__ void collocation_spherical_unnorm_angular_deriv1(
 } // collocation_spherical_unnorm_angular_deriv1
 
 
+} // namespace cuda
+} // namespace integrator
 } // namespace GauXC
 
