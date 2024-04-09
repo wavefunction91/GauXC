@@ -251,16 +251,16 @@ void eval_collocation_masked_combined_deriv1(
 uint32_t max_threads_shell_to_task_collocation( int32_t l, bool pure ) {
   if( pure ) {
     switch(l) {
-      case 0: return util::cuda_kernel_max_threads_per_block( collocation_device_shell_to_task_kernel_cartesian_0 );
-      $for( L in range(1, L_max + 1) )\
-case $(L): return util::cuda_kernel_max_threads_per_block( collocation_device_shell_to_task_kernel_spherical_$(L) );
+      case 0: return util::cuda_kernel_max_threads_per_block( collocation_device_shell_to_task_kernel_cartesian_0 );\
+      $for( L in range(1, L_max + 1) )
+      case $(L): return util::cuda_kernel_max_threads_per_block( collocation_device_shell_to_task_kernel_spherical_$(L) );\
       $endfor
       default: GAUXC_GENERIC_EXCEPTION("CUDA L_MAX = $(L_max)");
     }
   } else {
     switch(l) {
-      $for( L in range(L_max + 1) )\
-case $(L): return util::cuda_kernel_max_threads_per_block( collocation_device_shell_to_task_kernel_cartesian_$(L) );
+      $for( L in range(L_max + 1) )
+      case $(L): return util::cuda_kernel_max_threads_per_block( collocation_device_shell_to_task_kernel_cartesian_$(L) );\
       $endfor
       default: GAUXC_GENERIC_EXCEPTION("CUDA L_MAX = $(L_max)");
     }
@@ -405,14 +405,14 @@ uint32_t max_threads_shell_to_task_collocation_hessian( int32_t l, bool pure ) {
   if( pure ) {
     switch(l) {
       case 0: return util::cuda_kernel_max_threads_per_block( collocation_device_shell_to_task_kernel_cartesian_hessian_0 );\
-      $for( L in range(1, L_max) )
+      $for( L in range(1, L_max + 1) )
       case $(L): return util::cuda_kernel_max_threads_per_block( collocation_device_shell_to_task_kernel_spherical_hessian_$(L) );\
       $endfor
       default: GAUXC_GENERIC_EXCEPTION("CUDA L_MAX = $(L_max)");
     }
   } else {
     switch(l) {\
-      $for( L in range(L_max) )
+      $for( L in range(L_max + 1) )
       case $(L): return util::cuda_kernel_max_threads_per_block( collocation_device_shell_to_task_kernel_cartesian_hessian_$(L) );\
       $endfor
       default: GAUXC_GENERIC_EXCEPTION("CUDA L_MAX = $(L_max)");
