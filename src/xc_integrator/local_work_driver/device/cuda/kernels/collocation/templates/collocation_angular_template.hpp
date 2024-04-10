@@ -14,8 +14,6 @@
 #endif
 
 namespace GauXC      {
-namespace integrator {
-namespace cuda       {
 
 $for( L in range(L_max + 1) )\
 template <typename T>
@@ -115,7 +113,5 @@ $endfor\
 } // collocation_$(name)_angular_deriv1
 
 
-} // namespace cuda
-} // namespace integrator
 } // namespace GauXC
 

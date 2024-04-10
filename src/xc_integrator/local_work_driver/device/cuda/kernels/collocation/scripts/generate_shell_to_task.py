@@ -6,7 +6,7 @@ import itertools
 
 from io import StringIO
 
-L_max = 6
+L_max = 4
 if len(sys.argv) > 1: L_max = int(sys.argv[1])
 
 def generate_shell_to_task_lines( ang, deriv_order = 0 ):
