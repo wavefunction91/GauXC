@@ -579,7 +579,10 @@ int main(int argc, char** argv) {
       HighFive::DataSpace mat_space( basis.nbf(), basis.nbf() );
       HighFive::DataSpace sca_space( 1 );
 
-      auto dset = file.createDataSet<double>( "/DENSITY", mat_space );
+      std::string ugks_scalar;
+      if(Pz.size()) ugks_scalar = "_SCALAR";
+
+      auto dset = file.createDataSet<double>( "/DENSITY" + ugks_scalar, mat_space );
       dset.write_raw( P.data() );
 
       if( not rks ) {
@@ -595,7 +598,7 @@ int main(int argc, char** argv) {
 
 
       if( integrate_vxc ) {
-        dset = file.createDataSet<double>( "/VXC", mat_space );
+        dset = file.createDataSet<double>( "/VXC" + ugks_scalar, mat_space );
         dset.write_raw( VXC.data() );
         if( not rks ) {
           dset = file.createDataSet<double>( "/VXC_Z", mat_space );
