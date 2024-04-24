@@ -85,16 +85,20 @@ struct XCDeviceStackData : public XCDeviceData {
     double* weights_device = nullptr; ///< Grid weights for task batch
 
     // U variables
-    double* den_eval_device   = nullptr; ///< density for task batch
-    double* den_x_eval_device = nullptr; ///< d/dx density for task batch
-    double* den_y_eval_device = nullptr; ///< d/dy density for task batch
-    double* den_z_eval_device = nullptr; ///< d/dz density for task batch
+    double* den_eval_device      = nullptr; ///< density for task batch
+    double* den_x_eval_device    = nullptr; ///< d/dx density for task batch
+    double* den_y_eval_device    = nullptr; ///< d/dy density for task batch
+    double* den_z_eval_device    = nullptr; ///< d/dz density for task batch
+    double* den_lapl_eval_device = nullptr; ///< density Laplacian for task batch
 
     // V variables / XC output
     double* gamma_eval_device  = nullptr; ///< gamma for task batch
+    double* tau_eval_device    = nullptr; ///< tau for task batch
     double* eps_eval_device    = nullptr; ///< XC energy density for task batch
     double* vrho_eval_device   = nullptr; ///< Rho XC derivative for task batch
     double* vgamma_eval_device = nullptr; ///< Gamma XC derivative for task batch
+    double* vtau_eval_device   = nullptr; ///< Tau XC derivative for task batch
+    double* vlapl_eval_device  = nullptr; ///< Lapl XC derivative for task batch
 
     inline void reset() { std::memset( this, 0, sizeof(base_stack_data) ); }
   };

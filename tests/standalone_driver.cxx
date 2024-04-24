@@ -192,7 +192,6 @@ int main(int argc, char** argv) {
     auto mw = mw_factory.get_instance();
     mw.modify_weights(*lb);
 
-
     using matrix_type = Eigen::MatrixXd;
     // Read in reference data
     matrix_type P, Pz, Py, Px, VXC_ref, VXCz_ref, VXCy_ref, VXCx_ref, K_ref;
@@ -330,8 +329,20 @@ int main(int argc, char** argv) {
     }
     // Setup XC functional
     auto polar = (uks or gks) ? Spin::Polarized : Spin::Unpolarized;
-    functional_type func( Backend::builtin, functional_map.value(func_spec), 
-      polar );
+    functional_type func;
+    if(functional_map.key_exists(func_spec)) {
+      func = functional_type( Backend::builtin, functional_map.value(func_spec), 
+        polar );
+    } else { 
+      std::vector<std::pair<double, ExchCXX::XCKernel>> funcs;
+      std::vector<std::string> libxc_names;
+      split(libxc_names, func_spec, ",");
+      for( auto n : libxc_names ) {
+        funcs.push_back( {1.0, ExchCXX::XCKernel(ExchCXX::libxc_name_string(n), polar)} );
+      }
+      func = functional_type(funcs);
+    }
+
     // Setup Integrator
     XCIntegratorFactory<matrix_type> integrator_factory( int_exec_space , 
       "Replicated", integrator_kernel, lwd_kernel, reduction_kernel );
@@ -568,7 +579,10 @@ int main(int argc, char** argv) {
       HighFive::DataSpace mat_space( basis.nbf(), basis.nbf() );
       HighFive::DataSpace sca_space( 1 );
 
-      auto dset = file.createDataSet<double>( "/DENSITY", mat_space );
+      std::string ugks_scalar;
+      if(Pz.size()) ugks_scalar = "_SCALAR";
+
+      auto dset = file.createDataSet<double>( "/DENSITY" + ugks_scalar, mat_space );
       dset.write_raw( P.data() );
 
       if( not rks ) {
@@ -584,7 +598,7 @@ int main(int argc, char** argv) {
 
 
       if( integrate_vxc ) {
-        dset = file.createDataSet<double>( "/VXC", mat_space );
+        dset = file.createDataSet<double>( "/VXC" + ugks_scalar, mat_space );
         dset.write_raw( VXC.data() );
         if( not rks ) {
           dset = file.createDataSet<double>( "/VXC_Z", mat_space );

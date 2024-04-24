@@ -50,14 +50,19 @@ struct XCDeviceTask {
   double*   d2bfyy    = nullptr;
   double*   d2bfyz    = nullptr;
   double*   d2bfzz    = nullptr;
+  double*   d2bflapl    = nullptr;
   double*   den     = nullptr;
   double*   ddenx   = nullptr;
   double*   ddeny   = nullptr;
   double*   ddenz   = nullptr;
+  double*   denlapl     = nullptr;
   double*   eps     = nullptr;
   double*   gamma   = nullptr;
+  double*   tau   = nullptr;
   double*   vrho    = nullptr;
   double*   vgamma  = nullptr;
+  double*   vtau  = nullptr;
+  double*   vlapl  = nullptr;
 
   int32_t iParent       = -1;
   double dist_nearest   = 0.;

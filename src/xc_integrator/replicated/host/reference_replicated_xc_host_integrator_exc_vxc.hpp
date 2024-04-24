@@ -231,7 +231,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   const auto& basis = this->load_balancer_->basis();
   const auto& mol   = this->load_balancer_->molecule();
 
-  const bool needs_laplacian = func.is_mgga() ? true : false; // TODO: Needs Laplacian Check
+  const bool needs_laplacian = func.needs_laplacian(); 
   
   if (func.is_mgga() and is_gks) {
     GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED WITH mGGA FUNCTIONALS!");
@@ -337,7 +337,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     }
 
     if( func.is_mgga() ){
-      // TODO: Add check for Laplacian-dependent functionals
       if ( needs_laplacian ) {
         host_data.basis_eval .resize( 11 * npts * nbe ); // basis + grad (3) + hess (6) + lapl 
         host_data.lapl       .resize( spin_dim_scal * npts );
@@ -448,7 +447,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Evaluate Collocation (+ Grad and Hessian)
     if( func.is_mgga() ) {
       if ( needs_laplacian ) {
-  // TODO: Modify gau2grid to compute Laplacian instead of full hessian
+        // TODO: Modify gau2grid to compute Laplacian instead of full hessian
         lwd->eval_collocation_hessian( npts, nshells, nbe, points, basis, shell_list,
           basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval, d2basis_xx_eval,
           d2basis_xy_eval, d2basis_xz_eval, d2basis_yy_eval, d2basis_yz_eval,

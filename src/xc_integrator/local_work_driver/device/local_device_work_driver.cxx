@@ -30,6 +30,11 @@ void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data ) { \
   throw_if_invalid_pimpl(pimpl_);                               \
   pimpl_->NAME(device_data);                                    \
 }
+#define FWD_TO_PIMPL_BOOL(NAME) \
+void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, bool b ) { \
+  throw_if_invalid_pimpl(pimpl_);                                       \
+  pimpl_->NAME(device_data, b);                                         \
+}
 
 
 FWD_TO_PIMPL(partition_weights)         // Partition weights
@@ -37,6 +42,7 @@ FWD_TO_PIMPL(partition_weights)         // Partition weights
 FWD_TO_PIMPL(eval_collocation)          // Collocation
 FWD_TO_PIMPL(eval_collocation_gradient) // Collocation Gradient
 FWD_TO_PIMPL(eval_collocation_hessian)  // Collocation Hessian
+FWD_TO_PIMPL(eval_collocation_laplacian)  // Collocation Laplacian
 
 FWD_TO_PIMPL(eval_uvvar_lda_rks)            // U/VVar LDA (density)
 FWD_TO_PIMPL(eval_uvvar_gga_rks)            // U/VVar GGA (density + grad, gamma)
@@ -56,12 +62,24 @@ FWD_TO_PIMPL(eval_zmat_gga_vxc_uks)         // Eval Z Matrix GGA VXC
 FWD_TO_PIMPL(eval_zmat_lda_vxc_gks)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL(eval_zmat_gga_vxc_gks)         // Eval Z Matrix GGA VXC
 
+
+FWD_TO_PIMPL_BOOL(eval_uvvar_mgga_rks)           // U/VVar MGGA (density + grad, gamma, tau, lapl)
+FWD_TO_PIMPL_BOOL(eval_uvvar_mgga_uks)           // U/VVar MGGA (density + grad, gamma, tau, lapl)
+FWD_TO_PIMPL_BOOL(eval_uvvar_mgga_gks)           // U/VVar MGGA (density + grad, gamma, tau, lapl)
+
+FWD_TO_PIMPL_BOOL(eval_zmat_mgga_vxc_rks)        // Eval Z Matrix MGGA VXC
+FWD_TO_PIMPL_BOOL(eval_zmat_mgga_vxc_uks)        // Eval Z Matrix MGGA VXC
+FWD_TO_PIMPL_BOOL(eval_zmat_mgga_vxc_gks)        // Eval Z Matrix MGGA VXC
+
+FWD_TO_PIMPL_BOOL(eval_mmat_mgga_vxc_rks)        // Eval M Matrix MGGA VXC
+FWD_TO_PIMPL_BOOL(eval_mmat_mgga_vxc_uks)        // Eval M Matrix MGGA VXC
+FWD_TO_PIMPL_BOOL(eval_mmat_mgga_vxc_gks)        // Eval M Matrix MGGA VXC
+
 FWD_TO_PIMPL(eval_exx_fmat)             // Eval EXX F Matrix
 //FWD_TO_PIMPL(eval_exx_gmat)             // Eval EXX G Matrix
 
 FWD_TO_PIMPL(inc_exc)
 FWD_TO_PIMPL(inc_nel)
-FWD_TO_PIMPL(inc_vxc)                   // Increment VXC by Z 
 FWD_TO_PIMPL(inc_exx_k)     
 FWD_TO_PIMPL(inc_exc_grad_lda)
 FWD_TO_PIMPL(inc_exc_grad_gga)
@@ -75,6 +93,12 @@ FWD_TO_PIMPL(eval_exx_ek_screening_bfn_stats)
 void LocalDeviceWorkDriver::eval_xmat( double fac, XCDeviceData* device_data, bool do_grad ) {
   throw_if_invalid_pimpl(pimpl_);
   pimpl_->eval_xmat(fac, device_data, do_grad);
+}
+
+// Increment VXC by Z (+ M{x,y,z} for MMGA)
+void LocalDeviceWorkDriver::inc_vxc( XCDeviceData* device_data, bool do_m ) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->inc_vxc(device_data, do_m);
 }
 
 void LocalDeviceWorkDriver::eval_exx_gmat( XCDeviceData* device_data, 
@@ -93,6 +117,12 @@ void LocalDeviceWorkDriver::eval_kern_exc_vxc_gga( const functional_type& func,
   XCDeviceData* data) {
   throw_if_invalid_pimpl(pimpl_);
   pimpl_->eval_kern_exc_vxc_gga(func,data);
+}
+
+void LocalDeviceWorkDriver::eval_kern_exc_vxc_mgga( const functional_type& func,
+  XCDeviceData* data) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_kern_exc_vxc_mgga(func,data);
 }
 
 

@@ -14,8 +14,9 @@
 
 namespace GauXC {
 
-$py(do_grad = 'gradient' in type or 'hessian' in type)\
+$py(do_grad = 'gradient' in type or 'hessian' in type or 'lapl' in type)\
 $py(do_hess = 'hessian' in type)\
+$py(do_lapl = 'lapl' in type)\
 $py(nt = 512)\
 
 __global__ __launch_bounds__($(nt),2) void collocation_device_shell_to_task_kernel_$(type)_$(L)(
@@ -80,6 +81,9 @@ $if( do_hess )\
     auto* __restrict__ basis_yz_eval = task->d2bfyz + shoff;
     auto* __restrict__ basis_zz_eval = task->d2bfzz + shoff;
 $endif\
+$if( do_lapl )\
+    auto* __restrict__ basis_lapl_eval = task->d2bflapl + shoff;
+$endif\
 
     // Loop over points in task
     // Assign each point to separate thread within the warp
@@ -102,7 +106,7 @@ $endif\
 $if( do_grad )\
       double radial_eval_alpha = 0.;
 $endif\
-$if( do_hess )\
+$if( do_hess or do_lapl)\
       double radial_eval_alpha_squared = 0.;
 $endif\
 
@@ -115,7 +119,7 @@ $endif\
 $if( do_grad )\
         radial_eval_alpha += a * e;
 $endif\
-$if( do_hess )\
+$if( do_hess or do_lapl)\
         radial_eval_alpha_squared += a * a * e;
 $endif\
       }
@@ -123,7 +127,7 @@ $endif\
 $if( do_grad )\
       radial_eval_alpha *= -2;
 $endif\
-$if( do_hess )\
+$if( do_hess or do_lapl)\
       radial_eval_alpha_squared *= 4;
 $endif\
 
@@ -181,6 +185,12 @@ $endfor\
       // Evaluate second derivative of bfn wrt zz
 $for( j in range(len(eval_lines_dzz)) )\
       basis_zz_eval[ipt + $(j)*npts] = $(eval_lines_dzz[j]);
+$endfor\
+$endif\
+$if(do_lapl)\
+      // Evaluate Laplacian of bfn 
+$for( j in range(len(eval_lines_dx)) )\
+      basis_lapl_eval[ipt + $(j)*npts] = $(eval_lines_lapl[j]);
 $endfor\
 $endif\
 
