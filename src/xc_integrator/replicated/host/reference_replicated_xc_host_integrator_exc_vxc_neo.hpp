@@ -51,15 +51,15 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    neo_exc_vxc_local_work_( elec_Ps, elec_ldps,
-                             nullptr, 0,
-                             prot_Ps, prot_ldps,
-                             prot_Pz, prot_ldpz,
+    neo_exc_vxc_local_work_( elec_Ps,   elec_ldps,
+                             nullptr,   0,
+                             prot_Ps,   prot_ldps,
+                             prot_Pz,   prot_ldpz,
                              elec_VXCs, elec_ldvxcs,
                              nullptr,   0,
                              prot_VXCs, prot_ldvxcs,
                              prot_VXCz, prot_ldvxcz,
-                             elec_EXC, prot_EXC, &N_EL, settings  );
+                             elec_EXC,  prot_EXC, &N_EL, settings  );
   });
 
 
@@ -117,15 +117,15 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    neo_exc_vxc_local_work_( elec_Ps, elec_ldps,
-                             elec_Pz, elec_ldpz,
-                             prot_Ps, prot_ldps,
-                             prot_Pz, prot_ldpz,
+    neo_exc_vxc_local_work_( elec_Ps,   elec_ldps,
+                             elec_Pz,   elec_ldpz,
+                             prot_Ps,   prot_ldps,
+                             prot_Pz,   prot_ldpz,
                              elec_VXCs, elec_ldvxcs,
                              elec_VXCz, elec_ldvxcz,
                              prot_VXCs, prot_ldvxcs,
                              prot_VXCz, prot_ldvxcz,
-                             elec_EXC, prot_EXC, &N_EL, settings  );
+                             elec_EXC,  prot_EXC, &N_EL, settings  );
   });
 
 
@@ -159,12 +159,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                            value_type* prot_VXCs,     int64_t prot_ldvxcs,
                            value_type* prot_VXCz,     int64_t prot_ldvxcz,
                            value_type* elec_EXC,  value_type* prot_EXC,  value_type *N_EL,
-                           const IntegratorSettingsXC& ks_settings ) {
-  
+                           const IntegratorSettingsXC& settings ) {
   
   // Determine is electronic subsystem is RKS or UKS
   const bool is_uks = (elec_Pz != nullptr) and (elec_VXCz != nullptr);
-  const bool is_rks = not is_uks; // TODO: GKS
+  const bool is_rks = not is_uks; 
+  // TODO: Integrate with GKS
+  // TODO: Integrate with mGGA
 
   // Cast LWD to LocalHostWorkDriver
   auto* lwd = dynamic_cast<LocalHostWorkDriver*>(this->local_work_driver_.get());
@@ -195,7 +196,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
-  if( not lb_state.modified_weights_are_stored )  GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified");
+  if( not lb_state.modified_weights_are_stored ) {
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified");
+  }
   
 
   // Zero out integrands
@@ -212,7 +215,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   double NEL_WORK = 0.0;
   double ELEC_EXC_WORK = 0.0;
   double PROT_EXC_WORK = 0.0;
- 
     
   // Loop over tasks
   const size_t ntasks = tasks.size();
@@ -226,6 +228,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   for( size_t iT = 0; iT < ntasks; ++iT ) {
 
     //std::cout << iT << "/" << ntasks << std::endl;
+    //printf("%lu / %lu\n", iT, ntasks);
     // Alias current task
     const auto& task = tasks[iT];
 
@@ -401,9 +404,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
       // Evaluate X matrix (P * B) -> store in Z
       // NEED THE FACTOR OF 2 HERE!
-      lwd->eval_xmat( npts, protonic_nbf, protonic_nbe, protonic_submat_map, 2.0, prot_Ps, prot_ldps, protonic_basis_eval, protonic_nbe,
+      lwd->eval_xmat( npts, protonic_nbf, protonic_nbe, protonic_submat_map, 1.0, prot_Ps, prot_ldps, protonic_basis_eval, protonic_nbe,
         protonic_zmat,   protonic_nbe, nbe_scr );
-      lwd->eval_xmat( npts, protonic_nbf, protonic_nbe, protonic_submat_map, 2.0, prot_Pz, prot_ldpz, protonic_basis_eval, protonic_nbe,
+      lwd->eval_xmat( npts, protonic_nbf, protonic_nbe, protonic_submat_map, 1.0, prot_Pz, prot_ldpz, protonic_basis_eval, protonic_nbe,
         protonic_zmat_z, protonic_nbe, nbe_scr );
 
       // Evaluate U and V variables
@@ -422,12 +425,12 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     //----------------------Start EPC functional Evaluation---------------------------------------
     if(evalProtonic){
       for (int32_t iPt = 0; iPt < npts; iPt++ ){
-        // Get Electronic density scalar (RKS)
+        // Get Electronic density scalar
         const auto den = is_rks ? den_eval[iPt] : (den_eval[2*iPt] + den_eval[2*iPt+1]);
-        value_type total_erho = std::abs(den) > 1e-15? den : 0;
+        value_type total_erho = std::abs(den) > 1e-15? den : 0.0;
         // Get Protonic density scalar (UKS)
         const auto protonic_den = protonic_den_eval[2*iPt] + protonic_den_eval[2*iPt+1];
-        value_type total_prho = std::abs(protonic_den) > 1e-15? protonic_den : 0; 
+        value_type total_prho = std::abs(protonic_den) > 1e-15? protonic_den : 0.0; 
         
         // Skip this point if the density is too small
         if(total_erho < 1e-15 | total_prho < 1e-15){
@@ -545,12 +548,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     {
 
       // Increment Electronic XC (VXC+EPC)
-      lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, elec_VXCs, elec_ldvxcs,
-        nbe_scr );
+      lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, elec_VXCs, elec_ldvxcs, nbe_scr );
       if(not is_rks) 
-        lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat_z, nbe, elec_VXCz, elec_ldvxcz,
-          nbe_scr );
-
+        lwd->inc_vxc( npts, nbf, nbe, basis_eval, submat_map, zmat_z, nbe, elec_VXCz, elec_ldvxcz, nbe_scr );
 
       // Increment Protonic XC (EPC)
       // Scalar integrations
