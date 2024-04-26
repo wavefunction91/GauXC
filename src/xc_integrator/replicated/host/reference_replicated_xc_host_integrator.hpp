@@ -28,6 +28,9 @@ protected:
   void integrate_den_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp, value_type* N_EL ) override;
 
+  void eval_exc_( int64_t m, int64_t n, const value_type* P,
+                   int64_t ldp, value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
+
   void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp, value_type* VXC, int64_t ldvxc,
                       value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;

@@ -54,6 +54,7 @@ public:
   XCIntegrator( XCIntegrator&& ) noexcept;
 
   value_type    integrate_den( const MatrixType& );
+  value_type    eval_exc( const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
   exc_vxc_type_rks  eval_exc_vxc ( const MatrixType&, 
                                    const IntegratorSettingsXC& = IntegratorSettingsXC{} );
   exc_vxc_type_uks  eval_exc_vxc ( const MatrixType&, const MatrixType&,

@@ -207,12 +207,15 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                        value_type* VXCx, int64_t ldvxcx,
                        value_type* EXC, value_type *N_EL, const IntegratorSettingsXC& settings) {
 
-  const bool is_gks = (Pz != nullptr) and (VXCz != nullptr) and (VXCy != nullptr) and (VXCx != nullptr);
-  const bool is_uks = (Pz != nullptr) and (VXCz != nullptr) and (VXCy == nullptr) and (VXCx == nullptr);
+  const bool is_gks = (Pz != nullptr) and (Py != nullptr) and (Px != nullptr);
+  const bool is_uks = (Pz != nullptr) and (Py == nullptr) and (Px == nullptr);
   const bool is_rks = not is_uks and not is_gks;
   if (not is_rks and not is_uks and not is_gks) {
     GAUXC_GENERIC_EXCEPTION("MUST BE EITHER RKS, UKS, or GKS!");
   }
+
+  const bool is_exc_only = (!VXCs) and (!VXCz) and (!VXCy) and (!VXCx);
+  //if(is_exc_only) std::cout << "EXC ONLY" << std::endl;
 
 
   // Misc KS settings
@@ -259,19 +262,22 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Zero out integrands
   
+  if(VXCs)
   for( auto j = 0; j < nbf; ++j ) {
     for( auto i = 0; i < nbf; ++i ) {
       VXCs[i + j*ldvxcs] = 0.;
     }
   }
-  if(not is_rks) {
+
+  if(VXCz) {
     for( auto j = 0; j < nbf; ++j ) {
       for( auto i = 0; i < nbf; ++i ) {
         VXCz[i + j*ldvxcz] = 0.;
       }
     }
   }
-  if(is_gks) {
+
+  if(VXCx and VXCy) {
     for( auto j = 0; j < nbf; ++j ) {
       for( auto i = 0; i < nbf; ++i ) {
         VXCy[i + j*ldvxcy] = 0.;
@@ -295,7 +301,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   for( size_t iT = 0; iT < ntasks; ++iT ) {
      
     //std::cout << iT << "/" << ntasks << std::endl;
-    //printf("%lu / %lu\n", iT, ntasks);
+    //if(is_exc_only) printf("%lu / %lu\n", iT, ntasks);
     // Alias current task
     const auto& task = tasks[iT];
 
@@ -572,6 +578,22 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     }
 
 
+    // Scalar integrations
+    double NEL_local = 0.0;
+    double EXC_local  = 0.0;
+    for( int32_t i = 0; i < npts; ++i ) {
+      const auto den = is_rks ? den_eval[i] : (den_eval[2*i] + den_eval[2*i+1]);
+      NEL_local += weights[i] * den;
+      EXC_local += eps[i]     * den;
+    }
+
+    // Atomic updates
+    #pragma omp atomic
+    EXC_WORK += EXC_local;
+    #pragma omp atomic
+    NEL_WORK += NEL_local;
+
+    if(is_exc_only) continue;
 
     // Evaluate Z matrix for VXC
     if( func.is_mgga() ) {
@@ -615,21 +637,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                                     zmat_x, nbe, zmat_y, nbe, K);
       }
     }
-
-    // Scalar integrations
-    double NEL_local = 0.0;
-    double EXC_local  = 0.0;
-    for( int32_t i = 0; i < npts; ++i ) {
-      const auto den = is_rks ? den_eval[i] : (den_eval[2*i] + den_eval[2*i+1]);
-      NEL_local += weights[i] * den;
-      EXC_local += eps[i]     * den;
-    }
-
-    // Atomic updates
-    #pragma omp atomic
-    EXC_WORK += EXC_local;
-    #pragma omp atomic
-    NEL_WORK += NEL_local;
     
 
      
@@ -659,24 +666,26 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   *EXC  = EXC_WORK;
   *N_EL = NEL_WORK;
 
-  // Symmetrize VXC
-  for( int32_t j = 0;   j < nbf; ++j ) {
-    for( int32_t i = j+1; i < nbf; ++i ) {
-      VXCs[ j + i*ldvxcs ] = VXCs[ i + j*ldvxcs ];
-    }
-  }
-  if(not is_rks) {
+  if(not is_exc_only) {
+    // Symmetrize VXC
     for( int32_t j = 0;   j < nbf; ++j ) {
       for( int32_t i = j+1; i < nbf; ++i ) {
-        VXCz[ j + i*ldvxcz ] = VXCz[ i + j*ldvxcz ];
+        VXCs[ j + i*ldvxcs ] = VXCs[ i + j*ldvxcs ];
       }
     }
-  }
-  if( is_gks) {
-    for( int32_t j = 0;   j < nbf; ++j ) {
-      for( int32_t i = j+1; i < nbf; ++i ) {
-        VXCy[ j + i*ldvxcy ] = VXCy[ i + j*ldvxcy ];
-        VXCx[ j + i*ldvxcx ] = VXCx[ i + j*ldvxcx ];
+    if(not is_rks) {
+      for( int32_t j = 0;   j < nbf; ++j ) {
+        for( int32_t i = j+1; i < nbf; ++i ) {
+          VXCz[ j + i*ldvxcz ] = VXCz[ i + j*ldvxcz ];
+        }
+      }
+    }
+    if( is_gks) {
+      for( int32_t j = 0;   j < nbf; ++j ) {
+        for( int32_t i = j+1; i < nbf; ++i ) {
+          VXCy[ j + i*ldvxcy ] = VXCy[ i + j*ldvxcy ];
+          VXCx[ j + i*ldvxcx ] = VXCx[ i + j*ldvxcx ];
+        }
       }
     }
   }

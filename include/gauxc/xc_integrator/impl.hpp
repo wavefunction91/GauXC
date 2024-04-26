@@ -32,6 +32,13 @@ typename XCIntegrator<MatrixType>::value_type
 };
 
 template <typename MatrixType>
+typename XCIntegrator<MatrixType>::value_type
+  XCIntegrator<MatrixType>::eval_exc( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_exc(P, ks_settings);
+}
+
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_vxc_type_rks
   XCIntegrator<MatrixType>::eval_exc_vxc( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();

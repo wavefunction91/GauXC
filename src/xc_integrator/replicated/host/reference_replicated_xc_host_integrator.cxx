@@ -6,6 +6,7 @@
  * See LICENSE.txt for details
  */
 #include "reference_replicated_xc_host_integrator_integrate_den.hpp"
+#include "reference_replicated_xc_host_integrator_exc.hpp"
 #include "reference_replicated_xc_host_integrator_exc_vxc.hpp"
 #include "reference_replicated_xc_host_integrator_exc_grad.hpp"
 #include "reference_replicated_xc_host_integrator_exx.hpp"

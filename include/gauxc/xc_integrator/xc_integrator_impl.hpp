@@ -29,6 +29,7 @@ public:
 protected:
 
   virtual value_type    integrate_den_( const MatrixType& P ) = 0;
+  virtual value_type        eval_exc_     ( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_vxc_type_rks  eval_exc_vxc_ ( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_vxc_type_uks  eval_exc_vxc_ ( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_vxc_type_gks  eval_exc_vxc_ ( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, 
@@ -54,13 +55,20 @@ public:
    *  @param[in] P The density matrix
    *  @returns Approx Tr[P*S]
    */
- value_type integrate_den( const MatrixType& P ) {
-   return integrate_den_(P);
- }
+  value_type integrate_den( const MatrixType& P ) {
+    return integrate_den_(P);
+  }
+
+  /** Integrate EXC for RKS
+   *
+   *  @param[in] P The alpha density matrix
+   *  @returns Integrated EXC 
+   */
+  value_type eval_exc( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
+    return eval_exc_(P, ks_settings);
+  }
 
   /** Integrate EXC / VXC (Mean field terms) for RKS
-   * 
-   *   TODO: add API for UKS/GKS
    *
    *  @param[in] P The alpha density matrix
    *  @returns EXC / VXC in a combined structure
@@ -89,8 +97,6 @@ public:
   }
 
   /** Integrate Exact Exchange for RHF
-   * 
-   *   TODO: add API for UHF/GHF
    *
    *  @param[in] P The alpha density matrix
    *  @returns Excact Exchange Matrix

@@ -38,6 +38,8 @@ protected:
 
   virtual void integrate_den_( int64_t m, int64_t n, const value_type* P,
                                int64_t ldp, value_type* N_EL ) = 0;
+  virtual void eval_exc_( int64_t m, int64_t n, const value_type* P,
+                          int64_t ldp, value_type* EXC, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                               int64_t ldp, value_type* VXC, int64_t ldvxc,
                               value_type* EXC, const IntegratorSettingsXC& ks_settings ) = 0;
@@ -80,6 +82,10 @@ public:
 
   void integrate_den( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp, value_type* N_EL );
+
+  void eval_exc( int64_t m, int64_t n, const value_type* P,
+                 int64_t ldp, value_type* EXC, 
+                 const IntegratorSettingsXC& ks_settings ); 
 
   void eval_exc_vxc( int64_t m, int64_t n, const value_type* P,
                      int64_t ldp, value_type* VXC, int64_t ldvxc,
