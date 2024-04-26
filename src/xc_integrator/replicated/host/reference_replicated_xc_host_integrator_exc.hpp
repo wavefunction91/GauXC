@@ -18,9 +18,11 @@ namespace detail {
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  eval_exc_( int64_t m, int64_t n, const value_type* P,
-             int64_t ldp, value_type* EXC, 
-             const IntegratorSettingsXC& ks_settings ) {
+  eval_exc_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
+             const value_type* Pz, int64_t ldpz,
+             const value_type* Py, int64_t ldpy,
+             const value_type* Px, int64_t ldpx,
+             value_type* EXC, const IntegratorSettingsXC& ks_settings ) {
 
   const auto& basis = this->load_balancer_->basis();
 
@@ -30,8 +32,14 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     GAUXC_GENERIC_EXCEPTION("P Must Be Square");
   if( m != nbf ) 
     GAUXC_GENERIC_EXCEPTION("P Must Have Same Dimension as Basis");
-  if( ldp < nbf )
+  if( ldps and ldps < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDP");
+  if( ldpz and ldpz < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPZ");
+  if( ldpy and ldpy < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPY");
+  if( ldpx and ldpx < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPX");
 
 
   // Get Tasks
@@ -43,7 +51,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
     //exc_vxc_local_work_( P, ldp, VXC, ldvxc, EXC, &N_EL );
-    exc_vxc_local_work_( P, ldp, nullptr, 0, nullptr, 0, nullptr, 0,
+    exc_vxc_local_work_( Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx,
                          nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0, EXC, &N_EL, ks_settings );
   });
 
@@ -61,6 +69,24 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 }
 
+template <typename ValueType>
+void ReferenceReplicatedXCHostIntegrator<ValueType>::
+  eval_exc_( int64_t m, int64_t n, const value_type* P, int64_t ldp, 
+             value_type* EXC, const IntegratorSettingsXC& ks_settings ) {
+
+  eval_exc_(m, n, P, ldp, nullptr, 0, nullptr, 0, nullptr, 0, EXC, ks_settings);
+
+}
+
+template <typename ValueType>
+void ReferenceReplicatedXCHostIntegrator<ValueType>::
+  eval_exc_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
+             const value_type* Pz, int64_t ldpz,
+             value_type* EXC, const IntegratorSettingsXC& ks_settings ) {
+
+  eval_exc_(m, n, Ps, ldps, Pz, ldpz, nullptr, 0, nullptr, 0, EXC, ks_settings);
+
+}
 
 }
 }

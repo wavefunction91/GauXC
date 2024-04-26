@@ -29,7 +29,11 @@ public:
 protected:
 
   virtual value_type    integrate_den_( const MatrixType& P ) = 0;
+
   virtual value_type        eval_exc_     ( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual value_type        eval_exc_     ( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual value_type        eval_exc_     ( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, const IntegratorSettingsXC& ks_settings ) = 0;
+
   virtual exc_vxc_type_rks  eval_exc_vxc_ ( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_vxc_type_uks  eval_exc_vxc_ ( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_vxc_type_gks  eval_exc_vxc_ ( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, 
@@ -66,6 +70,24 @@ public:
    */
   value_type eval_exc( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
     return eval_exc_(P, ks_settings);
+  }
+
+  /** Integrate EXC for UKS
+   *
+   *  @param[in] P The alpha density matrix
+   *  @returns Integrated EXC 
+   */
+  value_type eval_exc( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
+    return eval_exc_(Ps, Pz, ks_settings);
+  }
+
+  /** Integrate EXC for GKS
+   *
+   *  @param[in] P The alpha density matrix
+   *  @returns Integrated EXC 
+   */
+  value_type eval_exc( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px,  const IntegratorSettingsXC& ks_settings ) {
+    return eval_exc_(Ps, Pz, Py, Px, ks_settings);
   }
 
   /** Integrate EXC / VXC (Mean field terms) for RKS
