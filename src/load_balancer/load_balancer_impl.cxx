@@ -29,6 +29,7 @@ LoadBalancerImpl::LoadBalancerImpl(const RuntimeEnvironment& rt, const Molecule&
   // Unique initializations for the protonic basis
   protonic_basis_       = std::make_shared<basis_type>(protonic_basis);
   protonic_basis_map_   = std::make_shared<basis_map_type>(*protonic_basis_, mol);
+  
 }
 
 LoadBalancerImpl::LoadBalancerImpl( const RuntimeEnvironment& rt, const Molecule& mol, 

@@ -29,6 +29,7 @@ public:
 protected:
 
   std::shared_ptr< functional_type > func_;               ///< XC functional
+  std::shared_ptr< functional_type > epcfunc_;            ///< EPC functional for NEO
   std::shared_ptr< LoadBalancer >    load_balancer_;      ///< Load Balancer
   std::unique_ptr< LocalWorkDriver > local_work_driver_;  ///< Local Work Driver
   std::shared_ptr< ReductionDriver > reduction_driver_;   ///< Reduction Driver
@@ -88,6 +89,13 @@ protected:
 public:
 
   ReplicatedXCIntegratorImpl( std::shared_ptr< functional_type >   func,
+                              std::shared_ptr< LoadBalancer >      lb, 
+                              std::unique_ptr< LocalWorkDriver >&& lwd,
+                              std::shared_ptr< ReductionDriver>    rd
+                              );
+
+  ReplicatedXCIntegratorImpl( std::shared_ptr< functional_type >   func,
+                              std::shared_ptr< functional_type >   epcfunc,
                               std::shared_ptr< LoadBalancer >      lb, 
                               std::unique_ptr< LocalWorkDriver >&& lwd,
                               std::shared_ptr< ReductionDriver>    rd

@@ -21,6 +21,17 @@ ReplicatedXCIntegratorImpl<ValueType>::
 
 template <typename ValueType>
 ReplicatedXCIntegratorImpl<ValueType>::
+  ReplicatedXCIntegratorImpl( std::shared_ptr< functional_type >   func,
+                              std::shared_ptr< functional_type >   epcfunc,
+                              std::shared_ptr< LoadBalancer >      lb, 
+                              std::unique_ptr< LocalWorkDriver >&& lwd,
+                              std::shared_ptr< ReductionDriver >   rd) :
+    ReplicatedXCIntegratorImpl(func, lb, std::move(lwd), rd) {
+      epcfunc_ = epcfunc;
+    }
+
+template <typename ValueType>
+ReplicatedXCIntegratorImpl<ValueType>::
   ~ReplicatedXCIntegratorImpl() noexcept = default;
 
 template <typename ValueType>
