@@ -31,7 +31,7 @@ struct XCHostData {
   std::vector<F> den_scr;
   std::vector<F> basis_eval;
 
-  std::vector<F> protonic_eps;
+  std::vector<F> epc;
   std::vector<F> protonic_vrho;
  
   std::vector<F> protonic_zmat;

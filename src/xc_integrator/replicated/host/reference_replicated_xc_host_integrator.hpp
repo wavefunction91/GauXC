@@ -110,7 +110,8 @@ protected:
                                 value_type* VXCz, int64_t ldvxcz,
                                 value_type* prot_VXCs, int64_t prot_ldvxcs,
                                 value_type* prot_VXCz, int64_t prot_ldvxcz,
-                                value_type* EXC1, value_type* prot_EXC, value_type *N_EL,
+                                value_type* EXC1, value_type* prot_EXC, 
+                                value_type *N_EL, value_type *N_PROT,
                                 const IntegratorSettingsXC& ks_settings );
                             
   void exc_grad_local_work_( const value_type* P, int64_t ldp, value_type* EXC_GRAD );

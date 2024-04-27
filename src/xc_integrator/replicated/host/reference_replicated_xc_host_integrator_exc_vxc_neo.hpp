@@ -48,6 +48,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Temporary electron count to judge integrator accuracy
   value_type N_EL;
+  // Temporary proton count to judge integrator accuracy
+  value_type N_PROT;
 
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
@@ -59,7 +61,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                              nullptr,   0,
                              prot_VXCs, prot_ldvxcs,
                              prot_VXCz, prot_ldvxcz,
-                             elec_EXC,  prot_EXC, &N_EL, settings  );
+                             elec_EXC,  prot_EXC, 
+                             &N_EL, &N_PROT, settings  );
   });
 
 
@@ -75,6 +78,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     this->reduction_driver_->allreduce_inplace( elec_EXC,  1,                 ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( prot_EXC,  1,                 ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( &N_EL,     1,                 ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( &N_PROT,   1,                 ReductionOp::Sum );
 
   });
 
@@ -114,6 +118,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Temporary electron count to judge integrator accuracy
   value_type N_EL;
+  // Temporary proton count to judge integrator accuracy
+  value_type N_PROT;
 
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
@@ -125,7 +131,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                              elec_VXCz, elec_ldvxcz,
                              prot_VXCs, prot_ldvxcs,
                              prot_VXCz, prot_ldvxcz,
-                             elec_EXC,  prot_EXC, &N_EL, settings  );
+                             elec_EXC,  prot_EXC,
+                             &N_EL, &N_PROT, settings  );
   });
 
 
@@ -142,6 +149,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     this->reduction_driver_->allreduce_inplace( elec_EXC,  1,                 ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( prot_EXC,  1,                 ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( &N_EL,     1,                 ReductionOp::Sum );
+    this->reduction_driver_->allreduce_inplace( &N_PROT,   1,                 ReductionOp::Sum );
 
   });
 
@@ -158,7 +166,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                            value_type* elec_VXCz,     int64_t elec_ldvxcz,
                            value_type* prot_VXCs,     int64_t prot_ldvxcs,
                            value_type* prot_VXCz,     int64_t prot_ldvxcz,
-                           value_type* elec_EXC,  value_type* prot_EXC,  value_type *N_EL,
+                           value_type* elec_EXC,  value_type* prot_EXC,  
+                           value_type *N_EL,      value_type *N_PROT,
                            const IntegratorSettingsXC& settings ) {
   
   // Determine is electronic subsystem is RKS or UKS
@@ -172,6 +181,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Setup Aliases
   const auto& func   = *this->func_;
+  const auto& epcfunc   = *this->epcfunc_;
   const auto& basis  = this->load_balancer_->basis();
   const auto& mol    = this->load_balancer_->molecule();
 
@@ -213,8 +223,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   *prot_EXC = 0.;
 
   double NEL_WORK = 0.0;
-  double ELEC_EXC_WORK = 0.0;
-  double PROT_EXC_WORK = 0.0;
+  double NPROT_WORK = 0.0;
+  double EXC_WORK = 0.0;
+  double EPC_WORK = 0.0;
     
   // Loop over tasks
   const size_t ntasks = tasks.size();
@@ -310,14 +321,15 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       dden_y_eval   = dden_x_eval + spin_dim_scal * npts;
       dden_z_eval   = dden_y_eval + spin_dim_scal * npts;
     }
+    
     //----------------------End Electronic System Setup------------------------
 
 
     //----------------------Start Protonic System Setup------------------------
     // Set Up Memory (assuming UKS)
-    host_data.protonic_zmat      .resize( npts * protonic_nbe * 2 );
-    host_data.protonic_eps       .resize( npts );
+    host_data.epc                .resize( npts );
     host_data.protonic_vrho      .resize( npts * 2 );
+    host_data.protonic_zmat      .resize( npts * protonic_nbe * 2 );
     // LDA
     host_data.protonic_basis_eval .resize( npts * protonic_nbe );
     host_data.protonic_den_scr    .resize( npts * 2);
@@ -327,8 +339,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     auto* protonic_zmat       = host_data.protonic_zmat.data();
     decltype(protonic_zmat) protonic_zmat_z = protonic_zmat + protonic_nbe * npts;
     
-    auto* protonic_eps       = host_data.protonic_eps.data();
-    auto* protonic_vrho      = host_data.protonic_vrho.data();
+    auto* epc                 = host_data.epc.data();
+    auto* protonic_vrho       = host_data.protonic_vrho.data();
     // No GGA for NEO yet
     //----------------------End Protonic System Setup------------------------
 
@@ -403,7 +415,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         protonic_basis_eval );
 
       // Evaluate X matrix (P * B) -> store in Z
-      // NEED THE FACTOR OF 2 HERE!
       lwd->eval_xmat( npts, protonic_nbf, protonic_nbe, protonic_submat_map, 1.0, prot_Ps, prot_ldps, protonic_basis_eval, protonic_nbe,
         protonic_zmat,   protonic_nbe, nbe_scr );
       lwd->eval_xmat( npts, protonic_nbf, protonic_nbe, protonic_submat_map, 1.0, prot_Pz, prot_ldpz, protonic_basis_eval, protonic_nbe,
@@ -414,7 +425,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         protonic_nbe, protonic_den_eval );
 
       // No protonic XC functional. Fill with eps and vrho to be 0.0
-      std::fill_n(protonic_eps,  npts,   0.);
+      std::fill_n(epc,  npts,   0.);
       std::fill_n(protonic_vrho, npts*2, 0.);
     }
     //----------------------End Calculating Protonic Density & UV Variable------------------------
@@ -424,39 +435,33 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     //----------------------Start EPC functional Evaluation---------------------------------------
     if(evalProtonic){
+      // Prepare for kernal input
       for (int32_t iPt = 0; iPt < npts; iPt++ ){
-        // Get Electronic density scalar
-        const auto den = is_rks ? den_eval[iPt] : (den_eval[2*iPt] + den_eval[2*iPt+1]);
-        value_type total_erho = std::abs(den) > 1e-15? den : 0.0;
-        // Get Protonic density scalar (UKS)
+        // Sum up electronic density 
+        const auto electonic_den = is_rks ? den_eval[iPt] : (den_eval[2*iPt] + den_eval[2*iPt+1]);
+        // Sum up protonic density
         const auto protonic_den = protonic_den_eval[2*iPt] + protonic_den_eval[2*iPt+1];
-        value_type total_prho = std::abs(protonic_den) > 1e-15? protonic_den : 0.0; 
-        
-        // Skip this point if the density is too small
-        if(total_erho < 1e-15 | total_prho < 1e-15){
-          protonic_eps[iPt]      = 0.0;
-          protonic_vrho[2*iPt]   = 0.0;
-          protonic_vrho[2*iPt+1] = 0.0;
-          continue;
-        }
+        // Treat total erho as spin-up, treat total prho as spin down
+        protonic_den_eval[2*iPt]   = electonic_den;
+        protonic_den_eval[2*iPt+1] = protonic_den;
+      }
 
-        // epc-17-2 denominator
-        value_type dn = 2.35 - 2.4 * std::sqrt(total_erho*total_prho) + 6.6 * (total_erho*total_prho);
+      // EPC Functional Evaluation (Calling ExchCXX Builtin Function)
+      epcfunc.eval_exc_vxc( npts, protonic_den_eval, epc, protonic_vrho );
 
-        // Update electronic eps and vxc
-        eps[iPt]                    +=   -1.0 * total_prho/dn;
-        vrho[spin_dim_scal*iPt]     += ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
-                                        + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
-        if(not is_rks) 
-          vrho[spin_dim_scal*iPt+1] += ( -1.0 * total_prho / dn + (-1.2 * std::sqrt(total_erho) * std::sqrt(total_prho) * total_prho 
-                                        + 6.6 * total_erho * total_prho * total_prho ) / (dn * dn) );
+      // Digest kernal output
+      for (int32_t iPt = 0; iPt < npts; iPt++ ){
+        // assign df/derho 
+        vrho[2*iPt]   += protonic_vrho[2*iPt];
+        vrho[2*iPt+1] += protonic_vrho[2*iPt];
+        // assign df/dprho
+        protonic_vrho[2*iPt] = protonic_vrho[2*iPt+1];
+        protonic_vrho[2*iPt+1] = 0.0;
+        // change back protonic density to original state
+        protonic_den_eval[2*iPt] = protonic_den_eval[2*iPt+1];
+        protonic_den_eval[2*iPt] = 0.0;
+      }
 
-        // Assign protonic eps and vxc
-        protonic_eps[iPt]            =   -1.0 * total_erho/dn;
-        protonic_vrho[2*iPt]         = ( -1.0 * total_erho / dn + (-1.2 * std::sqrt(total_prho) * std::sqrt(total_erho) * total_erho 
-                                        + 6.6 * total_erho * total_erho * total_prho ) / (dn * dn) );
-        protonic_vrho[2*iPt+1]       =    0.0;
-      } // End looping over pts
     } // End if(evalProtonic)
     //----------------------End EPC functional Evaluation---------------------------------------
  
@@ -466,6 +471,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Factor weights into XC results
     for( int32_t i = 0; i < npts; ++i ) {
       eps[i]  *= weights[i];
+      epc[i]  *= weights[i];
       vrho[spin_dim_scal*i] *= weights[i];
       if(not is_rks) vrho[spin_dim_scal*i+1] *= weights[i];
     }
@@ -507,7 +513,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     if(evalProtonic){
       // Factor weights into XC results
       for( int32_t i = 0; i < npts; ++i ) {
-        protonic_eps[i]      *= weights[i];
         protonic_vrho[2*i]   *= weights[i];
         protonic_vrho[2*i+1] *= weights[i];
       }
@@ -519,29 +524,34 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     //----------------------End Evaluating Protonic ZMat----------------------------
 
     // Scalar integrations
-    double NEL_local = 0.0;
-    double ELEC_EXC_local  = 0.0;
-    double PROT_EXC_local  = 0.0;
+    double NEL_local   = 0.0;
+    double NPROT_local = 0.0;
+    double EXC_local   = 0.0;
+    double EPC_local   = 0.0;
     for( int32_t i = 0; i < npts; ++i ) {
-      const auto den = is_rks ? den_eval[i] : (den_eval[2*i] + den_eval[2*i+1]);
-      NEL_local      += weights[i] * den;
-      ELEC_EXC_local += eps[i]     * den;
+      const auto den  = is_rks ? den_eval[i] : (den_eval[2*i] + den_eval[2*i+1]);
+      NEL_local    += weights[i] * den;
+      EXC_local    += eps[i]     * den;
+      EPC_local    += epc[i]     * den;;
     }
     // Protonic XC (EPC)
     if(evalProtonic){
       for( int32_t i = 0; i < npts; ++i ) {
         const auto protonic_den =  protonic_den_eval[2*i] + protonic_den_eval[2*i+1];
-        PROT_EXC_local  += protonic_eps[i]   * protonic_den;    
+        NPROT_local            +=  weights[i]  * protonic_den;
+        EPC_local              +=  epc[i]      * protonic_den;    
       }
     }
 
     // Atomic updates
     #pragma omp atomic
-    NEL_WORK += NEL_local;
+    NEL_WORK   += NEL_local;
     #pragma omp atomic
-    ELEC_EXC_WORK += ELEC_EXC_local;
+    NPROT_WORK += NPROT_local;
     #pragma omp atomic
-    PROT_EXC_WORK += PROT_EXC_local;
+    EXC_WORK   += EXC_local;
+    #pragma omp atomic
+    EPC_WORK   += EPC_local;
 
     
     // Incremeta LT of VXC
@@ -568,13 +578,15 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   }  // End OpenMP region
 
   // Set scalar return values
-  *N_EL = NEL_WORK;
-  *elec_EXC  = ELEC_EXC_WORK;
-  *prot_EXC  = PROT_EXC_WORK;
+  *N_EL      = NEL_WORK;
+  *N_PROT    = NPROT_WORK;
+  *elec_EXC  = EXC_WORK + EPC_WORK;
+  *prot_EXC  = EPC_WORK;
 
-  //std::cout << "N_EL = " << std::setprecision(12) << std::scientific << *N_EL << std::endl;
-  //std::cout << "elec_EXC = " << std::setprecision(12) << std::scientific << *elec_EXC << std::endl
-  //std::cout << "prot_EXC = " << std::setprecision(12) << std::scientific << *prot_EXC << std::endl;
+  std::cout << "N_EL = "     << std::setprecision(12) << std::scientific << *N_EL       << std::endl;
+  std::cout << "N_PROT = "   << std::setprecision(12) << std::scientific << *N_PROT     << std::endl;
+  std::cout << "elec_EXC = " << std::setprecision(12) << std::scientific << *elec_EXC   << std::endl;
+  std::cout << "prot_EXC = " << std::setprecision(12) << std::scientific << *prot_EXC   << std::endl;
 
   // Symmetrize Electronic VXC
   for( int32_t j = 0;   j < nbf; ++j )

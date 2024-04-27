@@ -13,7 +13,7 @@ set( GAUXC_CUTLASS_REVISION v2.10.0 )
 #set( GAUXC_EXCHCXX_REPOSITORY https://github.com/wavefunction91/ExchCXX.git )
 #set( GAUXC_EXCHCXX_REVISION   21a4700a826ec0beae1311a1d59677393bcb168f )
 set( GAUXC_EXCHCXX_REPOSITORY https://github.com/aodongliu/ExchCXX.git )
-set( GAUXC_EXCHCXX_REVISION   63aab83d92c90c4d130f2806ad008b749539d8b2 )
+set( GAUXC_EXCHCXX_REVISION   840403f14c7e5abd6b6a3f2126c3ce38d3fe8cf9 )
 
 set( GAUXC_GAU2GRID_REPOSITORY https://github.com/dgasmith/gau2grid.git )
 set( GAUXC_GAU2GRID_REVISION   v2.0.6 )
