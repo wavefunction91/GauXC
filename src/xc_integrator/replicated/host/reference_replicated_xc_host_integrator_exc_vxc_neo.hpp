@@ -437,13 +437,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     if(evalProtonic){
       // Prepare for kernal input
       for (int32_t iPt = 0; iPt < npts; iPt++ ){
-        // Sum up electronic density 
-        const auto electonic_den = is_rks ? den_eval[iPt] : (den_eval[2*iPt] + den_eval[2*iPt+1]);
-        // Sum up protonic density
-        const auto protonic_den = protonic_den_eval[2*iPt] + protonic_den_eval[2*iPt+1];
         // Treat total erho as spin-up, treat total prho as spin down
-        protonic_den_eval[2*iPt]   = electonic_den;
-        protonic_den_eval[2*iPt+1] = protonic_den;
+        protonic_den_eval[2*iPt]   = is_rks ? den_eval[iPt] : (den_eval[2*iPt] + den_eval[2*iPt+1]);
+        protonic_den_eval[2*iPt+1] = protonic_den_eval[2*iPt] + protonic_den_eval[2*iPt+1];
       }
 
       // EPC Functional Evaluation (Calling ExchCXX Builtin Function)
@@ -452,8 +448,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       // Digest kernal output
       for (int32_t iPt = 0; iPt < npts; iPt++ ){
         // assign df/derho 
-        vrho[2*iPt]   += protonic_vrho[2*iPt];
-        vrho[2*iPt+1] += protonic_vrho[2*iPt];
+        vrho[spin_dim_scal*iPt]   += protonic_vrho[2*iPt];
+        if(not is_rks) vrho[spin_dim_scal*iPt+1] += protonic_vrho[2*iPt];
         // assign df/dprho
         protonic_vrho[2*iPt] = protonic_vrho[2*iPt+1];
         protonic_vrho[2*iPt+1] = 0.0;
@@ -583,10 +579,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   *elec_EXC  = EXC_WORK + EPC_WORK;
   *prot_EXC  = EPC_WORK;
 
-  std::cout << "N_EL = "     << std::setprecision(12) << std::scientific << *N_EL       << std::endl;
-  std::cout << "N_PROT = "   << std::setprecision(12) << std::scientific << *N_PROT     << std::endl;
-  std::cout << "elec_EXC = " << std::setprecision(12) << std::scientific << *elec_EXC   << std::endl;
-  std::cout << "prot_EXC = " << std::setprecision(12) << std::scientific << *prot_EXC   << std::endl;
+  //std::cout << "N_EL = "     << std::setprecision(12) << std::scientific << *N_EL       << std::endl;
+  //std::cout << "N_PROT = "   << std::setprecision(12) << std::scientific << *N_PROT     << std::endl;
+  //std::cout << "elec_EXC = " << std::setprecision(12) << std::scientific << *elec_EXC   << std::endl;
+  //std::cout << "prot_EXC = " << std::setprecision(12) << std::scientific << *prot_EXC   << std::endl;
 
   // Symmetrize Electronic VXC
   for( int32_t j = 0;   j < nbf; ++j )
