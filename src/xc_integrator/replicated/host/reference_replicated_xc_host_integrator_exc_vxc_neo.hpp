@@ -438,8 +438,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       // Prepare for kernal input
       for (int32_t iPt = 0; iPt < npts; iPt++ ){
         // Treat total erho as spin-up, treat total prho as spin down
-        protonic_den_eval[2*iPt]   = is_rks ? den_eval[iPt] : (den_eval[2*iPt] + den_eval[2*iPt+1]);
         protonic_den_eval[2*iPt+1] = protonic_den_eval[2*iPt] + protonic_den_eval[2*iPt+1];
+        protonic_den_eval[2*iPt]   = is_rks ? den_eval[iPt] : (den_eval[2*iPt] + den_eval[2*iPt+1]);
       }
 
       // EPC Functional Evaluation (Calling ExchCXX Builtin Function)
@@ -457,7 +457,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         protonic_den_eval[2*iPt] = protonic_den_eval[2*iPt+1];
         protonic_den_eval[2*iPt] = 0.0;
       }
-
     } // End if(evalProtonic)
     //----------------------End EPC functional Evaluation---------------------------------------
  
