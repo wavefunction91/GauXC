@@ -131,6 +131,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   //incore_integrator.exc_vxc_local_work( basis, P, ldp, VXC, ldvxc, EXC, N_EL, task_begin, task_end, device_data );
   //return;
 
+  const bool exc_only = not VXC;
 
   const auto nbf = basis.nbf();
   const uint32_t nbf_threshold = 8000;
@@ -139,6 +140,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   this->timer_.time_op("XCIntegrator.ZeroHost", [&](){
     *EXC  = 0.;
     *N_EL = 0.;
+    if(not exc_only)
     for( auto j = 0; j < nbf; ++j )
     for( auto i = 0; i < nbf; ++i )
       VXC[i + j*ldvxc] = 0.;
@@ -415,6 +417,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   auto task_end    = task.task_end;
   auto& union_shell_list = task.shell_list;
 
+  const bool exc_only = not VXC;
 
   // Extract subbasis
   BasisSet<double> basis_subset; basis_subset.reserve(union_shell_list.size());
@@ -448,10 +451,10 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
 
   // Allocate host temporaries
-  std::vector<double> P_submat_host(nbe*nbe), VXC_submat_host(nbe*nbe,0.);
+  std::vector<double> P_submat_host(nbe*nbe), VXC_submat_host(exc_only ? 0 : nbe*nbe,0.);
   double EXC_tmp, NEL_tmp;
   double* P_submat   = P_submat_host.data();
-  double* VXC_submat = VXC_submat_host.data();
+  double* VXC_submat = exc_only ? nullptr : VXC_submat_host.data();
 
 
 
@@ -469,13 +472,15 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
 
 
   // Process selected task batch
-  incore_integrator.exc_vxc_local_work( basis_subset, P_submat, nbe, VXC_submat, nbe,
+  size_t ldvxc_sub = exc_only ? 0 : nbe;
+  incore_integrator.exc_vxc_local_work( basis_subset, P_submat, nbe, VXC_submat, ldvxc_sub,
     &EXC_tmp, &NEL_tmp, task_begin, task_end, device_data );
 
 
   // Update full quantities
   *EXC += EXC_tmp;
   *N_EL += NEL_tmp;
+  if(not exc_only)
   this->timer_.time_op_accumulate("XCIntegrator.IncrementSubPotential",[&]() {
     detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXC, ldvxc, 
                            VXC_submat, nbe, union_submat_cut );

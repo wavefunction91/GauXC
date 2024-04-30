@@ -6,6 +6,7 @@
  * See LICENSE.txt for details
  */
 #include "shellbatched_replicated_xc_device_integrator_integrate_den.hpp"
+#include "shellbatched_replicated_xc_device_integrator_exc.hpp"
 #include "shellbatched_replicated_xc_device_integrator_exc_vxc.hpp"
 #include "shellbatched_replicated_xc_device_integrator_exc_grad.hpp"
 #include "shellbatched_replicated_xc_device_integrator_exx.hpp"
