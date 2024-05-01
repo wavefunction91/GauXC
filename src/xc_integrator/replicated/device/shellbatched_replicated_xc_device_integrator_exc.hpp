@@ -18,12 +18,13 @@ namespace detail {
 template <typename ValueType>
 void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   eval_exc_( int64_t m, int64_t n, const value_type* P, int64_t ldp, 
-             const value_type*, int64_t,
+             const value_type* Pz, int64_t,
              const value_type*, int64_t,
              const value_type*, int64_t,
              value_type* EXC, const IntegratorSettingsXC& settings ) {
 
 
+  if(Pz) GAUXC_GENERIC_EXCEPTION("UKS/GKS + EXC Only GPU NYI");
 
   const auto& basis = this->load_balancer_->basis();
 

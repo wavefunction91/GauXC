@@ -24,6 +24,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
              value_type* EXC, const IntegratorSettingsXC& settings ) {
 
 
+  if(Pz) GAUXC_GENERIC_EXCEPTION("UKS/GKS + EXC Only Device NYI");
   const auto& basis = this->load_balancer_->basis();
 
   // Check that P / VXC are sane
