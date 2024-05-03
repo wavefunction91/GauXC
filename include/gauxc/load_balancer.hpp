@@ -108,10 +108,6 @@ public:
   /// Return the protonic BasisSetMap instance corresponding to protonic basis/molecule
   const basis_map_type& protonic_basis_map() const;
 
-  /// Return the number of protonic non-negligible local shell pairs for this LoadBalancer
-  const shell_pair_type& protonic_shell_pairs() const;
-  const shell_pair_type& protonic_shell_pairs();
-
   /// Return the runtime handle used to construct this LoadBalancer
   const RuntimeEnvironment& runtime() const;
   

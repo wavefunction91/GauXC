@@ -28,7 +28,7 @@ ReplicatedXCIntegratorImpl<ValueType>::
                               std::shared_ptr< ReductionDriver >   rd) :
     ReplicatedXCIntegratorImpl(func, lb, std::move(lwd), rd) {
       epcfunc_ = epcfunc;
-    }
+}
 
 template <typename ValueType>
 ReplicatedXCIntegratorImpl<ValueType>::

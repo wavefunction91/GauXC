@@ -31,7 +31,6 @@ protected:
   std::shared_ptr<shell_pair_type> shell_pairs_;
   // Protonic basis information if doing Nuclear-Electronic Orbital (NEO) theory
   std::shared_ptr<basis_type> protonic_basis_;
-  std::shared_ptr<shell_pair_type> protonic_shell_pairs_;
   std::shared_ptr<basis_map_type> protonic_basis_map_;
 
   std::vector< XCTask >     local_tasks_;
@@ -87,8 +86,6 @@ public:
   const shell_pair_type& shell_pairs();
   const basis_type& protonic_basis()  const;
   const basis_map_type& protonic_basis_map() const;
-  const shell_pair_type& protonic_shell_pairs() const;
-  const shell_pair_type& protonic_shell_pairs();
 
   LoadBalancerState& state();
 
