@@ -204,6 +204,7 @@ configure_package_config_file(
 # Install CMake files
 install( FILES
   ${PROJECT_SOURCE_DIR}/cmake/modules/FindMAGMA.cmake
+  ${PROJECT_SOURCE_DIR}/cmake/modules/FindNCCL.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/gauxc-config.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/gauxc-config-version.cmake
   DESTINATION ${INSTALL_CONFIGDIR}
