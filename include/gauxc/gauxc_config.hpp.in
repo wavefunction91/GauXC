@@ -24,7 +24,7 @@
 #endif
 
 #cmakedefine GAUXC_HAS_DEVICE
-#ifdef GAUXC_HAS_HOST
+#ifdef GAUXC_HAS_DEVICE
 #cmakedefine GAUXC_GPU_XC_MAX_AM     @GAUXC_GPU_XC_MAX_AM@
 #cmakedefine GAUXC_GPU_SNLINK_MAX_AM @GAUXC_GPU_SNLINK_MAX_AM@
 #endif
