@@ -22,7 +22,7 @@ using namespace GauXC;
 
 void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   std::string reference_file, 
-  functional_type& func, 
+  std::shared_ptr<functional_type> func, 
   PruningScheme pruning_scheme,
   bool check_grad,
   bool check_integrate_den,
@@ -200,7 +200,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   // Construct XCIntegrator
   XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", 
     integrator_kernel, lwd_kernel, reduction_kernel );
-  auto integrator = integrator_factory.get_instance( func, *lb );
+  auto integrator = integrator_factory.get_instance( *func, *lb );
 
   // Integrate Density
   if( check_integrate_den and rks) {
@@ -354,7 +354,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
 }
 
-void test_integrator(std::string reference_file, functional_type& func, PruningScheme pruning_scheme) {
+void test_integrator(std::string reference_file, std::shared_ptr<functional_type> func, PruningScheme pruning_scheme) {
 
 #ifdef GAUXC_HAS_DEVICE
   auto rt = DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.9);
@@ -420,8 +420,8 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
 
 }
 
-functional_type make_functional(ExchCXX::Functional func_key, ExchCXX::Spin spin) {
-  return functional_type(ExchCXX::Backend::builtin, func_key, spin);
+std::shared_ptr<functional_type> make_functional(ExchCXX::Functional func_key, ExchCXX::Spin spin) {
+  return std::make_shared<functional_type>(ExchCXX::Backend::builtin, func_key, spin);
 }
 
 
@@ -434,6 +434,8 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
   auto blyp    = ExchCXX::Functional::BLYP;
   auto scan    = ExchCXX::Functional::SCAN;
   auto r2scanl = ExchCXX::Functional::R2SCANL;
+  auto epc17_2 = ExchCXX::Functional::EPC17_2;
+  auto epc18_2 = ExchCXX::Functional::EPC18_2;
 
   // LDA Test
   SECTION( "Benzene / SVWN5 / cc-pVDZ" ) {
@@ -532,14 +534,15 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
   // NEO epc-17-2 Test (small basis)
   SECTION( "COH2 / BLYP,EPC-17-2 / sto-3g, prot-sp" ) {
     auto func = make_functional(blyp, unpol);
+    auto epcfunc = make_functional(epc17_2);
     test_integrator(GAUXC_REF_DATA_PATH "/coh2_blyp_epc17-2_sto-3g_protsp_ssf.hdf5", 
-        func, PruningScheme::Unpruned );
+        func, PruningScheme::Unpruned, epcfunc);
   }
 
   // NEO epc-17-2 Test (larger basis)
   SECTION( "COH2 / BLYP,EPC-17-2 / cc-pVDZ, prot-PB4-D" ) {
     auto func = make_functional(blyp, unpol);
     test_integrator(GAUXC_REF_DATA_PATH "/coh2_blyp_epc17-2_cc-pvdz_pb4d_ssf.hdf5", 
-        func, PruningScheme::Unpruned );
+        func, PruningScheme::Unpruned, epcfunc);
   }
 }

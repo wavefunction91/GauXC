@@ -11,6 +11,8 @@
 #include "integrator_util/integrator_common.hpp"
 #include "host/local_host_work_driver.hpp"
 #include "host/blas.hpp"
+#include <gauxc/external/hdf5.hpp>
+#include <highfive/H5File.hpp>
 #include <stdexcept>
 
 namespace GauXC  {
@@ -602,6 +604,64 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     prot_VXCz[ j + i*prot_ldvxcz ] = prot_VXCz[ i + j*prot_ldvxcz ];
   }
   }
+
+  // Create File
+  //std::remove("GAUXC.BIN");
+  auto outfname = "NEOGAUXC.BIN";
+  { HighFive::File( outfname, HighFive::File::Truncate ); }
+  // Write molecule
+  write_hdf5_record( mol, outfname, "/MOLECULE" );
+
+  // Electronic Part
+  write_hdf5_record( basis, outfname, "/BASIS" );
+
+  HighFive::File file( outfname, HighFive::File::ReadWrite );
+  HighFive::DataSpace mat_space( basis.nbf(), basis.nbf() );
+  HighFive::DataSpace sca_space( 1 );
+
+  std::string den  = is_rks ? "/DENSITY" : "/DENSITY_SCALAR";
+  std::string den2 = "/DENSITY_Z";
+  std::string vxc  = is_rks ? "/VXC" : "/VXC_SCALAR";
+  std::string vxc2 = "VXC_Z";
+
+  auto dset = file.createDataSet<double>( den, mat_space );
+  dset.write_raw( elec_Ps );
+  dset = file.createDataSet<double>( vxc, mat_space );
+  dset.write_raw( elec_VXCs );
+  if(not is_rks) {
+    dset = file.createDataSet<double>( den2, mat_space );
+    dset.write_raw( elec_Pz );
+    dset = file.createDataSet<double>( vxc2, mat_space );
+    dset.write_raw( elec_VXCz );
+  }
+
+  dset = file.createDataSet<double>( "/EXC", sca_space );
+  dset.write_raw( elec_EXC );
+
+
+
+  // Protonic Part
+  write_hdf5_record( protonic_basis, outfname, "/PROTONIC_BASIS" );
+
+  den  = "/PROTONIC_DENSITY_SCALAR";
+  den2 = "/PROTONIC_DENSITY_Z";
+  vxc  = "/PROTONIC_VXC_SCALAR";
+  vxc2 = "/PROTONIC_VXC_Z";
+  dset = file.createDataSet<double>( den, mat_space );
+  dset.write_raw( prot_Ps );
+  dset = file.createDataSet<double>( vxc, mat_space );
+  dset.write_raw( prot_VXCs );
+
+  dset = file.createDataSet<double>( den2, mat_space );
+  dset.write_raw( prot_Pz );
+  dset = file.createDataSet<double>( vxc2, mat_space );
+  dset.write_raw( prot_VXCz );
+
+  dset = file.createDataSet<double>( "/PROTONIC_EXC", sca_space );
+  dset.write_raw( prot_EXC );
+  
+
+
 
 }
 
