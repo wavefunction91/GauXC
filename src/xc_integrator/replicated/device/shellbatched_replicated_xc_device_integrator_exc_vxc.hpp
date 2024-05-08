@@ -354,6 +354,7 @@ void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
   // Execute remaining tasks sequentially
   if( task_future.valid() ) {
     task_future.wait();
+    task_future.get();
   }
   while( not incore_device_task_queue.empty() ) {
     execute_incore_device_task();

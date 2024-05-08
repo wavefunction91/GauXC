@@ -189,7 +189,7 @@ void XCDeviceStackData::allocate_static_data_exc_grad( int32_t nbf, int32_t nshe
 }
 
 
-void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, int32_t max_l ) {
+void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, size_t nprim_pair_total, int32_t max_l ) {
 
   if( allocated_terms.exx ) 
     GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXX");
@@ -197,6 +197,7 @@ void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells, 
   // Save state
   global_dims.nshells      = nshells;
   global_dims.nshell_pairs = nshell_pairs;
+  global_dims.nprim_pairs  = nprim_pair_total;
   global_dims.nbf          = nbf; 
   global_dims.max_l        = max_l; 
 
@@ -204,8 +205,8 @@ void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells, 
   buffer_adaptor mem( dynmem_ptr, dynmem_sz );
 
   static_stack.shells_device = mem.aligned_alloc<Shell<double>>( nshells , csl);
-  static_stack.shell_pairs_device = 
-    mem.aligned_alloc<ShellPair<double>>(nshell_pairs, csl);
+  static_stack.prim_pairs_device = 
+      mem.aligned_alloc<PrimitivePair<double>>(nprim_pair_total, csl);
 
   static_stack.exx_k_device = mem.aligned_alloc<double>( nbf * nbf , csl);
   static_stack.dmat_s_device  = mem.aligned_alloc<double>( nbf * nbf , csl);
@@ -345,9 +346,13 @@ void XCDeviceStackData::send_static_data_shell_pairs(
 
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
 
-  // Copy shell pairs
-  device_backend_->copy_async( shell_pairs.npairs(), shell_pairs.shell_pairs(),
-    static_stack.shell_pairs_device, "ShellPairs H2D" );
+  // Copy primitive pairs
+  std::vector<GauXC::PrimitivePair<double>> pp_host;
+  for(const auto& sp : shell_pairs) {
+    pp_host.insert( pp_host.end(), sp.prim_pairs(), sp.prim_pairs() + sp.nprim_pairs());
+  }
+  device_backend_->copy_async( global_dims.nprim_pairs, pp_host.data(),
+    static_stack.prim_pairs_device, "PrimPairs H2D" );
 
   // Create SoA
   shell_pair_soa.reset();
@@ -358,17 +363,19 @@ void XCDeviceStackData::send_static_data_shell_pairs(
   shell_pair_soa.sp_row_ptr = sp_row_ptr;
   shell_pair_soa.sp_col_ind = sp_col_ind;
 
+  GauXC::PrimitivePair<double>* prim_pair_ptr = static_stack.prim_pairs_device;
   for( auto i = 0ul, idx = 0ul; i < nshells; ++i ) {
     const auto j_st = sp_row_ptr[i];
     const auto j_en = sp_row_ptr[i+1];
     for( auto _j = j_st; _j < j_en; ++_j, idx++ ) {
       const auto j = sp_col_ind[_j];
 
-      shell_pair_soa.shell_pair_dev_ptr.emplace_back(
-        static_stack.shell_pairs_device + idx
-      );
+      const auto& sp = shell_pairs.shell_pairs()[idx];
+      const auto nprim_pairs = sp.nprim_pairs();
+      shell_pair_soa.prim_pair_dev_ptr.emplace_back( prim_pair_ptr );
+      prim_pair_ptr += nprim_pairs;
 
-      shell_pair_soa.shell_pair_nprim_pairs.push_back(shell_pairs.shell_pairs()[idx].nprim_pairs());
+      shell_pair_soa.shell_pair_nprim_pairs.push_back(nprim_pairs);
       auto& bra = basis[i];
       auto& ket = basis[j];
       shell_pair_soa.shell_pair_shidx.emplace_back(i,j);

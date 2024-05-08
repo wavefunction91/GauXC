@@ -13,7 +13,7 @@
 #  define GPGAUEVAL_INLINE __noinline__
 #endif
 
-namespace GauXC {
+namespace GauXC      {
 
 template <typename T>
 GPGAUEVAL_INLINE __device__ void collocation_cartesian_angular_0(
