@@ -172,8 +172,6 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
-  
-  std::cout << "std::numeric_limits<double>::epsilon(): " << std::numeric_limits<double>::epsilon() << std::endl;
 
   auto mg = MolGridFactory::create_default_molgrid(mol, pruning_scheme,
     BatchSize(512), RadialQuad::MuraKnowles, AtomicGridSizeDefault::UltraFineGrid);
