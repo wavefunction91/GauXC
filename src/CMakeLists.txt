@@ -100,6 +100,17 @@ add_subdirectory( external )
 
 add_library( gauxc::gauxc ALIAS gauxc )
 
+
+if(GAUXC_HAS_HOST)
+  set(GAUXC_CPU_XC_MAX_AM     6) 
+  set(GAUXC_CPU_SNLINK_MAX_AM 6)
+endif()
+
+if(GAUXC_HAS_DEVICE)
+  set(GAUXC_GPU_XC_MAX_AM     4) 
+  set(GAUXC_GPU_SNLINK_MAX_AM 2)
+endif()
+
 # Generate config file
 configure_file( 
   ${PROJECT_SOURCE_DIR}/include/gauxc/gauxc_config.hpp.in
@@ -151,10 +162,10 @@ set_target_properties(gauxc
     "GAUXC_HAS_MPI"        ${GAUXC_HAS_MPI}
     "GAUXC_HAS_OPENMP"     ${GAUXC_HAS_OPENMP}
     "GAUXC_HAS_HDF5"       ${GAUXC_HAS_HDF5}
-    "GAUXC_CPU_XC_MAX_AM"     6 
-    "GAUXC_CPU_SNLINK_MAX_AM" 6
-    "GAUXC_GPU_XC_MAX_AM"     4 
-    "GAUXC_GPU_SNLINK_MAX_AM" 2
+    "GAUXC_CPU_XC_MAX_AM"     ${GAUXC_CPU_XC_MAX_AM}     
+    "GAUXC_CPU_SNLINK_MAX_AM" ${GAUXC_CPU_SNLINK_MAX_AM}
+    "GAUXC_GPU_XC_MAX_AM"     ${GAUXC_GPU_XC_MAX_AM}     
+    "GAUXC_GPU_SNLINK_MAX_AM" ${GAUXC_GPU_SNLINK_MAX_AM}
 )
 set_property(TARGET gauxc APPEND PROPERTY EXPORT_PROPERTIES "${export_properties}")
 
