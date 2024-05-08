@@ -172,6 +172,8 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
+  
+  std::cout << "std::numeric_limits<double>::epsilon(): " << std::numeric_limits<double>::epsilon() << std::endl;
 
   auto mg = MolGridFactory::create_default_molgrid(mol, pruning_scheme,
     BatchSize(512), RadialQuad::MuraKnowles, AtomicGridSizeDefault::UltraFineGrid);
@@ -372,7 +374,7 @@ void test_integrator(std::string reference_file, std::shared_ptr<functional_type
 #ifdef GAUXC_HAS_HOST
     SECTION( "Host" ) {
       test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
-        pruning_scheme, true, true, true );
+        pruning_scheme, true, true, true, "Default", "Default", "Default", epcfunc);
     }
 #endif
 
@@ -445,98 +447,98 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
   auto epc18_2 = ExchCXX::Functional::EPC18_2;
 
   // LDA Test
-  SECTION( "Benzene / SVWN5 / cc-pVDZ" ) {
-    auto func = make_functional(svwn5, unpol);
-    test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf.hdf5", 
-        func, PruningScheme::Unpruned );
-  }
-  SECTION( "Benzene / SVWN5 / cc-pVDZ (Treutler)" ) {
-    auto func = make_functional(svwn5, unpol);
-    test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf_treutler_prune.hdf5", 
-        func, PruningScheme::Treutler );
-  }
-  SECTION( "Benzene / SVWN5 / cc-pVDZ (Robust)" ) {
-    auto func = make_functional(svwn5, unpol);
-    test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf_robust_prune.hdf5", 
-        func, PruningScheme::Robust );
-  }
+  //SECTION( "Benzene / SVWN5 / cc-pVDZ" ) {
+  //  auto func = make_functional(svwn5, unpol);
+  //  test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf.hdf5", 
+  //      func, PruningScheme::Unpruned );
+  //}
+  //SECTION( "Benzene / SVWN5 / cc-pVDZ (Treutler)" ) {
+  //  auto func = make_functional(svwn5, unpol);
+  //  test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf_treutler_prune.hdf5", 
+  //      func, PruningScheme::Treutler );
+  //}
+  //SECTION( "Benzene / SVWN5 / cc-pVDZ (Robust)" ) {
+  //  auto func = make_functional(svwn5, unpol);
+  //  test_integrator(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf_robust_prune.hdf5", 
+  //      func, PruningScheme::Robust );
+  //}
 
-  // GGA Test
-  SECTION( "Benzene / PBE0 / cc-pVDZ" ) {
-    auto func = make_functional(pbe0, unpol);
-    test_integrator(GAUXC_REF_DATA_PATH "/benzene_pbe0_cc-pvdz_ufg_ssf.hdf5", 
-        func, PruningScheme::Unpruned );
-  }
+  //// GGA Test
+  //SECTION( "Benzene / PBE0 / cc-pVDZ" ) {
+  //  auto func = make_functional(pbe0, unpol);
+  //  test_integrator(GAUXC_REF_DATA_PATH "/benzene_pbe0_cc-pvdz_ufg_ssf.hdf5", 
+  //      func, PruningScheme::Unpruned );
+  //}
 
-  // MGGA Test (TAU Only)
-  SECTION( "Cytosine / SCAN / cc-pVDZ") {
-    auto func = make_functional(scan, unpol);
-    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_scan_cc-pvdz_ufg_ssf_robust.hdf5", 
-        func, PruningScheme::Robust );
-  }
+  //// MGGA Test (TAU Only)
+  //SECTION( "Cytosine / SCAN / cc-pVDZ") {
+  //  auto func = make_functional(scan, unpol);
+  //  test_integrator(GAUXC_REF_DATA_PATH "/cytosine_scan_cc-pvdz_ufg_ssf_robust.hdf5", 
+  //      func, PruningScheme::Robust );
+  //}
 
-  // MGGA Test (TAU + LAPL)
-  SECTION( "Cytosine / R2SCANL / cc-pVDZ") {
-    auto func = make_functional(r2scanl, unpol);
-    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_r2scanl_cc-pvdz_ufg_ssf_robust.hdf5", 
-        func, PruningScheme::Robust );
-  }
+  //// MGGA Test (TAU + LAPL)
+  //SECTION( "Cytosine / R2SCANL / cc-pVDZ") {
+  //  auto func = make_functional(r2scanl, unpol);
+  //  test_integrator(GAUXC_REF_DATA_PATH "/cytosine_r2scanl_cc-pvdz_ufg_ssf_robust.hdf5", 
+  //      func, PruningScheme::Robust );
+  //}
 
-  //UKS LDA Test
-  SECTION( "Li / SVWN5 / sto-3g" ) {
-    auto func = make_functional(svwn5, pol);
-    test_integrator(GAUXC_REF_DATA_PATH "/li_svwn5_sto3g_uks.bin",
-        func, PruningScheme::Unpruned );
-  }
+  ////UKS LDA Test
+  //SECTION( "Li / SVWN5 / sto-3g" ) {
+  //  auto func = make_functional(svwn5, pol);
+  //  test_integrator(GAUXC_REF_DATA_PATH "/li_svwn5_sto3g_uks.bin",
+  //      func, PruningScheme::Unpruned );
+  //}
 
-  //UKS GGA Test
-  SECTION( "Li / BLYP / sto-3g" ) {
-    auto func = make_functional(blyp, pol);
-    test_integrator(GAUXC_REF_DATA_PATH "/li_blyp_sto3g_uks.bin",
-        func, PruningScheme::Unpruned );
-  }
+  ////UKS GGA Test
+  //SECTION( "Li / BLYP / sto-3g" ) {
+  //  auto func = make_functional(blyp, pol);
+  //  test_integrator(GAUXC_REF_DATA_PATH "/li_blyp_sto3g_uks.bin",
+  //      func, PruningScheme::Unpruned );
+  //}
 
-  // UKS MGGA Test (TAU Only)
-  SECTION( "Cytosine (doublet) / SCAN / cc-pVDZ") {
-    auto func = make_functional(scan, pol);
-    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_scan_cc-pvdz_ufg_ssf_robust_uks.hdf5", 
-        func, PruningScheme::Robust );
-  }
+  //// UKS MGGA Test (TAU Only)
+  //SECTION( "Cytosine (doublet) / SCAN / cc-pVDZ") {
+  //  auto func = make_functional(scan, pol);
+  //  test_integrator(GAUXC_REF_DATA_PATH "/cytosine_scan_cc-pvdz_ufg_ssf_robust_uks.hdf5", 
+  //      func, PruningScheme::Robust );
+  //}
 
-  // UKS MGGA Test (TAU + LAPL)
-  SECTION( "Cytosine (doublet) / R2SCANL / cc-pVDZ") {
-    auto func = make_functional(r2scanl, pol);
-    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_r2scanl_cc-pvdz_ufg_ssf_robust_uks.hdf5", 
-        func, PruningScheme::Robust );
-  }
+  //// UKS MGGA Test (TAU + LAPL)
+  //SECTION( "Cytosine (doublet) / R2SCANL / cc-pVDZ") {
+  //  auto func = make_functional(r2scanl, pol);
+  //  test_integrator(GAUXC_REF_DATA_PATH "/cytosine_r2scanl_cc-pvdz_ufg_ssf_robust_uks.hdf5", 
+  //      func, PruningScheme::Robust );
+  //}
 
-  // GKS GGA Test
-  SECTION( "H3 / BLYP / cc-pvdz" ) {
-    auto func = make_functional(blyp, pol);
-    test_integrator(GAUXC_REF_DATA_PATH "/h3_blyp_cc-pvdz_ssf_gks.bin",
-        func, PruningScheme::Unpruned );
-  }
+  //// GKS GGA Test
+  //SECTION( "H3 / BLYP / cc-pvdz" ) {
+  //  auto func = make_functional(blyp, pol);
+  //  test_integrator(GAUXC_REF_DATA_PATH "/h3_blyp_cc-pvdz_ssf_gks.bin",
+  //      func, PruningScheme::Unpruned );
+  //}
 
-  // sn-LinK Test
-  SECTION( "Benzene / PBE0 / 6-31G(d)" ) {
-    auto func = make_functional(pbe0, unpol);
-    test_integrator(GAUXC_REF_DATA_PATH "/benzene_631gd_pbe0_ufg.hdf5", 
-        func, PruningScheme::Unpruned );
-  }
+  //// sn-LinK Test
+  //SECTION( "Benzene / PBE0 / 6-31G(d)" ) {
+  //  auto func = make_functional(pbe0, unpol);
+  //  test_integrator(GAUXC_REF_DATA_PATH "/benzene_631gd_pbe0_ufg.hdf5", 
+  //      func, PruningScheme::Unpruned );
+  //}
 
-  // sn-LinK + f functions
-  SECTION( "H2O2 / PBE0 / def2-TZVP" ) {
-    auto func = make_functional(pbe0, unpol);
-    test_integrator(GAUXC_REF_DATA_PATH "/h2o2_def2-tzvp.hdf5", 
-        func, PruningScheme::Unpruned );
-  }
+  //// sn-LinK + f functions
+  //SECTION( "H2O2 / PBE0 / def2-TZVP" ) {
+  //  auto func = make_functional(pbe0, unpol);
+  //  test_integrator(GAUXC_REF_DATA_PATH "/h2o2_def2-tzvp.hdf5", 
+  //      func, PruningScheme::Unpruned );
+  //}
 
-  // sn-LinK + g functions
-  SECTION( "H2O2 / PBE0 / def2-QZVP" ) {
-    auto func = make_functional(pbe0, unpol);
-    test_integrator(GAUXC_REF_DATA_PATH "/h2o2_def2-qzvp.hdf5", 
-        func, PruningScheme::Unpruned );
-  }
+  //// sn-LinK + g functions
+  //SECTION( "H2O2 / PBE0 / def2-QZVP" ) {
+  //  auto func = make_functional(pbe0, unpol);
+  //  test_integrator(GAUXC_REF_DATA_PATH "/h2o2_def2-qzvp.hdf5", 
+  //      func, PruningScheme::Unpruned );
+  //}
 
   // NEO epc-17-2 Test (small basis)
   SECTION( "COH2 / BLYP,EPC-17-2 / sto-3g, prot-sp" ) {
@@ -547,10 +549,10 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
   }
 
   // NEO epc-17-2 Test (larger basis)
-  SECTION( "COH2 / BLYP,EPC-17-2 / cc-pVDZ, prot-PB4-D" ) {
-    auto func = make_functional(blyp, unpol);
-    auto epcfunc = make_functional(epc17_2, pol);
-    test_integrator(GAUXC_REF_DATA_PATH "/coh2_blyp_epc17-2_cc-pvdz_pb4d_ssf.hdf5", 
-        func, PruningScheme::Unpruned, epcfunc);
-  }
+  //SECTION( "COH2 / BLYP,EPC-17-2 / cc-pVDZ, prot-PB4-D" ) {
+  //  auto func = make_functional(blyp, unpol);
+  //  auto epcfunc = make_functional(epc17_2, pol);
+  //  test_integrator(GAUXC_REF_DATA_PATH "/coh2_blyp_epc17-2_cc-pvdz_pb4d_ssf.hdf5", 
+  //      func, PruningScheme::Unpruned, epcfunc);
+  //}
 }

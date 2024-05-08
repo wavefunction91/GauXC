@@ -641,20 +641,21 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
   // Protonic Part
+  HighFive::DataSpace protonic_mat_space( protonic_basis.nbf(), protonic_basis.nbf() );
   write_hdf5_record( protonic_basis, outfname, "/PROTONIC_BASIS" );
 
   den  = "/PROTONIC_DENSITY_SCALAR";
   den2 = "/PROTONIC_DENSITY_Z";
   vxc  = "/PROTONIC_VXC_SCALAR";
   vxc2 = "/PROTONIC_VXC_Z";
-  dset = file.createDataSet<double>( den, mat_space );
+  dset = file.createDataSet<double>( den, protonic_mat_space );
   dset.write_raw( prot_Ps );
-  dset = file.createDataSet<double>( vxc, mat_space );
+  dset = file.createDataSet<double>( vxc, protonic_mat_space );
   dset.write_raw( prot_VXCs );
 
-  dset = file.createDataSet<double>( den2, mat_space );
+  dset = file.createDataSet<double>( den2, protonic_mat_space );
   dset.write_raw( prot_Pz );
-  dset = file.createDataSet<double>( vxc2, mat_space );
+  dset = file.createDataSet<double>( vxc2, protonic_mat_space );
   dset.write_raw( prot_VXCz );
 
   dset = file.createDataSet<double>( "/PROTONIC_EXC", sca_space );
