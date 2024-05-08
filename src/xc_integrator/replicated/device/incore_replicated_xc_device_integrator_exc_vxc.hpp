@@ -260,9 +260,19 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   integrator_term_tracker enabled_terms;
   enabled_terms.exc_vxc = true;
+
   if (is_rks) enabled_terms.ks_scheme = RKS;
-  if (is_uks) enabled_terms.ks_scheme = UKS;
-  if (is_gks) enabled_terms.ks_scheme = GKS;
+  else if (is_uks) enabled_terms.ks_scheme = UKS;
+  else if (is_gks) enabled_terms.ks_scheme = GKS;
+
+  if( func.is_lda() )      
+    enabled_terms.xc_approx = integrator_xc_approx::LDA; 
+  else if( func.is_gga() ) 
+    enabled_terms.xc_approx = integrator_xc_approx::GGA; 
+  else if( func.needs_laplacian() )                    
+    enabled_terms.xc_approx = integrator_xc_approx::MGGA_LAPL;
+  else
+    enabled_terms.xc_approx = integrator_xc_approx::MGGA_TAU;
   
   // Do XC integration in task batches
   const auto nbf     = basis.nbf();
@@ -273,14 +283,9 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   device_data.send_static_data_density_basis( Ps, ldps, Pz, ldpz, Px, ldpx, Py, ldpy, basis );
 
 
-  // Processes batches in groups that saturate available device memory
-  if( func.is_lda() )      enabled_terms.xc_approx = integrator_xc_approx::LDA; 
-  else if( func.is_gga() ) enabled_terms.xc_approx = integrator_xc_approx::GGA; 
-  else GAUXC_GENERIC_EXCEPTION("XC Approx NYI");
 
   // Zero integrands
   device_data.zero_exc_vxc_integrands(enabled_terms);
-  
 
 
   auto task_it = task_begin;
@@ -292,23 +297,29 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     /*** Process the batches ***/
     
+    const bool need_lapl = func.needs_laplacian();
     // Evaluate collocation
-    if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
-    else                lwd->eval_collocation( &device_data );
-    
+    if( func.is_mgga() ) {
+      if(need_lapl) lwd->eval_collocation_laplacian( &device_data );
+      else          lwd->eval_collocation_gradient( &device_data );
+    }
+    else if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
+    else                     lwd->eval_collocation( &device_data );
+      
+    // for debugging. Remove before flight
     auto* data = dynamic_cast<XCDeviceAoSData*>(&device_data);
     auto tasks = data->host_device_tasks;
-    auto& task = tasks[0];
     auto static_stack = data->static_stack;
     auto base_stack   = data->base_stack;
     
     const double xmat_fac = is_rks ? 2.0 : 1.0;
+    const bool need_xmat_grad = func.is_mgga();
+    const bool need_vvar_grad = func.is_mgga() or func.is_gga();
 
     // Evaluate X matrix and V vars
-    const bool do_xmat_grad = false;
     auto do_xmat_vvar = [&](density_id den_id) {
-      lwd->eval_xmat( xmat_fac, &device_data, do_xmat_grad, den_id );
-      lwd->eval_vvar( &device_data, func.is_gga(), den_id );
+      lwd->eval_xmat( xmat_fac, &device_data, need_xmat_grad, den_id );
+      lwd->eval_vvar( &device_data, den_id, need_vvar_grad );
     };
 
     do_xmat_vvar(DEN_S);
@@ -322,12 +333,14 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
 
     // Evaluate U variables
-    if( func.is_gga() ) lwd->eval_uvars_gga( &device_data, enabled_terms.ks_scheme );
-    else                lwd->eval_uvars_lda( &device_data, enabled_terms.ks_scheme );
+    if( func.is_mgga() )      lwd->eval_uvars_mgga( &device_data, need_lapl );
+    else if( func.is_gga() )  lwd->eval_uvars_gga( &device_data, enabled_terms.ks_scheme );
+    else                      lwd->eval_uvars_lda( &device_data, enabled_terms.ks_scheme );
 
     // Evaluate XC functional
-    if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );
-    else                lwd->eval_kern_exc_vxc_lda( func, &device_data );
+    if( func.is_mgga() )     lwd->eval_kern_exc_vxc_mgga( func, &device_data );
+    else if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );
+    else                     lwd->eval_kern_exc_vxc_lda( func, &device_data );
     
 
     // Do scalar EXC/N_EL integrations
@@ -335,11 +348,15 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->inc_nel( &device_data );
 
    auto do_zmat_vxc = [&](density_id den_id) {
-     if( func.is_gga() ) 
+     if( func.is_mgga() ) {
+       lwd->eval_zmat_mgga_vxc( &device_data, need_lapl);
+       lwd->eval_mmat_mgga_vxc( &device_data, need_lapl);
+     }
+     else if( func.is_gga() ) 
        lwd->eval_zmat_gga_vxc( &device_data, enabled_terms.ks_scheme, den_id );
      else 
        lwd->eval_zmat_lda_vxc( &device_data, enabled_terms.ks_scheme, den_id );
-     lwd->inc_vxc( &device_data, den_id );
+     lwd->inc_vxc( &device_data, den_id, func.is_mgga() );
   };
 
   do_zmat_vxc(DEN_S);

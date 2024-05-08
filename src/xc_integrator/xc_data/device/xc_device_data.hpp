@@ -23,7 +23,8 @@ enum integrator_xc_approx : uint32_t {
   _UNDEF_APPROX         = 0,
   LDA                   = 1,
   GGA                   = 2,
-  MGGA                  = 3
+  MGGA_TAU              = 3,
+  MGGA_LAPL             = 4
 };
 
 enum integrator_ks_scheme : uint32_t {
@@ -71,10 +72,14 @@ struct required_term_storage {
   // Evaluation of functions on the grid (linear storage)
   bool grid_den      = false;
   bool grid_den_grad = false;
+  bool grid_den_lapl = false;
   bool grid_gamma    = false;
+  bool grid_tau      = false;
   bool grid_eps      = false;
   bool grid_vrho     = false;
   bool grid_vgamma   = false;
+  bool grid_vtau     = false;
+  bool grid_vlapl    = false;
 
 
   // Reference flags for memory management use
@@ -109,6 +114,12 @@ struct required_term_storage {
     }
     return 0ul;
   }
+  inline size_t grid_den_lapl_size(size_t npts){ 
+    return PRDVL(grid_den_lapl, npts);
+  }
+  inline size_t grid_tau_size(size_t npts){ 
+    return PRDVL(grid_tau, npts);
+  }
   inline size_t grid_eps_size(size_t npts){ 
     return PRDVL(grid_eps, npts);
   }
@@ -135,6 +146,12 @@ struct required_term_storage {
     }
     return 0ul;
   }
+  inline size_t grid_vtau_size(size_t npts){ 
+    return PRDVL(grid_vtau, npts);
+  }
+  inline size_t grid_vlapl_size(size_t npts){ 
+    return PRDVL(grid_vlapl, npts);
+  }
 
 
 
@@ -142,7 +159,8 @@ struct required_term_storage {
   bool task_bfn           = false;
   bool task_bfn_grad      = false;
   bool task_bfn_hess      = false;
-  bool task_zmat_lda_gga  = false;
+  bool task_bfn_lapl      = false;
+  bool task_zmat          = false;
   bool task_xmat          = false;
   bool task_xmat_grad     = false;
   bool task_fmat          = false;
@@ -160,8 +178,11 @@ struct required_term_storage {
   inline size_t task_bfn_hess_size(size_t nbe, size_t npts) {
     return PRDVL(task_bfn_hess, 6 * nbe * npts);
   }
-  inline size_t task_zmat_lda_gga_size(size_t nbe, size_t npts) {
-    return PRDVL(task_zmat_lda_gga, nbe * npts);
+  inline size_t task_bfn_lapl_size(size_t nbe, size_t npts) {
+    return PRDVL(task_bfn_lapl, nbe * npts);
+  }
+  inline size_t task_zmat_size(size_t nbe, size_t npts) {
+    return PRDVL(task_zmat, nbe * npts);
   }
   inline size_t task_xmat_grad_size(size_t nbe, size_t npts) {
     return PRDVL(task_xmat_grad, 3 * nbe * npts);
@@ -295,22 +316,29 @@ struct required_term_storage {
         GAUXC_GENERIC_EXCEPTION("NO KS SCHEME SET");
       //const bool is_lda  = is_xc and tracker.xc_approx == LDA;
       const bool is_gga  = is_xc and tracker.xc_approx == GGA;
+      const bool need_tau  = tracker.xc_approx == MGGA_TAU;
+      const bool need_lapl = tracker.xc_approx == MGGA_LAPL;
+      const bool is_mgga = is_xc and (need_tau or need_lapl);
       const bool is_grad = tracker.exc_grad;
 
       grid_den      = true;
-      grid_den_grad = is_gga or is_grad;
-      grid_vrho     = true;
-
-      grid_gamma    = is_gga;
+      grid_den_grad = is_gga or is_mgga or is_grad;
+      grid_den_lapl = need_lapl;
+      grid_gamma    = is_gga or is_mgga;
+      grid_tau      = is_mgga;
       grid_eps      = true;
-      grid_vgamma   = is_gga;
+      grid_vrho     = true;
+      grid_vgamma   = is_gga or is_mgga;
+      grid_vtau     = is_mgga;
+      grid_vlapl    = need_lapl;
 
       task_bfn          = true;
-      task_bfn_grad     = is_gga or  is_grad;
+      task_bfn_grad     = is_gga or  is_mgga or is_grad;
       task_bfn_hess     = is_gga and is_grad;
-      task_zmat_lda_gga = true;
+      task_bfn_lapl     = need_lapl;
+      task_zmat         = true;
       task_xmat         = true;
-      task_xmat_grad    = is_gga and is_grad;
+      task_xmat_grad    = is_mgga or (is_gga and is_grad);
       task_nbe_scr      = true;
 
       task_submat_cut_bfn   = true;
@@ -328,7 +356,7 @@ struct required_term_storage {
       task_bfn              = true;
       task_nbe_scr          = true;
       task_xmat             = true;
-      task_zmat_lda_gga     = true;
+      task_zmat             = true;
       task_submat_cut_bfn   = true;
       task_submat_block_bfn = true;
       task_indirection      = true;

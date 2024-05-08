@@ -7,67 +7,6 @@
  */
 #include "ini_input.hpp"
 
-// Misc string functions
-
-/**
- *  Trim a string of left trailing whitespace
- *
- *  \param [in/out] s std::string to be trimmed
- */
-static inline std::string& trim_left(std::string &s) {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-            std::not1(std::ptr_fun<int, int>(std::isspace))));
-    return s;
-}; // trim_left
-
-
-/**
- *  Trim a string of right trailing whitespace
- *
- *  \param [in/out] s std::string to be trimmed
- */
-static inline std::string& trim_right(std::string &s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(),
-            std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
-    return s;
-}; // trim_right
-
-
-/**
- *  Trim a string of trailing whitespace from both ends
- *
- *  \param [in/out] s std::string to be trimmed
- */
-static inline std::string &trim(std::string &s) {
-    return trim_left(trim_right(s));
-}; // trim
-
-/**
- *  Splits a string into tokens  based on a demiliter
- *
- *  \param [out] tokens     std::vector of std::string objects which hold
- *                          the split tokens
- *  \param [in]  str        std::string to split
- *  \param [in]  delimiters Delimiters on which to split str
- */
-static inline void split(std::vector<std::string>& tokens, 
-  const std::string& str, const std::string& delimiters = " ") {
-
-    tokens.clear();
-    // Skip delimiters at beginning.
-    std::string::size_type lastPos = str.find_first_not_of(delimiters, 0);
-    // Find first "non-delimiter".
-    std::string::size_type pos     = str.find_first_of(delimiters, lastPos);
-
-    while (std::string::npos != pos || std::string::npos != lastPos) {
-        // Found a token, add it to the vector.
-        tokens.push_back(str.substr(lastPos, pos - lastPos));
-        // Skip delimiters.  Note the "not_of"
-        lastPos = str.find_first_not_of(delimiters, pos);
-        // Find next "non-delimiter"
-        pos = str.find_first_of(delimiters, lastPos);
-    }
-}; // split
 
 
 class input_not_found : public std::exception {

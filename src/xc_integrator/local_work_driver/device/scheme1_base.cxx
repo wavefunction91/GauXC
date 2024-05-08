@@ -254,6 +254,7 @@ void AoSScheme1Base::eval_zmat_lda_vxc( XCDeviceData* _data, integrator_ks_schem
   zmat_lda_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks, scheme, den,
     data->device_backend_->queue() );
 
+  data->device_backend_->check_error("zmat_lda" __FILE__ ": " + std::to_string(__LINE__));
 }
 
 void AoSScheme1Base::eval_zmat_gga_vxc( XCDeviceData* _data, integrator_ks_scheme scheme, density_id den ) {
@@ -275,6 +276,54 @@ void AoSScheme1Base::eval_zmat_gga_vxc( XCDeviceData* _data, integrator_ks_schem
   zmat_gga_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks, scheme, den,
     data->device_backend_->queue() );
 
+  data->device_backend_->check_error("zmat_gga" __FILE__ ": " + std::to_string(__LINE__));
+}
+
+void AoSScheme1Base::eval_zmat_mgga_vxc( XCDeviceData* _data, bool do_lapl){
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+  size_t nbe_max = 0, npts_max = 0;
+  for( auto& task : tasks ) {
+    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
+    npts_max = std::max( npts_max, task.npts );
+  }
+
+  auto aos_stack     = data->aos_stack;
+  zmat_mgga_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
+    do_lapl, data->device_backend_->queue() );
+
+
+  data->device_backend_->check_error("zmat_mgga" __FILE__ ": " + std::to_string(__LINE__));
+}
+
+
+void AoSScheme1Base::eval_mmat_mgga_vxc( XCDeviceData* _data, bool do_lapl){
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+  size_t nbe_max = 0, npts_max = 0;
+  for( auto& task : tasks ) {
+    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
+    npts_max = std::max( npts_max, task.npts );
+  }
+
+  auto aos_stack     = data->aos_stack;
+  mmat_mgga_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
+    do_lapl, data->device_backend_->queue() );
+
+
+  data->device_backend_->check_error("mmat_mgga" __FILE__ ": " + std::to_string(__LINE__));
 }
 
 void AoSScheme1Base::eval_collocation( XCDeviceData* _data ) {
@@ -304,6 +353,7 @@ void AoSScheme1Base::eval_collocation( XCDeviceData* _data ) {
     static_stack.shells_device, aos_stack.device_tasks, 
     data->device_backend_->queue() );
 
+  data->device_backend_->check_error("collocation" __FILE__ ": " + std::to_string(__LINE__));
 }
 
 void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
@@ -337,6 +387,7 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
     data->device_backend_->queue() );
 #endif
   
+  data->device_backend_->check_error("collocation grad" __FILE__ ": " + std::to_string(__LINE__));
 }
 
 void AoSScheme1Base::eval_collocation_hessian( XCDeviceData* _data ) {
@@ -355,6 +406,28 @@ void AoSScheme1Base::eval_collocation_hessian( XCDeviceData* _data ) {
     data->l_batched_shell_to_task.data(), aos_stack.device_tasks,
     data->device_backend_->queue() );
 #endif
+  
+  data->device_backend_->check_error("collocation hess" __FILE__ ": " + std::to_string(__LINE__));
+}
+
+void AoSScheme1Base::eval_collocation_laplacian( XCDeviceData* _data ) {
+#ifdef GAUXC_HAS_HIP
+  GAUXC_GENERIC_EXCEPTION("Laplacian NYI for HIP Backends");
+#else
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto aos_stack     = data->aos_stack;
+
+  auto max_l = data->l_batched_shell_to_task.size() - 1;
+  eval_collocation_shell_to_task_laplacian( max_l, 
+    data->l_batched_shell_to_task.data(), aos_stack.device_tasks,
+    data->device_backend_->queue() );
+#endif
+  
+  data->device_backend_->check_error("collocation lapl" __FILE__ ": " + std::to_string(__LINE__));
 }
 
 
@@ -384,6 +457,8 @@ void AoSScheme1Base::inc_exc( XCDeviceData* _data ){
       base_stack.eps_eval_device, 1, base_stack.den_z_eval_device, 1, 
       static_stack.acc_scr_device, static_stack.exc_device );
   }
+  
+  data->device_backend_->check_error("inc exc" __FILE__ ": " + std::to_string(__LINE__));
 }
 void AoSScheme1Base::inc_nel( XCDeviceData* _data ){
 
@@ -409,6 +484,8 @@ void AoSScheme1Base::inc_nel( XCDeviceData* _data ){
       base_stack.weights_device, 1, base_stack.den_z_eval_device, 1, 
       static_stack.acc_scr_device, static_stack.nel_device );
   }
+  
+  data->device_backend_->check_error("inc nel" __FILE__ ": " + std::to_string(__LINE__));
 }
 
 
@@ -432,6 +509,8 @@ void AoSScheme1Base::eval_uvars_lda( XCDeviceData* _data, integrator_ks_scheme k
   GauXC::eval_uvars_lda( ntasks, npts_max, ks_scheme,
     aos_stack.device_tasks, data->device_backend_->queue() );
 
+  
+  data->device_backend_->check_error("uvvar lda" __FILE__ ": " + std::to_string(__LINE__));
 }
 
 void AoSScheme1Base::eval_uvars_gga( XCDeviceData* _data, integrator_ks_scheme ks_scheme){
@@ -454,10 +533,44 @@ void AoSScheme1Base::eval_uvars_gga( XCDeviceData* _data, integrator_ks_scheme k
   GauXC::eval_uvars_gga( ntasks, npts_max, ks_scheme,
     aos_stack.device_tasks, data->device_backend_->queue() );
 
+  
+  data->device_backend_->check_error("uvvar gga" __FILE__ ": " + std::to_string(__LINE__));
+}
+
+void AoSScheme1Base::eval_uvars_mgga( XCDeviceData* _data, bool do_lapl ){
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+  size_t nbe_max = 0, npts_max = 0;
+  for( auto& task : tasks ) {
+    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
+    npts_max = std::max( npts_max, task.npts );
+  }
+
+  // Zero tau
+  auto base_stack    = data->base_stack;
+  data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.tau_eval_device,   "Tau Zero" );
+  if(do_lapl) {
+    data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.den_lapl_eval_device, "DenLapl Zero" );
+  }
+
+
+  // Evaluate U variables
+  auto aos_stack     = data->aos_stack;
+  GauXC::eval_uvars_mgga( ntasks, data->total_npts_task_batch, nbe_max, npts_max, do_lapl,
+    aos_stack.device_tasks, data->device_backend_->queue() );
+
+  
+  data->device_backend_->check_error("uvvar mgga" __FILE__ ": " + std::to_string(__LINE__));
 }
 
 
-void AoSScheme1Base::eval_vvar( XCDeviceData* _data, bool do_grad, density_id den_select){
+void AoSScheme1Base::eval_vvar( XCDeviceData* _data, density_id den_select, bool do_grad){
   auto* data = dynamic_cast<Data*>(_data);
   if ( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
@@ -577,6 +690,8 @@ void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func,
     hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1,
                     base_stack.weights_device, 1, base_stack.vrho_neg_eval_device, 1 );
   }
+  
+  data->device_backend_->check_error("exc_vxc lda" __FILE__ ": " + std::to_string(__LINE__));
 }
 
 
@@ -666,9 +781,51 @@ void AoSScheme1Base::eval_kern_exc_vxc_gga( const functional_type& func,
   }
 
 
+  
+  data->device_backend_->check_error("exc_vxc gga" __FILE__ ": " + std::to_string(__LINE__));
 }
 
 
+void AoSScheme1Base::eval_kern_exc_vxc_mgga( const functional_type& func, 
+  XCDeviceData* _data ) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  if( !func.is_mgga() ) GAUXC_GENERIC_EXCEPTION("XC Kernel not GGA!");
+
+  auto base_stack    = data->base_stack;
+
+  if(func.needs_laplacian()) {
+    data->device_backend_->set_zero_async_master_queue( data->total_npts_task_batch, base_stack.vlapl_eval_device, "VLapl Zero" );
+  }
+
+  GauXC::eval_kern_exc_vxc_mgga( func, data->total_npts_task_batch, 
+    base_stack.den_s_eval_device, base_stack.gamma_eval_device, 
+    base_stack.tau_eval_device, base_stack.den_lapl_eval_device,
+    base_stack.eps_eval_device, base_stack.vrho_eval_device, 
+    base_stack.vgamma_eval_device, base_stack.vtau_eval_device,
+    base_stack.vlapl_eval_device, data->device_backend_->queue() );
+  data->device_backend_->check_error("exc_vxc mgga" __FILE__ ": " + std::to_string(__LINE__));
+
+  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
+                    base_stack.weights_device, 1, base_stack.eps_eval_device, 1 );
+  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
+                    base_stack.weights_device, 1, base_stack.vrho_eval_device, 1 );
+  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
+                    base_stack.weights_device, 1, base_stack.vgamma_eval_device, 1 );
+  hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
+                    base_stack.weights_device, 1, base_stack.vtau_eval_device, 1 );
+  if(func.needs_laplacian()) {
+    hadamard_product( data->device_backend_->master_blas_handle(), data->total_npts_task_batch, 1, 
+                      base_stack.weights_device, 1, base_stack.vlapl_eval_device, 1 );
+  }
+
+  
+  data->device_backend_->check_error("exc_vxc mgga" __FILE__ ": " + std::to_string(__LINE__));
+}
 
 
 
@@ -742,6 +899,8 @@ void AoSScheme1Base::eval_xmat( double fac, XCDeviceData* _data, bool do_grad, d
       }
   }
 
+  
+  data->device_backend_->check_error("xmat" __FILE__ ": " + std::to_string(__LINE__));
   // Record completion of BLAS ops on master stream
   data->device_backend_->sync_master_with_blas_pool();
 
@@ -754,9 +913,7 @@ void AoSScheme1Base::eval_xmat( double fac, XCDeviceData* _data, bool do_grad, d
 
 
 
-
-
-void AoSScheme1Base::inc_vxc( XCDeviceData* _data, density_id den_selector){
+void AoSScheme1Base::inc_vxc( XCDeviceData* _data, density_id den_selector, bool do_m ){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -769,14 +926,22 @@ void AoSScheme1Base::inc_vxc( XCDeviceData* _data, density_id den_selector){
   // Sync blas streams with master stream
   data->device_backend_->sync_blas_pool_with_master();
 
+  auto do_syr2k = [&]( auto& handle, size_t npts, size_t nbe, auto* bf_ptr, auto* zptr, double fac, auto* v_ptr ) {
+    syr2k( handle, DeviceBlasUplo::Lower, DeviceBlasOp::Trans, nbe, npts, 1.0, bf_ptr, npts,
+      zptr, npts, fac, v_ptr, nbe ); 
+  };
+
   // Launch SYR2K in round robin
   const auto n_blas_streams = data->device_backend_->blas_pool_size();
   for( size_t iT = 0; iT < ntasks; ++iT ) {
     auto& task = tasks[iT];
-    syr2k( data->device_backend_->blas_pool_handle(iT % n_blas_streams),
-      DeviceBlasUplo::Lower, DeviceBlasOp::Trans, task.bfn_screening.nbe, task.npts, 1.,
-      task.bf, task.npts, task.zmat, task.npts, 0., task.nbe_scr,
-      task.bfn_screening.nbe );
+    auto handle = data->device_backend_->blas_pool_handle( iT % n_blas_streams );
+    do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.bf, task.zmat, 0.0, task.nbe_scr);
+    if(do_m) {
+      do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfx, task.xmat_x, 1.0, task.nbe_scr);
+      do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfy, task.xmat_y, 1.0, task.nbe_scr);
+      do_syr2k(handle, task.npts, task.bfn_screening.nbe, task.dbfz, task.xmat_z, 1.0, task.nbe_scr);
+    }
   }
 
   // Record completion of BLAS ops on master stream
@@ -807,6 +972,8 @@ void AoSScheme1Base::inc_vxc( XCDeviceData* _data, density_id den_selector){
   sym_task_inc_potential( ntasks, aos_stack.device_tasks,
     vxc_ptr, nbf, submat_block_size,
     data->device_backend_->queue() );
+  
+  data->device_backend_->check_error("inc_vxc" __FILE__ ": " + std::to_string(__LINE__));
 }
 
 
@@ -848,6 +1015,8 @@ void AoSScheme1Base::symmetrize_vxc( XCDeviceData* _data, density_id den_selecto
     default:
       GAUXC_GENERIC_EXCEPTION( "symmetrize_vxc: invalid density selected" );
   }
+  
+  data->device_backend_->check_error("symmetrize vxc" __FILE__ ": " + std::to_string(__LINE__));
 }
 
 

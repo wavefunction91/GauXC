@@ -60,27 +60,31 @@ public:
   void eval_collocation( XCDeviceData* );
   void eval_collocation_gradient( XCDeviceData* );
   void eval_collocation_hessian( XCDeviceData* );
-
+  void eval_collocation_laplacian( XCDeviceData* );
   void eval_xmat( double fac, XCDeviceData*, bool do_grad, density_id den );
   
-  void eval_uvars_lda( XCDeviceData*, integrator_ks_scheme );
-  void eval_uvars_gga( XCDeviceData*, integrator_ks_scheme );
-  void eval_vvar( XCDeviceData*, bool, density_id );
+  void eval_uvars_lda( XCDeviceData*, integrator_ks_scheme ) ;
+  void eval_uvars_gga( XCDeviceData*, integrator_ks_scheme ) ;
+  void eval_uvars_mgga( XCDeviceData*, bool ) ;
+  void eval_vvar( XCDeviceData*, density_id, bool ) ;
+
 
   void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* );
   void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* );
+  void eval_kern_exc_vxc_mgga( const functional_type&, XCDeviceData* );
 
 
-  void eval_zmat_lda_vxc( XCDeviceData*, integrator_ks_scheme,  density_id );
-  void eval_zmat_gga_vxc( XCDeviceData*, integrator_ks_scheme,  density_id );
-
+  void eval_zmat_lda_vxc( XCDeviceData*, integrator_ks_scheme, density_id ) ;
+  void eval_zmat_gga_vxc( XCDeviceData*, integrator_ks_scheme, density_id ) ;
+  void eval_zmat_mgga_vxc( XCDeviceData*, bool ) ;
+  void eval_mmat_mgga_vxc( XCDeviceData*, bool );
 
   void eval_exx_fmat( XCDeviceData* );
   void eval_exx_gmat( XCDeviceData*, const BasisSetMap& );
 
   void inc_exc( XCDeviceData* );
   void inc_nel( XCDeviceData* );
-  void inc_vxc( XCDeviceData*, density_id );
+  void inc_vxc( XCDeviceData*, density_id, bool do_m = false );
   void inc_exc_grad_lda( XCDeviceData* );
   void inc_exc_grad_gga( XCDeviceData* );
   void inc_exx_k( XCDeviceData* );

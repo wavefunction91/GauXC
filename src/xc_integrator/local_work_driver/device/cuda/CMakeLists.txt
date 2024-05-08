@@ -41,7 +41,7 @@ endforeach()
 add_subdirectory(obara_saika)
 if(GAUXC_ENABLE_CUTLASS)
     include( gauxc-cutlass )
-    target_link_libraries( gauxc PRIVATE gauxc_cutlass )
+    target_link_libraries( gauxc PRIVATE $<BUILD_INTERFACE:gauxc_cutlass> )
     target_sources( gauxc PRIVATE
       scheme1_cutlass_base.cxx 
       scheme1_cutlass_data_base.cxx   

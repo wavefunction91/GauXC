@@ -55,10 +55,6 @@ public:
     std::shared_ptr<functional_type> func,
     std::shared_ptr<LoadBalancer>    lb ) {
 
-    // Early check for MGGAs and Device
-    if( ex_ == ExecutionSpace::Device && func->is_mgga() )
-      GAUXC_GENERIC_EXCEPTION("DEVICE IS NOT READY FOR MGGA");
-
     // Create Local Work Driver
     auto lwd = LocalWorkDriverFactory::make_local_work_driver( ex_, 
       lwd_kernel_, local_work_settings_ );

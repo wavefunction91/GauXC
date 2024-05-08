@@ -114,12 +114,16 @@ struct XCDeviceStackData : public XCDeviceData {
     
     double* den_eval_device     = nullptr; /// Storage for interleaved density (non-RKS only)
 
+    double* den_lapl_eval_device = nullptr; ///< density Laplacian for task batch
 
     // V variables / XC output
     double* gamma_eval_device  = nullptr; ///< gamma for task batch
+    double* tau_eval_device    = nullptr; ///< tau for task batch
     double* eps_eval_device    = nullptr; ///< XC energy density for task batch
     double* vrho_eval_device   = nullptr; ///< Rho XC derivative for task batch
     double* vgamma_eval_device = nullptr; ///< Gamma XC derivative for task batch
+    double* vtau_eval_device   = nullptr; ///< Tau XC derivative for task batch
+    double* vlapl_eval_device  = nullptr; ///< Lapl XC derivative for task batch
 
     double* vrho_pos_eval_device  = nullptr;  ///< Polarized Rho+ XC derivative for task batch
     double* vrho_neg_eval_device  = nullptr;  ///< Polarized Rho+ XC derivative for task batch

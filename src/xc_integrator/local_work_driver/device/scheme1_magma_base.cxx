@@ -112,12 +112,14 @@ void AoSScheme1MAGMABase::eval_exx_fmat( XCDeviceData* _data ) {
 #endif
 }
 
-void AoSScheme1MAGMABase::inc_vxc( XCDeviceData* _data, density_id den){
+void AoSScheme1MAGMABase::inc_vxc( XCDeviceData* _data, density_id den, bool do_m){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  if(do_m) GAUXC_GENERIC_EXCEPTION("MAGMA + MGGA NYI");
 
   auto& tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();

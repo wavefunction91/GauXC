@@ -19,6 +19,11 @@ void eval_uvars_lda( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_sc
 void eval_uvars_gga( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
   XCDeviceTask* device_tasks, device_queue queue );
 
+void eval_uvars_mgga( size_t ntasks, size_t npts_total, int32_t nbf_max, 
+  int32_t npts_max, bool do_lapl, XCDeviceTask* device_tasks, 
+  device_queue queue );
+
 void eval_vvar( size_t ntasks, int32_t nbf_max, int32_t npts_max, bool do_grad, density_id den_select,
   XCDeviceTask* device_tasks, device_queue queue );
+
 }

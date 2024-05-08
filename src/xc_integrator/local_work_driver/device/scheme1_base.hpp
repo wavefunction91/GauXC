@@ -17,16 +17,21 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   void eval_collocation( XCDeviceData* ) override final;
   void eval_collocation_gradient( XCDeviceData* ) override final;
   void eval_collocation_hessian( XCDeviceData* ) override final;
+  void eval_collocation_laplacian( XCDeviceData* ) override final;
 
   void eval_uvars_lda( XCDeviceData*, integrator_ks_scheme ) override final;
   void eval_uvars_gga( XCDeviceData*, integrator_ks_scheme ) override final;
-  void eval_vvar( XCDeviceData*, bool, density_id ) override final;
+  void eval_uvars_mgga( XCDeviceData*, bool ) override final;
+  void eval_vvar( XCDeviceData*, density_id, bool ) override final;
 
   void eval_zmat_lda_vxc( XCDeviceData*, integrator_ks_scheme, density_id ) override final;
   void eval_zmat_gga_vxc( XCDeviceData*, integrator_ks_scheme, density_id ) override final;
+  void eval_zmat_mgga_vxc( XCDeviceData*, bool ) override final;
+  void eval_mmat_mgga_vxc( XCDeviceData*, bool ) override final;
 
   void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* ) override final;
   void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* ) override final;
+  void eval_kern_exc_vxc_mgga( const functional_type&, XCDeviceData* ) override final;
   void inc_exc( XCDeviceData* ) override final;
   void inc_nel( XCDeviceData* ) override final;
   void inc_exc_grad_lda( XCDeviceData* ) override final;
@@ -45,7 +50,7 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   // Overridable APIs
   virtual void eval_xmat( double fac, XCDeviceData*, bool , density_id ) override;
   virtual void eval_exx_fmat( XCDeviceData* ) override;
-  virtual void inc_vxc( XCDeviceData*, density_id) override;
+  virtual void inc_vxc( XCDeviceData*, density_id, bool ) override;
   virtual void inc_exx_k( XCDeviceData* ) override;
 
 

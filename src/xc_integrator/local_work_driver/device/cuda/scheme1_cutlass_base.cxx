@@ -50,12 +50,14 @@ void AoSScheme1CUTLASSBase::eval_xmat(double fac, XCDeviceData* _data, bool do_g
   );
 }
 
-void AoSScheme1CUTLASSBase::inc_vxc( XCDeviceData* _data){
+void AoSScheme1CUTLASSBase::inc_vxc( XCDeviceData* _data, bool do_m){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  if(do_m) GAUXC_GENERIC_EXCEPTION("CUTLASS + MGGA NYI");
 
   auto& tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();

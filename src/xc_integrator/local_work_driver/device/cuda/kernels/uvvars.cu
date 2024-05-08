@@ -16,7 +16,7 @@ namespace GauXC {
 
 #define VVAR_KERNEL_SM_BLOCK 32
 #define GGA_KERNEL_SM_WARPS 16
-// TODO: Tune this value?
+#define MGGA_KERNEL_SM_BLOCK 32
 
 __global__ void eval_uvars_lda_rks_kernel( size_t ntasks, XCDeviceTask* tasks_device) {
   // eval_vvars populated uvar storage already in the case of LDA+RKS
@@ -299,6 +299,119 @@ __global__ void eval_uvars_gga_gks_kernel( size_t ntasks, XCDeviceTask* tasks_de
 
 }
 
+template <bool need_lapl>
+__global__ void eval_uvars_mgga_rks_kernel( size_t           ntasks,
+                                       XCDeviceTask* tasks_device ) {
+
+  constexpr auto warp_size = cuda::warp_size;
+  //constexpr auto max_warps_per_thread_block = cuda::max_warps_per_thread_block;
+
+  const int batch_idx = blockIdx.z;
+  if( batch_idx >= ntasks ) return;
+
+  auto& task = tasks_device[ batch_idx ];
+
+  const auto npts            = task.npts;
+  const auto nbf             = task.bfn_screening.nbe;
+
+  auto* tau_eval_device   = task.tau;
+  decltype(tau_eval_device) lapl_eval_device = nullptr;
+  if constexpr (need_lapl) {
+    lapl_eval_device = task.denlapl;
+  }
+
+  //const auto* basis_eval_device = task.bf;
+  const auto* dbasis_x_eval_device = task.dbfx;
+  const auto* dbasis_y_eval_device = task.dbfy;
+  const auto* dbasis_z_eval_device = task.dbfz;
+  decltype(dbasis_x_eval_device) basis_lapl_eval_device = nullptr;
+  if constexpr (need_lapl) {
+    basis_lapl_eval_device = task.d2bflapl;
+  }
+
+  //const auto* den_basis_prod_device    = task.zmat;
+  const auto* den_basis_dx_prod_device = task.xmat_x;
+  const auto* den_basis_dy_prod_device = task.xmat_y;
+  const auto* den_basis_dz_prod_device = task.xmat_z;
+  decltype(den_basis_dx_prod_device) den_basis_prod_device = nullptr;
+  if constexpr (need_lapl) {
+    den_basis_prod_device = task.zmat;
+  }
+
+  __shared__ double den_shared[3+!!need_lapl][warp_size][MGGA_KERNEL_SM_BLOCK+1];
+
+  for ( int bid_x = blockIdx.x * blockDim.x; 
+        bid_x < nbf;
+        bid_x += blockDim.x * gridDim.x ) {
+    
+    for ( int bid_y = blockIdx.y * MGGA_KERNEL_SM_BLOCK; 
+          bid_y < npts;
+          bid_y += MGGA_KERNEL_SM_BLOCK * gridDim.y ) {
+        
+      for (int sm_y = threadIdx.y; sm_y < MGGA_KERNEL_SM_BLOCK; sm_y += blockDim.y) {
+        den_shared[0][threadIdx.x][sm_y] = 0.;
+        den_shared[1][threadIdx.x][sm_y] = 0.;
+        den_shared[2][threadIdx.x][sm_y] = 0.;
+        if constexpr (need_lapl)
+          den_shared[3][threadIdx.x][sm_y] = 0.;
+
+        if (bid_y + threadIdx.x < npts and bid_x + sm_y < nbf) { 
+          const double* db_x_col = den_basis_dx_prod_device + (bid_x + sm_y)*npts;
+          const double* db_y_col = den_basis_dy_prod_device + (bid_x + sm_y)*npts;
+          const double* db_z_col = den_basis_dz_prod_device + (bid_x + sm_y)*npts;
+
+          const double* bf_x_col = dbasis_x_eval_device  + (bid_x + sm_y)*npts;
+          const double* bf_y_col = dbasis_y_eval_device  + (bid_x + sm_y)*npts;
+          const double* bf_z_col = dbasis_z_eval_device  + (bid_x + sm_y)*npts;
+
+
+          den_shared[0][threadIdx.x][sm_y] = bf_x_col[ bid_y + threadIdx.x ] * db_x_col[ bid_y + threadIdx.x ];
+          den_shared[1][threadIdx.x][sm_y] = bf_y_col[ bid_y + threadIdx.x ] * db_y_col[ bid_y + threadIdx.x ];
+          den_shared[2][threadIdx.x][sm_y] = bf_z_col[ bid_y + threadIdx.x ] * db_z_col[ bid_y + threadIdx.x ];
+
+
+          if constexpr (need_lapl) {
+            const double* db_col   = den_basis_prod_device  + (bid_x + sm_y)*npts;
+            const double* bf_l_col = basis_lapl_eval_device + (bid_x + sm_y)*npts;
+            den_shared[3][threadIdx.x][sm_y] = bf_l_col[ bid_y + threadIdx.x ] * db_col[ bid_y + threadIdx.x ];
+          }
+        }
+      }
+      __syncthreads();
+
+
+      for (int sm_y = threadIdx.y; sm_y < MGGA_KERNEL_SM_BLOCK; sm_y += blockDim.y) {
+        const int tid_y = bid_y + sm_y;
+
+        register double tx_reg  = den_shared[0][sm_y][threadIdx.x];
+        register double ty_reg  = den_shared[1][sm_y][threadIdx.x];
+        register double tz_reg  = den_shared[2][sm_y][threadIdx.x];
+        // Warp blocks are stored col major
+        register double tau_reg = 0.0;
+        tau_reg  = 0.5 * cuda::warp_reduce_sum<warp_size>( tx_reg );
+        tau_reg += 0.5 * cuda::warp_reduce_sum<warp_size>( ty_reg );
+        tau_reg += 0.5 * cuda::warp_reduce_sum<warp_size>( tz_reg );
+
+        register double lapl_reg = 0.0;
+        if constexpr (need_lapl) {
+          lapl_reg = den_shared[3][sm_y][threadIdx.x];
+          lapl_reg = cuda::warp_reduce_sum<warp_size>(lapl_reg);
+          lapl_reg = 2. * lapl_reg + 4. * tau_reg;
+        }
+
+        if( threadIdx.x == 0 and tid_y < npts ) {
+          atomicAdd( tau_eval_device   + tid_y, tau_reg );
+          if constexpr (need_lapl) {
+            atomicAdd( lapl_eval_device   + tid_y, lapl_reg );
+          }
+        }
+      }
+      __syncthreads();
+    }
+  }
+}
+
+
 #define EVAL_UVARS_KERNEL(xc_approx) \
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();  \
   dim3 blocks( util::div_ceil( npts_max,  threads.x ),  \
@@ -333,6 +446,30 @@ void eval_uvars_gga( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_sc
 }
 
 
+
+void eval_uvars_mgga( size_t ntasks, size_t npts_total, int32_t nbf_max, 
+  int32_t npts_max, bool do_lapl, XCDeviceTask* device_tasks, 
+  device_queue queue ) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>();
+
+  // U Variables
+  {
+  dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block / 2, 1 );
+  dim3 blocks( std::min(uint64_t(4), util::div_ceil( nbf_max, 4 )),
+               std::min(uint64_t(16), util::div_ceil( nbf_max, 16 )),
+               ntasks );
+  if(do_lapl)
+    eval_uvars_mgga_rks_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+  else
+    eval_uvars_mgga_rks_kernel<false><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+  }
+
+  // V variables (GAMMA)
+  dim3 threads( cuda::max_threads_per_thread_block );
+  dim3 blocks( util::div_ceil( npts_total, threads.x ) );
+  eval_uvars_gga_rks_kernel <<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+}
 
 
 
@@ -452,7 +589,6 @@ __global__ void eval_vvar_grad_kern( size_t        ntasks,
 
 
 
-
 template <density_id den_select>
 __global__ void eval_vvar_kern( size_t        ntasks,
                                        XCDeviceTask* tasks_device ) {
@@ -506,8 +642,6 @@ __global__ void eval_vvar_kern( size_t        ntasks,
 
 
 
-
-
 void eval_vvar( size_t ntasks, int32_t nbf_max, int32_t npts_max, bool do_grad, density_id den_select,
   XCDeviceTask* device_tasks, device_queue queue ) {
 
@@ -538,11 +672,6 @@ void eval_vvar( size_t ntasks, int32_t nbf_max, int32_t npts_max, bool do_grad, 
   }
 
 }
-
-
-
-
-
 
 
 
