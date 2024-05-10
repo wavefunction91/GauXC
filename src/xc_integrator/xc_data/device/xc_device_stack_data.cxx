@@ -708,17 +708,18 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   const bool is_rks = terms.ks_scheme == RKS;
   const bool is_uks = terms.ks_scheme == UKS;
   const bool is_gks = terms.ks_scheme == GKS;
-  const bool is_pol  = is_uks or is_gks;
-  const bool is_gga = reqt.grid_den_grad;
+  const bool is_pol = is_uks or is_gks;
+  const bool is_gga = terms.xc_approx == GGA;
 
   const bool is_den = terms.den;
-
+  
   // Grid Points
   if( reqt.grid_points ) {
     base_stack.points_x_device = mem.aligned_alloc<double>( msz, aln, csl);
     base_stack.points_y_device = mem.aligned_alloc<double>( msz, aln, csl);
     base_stack.points_z_device = mem.aligned_alloc<double>( msz, aln, csl);
   }
+
 
   // Grid Weights
   if( reqt.grid_weights ) {
@@ -751,6 +752,7 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
                    base_stack.dden_xz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
     }
   }
+
   if( reqt.grid_den_lapl ) { // Density Laplacian
     base_stack.den_lapl_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
   }
@@ -762,6 +764,7 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
                     base_stack.gamma_mm_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
     else            base_stack.gamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
   }
+
   if( reqt.grid_vrho ) { // Vrho
     if( is_pol  ) { base_stack.vrho_eval_device = mem.aligned_alloc<double>(2 * msz, aln, csl);
                    base_stack.vrho_pos_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
@@ -776,12 +779,9 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
                     base_stack.vgamma_mm_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
     else            base_stack.vgamma_eval_device    = mem.aligned_alloc<double>(msz, aln, csl);
   }
+
   if( reqt.grid_tau ) { // Tau 
     base_stack.tau_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-  }
-
-  if( reqt.grid_eps ) { // Energy density 
-    base_stack.eps_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
   }
 
   if( is_gks ) {       // H, K matrices
@@ -806,6 +806,8 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   if( reqt.grid_vlapl ) { // Vlapl
     base_stack.vlapl_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
   }
+
+
 
   // Update dynmem data for derived impls
   return device_buffer_t{ mem.stack(), mem.nleft() };

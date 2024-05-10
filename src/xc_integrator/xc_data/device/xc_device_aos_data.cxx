@@ -487,8 +487,9 @@ void XCDeviceAoSData::pack_and_send(
     buffer_adaptor gamma_mem  ( base_stack.gamma_eval_device,     total_npts * gamma_fac );
     buffer_adaptor vrho_mem   ( base_stack.vrho_eval_device,      total_npts * den_fac   );
     buffer_adaptor vgamma_mem ( base_stack.vgamma_eval_device,    total_npts * gamma_fac );
-
+    
     buffer_adaptor den_mem    ( base_stack.den_eval_device,       total_npts * den_fac   );
+       
 
     // Polarized KS
     buffer_adaptor den_z_mem  ( base_stack.den_z_eval_device,     total_npts  );
@@ -606,7 +607,7 @@ void XCDeviceAoSData::pack_and_send(
       if (reqt.grid_den) {
         task.den_s        = den_s_mem.aligned_alloc<double>( npts, csl );
         if(is_pol) {
-          task.den          = den_mem.aligned_alloc<double>(npts*den_fac, csl); //Interleaved memory
+          task.den          = den_mem.aligned_alloc<double>(npts*2, csl); //Interleaved memory
           task.den_z        = den_z_mem.aligned_alloc<double>( npts, csl);
           if ( is_gks ) {
             task.den_y        = den_y_mem.aligned_alloc<double>( npts, csl);
