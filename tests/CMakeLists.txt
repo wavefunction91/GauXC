@@ -54,6 +54,7 @@ add_executable( gauxc_test
   basisset_test.cxx 
   load_balancer_test.cxx 
   xc_integrator.cxx 
+  environment.cxx
   collocation.cxx
   weights.cxx
   standards.cxx 
