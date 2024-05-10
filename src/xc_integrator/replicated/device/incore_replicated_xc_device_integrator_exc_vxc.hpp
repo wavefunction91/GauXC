@@ -306,12 +306,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     else if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
     else                     lwd->eval_collocation( &device_data );
       
-    // for debugging. Remove before flight
-    auto* data = dynamic_cast<XCDeviceAoSData*>(&device_data);
-    auto tasks = data->host_device_tasks;
-    auto static_stack = data->static_stack;
-    auto base_stack   = data->base_stack;
-    
     const double xmat_fac = is_rks ? 2.0 : 1.0;
     const bool need_xmat_grad = func.is_mgga();
     const bool need_vvar_grad = func.is_mgga() or func.is_gga();

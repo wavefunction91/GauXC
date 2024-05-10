@@ -467,7 +467,9 @@ void eval_uvars_mgga( size_t ntasks, size_t npts_total, int32_t nbf_max,
 
   // V variables (GAMMA)
   dim3 threads( cuda::max_threads_per_thread_block );
-  dim3 blocks( util::div_ceil( npts_total, threads.x ) );
+  dim3 blocks( util::div_ceil( npts_total,  threads.x ),  
+               1, 
+               ntasks ); 
   eval_uvars_gga_rks_kernel <<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
 }
 
