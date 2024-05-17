@@ -9,8 +9,7 @@
 #include "reference_replicated_xc_host_integrator.hpp"
 #include "host/local_host_work_driver.hpp"
 
-namespace GauXC  {
-namespace detail {
+namespace GauXC::detail {
 
 template <typename ValueType>
 ReplicatedXCHostIntegrator<ValueType>::~ReplicatedXCHostIntegrator() noexcept = default;
@@ -54,6 +53,5 @@ typename ReplicatedXCHostIntegratorFactory<ValueType>::ptr_return_t
 template class ReplicatedXCHostIntegratorFactory<double>;
 
 
-}
-}
+} // namespace GauXC::detail
 

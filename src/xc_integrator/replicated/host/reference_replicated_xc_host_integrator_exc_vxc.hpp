@@ -13,152 +13,53 @@
 #include "host/blas.hpp"
 #include <stdexcept>
 
-namespace GauXC  {
-namespace detail {
+namespace GauXC::detail {
 
+/**
+ *  Generic implementation of EXC/VXC for RKS/UKS/GKS
+ *  
+ *  If passed pointers are null-y and the leading dimensions
+ *  are zero, RKS/UKS are deduced. RKS/UKS drivers delegate
+ *  to this function/
+ */
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
-                 int64_t ldp, value_type* VXC, int64_t ldvxc,
+  eval_exc_vxc_( int64_t m, int64_t n, 
+                 const value_type* Ps, int64_t ldps,
+                 const value_type* Pz, int64_t ldpz,
+                 const value_type* Py, int64_t ldpy,
+                 const value_type* Px, int64_t ldpx,
+                 value_type* VXCs, int64_t ldvxcs,
+                 value_type* VXCz, int64_t ldvxcz,
+                 value_type* VXCy, int64_t ldvxcy,
+                 value_type* VXCx, int64_t ldvxcx,
                  value_type* EXC, const IntegratorSettingsXC& ks_settings ) {
 
   const auto& basis = this->load_balancer_->basis();
 
   // Check that P / VXC are sane
   const int64_t nbf = basis.nbf();
-  if( m != n ) 
-    GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
-  if( m != nbf ) 
-    GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
-  if( ldp < nbf )
-    GAUXC_GENERIC_EXCEPTION("Invalid LDP");
-  if( ldvxc < nbf )
-    GAUXC_GENERIC_EXCEPTION("Invalid LDVXC");
-
-
-  // Get Tasks
-  this->load_balancer_->get_tasks();
-
-  // Temporary electron count to judge integrator accuracy
-  value_type N_EL;
-
-  // Compute Local contributions to EXC / VXC
-  this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    //exc_vxc_local_work_( P, ldp, VXC, ldvxc, EXC, &N_EL );
-    exc_vxc_local_work_( P, ldp, nullptr, 0, nullptr, 0, nullptr, 0,
-                         VXC, ldvxc, nullptr, 0, nullptr, 0, nullptr, 0, EXC, &N_EL, ks_settings );
-  });
-
-
-  // Reduce Results
-  this->timer_.time_op("XCIntegrator.Allreduce", [&](){
-
-    if( not this->reduction_driver_->takes_host_memory() )
-      GAUXC_GENERIC_EXCEPTION("This Module Only Works With Host Reductions");
-
-    this->reduction_driver_->allreduce_inplace( VXC, nbf*nbf, ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
-
-  });
-
-}
-
-template <typename ValueType>
-void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  eval_exc_vxc_( int64_t m, int64_t n, const value_type* Ps,
-                      int64_t ldps,
-                      const value_type* Pz,
-                      int64_t ldpz,
-                      value_type* VXCs, int64_t ldvxcs,
-                      value_type* VXCz, int64_t ldvxcz,
-                      value_type* EXC, const IntegratorSettingsXC& ks_settings) {
-
-  const auto& basis = this->load_balancer_->basis();
-
-  // Check that P / VXC are sane
-  const int64_t nbf = basis.nbf();
   if( m != n )
     GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
   if( m != nbf )
     GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
+
   if( ldps < nbf )
-    GAUXC_GENERIC_EXCEPTION("Invalid LDPSCALAR");
-  if( ldpz < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPS");
+  if( ldpz and ldpz < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDPZ");
-  if( ldvxcs < nbf )
-    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCSCALAR");
-  if( ldvxcz < nbf )
-    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCZ");
-
-  // Get Tasks
-  this->load_balancer_->get_tasks();
-
-  // Temporary electron count to judge integrator accuracy
-  value_type N_EL;
-
-  // Compute Local contributions to EXC / VXC
-  this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    exc_vxc_local_work_( Ps, ldps, Pz, ldpz, nullptr, 0,nullptr, 0,
-                         VXCs, ldvxcs, VXCz, ldvxcz, nullptr, 0, nullptr, 0, EXC, &N_EL, ks_settings );
-  });
-
-
-  // Reduce Results
-  this->timer_.time_op("XCIntegrator.Allreduce", [&](){
-
-    if( not this->reduction_driver_->takes_host_memory() )
-      GAUXC_GENERIC_EXCEPTION("This Module Only Works With Host Reductions");
-
-    this->reduction_driver_->allreduce_inplace( VXCs, nbf*nbf, ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( VXCz, nbf*nbf, ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
-
-  });
-
-
-}
-
-template <typename ValueType>
-void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  eval_exc_vxc_( int64_t m, int64_t n, const value_type* Ps,
-                      int64_t ldps,
-                      const value_type* Pz,
-                      int64_t ldpz,
-                      const value_type* Py,
-                      int64_t ldpy,
-                      const value_type* Px,
-                      int64_t ldpx,
-                      value_type* VXCs, int64_t ldvxcs,
-                      value_type* VXCz, int64_t ldvxcz,
-                      value_type* VXCy, int64_t ldvxcy,
-                      value_type* VXCx, int64_t ldvxcx,
-                      value_type* EXC, const IntegratorSettingsXC& ks_settings ) {
-
-  const auto& basis = this->load_balancer_->basis();
-
-  // Check that P / VXC are sane
-  const int64_t nbf = basis.nbf();
-  if( m != n )
-    GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
-  if( m != nbf )
-    GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
-  if( ldps < nbf )
-    GAUXC_GENERIC_EXCEPTION("Invalid LDPSCALAR");
-  if( ldpz < nbf )
-    GAUXC_GENERIC_EXCEPTION("Invalid LDPZ");
-  if( ldpy < nbf )
+  if( ldpy and ldpy < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDPX");
-  if( ldpx < nbf )
+  if( ldpx and ldpx < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDPY");
+
   if( ldvxcs < nbf )
-    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCSCALAR");
-  if( ldvxcz < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXCS");
+  if( ldvxcz and ldvxcz < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDVXCZ");
-  if( ldvxcy < nbf )
+  if( ldvxcy and ldvxcy < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDVXCX");
-  if( ldvxcx < nbf )
+  if( ldvxcx and ldvxcx < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDVXCY");
 
   // Get Tasks
@@ -182,9 +83,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       GAUXC_GENERIC_EXCEPTION("This Module Only Works With Host Reductions");
 
     this->reduction_driver_->allreduce_inplace( VXCs, nbf*nbf, ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( VXCz, nbf*nbf, ReductionOp::Sum );
-    this->reduction_driver_->allreduce_inplace( VXCy, nbf*nbf, ReductionOp::Sum ); 
-    this->reduction_driver_->allreduce_inplace( VXCx, nbf*nbf, ReductionOp::Sum );
+    if(VXCz) this->reduction_driver_->allreduce_inplace( VXCz, nbf*nbf, ReductionOp::Sum );
+    if(VXCy) this->reduction_driver_->allreduce_inplace( VXCy, nbf*nbf, ReductionOp::Sum ); 
+    if(VXCx) this->reduction_driver_->allreduce_inplace( VXCx, nbf*nbf, ReductionOp::Sum );
+
     this->reduction_driver_->allreduce_inplace( EXC,   1    , ReductionOp::Sum );
     this->reduction_driver_->allreduce_inplace( &N_EL, 1    , ReductionOp::Sum );
 
@@ -194,7 +96,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 }
 
 
-
+/// Generic implementation details of EXC/VXC local work - deduces RKS/UKS/GKS
+/// based on null-y / zero parameters
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
   exc_vxc_local_work_( const value_type* Ps, int64_t ldps,
@@ -205,7 +108,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                        value_type* VXCz, int64_t ldvxcz,
                        value_type* VXCy, int64_t ldvxcy,
                        value_type* VXCx, int64_t ldvxcx,
-                       value_type* EXC, value_type *N_EL, const IntegratorSettingsXC& settings) {
+                       value_type* EXC, value_type *N_EL, 
+                       const IntegratorSettingsXC& settings) {
 
   const bool is_gks = (Pz != nullptr) and (VXCz != nullptr) and (VXCy != nullptr) and (VXCx != nullptr);
   const bool is_uks = (Pz != nullptr) and (VXCz != nullptr) and (VXCy == nullptr) and (VXCx == nullptr);
@@ -683,5 +587,36 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 } 
 
+
+
+/// RKS EXC/VXC driver - delegates to generic GKS impl
+template <typename ValueType>
+void ReferenceReplicatedXCHostIntegrator<ValueType>::
+  eval_exc_vxc_( int64_t m, int64_t n, 
+                 const value_type* P, int64_t ldp,
+                 value_type* VXC, int64_t ldvxc,
+                 value_type* EXC, const IntegratorSettingsXC& ks_settings) {
+
+  eval_exc_vxc_(m, n, P, ldp, nullptr, 0, nullptr, 0, nullptr, 0,
+    VXC, ldvxc, nullptr, 0, nullptr, 0, nullptr, 0, EXC, ks_settings);
+
 }
+
+
+/// UKS EXC/VXC driver - delegates to generic GKS impl
+template <typename ValueType>
+void ReferenceReplicatedXCHostIntegrator<ValueType>::
+  eval_exc_vxc_( int64_t m, int64_t n, 
+                 const value_type* Ps, int64_t ldps,
+                 const value_type* Pz, int64_t ldpz,
+                 value_type* VXCs, int64_t ldvxcs,
+                 value_type* VXCz, int64_t ldvxcz,
+                 value_type* EXC, const IntegratorSettingsXC& ks_settings) {
+
+  eval_exc_vxc_(m, n, Ps, ldps, Pz, ldpz, nullptr, 0, nullptr, 0,
+    VXCs, ldvxcs, VXCz, ldvxcz, nullptr, 0, nullptr, 0,
+    EXC, ks_settings);
+
 }
+
+} // namespace GauXC::detail
