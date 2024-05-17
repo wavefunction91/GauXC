@@ -7,6 +7,7 @@
  */
 #include <gauxc/xc_integrator/replicated/replicated_xc_host_integrator.hpp>
 #include "reference_replicated_xc_host_integrator.hpp"
+#include "shell_batched_replicated_xc_host_integrator.hpp"
 #include "host/local_host_work_driver.hpp"
 
 namespace GauXC::detail {
@@ -39,6 +40,11 @@ typename ReplicatedXCHostIntegratorFactory<ValueType>::ptr_return_t
 
   if( integrator_kernel == "REFERENCE" )
     return std::make_unique<ReferenceReplicatedXCHostIntegrator<ValueType>>(
+      func, lb, std::move(lwd), rd
+    );
+
+  else if( integrator_kernel == "SHELLBATCHED" )
+    return std::make_unique<ShellBatchedReplicatedXCHostIntegrator<ValueType>>(
       func, lb, std::move(lwd), rd
     );
 

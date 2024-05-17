@@ -63,16 +63,17 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     GAUXC_GENERIC_EXCEPTION("Invalid LDVXCY");
 
   // Get Tasks
-  this->load_balancer_->get_tasks();
+  auto& tasks = this->load_balancer_->get_tasks();
 
   // Temporary electron count to judge integrator accuracy
   value_type N_EL;
    
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-    exc_vxc_local_work_( Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx, 
+    exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx, 
                          VXCs, ldvxcs, VXCz, ldvxcz,
-                         VXCy, ldvxcy, VXCx, ldvxcx, EXC, &N_EL, ks_settings );
+                         VXCy, ldvxcy, VXCx, ldvxcx, EXC, &N_EL, ks_settings,
+                         tasks.begin(), tasks.end() );
   });
 
 
@@ -100,7 +101,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 /// based on null-y / zero parameters
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  exc_vxc_local_work_( const value_type* Ps, int64_t ldps,
+  exc_vxc_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
                        const value_type* Pz, int64_t ldpz,
                        const value_type* Py, int64_t ldpy,
                        const value_type* Px, int64_t ldpx,
@@ -109,7 +110,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
                        value_type* VXCy, int64_t ldvxcy,
                        value_type* VXCx, int64_t ldvxcx,
                        value_type* EXC, value_type *N_EL, 
-                       const IntegratorSettingsXC& settings) {
+                       const IntegratorSettingsXC& settings,
+                       task_iterator task_begin, task_iterator task_end) {
 
   const bool is_gks = (Pz != nullptr) and (VXCz != nullptr) and (VXCy != nullptr) and (VXCx != nullptr);
   const bool is_uks = (Pz != nullptr) and (VXCz != nullptr) and (VXCy == nullptr) and (VXCx == nullptr);
@@ -132,7 +134,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Setup Aliases
   const auto& func  = *this->func_;
-  const auto& basis = this->load_balancer_->basis();
   const auto& mol   = this->load_balancer_->molecule();
 
   const bool needs_laplacian = func.needs_laplacian(); 
@@ -152,7 +153,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   };
 
   auto& tasks = this->load_balancer_->get_tasks();
-  std::sort( tasks.begin(), tasks.end(), task_comparator );
+  std::sort( task_begin, task_end, task_comparator );
 
 
   // Check that Partition Weights have been calculated
@@ -188,7 +189,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   double NEL_WORK = 0.0;
     
   // Loop over tasks
-  const size_t ntasks = tasks.size();
+  const size_t ntasks = std::distance(task_begin, task_end);
 
   #pragma omp parallel
   {
@@ -201,7 +202,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     //std::cout << iT << "/" << ntasks << std::endl;
     //printf("%lu / %lu\n", iT, ntasks);
     // Alias current task
-    const auto& task = tasks[iT];
+    const auto& task = *(task_begin + iT);
 
     // Get tasks constants
     const int32_t  npts    = task.points.size();

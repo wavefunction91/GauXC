@@ -15,9 +15,9 @@ namespace GauXC  {
 namespace detail {
 
 template <typename ValueType>
-ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::~ShellBatchedReplicatedXCDeviceIntegrator() noexcept = default;
+ShellBatchedReplicatedXCHostIntegrator<ValueType>::~ShellBatchedReplicatedXCHostIntegrator() noexcept = default;
 
-template class ShellBatchedReplicatedXCDeviceIntegrator<double>;
+template class ShellBatchedReplicatedXCHostIntegrator<double>;
 
 }
 }
