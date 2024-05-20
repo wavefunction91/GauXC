@@ -264,8 +264,14 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
 
 #ifdef GAUXC_HAS_HOST
     SECTION( "Host" ) {
-      test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
-        pruning_scheme, true, true, true );
+      SECTION("Reference") {
+        test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
+          pruning_scheme, true, true, true );
+      }
+      SECTION("ShellBatched") {
+        test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
+          pruning_scheme, false, false, false, "ShellBatched" );
+      }
     }
 #endif
 

@@ -6,36 +6,36 @@
  * See LICENSE.txt for details
  */
 #pragma once
-#include <gauxc/xc_integrator/replicated/replicated_xc_device_integrator.hpp>
-#include "incore_replicated_xc_device_integrator.hpp"
+#include <gauxc/xc_integrator/replicated/replicated_xc_host_integrator.hpp>
+#include "reference_replicated_xc_host_integrator.hpp"
 #include "shell_batched_replicated_xc_integrator.hpp"
 
 namespace GauXC {
 namespace detail {
 
 template <typename ValueType>
-class ShellBatchedReplicatedXCDeviceIntegrator : 
+class ShellBatchedReplicatedXCHostIntegrator : 
   public ShellBatchedReplicatedXCIntegrator<
-    ReplicatedXCDeviceIntegrator<ValueType>,
-    IncoreReplicatedXCDeviceIntegrator<ValueType>
+    ReplicatedXCHostIntegrator<ValueType>,
+    ReferenceReplicatedXCHostIntegrator<ValueType>
   > {
 
   using base_type  = ShellBatchedReplicatedXCIntegrator<
-    ReplicatedXCDeviceIntegrator<ValueType>,
-    IncoreReplicatedXCDeviceIntegrator<ValueType>
+    ReplicatedXCHostIntegrator<ValueType>,
+    ReferenceReplicatedXCHostIntegrator<ValueType>
   >;
 
 public:
 
   template <typename... Args>
-  ShellBatchedReplicatedXCDeviceIntegrator( Args&&... args ) :
+  ShellBatchedReplicatedXCHostIntegrator( Args&&... args ) :
     base_type( std::forward<Args>(args)... ) { }
 
-  virtual ~ShellBatchedReplicatedXCDeviceIntegrator() noexcept;
+  virtual ~ShellBatchedReplicatedXCHostIntegrator() noexcept;
 
 };
 
-extern template class ShellBatchedReplicatedXCDeviceIntegrator<double>;
+extern template class ShellBatchedReplicatedXCHostIntegrator<double>;
 
 }
 }

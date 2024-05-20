@@ -5,7 +5,7 @@
  *
  * See LICENSE.txt for details
  */
-#include "shellbatched_replicated_xc_device_integrator.hpp"
+#include "shell_batched_replicated_xc_host_integrator.hpp"
 #include "shell_batched_replicated_xc_integrator_integrate_den.hpp"
 #include "shell_batched_replicated_xc_integrator_exc_vxc.hpp"
 #include "shell_batched_replicated_xc_integrator_exc_grad.hpp"
@@ -15,9 +15,9 @@ namespace GauXC  {
 namespace detail {
 
 template <typename ValueType>
-ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::~ShellBatchedReplicatedXCDeviceIntegrator() noexcept = default;
+ShellBatchedReplicatedXCHostIntegrator<ValueType>::~ShellBatchedReplicatedXCHostIntegrator() noexcept = default;
 
-template class ShellBatchedReplicatedXCDeviceIntegrator<double>;
+template class ShellBatchedReplicatedXCHostIntegrator<double>;
 
 }
 }

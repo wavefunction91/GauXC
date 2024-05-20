@@ -20,6 +20,7 @@ class IncoreReplicatedXCDeviceIntegrator :
 
 public:
 
+  static constexpr bool is_device = true;
   using value_type = typename base_type::value_type;
   using basis_type = typename base_type::basis_type;
 
