@@ -7,7 +7,7 @@
  */
 #pragma once
 #include <gauxc/xc_integrator/replicated/replicated_xc_device_integrator.hpp>
-#include "reference_replicated_xc_host_integrator.hpp"
+#include "incore_replicated_xc_device_integrator.hpp"
 #include "shell_batched_replicated_xc_integrator.hpp"
 
 namespace GauXC {
@@ -17,12 +17,12 @@ template <typename ValueType>
 class ShellBatchedReplicatedXCDeviceIntegrator : 
   public ShellBatchedReplicatedXCIntegrator<
     ReplicatedXCDeviceIntegrator<ValueType>,
-    ReferenceReplicatedXCDeviceIntegrator<ValueType>
+    IncoreReplicatedXCDeviceIntegrator<ValueType>
   > {
 
   using base_type  = ShellBatchedReplicatedXCIntegrator<
     ReplicatedXCDeviceIntegrator<ValueType>,
-    ReferenceReplicatedXCDeviceIntegrator<ValueType>
+    IncoreReplicatedXCDeviceIntegrator<ValueType>
   >;
 
 public:

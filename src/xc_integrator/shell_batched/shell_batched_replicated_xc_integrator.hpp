@@ -8,7 +8,7 @@
 #pragma once
 #include <gauxc/gauxc_config.hpp>
 #include "shell_batched_xc_integrator.hpp"
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
 #include "device/xc_device_data.hpp"
 #endif
 
@@ -32,7 +32,7 @@ public:
 
 protected:
 
-#ifdef GAUXC_ENABLE_DEVICE
+#ifdef GAUXC_HAS_DEVICE
   std::unique_ptr<XCDeviceData> device_data_ptr_;
 #endif
 
