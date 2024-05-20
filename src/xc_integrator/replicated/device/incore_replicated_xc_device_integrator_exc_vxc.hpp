@@ -237,6 +237,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   const auto& func  = *this->func_;
   const auto& mol   = this->load_balancer_->molecule();
 
+  if( func.is_mgga() and (is_uks or is_gks) ) GAUXC_GENERIC_EXCEPTION("Device + Polarized mGGAs NYI!");
+
   // Get basis map
   BasisSetMap basis_map(basis,mol);
 
