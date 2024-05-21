@@ -7,10 +7,10 @@
  */
 #include <gauxc/xc_integrator/replicated/replicated_xc_host_integrator.hpp>
 #include "reference_replicated_xc_host_integrator.hpp"
+#include "shell_batched_replicated_xc_host_integrator.hpp"
 #include "host/local_host_work_driver.hpp"
 
-namespace GauXC  {
-namespace detail {
+namespace GauXC::detail {
 
 template <typename ValueType>
 ReplicatedXCHostIntegrator<ValueType>::~ReplicatedXCHostIntegrator() noexcept = default;
@@ -43,6 +43,11 @@ typename ReplicatedXCHostIntegratorFactory<ValueType>::ptr_return_t
       func, lb, std::move(lwd), rd
     );
 
+  else if( integrator_kernel == "SHELLBATCHED" )
+    return std::make_unique<ShellBatchedReplicatedXCHostIntegrator<ValueType>>(
+      func, lb, std::move(lwd), rd
+    );
+
   else
     GAUXC_GENERIC_EXCEPTION("INTEGRATOR KERNEL: " + integrator_kernel + " NOT RECOGNIZED");
 
@@ -54,6 +59,5 @@ typename ReplicatedXCHostIntegratorFactory<ValueType>::ptr_return_t
 template class ReplicatedXCHostIntegratorFactory<double>;
 
 
-}
-}
+} // namespace GauXC::detail
 

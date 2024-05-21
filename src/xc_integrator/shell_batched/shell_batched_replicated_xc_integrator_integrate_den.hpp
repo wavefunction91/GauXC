@@ -5,26 +5,16 @@
  *
  * See LICENSE.txt for details
  */
-#include "shellbatched_replicated_xc_device_integrator.hpp"
-#include "device/local_device_work_driver.hpp"
-#include "device/xc_device_aos_data.hpp"
-#include "integrator_util/integrator_common.hpp"
-#include "host/util.hpp"
+#pragma once
+#include "shell_batched_replicated_xc_integrator.hpp"
 #include <gauxc/util/misc.hpp>
 #include <gauxc/util/unused.hpp>
-
-#include <stdexcept>
-#include <fstream>
-#include <queue>
-#include <mutex>
-#include <future>
-#include <set>
 
 namespace GauXC  {
 namespace detail {
 
-template <typename ValueType>
-void ShellBatchedReplicatedXCDeviceIntegrator<ValueType>::
+template <typename BaseIntegratorType, typename IncoreIntegratorType>
+void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType>::
   integrate_den_( int64_t m, int64_t n, const value_type* P,
                  int64_t ldp, value_type* N_EL ) { 
                  

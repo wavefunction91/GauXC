@@ -13,8 +13,7 @@
 #include "host/blas.hpp"
 #include <stdexcept>
 
-namespace GauXC  {
-namespace detail {
+namespace GauXC::detail {
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
@@ -449,5 +448,4 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   
 }
 
-}
-}
+} // namespace GauXC::detail

@@ -27,8 +27,7 @@ ostream& operator<<( ostream& out, const vector<T>& v ) {
 }
 }
 
-namespace GauXC  {
-namespace detail {
+namespace GauXC::detail {
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
@@ -543,5 +542,4 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 }
 
-}
-}
+} // namespace GauXC::detail

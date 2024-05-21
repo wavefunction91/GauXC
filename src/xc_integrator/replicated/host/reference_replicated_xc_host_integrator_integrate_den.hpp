@@ -12,8 +12,7 @@
 #include "host/local_host_work_driver.hpp"
 #include <stdexcept>
 
-namespace GauXC  {
-namespace detail {
+namespace GauXC::detail {
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
@@ -25,9 +24,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Check that P / VXC are sane
   const int64_t nbf = basis.nbf();
   if( m != n ) 
-    GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
+    GAUXC_GENERIC_EXCEPTION("P Must Be Square");
   if( m != nbf ) 
-    GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
+    GAUXC_GENERIC_EXCEPTION("P Must Have Same Dimension as Basis");
   if( ldp < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDP");
 
@@ -164,5 +163,4 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 }
 
-}
-}
+} // namespace GauXC::detail
