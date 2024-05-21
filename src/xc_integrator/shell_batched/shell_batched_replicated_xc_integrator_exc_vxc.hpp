@@ -261,7 +261,7 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
   // Execute remaining tasks sequentially
   if( task_future.valid() ) {
     task_future.wait();
-    task_future.get();
+    task_future.get(); // Propagate trailing exceptions if present
   }
   while( not incore_task_data_queue.empty() ) {
     execute_incore_task();
