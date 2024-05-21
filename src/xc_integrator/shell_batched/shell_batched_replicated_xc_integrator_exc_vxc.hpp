@@ -1,5 +1,5 @@
 /**
- * GauXC Copyright (c) 2020-2023, The Regents of the University of California,
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
  * any required approvals from the U.S. Dept. of Energy). All rights reserved.
  *
@@ -261,7 +261,7 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
   // Execute remaining tasks sequentially
   if( task_future.valid() ) {
     task_future.wait();
-    task_future.get();
+    task_future.get(); // Propagate trailing exceptions if present
   }
   while( not incore_task_data_queue.empty() ) {
     execute_incore_task();
