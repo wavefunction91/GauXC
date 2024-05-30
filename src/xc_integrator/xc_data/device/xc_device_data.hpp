@@ -249,7 +249,7 @@ struct required_term_storage {
     const bool is_xc = tracker.exc_vxc or tracker.exc_grad;
     if(is_xc) {
       if( tracker.xc_approx == _UNDEFINED )
-        GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET");
+        GAUXC_GENERIC_EXCEPTION("No XC Approx Set");
       //const bool is_lda  = is_xc and tracker.xc_approx == LDA;
       const bool is_gga  = is_xc and tracker.xc_approx == GGA;
       const bool need_tau  = tracker.xc_approx == MGGA_TAU;

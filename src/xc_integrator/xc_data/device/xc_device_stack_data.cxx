@@ -724,13 +724,13 @@ void XCDeviceStackData::pack_and_send( integrator_term_tracker ,
   } // Loop over tasks
 
   if( points_x_pack.size() != total_npts_task_batch )
-    GAUXC_GENERIC_EXCEPTION("Inconsisdent Points-X allocation");
+    GAUXC_GENERIC_EXCEPTION("Inconsistent Points-X allocation");
   if( points_y_pack.size() != total_npts_task_batch )
-    GAUXC_GENERIC_EXCEPTION("Inconsisdent Points-Y allocation");
+    GAUXC_GENERIC_EXCEPTION("Inconsistent Points-Y allocation");
   if( points_z_pack.size() != total_npts_task_batch )
-    GAUXC_GENERIC_EXCEPTION("Inconsisdent Points-Z allocation");
+    GAUXC_GENERIC_EXCEPTION("Inconsistent Points-Z allocation");
   if( weights_pack.size() != total_npts_task_batch )
-    GAUXC_GENERIC_EXCEPTION("Inconsisdent weights allocation");
+    GAUXC_GENERIC_EXCEPTION("Inconsistent weights allocation");
 
 
 
@@ -760,7 +760,7 @@ void XCDeviceStackData::copy_weights_to_tasks( host_task_iterator task_begin, ho
     []( const auto& a, const auto& b ) { return a + b.points.size(); } );
 
   if( local_npts != total_npts_task_batch )
-    GAUXC_GENERIC_EXCEPTION("NPTS MISMATCH");
+    GAUXC_GENERIC_EXCEPTION("NPTS Mismatch");
 
   // Copy weights into contiguous host data
   std::vector<double> weights_host(local_npts);

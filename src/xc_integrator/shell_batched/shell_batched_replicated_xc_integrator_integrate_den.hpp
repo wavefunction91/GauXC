@@ -18,7 +18,7 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
   integrate_den_( int64_t m, int64_t n, const value_type* P,
                  int64_t ldp, value_type* N_EL ) { 
                  
-  GAUXC_GENERIC_EXCEPTION("NYI" );                 
+  GAUXC_GENERIC_EXCEPTION("ShellBatched integrate_den NYI" );                 
   util::unused(m,n,P,ldp,N_EL);
 }
 

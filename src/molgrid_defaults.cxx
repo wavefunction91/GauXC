@@ -119,7 +119,7 @@ std::tuple<RadialSize,AngularSize>
       }
 
     default:
-      GAUXC_GENERIC_EXCEPTION("Not A Resognized Standard Grid");
+      GAUXC_GENERIC_EXCEPTION("Not A Recognized Standard Grid");
       abort();
   }
 

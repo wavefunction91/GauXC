@@ -26,7 +26,7 @@ namespace detail {
 /// State tracker for LoadBalancer instances 
 struct LoadBalancerState {
   bool modified_weights_are_stored = false; 
-    ///< Whether the load balancer currently sotred partitioned weights
+    ///< Whether the load balancer currently stored partitioned weights
 };
 
 
@@ -136,15 +136,15 @@ public:
    *    - "REPLICATED": Read as "REPLICATED-PETITE"
    *    - "REPLICATED-PETITE": Replicate the load balancer function, only keep
    *                           non negligible basis functions
-   *    - "REPLICATE-FILLIN": Same as "REPLICATED-PETITE" except if two 
-   *                          non-adjacent bfns are kept, the gaps are filled in.
-   *                          This gurantees contiguous memory access but leads
-   *                          to significantly more work. Not advised for general 
-   *                          usage
+   *    - "REPLICATED-FILLIN": Same as "REPLICATED-PETITE" except if two 
+   *                           non-adjacent bfns are kept, the gaps are filled in.
+   *                           This gurantees contiguous memory access but leads
+   *                           to significantly more work. Not advised for general 
+   *                           usage
    * 
    *    Currently accepted values for Device execution space:
    *      - "DEFAULT": Read as "REPLICATED"
-   *      - "REPLICATAED": Same as Host::REPLICATED-PETITE
+   *      - "REPLICATED": Same as Host::REPLICATED-PETITE
    */
   LoadBalancerFactory( ExecutionSpace ex, std::string kernel_name );
 
