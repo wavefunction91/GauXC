@@ -68,7 +68,7 @@ LocalWorkDriverFactory::ptr_return_t
 
 
   default:
-    GAUXC_GENERIC_EXCEPTION("Execution Space Not Regognized");
+    GAUXC_GENERIC_EXCEPTION("Execution Space Not Recognized");
 
   }
 

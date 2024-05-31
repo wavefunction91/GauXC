@@ -117,7 +117,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   const bool is_uks = (Pz != nullptr) and (VXCz != nullptr) and (VXCy == nullptr) and (VXCx == nullptr);
   const bool is_rks = not is_uks and not is_gks;
   if (not is_rks and not is_uks and not is_gks) {
-    GAUXC_GENERIC_EXCEPTION("MUST BE EITHER RKS, UKS, or GKS!");
+    GAUXC_GENERIC_EXCEPTION("Must Be Either RKS, UKS, or GKS!");
   }
 
 
@@ -139,7 +139,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   const bool needs_laplacian = func.needs_laplacian(); 
   
   if (func.is_mgga() and is_gks) {
-    GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED WITH mGGA FUNCTIONALS!");
+    GAUXC_GENERIC_EXCEPTION("GKS Not Yet Implemented With MGGA Functionals!");
   }
 
   // Get basis map
@@ -159,7 +159,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
   if( not lb_state.modified_weights_are_stored ) {
-    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified");
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Been Modified");
   }
 
   // Zero out integrands

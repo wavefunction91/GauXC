@@ -88,7 +88,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
   if( not lb_state.modified_weights_are_stored ) {
-    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Been Modified"); 
   }
 
   // Zero out integrands

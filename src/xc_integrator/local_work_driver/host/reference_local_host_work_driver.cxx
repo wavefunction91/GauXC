@@ -628,7 +628,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nb
 							const double* dbasis_z_eval, const double* dden_x_eval, 
 							const double* dden_y_eval, const double* dden_z_eval, double* Z, size_t ldz ) {
 
-    if( ldz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
+    if( ldz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
     blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z, nbf );
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
@@ -664,8 +664,8 @@ void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nb
               size_t ldzs, double* Zz, size_t ldzz ) {
 
 
-    if( ldzs != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
-    if( ldzz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
+    if( ldzs != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
+    if( ldzz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
     blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zs, ldzs);
     blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zz, ldzz);
 
@@ -721,7 +721,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nb
               const double* dden_x_eval,
               const double* dden_y_eval, const double* dden_z_eval, double* Z, size_t ldz ) {
 
-    if( ldz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
+    if( ldz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
     blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z, nbf );
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
@@ -765,8 +765,8 @@ void ReferenceLocalHostWorkDriver::eval_zmat_mgga_vxc_uks( size_t npts, size_t n
               size_t ldzs, double* Zz, size_t ldzz ) {
 
 
-    if( ldzs != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
-    if( ldzz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
+    if( ldzs != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
+    if( ldzz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
     blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zs, ldzs);
     blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zz, ldzz);
 
@@ -828,7 +828,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_mgga_vxc_uks( size_t npts, size_t n
               const double* dbasis_z_eval,
               double* mmat_x, double* mmat_y, double* mmat_z, size_t ldm ) {
 
-    if( ldm != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
+    if( ldm != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
     
     blas::lacpy( 'A', nbf, npts, dbasis_x_eval, nbf, mmat_x, ldm);
     blas::lacpy( 'A', nbf, npts, dbasis_y_eval, nbf, mmat_y, ldm);
@@ -866,8 +866,8 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks(size_t npts, size_t nb
               double* mmat_xs, double* mmat_ys, double* mmat_zs, size_t ldms,
               double* mmat_xz, double* mmat_yz, double* mmat_zz, size_t ldmz) {
 
-    if( ldms != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
-    if( ldmz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
+    if( ldms != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
+    if( ldmz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
     
     blas::lacpy( 'A', nbf, npts, dbasis_x_eval, nbf, mmat_xs, ldms);
     blas::lacpy( 'A', nbf, npts, dbasis_y_eval, nbf, mmat_ys, ldms);
@@ -933,10 +933,10 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
     auto *HY = HZ + npts;
     auto *HX = HY + npts;
 
-    if( ldzs != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
-    if( ldzz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
-    if( ldzx != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
-    if( ldzy != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("INVALID DIMS"));
+    if( ldzs != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
+    if( ldzz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
+    if( ldzx != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
+    if( ldzy != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
 
     blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zs, ldzs);
     blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zz, ldzz);
