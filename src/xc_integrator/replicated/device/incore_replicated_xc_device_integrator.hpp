@@ -32,6 +32,17 @@ protected:
   void integrate_den_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp, value_type* N_EL ) override;
 
+  void eval_exc_( int64_t m, int64_t n, const value_type* P, int64_t ldp, 
+                  value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
+  void eval_exc_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
+                  const value_type* Pz, int64_t ldpz,
+                  value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
+  void eval_exc_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
+                  const value_type* Pz, int64_t ldpz,
+                  const value_type* Py, int64_t ldpy,
+                  const value_type* Px, int64_t ldpx,
+                  value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
+
   void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp, value_type* VXC, int64_t ldvxc,
                       value_type* EXC, const IntegratorSettingsXC& settings) override;
@@ -74,7 +85,7 @@ protected:
 
   void exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                             host_task_iterator task_begin, host_task_iterator task_end,
-                            XCDeviceData& device_data );
+                            XCDeviceData& device_data, bool do_vxc = true );
 
   void exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                             value_type* VXC, int64_t ldvxc, value_type* EXC, value_type *N_EL,

@@ -40,6 +40,9 @@ private:
   std::unique_ptr< pimpl_type > pimpl_;
 
   value_type    integrate_den_( const MatrixType& ) override;
+  value_type    eval_exc_     ( const MatrixType&, const IntegratorSettingsXC& ) override;
+  value_type    eval_exc_     ( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
+  value_type    eval_exc_     ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
   exc_vxc_type_rks  eval_exc_vxc_ ( const MatrixType&, const IntegratorSettingsXC& ) override;
   exc_vxc_type_uks  eval_exc_vxc_ ( const MatrixType&, const MatrixType&, const IntegratorSettingsXC&) override;
   exc_vxc_type_gks  eval_exc_vxc_ ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;

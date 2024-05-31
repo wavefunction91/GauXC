@@ -175,6 +175,7 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
   this->timer_.time_op("XCIntegrator.ZeroHost", [&](){
     *EXC  = 0.;
     *N_EL = 0.;
+    if(VXCs)
     for( auto j = 0; j < nbf; ++j )
     for( auto i = 0; i < nbf; ++i ) {
       VXCs[i + j*ldvxcs] = 0.;
@@ -323,10 +324,11 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
 
 
   // Allocate host temporaries
-  std::vector<double> Ps_submat_host(nbe*nbe), VXCs_submat_host(nbe*nbe,0.);
   double EXC_tmp, NEL_tmp;
+  std::vector<double> Ps_submat_host(nbe*nbe); 
   double* Ps_submat   = Ps_submat_host.data();
-  double* VXCs_submat = VXCs_submat_host.data();
+  std::vector<double> VXCs_submat_host(VXCs ? nbe*nbe : 0); 
+  double* VXCs_submat = VXCs ? VXCs_submat_host.data() : nullptr;
 
   std::vector<double> Pz_submat_host, Py_submat_host, Px_submat_host;
   std::vector<double> VXCz_submat_host, VXCy_submat_host, VXCx_submat_host;
@@ -335,23 +337,29 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
 
   if(Pz) {
     Pz_submat_host.resize(nbe*nbe);
-    VXCz_submat_host.resize(nbe*nbe, 0.0);
     Pz_submat = Pz_submat_host.data();
-    VXCz_submat = VXCz_submat_host.data();
+    if(VXCz) {
+      VXCz_submat_host.resize(nbe*nbe, 0.0);
+      VXCz_submat = VXCz_submat_host.data();
+    }
   }
 
   if(Py) {
     Py_submat_host.resize(nbe*nbe);
-    VXCy_submat_host.resize(nbe*nbe, 0.0);
     Py_submat = Py_submat_host.data();
-    VXCy_submat = VXCy_submat_host.data();
+    if(VXCy) {
+      VXCy_submat_host.resize(nbe*nbe, 0.0);
+      VXCy_submat = VXCy_submat_host.data();
+    }
   }
 
   if(Px) {
     Px_submat_host.resize(nbe*nbe);
-    VXCx_submat_host.resize(nbe*nbe, 0.0);
     Px_submat = Px_submat_host.data();
-    VXCx_submat = VXCx_submat_host.data();
+    if(VXCx) {
+      VXCx_submat_host.resize(nbe*nbe, 0.0);
+      VXCx_submat = VXCx_submat_host.data();
+    }
   }
 
 
@@ -409,8 +417,10 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
   *EXC += EXC_tmp;
   *N_EL += NEL_tmp;
   this->timer_.time_op_accumulate("XCIntegrator.IncrementSubPotential",[&]() {
+    if(VXCs)
     detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCs, ldvxcs, 
                            VXCs_submat, nbe, union_submat_cut );
+
     if(VXCz)
     detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCz, ldvxcz, 
                            VXCz_submat, nbe, union_submat_cut );
