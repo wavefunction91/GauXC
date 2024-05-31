@@ -26,7 +26,7 @@ namespace detail {
 /// State tracker for LoadBalancer instances 
 struct LoadBalancerState {
   bool modified_weights_are_stored = false; 
-    ///< Whether the load balancer currently stored partitioned weights
+    ///< Whether the load balancer currently stores partitioned weights
 };
 
 
