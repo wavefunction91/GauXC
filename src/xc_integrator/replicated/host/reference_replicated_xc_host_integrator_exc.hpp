@@ -43,7 +43,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 
   // Get Tasks
-  this->load_balancer_->get_tasks();
+  auto& tasks = this->load_balancer_->get_tasks();
 
   // Temporary electron count to judge integrator accuracy
   value_type N_EL;
@@ -51,8 +51,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Compute Local contributions to EXC / VXC
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
     //exc_vxc_local_work_( P, ldp, VXC, ldvxc, EXC, &N_EL );
-    exc_vxc_local_work_( Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx,
-                         nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0, EXC, &N_EL, ks_settings );
+    exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx,
+                         nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0, 
+                         EXC, &N_EL, ks_settings, tasks.begin(), tasks.end() );
   });
 
 

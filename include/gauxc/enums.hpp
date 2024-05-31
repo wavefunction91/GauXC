@@ -51,5 +51,11 @@ enum class ExecutionSpace {
   Device ///< Execute task on the device (e.g. GPU)
 };
 
+/// Supported Algorithms / Integrands
+enum class SupportedAlg {
+  XC,
+  DEN,
+  SNLINK
+};
 
 } // namespace GauXC

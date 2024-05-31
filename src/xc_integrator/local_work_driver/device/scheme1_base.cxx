@@ -303,34 +303,34 @@ void AoSScheme1Base::eval_zmat_mgga_vxc_rks( XCDeviceData* _data, bool do_lapl){
 
 void AoSScheme1Base::eval_zmat_lda_vxc_uks( XCDeviceData* ){
 
-  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
+  GAUXC_GENERIC_EXCEPTION("UKS Not Yet Implemented For Device");
 
 }
 
 void AoSScheme1Base::eval_zmat_gga_vxc_uks( XCDeviceData* ){
 
-  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
+  GAUXC_GENERIC_EXCEPTION("UKS Not Yet Implemented For Device");
 
 }
 
 void AoSScheme1Base::eval_zmat_mgga_vxc_uks( XCDeviceData*, bool /*do_lapl*/){
-  GAUXC_GENERIC_EXCEPTION("UKS MGGA NOT YET IMPLEMENTED FOR DEVICE");
+  GAUXC_GENERIC_EXCEPTION("UKS MGGA Not Yet Implemented For Device");
 }
 
 void AoSScheme1Base::eval_zmat_lda_vxc_gks( XCDeviceData* ){
 
-  GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED FOR DEVICE");
+  GAUXC_GENERIC_EXCEPTION("GKS Not Yet Implemented For Device");
 
 }
 
 void AoSScheme1Base::eval_zmat_gga_vxc_gks( XCDeviceData* ){
 
-  GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED FOR DEVICE");
+  GAUXC_GENERIC_EXCEPTION("GKS Not Yet Implemented For Device");
 
 }
 
 void AoSScheme1Base::eval_zmat_mgga_vxc_gks( XCDeviceData*, bool /*do_lapl*/){
-  GAUXC_GENERIC_EXCEPTION("GKS MGGA NOT YET IMPLEMENTED FOR DEVICE");
+  GAUXC_GENERIC_EXCEPTION("GKS MGGA Not Yet Implemented For Device");
 }
 
 void AoSScheme1Base::eval_mmat_mgga_vxc_rks( XCDeviceData* _data, bool do_lapl){
@@ -356,10 +356,10 @@ void AoSScheme1Base::eval_mmat_mgga_vxc_rks( XCDeviceData* _data, bool do_lapl){
   data->device_backend_->check_error("mmat_mgga" __FILE__ ": " + std::to_string(__LINE__));
 }
 void AoSScheme1Base::eval_mmat_mgga_vxc_uks( XCDeviceData*, bool /*do_lapl*/){
-  GAUXC_GENERIC_EXCEPTION("UKS MGGA NOT YET IMPLEMENTED FOR DEVICE");
+  GAUXC_GENERIC_EXCEPTION("UKS MGGA Not Yet Implemented For Device");
 }
 void AoSScheme1Base::eval_mmat_mgga_vxc_gks( XCDeviceData*, bool /*do_lapl*/){
-  GAUXC_GENERIC_EXCEPTION("GKS MGGA NOT YET IMPLEMENTED FOR DEVICE");
+  GAUXC_GENERIC_EXCEPTION("GKS MGGA Not Yet Implemented For Device");
 }
 
 void AoSScheme1Base::eval_collocation( XCDeviceData* _data ) {
@@ -622,35 +622,35 @@ void AoSScheme1Base::eval_uvvar_mgga_rks( XCDeviceData* _data, bool do_lapl ){
 
 void AoSScheme1Base::eval_uvvar_lda_uks( XCDeviceData* ){
 
-  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE"); 
+  GAUXC_GENERIC_EXCEPTION("UKS Not Yet Implemented For Device"); 
 
 }
 
 void AoSScheme1Base::eval_uvvar_gga_uks( XCDeviceData* ){
 
-  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
+  GAUXC_GENERIC_EXCEPTION("UKS Not Yet Implemented For Device");
 
 }
 
 void AoSScheme1Base::eval_uvvar_mgga_uks( XCDeviceData*, bool /*do_lapl*/ ){
-  GAUXC_GENERIC_EXCEPTION("UKS MGGA NOT YET IMPLEMENTED FOR DEVICE"); 
+  GAUXC_GENERIC_EXCEPTION("UKS MGGA Not Yet Implemented For Device"); 
 }
 
 
 void AoSScheme1Base::eval_uvvar_lda_gks( XCDeviceData* ){
 
-    GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED FOR DEVICE");
+    GAUXC_GENERIC_EXCEPTION("GKS Not Yet Implemented For Device");
 
 }
 
 void AoSScheme1Base::eval_uvvar_gga_gks( XCDeviceData* ){
 
-    GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED FOR DEVICE");
+    GAUXC_GENERIC_EXCEPTION("GKS Not Yet Implemented For Device");
 
 }
 
 void AoSScheme1Base::eval_uvvar_mgga_gks( XCDeviceData*, bool /*do_lapl*/ ){
-  GAUXC_GENERIC_EXCEPTION("GKS MGGA NOT YET IMPLEMENTED FOR DEVICE"); 
+  GAUXC_GENERIC_EXCEPTION("GKS MGGA Not Yet Implemented For Device"); 
 }
 
 void AoSScheme1Base::eval_kern_exc_vxc_lda( const functional_type& func, 

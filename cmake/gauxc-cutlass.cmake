@@ -1,7 +1,7 @@
 # Check that only CUDA CC 8.0+ is enabled
 foreach( cuda_arch ${CMAKE_CUDA_ARCHITECTURES} )
-  if( NOT cuda_arch EQUAL 80 )
-    message(FATAL_ERROR "GauXC Requires CUDA CC 8.0 For CUTLASS")
+  if( NOT cuda_arch GREATER_EQUAL 80 )
+    message(FATAL_ERROR "GauXC Requires CUDA CC >= 8.0 For CUTLASS")
   endif()
 endforeach()
 
