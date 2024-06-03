@@ -7,6 +7,7 @@
  */
 #include "shell_batched_replicated_xc_host_integrator.hpp"
 #include "shell_batched_replicated_xc_integrator_integrate_den.hpp"
+#include "shell_batched_replicated_xc_integrator_exc.hpp"
 #include "shell_batched_replicated_xc_integrator_exc_vxc.hpp"
 #include "shell_batched_replicated_xc_integrator_exc_grad.hpp"
 #include "shell_batched_replicated_xc_integrator_exx.hpp"

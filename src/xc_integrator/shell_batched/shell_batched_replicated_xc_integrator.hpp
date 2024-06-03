@@ -42,6 +42,22 @@ protected:
   // Density Integration 
   void integrate_den_( int64_t m, int64_t n, const value_type* P, int64_t ldp, value_type* N_EL ) override;
 
+  /// RKS EXC
+  void eval_exc_( int64_t m, int64_t n, const value_type* P, int64_t ldp, 
+                  value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
+
+  /// UKS EXC
+  void eval_exc_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
+                  const value_type* Pz, int64_t ldpz,
+                  value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
+
+  /// GKS EXC - also serves as the generic implementation
+  void eval_exc_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
+                  const value_type* Pz, int64_t ldpz,
+                  const value_type* Py, int64_t ldpy,
+                  const value_type* Px, int64_t ldpx,
+                  value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
+
   /// RKS EXC/VXC
   void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P, int64_t ldp, 
                       value_type* VXC, int64_t ldvxc, value_type* EXC, 

@@ -160,7 +160,7 @@ struct XCDeviceStackData : public XCDeviceData {
   host_task_iterator generate_buffers( integrator_term_tracker, const BasisSetMap&,
     host_task_iterator, host_task_iterator) override final;
   void allocate_static_data_weights( int32_t natoms ) override final;
-  void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms ) override final;
+  void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms, bool do_vxc ) override final;
   void allocate_static_data_den( int32_t nbf, int32_t nshells ) override final;
   void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) override final;
   void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, size_t nprim_pair_total, int32_t max_l ) override final;

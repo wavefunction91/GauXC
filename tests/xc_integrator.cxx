@@ -177,6 +177,11 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
       CHECK( VXC1_diff_nrm / basis.nbf() < 1e-10 ); 
     }
+
+    // Check EXC-only path
+    auto EXC2 = integrator.eval_exc( P );
+    CHECK(EXC2 == Approx(EXC));
+
   } else if (uks) {
     auto [ EXC, VXC, VXCz ] = integrator.eval_exc_vxc( P, Pz );
 
@@ -196,6 +201,9 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       CHECK( VXCz1_diff_nrm / basis.nbf() < 1e-10 );
     }
 
+    // Check EXC-only path
+    auto EXC2 = integrator.eval_exc( P, Pz );
+    CHECK(EXC2 == Approx(EXC));
   } else if (gks) {
     auto [ EXC, VXC, VXCz, VXCy, VXCx ] = integrator.eval_exc_vxc( P, Pz, Py, Px );
 
@@ -224,6 +232,9 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       CHECK( VXCx1_diff_nrm / basis.nbf() < 1e-10 );
     }
 
+    // Check EXC-only path
+    auto EXC2 = integrator.eval_exc( P, Pz, Py, Px );
+    CHECK(EXC2 == Approx(EXC));
   }
 
 

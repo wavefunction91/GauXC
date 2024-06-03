@@ -107,7 +107,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // Don't communicate data back to the host before reduction
     this->timer_.time_op("XCIntegrator.LocalWork_EXC_VXC", [&](){
       exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx, tasks.begin(), tasks.end(), 
-        *device_data_ptr);
+        *device_data_ptr, true);
     });
 
     GAUXC_MPI_CODE(
@@ -221,7 +221,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                             const value_type* Py, int64_t ldpy,
                             const value_type* Px, int64_t ldpx,
                             host_task_iterator task_begin, host_task_iterator task_end,
-                            XCDeviceData& device_data ) {
+                            XCDeviceData& device_data, bool do_vxc ) {
   const bool is_gks = (Pz != nullptr) and (Py != nullptr) and (Px != nullptr);
   const bool is_uks = (Pz != nullptr) and (Py == nullptr) and (Px == nullptr);
   const bool is_rks = (Ps != nullptr) and (not is_uks and not is_gks);
@@ -256,7 +256,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
   if( not lb_state.modified_weights_are_stored ) {
-    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Been Modified"); 
   }
   
 
@@ -280,7 +280,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   const auto nbf     = basis.nbf();
   const auto nshells = basis.nshells();
   device_data.reset_allocations();
-  device_data.allocate_static_data_exc_vxc( nbf, nshells, enabled_terms );
+  device_data.allocate_static_data_exc_vxc( nbf, nshells, enabled_terms, do_vxc );
   
   device_data.send_static_data_density_basis( Ps, ldps, Pz, ldpz, Px, ldpx, Py, ldpy, basis );
 
@@ -342,6 +342,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // Do scalar EXC/N_EL integrations
     lwd->inc_exc( &device_data );
     lwd->inc_nel( &device_data );
+    if( not do_vxc ) continue;
 
    auto do_zmat_vxc = [&](density_id den_id) {
      if( func.is_mgga() ) {
@@ -367,17 +368,16 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   } // Loop over batches of batches 
 
   // Symmetrize VXC in device memory
-
-  lwd->symmetrize_vxc( &device_data, DEN_S );
-  if (not is_rks) {
-    lwd->symmetrize_vxc( &device_data, DEN_Z );
-    if (not is_uks) {
-      lwd->symmetrize_vxc( &device_data, DEN_Y );
-      lwd->symmetrize_vxc( &device_data, DEN_X );
+  if( do_vxc ) {
+    lwd->symmetrize_vxc( &device_data, DEN_S );
+    if (not is_rks) {
+      lwd->symmetrize_vxc( &device_data, DEN_Z );
+      if (not is_uks) {
+        lwd->symmetrize_vxc( &device_data, DEN_Y );
+        lwd->symmetrize_vxc( &device_data, DEN_X );
+      }
     }
   }
-
-
 }
 
 template <typename ValueType>
@@ -394,7 +394,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                             XCDeviceData& device_data ) {
   
   // Get integrate and keep data on device
-  exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx, task_begin, task_end, device_data );
+  const bool do_vxc = VXCs;
+  exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx, task_begin, task_end, device_data, do_vxc );
   auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
   rt.device_backend()->master_queue_synchronize();
 

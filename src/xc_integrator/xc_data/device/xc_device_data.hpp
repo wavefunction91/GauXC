@@ -311,9 +311,9 @@ struct required_term_storage {
 
     if(is_xc) {
       if( tracker.xc_approx == _UNDEF_APPROX )
-        GAUXC_GENERIC_EXCEPTION("NO XC APPROX SET");
+        GAUXC_GENERIC_EXCEPTION("No XC Approx Set");
       if( tracker.ks_scheme == _UNDEF_SCHEME )
-        GAUXC_GENERIC_EXCEPTION("NO KS SCHEME SET");
+        GAUXC_GENERIC_EXCEPTION("No KS Scheme Set");
       //const bool is_lda  = is_xc and tracker.xc_approx == LDA;
       const bool is_gga  = is_xc and tracker.xc_approx == GGA;
       const bool need_tau  = tracker.xc_approx == MGGA_TAU;
@@ -430,7 +430,7 @@ struct XCDeviceData {
   /// Allocate device memory for data that will persist on the device.
   virtual void reset_allocations() = 0;
   virtual void allocate_static_data_weights( int32_t natoms ) = 0;
-  virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms ) = 0;
+  virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms, bool do_vxc ) = 0;
   virtual void allocate_static_data_den( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) = 0;
   virtual void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, size_t nprim_pair_total, int32_t max_l ) = 0;

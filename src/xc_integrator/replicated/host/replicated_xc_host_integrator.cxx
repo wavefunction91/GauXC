@@ -49,7 +49,7 @@ typename ReplicatedXCHostIntegratorFactory<ValueType>::ptr_return_t
     );
 
   else
-    GAUXC_GENERIC_EXCEPTION("INTEGRATOR KERNEL: " + integrator_kernel + " NOT RECOGNIZED");
+    GAUXC_GENERIC_EXCEPTION("Integrator Kernel: " + integrator_kernel + " Not Recognized");
 
   return nullptr;
 
