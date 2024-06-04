@@ -460,7 +460,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         protonic_vrho[2*iPt+1] = 0.0;
         // change back protonic density to original state
         protonic_den_eval[2*iPt] = protonic_den_eval[2*iPt+1];
-        protonic_den_eval[2*iPt] = 0.0;
+        protonic_den_eval[2*iPt+1] = 0.0;
       }
     } // End if(evalProtonic)
     //----------------------End EPC functional Evaluation---------------------------------------
