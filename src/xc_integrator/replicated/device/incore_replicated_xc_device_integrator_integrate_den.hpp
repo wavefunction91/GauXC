@@ -72,10 +72,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                        int64_t ldp, value_type* N_EL,
                        host_task_iterator task_begin, host_task_iterator task_end,
                        XCDeviceData& device_data ) {
-#if 0
-  GAUXC_GENERIC_EXCEPTION("NYI");
-#else
-
 
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
 
@@ -99,7 +95,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
   if( not lb_state.modified_weights_are_stored ) {
-    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Been Modified"); 
   }
 
   // Do XC integration in task batches
@@ -143,7 +139,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   this->timer_.time_op("XCIntegrator.DeviceToHostCopy",[&](){
     device_data.retrieve_den_integrands( N_EL );
   });
-#endif
 }
 
 }

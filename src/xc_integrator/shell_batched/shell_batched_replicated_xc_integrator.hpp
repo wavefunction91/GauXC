@@ -6,27 +6,38 @@
  * See LICENSE.txt for details
  */
 #pragma once
-#include <gauxc/xc_integrator/replicated/replicated_xc_host_integrator.hpp>
-#include "xc_host_data.hpp"
+#include <gauxc/gauxc_config.hpp>
+#include "shell_batched_xc_integrator.hpp"
+#ifdef GAUXC_HAS_DEVICE
+#include "device/xc_device_data.hpp"
+#endif
 
-namespace GauXC::detail {
+namespace GauXC {
+namespace detail {
 
-template <typename ValueType>
-class ReferenceReplicatedXCHostIntegrator : 
-  public ReplicatedXCHostIntegrator<ValueType> {
+template <typename BaseIntegratorType, typename IncoreIntegratorType>
+class ShellBatchedReplicatedXCIntegrator : 
+  public BaseIntegratorType,
+  public ShellBatchedXCIntegratorBase {
 
-  using base_type  = ReplicatedXCHostIntegrator<ValueType>;
+  using base_type  = BaseIntegratorType;
 
 public:
 
-  static constexpr bool is_device = false;
   using value_type = typename base_type::value_type;
   using basis_type = typename base_type::basis_type;
-  using task_container = std::vector<XCTask>;
-  using task_iterator  = typename task_container::iterator;
 
+  using host_task_container = std::vector<XCTask>;
+  using host_task_iterator  = typename host_task_container::iterator;
 
 protected:
+
+#ifdef GAUXC_HAS_DEVICE
+  std::unique_ptr<XCDeviceData> device_data_ptr_;
+#endif
+
+  using incore_integrator_type = IncoreIntegratorType;
+  using incore_task_data = ShellBatchedXCIntegratorBase::incore_task_data;
 
   // Density Integration 
   void integrate_den_( int64_t m, int64_t n, const value_type* P, int64_t ldp, value_type* N_EL ) override;
@@ -42,10 +53,10 @@ protected:
 
   /// GKS EXC - also serves as the generic implementation
   void eval_exc_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
-                      const value_type* Pz, int64_t ldpz,
-                      const value_type* Py, int64_t ldpy,
-                      const value_type* Px, int64_t ldpx,
-                      value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
+                  const value_type* Pz, int64_t ldpz,
+                  const value_type* Py, int64_t ldpy,
+                  const value_type* Px, int64_t ldpx,
+                  value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
 
   /// RKS EXC/VXC
   void eval_exc_vxc_( int64_t m, int64_t n, const value_type* P, int64_t ldp, 
@@ -70,25 +81,25 @@ protected:
                       value_type* VXCx, int64_t ldvxcx,
                       value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
 
-  void neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
-                          const value_type* Ps, int64_t ldps,
+  void neo_eval_exc_vxc_( int64_t elec_m, int64_t elec_n, int64_t prot_m, int64_t prot_n, 
+                          const value_type* elec_Ps, int64_t elec_ldps,
                           const value_type* prot_Ps, int64_t prot_ldps,
                           const value_type* prot_Pz, int64_t prot_ldpz,
-                          value_type* VXCs, int64_t ldvxcs,
-                          value_type* prot_VXCs, int64_t prot_ldvxcs,
-                          value_type* prot_VXCz, int64_t prot_ldvxcz,
-                          value_type* EXC1, value_type* prot_EXC, const IntegratorSettingsXC& ks_settings ) override;
+                          value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                          value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                          value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                          value_type* elec_EXC,  value_type* prot_EXC, const IntegratorSettingsXC& settings  ) override;
 
-  void neo_eval_exc_vxc_( int64_t m1, int64_t n1, int64_t m2, int64_t n2, 
-                          const value_type* Ps, int64_t ldps,
-                          const value_type* Pz, int64_t ldpz,
+  void neo_eval_exc_vxc_( int64_t elec_m, int64_t elec_n, int64_t prot_m, int64_t prot_n, 
+                          const value_type* elec_Ps, int64_t elec_ldps,
+                          const value_type* elec_Pz, int64_t elec_ldpz,
                           const value_type* prot_Ps, int64_t prot_ldps,
                           const value_type* prot_Pz, int64_t prot_ldpz,
-                          value_type* VXCs, int64_t ldvxcs,
-                          value_type* VXCz, int64_t ldvxcz,
-                          value_type* prot_VXCs, int64_t prot_ldvxcs,
-                          value_type* prot_VXCz, int64_t prot_ldvxcz,
-                          value_type* EXC1, value_type* prot_EXC, const IntegratorSettingsXC& ks_settings ) override;
+                          value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                          value_type* elec_VXCz,     int64_t elec_ldvxcz,
+                          value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                          value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                          value_type* elec_EXC,  value_type* prot_EXC, const IntegratorSettingsXC& settings  ) override;
 
   /// RKS EXC Gradient
   void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
@@ -101,9 +112,6 @@ protected:
 
 
 
-  // Implementation details of integrate_den
-  void integrate_den_local_work_( const value_type* P, int64_t ldp, 
-                                   value_type *N_EL );
 
   // Implementation details of exc_vxc (for RKS/UKS/GKS deduced from input character)
   void exc_vxc_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
@@ -114,46 +122,30 @@ protected:
                             value_type* VXCz, int64_t ldvxcz,
                             value_type* VXCy, int64_t ldvxcy,
                             value_type* VXCx, int64_t ldvxcx,
-                            value_type* EXC, value_type *N_EL, const IntegratorSettingsXC& ks_settings,
-                            task_iterator task_begin, task_iterator task_end );
+                            value_type* EXC, value_type *N_EL,
+                            host_task_iterator task_begin, host_task_iterator task_end, incore_integrator_type& incore_integrator
+                             );
 
-  void neo_exc_vxc_local_work_( const value_type* Ps, int64_t ldps,
-                                const value_type* Pz, int64_t ldpz,
-                                const value_type* prot_Ps, int64_t prot_ldps,
-                                const value_type* prot_Pz, int64_t prot_ldpz,
-                                value_type* VXCs, int64_t ldvxcs,
-                                value_type* VXCz, int64_t ldvxcz,
-                                value_type* prot_VXCs, int64_t prot_ldvxcs,
-                                value_type* prot_VXCz, int64_t prot_ldvxcz,
-                                value_type* EXC1, value_type* prot_EXC, 
-                                value_type *N_EL, value_type *N_PROT,
-                                const IntegratorSettingsXC& ks_settings,
-                                task_iterator task_begin, task_iterator task_end );
-                            
-  // Implemetation details of exc_grad
-  void exc_grad_local_work_( const value_type* P, int64_t ldp, value_type* EXC_GRAD );
 
-  // Implementation details of sn-LinK
-  void exx_local_work_( const value_type* P, int64_t ldp, value_type* K, int64_t ldk,
-    const IntegratorSettingsEXX& settings );
-
+  void execute_task_batch( incore_task_data& task, const basis_type& basis, const Molecule& mol, 
+                           const value_type* Ps, int64_t ldps,
+                           const value_type* Pz, int64_t ldpz,
+                           const value_type* Py, int64_t ldpy,
+                           const value_type* Px, int64_t ldpx,
+                           value_type* VXCs, int64_t ldvxcs,
+                           value_type* VXCz, int64_t ldvxcz,
+                           value_type* VXCy, int64_t ldvxcy,
+                           value_type* VXCx, int64_t ldvxcx,
+                           value_type* EXC, value_type* N_EL, incore_integrator_type& incore_integrator);
 public:
 
   template <typename... Args>
-  ReferenceReplicatedXCHostIntegrator( Args&&... args ) :
+  ShellBatchedReplicatedXCIntegrator( Args&&... args ) :
     base_type( std::forward<Args>(args)... ) { }
 
-  virtual ~ReferenceReplicatedXCHostIntegrator() noexcept;
-
-
-  template <typename... Args>
-  void exc_vxc_local_work(Args&&... args) {
-    exc_vxc_local_work_( std::forward<Args>(args)... );
-  }
-
+  virtual ~ShellBatchedReplicatedXCIntegrator() noexcept = default;
 
 };
 
-extern template class ReferenceReplicatedXCHostIntegrator<double>;
-
-} // namespace GauXC::detail
+}
+}

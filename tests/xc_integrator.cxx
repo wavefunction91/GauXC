@@ -76,6 +76,8 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
  
     if (file.exist("/PROTONIC_DENSITY_SCALAR") and file.exist("/PROTONIC_DENSITY_Z")) 
        neo=true;
+    
+    if(neo and !integrator_kernel.compare("ShellBatched")) return;
  
     auto dset = file.getDataSet(den);
     
@@ -259,6 +261,11 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       }
     }
 
+    // Check EXC-only path
+    if(neo) return; // NEO EXC-only NYI
+    auto EXC2 = integrator->eval_exc( P );
+    CHECK(EXC2 == Approx(EXC));
+
   } else if (uks) {
     double EXC, protonic_EXC;
     matrix_type VXC, VXCz, protonic_VXCs, protonic_VXCz;
@@ -304,6 +311,10 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       }
     }
 
+    // Check EXC-only path
+    if(neo) return; // NEO EXC-only NYI
+    auto EXC2 = integrator->eval_exc( P, Pz );
+    CHECK(EXC2 == Approx(EXC));
   } else if (gks) {
     auto [ EXC, VXC, VXCz, VXCy, VXCx ] = integrator->eval_exc_vxc( P, Pz, Py, Px );
 
@@ -332,6 +343,9 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       CHECK( VXCx1_diff_nrm / basis.nbf() < 1e-10 );
     }
 
+    // Check EXC-only path
+    auto EXC2 = integrator->eval_exc( P, Pz, Py, Px );
+    CHECK(EXC2 == Approx(EXC));
   }
 
 
@@ -371,8 +385,14 @@ void test_integrator(std::string reference_file, std::shared_ptr<functional_type
 
 #ifdef GAUXC_HAS_HOST
     SECTION( "Host" ) {
-      test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
-        pruning_scheme, true, true, true, "Default", "Default", "Default", epcfunc);
+      SECTION("Reference") {
+        test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
+          pruning_scheme, true, true, true, "Default", "Default", "Default", epcfunc);
+      }
+      SECTION("ShellBatched") {
+        test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
+          pruning_scheme, false, false, false, "ShellBatched", "Default", "Default", epcfunc);
+      }
     }
 #endif
 

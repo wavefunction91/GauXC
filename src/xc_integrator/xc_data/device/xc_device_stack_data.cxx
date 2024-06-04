@@ -80,7 +80,7 @@ void XCDeviceStackData::allocate_static_data_weights( int32_t natoms ) {
   allocated_terms.weights = true;
 }
 
-void XCDeviceStackData::allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells ) {
+void XCDeviceStackData::allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, bool do_vxc ) {
 
   if( allocated_terms.exc_vxc ) 
     GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXC VXC");
@@ -97,7 +97,8 @@ void XCDeviceStackData::allocate_static_data_exc_vxc( int32_t nbf, int32_t nshel
   static_stack.nel_device        = mem.aligned_alloc<double>( 1 , csl);
   static_stack.acc_scr_device    = mem.aligned_alloc<double>( 1 , csl);
 
-  static_stack.vxc_device  = mem.aligned_alloc<double>( nbf * nbf , csl);
+  if(do_vxc) static_stack.vxc_device = mem.aligned_alloc<double>( nbf * nbf , csl);
+
   static_stack.dmat_device = mem.aligned_alloc<double>( nbf * nbf , csl);
 
   // Get current stack location
@@ -428,7 +429,7 @@ void XCDeviceStackData::zero_exc_vxc_integrands() {
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
 
   const auto nbf = global_dims.nbf;
-  device_backend_->set_zero( nbf*nbf, static_stack.vxc_device, "VXC Zero" );
+  if(static_stack.vxc_device) device_backend_->set_zero( nbf*nbf, static_stack.vxc_device, "VXC Zero" );
   device_backend_->set_zero( 1,       static_stack.exc_device, "EXC Zero" );
   device_backend_->set_zero( 1,       static_stack.nel_device, "NEL Zero" );
 
@@ -471,10 +472,12 @@ void XCDeviceStackData::retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
   double* VXC, int32_t ldvxc ) {
 
   const auto nbf = global_dims.nbf;
-  if( ldvxc != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDVXC must bf NBF");
+  if( ldvxc and ldvxc != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDVXC must bf NBF");
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
   
+  if(VXC)
   device_backend_->copy_async( nbf*nbf, static_stack.vxc_device, VXC,  "VXC D2H" );
+
   device_backend_->copy_async( 1,       static_stack.nel_device, N_EL, "NEL D2H" );
   device_backend_->copy_async( 1,       static_stack.exc_device, EXC,  "EXC D2H" );
 
@@ -724,13 +727,13 @@ void XCDeviceStackData::pack_and_send( integrator_term_tracker ,
   } // Loop over tasks
 
   if( points_x_pack.size() != total_npts_task_batch )
-    GAUXC_GENERIC_EXCEPTION("Inconsisdent Points-X allocation");
+    GAUXC_GENERIC_EXCEPTION("Inconsistent Points-X allocation");
   if( points_y_pack.size() != total_npts_task_batch )
-    GAUXC_GENERIC_EXCEPTION("Inconsisdent Points-Y allocation");
+    GAUXC_GENERIC_EXCEPTION("Inconsistent Points-Y allocation");
   if( points_z_pack.size() != total_npts_task_batch )
-    GAUXC_GENERIC_EXCEPTION("Inconsisdent Points-Z allocation");
+    GAUXC_GENERIC_EXCEPTION("Inconsistent Points-Z allocation");
   if( weights_pack.size() != total_npts_task_batch )
-    GAUXC_GENERIC_EXCEPTION("Inconsisdent weights allocation");
+    GAUXC_GENERIC_EXCEPTION("Inconsistent weights allocation");
 
 
 
@@ -760,7 +763,7 @@ void XCDeviceStackData::copy_weights_to_tasks( host_task_iterator task_begin, ho
     []( const auto& a, const auto& b ) { return a + b.points.size(); } );
 
   if( local_npts != total_npts_task_batch )
-    GAUXC_GENERIC_EXCEPTION("NPTS MISMATCH");
+    GAUXC_GENERIC_EXCEPTION("NPTS Mismatch");
 
   // Copy weights into contiguous host data
   std::vector<double> weights_host(local_npts);

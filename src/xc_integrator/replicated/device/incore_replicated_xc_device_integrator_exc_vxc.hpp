@@ -117,7 +117,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                       value_type* VXCz, int64_t ldvxcz,
                       value_type* EXC, const IntegratorSettingsXC& settings ) {
   GauXC::util::unused(m,n,Ps,ldps,Pz,ldpz,VXCs,ldvxcs,VXCz,ldvxcz,EXC,settings);
-  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
+  GAUXC_GENERIC_EXCEPTION("UKS Not Yet Implemented For Device");
 }
 
 template <typename ValueType>
@@ -136,7 +136,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                       value_type* VXCx, int64_t ldvxcx,
                       value_type* EXC, const IntegratorSettingsXC& settings ) {
   GauXC::util::unused(m,n,Ps,ldps,Pz,ldpz,Py,ldpy,Px,ldpx,VXCs,ldvxcs,VXCz,ldvxcz,VXCy,ldvxcy,VXCx,ldvxcx,EXC,settings);
-  GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED FOR DEVICE");
+  GAUXC_GENERIC_EXCEPTION("GKS Not Yet Implemented For Device");
 }
 
 template <typename ValueType>
@@ -175,7 +175,7 @@ template <typename ValueType>
 void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   exc_vxc_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                        host_task_iterator task_begin, host_task_iterator task_end,
-                       XCDeviceData& device_data ) {
+                       XCDeviceData& device_data, bool do_vxc ) {
 
 
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
@@ -201,7 +201,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
   if( not lb_state.modified_weights_are_stored ) {
-    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Been Modified"); 
   }
 
 #if 0
@@ -226,7 +226,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   const auto nbf     = basis.nbf();
   const auto nshells = basis.nshells();
   device_data.reset_allocations();
-  device_data.allocate_static_data_exc_vxc( nbf, nshells );
+  device_data.allocate_static_data_exc_vxc( nbf, nshells, do_vxc );
   device_data.send_static_data_density_basis( P, ldp, basis );
 
   // Zero integrands
@@ -288,6 +288,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // Do scalar EXC/N_EL integrations
     lwd->inc_exc( &device_data );
     lwd->inc_nel( &device_data );
+    if( not do_vxc ) continue;
 
     // Evaluate Z (+ M) matrix
     if( func.is_mgga() ) {
@@ -303,7 +304,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   } // Loop over batches of batches 
 
   // Symmetrize VXC in device memory
-  lwd->symmetrize_vxc( &device_data );
+  if(do_vxc) lwd->symmetrize_vxc( &device_data );
 
 }
 
@@ -318,7 +319,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                        XCDeviceData& device_data ) {
 
   // Get integrate and keep data on device
-  exc_vxc_local_work_( basis, P, ldp, task_begin, task_end, device_data );
+  const bool do_vxc = VXC;
+  exc_vxc_local_work_( basis, P, ldp, task_begin, task_end, device_data, do_vxc );
   auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
   rt.device_backend()->master_queue_synchronize();
 
@@ -336,7 +338,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data ) {
   GauXC::util::unused(basis,Ps,ldps,Pz,ldpz,task_begin,task_end,device_data);
-  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
+  GAUXC_GENERIC_EXCEPTION("UKS Not Yet Implemented For Device");
 }
 
 template <typename ValueType>
@@ -349,7 +351,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                             XCDeviceData& device_data ) {
 
   GauXC::util::unused(basis,Ps,ldps,Pz,ldpz,VXCs,ldvxcs,VXCz,ldvxcz,EXC,N_EL,task_begin,task_end,device_data);
-  GAUXC_GENERIC_EXCEPTION("UKS NOT YET IMPLEMENTED FOR DEVICE");
+  GAUXC_GENERIC_EXCEPTION("UKS Not Yet Implemented For Device");
 }
 
 template <typename ValueType>
@@ -361,7 +363,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data ) {
   GauXC::util::unused(basis,Ps,ldps,Pz,ldpz,Py,ldpy,Px,ldpx,task_begin,task_end,device_data);
-  GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED FOR DEVICE");
+  GAUXC_GENERIC_EXCEPTION("GKS Not Yet Implemented For Device");
 }
 
 template <typename ValueType>
@@ -378,7 +380,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                             XCDeviceData& device_data ) {
 
   GauXC::util::unused(basis,Ps,ldps,Pz,ldpz,Py,ldpy,Px,ldpx,VXCs,ldvxcs,VXCz,ldvxcz,VXCy,ldvxcy,VXCx,ldvxcx,EXC,N_EL,task_begin,task_end,device_data);
-  GAUXC_GENERIC_EXCEPTION("GKS NOT YET IMPLEMENTED FOR DEVICE");
+  GAUXC_GENERIC_EXCEPTION("GKS Not Yet Implemented For Device");
 }
 
 

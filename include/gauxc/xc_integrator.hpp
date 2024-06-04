@@ -56,6 +56,11 @@ public:
   XCIntegrator( XCIntegrator&& ) noexcept;
 
   value_type    integrate_den( const MatrixType& );
+
+  value_type    eval_exc( const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+  value_type    eval_exc( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+  value_type    eval_exc( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,  const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+
   exc_vxc_type_rks  eval_exc_vxc ( const MatrixType&, 
                                    const IntegratorSettingsXC& = IntegratorSettingsXC{} );
   exc_vxc_type_uks  eval_exc_vxc ( const MatrixType&, const MatrixType&,
@@ -66,7 +71,9 @@ public:
                                           const IntegratorSettingsXC& = IntegratorSettingsXC{} );
   exc_vxc_type_neo_uks neo_eval_exc_vxc ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,
                                           const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+
   exc_grad_type eval_exc_grad( const MatrixType& );
+
   exx_type      eval_exx     ( const MatrixType&, 
                                const IntegratorSettingsEXX& = IntegratorSettingsEXX{} );
 

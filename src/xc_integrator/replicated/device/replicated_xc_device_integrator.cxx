@@ -7,7 +7,7 @@
  */
 #include <gauxc/xc_integrator/replicated/replicated_xc_device_integrator.hpp>
 #include "incore_replicated_xc_device_integrator.hpp"
-#include "shellbatched_replicated_xc_device_integrator.hpp"
+#include "shell_batched_replicated_xc_device_integrator.hpp"
 #include "device/local_device_work_driver.hpp"
 
 namespace GauXC  {
@@ -49,7 +49,7 @@ typename ReplicatedXCDeviceIntegratorFactory<ValueType>::ptr_return_t
     );
 
   else
-    GAUXC_GENERIC_EXCEPTION("INTEGRATOR KERNEL " + integrator_kernel + " NOT RECOGNIZED");
+    GAUXC_GENERIC_EXCEPTION("Integrator Kernel " + integrator_kernel + " Not Recognized");
 
 
 }

@@ -27,8 +27,7 @@ ostream& operator<<( ostream& out, const vector<T>& v ) {
 }
 }
 
-namespace GauXC  {
-namespace detail {
+namespace GauXC::detail {
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
@@ -41,13 +40,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Check that P / VXC are sane
   const int64_t nbf = basis.nbf();
   if( m != n ) 
-    GAUXC_GENERIC_EXCEPTION(" P/VXC Must Be Square");
+    GAUXC_GENERIC_EXCEPTION("P/VXC Must Be Square");
   if( m != nbf ) 
-    GAUXC_GENERIC_EXCEPTION(" P/VXC Must Have Same Dimension as Basis");
+    GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
   if( ldp < nbf )
-    GAUXC_GENERIC_EXCEPTION(" Invalid LDP");
+    GAUXC_GENERIC_EXCEPTION("Invalid LDP");
   if( ldk < nbf )
-    GAUXC_GENERIC_EXCEPTION(" Invalid LDVXC");
+    GAUXC_GENERIC_EXCEPTION("Invalid LDVXC");
 
 
   // Get Tasks
@@ -297,7 +296,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
   if( not lb_state.modified_weights_are_stored ) {
-    GAUXC_GENERIC_EXCEPTION("Weights Have Not Beed Modified"); 
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Been Modified"); 
   }
 
   // Zero out integrands
@@ -543,5 +542,4 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 }
 
-}
-}
+} // namespace GauXC::detail
