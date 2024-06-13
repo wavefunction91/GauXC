@@ -41,7 +41,7 @@ else()
 
 endif()
 
-if(BUILD_SHARED_LIBS)
+if(NOT GAUXC_LINK_CUDA_STATIC)
   target_link_libraries( gauxc PUBLIC CUDA::cublas )
 else()
   target_link_libraries( gauxc PUBLIC CUDA::cublas_static )
