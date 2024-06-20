@@ -89,6 +89,58 @@ public:
     return get_shared_instance( std::make_shared<functional_type>(func), lb );
   }
 
+  /** Generate XCIntegrator instance
+   *
+   *  @param[in] func  XC functional
+   *  @param[in] epcfunc  EPC functional
+   *  @param[in] lb    Preconstructed Load Balancer instance
+   */
+  std::shared_ptr<integrator_type> get_shared_instance( 
+    std::shared_ptr<functional_type> func,
+    std::shared_ptr<functional_type> epcfunc,
+    std::shared_ptr<LoadBalancer>    lb ) {
+
+    // Create Local Work Driver
+    auto lwd = LocalWorkDriverFactory::make_local_work_driver( ex_, 
+      lwd_kernel_, local_work_settings_ );
+
+    // Create Reduction Driver
+    auto rd = ReductionDriverFactory::get_shared_instance( 
+      lb->runtime(), rd_kernel_ );
+
+    // Create Integrator instance
+    std::transform( input_type_.begin(), input_type_.end(), input_type_.begin(), 
+      ::toupper );
+
+    if(!epcfunc->is_polarized())
+      GAUXC_GENERIC_EXCEPTION("EPC FUNCTIONAL NOT POLARIZED");
+
+    if( input_type_ == "REPLICATED" )
+      return std::make_shared<integrator_type>( 
+        ReplicatedXCIntegratorFactory<MatrixType>::make_integrator_impl(
+          ex_, integrator_kernel_, func, epcfunc, lb, std::move(lwd), rd
+        )
+      );
+    else GAUXC_GENERIC_EXCEPTION("INTEGRATOR TYPE NOT RECOGNIZED");
+
+    return nullptr;
+
+  }
+
+  auto get_shared_instance( const functional_type& func, const functional_type& epcfunc,
+                            const LoadBalancer& lb ) {
+    return get_shared_instance( std::make_shared<functional_type>(func),
+                                std::make_shared<functional_type>(epcfunc),
+                                std::make_shared<LoadBalancer>(lb) );
+  }
+
+  auto get_shared_instance( const functional_type& func, const functional_type& epcfunc,
+                            std::shared_ptr<LoadBalancer> lb ) {
+    return get_shared_instance( std::make_shared<functional_type>(func), 
+                                std::make_shared<functional_type>(epcfunc),
+                                lb );
+  }
+
 
   template <typename... Args>
   integrator_type get_instance( Args&&... args ) {

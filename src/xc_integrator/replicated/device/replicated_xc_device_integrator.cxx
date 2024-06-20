@@ -54,6 +54,43 @@ typename ReplicatedXCDeviceIntegratorFactory<ValueType>::ptr_return_t
 
 }
 
+
+template <typename ValueType>
+typename ReplicatedXCDeviceIntegratorFactory<ValueType>::ptr_return_t
+  ReplicatedXCDeviceIntegratorFactory<ValueType>::make_integrator_impl(
+    std::string integrator_kernel,
+    std::shared_ptr<functional_type> func,
+    std::shared_ptr<functional_type> epcfunc,
+    std::shared_ptr<LoadBalancer> lb, 
+    std::unique_ptr<LocalWorkDriver>&& lwd,
+    std::shared_ptr<ReductionDriver>   rd
+    ) {
+
+  // Make sure that the LWD is a valid LocalDeviceWorkDriver
+  if(not dynamic_cast<LocalDeviceWorkDriver*>(lwd.get())) {
+    GAUXC_GENERIC_EXCEPTION("Passed LWD Not valid for Device ExSpace");
+  }
+
+  std::transform(integrator_kernel.begin(), integrator_kernel.end(), 
+    integrator_kernel.begin(), ::toupper );
+
+  if( integrator_kernel == "DEFAULT" ) integrator_kernel = "INCORE";
+
+  if( integrator_kernel == "INCORE" )
+    return std::make_unique<IncoreReplicatedXCDeviceIntegrator<ValueType>>(
+      func, epcfunc, lb, std::move(lwd), rd
+    );
+  else if( integrator_kernel == "SHELLBATCHED" )
+    return std::make_unique<ShellBatchedReplicatedXCDeviceIntegrator<ValueType>>(
+      func, epcfunc, lb, std::move(lwd), rd
+    );
+
+  else
+    GAUXC_GENERIC_EXCEPTION("INTEGRATOR KERNEL " + integrator_kernel + " NOT RECOGNIZED");
+
+
+}
+
 template struct ReplicatedXCDeviceIntegratorFactory<double>;
 
 
