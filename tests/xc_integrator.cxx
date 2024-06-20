@@ -125,9 +125,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     }
   }
 
-  if(uks and ex == ExecutionSpace::Device) return;
-  if(gks and ex == ExecutionSpace::Device) return;
-
+  if( (uks or gks) and ex == ExecutionSpace::Device and func.is_mgga() ) return;
 
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );

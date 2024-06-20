@@ -50,17 +50,54 @@ struct XCDeviceTask {
   double*   d2bfyy    = nullptr;
   double*   d2bfyz    = nullptr;
   double*   d2bfzz    = nullptr;
-  double*   d2bflapl    = nullptr;
-  double*   den     = nullptr;
-  double*   ddenx   = nullptr;
-  double*   ddeny   = nullptr;
-  double*   ddenz   = nullptr;
-  double*   denlapl     = nullptr;
   double*   eps     = nullptr;
-  double*   gamma   = nullptr;
-  double*   tau   = nullptr;
+
+  double* den       = nullptr;
+  double* gamma     = nullptr;
   double*   vrho    = nullptr;
   double*   vgamma  = nullptr;
+    
+  // (S,Z,Y,X) densities
+  double* den_s     = nullptr;
+  double* den_z     = nullptr;
+  double* den_y     = nullptr;
+  double* den_x     = nullptr;
+  // Del(S,Z,Y,X) Gradients
+  double* dden_sx   = nullptr;
+  double* dden_sy   = nullptr;
+  double* dden_sz   = nullptr;
+  double* dden_zx   = nullptr;
+  double* dden_zy   = nullptr;
+  double* dden_zz   = nullptr;
+  double* dden_yx   = nullptr;
+  double* dden_yy   = nullptr;
+  double* dden_yz   = nullptr;
+  double* dden_xx   = nullptr;
+  double* dden_xy   = nullptr;
+  double* dden_xz   = nullptr;
+  
+  // 2C U vars
+  double* vrho_pos  = nullptr;
+  double* vrho_neg  = nullptr;
+  double* gamma_pp  = nullptr;
+  double* gamma_pm  = nullptr;
+  double* gamma_mm  = nullptr;
+  double* vgamma_pp  = nullptr;
+  double* vgamma_pm  = nullptr;
+  double* vgamma_mm  = nullptr;
+
+  // GKS K,H matrices
+  double* K_z        = nullptr;
+  double* K_y        = nullptr;
+  double* K_x        = nullptr;
+  double* H_z        = nullptr;
+  double* H_y        = nullptr;
+  double* H_x        = nullptr;
+
+  // MGGA
+  double*   d2bflapl    = nullptr;
+  double*   denlapl     = nullptr;
+  double*   tau   = nullptr;
   double*   vtau  = nullptr;
   double*   vlapl  = nullptr;
 

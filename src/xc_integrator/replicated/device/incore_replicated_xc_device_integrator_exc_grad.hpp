@@ -108,7 +108,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   const auto natoms  = mol.size();
   device_data.reset_allocations();
   device_data.allocate_static_data_exc_grad( nbf, nshells, natoms );
-  device_data.send_static_data_density_basis( P, ldp, basis );
+  device_data.send_static_data_density_basis( P, ldp, nullptr, 0, nullptr, 0, nullptr, 0, basis );
 
   // Zero integrands
   device_data.zero_exc_grad_integrands();
@@ -116,6 +116,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Processes batches in groups that saturadate available device memory
   integrator_term_tracker enabled_terms;
   enabled_terms.exc_grad = true;
+  enabled_terms.ks_scheme = RKS;
   if( func.is_lda() )      enabled_terms.xc_approx = integrator_xc_approx::LDA; 
   else if( func.is_gga() ) enabled_terms.xc_approx = integrator_xc_approx::GGA; 
   else GAUXC_GENERIC_EXCEPTION("XC Approx NYI");
@@ -135,11 +136,14 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
     // Evaluate X matrix
     const bool do_xmat_grad = func.is_gga();
-    lwd->eval_xmat( 2.0, &device_data, do_xmat_grad );
+    lwd->eval_xmat( 2.0, &device_data, do_xmat_grad, DEN_S );
+    
+    // Evaluate V variable
+    lwd->eval_vvar( &device_data, DEN_S, do_xmat_grad );
 
-    // Evaluate U/V variables
-    if( func.is_gga() ) lwd->eval_uvvar_gga_rks( &device_data );
-    else                lwd->eval_uvvar_lda_rks( &device_data );
+    // Evaluate U variables
+    if( func.is_gga() ) lwd->eval_uvars_gga( &device_data, enabled_terms.ks_scheme );
+    else                lwd->eval_uvars_lda( &device_data, enabled_terms.ks_scheme );
 
     // Evaluate XC functional (we need VXC for EXC Gradient)
     if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );

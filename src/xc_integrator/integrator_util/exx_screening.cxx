@@ -255,7 +255,7 @@ void exx_ek_screening(
   device_data.reset_allocations();
   device_data.allocate_static_data_exx_ek_screening( ntasks, nbf, nshells, 
     shpairs.npairs(), basis_map.max_l() );
-  device_data.send_static_data_density_basis( P_abs, ldp, basis );
+  device_data.send_static_data_density_basis( P_abs, ldp, nullptr, 0, nullptr, 0, nullptr, 0,  basis );
   device_data.send_static_data_exx_ek_screening( V_shell_max, ldv, basis_map,
     shpairs );
 
