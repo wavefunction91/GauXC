@@ -17,8 +17,8 @@ namespace GauXC {
 
 struct AoSScheme1CUTLASSBase : public AoSScheme1Base {
 
-  void eval_xmat(double fac, XCDeviceData*, bool do_grad ) override final;
-  void inc_vxc( XCDeviceData*, bool ) override final;
+  void eval_xmat(double fac, XCDeviceData*, bool do_grad, density_id ) override final;
+  void inc_vxc( XCDeviceData*, density_id, bool ) override final;
 
   struct Data;
 

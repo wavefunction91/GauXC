@@ -96,7 +96,7 @@ void AoSScheme1CUTLASSBase::Data::pack_and_send(
   std::vector<int64_t> ld64_dmat_host( ntask ), ld64_zmat_host( ntask ), 
                        ld64_vmat_host( ntask ), ld64_bf_host( ntask );
 
-  double* static_dmat = static_stack.dmat_device;
+  double* static_dmat = static_stack.dmat_s_device;
   const auto nbf = global_dims.nbf;
 
   // host_device_tasks should be populated by parent impl called at top
