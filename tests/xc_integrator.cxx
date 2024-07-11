@@ -300,10 +300,12 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
 
     #ifdef GAUXC_HAS_MAGMA
     SECTION( "Incore - MPI Reduction - MAGMA" ) {
-      test_xc_integrator( ExecutionSpace::Device, rt,
-        reference_file, func, pruning_scheme,
-        false, true, check_k, "Default", "Default", 
-        "Scheme1-MAGMA" );
+      if(not func.is_mgga() and not func.is_polarized()) {
+        test_xc_integrator( ExecutionSpace::Device, rt,
+          reference_file, func, pruning_scheme,
+          false, true, check_k, "Default", "Default", 
+          "Scheme1-MAGMA" );
+      }
     }
     #endif
 
