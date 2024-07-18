@@ -201,10 +201,10 @@ void zmat_mgga_vxc( size_t            ntasks,
                     bool              do_lapl,
                     device_queue queue ) {
 
-  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
+  hipStream_t stream = queue.queue_as<util::hip_stream>() ;
 
 
-  dim3 threads(cuda::warp_size,cuda::max_warps_per_thread_block,1);
+  dim3 threads(hip::warp_size,hip::max_warps_per_thread_block,1);
   dim3 blocks( util::div_ceil( max_npts, threads.x ),
                util::div_ceil( max_nbf,  threads.y ),
                ntasks );
@@ -260,10 +260,10 @@ void mmat_mgga_vxc( size_t            ntasks,
                     bool              do_lapl,
                     device_queue queue ) {
 
-  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
+  hipStream_t stream = queue.queue_as<util::hip_stream>() ;
 
 
-  dim3 threads(cuda::warp_size,cuda::max_warps_per_thread_block,1);
+  dim3 threads(hip::warp_size,hip::max_warps_per_thread_block,1);
   dim3 blocks( util::div_ceil( max_npts, threads.x ),
                util::div_ceil( max_nbf,  threads.y ),
                ntasks );
@@ -272,11 +272,8 @@ void mmat_mgga_vxc( size_t            ntasks,
     mmat_mgga_vxc_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
   else
     mmat_mgga_vxc_kernel<false><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-}
 
 }
-
-
 
 
 }
