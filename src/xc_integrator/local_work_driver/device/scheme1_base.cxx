@@ -441,9 +441,9 @@ void AoSScheme1Base::eval_collocation_hessian( XCDeviceData* _data ) {
   eval_collocation_shell_to_task_hessian( max_l, 
     data->l_batched_shell_to_task.data(), aos_stack.device_tasks,
     data->device_backend_->queue() );
-#endif
   
   data->device_backend_->check_error("collocation hess" __FILE__ ": " + std::to_string(__LINE__));
+#endif
 }
 
 void AoSScheme1Base::eval_collocation_laplacian( XCDeviceData* _data ) {
@@ -461,9 +461,9 @@ void AoSScheme1Base::eval_collocation_laplacian( XCDeviceData* _data ) {
   eval_collocation_shell_to_task_laplacian( max_l, 
     data->l_batched_shell_to_task.data(), aos_stack.device_tasks,
     data->device_backend_->queue() );
-#endif
   
   data->device_backend_->check_error("collocation lapl" __FILE__ ": " + std::to_string(__LINE__));
+#endif
 }
 
 
