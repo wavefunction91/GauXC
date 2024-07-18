@@ -193,7 +193,7 @@ void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max,
 
 }
 
-#define GGA_KERNEL_SM_BLOCK_Y 32
+#define GGA_KERNEL_SM_BLOCK_Y 16
 
 template <bool need_lapl>
 __global__ void eval_uvars_mgga_kernel( size_t           ntasks,
@@ -319,7 +319,7 @@ void eval_uvvars_mgga( size_t ntasks, size_t npts_total, int32_t nbf_max,
   {
   dim3 threads( hip::warp_size, hip::max_warps_per_thread_block / 2, 1 );
   dim3 blocks( std::min(uint64_t(4), util::div_ceil( nbf_max, 4 )),
-               std::min(uint64_t(16), util::div_ceil( nbf_max, 16 )),
+               std::min(uint64_t(GGA_KERNEL_SM_BLOCK_Y), util::div_ceil( npts_max, GGA_KERNEL_SM_BLOCK_Y )),
                ntasks );
   eval_uvars_gga_kernel <<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
   if(do_lapl)
