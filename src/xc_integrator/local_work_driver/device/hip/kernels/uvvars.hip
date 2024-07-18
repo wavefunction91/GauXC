@@ -193,6 +193,8 @@ void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max,
 
 }
 
+#define GGA_KERNEL_SM_BLOCK_Y 32
+
 template <bool need_lapl>
 __global__ void eval_uvars_mgga_kernel( size_t           ntasks,
                                        XCDeviceTask* tasks_device ) {
@@ -277,16 +279,16 @@ __global__ void eval_uvars_mgga_kernel( size_t           ntasks,
       for (int sm_y = threadIdx.y; sm_y < GGA_KERNEL_SM_BLOCK_Y; sm_y += blockDim.y) {
         const int tid_y = bid_y + sm_y;
 
-        register double tx_reg  = den_shared[0][sm_y][threadIdx.x];
-        register double ty_reg  = den_shared[1][sm_y][threadIdx.x];
-        register double tz_reg  = den_shared[2][sm_y][threadIdx.x];
+        double tx_reg  = den_shared[0][sm_y][threadIdx.x];
+        double ty_reg  = den_shared[1][sm_y][threadIdx.x];
+        double tz_reg  = den_shared[2][sm_y][threadIdx.x];
         // Warp blocks are stored col major
-        register double tau_reg = 0.0;
+        double tau_reg = 0.0;
         tau_reg  = 0.5 * hip::warp_reduce_sum<warp_size>( tx_reg );
         tau_reg += 0.5 * hip::warp_reduce_sum<warp_size>( ty_reg );
         tau_reg += 0.5 * hip::warp_reduce_sum<warp_size>( tz_reg );
 
-        register double lapl_reg = 0.0;
+        double lapl_reg = 0.0;
         if constexpr (need_lapl) {
           lapl_reg = den_shared[3][sm_y][threadIdx.x];
           lapl_reg = hip::warp_reduce_sum<warp_size>(lapl_reg);
