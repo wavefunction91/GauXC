@@ -16,9 +16,10 @@
 
 namespace GauXC {
 
-void AoSScheme1CUTLASSBase::eval_xmat(double fac, XCDeviceData* _data, bool do_grad ){
+void AoSScheme1CUTLASSBase::eval_xmat(double fac, XCDeviceData* _data, bool do_grad, density_id den_id ){
 
   if( do_grad ) GAUXC_GENERIC_EXCEPTION("CUTLASS + X Gradient NYI");
+  if( den_id != DEN_S ) GAUXC_GENERIC_EXCEPTION("CUTLASS + U/GKS NYI");
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -33,7 +34,7 @@ void AoSScheme1CUTLASSBase::eval_xmat(double fac, XCDeviceData* _data, bool do_g
   const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
   auto static_stack  = data->static_stack;
   auto aos_stack     = data->aos_stack;
-  sym_pack_submat( ntasks, aos_stack.device_tasks, static_stack.dmat_device, 
+  sym_pack_submat( ntasks, aos_stack.device_tasks, static_stack.dmat_s_device, 
     nbf, submat_block_size, data->device_backend_->queue() );
 
   auto cutlass_stack = data->cutlass_stack;
@@ -50,7 +51,7 @@ void AoSScheme1CUTLASSBase::eval_xmat(double fac, XCDeviceData* _data, bool do_g
   );
 }
 
-void AoSScheme1CUTLASSBase::inc_vxc( XCDeviceData* _data, bool do_m){
+void AoSScheme1CUTLASSBase::inc_vxc( XCDeviceData* _data, density_id den_id,  bool do_m){
 
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
@@ -58,6 +59,7 @@ void AoSScheme1CUTLASSBase::inc_vxc( XCDeviceData* _data, bool do_m){
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
   if(do_m) GAUXC_GENERIC_EXCEPTION("CUTLASS + MGGA NYI");
+  if( den_id != DEN_S ) GAUXC_GENERIC_EXCEPTION("CUTLASS + U/GKS NYI");
 
   auto& tasks = data->host_device_tasks;
   const auto ntasks = tasks.size();
@@ -81,7 +83,7 @@ void AoSScheme1CUTLASSBase::inc_vxc( XCDeviceData* _data, bool do_m){
   auto static_stack  = data->static_stack;
   auto aos_stack     = data->aos_stack;
   sym_task_inc_potential( ntasks, aos_stack.device_tasks, 
-    static_stack.vxc_device, nbf, submat_block_size, 
+    static_stack.vxc_s_device, nbf, submat_block_size, 
     data->device_backend_->queue() );
 }
 

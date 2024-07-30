@@ -47,13 +47,11 @@ struct XCDeviceStackData : public XCDeviceData {
     Shell<double>* shells_device = nullptr; ///< Array of static basis shells (nshells)
     PrimitivePair<double>* prim_pairs_device = nullptr;
 
-    double* dmat_device   = nullptr; ///< Static density matrix storage (nbf,nbf)
     double* rab_device    = nullptr; ///< Static RAB matrix storage (*,natoms)
     double* coords_device = nullptr; ///< Static atomic positions (3 * natoms)
 
     double* exc_device     = nullptr;  ///< EXC storage (1)
     double* nel_device     = nullptr;  ///< N_EL storage (1)
-    double* vxc_device     = nullptr;  ///< VXC storage (nbf,nbf)
     double* exx_k_device   = nullptr;  ///< EXX K storage (nbf,nbf)
     double* acc_scr_device = nullptr;  ///< Accumulaion scratch (1)
     double* exc_grad_device = nullptr; ///< EXC Gradient storage (3*natoms)
@@ -65,6 +63,15 @@ struct XCDeviceStackData : public XCDeviceData {
     double* ek_bfn_max_device     = nullptr;
     int32_t* shell_to_bf_device = nullptr;
     int32_t* shell_sizes_device = nullptr;
+
+    double* dmat_s_device   = nullptr;  ///< Static density matrix storage (nbf,nbf)
+    double* dmat_z_device   = nullptr;  /// Ditto for Z,Y,X densities
+    double* dmat_y_device   = nullptr;
+    double* dmat_x_device   = nullptr;
+    double* vxc_s_device    = nullptr;  ///< VXC storage (nbf, nbf)
+    double* vxc_z_device    = nullptr;  /// Ditto for Z,Y,X densities
+    double* vxc_y_device    = nullptr;
+    double* vxc_x_device    = nullptr;
 
     inline void reset() { std::memset( this, 0, sizeof(static_data) ); }
   };
@@ -85,10 +92,28 @@ struct XCDeviceStackData : public XCDeviceData {
     double* weights_device = nullptr; ///< Grid weights for task batch
 
     // U variables
-    double* den_eval_device      = nullptr; ///< density for task batch
-    double* den_x_eval_device    = nullptr; ///< d/dx density for task batch
-    double* den_y_eval_device    = nullptr; ///< d/dy density for task batch
-    double* den_z_eval_device    = nullptr; ///< d/dz density for task batch
+    double* den_s_eval_device   = nullptr; ///< scalar density for task batch
+    double* dden_sx_eval_device = nullptr; ///< d/dx scalar density for task batch
+    double* dden_sy_eval_device = nullptr; ///< d/dy scalar density for task batch
+    double* dden_sz_eval_device = nullptr; ///< d/dz scalar density for task batch
+    
+    double* den_z_eval_device   = nullptr; ///< z density for task batch
+    double* dden_zx_eval_device = nullptr; ///< d/dx z density for task batch
+    double* dden_zy_eval_device = nullptr; ///< d/dy z density for task batch
+    double* dden_zz_eval_device = nullptr; ///< d/dz z density for task batch
+
+    double* den_y_eval_device   = nullptr; ///< y density for task batch
+    double* dden_yx_eval_device = nullptr; ///< d/dx y density for task batch
+    double* dden_yy_eval_device = nullptr; ///< d/dy y density for task batch
+    double* dden_yz_eval_device = nullptr; ///< d/dz y density for task batch
+
+    double* den_x_eval_device   = nullptr; ///< x density for task batch
+    double* dden_xx_eval_device = nullptr; ///< d/dx x density for task batch
+    double* dden_xy_eval_device = nullptr; ///< d/dy x density for task batch
+    double* dden_xz_eval_device = nullptr; ///< d/dz x density for task batch
+    
+    double* den_eval_device     = nullptr; /// Storage for interleaved density (non-RKS only)
+
     double* den_lapl_eval_device = nullptr; ///< density Laplacian for task batch
 
     // V variables / XC output
@@ -99,6 +124,23 @@ struct XCDeviceStackData : public XCDeviceData {
     double* vgamma_eval_device = nullptr; ///< Gamma XC derivative for task batch
     double* vtau_eval_device   = nullptr; ///< Tau XC derivative for task batch
     double* vlapl_eval_device  = nullptr; ///< Lapl XC derivative for task batch
+
+    double* vrho_pos_eval_device  = nullptr;  ///< Polarized Rho+ XC derivative for task batch
+    double* vrho_neg_eval_device  = nullptr;  ///< Polarized Rho+ XC derivative for task batch
+
+    double* gamma_pp_eval_device  = nullptr;  ///< Polarized Gamma++ for task batch
+    double* gamma_pm_eval_device  = nullptr;  ///< Polarized Gamma+- for task batch
+    double* gamma_mm_eval_device  = nullptr;  ///< Polarized Gamma-- for task batch
+    double* vgamma_pp_eval_device  = nullptr; ///< Polarized Gamma++ XC derivative for task batch
+    double* vgamma_pm_eval_device  = nullptr; ///< Polarized Gamma+- XC derivative for task batch
+    double* vgamma_mm_eval_device  = nullptr; ///< Polarized Gamma-- XC derivative for task batch
+
+    double* H_x_eval_device     = nullptr;    ///< norm(m) dependent GGA X transformation factor for task batch
+    double* H_y_eval_device     = nullptr;    ///< norm(m) dependent GGA Y transformation factor for task batch
+    double* H_z_eval_device     = nullptr;    ///< norm(m) dependent GGA Z transformation factor for task batch
+    double* K_x_eval_device     = nullptr;    ///< norm(m) dependent LDA X transformation factor for task batch
+    double* K_y_eval_device     = nullptr;    ///< norm(m) dependent LDA Y transformation factor for task batch
+    double* K_z_eval_device     = nullptr;    ///< norm(m) dependent LDA Z transformation factor for task batch
 
     inline void reset() { std::memset( this, 0, sizeof(base_stack_data) ); }
   };
@@ -118,31 +160,36 @@ struct XCDeviceStackData : public XCDeviceData {
   host_task_iterator generate_buffers( integrator_term_tracker, const BasisSetMap&,
     host_task_iterator, host_task_iterator) override final;
   void allocate_static_data_weights( int32_t natoms ) override final;
-  void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, bool do_vxc ) override final;
+  void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms, bool do_vxc ) override final;
   void allocate_static_data_den( int32_t nbf, int32_t nshells ) override final;
   void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) override final;
   void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, size_t nprim_pair_total, int32_t max_l ) override final;
   void allocate_static_data_exx_ek_screening( size_t ntasks, int32_t nbf, int32_t nshells, int nshell_pairs, int32_t max_l ) override final;
   void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) override final;
-  void send_static_data_density_basis( const double* P, int32_t ldp, 
+  void send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz,
+                                        const double* Py, int32_t ldpy, const double* Px, int32_t ldpx,
     const BasisSet<double>& basis ) override final;
   void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) 
     override final;
   void send_static_data_exx_ek_screening( const double* V_max, int32_t ldv, const BasisSetMap&, const ShellPairCollection<double>& ) override final;
   void zero_den_integrands() override final;
-  void zero_exc_vxc_integrands() override final;
+  void zero_exc_vxc_integrands(integrator_term_tracker t) override final;
   void zero_exc_grad_integrands() override final;
   void zero_exx_integrands() override final;
   void zero_exx_ek_screening_intermediates() override final;
   void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
-    double* VXC, int32_t ldvxc ) override final;
+    double* VXCscalar, int32_t ldvxcscalar, double* VXCz, int32_t ldvxcz,
+    double* VXCy     , int32_t ldvxcy     , double* VXCx, int32_t ldvxcx ) override final;
   void retrieve_exc_grad_integrands( double* EXC_GRAD, double* N_EL ) override final;
   void retrieve_den_integrands( double* N_EL ) override final;
   void retrieve_exx_integrands( double* K, int32_t ldk ) override final;
   void retrieve_exx_ek_max_bfn_sum( double* MBS, int32_t nt) override final;
   void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) override final;
 
-  double* vxc_device_data() override;
+  double* vxc_s_device_data() override;
+  double* vxc_z_device_data() override;
+  double* vxc_y_device_data() override;
+  double* vxc_x_device_data() override;
   double* exc_device_data() override;
   double* nel_device_data() override;
   double* exx_k_device_data() override;
