@@ -648,10 +648,19 @@ void eval_vvar( size_t ntasks, int32_t nbf_max, int32_t npts_max, bool do_grad, 
   XCDeviceTask* device_tasks, device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
-  dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block, 1 );
-  dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
-               util::div_ceil( npts_max, threads.y ),
-               ntasks );
+  dim3 threads;
+  dim3 blocks;
+  if( do_grad ) {
+    threads = dim3( cuda::warp_size, cuda::max_warps_per_thread_block / 2, 1 );
+    blocks = dim3( std::min(uint64_t(4), util::div_ceil( nbf_max, 4 )),
+            std::min(uint64_t(16), util::div_ceil( nbf_max, 16 )),
+            ntasks );
+  } else {
+    threads = dim3( cuda::warp_size, cuda::max_warps_per_thread_block, 1 );
+    blocks = dim3( util::div_ceil( nbf_max,  threads.x ),
+            util::div_ceil( npts_max, threads.y ),
+            ntasks );
+  }
   switch( den_select ) {
     case DEN_S: 
       if (do_grad)  eval_vvar_grad_kern<DEN_S><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
