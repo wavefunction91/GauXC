@@ -329,7 +329,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
 
     // Evaluate U variables
-    if( func.is_mgga() )      lwd->eval_uvars_mgga( &device_data, need_lapl );
+    if( func.is_mgga() )      lwd->eval_uvars_mgga( &device_data, need_lapl );     //<<< TODO: Fn call is different because MGGA U/GKS NYI
     else if( func.is_gga() )  lwd->eval_uvars_gga( &device_data, enabled_terms.ks_scheme );
     else                      lwd->eval_uvars_lda( &device_data, enabled_terms.ks_scheme );
 

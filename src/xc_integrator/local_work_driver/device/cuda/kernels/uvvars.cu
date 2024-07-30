@@ -450,7 +450,7 @@ void eval_uvars_gga( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_sc
 void eval_uvars_mgga( size_t ntasks, size_t npts_total, int32_t nbf_max, 
   int32_t npts_max, bool do_lapl, XCDeviceTask* device_tasks, 
   device_queue queue ) {
-
+  // TODO: This interface should be unified with the lda/gga interfaces
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
 
   // U Variables
