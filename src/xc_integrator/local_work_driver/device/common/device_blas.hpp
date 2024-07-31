@@ -63,5 +63,6 @@ void syr2k( device_blas_handle handle,
             int M, int K, T ALPHA, 
             const T* A, int LDA, const T* B, int LDB,
             T BETA, T* C, int LDC );
+
 }
 

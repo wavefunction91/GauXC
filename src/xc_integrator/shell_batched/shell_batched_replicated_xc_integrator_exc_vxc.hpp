@@ -429,18 +429,11 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
   // Process selected task batch
 #ifdef GAUXC_HAS_DEVICE
   if constexpr (IncoreIntegratorType::is_device) {
-    if(Pz or Py or Py) 
-      GAUXC_GENERIC_EXCEPTION("Device UKS/GKS + ShellBatched NYI");
 
     incore_integrator.exc_vxc_local_work( basis_subset, Ps_submat, nbe, 
-      VXCs_submat, nbe, &EXC_tmp, &NEL_tmp, task_begin, task_end, 
-      *device_data_ptr_ );
-    // TODO: Make this work for UKS/GKS after 
-    // https://github.com/wavefunction91/GauXC/pull/91
-    //incore_integrator.exc_vxc_local_work( basis_subset, Ps_submat, nbe, 
-    //  Pz_submat, nbe, Py_submat, nbe, Px_submat, nbe, VXCs_submat, nbe,
-    //  VXCz_submat, nbe, VXCy_submat, nbe, VXCx_submat, nbe,
-    //  &EXC_tmp, &NEL_tmp, task_begin, task_end, *device_data_ptr_ );
+      Pz_submat, nbe, Py_submat, nbe, Px_submat, nbe, VXCs_submat, nbe,
+      VXCz_submat, nbe, VXCy_submat, nbe, VXCx_submat, nbe,
+      &EXC_tmp, &NEL_tmp, task_begin, task_end, *device_data_ptr_ );
   } else if constexpr (not IncoreIntegratorType::is_device) {
 #endif
     incore_integrator.exc_vxc_local_work( basis_subset, Ps_submat, nbe, 

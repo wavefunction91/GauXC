@@ -103,7 +103,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   const auto nshells = basis.nshells();
   device_data.reset_allocations();
   device_data.allocate_static_data_den( nbf, nshells );
-  device_data.send_static_data_density_basis( P, ldp, basis );
+  device_data.send_static_data_density_basis( P, ldp, nullptr, 0, nullptr, 0, nullptr, 0,  basis );
 
   // Zero integrands
   device_data.zero_den_integrands();
@@ -125,10 +125,12 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->eval_collocation( &device_data );
 
     // Evaluate X matrix
-    lwd->eval_xmat( 1.0, &device_data );
+    const bool do_xmat_grad = false;
+    lwd->eval_xmat( 1.0, &device_data, do_xmat_grad, DEN_S );
 
     // Evaluate the density
-    lwd->eval_uvvar_lda_rks( &device_data );
+    const bool do_vvar_grad = false;
+    lwd->eval_vvar( &device_data, DEN_S, do_vvar_grad );
 
     // Do scalar N_EL integration
     lwd->inc_nel( &device_data );
