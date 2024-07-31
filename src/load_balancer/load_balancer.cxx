@@ -93,6 +93,15 @@ const LoadBalancer::shell_pair_type& LoadBalancer::shell_pairs() {
   return pimpl_->shell_pairs();
 }
 
+const LoadBalancer::basis_type& LoadBalancer::protonic_basis() const {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->protonic_basis();
+}
+const LoadBalancer::basis_map_type& LoadBalancer::protonic_basis_map() const {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->protonic_basis_map();
+}
+
 LoadBalancerState& LoadBalancer::state() {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->state();

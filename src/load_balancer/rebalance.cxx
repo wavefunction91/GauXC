@@ -177,6 +177,8 @@ auto rebalance(TaskIterator begin, TaskIterator end, const CostFunctor& cost, MP
       mpi_buffer.pack(task.weights);
       mpi_buffer.pack(task.bfn_screening.shell_list);
       mpi_buffer.pack(task.bfn_screening.nbe);
+      mpi_buffer.pack(task.protonic_bfn_screening.shell_list);
+      mpi_buffer.pack(task.protonic_bfn_screening.nbe);
       mpi_buffer.pack(task.cou_screening.shell_list);
       mpi_buffer.pack(task.cou_screening.shell_pair_list);
       mpi_buffer.pack(task.cou_screening.shell_pair_idx_list);
@@ -296,6 +298,8 @@ auto rebalance(TaskIterator begin, TaskIterator end, const CostFunctor& cost, MP
       mpi_buffer.unpack(task.weights);
       mpi_buffer.unpack(task.bfn_screening.shell_list);
       mpi_buffer.unpack(task.bfn_screening.nbe);
+      mpi_buffer.unpack(task.protonic_bfn_screening.shell_list);
+      mpi_buffer.unpack(task.protonic_bfn_screening.nbe);
       mpi_buffer.unpack(task.cou_screening.shell_list);
       mpi_buffer.unpack(task.cou_screening.shell_pair_list);
       mpi_buffer.unpack(task.cou_screening.shell_pair_idx_list);

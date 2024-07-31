@@ -73,6 +73,59 @@ struct ReplicatedXCIntegratorFactory {
 
   }
 
+
+
+  /** Generate a ReplicatedXCIntegrator instance
+   *
+   *  @param[in]  ex                 Execution space for integrator instance
+   *  @param[in]  integration_kernel Name of integration scaffold to load ("Default", "Reference", etc)
+   *  @param[in]  func               XC functional to integrate
+   *  @param[in]  epcfunc            EPC functional to integrate
+   *  @param[in]  lb                 Pregenerated LoadBalancer instance
+   *  @param[in]  lwd                Local Work Driver
+   */
+  static ptr_return_t make_integrator_impl( 
+    ExecutionSpace ex,
+    std::string integrator_kernel,
+    std::shared_ptr<functional_type>   func,
+    std::shared_ptr<functional_type>   epcfunc,
+    std::shared_ptr<LoadBalancer>      lb,
+    std::unique_ptr<LocalWorkDriver>&& lwd,
+    std::shared_ptr<ReductionDriver>   rd
+    ) {
+
+
+
+    switch(ex) {
+
+      using host_factory = 
+        detail::ReplicatedXCHostIntegratorFactory<value_type>;
+      case ExecutionSpace::Host:
+        return std::make_unique<integrator_type>( 
+          host_factory::make_integrator_impl(
+            integrator_kernel, func, epcfunc, lb, std::move(lwd), rd 
+          )
+        );
+
+      #ifdef GAUXC_HAS_DEVICE
+      using device_factory = 
+        detail::ReplicatedXCDeviceIntegratorFactory<value_type>;
+      case ExecutionSpace::Device:
+        return std::make_unique<integrator_type>( 
+          device_factory::make_integrator_impl(
+            integrator_kernel, func, epcfunc, lb, std::move(lwd), rd
+          )
+        );
+      #endif
+
+      default:
+        GAUXC_GENERIC_EXCEPTION("ReplicatedXCIntegrator ExecutionSpace Not Supported");
+    }
+
+    return nullptr;
+
+  }
+
  
 };
 

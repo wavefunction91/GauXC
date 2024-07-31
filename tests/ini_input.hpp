@@ -23,9 +23,8 @@
  *  \param [in/out] s std::string to be trimmed
  */
 static inline std::string& trim_left(std::string &s) {
-    s.erase(s.begin(), std::find_if(s.begin(), s.end(),
-            std::not1(std::ptr_fun<int, int>(std::isspace))));
-    return s;
+     s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](int c) {return !std::isspace(c);}));
+     return s;
 }; // trim_left
 
 
@@ -35,9 +34,8 @@ static inline std::string& trim_left(std::string &s) {
  *  \param [in/out] s std::string to be trimmed
  */
 static inline std::string& trim_right(std::string &s) {
-    s.erase(std::find_if(s.rbegin(), s.rend(),
-            std::not1(std::ptr_fun<int, int>(std::isspace))).base(), s.end());
-    return s;
+     s.erase(std::find_if(s.rbegin(), s.rend(), [](int c) {return !std::isspace(c);}).base(), s.end());
+     return s;
 }; // trim_right
 
 
