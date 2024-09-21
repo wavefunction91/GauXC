@@ -57,13 +57,14 @@ __global__ void eval_uvars_lda_kernel( size_t           ntasks,
 }
 
 
-void eval_uvvars_lda( size_t ntasks, int32_t nbf_max, int32_t npts_max,
-  XCDeviceTask* device_tasks, device_queue queue ) {
-
+void eval_uvars_lda( size_t ntasks, int32_t npts_max,
+                   integrator_ks_scheme scheme,
+  XCDeviceTask* device_tasks,
+ device_queue queue ) {
   hipStream_t stream = queue.queue_as<util::hip_stream>();
 
   dim3 threads(hip::warp_size, hip::max_warps_per_thread_block, 1);
-  dim3 blocks( util::div_ceil( nbf_max , threads.x ),
+  dim3 blocks( util::div_ceil( npts_max , threads.x ),
                util::div_ceil( npts_max , threads.y ),
                ntasks );
 
