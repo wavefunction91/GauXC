@@ -94,9 +94,9 @@ __global__ void zmat_gga_vxc_kernel( size_t        ntasks,
   const auto nbf             = task.bfn_screening.nbe;
   const auto* vrho_device    = task.vrho;
   const auto* vgamma_device  = task.vgamma;
-  const auto* den_x_eval_device = task.ddenx;
-  const auto* den_y_eval_device = task.ddeny;
-  const auto* den_z_eval_device = task.ddenz;
+  const auto* den_x_eval_device = task.dden_sx;
+  const auto* den_y_eval_device = task.dden_sy;
+  const auto* den_z_eval_device = task.dden_sz;
 
   const auto* basis_eval_device = task.bf;
   const auto* dbasis_x_eval_device = task.dbfx;
@@ -156,9 +156,9 @@ __global__ void zmat_mgga_vxc_kernel( size_t        ntasks,
   const auto* vrho_device    = task.vrho;
   const auto* vgamma_device  = task.vgamma;
   const double* vlapl_device = need_lapl ? task.vlapl : nullptr;
-  const auto* den_x_eval_device = task.ddenx;
-  const auto* den_y_eval_device = task.ddeny;
-  const auto* den_z_eval_device = task.ddenz;
+  const auto* den_x_eval_device = task.dden_sx;
+  const auto* den_y_eval_device = task.dden_sy;
+  const auto* den_z_eval_device = task.dden_sz;
 
   const auto* basis_eval_device = task.bf;
   const auto* dbasis_x_eval_device = task.dbfx;

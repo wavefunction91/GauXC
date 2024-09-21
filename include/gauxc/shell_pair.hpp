@@ -10,6 +10,8 @@
 #include <gauxc/basisset.hpp>
 #include <gauxc/exceptions.hpp>
 
+#include <cstdint>
+
 namespace GauXC {
 namespace detail {
   struct cartesian_point {

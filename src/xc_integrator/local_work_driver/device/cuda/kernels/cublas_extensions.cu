@@ -181,5 +181,6 @@ void syr2k( device_blas_handle generic_handle,
 
 }
 
+
 }
 

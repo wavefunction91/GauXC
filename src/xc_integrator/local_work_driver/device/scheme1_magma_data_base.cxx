@@ -104,6 +104,7 @@ void AoSScheme1MAGMABase::Data::pack_and_send(
 
 }
 
+
 void AoSScheme1MAGMABase::Data::pack_and_send_xmat( 
   host_task_iterator task_begin, host_task_iterator task_end 
 ) {
@@ -115,7 +116,7 @@ void AoSScheme1MAGMABase::Data::pack_and_send_xmat(
                        ld_dmat_host( ntask ), ld_zmat_host( ntask ), 
                        ld_vmat_host( ntask ), ld_bf_host( ntask );
 
-  double* static_dmat = static_stack.dmat_device;
+  double* static_dmat = static_stack.dmat_s_device;
   const auto nbf = global_dims.nbf;
 
   // host_device_tasks should be populated by parent impl called at top

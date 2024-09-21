@@ -24,7 +24,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
              value_type* EXC, const IntegratorSettingsXC& settings ) {
 
 
-  if(Pz) GAUXC_GENERIC_EXCEPTION("UKS/GKS + EXC Only Device NYI");
   const auto& basis = this->load_balancer_->basis();
 
   // Check that P / VXC are sane
@@ -53,8 +52,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   // Compute local contributions to EXC/VXC and retrieve
   // data from device 
   this->timer_.time_op("XCIntegrator.LocalWork_EXC", [&](){
-    exc_vxc_local_work_( basis, Ps, ldps, nullptr, 0, EXC, 
-      &N_EL, tasks.begin(), tasks.end(), *device_data_ptr);
+    exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx,
+        // Passing nullptr for VXCs disables VXC entirely
+        nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0, EXC, &N_EL,
+       tasks.begin(), tasks.end(), *device_data_ptr);
   });
 
   GAUXC_MPI_CODE(

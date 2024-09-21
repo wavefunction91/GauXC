@@ -9,8 +9,6 @@ include(CMakeFindDependencyMacro)
 # Always Required Dependencies
 find_dependency( ExchCXX )
 find_dependency( IntegratorXX )
-find_dependency( OpenMP       )
-
 
 set( GAUXC_HAS_HOST       @GAUXC_HAS_HOST@      )
 set( GAUXC_HAS_CUDA       @GAUXC_HAS_CUDA@      )
@@ -28,6 +26,9 @@ set( GAUXC_BLAS_IS_LP64   @GAUXC_BLAS_IS_LP64@  )
 enable_language(C)
 enable_language(CXX) 
 
+if(GAUXC_HAS_OPENMP)
+  find_dependency( OpenMP )
+endif()
 
 if( GAUXC_HAS_HOST )
   if(GAUXC_BLAS_IS_LP64)

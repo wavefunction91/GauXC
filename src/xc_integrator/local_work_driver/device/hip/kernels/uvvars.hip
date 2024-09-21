@@ -96,9 +96,9 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
   const auto nbf             = task.bfn_screening.nbe;
 
   auto* den_eval_device   = task.den;
-  auto* den_x_eval_device = task.ddenx;
-  auto* den_y_eval_device = task.ddeny;
-  auto* den_z_eval_device = task.ddenz;
+  auto* den_x_eval_device = task.den_x;
+  auto* den_y_eval_device = task.den_y;
+  auto* den_z_eval_device = task.den_z;
 
   const auto* basis_eval_device = task.bf;
   const auto* dbasis_x_eval_device = task.dbfx;
