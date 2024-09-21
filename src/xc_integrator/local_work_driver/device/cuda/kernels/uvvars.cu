@@ -457,7 +457,7 @@ void eval_uvars_mgga( size_t ntasks, size_t npts_total, int32_t nbf_max,
   {
   dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block / 2, 1 );
   dim3 blocks( std::min(uint64_t(4), util::div_ceil( nbf_max, 4 )),
-               std::min(uint64_t(GGA_KERNEL_SM_BLOCK_Y), util::div_ceil( npts_max, GGA_KERNEL_SM_BLOCK_Y )),
+               std::min(uint64_t(MGGA_KERNEL_SM_BLOCK), util::div_ceil( npts_max, MGGA_KERNEL_SM_BLOCK )),
                ntasks );
   if(do_lapl)
     eval_uvars_mgga_rks_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
