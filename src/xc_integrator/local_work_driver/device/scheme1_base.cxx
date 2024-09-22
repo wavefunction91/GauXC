@@ -530,12 +530,8 @@ void AoSScheme1Base::eval_uvars_gga( XCDeviceData* _data, integrator_ks_scheme k
   
   // Evaluate U variable
   auto aos_stack     = data->aos_stack;
-#ifdef GAUXC_HAS_HIP
-  throw std::runtime_error("uvars_gga not supported with HIP");
-#else
   GauXC::eval_uvars_gga( ntasks, npts_max, ks_scheme,
     aos_stack.device_tasks, data->device_backend_->queue() );
-#endif
 
   
   data->device_backend_->check_error("uvvar gga" __FILE__ ": " + std::to_string(__LINE__));
@@ -566,12 +562,8 @@ void AoSScheme1Base::eval_uvars_mgga( XCDeviceData* _data, bool do_lapl ){
 
   // Evaluate U variables
   auto aos_stack     = data->aos_stack;
-#ifdef GAUXC_HAS_HIP
-  throw std::runtime_error("uvars_mgga not supported with HIP");
-#else
   GauXC::eval_uvars_mgga( ntasks, data->total_npts_task_batch, nbe_max, npts_max, do_lapl,
     aos_stack.device_tasks, data->device_backend_->queue() );
-#endif
 
   
   data->device_backend_->check_error("uvvar mgga" __FILE__ ": " + std::to_string(__LINE__));
@@ -637,12 +629,8 @@ void AoSScheme1Base::eval_vvar( XCDeviceData* _data, density_id den_select, bool
   
   // Evaluate V variable
   auto aos_stack     = data->aos_stack;
-#ifdef GAUXC_HAS_HIP
-  throw std::runtime_error("vvar not supported with HIP");
-#else
   GauXC::eval_vvar( ntasks, nbe_max, npts_max, do_grad, den_select,
     aos_stack.device_tasks, data->device_backend_->queue() );
-#endif
 
 }
 
