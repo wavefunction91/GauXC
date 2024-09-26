@@ -30,15 +30,6 @@ set( GAUXC_OBARA_SAIKA_HOST_SRC
      src/chebyshev_boys_computation.cxx
 )
 
-# This is required for compilation with NVHPC as it crashes with the O3 optimization flag
-if (DEFINED GAUXC_OBARA_SAIKA_COMPILE_OPTIMIZATION_OPTIONS)
-    foreach (flag "[\\/\\-]O3" "[\\/\\-]Ofast" "[\\/\\-]fast")
-        string(REGEX REPLACE ${flag} ${GAUXC_OBARA_SAIKA_COMPILE_OPTIMIZATION_OPTIONS} CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE}")
-    endforeach()
-    message("Setting Obara-Saika CMAKE_CXX_FLAGS_RELEASE to: ${CMAKE_CXX_FLAGS_RELEASE}")
-endif()
-
-
 target_sources( gauxc PRIVATE ${GAUXC_OBARA_SAIKA_HOST_SRC} )
 target_include_directories( gauxc PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
