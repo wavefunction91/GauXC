@@ -22,14 +22,15 @@ using namespace GauXC;
 
 void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   std::string reference_file, 
-  functional_type& func, 
+  std::shared_ptr<functional_type> func, 
   PruningScheme pruning_scheme,
   bool check_grad,
   bool check_integrate_den,
   bool check_k,
   std::string integrator_kernel = "Default",  
   std::string reduction_kernel  = "Default",
-  std::string lwd_kernel        = "Default") {
+  std::string lwd_kernel        = "Default",
+  std::shared_ptr<functional_type> epcfunc = nullptr) {
 
   // Read the reference file
   using matrix_type = Eigen::MatrixXd;
@@ -39,6 +40,11 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   double EXC_ref;
   std::vector<double> EXC_GRAD_ref;
   bool has_k = false, has_exc_grad = false, rks = true, uks = false, gks = false;
+  // For NEO-DFT Test:
+  bool neo = false;
+  BasisSet<double> protonic_basis;
+  matrix_type protonic_Ps, protonic_Pz, protonic_VXCs_ref, protonic_VXCz_ref;
+  double protonic_EXC_ref;
   {
     read_hdf5_record( mol,   reference_file, "/MOLECULE" );
     read_hdf5_record( basis, reference_file, "/BASIS"    );
@@ -68,9 +74,15 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
        gks=true;
     }
  
+    if (file.exist("/PROTONIC_DENSITY_SCALAR") and file.exist("/PROTONIC_DENSITY_Z")) 
+       neo=true;
+    
+    if(neo and !integrator_kernel.compare("ShellBatched")) return;
+ 
     auto dset = file.getDataSet(den);
     
     auto dims = dset.getDimensions();
+
     P        = matrix_type( dims[0], dims[1] );
     VXC_ref  = matrix_type( dims[0], dims[1] );
     if (not rks) {
@@ -123,9 +135,39 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
         dset = file.getDataSet("/K");
         dset.read( K_ref.data() );
     }
+
+    if (neo) {
+
+      read_hdf5_record( protonic_basis, reference_file, "/PROTONIC_BASIS"    );
+          
+      std::string prot_den_s="/PROTONIC_DENSITY_SCALAR";
+      std::string prot_den_z="/PROTONIC_DENSITY_Z";
+      std::string prot_vxc_s="/PROTONIC_VXC_SCALAR";
+      std::string prot_vxc_z="/PROTONIC_VXC_Z";
+
+      auto protonic_dset = file.getDataSet(prot_den_s);
+      auto protonic_dims = protonic_dset.getDimensions();
+
+      protonic_Ps        = matrix_type( protonic_dims[0], protonic_dims[1] );
+      protonic_Pz        = matrix_type( protonic_dims[0], protonic_dims[1] );
+      protonic_VXCs_ref  = matrix_type( protonic_dims[0], protonic_dims[1] );
+      protonic_VXCz_ref  = matrix_type( protonic_dims[0], protonic_dims[1] );
+
+      protonic_dset.read( protonic_Ps.data() );
+      protonic_dset = file.getDataSet(prot_vxc_s);
+      protonic_dset.read( protonic_VXCs_ref.data() );
+
+      protonic_dset = file.getDataSet(prot_den_z);
+      protonic_dset.read( protonic_Pz.data() );
+      protonic_dset = file.getDataSet(prot_vxc_z);
+      protonic_dset.read( protonic_VXCz_ref.data() );
+
+      protonic_dset = file.getDataSet("/PROTONIC_EXC");
+      protonic_dset.read( &protonic_EXC_ref );
+    }
   }
 
-  if( (uks or gks) and ex == ExecutionSpace::Device and func.is_mgga() ) return;
+  if( (uks or gks) and ex == ExecutionSpace::Device and func->is_mgga() ) return;
 
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
@@ -135,14 +177,21 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
   // Construct Load Balancer
   LoadBalancerFactory lb_factory(ExecutionSpace::Host, "Default");
-  auto lb = lb_factory.get_instance(rt, mol, mg, basis);
+  std::unique_ptr<LoadBalancer> lb;
+  if (neo) {
+    for( auto& sh : protonic_basis ) 
+      sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
+    lb = std::make_unique<LoadBalancer>( lb_factory.get_instance(rt, mol, mg, basis, protonic_basis) );
+  } else{
+    lb = std::make_unique<LoadBalancer>( lb_factory.get_instance(rt, mol, mg, basis) );
+  }
 
   // Construct Weights Module
   MolecularWeightsFactory mw_factory( ex, "Default", MolecularWeightsSettings{} );
   auto mw = mw_factory.get_instance();
 
   // Apply partition weights
-  mw.modify_weights(lb);
+  mw.modify_weights(*lb);
 
   // Construct XC Functional
   //auto Spin = uks ? ExchCXX::Spin::Polarized : ExchCXX::Spin::Unpolarized;
@@ -151,39 +200,75 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   // Construct XCIntegrator
   XCIntegratorFactory<matrix_type> integrator_factory( ex, "Replicated", 
     integrator_kernel, lwd_kernel, reduction_kernel );
-  auto integrator = integrator_factory.get_instance( func, lb );
+  std::unique_ptr<XCIntegrator<matrix_type>> integrator;
+  if(neo){
+    integrator = std::make_unique<XCIntegrator<matrix_type>>( integrator_factory.get_instance(*func, *epcfunc, *lb) );
+  }else{
+    integrator = std::make_unique<XCIntegrator<matrix_type>>( integrator_factory.get_instance(*func, *lb) );
+  }
 
   // Integrate Density
   if( check_integrate_den and rks) {
     auto N_EL_ref = std::accumulate( mol.begin(), mol.end(), 0ul,
       [](const auto& a, const auto &b) { return a + b.Z.get(); });
-    auto N_EL = integrator.integrate_den( P );
+    auto N_EL = integrator->integrate_den( P );
     // Factor of 2 b/c P is the alpha density for RKS
     CHECK( N_EL == Approx(N_EL_ref/2.0).epsilon(1e-6) );
   }
 
   // Integrate EXC/VXC
   if ( rks ) {
-    auto [ EXC, VXC ] = integrator.eval_exc_vxc( P );
+    double EXC, protonic_EXC;
+    matrix_type VXC, protonic_VXCs, protonic_VXCz;
+
+    if(neo) std::tie( EXC, protonic_EXC, VXC, protonic_VXCs, protonic_VXCz ) = integrator->neo_eval_exc_vxc( P, protonic_Ps, protonic_Pz );
+    else    std::tie( EXC, VXC ) = integrator->eval_exc_vxc( P );
 
     // Check EXC/VXC
     auto VXC_diff_nrm = ( VXC - VXC_ref ).norm();
     CHECK( EXC == Approx( EXC_ref ) );
     CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 ); 
+
+    if ( neo ) {
+      auto protonic_VXCs_diff_nrm = ( protonic_VXCs - protonic_VXCs_ref ).norm();
+      auto protonic_VXCz_diff_nrm = ( protonic_VXCz - protonic_VXCz_ref ).norm();
+      CHECK( protonic_EXC == Approx( protonic_EXC_ref ) );
+      CHECK( protonic_VXCs_diff_nrm / protonic_basis.nbf() < 1e-10 );
+      CHECK( protonic_VXCz_diff_nrm / protonic_basis.nbf() < 1e-10 );
+    }
+
     // Check if the integrator propagates state correctly
-    {
-      auto [ EXC1, VXC1 ] = integrator.eval_exc_vxc( P );
+    { 
+      double EXC1, protonic_EXC1;
+      matrix_type VXC1, protonic_VXCs1, protonic_VXCz1;
+
+      if(neo) std::tie( EXC1, protonic_EXC1, VXC1, protonic_VXCs1, protonic_VXCz1 ) = integrator->neo_eval_exc_vxc( P, protonic_Ps, protonic_Pz );
+      else    std::tie( EXC1, VXC1 ) = integrator->eval_exc_vxc( P );
+      
       CHECK( EXC1 == Approx( EXC_ref ) );
       auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
       CHECK( VXC1_diff_nrm / basis.nbf() < 1e-10 ); 
+
+      if ( neo ) {
+        auto protonic_VXCs1_diff_nrm = ( protonic_VXCs1 - protonic_VXCs_ref ).norm();
+        auto protonic_VXCz1_diff_nrm = ( protonic_VXCz1 - protonic_VXCz_ref ).norm();
+        CHECK( protonic_EXC1 == Approx( protonic_EXC_ref ) );
+        CHECK( protonic_VXCs1_diff_nrm / protonic_basis.nbf() < 1e-10 );
+        CHECK( protonic_VXCz1_diff_nrm / protonic_basis.nbf() < 1e-10 );
+      }
     }
 
     // Check EXC-only path
-    auto EXC2 = integrator.eval_exc( P );
+    if(neo) return; // NEO EXC-only NYI
+    auto EXC2 = integrator->eval_exc( P );
     CHECK(EXC2 == Approx(EXC));
 
   } else if (uks) {
-    auto [ EXC, VXC, VXCz ] = integrator.eval_exc_vxc( P, Pz );
+    double EXC, protonic_EXC;
+    matrix_type VXC, VXCz, protonic_VXCs, protonic_VXCz;
+
+    if(neo) std::tie( EXC, protonic_EXC, VXC, VXCz, protonic_VXCs, protonic_VXCz ) = integrator->neo_eval_exc_vxc( P, Pz, protonic_Ps, protonic_Pz );
+    else    std::tie( EXC, VXC, VXCz ) = integrator->eval_exc_vxc( P, Pz );
 
     // Check EXC/VXC
     auto VXC_diff_nrm = ( VXC - VXC_ref ).norm();
@@ -191,21 +276,44 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     CHECK( EXC == Approx( EXC_ref ) );
     CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 );
     CHECK( VXCz_diff_nrm / basis.nbf() < 1e-10 );
+    
+    if ( neo ) {
+      auto protonic_VXCs_diff_nrm = ( protonic_VXCs - protonic_VXCs_ref ).norm();
+      auto protonic_VXCz_diff_nrm = ( protonic_VXCz - protonic_VXCz_ref ).norm();
+      CHECK( protonic_EXC == Approx( protonic_EXC_ref ) );
+      CHECK( protonic_VXCs_diff_nrm / protonic_basis.nbf() < 1e-10 );
+      CHECK( protonic_VXCz_diff_nrm / protonic_basis.nbf() < 1e-10 );
+    }
+
     // Check if the integrator propagates state correctly
-    {
-      auto [ EXC1, VXC1, VXCz1 ] = integrator.eval_exc_vxc( P, Pz );
-      CHECK( EXC1 == Approx( EXC_ref ) );
+    { 
+      double EXC1, protonic_EXC1;
+      matrix_type VXC1, VXCz1, protonic_VXCs1, protonic_VXCz1;
+
+      if(neo) std::tie( EXC1, protonic_EXC1, VXC1, VXCz1, protonic_VXCs1, protonic_VXCz1 ) = integrator->neo_eval_exc_vxc( P, Pz, protonic_Ps, protonic_Pz );
+      else    std::tie( EXC1, VXC1, VXCz1 ) = integrator->eval_exc_vxc( P, Pz );
+      
       auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
       auto VXCz1_diff_nrm = ( VXCz1 - VXCz_ref ).norm();
+      CHECK( EXC1 == Approx( EXC_ref ) );
       CHECK( VXC1_diff_nrm / basis.nbf() < 1e-10 );
       CHECK( VXCz1_diff_nrm / basis.nbf() < 1e-10 );
+
+      if ( neo ) {
+        auto protonic_VXCs1_diff_nrm = ( protonic_VXCs1 - protonic_VXCs_ref ).norm();
+        auto protonic_VXCz1_diff_nrm = ( protonic_VXCz1 - protonic_VXCz_ref ).norm();
+        CHECK( protonic_EXC1 == Approx( protonic_EXC_ref ) );
+        CHECK( protonic_VXCs1_diff_nrm / protonic_basis.nbf() < 1e-10 );
+        CHECK( protonic_VXCz1_diff_nrm / protonic_basis.nbf() < 1e-10 );
+      }
     }
 
     // Check EXC-only path
-    auto EXC2 = integrator.eval_exc( P, Pz );
+    if(neo) return; // NEO EXC-only NYI
+    auto EXC2 = integrator->eval_exc( P, Pz );
     CHECK(EXC2 == Approx(EXC));
   } else if (gks) {
-    auto [ EXC, VXC, VXCz, VXCy, VXCx ] = integrator.eval_exc_vxc( P, Pz, Py, Px );
+    auto [ EXC, VXC, VXCz, VXCy, VXCx ] = integrator->eval_exc_vxc( P, Pz, Py, Px );
 
     // Check EXC/VXC
     auto VXC_diff_nrm = ( VXC - VXC_ref ).norm();
@@ -220,7 +328,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     CHECK( VXCx_diff_nrm / basis.nbf() < 1e-10 );
     // Check if the integrator propagates state correctly
     {
-      auto [ EXC1, VXC1, VXCz1, VXCy1, VXCx1] = integrator.eval_exc_vxc( P, Pz, Py, Px );
+      auto [ EXC1, VXC1, VXCz1, VXCy1, VXCx1] = integrator->eval_exc_vxc( P, Pz, Py, Px );
       CHECK( EXC1 == Approx( EXC_ref ) );
       auto VXC1_diff_nrm = ( VXC1 - VXC_ref ).norm();
       auto VXCz1_diff_nrm = ( VXCz1 - VXCz_ref ).norm();
@@ -233,7 +341,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     }
 
     // Check EXC-only path
-    auto EXC2 = integrator.eval_exc( P, Pz, Py, Px );
+    auto EXC2 = integrator->eval_exc( P, Pz, Py, Px );
     CHECK(EXC2 == Approx(EXC));
   }
 
@@ -241,7 +349,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
   // Check EXC Grad
   if( check_grad and has_exc_grad and rks) {
-    auto EXC_GRAD = integrator.eval_exc_grad( P );
+    auto EXC_GRAD = integrator->eval_exc_grad( P );
     using map_type = Eigen::Map<Eigen::MatrixXd>;
     map_type EXC_GRAD_ref_map( EXC_GRAD_ref.data(), mol.size(), 3 );
     map_type EXC_GRAD_map( EXC_GRAD.data(), mol.size(), 3 );
@@ -256,14 +364,15 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       std::cout << "Skiping device sn-K + L > 2" << std::endl;
       return;
     }
-    auto K = integrator.eval_exx( P );
+    auto K = integrator->eval_exx( P );
     CHECK((K - K.transpose()).norm() < std::numeric_limits<double>::epsilon()); // Symmetric
     CHECK( (K - K_ref).norm() / basis.nbf() < 1e-7 );
   }
 
 }
 
-void test_integrator(std::string reference_file, functional_type& func, PruningScheme pruning_scheme) {
+void test_integrator(std::string reference_file, std::shared_ptr<functional_type> func, PruningScheme pruning_scheme,
+  std::shared_ptr<functional_type> epcfunc = nullptr) {
 
 #ifdef GAUXC_HAS_DEVICE
   auto rt = DeviceRuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.9);
@@ -275,11 +384,11 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
     SECTION( "Host" ) {
       SECTION("Reference") {
         test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
-          pruning_scheme, true, true, true );
+          pruning_scheme, true, true, true, "Default", "Default", "Default", epcfunc);
       }
       SECTION("ShellBatched") {
         test_xc_integrator( ExecutionSpace::Host, rt, reference_file, func,
-          pruning_scheme, false, false, false, "ShellBatched" );
+          pruning_scheme, false, false, false, "ShellBatched", "Default", "Default", epcfunc);
       }
     }
 #endif
@@ -300,7 +409,7 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
 
     #ifdef GAUXC_HAS_MAGMA
     SECTION( "Incore - MPI Reduction - MAGMA" ) {
-      if(not func.is_mgga() and not func.is_polarized()) {
+      if(not func->is_mgga() and not func->is_polarized()) {
         test_xc_integrator( ExecutionSpace::Device, rt,
           reference_file, func, pruning_scheme,
           false, true, check_k, "Default", "Default", 
@@ -311,7 +420,7 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
 
     #ifdef GAUXC_HAS_CUTLASS
     SECTION( "Incore - MPI Reduction - CUTLASS" ) {
-      if(not func.is_mgga() and not func.is_polarized()) {
+      if(not func->is_mgga() and not func->is_polarized()) {
         test_xc_integrator( ExecutionSpace::Device, rt, 
           reference_file, func, pruning_scheme,
           false, true, false, "Default", "Default", 
@@ -339,8 +448,8 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
 
 }
 
-functional_type make_functional(ExchCXX::Functional func_key, ExchCXX::Spin spin) {
-  return functional_type(ExchCXX::Backend::builtin, func_key, spin);
+std::shared_ptr<functional_type> make_functional(ExchCXX::Functional func_key, ExchCXX::Spin spin) {
+  return std::make_shared<functional_type>(ExchCXX::Backend::builtin, func_key, spin);
 }
 
 
@@ -353,6 +462,8 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
   auto blyp    = ExchCXX::Functional::BLYP;
   auto scan    = ExchCXX::Functional::SCAN;
   auto r2scanl = ExchCXX::Functional::R2SCANL;
+  auto epc17_2 = ExchCXX::Functional::EPC17_2;
+  auto epc18_2 = ExchCXX::Functional::EPC18_2;
 
   // LDA Test
   SECTION( "Benzene / SVWN5 / cc-pVDZ" ) {
@@ -447,4 +558,35 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     test_integrator(GAUXC_REF_DATA_PATH "/h2o2_def2-qzvp.hdf5", 
         func, PruningScheme::Unpruned );
   }
-}
+
+  // EPC Tests
+  // epc-17-2 Test (small basis)
+  SECTION( "COH2 / BLYP,EPC-17-2 / sto-3g, prot-sp" ) {
+    auto func = make_functional(blyp, unpol);
+    auto epcfunc = make_functional(epc17_2, pol);
+    test_integrator(GAUXC_REF_DATA_PATH "/coh2_blyp_epc17-2_sto-3g_protsp_ssf.hdf5", 
+        func, PruningScheme::Unpruned, epcfunc);
+  }
+  // epc-17-2 Test (larger basis)
+  SECTION( "COH2 / BLYP,EPC-17-2 / cc-pVDZ, prot-PB4-D" ) {
+    auto func = make_functional(blyp, unpol);
+    auto epcfunc = make_functional(epc17_2, pol);
+    test_integrator(GAUXC_REF_DATA_PATH "/coh2_blyp_epc17-2_cc-pvdz_pb4d_ssf.hdf5", 
+        func, PruningScheme::Unpruned, epcfunc);
+  }
+  // epc-18-2 Test
+  SECTION( "COH2 / BLYP,EPC-18-2 / cc-pVDZ, prot-PB4-D" ) {
+    auto func = make_functional(blyp, unpol);
+    auto epcfunc = make_functional(epc18_2, pol);
+    test_integrator(GAUXC_REF_DATA_PATH "/coh2_blyp_epc18-2_cc-pvdz_pb4d_ssf.hdf5", 
+        func, PruningScheme::Unpruned, epcfunc);
+   }
+  // UKS NEO epc-17-2 Test 
+  SECTION( "OH2+ / BLYP,EPC-17-2 / cc-pVDZ, prot-PB4-D" ) {
+    auto func = make_functional(blyp, pol);
+    auto epcfunc = make_functional(epc17_2, pol);
+    test_integrator(GAUXC_REF_DATA_PATH "/coh2_blyp_epc17-2_cc-pvdz_pb4d_ssf_uks.hdf5", 
+        func, PruningScheme::Unpruned, epcfunc);
+  }
+} 
+  

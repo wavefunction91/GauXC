@@ -216,6 +216,38 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
 template <typename ValueType>
 void IncoreReplicatedXCDeviceIntegrator<ValueType>::
+  neo_eval_exc_vxc_( int64_t elec_m, int64_t elec_n, int64_t prot_m, int64_t prot_n, 
+                     const value_type* elec_Ps, int64_t elec_ldps,
+                     const value_type* prot_Ps, int64_t prot_ldps,
+                     const value_type* prot_Pz, int64_t prot_ldpz,
+                     value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                     value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                     value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                     value_type* elec_EXC,  value_type* prot_EXC, const IntegratorSettingsXC& settings ) {
+  GauXC::util::unused(elec_m,elec_n,prot_m,prot_n,elec_Ps,elec_ldps,prot_Ps,prot_ldps,prot_Pz,prot_ldpz,
+    elec_VXCs,elec_ldvxcs,prot_VXCs,prot_ldvxcs,prot_VXCz,prot_ldvxcz,elec_EXC,prot_EXC,settings);
+  GAUXC_GENERIC_EXCEPTION("NEO-RKS NOT YET IMPLEMENTED FOR DEVICE");
+}
+
+template <typename ValueType>
+void IncoreReplicatedXCDeviceIntegrator<ValueType>::
+  neo_eval_exc_vxc_( int64_t elec_m, int64_t elec_n, int64_t prot_m, int64_t prot_n, 
+                     const value_type* elec_Ps, int64_t elec_ldps,
+                     const value_type* elec_Pz, int64_t elec_ldpz,
+                     const value_type* prot_Ps, int64_t prot_ldps,
+                     const value_type* prot_Pz, int64_t prot_ldpz,
+                     value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                     value_type* elec_VXCz,     int64_t elec_ldvxcz,
+                     value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                     value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                     value_type* elec_EXC,  value_type* prot_EXC, const IntegratorSettingsXC& settings ) {
+  GauXC::util::unused(elec_m,elec_n,prot_m,prot_n,elec_Ps,elec_ldps,elec_Pz,elec_ldpz,prot_Ps,prot_ldps,prot_Pz,prot_ldpz,
+    elec_VXCs,elec_ldvxcs,elec_VXCz,elec_ldvxcz,prot_VXCs,prot_ldvxcs,prot_VXCz,prot_ldvxcz,elec_EXC,prot_EXC,settings);
+  GAUXC_GENERIC_EXCEPTION("NEO-UKS NOT YET IMPLEMENTED FOR DEVICE");
+}
+
+template <typename ValueType>
+void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   exc_vxc_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
                             const value_type* Pz, int64_t ldpz,
                             const value_type* Py, int64_t ldpy,
