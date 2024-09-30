@@ -122,7 +122,12 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
     int cont = (iCenter < natoms);
 
     // We will continue iterating until all of the threads have cont set to 0
+
+#ifdef __HIP_PLATFORM_NVIDIA__
+    while (__any_sync(__activemask(), cont)) {
+#else
     while (__any(cont)) {
+#endif
       if (cont) {
         double2 rj[weight_unroll/2];
         double2 rab_val[weight_unroll/2];
