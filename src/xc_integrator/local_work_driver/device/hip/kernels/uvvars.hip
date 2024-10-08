@@ -14,7 +14,7 @@
 namespace GauXC {
 
 #define VVAR_KERNEL_SM_BLOCK 16
-#define GGA_KERNEL_SM_WARPS 16
+#define GGA_KERNEL_SM_WARPS 8
 #define MGGA_KERNEL_SM_BLOCK 16
 
 __global__ void eval_uvars_lda_rks_kernel( size_t ntasks, XCDeviceTask* tasks_device) {
