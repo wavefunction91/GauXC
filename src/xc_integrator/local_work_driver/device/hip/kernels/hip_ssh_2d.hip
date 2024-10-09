@@ -138,12 +138,12 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
 
         #pragma unroll
         for (int k = 0; k < weight_unroll/2; k++) {
-          double2* addr = (double2*)(local_dist_scratch + jCenter) + k;
-          rj[k].x = addr->x;
-          rj[k].y = addr->y;
-          double2* addr2 = (double2*)(local_rab + jCenter) + k;
-          rab_val[k].x = addr2->x;
-          rab_val[k].y = addr2->y;
+          double* addr = (double*)((double2*)(local_dist_scratch + jCenter) + k);
+          rj[k].x = addr[0];
+          rj[k].y = addr[1];
+          double* addr2 = (double*)((double2*)(local_rab + jCenter) + k);
+          rab_val[k].x = addr2[0];
+          rab_val[k].y = addr2[1];
           // These caused a memory access violation when lddist is not a
           // multiple of 2 as then there can be an unaligned access
           // rj[k]      = *((double2*)(local_dist_scratch + jCenter) + k);
