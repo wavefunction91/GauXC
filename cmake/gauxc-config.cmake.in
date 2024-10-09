@@ -51,6 +51,20 @@ if( GAUXC_HAS_CUDA )
   endif()
 endif()
 
+if( GAUXC_HAS_HIP )
+  enable_language( HIP )
+  set (CMAKE_HIP_ARCHITECTURES @CMAKE_HIP_ARCHITECTURES@)
+  set (ROCM_PATH @ROCM_PATH@)
+
+  list (PREPEND CMAKE_PREFIX_PATH ${ROCM_PATH} ${ROCM_PATH}/hip ${ROCM_PATH}/hipblas)
+  set(GPU_TARGETS "${CMAKE_HIP_ARCHITECTURES}" CACHE STRING "AMD GPU targets to compile for")
+
+  find_package( hip REQUIRED )
+  find_package( hipblas REQUIRED )
+
+  list(REMOVE_AT CMAKE_PREFIX_PATH 0 1 2)
+endif
+
 if( GAUXC_HAS_MPI )
   find_dependency( MPI )
 endif()
