@@ -614,17 +614,23 @@ __global__ void eval_vvar_kern( size_t        ntasks,
 
   const auto* den_basis_prod_device = task.zmat;
 
-  const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
-  const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
-
   register double den_reg = 0.;
 
-  if( tid_x < nbf and tid_y < npts ) {
+  int start_y = blockIdx.y * blockDim.y + threadIdx.y;
 
-    const double* bf_col   = basis_eval_device     + tid_x*npts;
-    const double* db_col   = den_basis_prod_device + tid_x*npts;
+  for (int tid_x = blockIdx.x * blockDim.x + threadIdx.x; 
+       tid_x < nbf;
+       tid_x += blockDim.x * gridDim.x ) {
+    
+    for (int tid_y = start_y; 
+         tid_y < npts;
+         tid_y += blockDim.y * gridDim.y ) {
 
-    den_reg = bf_col[ tid_y ]   * db_col[ tid_y ];
+        const double* bf_col   = basis_eval_device     + tid_x*npts;
+        const double* db_col   = den_basis_prod_device + tid_x*npts;
+
+        den_reg += bf_col[ tid_y ]   * db_col[ tid_y ];
+    }
 
   }
 
@@ -634,8 +640,8 @@ __global__ void eval_vvar_kern( size_t        ntasks,
   den_reg = cuda::warp_reduce_sum<warp_size>( den_reg );
 
 
-  if( threadIdx.x == 0 and tid_y < npts ) {
-    atomicAdd( den_eval_device   + tid_y, den_reg );
+  if( threadIdx.x == 0 and start_y < npts ) {
+    atomicAdd( den_eval_device   + start_y, den_reg );
   }
   
 
