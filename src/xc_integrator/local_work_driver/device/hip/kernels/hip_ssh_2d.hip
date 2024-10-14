@@ -99,7 +99,6 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
     if( parent_weight < eps_d ) {
       if (threadIdx.x == 0)
         weights[ipt] = 0.;
-      __syncwarp();
       continue;
     }
 
@@ -107,7 +106,6 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
     if (threadIdx.x == 0) {
       jCounter[0] = 0;
     }
-    __syncwarp();
 
     // Each thread will process an iCenter. Atomic operations are used to assign
     // an iCenter value to each thread.
@@ -185,7 +183,6 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
       jCenter = (jCenter < ldRAB) ? jCenter : 0;
     }
 
-    __syncwarp();
     // All of the threads then sum their contributions. Only thread 0 needs to add the parent
     // contribution.
     sum = hip::warp_reduce_sum<hip::warp_size>(sum);
@@ -193,7 +190,6 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
       sum += parent_weight;
       weights[ipt] *= parent_weight / sum;
     }
-    __syncwarp();
 #endif
   }
 
