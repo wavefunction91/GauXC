@@ -128,7 +128,8 @@ void HIPBackend::check_error_(std::string msg) {
   GAUXC_HIP_ERROR("HIP Failed ["+msg+"]", stat );
 }
 
-std::unique_ptr<DeviceBackend> make_device_backend() {
+std::unique_ptr<DeviceBackend> make_device_backend(GAUXC_MPI_CODE(MPI_Comm c))
+{
   return std::make_unique<HIPBackend>();
 }
 }
