@@ -1406,7 +1406,7 @@ Molecule make_ubiquitin() {
 
 BasisSet<double> make_631Gd( const Molecule& mol, SphericalType sph ) {
 
-  std::string basis_path = GAUXC_REF_DATA_PATH  "/../basis/old/6-31g*.g94";
+  std::string basis_path = GAUXC_REF_DATA_PATH  "/../basis/old/6-31g-star.g94";
   return parse_basis( mol, basis_path, sph );
 
 }
