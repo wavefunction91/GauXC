@@ -64,7 +64,6 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
 
     auto* __restrict__ basis_eval = task->bf + shoff;
 
-
     // Loop over points in task
     // Assign each point to separate thread within the warp
     #pragma unroll 1
@@ -93,17 +92,24 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       }
 
 
-      
+      // Common Subexpressions
+      const auto x0 = radial_eval*sqrt_3*y; 
+      const auto x1 = 0.5*radial_eval; 
+      const auto x2 = x*x; 
+      const auto x3 = y*y; 
+
 
       // Evaluate basis function
-      basis_eval[ipt + 0*npts] = sqrt_3*radial_eval*x*y;
-      basis_eval[ipt + 1*npts] = sqrt_3*radial_eval*y*z;
-      basis_eval[ipt + 2*npts] = radial_eval*(-x*x - y*y + 2*z*z)/2;
-      basis_eval[ipt + 3*npts] = sqrt_3*radial_eval*x*z;
-      basis_eval[ipt + 4*npts] = sqrt_3*radial_eval*(x*x - y*y)/2;
+      basis_eval[ipt + 0*npts] = x*x0;
+      basis_eval[ipt + 1*npts] = x0*z;
+      basis_eval[ipt + 2*npts] = -x1*(x2 + x3 - 2.0*z*z);
+      basis_eval[ipt + 3*npts] = radial_eval*sqrt_3*x*z;
+      basis_eval[ipt + 4*npts] = sqrt_3*x1*(x2 - x3);
 
 
     
+
+
 
 
 
@@ -120,16 +126,16 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       double ang_eval_3;
 
 
-      ang_eval_0 = sqrt_3*radial_eval*x*y;
-      ang_eval_1 = sqrt_3*radial_eval*y*z;
-      ang_eval_2 = radial_eval*(-x*x - y*y + 2*z*z)/2;
-      ang_eval_3 = sqrt_3*radial_eval*x*z;
+      ang_eval_0 = x*x0;
+      ang_eval_1 = x0*z;
+      ang_eval_2 = -x1*(x2 + x3 - 2.0*z*z);
+      ang_eval_3 = radial_eval*sqrt_3*x*z;
       basis_eval[ipt + 0*npts] = ang_eval_0;
       basis_eval[ipt + 1*npts] = ang_eval_1;
       basis_eval[ipt + 2*npts] = ang_eval_2;
       basis_eval[ipt + 3*npts] = ang_eval_3;
 
-      ang_eval_0 = sqrt_3*radial_eval*(x*x - y*y)/2;
+      ang_eval_0 = sqrt_3*x1*(x2 - x3);
       basis_eval[ipt + 4*npts] = ang_eval_0;
 
 

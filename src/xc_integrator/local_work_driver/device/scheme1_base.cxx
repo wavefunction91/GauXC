@@ -387,7 +387,7 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
     data->device_backend_->queue() );
 #endif
   
-  data->device_backend_->check_error("collocation grad" __FILE__ ": " + std::to_string(__LINE__));
+  data->device_backend_->check_error("collocation grad " __FILE__ ": " + std::to_string(__LINE__));
 }
 
 void AoSScheme1Base::eval_collocation_hessian( XCDeviceData* _data ) {
@@ -428,6 +428,26 @@ void AoSScheme1Base::eval_collocation_laplacian( XCDeviceData* _data ) {
 #endif
   
   data->device_backend_->check_error("collocation lapl" __FILE__ ": " + std::to_string(__LINE__));
+}
+
+void AoSScheme1Base::eval_collocation_lapgrad( XCDeviceData* _data ) {
+#ifdef GAUXC_HAS_HIP
+  GAUXC_GENERIC_EXCEPTION("Laplacian Gradient NYI for HIP Backends");
+#else
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto aos_stack     = data->aos_stack;
+
+  auto max_l = data->l_batched_shell_to_task.size() - 1;
+  eval_collocation_shell_to_task_lapgrad( max_l, 
+    data->l_batched_shell_to_task.data(), aos_stack.device_tasks,
+    data->device_backend_->queue() );
+#endif
+  
+  data->device_backend_->check_error("collocation lap grad " __FILE__ ": " + std::to_string(__LINE__));
 }
 
 
@@ -1051,6 +1071,24 @@ void AoSScheme1Base::inc_exc_grad_gga( XCDeviceData* _data ) {
 
   const auto nshell = data->global_dims.nshells;
   increment_exc_grad_gga( nshell, 
+    data->shell_to_task_stack.shell_to_task_device, 
+    data->aos_stack.device_tasks,
+    data->static_stack.exc_grad_device,
+    data->device_backend_->queue() ); 
+#endif
+}
+
+void AoSScheme1Base::inc_exc_grad_mgga( XCDeviceData* _data, bool need_lapl ) {
+#ifdef GAUXC_HAS_HIP
+  GAUXC_GENERIC_EXCEPTION("MGGA Grad NYI for HIP Backends");
+#else
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  const auto nshell = data->global_dims.nshells;
+  increment_exc_grad_mgga( nshell, need_lapl,
     data->shell_to_task_stack.shell_to_task_device, 
     data->aos_stack.device_tasks,
     data->static_stack.exc_grad_device,

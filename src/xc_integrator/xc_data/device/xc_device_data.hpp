@@ -160,6 +160,7 @@ struct required_term_storage {
   bool task_bfn_grad      = false;
   bool task_bfn_hess      = false;
   bool task_bfn_lapl      = false;
+  bool task_bfn_lapgrad   = false;
   bool task_zmat          = false;
   bool task_xmat          = false;
   bool task_xmat_grad     = false;
@@ -180,6 +181,9 @@ struct required_term_storage {
   }
   inline size_t task_bfn_lapl_size(size_t nbe, size_t npts) {
     return PRDVL(task_bfn_lapl, nbe * npts);
+  }
+  inline size_t task_bfn_lapgrad_size(size_t nbe, size_t npts) {
+    return PRDVL(task_bfn_lapgrad, 3 * nbe * npts);
   }
   inline size_t task_zmat_size(size_t nbe, size_t npts) {
     return PRDVL(task_zmat, nbe * npts);
@@ -334,8 +338,9 @@ struct required_term_storage {
 
       task_bfn          = true;
       task_bfn_grad     = is_gga or  is_mgga or is_grad;
-      task_bfn_hess     = is_gga and is_grad;
+      task_bfn_hess     = (is_gga or is_mgga) and is_grad;
       task_bfn_lapl     = need_lapl;
+      task_bfn_lapgrad  = need_lapl and is_grad;
       task_zmat         = true;
       task_xmat         = true;
       task_xmat_grad    = is_mgga or (is_gga and is_grad);

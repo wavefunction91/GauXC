@@ -18,6 +18,7 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   void eval_collocation_gradient( XCDeviceData* ) override final;
   void eval_collocation_hessian( XCDeviceData* ) override final;
   void eval_collocation_laplacian( XCDeviceData* ) override final;
+  void eval_collocation_lapgrad( XCDeviceData* ) override final;
 
   void eval_uvars_lda( XCDeviceData*, integrator_ks_scheme ) override final;
   void eval_uvars_gga( XCDeviceData*, integrator_ks_scheme ) override final;
@@ -36,6 +37,7 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   void inc_nel( XCDeviceData* ) override final;
   void inc_exc_grad_lda( XCDeviceData* ) override final;
   void inc_exc_grad_gga( XCDeviceData* ) override final;
+  void inc_exc_grad_mgga( XCDeviceData*, bool ) override final;
   void symmetrize_vxc( XCDeviceData* , density_id) override final;
   void symmetrize_exx_k( XCDeviceData* ) override final;
   //void eval_exx_gmat( XCDeviceData* ) override final;

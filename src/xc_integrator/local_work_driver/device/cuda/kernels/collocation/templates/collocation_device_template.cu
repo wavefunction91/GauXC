@@ -348,7 +348,7 @@ template <typename... Args>
 void dispatch_shell_to_task_collocation_gradient( cudaStream_t stream, int32_t l, 
   bool pure, uint32_t ntask_average, uint32_t nshells, Args&&... args ) {
 
-  dim3 threads = max_threads_shell_to_task_collocation(l,pure);
+  dim3 threads = max_threads_shell_to_task_collocation_gradient(l,pure);
   int nwarp_per_block = threads.x / cuda::warp_size;
   int n_task_blocks = util::div_ceil( ntask_average, nwarp_per_block );
   dim3 block(n_task_blocks, 1, nshells);
@@ -425,7 +425,7 @@ template <typename... Args>
 void dispatch_shell_to_task_collocation_hessian( cudaStream_t stream, int32_t l, 
   bool pure, uint32_t ntask_average, uint32_t nshells, Args&&... args ) {
 
-  dim3 threads = max_threads_shell_to_task_collocation(l,pure);
+  dim3 threads = max_threads_shell_to_task_collocation_hessian(l,pure);
   int nwarp_per_block = threads.x / cuda::warp_size;
   int n_task_blocks = util::div_ceil( ntask_average, nwarp_per_block );
   dim3 block(n_task_blocks, 1, nshells);
@@ -506,7 +506,7 @@ template <typename... Args>
 void dispatch_shell_to_task_collocation_laplacian( cudaStream_t stream, int32_t l,
   bool pure, uint32_t ntask_average, uint32_t nshells, Args&&... args ) {
 
-  dim3 threads = max_threads_shell_to_task_collocation(l,pure);
+  dim3 threads = max_threads_shell_to_task_collocation_laplacian(l,pure);
   int nwarp_per_block = threads.x / cuda::warp_size;
   int n_task_blocks = util::div_ceil( ntask_average, nwarp_per_block );
   dim3 block(n_task_blocks, 1, nshells);
@@ -553,6 +553,89 @@ void eval_collocation_shell_to_task_laplacian(
     auto nshells = l_batched_shell_to_task[l].nshells_in_batch;
     auto ntask_average = std::max(1ul, l_batched_shell_to_task[l].ntask_average);
     dispatch_shell_to_task_collocation_laplacian( stream, l, pure,
+      ntask_average, nshells, shell_to_task_device, device_tasks );
+    auto stat = cudaGetLastError();
+    GAUXC_CUDA_ERROR("LAP", stat);
+  }
+
+
+}
+
+uint32_t max_threads_shell_to_task_collocation_lapgrad( int32_t l, bool pure ) {
+  if( pure ) {
+    switch(l) {
+      case 0: return util::cuda_kernel_max_threads_per_block( collocation_device_shell_to_task_kernel_cartesian_lapgrad_0 );\
+      $for( L in range(1, L_max + 1) )
+      case $(L): return util::cuda_kernel_max_threads_per_block( collocation_device_shell_to_task_kernel_spherical_lapgrad_$(L) );
+      $endfor
+      default: GAUXC_GENERIC_EXCEPTION("CUDA L_MAX = $(L_max)");
+    }
+  } else {
+    switch(l) {\
+      $for( L in range(L_max + 1) )
+      case $(L): return util::cuda_kernel_max_threads_per_block( collocation_device_shell_to_task_kernel_cartesian_lapgrad_$(L) );\
+      $endfor
+      default: GAUXC_GENERIC_EXCEPTION("CUDA L_MAX = $(L_max)");
+    }
+  }
+  return 0;
+}
+
+
+
+
+
+template <typename... Args>
+void dispatch_shell_to_task_collocation_lapgrad( cudaStream_t stream, int32_t l,
+  bool pure, uint32_t ntask_average, uint32_t nshells, Args&&... args ) {
+
+  dim3 threads = max_threads_shell_to_task_collocation_lapgrad(l,pure);
+  int nwarp_per_block = threads.x / cuda::warp_size;
+  int n_task_blocks = util::div_ceil( ntask_average, nwarp_per_block );
+  dim3 block(n_task_blocks, 1, nshells);
+
+  if( pure ) {
+    switch(l) {
+      case 0:
+        collocation_device_shell_to_task_kernel_cartesian_lapgrad_0<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
+        break;
+      $for( L in range(1, L_max + 1) )
+      case $(L):
+        collocation_device_shell_to_task_kernel_spherical_lapgrad_$(L)<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
+        break;\
+      $endfor
+      default: GAUXC_GENERIC_EXCEPTION("CUDA L_MAX = $(L_max)");
+    }
+  } else {
+    switch(l) {\
+      $for( L in range(0, L_max + 1) )
+      case $(L):
+        collocation_device_shell_to_task_kernel_cartesian_lapgrad_$(L)<<<block,threads,0,stream>>>( nshells, std::forward<Args>(args)... );
+        break;\
+      $endfor
+      default: GAUXC_GENERIC_EXCEPTION("CUDA L_MAX = $(L_max)");
+    }
+  }
+
+}
+
+
+
+void eval_collocation_shell_to_task_lapgrad(
+  uint32_t                    max_l,
+  AngularMomentumShellToTaskBatch* l_batched_shell_to_task,
+  XCDeviceTask*               device_tasks,
+  device_queue           queue
+) {
+
+  cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
+
+  for( auto l = 0u; l <= max_l; ++l ) {
+    auto pure = l_batched_shell_to_task[l].pure;
+    auto shell_to_task_device = l_batched_shell_to_task[l].shell_to_task_device;
+    auto nshells = l_batched_shell_to_task[l].nshells_in_batch;
+    auto ntask_average = std::max(1ul, l_batched_shell_to_task[l].ntask_average);
+    dispatch_shell_to_task_collocation_lapgrad( stream, l, pure,
       ntask_average, nshells, shell_to_task_device, device_tasks );
     auto stat = cudaGetLastError();
     GAUXC_CUDA_ERROR("LAP", stat);

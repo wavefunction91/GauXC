@@ -64,7 +64,6 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
 
     auto* __restrict__ basis_eval = task->bf + shoff;
 
-
     // Loop over points in task
     // Assign each point to separate thread within the warp
     #pragma unroll 1
@@ -93,21 +92,42 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       }
 
 
-      
+      // Common Subexpressions
+      const auto x0 = 0.5*radial_eval*x*y; 
+      const auto x1 = x*x; 
+      const auto x2 = y*y; 
+      const auto x3 = -x2; 
+      const auto x4 = 0.25*radial_eval; 
+      const auto x5 = x4*z; 
+      const auto x6 = x5*y; 
+      const auto x7 = 3.0*x1; 
+      const auto x8 = z*z; 
+      const auto x9 = 3.0*x2; 
+      const auto x10 = -x7 + 4.0*x8 - x9; 
+      const auto x11 = 0.125*radial_eval; 
+      const auto x12 = x*x*x*x; 
+      const auto x13 = y*y*y*y; 
+      const auto x14 = 6.0*x1*x2; 
+      const auto x15 = x1*x8; 
+      const auto x16 = x2*x8; 
+      const auto x17 = x*x5; 
+
 
       // Evaluate basis function
-      basis_eval[ipt + 0*npts] = sqrt_35*radial_eval*x*y*(x*x - y*y)/2;
-      basis_eval[ipt + 1*npts] = sqrt_70*radial_eval*y*z*(3*x*x - y*y)/4;
-      basis_eval[ipt + 2*npts] = sqrt_5*radial_eval*x*y*(-x*x - y*y + 6*z*z)/2;
-      basis_eval[ipt + 3*npts] = sqrt_10*radial_eval*y*z*(-3*x*x - 3*y*y + 4*z*z)/4;
-      basis_eval[ipt + 4*npts] = radial_eval*(3*x*x*x*x + 6*x*x*y*y - 24*x*x*z*z + 3*y*y*y*y - 24*y*y*z*z + 8*z*z*z*z)/8;
-      basis_eval[ipt + 5*npts] = sqrt_10*radial_eval*x*z*(-3*x*x - 3*y*y + 4*z*z)/4;
-      basis_eval[ipt + 6*npts] = sqrt_5*radial_eval*(-x*x*x*x + 6*x*x*z*z + y*y*y*y - 6*y*y*z*z)/4;
-      basis_eval[ipt + 7*npts] = sqrt_70*radial_eval*x*z*(x*x - 3*y*y)/4;
-      basis_eval[ipt + 8*npts] = sqrt_35*radial_eval*(x*x*x*x - 6*x*x*y*y + y*y*y*y)/8;
+      basis_eval[ipt + 0*npts] = sqrt_35*x0*(x1 + x3);
+      basis_eval[ipt + 1*npts] = sqrt_70*x6*(x3 + x7);
+      basis_eval[ipt + 2*npts] = -sqrt_5*x0*(x1 + x2 - 6.0*x8);
+      basis_eval[ipt + 3*npts] = sqrt_10*x10*x6;
+      basis_eval[ipt + 4*npts] = x11*(3.0*x12 + 3.0*x13 + x14 - 24.0*x15 - 24.0*x16 + 8.0*(z*z*z*z));
+      basis_eval[ipt + 5*npts] = sqrt_10*x10*x17;
+      basis_eval[ipt + 6*npts] = -sqrt_5*x4*(x12 - x13 - 6.0*x15 + 6.0*x16);
+      basis_eval[ipt + 7*npts] = sqrt_70*x17*(x1 - x9);
+      basis_eval[ipt + 8*npts] = sqrt_35*x11*(x12 + x13 - x14);
 
 
     
+
+
 
 
 
@@ -124,25 +144,25 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       double ang_eval_3;
 
 
-      ang_eval_0 = sqrt_35*radial_eval*x*y*(x*x - y*y)/2;
-      ang_eval_1 = sqrt_70*radial_eval*y*z*(3*x*x - y*y)/4;
-      ang_eval_2 = sqrt_5*radial_eval*x*y*(-x*x - y*y + 6*z*z)/2;
-      ang_eval_3 = sqrt_10*radial_eval*y*z*(-3*x*x - 3*y*y + 4*z*z)/4;
+      ang_eval_0 = sqrt_35*x0*(x1 + x3);
+      ang_eval_1 = sqrt_70*x6*(x3 + x7);
+      ang_eval_2 = -sqrt_5*x0*(x1 + x2 - 6.0*x8);
+      ang_eval_3 = sqrt_10*x10*x6;
       basis_eval[ipt + 0*npts] = ang_eval_0;
       basis_eval[ipt + 1*npts] = ang_eval_1;
       basis_eval[ipt + 2*npts] = ang_eval_2;
       basis_eval[ipt + 3*npts] = ang_eval_3;
 
-      ang_eval_0 = radial_eval*(3*x*x*x*x + 6*x*x*y*y - 24*x*x*z*z + 3*y*y*y*y - 24*y*y*z*z + 8*z*z*z*z)/8;
-      ang_eval_1 = sqrt_10*radial_eval*x*z*(-3*x*x - 3*y*y + 4*z*z)/4;
-      ang_eval_2 = sqrt_5*radial_eval*(-x*x*x*x + 6*x*x*z*z + y*y*y*y - 6*y*y*z*z)/4;
-      ang_eval_3 = sqrt_70*radial_eval*x*z*(x*x - 3*y*y)/4;
+      ang_eval_0 = x11*(3.0*x12 + 3.0*x13 + x14 - 24.0*x15 - 24.0*x16 + 8.0*(z*z*z*z));
+      ang_eval_1 = sqrt_10*x10*x17;
+      ang_eval_2 = -sqrt_5*x4*(x12 - x13 - 6.0*x15 + 6.0*x16);
+      ang_eval_3 = sqrt_70*x17*(x1 - x9);
       basis_eval[ipt + 4*npts] = ang_eval_0;
       basis_eval[ipt + 5*npts] = ang_eval_1;
       basis_eval[ipt + 6*npts] = ang_eval_2;
       basis_eval[ipt + 7*npts] = ang_eval_3;
 
-      ang_eval_0 = sqrt_35*radial_eval*(x*x*x*x - 6*x*x*y*y + y*y*y*y)/8;
+      ang_eval_0 = sqrt_35*x11*(x12 + x13 - x14);
       basis_eval[ipt + 8*npts] = ang_eval_0;
 
 

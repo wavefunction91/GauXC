@@ -81,6 +81,11 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   const auto& func  = *this->func_;
   const auto& mol   = this->load_balancer_->molecule();
 
+  // Sanity gates
+  if(func.needs_laplacian()) {
+    GAUXC_GENERIC_EXCEPTION("Device EXC Gradients + Laplacian Dependent MGGAs Not Yet Implemented");
+  }
+
   // Get basis map
   BasisSetMap basis_map(basis,mol);
 
@@ -119,7 +124,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   enabled_terms.ks_scheme = RKS;
   if( func.is_lda() )      enabled_terms.xc_approx = integrator_xc_approx::LDA; 
   else if( func.is_gga() ) enabled_terms.xc_approx = integrator_xc_approx::GGA; 
-  else GAUXC_GENERIC_EXCEPTION("XC Approx NYI");
+  else if( func.needs_laplacian() ) enabled_terms.xc_approx = integrator_xc_approx::MGGA_LAPL;
+  else enabled_terms.xc_approx = integrator_xc_approx::MGGA_TAU;
 
   auto task_it = task_begin;
   while( task_it != task_end ) {
@@ -131,30 +137,34 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     /*** Process the batches ***/
 
     // Evaluate collocation
-    if( func.is_gga() ) lwd->eval_collocation_hessian ( &device_data );
-    else                lwd->eval_collocation_gradient( &device_data );
+    if( func.needs_laplacian() ) lwd->eval_collocation_lapgrad ( &device_data );
+    else if( !func.is_lda() )    lwd->eval_collocation_hessian ( &device_data );
+    else                         lwd->eval_collocation_gradient( &device_data );
 
     // Evaluate X matrix
-    const bool do_xmat_grad = func.is_gga();
+    const bool do_xmat_grad = func.is_gga() or func.is_mgga();
     lwd->eval_xmat( 2.0, &device_data, do_xmat_grad, DEN_S );
     
-    // Evaluate V variable
+    // Evaluate V variables
     lwd->eval_vvar( &device_data, DEN_S, do_xmat_grad );
 
     // Evaluate U variables
-    if( func.is_gga() ) lwd->eval_uvars_gga( &device_data, enabled_terms.ks_scheme );
-    else                lwd->eval_uvars_lda( &device_data, enabled_terms.ks_scheme );
+    if( func.is_mgga() )     lwd->eval_uvars_mgga( &device_data, func.needs_laplacian( ) );
+    else if( func.is_gga() ) lwd->eval_uvars_gga ( &device_data, enabled_terms.ks_scheme );
+    else                     lwd->eval_uvars_lda ( &device_data, enabled_terms.ks_scheme );
 
     // Evaluate XC functional (we need VXC for EXC Gradient)
-    if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga( func, &device_data );
-    else                lwd->eval_kern_exc_vxc_lda( func, &device_data );
+    if( func.is_mgga() )     lwd->eval_kern_exc_vxc_mgga( func, &device_data );
+    else if( func.is_gga() ) lwd->eval_kern_exc_vxc_gga ( func, &device_data );
+    else                     lwd->eval_kern_exc_vxc_lda ( func, &device_data );
 
     // Do scalar N_EL integration
     lwd->inc_nel( &device_data );
 
     // Increment EXC Gradient
-    if( func.is_gga() ) lwd->inc_exc_grad_gga( &device_data );
-    else                lwd->inc_exc_grad_lda( &device_data );
+    if( func.is_mgga() )     lwd->inc_exc_grad_mgga( &device_data, func.needs_laplacian() );
+    else if( func.is_gga() ) lwd->inc_exc_grad_gga ( &device_data );
+    else                     lwd->inc_exc_grad_lda ( &device_data );
 
   } // Loop over batches of batches 
 

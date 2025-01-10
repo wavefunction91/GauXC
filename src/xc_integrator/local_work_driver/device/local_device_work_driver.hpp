@@ -61,6 +61,7 @@ public:
   void eval_collocation_gradient( XCDeviceData* );
   void eval_collocation_hessian( XCDeviceData* );
   void eval_collocation_laplacian( XCDeviceData* );
+  void eval_collocation_lapgrad( XCDeviceData* );
   void eval_xmat( double fac, XCDeviceData*, bool do_grad, density_id den );
   
   void eval_uvars_lda( XCDeviceData*, integrator_ks_scheme ) ;
@@ -87,6 +88,7 @@ public:
   void inc_vxc( XCDeviceData*, density_id, bool do_m = false );
   void inc_exc_grad_lda( XCDeviceData* );
   void inc_exc_grad_gga( XCDeviceData* );
+  void inc_exc_grad_mgga( XCDeviceData*, bool );
   void inc_exx_k( XCDeviceData* );
 
   void eval_exx_ek_screening_bfn_stats( XCDeviceData* );

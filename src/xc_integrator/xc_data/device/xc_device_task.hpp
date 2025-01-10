@@ -96,6 +96,9 @@ struct XCDeviceTask {
 
   // MGGA
   double*   d2bflapl    = nullptr;
+  double*   d3bflapl_x    = nullptr;
+  double*   d3bflapl_y    = nullptr;
+  double*   d3bflapl_z    = nullptr;
   double*   denlapl     = nullptr;
   double*   tau   = nullptr;
   double*   vtau  = nullptr;

@@ -65,6 +65,7 @@ FWD_TO_PIMPL(eval_collocation)          // Collocation
 FWD_TO_PIMPL(eval_collocation_gradient) // Collocation Gradient
 FWD_TO_PIMPL(eval_collocation_hessian)  // Collocation Hessian
 FWD_TO_PIMPL(eval_collocation_laplacian)  // Collocation Laplacian
+FWD_TO_PIMPL(eval_collocation_lapgrad)  // Collocation Laplacian gradient
 
 
 FWD_TO_PIMPL_KS_SCHEME(eval_uvars_lda)            // U variables LDA (rho)
@@ -88,6 +89,7 @@ FWD_TO_PIMPL_DEN_ID_BOOL(inc_vxc)            // Increment VXC_I by Z
 FWD_TO_PIMPL(inc_exx_k)     
 FWD_TO_PIMPL(inc_exc_grad_lda)
 FWD_TO_PIMPL(inc_exc_grad_gga)
+FWD_TO_PIMPL_BOOL(inc_exc_grad_mgga)
 
 FWD_TO_PIMPL_DEN_ID(symmetrize_vxc)
 FWD_TO_PIMPL(symmetrize_exx_k)

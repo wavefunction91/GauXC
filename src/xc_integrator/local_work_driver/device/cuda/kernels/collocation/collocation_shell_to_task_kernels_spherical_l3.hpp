@@ -64,7 +64,6 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
 
     auto* __restrict__ basis_eval = task->bf + shoff;
 
-
     // Loop over points in task
     // Assign each point to separate thread within the warp
     #pragma unroll 1
@@ -93,19 +92,34 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       }
 
 
-      
+      // Common Subexpressions
+      const auto x0 = 0.25*radial_eval; 
+      const auto x1 = x0*y; 
+      const auto x2 = x*x; 
+      const auto x3 = 3.0*x2; 
+      const auto x4 = y*y; 
+      const auto x5 = -x4; 
+      const auto x6 = radial_eval*z; 
+      const auto x7 = z*z; 
+      const auto x8 = -x2 - x4 + 4.0*x7; 
+      const auto x9 = 0.5*x6; 
+      const auto x10 = 3.0*x4; 
+      const auto x11 = x*x0; 
+
 
       // Evaluate basis function
-      basis_eval[ipt + 0*npts] = sqrt_10*radial_eval*y*(3*x*x - y*y)/4;
-      basis_eval[ipt + 1*npts] = sqrt_15*radial_eval*x*y*z;
-      basis_eval[ipt + 2*npts] = sqrt_6*radial_eval*y*(-x*x - y*y + 4*z*z)/4;
-      basis_eval[ipt + 3*npts] = radial_eval*z*(-3*x*x - 3*y*y + 2*z*z)/2;
-      basis_eval[ipt + 4*npts] = sqrt_6*radial_eval*x*(-x*x - y*y + 4*z*z)/4;
-      basis_eval[ipt + 5*npts] = sqrt_15*radial_eval*z*(x*x - y*y)/2;
-      basis_eval[ipt + 6*npts] = sqrt_10*radial_eval*x*(x*x - 3*y*y)/4;
+      basis_eval[ipt + 0*npts] = sqrt_10*x1*(x3 + x5);
+      basis_eval[ipt + 1*npts] = sqrt_15*x*x6*y;
+      basis_eval[ipt + 2*npts] = sqrt_6*x1*x8;
+      basis_eval[ipt + 3*npts] = -x9*(x10 + x3 - 2.0*x7);
+      basis_eval[ipt + 4*npts] = sqrt_6*x11*x8;
+      basis_eval[ipt + 5*npts] = sqrt_15*x9*(x2 + x5);
+      basis_eval[ipt + 6*npts] = sqrt_10*x11*(-x10 + x2);
 
 
     
+
+
 
 
 
@@ -122,18 +136,18 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       double ang_eval_3;
 
 
-      ang_eval_0 = sqrt_10*radial_eval*y*(3*x*x - y*y)/4;
-      ang_eval_1 = sqrt_15*radial_eval*x*y*z;
-      ang_eval_2 = sqrt_6*radial_eval*y*(-x*x - y*y + 4*z*z)/4;
-      ang_eval_3 = radial_eval*z*(-3*x*x - 3*y*y + 2*z*z)/2;
+      ang_eval_0 = sqrt_10*x1*(x3 + x5);
+      ang_eval_1 = sqrt_15*x*x6*y;
+      ang_eval_2 = sqrt_6*x1*x8;
+      ang_eval_3 = -x9*(x10 + x3 - 2.0*x7);
       basis_eval[ipt + 0*npts] = ang_eval_0;
       basis_eval[ipt + 1*npts] = ang_eval_1;
       basis_eval[ipt + 2*npts] = ang_eval_2;
       basis_eval[ipt + 3*npts] = ang_eval_3;
 
-      ang_eval_0 = sqrt_6*radial_eval*x*(-x*x - y*y + 4*z*z)/4;
-      ang_eval_1 = sqrt_15*radial_eval*z*(x*x - y*y)/2;
-      ang_eval_2 = sqrt_10*radial_eval*x*(x*x - 3*y*y)/4;
+      ang_eval_0 = sqrt_6*x11*x8;
+      ang_eval_1 = sqrt_15*x9*(x2 + x5);
+      ang_eval_2 = sqrt_10*x11*(-x10 + x2);
       basis_eval[ipt + 4*npts] = ang_eval_0;
       basis_eval[ipt + 5*npts] = ang_eval_1;
       basis_eval[ipt + 6*npts] = ang_eval_2;

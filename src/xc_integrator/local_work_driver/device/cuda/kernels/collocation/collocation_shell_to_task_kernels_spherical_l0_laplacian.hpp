@@ -15,15 +15,15 @@
 namespace GauXC {
 
 
-__global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel_spherical_laplacian_0(
+__global__ __launch_bounds__(256,2) void collocation_device_shell_to_task_kernel_spherical_laplacian_0(
   uint32_t                        nshell,
   ShellToTaskDevice* __restrict__ shell_to_task,
   XCDeviceTask*      __restrict__ device_tasks
 ) {
 
 
-  __shared__ double alpha[16][detail::shell_nprim_max + 1]; 
-  __shared__ double coeff[16][detail::shell_nprim_max + 1];
+  __shared__ double alpha[8][detail::shell_nprim_max + 1]; 
+  __shared__ double coeff[8][detail::shell_nprim_max + 1];
   double* my_alpha = alpha[threadIdx.x/32];
   double* my_coeff = coeff[threadIdx.x/32];
 
@@ -66,7 +66,6 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
     auto* __restrict__ basis_x_eval = task->dbfx + shoff;
     auto* __restrict__ basis_y_eval = task->dbfy + shoff;
     auto* __restrict__ basis_z_eval = task->dbfz + shoff;
-
     auto* __restrict__ basis_lapl_eval = task->d2bflapl + shoff;
 
     // Loop over points in task
@@ -103,7 +102,12 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       radial_eval_alpha *= -2;
       radial_eval_alpha_squared *= 4;
 
-      
+      // Common Subexpressions
+      const auto x0 = radial_eval_alpha_squared*(x*x); 
+      const auto x1 = radial_eval_alpha_squared*x; 
+      const auto x2 = radial_eval_alpha_squared*(y*y); 
+      const auto x3 = radial_eval_alpha_squared*(z*z); 
+
 
       // Evaluate basis function
       basis_eval[ipt + 0*npts] = radial_eval;
@@ -119,8 +123,10 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       // Evaluate first derivative of bfn wrt z
       basis_z_eval[ipt + 0*npts] = radial_eval_alpha*z;
 
+
       // Evaluate Laplacian of bfn 
-      basis_lapl_eval[ipt + 0*npts] = 3*radial_eval_alpha + radial_eval_alpha_squared*x*x + radial_eval_alpha_squared*y*y + radial_eval_alpha_squared*z*z;
+      basis_lapl_eval[ipt + 0*npts] = 3.0*radial_eval_alpha + x0 + x2 + x3;
+
 
 
 

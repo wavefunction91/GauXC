@@ -15,7 +15,7 @@
 namespace GauXC {
 
 
-__global__ __launch_bounds__(128,2) void collocation_device_shell_to_task_kernel_cartesian_hessian_1(
+__global__ __launch_bounds__(128,2) void collocation_device_shell_to_task_kernel_spherical_lapgrad_1(
   uint32_t                        nshell,
   ShellToTaskDevice* __restrict__ shell_to_task,
   XCDeviceTask*      __restrict__ device_tasks
@@ -72,6 +72,10 @@ __global__ __launch_bounds__(128,2) void collocation_device_shell_to_task_kernel
     auto* __restrict__ basis_yy_eval = task->d2bfyy + shoff;
     auto* __restrict__ basis_yz_eval = task->d2bfyz + shoff;
     auto* __restrict__ basis_zz_eval = task->d2bfzz + shoff;
+    auto* __restrict__ basis_lapl_eval = task->d2bflapl + shoff;
+    auto* __restrict__ basis_lapl_x_eval = task->d3bflapl_x + shoff;
+    auto* __restrict__ basis_lapl_y_eval = task->d3bflapl_y + shoff;
+    auto* __restrict__ basis_lapl_z_eval = task->d3bflapl_z + shoff;
 
     // Loop over points in task
     // Assign each point to separate thread within the warp
@@ -93,6 +97,7 @@ __global__ __launch_bounds__(128,2) void collocation_device_shell_to_task_kernel
       double radial_eval = 0.;
       double radial_eval_alpha = 0.;
       double radial_eval_alpha_squared = 0.;
+      double radial_eval_alpha_cubed = 0.;
 
       #pragma unroll 1
       for( uint32_t i = 0; i < nprim; ++i ) {
@@ -102,90 +107,125 @@ __global__ __launch_bounds__(128,2) void collocation_device_shell_to_task_kernel
         radial_eval += e;
         radial_eval_alpha += a * e;
         radial_eval_alpha_squared += a * a * e;
+        radial_eval_alpha_cubed += a * a * a * e;
       }
 
       radial_eval_alpha *= -2;
       radial_eval_alpha_squared *= 4;
+      radial_eval_alpha_cubed *= -8;
 
       // Common Subexpressions
-      const auto x0 = x*x; 
-      const auto x1 = radial_eval_alpha*x; 
-      const auto x2 = x1*y; 
-      const auto x3 = x1*z; 
-      const auto x4 = y*y; 
-      const auto x5 = y*z; 
-      const auto x6 = radial_eval_alpha*x5; 
-      const auto x7 = z*z; 
-      const auto x8 = 3.0*radial_eval_alpha; 
-      const auto x9 = radial_eval_alpha_squared*x0; 
-      const auto x10 = radial_eval_alpha + x9; 
-      const auto x11 = x10*y; 
-      const auto x12 = x10*z; 
-      const auto x13 = radial_eval_alpha_squared*x4; 
-      const auto x14 = radial_eval_alpha + x13; 
-      const auto x15 = x*x14; 
-      const auto x16 = radial_eval_alpha_squared*x*x5; 
-      const auto x17 = radial_eval_alpha_squared*x7; 
-      const auto x18 = radial_eval_alpha + x17; 
-      const auto x19 = x*x18; 
-      const auto x20 = x14*z; 
-      const auto x21 = x18*y; 
-      const auto x22 = 5.0*radial_eval_alpha + x13 + x17 + x9; 
+      const auto x0 = radial_eval_alpha*x; 
+      const auto x1 = x0*y; 
+      const auto x2 = x0*z; 
+      const auto x3 = x*x; 
+      const auto x4 = x3; 
+      const auto x5 = y*y; 
+      const auto x6 = x5; 
+      const auto x7 = y*z; 
+      const auto x8 = radial_eval_alpha*x7; 
+      const auto x9 = z*z; 
+      const auto x10 = x9; 
+      const auto x11 = radial_eval_alpha_squared*x4; 
+      const auto x12 = radial_eval_alpha + x11; 
+      const auto x13 = x12*y; 
+      const auto x14 = x12*z; 
+      const auto x15 = 3.0*radial_eval_alpha; 
+      const auto x16 = radial_eval_alpha_squared*x6; 
+      const auto x17 = radial_eval_alpha + x16; 
+      const auto x18 = x*x17; 
+      const auto x19 = radial_eval_alpha_squared*x*x7; 
+      const auto x20 = radial_eval_alpha_squared*x10; 
+      const auto x21 = radial_eval_alpha + x20; 
+      const auto x22 = x*x21; 
+      const auto x23 = x17*z; 
+      const auto x24 = x21*y; 
+      const auto x25 = 5.0*radial_eval_alpha; 
+      const auto x26 = x16 + x20 + x25; 
+      const auto x27 = x11 + x26; 
+      const auto x28 = 5.0*radial_eval_alpha_squared; 
+      const auto x29 = radial_eval_alpha_cubed*(x*x*x); 
+      const auto x30 = radial_eval_alpha_cubed*x6 + radial_eval_alpha_squared; 
+      const auto x31 = radial_eval_alpha_cubed*x10 + radial_eval_alpha_squared; 
+      const auto x32 = x*x28 + x*x30 + x*x31 + x29; 
+      const auto x33 = 3.0*radial_eval_alpha_squared; 
+      const auto x34 = radial_eval_alpha_cubed*(y*y*y); 
+      const auto x35 = radial_eval_alpha_cubed*x4 + radial_eval_alpha_squared; 
+      const auto x36 = x11 + x25; 
+      const auto x37 = x28*y + x31*y + x34 + x35*y; 
+      const auto x38 = radial_eval_alpha_cubed*(z*z*z); 
+      const auto x39 = x28*z + x30*z + x35*z + x38; 
 
 
       // Evaluate basis function
-      basis_eval[ipt + 0*npts] = radial_eval*x;
-      basis_eval[ipt + 1*npts] = radial_eval*y;
-      basis_eval[ipt + 2*npts] = radial_eval*z;
+      basis_eval[ipt + 0*npts] = radial_eval*y;
+      basis_eval[ipt + 1*npts] = radial_eval*z;
+      basis_eval[ipt + 2*npts] = radial_eval*x;
 
 
     
       // Evaluate first derivative of bfn wrt x
-      basis_x_eval[ipt + 0*npts] = radial_eval + radial_eval_alpha*x0;
+      basis_x_eval[ipt + 0*npts] = x1;
       basis_x_eval[ipt + 1*npts] = x2;
-      basis_x_eval[ipt + 2*npts] = x3;
+      basis_x_eval[ipt + 2*npts] = radial_eval + radial_eval_alpha*x4;
 
       // Evaluate first derivative of bfn wrt y
-      basis_y_eval[ipt + 0*npts] = x2;
-      basis_y_eval[ipt + 1*npts] = radial_eval + radial_eval_alpha*x4;
-      basis_y_eval[ipt + 2*npts] = x6;
+      basis_y_eval[ipt + 0*npts] = radial_eval + radial_eval_alpha*x6;
+      basis_y_eval[ipt + 1*npts] = x8;
+      basis_y_eval[ipt + 2*npts] = x1;
 
       // Evaluate first derivative of bfn wrt z
-      basis_z_eval[ipt + 0*npts] = x3;
-      basis_z_eval[ipt + 1*npts] = x6;
-      basis_z_eval[ipt + 2*npts] = radial_eval + radial_eval_alpha*x7;
+      basis_z_eval[ipt + 0*npts] = x8;
+      basis_z_eval[ipt + 1*npts] = radial_eval + radial_eval_alpha*x10;
+      basis_z_eval[ipt + 2*npts] = x2;
 
       // Evaluate second derivative of bfn wrt xx
-      basis_xx_eval[ipt + 0*npts] = x*(x8 + x9);
-      basis_xx_eval[ipt + 1*npts] = x11;
-      basis_xx_eval[ipt + 2*npts] = x12;
+      basis_xx_eval[ipt + 0*npts] = x13;
+      basis_xx_eval[ipt + 1*npts] = x14;
+      basis_xx_eval[ipt + 2*npts] = x*(x11 + x15);
 
       // Evaluate second derivative of bfn wrt xy
-      basis_xy_eval[ipt + 0*npts] = x11;
-      basis_xy_eval[ipt + 1*npts] = x15;
-      basis_xy_eval[ipt + 2*npts] = x16;
+      basis_xy_eval[ipt + 0*npts] = x18;
+      basis_xy_eval[ipt + 1*npts] = x19;
+      basis_xy_eval[ipt + 2*npts] = x13;
 
       // Evaluate second derivative of bfn wrt xz
-      basis_xz_eval[ipt + 0*npts] = x12;
-      basis_xz_eval[ipt + 1*npts] = x16;
-      basis_xz_eval[ipt + 2*npts] = x19;
+      basis_xz_eval[ipt + 0*npts] = x19;
+      basis_xz_eval[ipt + 1*npts] = x22;
+      basis_xz_eval[ipt + 2*npts] = x14;
 
       // Evaluate second derivative of bfn wrt yy
-      basis_yy_eval[ipt + 0*npts] = x15;
-      basis_yy_eval[ipt + 1*npts] = y*(x13 + x8);
-      basis_yy_eval[ipt + 2*npts] = x20;
+      basis_yy_eval[ipt + 0*npts] = y*(x15 + x16);
+      basis_yy_eval[ipt + 1*npts] = x23;
+      basis_yy_eval[ipt + 2*npts] = x18;
 
       // Evaluate second derivative of bfn wrt yz
-      basis_yz_eval[ipt + 0*npts] = x16;
-      basis_yz_eval[ipt + 1*npts] = x20;
-      basis_yz_eval[ipt + 2*npts] = x21;
+      basis_yz_eval[ipt + 0*npts] = x23;
+      basis_yz_eval[ipt + 1*npts] = x24;
+      basis_yz_eval[ipt + 2*npts] = x19;
 
       // Evaluate second derivative of bfn wrt zz
-      basis_zz_eval[ipt + 0*npts] = x19;
-      basis_zz_eval[ipt + 1*npts] = x21;
-      basis_zz_eval[ipt + 2*npts] = z*(x17 + x8);
+      basis_zz_eval[ipt + 0*npts] = x24;
+      basis_zz_eval[ipt + 1*npts] = z*(x15 + x20);
+      basis_zz_eval[ipt + 2*npts] = x22;
 
+      // Evaluate Laplacian of bfn 
+      basis_lapl_eval[ipt + 0*npts] = x27*y;
+      basis_lapl_eval[ipt + 1*npts] = x27*z;
+      basis_lapl_eval[ipt + 2*npts] = x*x27;
 
+      // Evaluate Laplacian gradient of bfn (dx)
+      basis_lapl_x_eval[ipt + 0*npts] = x32*y;
+      basis_lapl_x_eval[ipt + 1*npts] = x32*z;
+      basis_lapl_x_eval[ipt + 2*npts] = x*(x*x33 + x29) + x26 + x3*x30 + x3*x31 + x33*x4;
+      // Evaluate Laplacian gradient of bfn (dy)
+      basis_lapl_y_eval[ipt + 0*npts] = x20 + x31*x5 + x33*x6 + x35*x5 + x36 + y*(x33*y + x34);
+      basis_lapl_y_eval[ipt + 1*npts] = x37*z;
+      basis_lapl_y_eval[ipt + 2*npts] = x*x37;
+      // Evaluate Laplacian gradient of bfn (dz)
+      basis_lapl_z_eval[ipt + 0*npts] = x39*y;
+      basis_lapl_z_eval[ipt + 1*npts] = x10*x33 + x16 + x30*x9 + x35*x9 + x36 + z*(x33*z + x38);
+      basis_lapl_z_eval[ipt + 2*npts] = x*x39;
 
 
 
@@ -200,9 +240,9 @@ __global__ __launch_bounds__(128,2) void collocation_device_shell_to_task_kernel
       double ang_eval_2;
 
 
-      ang_eval_0 = radial_eval*x;
-      ang_eval_1 = radial_eval*y;
-      ang_eval_2 = radial_eval*z;
+      ang_eval_0 = radial_eval*y;
+      ang_eval_1 = radial_eval*z;
+      ang_eval_2 = radial_eval*x;
       basis_eval[ipt + 0*npts] = ang_eval_0;
       basis_eval[ipt + 1*npts] = ang_eval_1;
       basis_eval[ipt + 2*npts] = ang_eval_2;
@@ -212,15 +252,15 @@ __global__ __launch_bounds__(128,2) void collocation_device_shell_to_task_kernel
       double dang_eval_x_1, dang_eval_y_1, dang_eval_z_1;
       double dang_eval_x_2, dang_eval_y_2, dang_eval_z_2;
 
-      dang_eval_x_0 = radial_eval + radial_eval_alpha*x0;
-      dang_eval_y_0 = x2;
-      dang_eval_z_0 = x3;
+      dang_eval_x_0 = x1;
+      dang_eval_y_0 = radial_eval + radial_eval_alpha*x6;
+      dang_eval_z_0 = x8;
       dang_eval_x_1 = x2;
-      dang_eval_y_1 = radial_eval + radial_eval_alpha*x4;
-      dang_eval_z_1 = x6;
-      dang_eval_x_2 = x3;
-      dang_eval_y_2 = x6;
-      dang_eval_z_2 = radial_eval + radial_eval_alpha*x7;
+      dang_eval_y_1 = x8;
+      dang_eval_z_1 = radial_eval + radial_eval_alpha*x10;
+      dang_eval_x_2 = radial_eval + radial_eval_alpha*x4;
+      dang_eval_y_2 = x1;
+      dang_eval_z_2 = x2;
       basis_x_eval[ipt + 0*npts] = dang_eval_x_0;
       basis_y_eval[ipt + 0*npts] = dang_eval_y_0;
       basis_z_eval[ipt + 0*npts] = dang_eval_z_0;

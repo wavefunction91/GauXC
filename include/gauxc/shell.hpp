@@ -225,7 +225,6 @@ public:
 };
 
 
-#if 0
 template <typename T>
 inline std::ostream& operator<<( std::ostream& os, const Shell<T>& sh ) {
     os << "GauXC::Shell:( O={" 
@@ -233,9 +232,6 @@ inline std::ostream& operator<<( std::ostream& os, const Shell<T>& sh ) {
 	<< "}" << std::endl;
     os << "  ";
     os << " {l=" << sh.l() << ",sph=" << sh.pure() << "}";
-    os << std::endl;
-    os << " {cr=" << sh.cutoff_radius() << ",cv=" << sh.cutoff_val() 
-	    <<",mr=" << sh.max_radius() << ",mv=" << sh.max_val() << "}";
     os << std::endl;
 
     for(auto i=0ul; i<sh.nprim(); ++i) {
@@ -246,6 +242,5 @@ inline std::ostream& operator<<( std::ostream& os, const Shell<T>& sh ) {
 
     return os;
 }
-#endif
 
 }

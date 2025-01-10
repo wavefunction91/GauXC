@@ -41,6 +41,9 @@ struct XCDeviceAoSData : public XCDeviceStackData {
     double* d2bf_zz_eval_device = nullptr; ///< 2nd Derivative of `bf_eval_device` wrt z+z
 
     double* d2bf_lapl_eval_device = nullptr; ///< Laplacian of `bf_eval_device`
+    double* d3bf_lapgrad_x_eval_device = nullptr; ///< Laplacian derivative of bf_eval_device wrt x
+    double* d3bf_lapgrad_y_eval_device = nullptr; ///< Laplacian derivative of bf_eval_device wrt y
+    double* d3bf_lapgrad_z_eval_device = nullptr; ///< Laplacian derivative of bf_eval_device wrt z
 
     // VXC Z Matrix
     double* zmat_vxc_device = nullptr;

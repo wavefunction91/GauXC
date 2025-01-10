@@ -46,13 +46,40 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
                         d2eval_xz( nbf * npts ),
                         d2eval_yy( nbf * npts ),
                         d2eval_yz( nbf * npts ),
-                        d2eval_zz( nbf * npts );
+                        d2eval_zz( nbf * npts ),
+                        d3eval_xxx( nbf * npts ),
+                        d3eval_xxy( nbf * npts ),
+                        d3eval_xxz( nbf * npts ),
+                        d3eval_xyy( nbf * npts ),
+                        d3eval_xyz( nbf * npts ),
+                        d3eval_xzz( nbf * npts ),
+                        d3eval_yyy( nbf * npts ),
+                        d3eval_yyz( nbf * npts ),
+                        d3eval_yzz( nbf * npts ),
+                        d3eval_zzz( nbf * npts );
 
-    gau2grid_collocation_hessian( npts, mask.size(), nbf,
+    gau2grid_collocation_der3( npts, mask.size(), nbf,
       pts.data()->data(), basis, mask.data(), eval.data(), 
       deval_x.data(), deval_y.data(), deval_z.data(),
       d2eval_xx.data(), d2eval_xy.data(), d2eval_xz.data(),
-      d2eval_yy.data(), d2eval_yz.data(), d2eval_zz.data() );
+      d2eval_yy.data(), d2eval_yz.data(), d2eval_zz.data(),
+      d3eval_xxx.data(), d3eval_xxy.data(), d3eval_xxz.data(),
+      d3eval_xyy.data(), d3eval_xyz.data(), d3eval_xzz.data(),
+      d3eval_yyy.data(), d3eval_yyz.data(), d3eval_yzz.data(),
+      d3eval_zzz.data());
+
+    std::vector<double> d2eval_lapl(nbf * npts);
+    std::vector<double> d3eval_lapl_x(nbf * npts);
+    std::vector<double> d3eval_lapl_y(nbf * npts);
+    std::vector<double> d3eval_lapl_z(nbf * npts);
+    for(auto i = 0; i < nbf*npts; ++i) {
+      d2eval_lapl[i] = d2eval_xx[i] + d2eval_yy[i] + d2eval_zz[i];
+      d3eval_lapl_x[i] = d3eval_xxx[i] + d3eval_xyy[i] + d3eval_xzz[i];
+      d3eval_lapl_y[i] = d3eval_xxy[i] + d3eval_yyy[i] + d3eval_yzz[i];
+      d3eval_lapl_z[i] = d3eval_xxz[i] + d3eval_yyz[i] + d3eval_zzz[i];
+    }
+
+    
 
     auto max_abs = *std::max_element( eval.begin(), eval.end(),
                    [](auto a, auto b){ return std::abs(a) < std::abs(b); } );
@@ -61,7 +88,9 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
     ref_collocation_data d{ std::move(mask), std::move(pts), std::move(eval),
                             std::move(deval_x), std::move(deval_y), std::move(deval_z),
                             std::move(d2eval_xx), std::move(d2eval_xy), std::move(d2eval_xz),
-                            std::move(d2eval_yy), std::move(d2eval_yz), std::move(d2eval_zz) 
+                            std::move(d2eval_yy), std::move(d2eval_yz), std::move(d2eval_zz),
+                            std::move(d2eval_lapl), std::move(d3eval_lapl_x), std::move(d3eval_lapl_y),
+                            std::move(d3eval_lapl_z)
                             };
 
     ref_data.emplace_back( std::move(d) );

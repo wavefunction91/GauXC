@@ -24,6 +24,10 @@ $for( L in range(L_max + 1))
 $endfor
 
 $for( L in range(L_max + 1))
+#include "collocation/collocation_shell_to_task_kernels_cartesian_l$(L)_lapgrad.hpp"\
+$endfor
+
+$for( L in range(L_max + 1))
 #include "collocation/collocation_shell_to_task_kernels_spherical_l$(L).hpp"\
 $endfor
 
@@ -37,4 +41,8 @@ $endfor
 
 $for( L in range(L_max + 1))
 #include "collocation/collocation_shell_to_task_kernels_spherical_l$(L)_laplacian.hpp"\
+$endfor
+
+$for( L in range(L_max + 1))
+#include "collocation/collocation_shell_to_task_kernels_spherical_l$(L)_lapgrad.hpp"\
 $endfor

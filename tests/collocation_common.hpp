@@ -32,10 +32,15 @@ struct ref_collocation_data {
   std::vector<double>               d2eval_yy;
   std::vector<double>               d2eval_yz;
   std::vector<double>               d2eval_zz;
+  std::vector<double>               d2eval_lapl;
+  std::vector<double>               d3eval_lapl_x;
+  std::vector<double>               d3eval_lapl_y;
+  std::vector<double>               d3eval_lapl_z;
 
   template <typename Archive>
   void serialize( Archive& ar ) {
-    ar( mask, pts, eval, deval_x, deval_y, deval_z, d2eval_xx, d2eval_xy, d2eval_xz, d2eval_yy, d2eval_yz, d2eval_zz );
+    ar( mask, pts, eval, deval_x, deval_y, deval_z, d2eval_xx, d2eval_xy, d2eval_xz, 
+        d2eval_yy, d2eval_yz, d2eval_zz, d2eval_lapl, d3eval_lapl_x, d3eval_lapl_y, d3eval_lapl_z);
   }
 
 };
