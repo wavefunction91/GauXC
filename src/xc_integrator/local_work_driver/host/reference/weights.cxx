@@ -172,6 +172,7 @@ void reference_ssf_weights_host(
 
     // Evaluate unnormalized partition functions 
     std::fill(partitionScratch.begin(),partitionScratch.end(),1.);
+#if 1
     for( size_t iA = 0; iA < natoms; iA++ ) 
     for( size_t jA = 0; jA < iA;     jA++ )
     if( partitionScratch[iA] > integrator::ssf_weight_tol or 
@@ -196,6 +197,24 @@ void reference_ssf_weights_host(
       }
 
     }
+#else
+    for(size_t iA = 0; iA < natoms; ++iA)
+    for(size_t jA = 0; jA < natoms; ++jA) 
+    if(iA != jA and partitionScratch[iA] > integrator::ssf_weight_tol) {
+      const double mu = (atomDist[iA] - atomDist[jA]) / RAB[jA + iA*natoms];
+      if( fabs(mu) < integrator::magic_ssf_factor<> ) {
+        double g = 0.5 * (1. - gFrisch(mu));
+        partitionScratch[iA] *= g;
+      } else if(mu >= integrator::magic_ssf_factor<>) {
+        partitionScratch[iA] = 0.0;
+      }
+    }
+
+    if(partitionScratch[task.iParent] < std::numeric_limits<double>::epsilon()) {
+      weight = 0;
+      continue;
+    }
+#endif
 
     // Normalization
     double sum = 0.;

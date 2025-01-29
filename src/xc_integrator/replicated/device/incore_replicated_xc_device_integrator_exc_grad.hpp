@@ -49,7 +49,64 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // Compute local contributions to EXC Gradient and retrieve
     // data from device 
     this->timer_.time_op("XCIntegrator.LocalWork", [&](){
-      eval_exc_grad_local_work_( basis, P, ldp, EXC_GRAD, tasks.begin(),
+      eval_exc_grad_local_work_( basis, P, ldp, nullptr, 0, EXC_GRAD, tasks.begin(),
+        tasks.end(), *device_data_ptr );
+    });
+
+    GAUXC_MPI_CODE(
+    this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
+      MPI_Barrier(this->load_balancer_->runtime().comm());
+    });  
+    )
+
+    this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+      this->reduction_driver_->allreduce_inplace( EXC_GRAD, 3*natoms, 
+        ReductionOp::Sum );
+    });
+
+  }
+
+}
+
+
+template <typename ValueType>
+void IncoreReplicatedXCDeviceIntegrator<ValueType>::
+  eval_exc_grad_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
+                  const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD ) { 
+                 
+  const auto& basis = this->load_balancer_->basis();
+
+  // Check that P is sane
+  const int64_t nbf = basis.nbf();
+  if( m != n ) 
+    GAUXC_GENERIC_EXCEPTION("P Must Be Square");
+  if( m != nbf ) 
+    GAUXC_GENERIC_EXCEPTION("P Must Have Same Dimension as Basis");
+  if( ldps < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPS");
+  if( ldpz < nbf )
+    GAUXC_GENERIC_EXCEPTION("Invalid LDPZ");
+
+  // Get Tasks
+  auto& tasks = this->load_balancer_->get_tasks();
+
+  // Allocate Device memory
+  auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
+  auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
+  auto device_data_ptr = 
+    this->timer_.time_op("XCIntegrator.DeviceAlloc",
+      [&](){ return lwd->create_device_data(rt); });
+
+  const auto& mol = this->load_balancer_->molecule();
+  const auto natoms = mol.size();
+  if( this->reduction_driver_->takes_device_memory() ) {
+    GAUXC_GENERIC_EXCEPTION("Device Reduction + EXC Grad NYI");
+  } else {
+
+    // Compute local contributions to EXC Gradient and retrieve
+    // data from device 
+    this->timer_.time_op("XCIntegrator.LocalWork", [&](){
+      eval_exc_grad_local_work_( basis, Ps, ldps, Pz, ldpz, EXC_GRAD, tasks.begin(),
         tasks.end(), *device_data_ptr );
     });
 
@@ -71,9 +128,13 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 template <typename ValueType>
 void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   eval_exc_grad_local_work_( const basis_type& basis, 
-    const value_type* P, int64_t ldp,
+    const value_type* Ps, int64_t ldps,
+    const value_type* Pz, int64_t ldpz,
     host_task_iterator task_begin, host_task_iterator task_end,
     XCDeviceData& device_data ) {
+
+  const bool is_uks = Pz != nullptr;
+  const bool is_rks = not is_uks;
 
   auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
 
@@ -106,26 +167,29 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   if( not lb_state.modified_weights_are_stored ) {
     GAUXC_GENERIC_EXCEPTION("Weights Have Not Been Modified"); 
   }
+  // Processes batches in groups that saturadate available device memory
+  integrator_term_tracker enabled_terms;
+  enabled_terms.exc_grad = true;
+
+  if (is_rks) enabled_terms.ks_scheme = RKS;
+  else if (is_uks) enabled_terms.ks_scheme = UKS;
+
+  if( func.is_lda() )      enabled_terms.xc_approx = integrator_xc_approx::LDA; 
+  else if( func.is_gga() ) enabled_terms.xc_approx = integrator_xc_approx::GGA; 
+  else if( func.needs_laplacian() ) enabled_terms.xc_approx = integrator_xc_approx::MGGA_LAPL;
+  else enabled_terms.xc_approx = integrator_xc_approx::MGGA_TAU;
 
   // Do XC integration in task batches
   const auto nbf     = basis.nbf();
   const auto nshells = basis.nshells();
   const auto natoms  = mol.size();
   device_data.reset_allocations();
-  device_data.allocate_static_data_exc_grad( nbf, nshells, natoms );
-  device_data.send_static_data_density_basis( P, ldp, nullptr, 0, nullptr, 0, nullptr, 0, basis );
+  device_data.allocate_static_data_exc_grad( nbf, nshells, natoms, enabled_terms );
+  device_data.send_static_data_density_basis( Ps, ldps, Pz, ldpz, nullptr, 0, nullptr, 0, basis );
 
   // Zero integrands
   device_data.zero_exc_grad_integrands();
 
-  // Processes batches in groups that saturadate available device memory
-  integrator_term_tracker enabled_terms;
-  enabled_terms.exc_grad = true;
-  enabled_terms.ks_scheme = RKS;
-  if( func.is_lda() )      enabled_terms.xc_approx = integrator_xc_approx::LDA; 
-  else if( func.is_gga() ) enabled_terms.xc_approx = integrator_xc_approx::GGA; 
-  else if( func.needs_laplacian() ) enabled_terms.xc_approx = integrator_xc_approx::MGGA_LAPL;
-  else enabled_terms.xc_approx = integrator_xc_approx::MGGA_TAU;
 
   auto task_it = task_begin;
   while( task_it != task_end ) {
@@ -141,15 +205,27 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     else if( !func.is_lda() )    lwd->eval_collocation_hessian ( &device_data );
     else                         lwd->eval_collocation_gradient( &device_data );
 
-    // Evaluate X matrix
-    const bool do_xmat_grad = func.is_gga() or func.is_mgga();
-    lwd->eval_xmat( 2.0, &device_data, do_xmat_grad, DEN_S );
-    
-    // Evaluate V variables
-    lwd->eval_vvar( &device_data, DEN_S, do_xmat_grad );
+    // Evaluate X matrix and V vars
+    const auto xmat_fac = is_rks ? 2.0 : 1.0;
+    const auto need_lapl = func.needs_laplacian();
+    const auto need_xmat_grad = not func.is_lda();
+    auto do_xmat_vvar = [&](density_id den_id) {
+      lwd->eval_xmat( xmat_fac, &device_data, need_xmat_grad, den_id );
+      if(func.is_lda())      lwd->eval_vvars_lda( &device_data, den_id );
+      else if(func.is_gga()) lwd->eval_vvars_gga( &device_data, den_id ); 
+      else                   lwd->eval_vvars_mgga( &device_data, den_id, need_lapl );
+
+      // Save XMat for EXC gradient assembly
+      if(is_uks) lwd->save_xmat( &device_data, need_xmat_grad, den_id );
+    };
+
+    do_xmat_vvar(DEN_S);
+    if (not is_rks) {
+      do_xmat_vvar(DEN_Z);
+    }
 
     // Evaluate U variables
-    if( func.is_mgga() )     lwd->eval_uvars_mgga( &device_data, func.needs_laplacian( ) );
+    if( func.is_mgga() )     lwd->eval_uvars_mgga( &device_data, enabled_terms.ks_scheme, need_lapl );
     else if( func.is_gga() ) lwd->eval_uvars_gga ( &device_data, enabled_terms.ks_scheme );
     else                     lwd->eval_uvars_lda ( &device_data, enabled_terms.ks_scheme );
 
@@ -162,9 +238,9 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     lwd->inc_nel( &device_data );
 
     // Increment EXC Gradient
-    if( func.is_mgga() )     lwd->inc_exc_grad_mgga( &device_data, func.needs_laplacian() );
-    else if( func.is_gga() ) lwd->inc_exc_grad_gga ( &device_data );
-    else                     lwd->inc_exc_grad_lda ( &device_data );
+    if( func.is_mgga() )     lwd->inc_exc_grad_mgga( &device_data, enabled_terms.ks_scheme, need_lapl );
+    else if( func.is_gga() ) lwd->inc_exc_grad_gga ( &device_data, enabled_terms.ks_scheme );
+    else                     lwd->inc_exc_grad_lda ( &device_data, enabled_terms.ks_scheme );
 
   } // Loop over batches of batches 
 
@@ -173,12 +249,14 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 template <typename ValueType>
 void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   eval_exc_grad_local_work_( const basis_type& basis, 
-    const value_type* P, int64_t ldp, value_type* EXC_GRAD, 
+    const value_type* Ps, int64_t ldps, 
+    const value_type* Pz, int64_t ldpz, 
+    value_type* EXC_GRAD, 
     host_task_iterator task_begin, host_task_iterator task_end,
     XCDeviceData& device_data ) {
 
   // Compute XC gradient and keep data on the device
-  eval_exc_grad_local_work_( basis, P, ldp, task_begin, task_end, device_data );
+  eval_exc_grad_local_work_( basis, Ps, ldps, Pz, ldpz, task_begin, task_end, device_data );
 
   // Receive XC gradient from host
   double N_EL;

@@ -67,5 +67,11 @@ DeviceBackend* DeviceRuntimeEnvironment::device_backend() const {
 bool DeviceRuntimeEnvironment::owns_memory() const {
   return device_runtime_pimpl_cast(pimpl_.get())->owns_memory();
 }
+void DeviceRuntimeEnvironment::release_buffer() {
+  device_runtime_pimpl_cast(pimpl_.get())->release_buffer();
+}
+void DeviceRuntimeEnvironment::set_buffer(void* p, size_t sz) {
+  device_runtime_pimpl_cast(pimpl_.get())->set_buffer(p, sz);
+}
 
 }

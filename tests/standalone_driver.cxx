@@ -397,8 +397,7 @@ int main(int argc, char** argv) {
         EXC_GRAD = integrator.eval_exc_grad( P );
       }
       else if( uks ) {
-        std::cout << "Warning: eval_exc_grad + UKS NYI!" << std::endl;
-        //EXC_GRAD = integrator.eval_exc_grad( P, Pz );
+        EXC_GRAD = integrator.eval_exc_grad( P, Pz );
       }
       else if( gks ) {
         std::cout << "Warning: eval_exc_grad + GKS NYI!" << std::endl;

@@ -70,8 +70,10 @@ protected:
                       value_type* EXC, const IntegratorSettingsXC& settings ) override;
 
 
-  void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
-                       int64_t ldp, value_type* EXC_GRAD ) override;
+  void eval_exc_grad_( int64_t m, int64_t n, const value_type* P, int64_t ldp, 
+                       value_type* EXC_GRAD ) override;
+  void eval_exc_grad_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
+                       const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD ) override;
 
   void eval_exx_( int64_t m, int64_t n, const value_type* P,
                   int64_t ldp, value_type* K, int64_t ldk,
@@ -102,12 +104,13 @@ protected:
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data );
 
-  void eval_exc_grad_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
+  void eval_exc_grad_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps, 
+                                  const value_type* Pz, int64_t ldpz,
                                   host_task_iterator task_begin, host_task_iterator task_end,
                                   XCDeviceData& device_data );
 
-  void eval_exc_grad_local_work_( const basis_type& basis, const value_type* P,
-                                  int64_t ldp, value_type* EXC_GRAD, 
+  void eval_exc_grad_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
+                                  const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD, 
                                   host_task_iterator task_begin, host_task_iterator task_end,
                                   XCDeviceData& device_data );
 

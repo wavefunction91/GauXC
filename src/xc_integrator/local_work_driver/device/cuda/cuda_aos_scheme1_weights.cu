@@ -33,7 +33,7 @@ void cuda_aos_scheme1_weights_wrapper( int32_t npts, int32_t natoms,
   compute_grid_to_center_dist( npts, natoms, coords, points_x, points_y, points_z, 
    dist, lddist, stream );
 
-#if 1
+#if 0
   // Get the number of SM's on the device
   int num_sm;
   int dev_id = 0;
@@ -49,7 +49,7 @@ void cuda_aos_scheme1_weights_wrapper( int32_t npts, int32_t natoms,
       weights
     );
 #else
-  partition_weights_ssf_1d( npts, natoms, RAB, natoms, coords, dist, lddist,
+  partition_weights_ssf_1d( npts, natoms, RAB, ldRAB, coords, dist, lddist,
     iparent, dist_nearest, weights, stream );
 #endif
 

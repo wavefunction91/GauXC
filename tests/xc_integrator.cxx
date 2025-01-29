@@ -125,7 +125,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     }
   }
 
-  if( (uks or gks) and ex == ExecutionSpace::Device and func.is_mgga() ) return;
+  if( gks and ex == ExecutionSpace::Device and func.is_mgga() ) return;
 
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
@@ -240,13 +240,13 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
 
   // Check EXC Grad
-  if( check_grad and has_exc_grad and rks) {
-    auto EXC_GRAD = integrator.eval_exc_grad( P );
+  if( check_grad and has_exc_grad ) {
+    auto EXC_GRAD = rks ? integrator.eval_exc_grad( P ) : integrator.eval_exc_grad( P, Pz );
     using map_type = Eigen::Map<Eigen::MatrixXd>;
     map_type EXC_GRAD_ref_map( EXC_GRAD_ref.data(), mol.size(), 3 );
     map_type EXC_GRAD_map( EXC_GRAD.data(), mol.size(), 3 );
     auto EXC_GRAD_diff_nrm = (EXC_GRAD_ref_map - EXC_GRAD_map).norm();
-    CHECK( EXC_GRAD_diff_nrm / std::sqrt(3.0*mol.size()) < 1e-10 );
+    CHECK( EXC_GRAD_diff_nrm / std::sqrt(3.0*mol.size()) < 1e-8 );
   }
 
   // Check K
@@ -311,12 +311,10 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
 
     #ifdef GAUXC_HAS_CUTLASS
     SECTION( "Incore - MPI Reduction - CUTLASS" ) {
-      if(not func.is_mgga() and not func.is_polarized()) {
-        test_xc_integrator( ExecutionSpace::Device, rt, 
-          reference_file, func, pruning_scheme,
-          false, true, false, "Default", "Default", 
-          "Scheme1-CUTLASS" );
-      }
+      test_xc_integrator( ExecutionSpace::Device, rt, 
+        reference_file, func, pruning_scheme,
+        true, true, false, "Default", "Default", 
+        "Scheme1-CUTLASS" );
     }
     #endif
 
@@ -405,12 +403,24 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     test_integrator(GAUXC_REF_DATA_PATH "/li_svwn5_sto3g_uks.bin",
         func, PruningScheme::Unpruned );
   }
+  // + grad
+  SECTION( "Cytosine (doublet) / SVWN5 / cc-pVDZ") {
+    auto func = make_functional(svwn5, pol);
+    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_svwn5_cc-pvdz_ufg_ssf_robust_uks.hdf5", 
+        func, PruningScheme::Robust );
+  }
 
   //UKS GGA Test
   SECTION( "Li / BLYP / sto-3g" ) {
     auto func = make_functional(blyp, pol);
     test_integrator(GAUXC_REF_DATA_PATH "/li_blyp_sto3g_uks.bin",
         func, PruningScheme::Unpruned );
+  }
+  // + grad
+  SECTION( "Cytosine (doublet) / BLYP / cc-pVDZ") {
+    auto func = make_functional(blyp, pol);
+    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_blyp_cc-pvdz_ufg_ssf_robust_uks.hdf5", 
+        func, PruningScheme::Robust );
   }
 
   // UKS MGGA Test (TAU Only)

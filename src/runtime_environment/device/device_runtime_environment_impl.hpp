@@ -8,6 +8,7 @@
 #pragma once
 #include "../runtime_environment_impl.hpp"
 #include "device_backend.hpp"
+#include <gauxc/exceptions.hpp>
 
 namespace GauXC::detail {
 
@@ -63,6 +64,23 @@ public:
   inline size_t device_memory_size() const { return device_memory_size_; }
   inline bool owns_memory() const { return i_own_this_memory_; }
 
+  inline void release_buffer() {
+    if(i_own_this_memory_ and device_memory_ and device_memory_size_) {
+      device_backend_->free_device_buffer(device_memory_);
+    } else {
+      GAUXC_GENERIC_EXCEPTION("GauXC Cannot Release A Buffer It Does Not Own");
+    }
+  }
+
+  inline void set_buffer(void* p, size_t sz) {
+    if(owns_memory()) {
+      release_buffer();
+      i_own_this_memory_ = false;
+    }
+
+    device_memory_ = p;
+    device_memory_size_ = sz;
+  }
 };
 
 

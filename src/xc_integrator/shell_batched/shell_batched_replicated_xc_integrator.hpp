@@ -83,8 +83,11 @@ protected:
 
 
   /// RKS EXC Gradient
-  void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
-                       int64_t ldp, value_type* EXC_GRAD ) override;
+  void eval_exc_grad_( int64_t m, int64_t n, const value_type* P, int64_t ldp, 
+                       value_type* EXC_GRAD ) override;
+  /// UKS EXC Gradient
+  void eval_exc_grad_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
+                       const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD ) override;
 
   /// sn-LinK
   void eval_exx_( int64_t m, int64_t n, const value_type* P,

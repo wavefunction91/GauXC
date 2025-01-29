@@ -63,11 +63,14 @@ public:
   void eval_collocation_laplacian( XCDeviceData* );
   void eval_collocation_lapgrad( XCDeviceData* );
   void eval_xmat( double fac, XCDeviceData*, bool do_grad, density_id den );
+  void save_xmat( XCDeviceData*, bool grad, density_id den );
   
-  void eval_uvars_lda( XCDeviceData*, integrator_ks_scheme ) ;
-  void eval_uvars_gga( XCDeviceData*, integrator_ks_scheme ) ;
-  void eval_uvars_mgga( XCDeviceData*, bool ) ;
-  void eval_vvar( XCDeviceData*, density_id, bool ) ;
+  void eval_uvars_lda ( XCDeviceData*, integrator_ks_scheme ) ;
+  void eval_uvars_gga ( XCDeviceData*, integrator_ks_scheme ) ;
+  void eval_uvars_mgga( XCDeviceData*, integrator_ks_scheme, bool ) ;
+  void eval_vvars_lda ( XCDeviceData*, density_id ) ;
+  void eval_vvars_gga ( XCDeviceData*, density_id ) ;
+  void eval_vvars_mgga( XCDeviceData*, density_id, bool ) ;
 
 
   void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* );
@@ -77,8 +80,8 @@ public:
 
   void eval_zmat_lda_vxc( XCDeviceData*, integrator_ks_scheme, density_id ) ;
   void eval_zmat_gga_vxc( XCDeviceData*, integrator_ks_scheme, density_id ) ;
-  void eval_zmat_mgga_vxc( XCDeviceData*, bool ) ;
-  void eval_mmat_mgga_vxc( XCDeviceData*, bool );
+  void eval_zmat_mgga_vxc( XCDeviceData*, integrator_ks_scheme, bool, density_id ) ;
+  void eval_mmat_mgga_vxc( XCDeviceData*, integrator_ks_scheme, bool, density_id );
 
   void eval_exx_fmat( XCDeviceData* );
   void eval_exx_gmat( XCDeviceData*, const BasisSetMap& );
@@ -86,9 +89,9 @@ public:
   void inc_exc( XCDeviceData* );
   void inc_nel( XCDeviceData* );
   void inc_vxc( XCDeviceData*, density_id, bool do_m = false );
-  void inc_exc_grad_lda( XCDeviceData* );
-  void inc_exc_grad_gga( XCDeviceData* );
-  void inc_exc_grad_mgga( XCDeviceData*, bool );
+  void inc_exc_grad_lda( XCDeviceData*, integrator_ks_scheme );
+  void inc_exc_grad_gga( XCDeviceData*, integrator_ks_scheme  );
+  void inc_exc_grad_mgga( XCDeviceData*, integrator_ks_scheme , bool );
   void inc_exx_k( XCDeviceData* );
 
   void eval_exx_ek_screening_bfn_stats( XCDeviceData* );

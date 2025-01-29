@@ -33,22 +33,23 @@ __global__ void modify_weights_ssf_kernel_1d(
   // Frisch partition functions
   auto gFrisch = [](double x) {
 
-    const double s_x  = x / integrator::magic_ssf_factor<>;
+    const double s_x  = x  * 1.5625; // / integrator::magic_ssf_factor<>;
     const double s_x2 = s_x  * s_x;
     const double s_x3 = s_x  * s_x2;
     const double s_x5 = s_x3 * s_x2;
     const double s_x7 = s_x5 * s_x2;
 
-    return (35.*(s_x - s_x3) + 21.*s_x5 - 5.*s_x7) / 16.;
+    //return (35.*(s_x - s_x3) + 21.*s_x5 - 5.*s_x7) / 16.;
+    return ((35.)*(s_x - s_x3) + (21.)*s_x5 - (5.)*s_x7);
   };
   
   auto sFrisch = [&] (double x) {
-    if( fabs(x) < integrator::magic_ssf_factor<> ) return 0.5 * (1. - gFrisch(x));
+    if( fabs(x) < integrator::magic_ssf_factor<> ) return (0.5 - (0.5/16.) * gFrisch(x));
     else if( x >= integrator::magic_ssf_factor<> ) return 0.;
     else                               return 1.;
   };
 
-  constexpr double weight_tol = 1e-10;
+  constexpr double weight_tol = integrator::ssf_weight_tol;
 
   const int tid_x = threadIdx.x + blockIdx.x * blockDim.x;
   const int nt_x  = blockDim.x  * gridDim.x;
@@ -100,7 +101,7 @@ __global__ void modify_weights_ssf_kernel_1d(
 
       const double ri = local_dist_scratch[ iCenter ];
 
-      const double* const local_rab = RAB + iCenter * natoms;
+      const double* const local_rab = RAB + iCenter * ldRAB;
 
       double ps = 1.;
       for( int jCenter = 0; jCenter < natoms; jCenter++ ) 

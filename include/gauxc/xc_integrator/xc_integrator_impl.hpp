@@ -39,6 +39,7 @@ protected:
   virtual exc_vxc_type_gks  eval_exc_vxc_ ( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, 
                                             const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_grad_type eval_exc_grad_( const MatrixType& P ) = 0;
+  virtual exc_grad_type eval_exc_grad_( const MatrixType& Ps, const MatrixType& Pz ) = 0;
   virtual exx_type      eval_exx_     ( const MatrixType&     P, 
                                         const IntegratorSettingsEXX& settings ) = 0;
   virtual const util::Timer& get_timings_() const = 0;
@@ -108,14 +109,21 @@ public:
   }
 
   /** Integrate EXC gradient for RKS
-   * 
-   *   TODO: add API for UKS/GKS
    *
    *  @param[in] P The alpha density matrix
    *  @returns EXC gradient
    */
   exc_grad_type eval_exc_grad( const MatrixType& P ) {
     return eval_exc_grad_(P);
+  }
+
+  /** Integrate EXC gradient for UKS
+   *
+   *  @param[in] P The alpha density matrix
+   *  @returns EXC gradient
+   */
+  exc_grad_type eval_exc_grad( const MatrixType& Ps, const MatrixType& Pz ) {
+    return eval_exc_grad_(Ps, Pz);
   }
 
   /** Integrate Exact Exchange for RHF

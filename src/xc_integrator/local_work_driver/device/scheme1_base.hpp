@@ -22,22 +22,24 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
 
   void eval_uvars_lda( XCDeviceData*, integrator_ks_scheme ) override final;
   void eval_uvars_gga( XCDeviceData*, integrator_ks_scheme ) override final;
-  void eval_uvars_mgga( XCDeviceData*, bool ) override final;
-  void eval_vvar( XCDeviceData*, density_id, bool ) override final;
+  void eval_uvars_mgga( XCDeviceData*, integrator_ks_scheme, bool ) override final;
+  void eval_vvars_lda ( XCDeviceData*, density_id ) override final;
+  void eval_vvars_gga ( XCDeviceData*, density_id ) override final;
+  void eval_vvars_mgga( XCDeviceData*, density_id, bool ) override final;
 
   void eval_zmat_lda_vxc( XCDeviceData*, integrator_ks_scheme, density_id ) override final;
   void eval_zmat_gga_vxc( XCDeviceData*, integrator_ks_scheme, density_id ) override final;
-  void eval_zmat_mgga_vxc( XCDeviceData*, bool ) override final;
-  void eval_mmat_mgga_vxc( XCDeviceData*, bool ) override final;
+  void eval_zmat_mgga_vxc( XCDeviceData*, integrator_ks_scheme, bool, density_id ) override final;
+  void eval_mmat_mgga_vxc( XCDeviceData*, integrator_ks_scheme, bool, density_id ) override final;
 
   void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* ) override final;
   void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* ) override final;
   void eval_kern_exc_vxc_mgga( const functional_type&, XCDeviceData* ) override final;
   void inc_exc( XCDeviceData* ) override final;
   void inc_nel( XCDeviceData* ) override final;
-  void inc_exc_grad_lda( XCDeviceData* ) override final;
-  void inc_exc_grad_gga( XCDeviceData* ) override final;
-  void inc_exc_grad_mgga( XCDeviceData*, bool ) override final;
+  void inc_exc_grad_lda( XCDeviceData*, integrator_ks_scheme  ) override final;
+  void inc_exc_grad_gga( XCDeviceData*, integrator_ks_scheme  ) override final;
+  void inc_exc_grad_mgga( XCDeviceData*, integrator_ks_scheme , bool ) override final;
   void symmetrize_vxc( XCDeviceData* , density_id) override final;
   void symmetrize_exx_k( XCDeviceData* ) override final;
   //void eval_exx_gmat( XCDeviceData* ) override final;
@@ -48,6 +50,7 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
     XCDeviceData*, host_task_iterator, host_task_iterator,
     const ShellPairCollection<double>& ) override final;
 
+  void save_xmat( XCDeviceData*, bool do_grad, density_id den ) override final;
 
   // Overridable APIs
   virtual void eval_xmat( double fac, XCDeviceData*, bool , density_id ) override;

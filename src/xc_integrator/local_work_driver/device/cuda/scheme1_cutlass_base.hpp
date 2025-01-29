@@ -32,11 +32,29 @@ struct AoSScheme1CUTLASSBase::Data : public AoSScheme1Base::Data {
   using base_type::device_buffer_t;
 
   struct cutlass_data {
-    double** dmat_array_device = nullptr;
+    double** dmat_s_array_device = nullptr;
+    double** dmat_z_array_device = nullptr;
+    double** dmat_y_array_device = nullptr;
+    double** dmat_x_array_device = nullptr;
     double** vmat_array_device = nullptr;
     double** zmat_array_device = nullptr;
     double** bf_array_device   = nullptr;
+    double** bfx_array_device   = nullptr;
+    double** bfy_array_device   = nullptr;
+    double** bfz_array_device   = nullptr;
+    double** xmat_x_array_device   = nullptr;
+    double** xmat_y_array_device   = nullptr;
+    double** xmat_z_array_device   = nullptr;
 
+    inline double** dmat_array(density_id id) {
+      switch(id) {
+        case DEN_S: return dmat_s_array_device;
+        case DEN_Z: return dmat_z_array_device;
+        case DEN_Y: return dmat_y_array_device;
+        case DEN_X: return dmat_x_array_device;
+        default: GAUXC_GENERIC_EXCEPTION("dmat_array: density_id not recognized");
+      }
+    }
                            
     cutlass::gemm::GemmCoord* problem_sizes_device = nullptr;
     cutlass::gemm::GemmCoord* syr2k_sizes_device = nullptr;

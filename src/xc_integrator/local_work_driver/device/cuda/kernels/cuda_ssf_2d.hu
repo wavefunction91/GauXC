@@ -48,7 +48,7 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
   //constexpr uint32_t warps_per_thread_block = weight_thread_block / cuda::warp_size;
   static_assert( weight_unroll == 4 );
 
-  constexpr double weight_tol = 1e-10;
+  constexpr double weight_tol = integrator::ssf_weight_tol;
   int natom_block = ((natoms + blockDim.x - 1) / blockDim.x) * blockDim.x;
 
   const int tid_x = threadIdx.y + blockIdx.y * blockDim.y;
@@ -87,6 +87,7 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
           contribution = sFrisch( mu );
         }
         contribution = cuda::warp_reduce_prod<cuda::warp_size>(contribution);
+        contribution = __shfl_sync(0xFFFFFFFF, contribution, 0);
 
         parent_weight *= contribution;
 

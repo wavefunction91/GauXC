@@ -32,6 +32,8 @@ void zmat_mgga_vxc( size_t        ntasks,
                     int32_t       max_npts,
                     XCDeviceTask* tasks_device,
                     bool          do_lapl,
+                    integrator_ks_scheme s,
+                    density_id sel,
                     device_queue queue );
 
 void mmat_mgga_vxc( size_t        ntasks,
@@ -39,5 +41,7 @@ void mmat_mgga_vxc( size_t        ntasks,
                     int32_t       max_npts,
                     XCDeviceTask* tasks_device,
                     bool          do_lapl,
+                    integrator_ks_scheme s,
+                    density_id sel,
                     device_queue queue );
 }

@@ -172,6 +172,20 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type
 }
 
 template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type 
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_grad_( const MatrixType& Ps, const MatrixType& Pz ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+
+  std::vector<value_type> EXC_GRAD( 3*pimpl_->load_balancer().molecule().natoms() );
+  pimpl_->eval_exc_grad( Ps.rows(), Ps.cols(), Ps.data(), Ps.rows(), Pz.data(), Pz.rows(),
+                         EXC_GRAD.data() );
+
+  return EXC_GRAD;
+
+}
+
+template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exx_type 
   ReplicatedXCIntegrator<MatrixType>::eval_exx_( const MatrixType& P, const IntegratorSettingsEXX& settings ) {
 

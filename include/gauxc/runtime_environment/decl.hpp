@@ -77,6 +77,8 @@ public:
   bool owns_memory() const;
   DeviceBackend* device_backend() const;
 
+  void release_buffer();
+  void set_buffer(void* m, size_t sz);
 };
 #endif
 

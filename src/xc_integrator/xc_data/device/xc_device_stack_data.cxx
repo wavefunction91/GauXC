@@ -155,7 +155,7 @@ void XCDeviceStackData::allocate_static_data_den( int32_t nbf, int32_t nshells )
   allocated_terms.den = true;
 }
 
-void XCDeviceStackData::allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) {
+void XCDeviceStackData::allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms, integrator_term_tracker enabled_terms ) {
 
   if( allocated_terms.exc_grad ) 
     GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXC GRAD");
@@ -173,7 +173,15 @@ void XCDeviceStackData::allocate_static_data_exc_grad( int32_t nbf, int32_t nshe
   static_stack.nel_device        = mem.aligned_alloc<double>( 1 , csl);
   static_stack.acc_scr_device    = mem.aligned_alloc<double>( 1 , csl);
 
-  static_stack.dmat_s_device = mem.aligned_alloc<double>( nbf * nbf , csl);
+  allocated_terms.ks_scheme = enabled_terms.ks_scheme;
+  static_stack.dmat_s_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+  if( not (allocated_terms.ks_scheme == RKS) ) {
+      static_stack.dmat_z_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+      if( allocated_terms.ks_scheme == GKS ) {
+        static_stack.dmat_y_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+        static_stack.dmat_x_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+      }
+  }
 
   // Get current stack location
   dynmem_ptr = mem.stack();
@@ -639,7 +647,7 @@ size_t XCDeviceStackData::get_mem_req(
     // U Variables
     reqt.grid_den_size(npts)      * sizeof(double) + 
     reqt.grid_den_grad_size(npts) * sizeof(double) +
-    reqt.grid_den_lapl_size(npts) * sizeof(double) +
+    reqt.grid_lapl_size(npts)     * sizeof(double) +
 
     // H/K Matrices (GKS)
     reqt.grid_HK_size(npts)       * sizeof(double) +
@@ -708,60 +716,85 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
 
   // Grid function evaluations
   if( reqt.grid_den ) { // Density 
-    base_stack.den_s_eval_device     = mem.aligned_alloc<double>(msz, aln, csl);
-    if( is_pol )  {  base_stack.den_eval_device       = mem.aligned_alloc<double>(2*msz, aln, csl);
-                    base_stack.den_z_eval_device     = mem.aligned_alloc<double>(msz, aln, csl); 
-    if( is_gks ){   base_stack.den_y_eval_device     = mem.aligned_alloc<double>(msz, aln, csl); 
-                    base_stack.den_x_eval_device     = mem.aligned_alloc<double>(msz, aln, csl); }
+    base_stack.den_s_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+
+    if(is_pol) {
+      base_stack.den_interleaved_device = mem.aligned_alloc<double>(2*msz, aln, csl);
+      base_stack.den_z_eval_device      = mem.aligned_alloc<double>(msz, aln, csl);
+    }
+
+    if(is_gks){   
+      base_stack.den_y_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+      base_stack.den_x_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
     }
   }
 
   if( reqt.grid_den_grad ) { // Density gradient
-                   base_stack.dden_sx_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                   base_stack.dden_sy_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                   base_stack.dden_sz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+    base_stack.dden_sx_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    base_stack.dden_sy_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    base_stack.dden_sz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
 
-    if( is_pol )  { base_stack.dden_zx_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                   base_stack.dden_zy_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
-                   base_stack.dden_zz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
-    if( is_gks ) { base_stack.dden_yx_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                   base_stack.dden_yy_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
-                   base_stack.dden_yz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
-                   base_stack.dden_xx_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                   base_stack.dden_xy_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
-                   base_stack.dden_xz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
+    if(is_pol) { 
+      base_stack.dden_zx_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+      base_stack.dden_zy_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+      base_stack.dden_zz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+    }
+    if( is_gks ) { 
+      base_stack.dden_yx_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+      base_stack.dden_yy_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+      base_stack.dden_yz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+      base_stack.dden_xx_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+      base_stack.dden_xy_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+      base_stack.dden_xz_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
     }
   }
 
-  if( reqt.grid_den_lapl ) { // Density Laplacian
-    base_stack.den_lapl_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+  if( reqt.grid_tau ) { // Tau 
+    base_stack.tau_s_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if(is_pol) {
+      base_stack.tau_interleaved_device = mem.aligned_alloc<double>(2*msz, aln, csl);
+      base_stack.tau_z_eval_device      = mem.aligned_alloc<double>(msz, aln, csl);
+    } 
+  }
+
+  if( reqt.grid_lapl ) { // Density Laplacian
+    base_stack.lapl_s_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if(is_pol) {
+      base_stack.lapl_interleaved_device = mem.aligned_alloc<double>(2*msz, aln, csl);
+      base_stack.lapl_z_eval_device      = mem.aligned_alloc<double>(msz, aln, csl);
+    } 
   }
 
   if( reqt.grid_gamma ) { // Gamma
-    if( is_pol  ) {  base_stack.gamma_eval_device    = mem.aligned_alloc<double>(3 * msz, aln, csl);
-                    base_stack.gamma_pp_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                    base_stack.gamma_pm_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                    base_stack.gamma_mm_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
-    else            base_stack.gamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_pol  ) {  
+      base_stack.gamma_eval_device    = mem.aligned_alloc<double>(3 * msz, aln, csl);
+      base_stack.gamma_pp_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+      base_stack.gamma_pm_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+      base_stack.gamma_mm_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+    } else {           
+      base_stack.gamma_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    }
   }
 
   if( reqt.grid_vrho ) { // Vrho
-    if( is_pol  ) { base_stack.vrho_eval_device = mem.aligned_alloc<double>(2 * msz, aln, csl);
-                   base_stack.vrho_pos_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                   base_stack.vrho_neg_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
-    else           base_stack.vrho_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_pol  ) { 
+      base_stack.vrho_eval_device     = mem.aligned_alloc<double>(2 * msz, aln, csl);
+      base_stack.vrho_pos_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+      base_stack.vrho_neg_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+    } else {          
+      base_stack.vrho_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    }
   }
 
   if( reqt.grid_vgamma ) { // Vgamma
-    if( is_pol  ) {  base_stack.vgamma_eval_device    = mem.aligned_alloc<double>(3*msz, aln, csl);
-                    base_stack.vgamma_pp_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                    base_stack.vgamma_pm_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
-                    base_stack.vgamma_mm_eval_device = mem.aligned_alloc<double>(msz, aln, csl); }
-    else            base_stack.vgamma_eval_device    = mem.aligned_alloc<double>(msz, aln, csl);
-  }
-
-  if( reqt.grid_tau ) { // Tau 
-    base_stack.tau_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_pol  ) {  
+      base_stack.vgamma_eval_device    = mem.aligned_alloc<double>(3*msz, aln, csl);
+      base_stack.vgamma_pp_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+      base_stack.vgamma_pm_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+      base_stack.vgamma_mm_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+    } else {
+      base_stack.vgamma_eval_device    = mem.aligned_alloc<double>(msz, aln, csl);
+    }
   }
 
   if( is_gks ) {       // H, K matrices
@@ -780,11 +813,23 @@ XCDeviceStackData::device_buffer_t XCDeviceStackData::allocate_dynamic_stack(
   }
 
   if( reqt.grid_vtau ) { // Vtau
-    base_stack.vtau_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_pol  ) { 
+      base_stack.vtau_eval_device     = mem.aligned_alloc<double>(2 * msz, aln, csl);
+      base_stack.vtau_pos_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+      base_stack.vtau_neg_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+    } else {          
+      base_stack.vtau_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    }
   }
 
   if( reqt.grid_vlapl ) { // Vlapl
-    base_stack.vlapl_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    if( is_pol  ) { 
+      base_stack.vlapl_eval_device     = mem.aligned_alloc<double>(2 * msz, aln, csl);
+      base_stack.vlapl_pos_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+      base_stack.vlapl_neg_eval_device = mem.aligned_alloc<double>(msz, aln, csl); 
+    } else {          
+      base_stack.vlapl_eval_device = mem.aligned_alloc<double>(msz, aln, csl);
+    }
   }
 
 

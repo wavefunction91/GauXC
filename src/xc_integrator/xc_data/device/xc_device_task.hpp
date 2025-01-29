@@ -52,16 +52,29 @@ struct XCDeviceTask {
   double*   d2bfzz    = nullptr;
   double*   eps     = nullptr;
 
-  double* den       = nullptr;
-  double* gamma     = nullptr;
-  double*   vrho    = nullptr;
-  double*   vgamma  = nullptr;
+  double* den    = nullptr;
+  double* gamma  = nullptr;
+  double* tau    = nullptr;
+  double* lapl   = nullptr;
+  double* vrho   = nullptr;
+  double* vgamma = nullptr;
+  double* vtau   = nullptr;
+  double* vlapl  = nullptr;
     
   // (S,Z,Y,X) densities
   double* den_s     = nullptr;
   double* den_z     = nullptr;
   double* den_y     = nullptr;
   double* den_x     = nullptr;
+  double* tau_s     = nullptr;
+  double* tau_z     = nullptr;
+  double* tau_y     = nullptr;
+  double* tau_x     = nullptr;
+  double* lapl_s    = nullptr;
+  double* lapl_z    = nullptr;
+  double* lapl_y    = nullptr;
+  double* lapl_x    = nullptr;
+
   // Del(S,Z,Y,X) Gradients
   double* dden_sx   = nullptr;
   double* dden_sy   = nullptr;
@@ -85,6 +98,10 @@ struct XCDeviceTask {
   double* vgamma_pp  = nullptr;
   double* vgamma_pm  = nullptr;
   double* vgamma_mm  = nullptr;
+  double* vtau_pos  = nullptr;
+  double* vtau_neg  = nullptr;
+  double* vlapl_pos  = nullptr;
+  double* vlapl_neg  = nullptr;
 
   // GKS K,H matrices
   double* K_z        = nullptr;
@@ -99,10 +116,16 @@ struct XCDeviceTask {
   double*   d3bflapl_x    = nullptr;
   double*   d3bflapl_y    = nullptr;
   double*   d3bflapl_z    = nullptr;
-  double*   denlapl     = nullptr;
-  double*   tau   = nullptr;
-  double*   vtau  = nullptr;
-  double*   vlapl  = nullptr;
+
+  // Persistent X matrices for EXC gradients
+  double* xmatS   = nullptr;
+  double* xmatS_x = nullptr;
+  double* xmatS_y = nullptr;
+  double* xmatS_z = nullptr;
+  double* xmatZ   = nullptr;
+  double* xmatZ_x = nullptr;
+  double* xmatZ_y = nullptr;
+  double* xmatZ_z = nullptr;
 
   int32_t iParent       = -1;
   double dist_nearest   = 0.;

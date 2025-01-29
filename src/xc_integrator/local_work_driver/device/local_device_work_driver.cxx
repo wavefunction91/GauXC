@@ -53,10 +53,20 @@ void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, integrator_ks_schem
   throw_if_invalid_pimpl(pimpl_);                               \
   pimpl_->NAME(device_data, track);                               \
 }
+#define FWD_TO_PIMPL_KS_SCHEME_BOOL(NAME) \
+void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, integrator_ks_scheme track, bool b ) { \
+  throw_if_invalid_pimpl(pimpl_);                               \
+  pimpl_->NAME(device_data, track, b);                               \
+}
 #define FWD_TO_PIMPL_KS_SCHEME_DEN_ID(NAME) \
 void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, integrator_ks_scheme track, density_id den ) { \
   throw_if_invalid_pimpl(pimpl_);                               \
   pimpl_->NAME(device_data, track, den);                               \
+}
+#define FWD_TO_PIMPL_KS_SCHEME_BOOL_DEN_ID(NAME) \
+void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, integrator_ks_scheme track, bool b, density_id den ) { \
+  throw_if_invalid_pimpl(pimpl_);                               \
+  pimpl_->NAME(device_data, track, b, den);                               \
 }
 
 FWD_TO_PIMPL(partition_weights)         // Partition weights
@@ -70,16 +80,18 @@ FWD_TO_PIMPL(eval_collocation_lapgrad)  // Collocation Laplacian gradient
 
 FWD_TO_PIMPL_KS_SCHEME(eval_uvars_lda)            // U variables LDA (rho)
 FWD_TO_PIMPL_KS_SCHEME(eval_uvars_gga)            // U variables GGA (gamma)
-FWD_TO_PIMPL_BOOL(eval_uvars_mgga)                // U variables MGGA (tau, lapl)
-FWD_TO_PIMPL_DEN_ID_BOOL(eval_vvar)               // V variable (density + grad)
+FWD_TO_PIMPL_KS_SCHEME_BOOL(eval_uvars_mgga)      // U variables MGGA (tau, lapl)
+FWD_TO_PIMPL_DEN_ID(eval_vvars_lda)               // V variables LDA (density)
+FWD_TO_PIMPL_DEN_ID(eval_vvars_gga)               // V variables GGA (density + grad)
+FWD_TO_PIMPL_DEN_ID_BOOL(eval_vvars_mgga)         // V variables MGGA (density + grad + tau + lapl)
 
 FWD_TO_PIMPL_KS_SCHEME_DEN_ID(eval_zmat_lda_vxc)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL_KS_SCHEME_DEN_ID(eval_zmat_gga_vxc)         // Eval Z Matrix GGA VXC
-FWD_TO_PIMPL_BOOL(eval_zmat_mgga_vxc)                    // Eval Z Matrix mGGA VXC
-FWD_TO_PIMPL_BOOL(eval_mmat_mgga_vxc)                    // Eval M Matrix mGGA VXC
+FWD_TO_PIMPL_KS_SCHEME_BOOL_DEN_ID(eval_zmat_mgga_vxc)   // Eval Z Matrix mGGA VXC
+FWD_TO_PIMPL_KS_SCHEME_BOOL_DEN_ID(eval_mmat_mgga_vxc)   // Eval M Matrix mGGA VXC
 
 FWD_TO_PIMPL(eval_exx_fmat)             // Eval EXX F Matrix
-//FWD_TO_PIMPL(eval_exx_gmat)             // Eval EXX G Matrix
+//FWD_TO_PIMPL(eval_exx_gmat)           // Eval EXX G Matrix
 
 
 FWD_TO_PIMPL(inc_exc)
@@ -87,9 +99,9 @@ FWD_TO_PIMPL(inc_nel)
 FWD_TO_PIMPL_DEN_ID_BOOL(inc_vxc)            // Increment VXC_I by Z
 
 FWD_TO_PIMPL(inc_exx_k)     
-FWD_TO_PIMPL(inc_exc_grad_lda)
-FWD_TO_PIMPL(inc_exc_grad_gga)
-FWD_TO_PIMPL_BOOL(inc_exc_grad_mgga)
+FWD_TO_PIMPL_KS_SCHEME(inc_exc_grad_lda)
+FWD_TO_PIMPL_KS_SCHEME(inc_exc_grad_gga)
+FWD_TO_PIMPL_KS_SCHEME_BOOL(inc_exc_grad_mgga)
 
 FWD_TO_PIMPL_DEN_ID(symmetrize_vxc)
 FWD_TO_PIMPL(symmetrize_exx_k)
@@ -101,6 +113,10 @@ FWD_TO_PIMPL(eval_exx_ek_screening_bfn_stats)
 void LocalDeviceWorkDriver::eval_xmat( double fac, XCDeviceData* device_data, bool do_grad, density_id den ) {
   throw_if_invalid_pimpl(pimpl_);
   pimpl_->eval_xmat(fac, device_data, do_grad, den);
+}
+void LocalDeviceWorkDriver::save_xmat( XCDeviceData* device_data, bool do_grad, density_id den ) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->save_xmat(device_data, do_grad, den);
 }
 
 
