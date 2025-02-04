@@ -7,7 +7,7 @@
  */
 #include <gauxc/molgrid/defaults.hpp>
 #include <gauxc/exceptions.hpp>
-#include <integratorxx/quadratures/lebedev_laikov.hpp>
+#include <integratorxx/quadratures/s2/lebedev_laikov.hpp>
 
 namespace GauXC {
 
@@ -83,11 +83,19 @@ RadialScale default_mhl_radial_scaling_factor( AtomicNumber _Z ) {
   return RadialScale( default_atomic_radius(_Z) * fac );
 }
 
+RadialScale default_bk_radial_scaling_factor( AtomicNumber _Z ) {
+  auto Z = _Z.get(); 
+  const double fac = (Z!=1) ? 0.5 : 1.0;
+  return RadialScale( default_atomic_radius(_Z) * fac );
+}
+
 RadialScale default_radial_scaling_factor(RadialQuad rq, AtomicNumber Z) {
   if( rq == RadialQuad::MuraKnowles ) 
     return default_mk_radial_scaling_factor(Z);
   else if( rq == RadialQuad::TreutlerAldrichs )
     return default_ta_radial_scaling_factor(Z);
+  else if( rq == RadialQuad::Becke )
+    return default_bk_radial_scaling_factor(Z);
   else // MHL
     return default_mhl_radial_scaling_factor(Z);
 }

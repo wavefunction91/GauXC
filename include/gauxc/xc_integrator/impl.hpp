@@ -97,6 +97,21 @@ typename XCIntegrator<MatrixType>::exx_type
 };
 
 template <typename MatrixType>
+typename XCIntegrator<MatrixType>::dd_psi_type
+  XCIntegrator<MatrixType>::eval_dd_psi(const MatrixType& P, unsigned max_Ylm) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_dd_psi(P, max_Ylm);
+}
+
+template <typename MatrixType>
+typename XCIntegrator<MatrixType>::dd_psi_potential_type
+  XCIntegrator<MatrixType>::eval_dd_psi_potential(const MatrixType& X, unsigned max_Ylm) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_dd_psi_potential(X, max_Ylm);
+}
+
+
+template <typename MatrixType>
 const util::Timer& XCIntegrator<MatrixType>::get_timings() const {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->get_timings();

@@ -81,6 +81,10 @@ protected:
   virtual void eval_exx_( int64_t m, int64_t n, const value_type* P,
                           int64_t ldp, value_type* K, int64_t ldk,
                           const IntegratorSettingsEXX& settings ) = 0;
+  virtual void eval_dd_psi_( int64_t m, int64_t n, const value_type* P, int64_t ldp, unsigned max_Ylm, 
+                             value_type* ddPsi, int64_t ldPsi ) = 0;
+  virtual void eval_dd_psi_potential_( int64_t m, int64_t n, const value_type* X, unsigned max_Ylm,
+                             value_type* Vddx) = 0;
 
 public:
 
@@ -140,6 +144,11 @@ public:
   void eval_exx( int64_t m, int64_t n, const value_type* P,
                  int64_t ldp, value_type* K, int64_t ldk,
                  const IntegratorSettingsEXX& settings );
+  void eval_dd_psi( int64_t m, int64_t n, const value_type* P,
+                     int64_t ldp, unsigned max_Ylm, 
+                     value_type* ddPsi, int64_t ldPsi );
+  void eval_dd_psi_potential( int64_t m, int64_t n, const value_type* X, unsigned max_Ylm, 
+                      value_type* Vddx );
 
   inline const util::Timer& get_timings() const { return timer_; }
 

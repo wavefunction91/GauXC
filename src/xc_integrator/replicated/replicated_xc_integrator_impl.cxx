@@ -146,6 +146,24 @@ void ReplicatedXCIntegratorImpl<ValueType>::
 
 }
 
+template <typename ValueType>
+void ReplicatedXCIntegratorImpl<ValueType>::
+  eval_dd_psi( int64_t m, int64_t n, const value_type* P,
+               int64_t ldp, unsigned max_Ylm, value_type* ddPsi, int64_t ldPsi ) {
+
+  eval_dd_psi_(m, n, P, ldp, max_Ylm, ddPsi, ldPsi);
+
+}
+
+template <typename ValueType>
+void ReplicatedXCIntegratorImpl<ValueType>::
+  eval_dd_psi_potential( int64_t m, int64_t n, const value_type* X, unsigned max_Ylm, value_type* Vddx) {
+  
+  eval_dd_psi_potential_(m, n, X, max_Ylm, Vddx);
+  
+}
+  
+
 template class ReplicatedXCIntegratorImpl<double>;
 
 }

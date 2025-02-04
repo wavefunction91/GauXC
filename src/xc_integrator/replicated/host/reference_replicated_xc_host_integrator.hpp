@@ -83,7 +83,12 @@ protected:
                   int64_t ldp, value_type* K, int64_t ldk,
                   const IntegratorSettingsEXX& settings ) override;
 
+  /// ddX PSi 
+  void eval_dd_psi_( int64_t m, int64_t n, const value_type* P,
+                     int64_t ldp, unsigned max_Ylm, value_type* ddPsi, int64_t ldPsi ) override;
 
+  /// ddX PhiX
+  void eval_dd_psi_potential_( int64_t m, int64_t n, const value_type* X, unsigned max_Ylm, value_type* Vddx ) override;
 
   // Implementation details of integrate_den
   void integrate_den_local_work_( const value_type* P, int64_t ldp, 
@@ -109,6 +114,11 @@ protected:
   void exx_local_work_( const value_type* P, int64_t ldp, value_type* K, int64_t ldk,
     const IntegratorSettingsEXX& settings );
 
+  // Implementation details of ddX Psi
+  void dd_psi_local_work_( const value_type* P, int64_t ldp, unsigned max_Ylm, value_type* ddPsi, int64_t ldPsi );    
+
+  void dd_psi_potential_local_work_( const value_type* X, value_type* Vddx, unsigned max_Ylm );
+  
 public:
 
   template <typename... Args>

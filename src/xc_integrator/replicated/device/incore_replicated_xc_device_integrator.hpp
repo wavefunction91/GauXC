@@ -79,6 +79,12 @@ protected:
                   int64_t ldp, value_type* K, int64_t ldk,
                   const IntegratorSettingsEXX& settings ) override;
 
+  void eval_dd_psi_( int64_t m, int64_t n, const value_type* P,
+                     int64_t ldp, unsigned max_Ylm, value_type* ddPsi, 
+                     int64_t ldPsi ) override;
+  
+  void eval_dd_psi_potential_( int64_t m, int64_t n, const value_type* X, 
+                    unsigned max_Ylm, value_type* Vddx ) override;
 
   void integrate_den_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                             value_type *N_EL,

@@ -8,9 +8,9 @@
 #include "catch2/catch.hpp"
 #include <gauxc/grid.hpp>
 
-#include <integratorxx/quadratures/lebedev_laikov.hpp>
-#include <integratorxx/quadratures/muraknowles.hpp>
-#include <integratorxx/quadratures/mhl.hpp>
+#include <integratorxx/quadratures/radial/muraknowles.hpp>
+#include <integratorxx/quadratures/radial/mhl.hpp>
+#include <integratorxx/quadratures/s2/lebedev_laikov.hpp>
 #include <integratorxx/composite_quadratures/spherical_quadrature.hpp>
 
 #include <random>

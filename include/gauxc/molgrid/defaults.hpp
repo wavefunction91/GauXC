@@ -14,6 +14,7 @@ namespace GauXC {
   double slater_radius_64(AtomicNumber);
   double slater_radius_30(AtomicNumber);
   double clementi_radius_67(AtomicNumber);
+  double uff_radius_103(AtomicNumber);
   double default_atomic_radius(AtomicNumber);
 
   RadialScale default_mk_radial_scaling_factor( AtomicNumber );

@@ -36,6 +36,8 @@ public:
   using exc_vxc_type_gks  = std::tuple< value_type, matrix_type, matrix_type, matrix_type, matrix_type >;
   using exc_grad_type = std::vector< value_type >;
   using exx_type      = matrix_type;
+  using dd_psi_type   = std::vector< value_type >;
+  using dd_psi_potential_type   = matrix_type;
 
 private:
 
@@ -72,6 +74,8 @@ public:
   exx_type      eval_exx     ( const MatrixType&, 
                                const IntegratorSettingsEXX& = IntegratorSettingsEXX{} );
 
+  dd_psi_type eval_dd_psi( const MatrixType&, unsigned );
+  dd_psi_potential_type eval_dd_psi_potential( const MatrixType&, unsigned );
 
   const util::Timer& get_timings() const;
   const LoadBalancer& load_balancer() const;

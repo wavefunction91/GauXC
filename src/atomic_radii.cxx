@@ -318,4 +318,31 @@ double clementi_radius_67(AtomicNumber _Z) {
 
 }
 
+// UFF atomic radii
+// Atomic radii derived from the universal force field
+// A. K. Rappe et. al. J. Am. Chem. Soc., 1992, 114 (25), pp 10024-10035
+// https://doi.org/10.1021/ja00051a040, data given in Angström,
+// will be converted to Bohr. Note that keys are normalised to lower case.
+const std::vector<double> radius_uff_list = {1.443, 1.81, 1.2255, 1.3725, 2.0415, 1.9255, 1.83, 1.75, 
+                            1.682, 1.6215, 1.4915, 1.5105, 
+                            2.2495, 2.1475, 2.0735, 2.0175, 1.9735, 1.934, 1.906, 1.6995, 1.6475, 
+                            1.5875, 1.572, 1.5115, 1.4805, 1.456, 1.436, 1.417, 1.7475, 
+                            1.3815, 2.1915, 2.14, 2.115, 2.1025, 2.0945, 2.0705, 2.057, 
+                            1.8205, 1.6725, 1.562, 1.5825, 1.526, 1.499, 1.4815, 1.4645, 
+                            1.4495, 1.574, 1.424, 2.2315, 2.196, 2.21, 2.235, 2.25, 2.202, 
+                            2.2585, 1.8515, 1.761, 1.778, 1.803, 1.7875, 1.7735, 1.76, 1.7465, 
+                            1.684, 1.7255, 1.714, 1.7045, 1.6955, 1.687, 1.6775, 1.82, 1.5705, 
+                            1.585, 1.5345, 1.477, 1.56, 1.42, 1.377, 1.6465, 1.3525, 2.1735, 2.1485, 
+                            2.185, 2.3545, 2.375, 2.3825, 2.45, 1.8385, 1.739, 1.698, 1.712, 1.6975, 
+                            1.712, 1.712, 1.6905, 1.663, 1.6695, 1.6565, 1.6495, 1.643, 1.637, 1.624, 1.618};
+
+double uff_radius_103(AtomicNumber _Z) {
+    const double RADIUS_UFF_SCALING = 1.1;
+    const double DDX_BOHR_TO_ANGSTROM = 0.52917721092;
+    auto Z = _Z.get();
+    if (Z < 0 || Z >= radius_uff_list.size()) {
+        return -1.;
+    }
+    return radius_uff_list[Z-1] * RADIUS_UFF_SCALING / DDX_BOHR_TO_ANGSTROM;
+}
 }

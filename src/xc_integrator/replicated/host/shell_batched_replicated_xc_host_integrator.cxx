@@ -11,6 +11,8 @@
 #include "shell_batched_replicated_xc_integrator_exc_vxc.hpp"
 #include "shell_batched_replicated_xc_integrator_exc_grad.hpp"
 #include "shell_batched_replicated_xc_integrator_exx.hpp"
+#include "shell_batched_replicated_xc_integrator_dd_psi.hpp"
+#include "shell_batched_replicated_xc_integrator_dd_psi_potential.hpp"
 
 namespace GauXC  {
 namespace detail {

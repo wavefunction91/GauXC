@@ -200,5 +200,32 @@ typename ReplicatedXCIntegrator<MatrixType>::exx_type
 
 }
 
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::dd_psi_type
+  ReplicatedXCIntegrator<MatrixType>::eval_dd_psi_( const MatrixType& P, unsigned max_Ylm ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+
+  const size_t natoms = pimpl_->load_balancer().molecule().natoms();
+  const size_t Ylm_sz = (max_Ylm + 1) * ( max_Ylm + 1);
+  std::vector<value_type> ddPsi(natoms * Ylm_sz, 0.0);
+  pimpl_->eval_dd_psi(P.rows(), P.cols(), P.data(), P.rows(), max_Ylm, ddPsi.data(), Ylm_sz);
+  return ddPsi;
+}
+
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::dd_psi_potential_type
+  ReplicatedXCIntegrator<MatrixType>::eval_dd_psi_potential_( const MatrixType& X, unsigned max_Ylm ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+
+  const size_t nbf = pimpl_->load_balancer().basis().nbf();
+  matrix_type Vddx(nbf, nbf);
+  Vddx.setZero(); 
+  pimpl_->eval_dd_psi_potential(X.rows(), X.cols(), X.data(), max_Ylm, Vddx.data());
+  return Vddx;                      
+
+}
+
 }
 }
