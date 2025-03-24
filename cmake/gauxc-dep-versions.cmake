@@ -2,7 +2,7 @@ set( GAUXC_LINALG_MODULES_REPOSITORY https://github.com/wavefunction91/linalg-cm
 set( GAUXC_LINALG_MODULES_REVISION  28ceaa9738f14935aa544289fa2fe4c4cc955d0e )
 
 set( GAUXC_CEREAL_REPOSITORY https://github.com/USCiLab/cereal.git )
-set( GAUXC_CEREAL_REVISION   v1.3.0 )
+set( GAUXC_CEREAL_REVISION   v1.3.2 )
 
 set( GAUXC_CUB_REPOSITORY https://github.com/NVIDIA/cub.git )
 set( GAUXC_CUB_REVISION   1.10.0 )
