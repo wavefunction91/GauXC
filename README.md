@@ -110,7 +110,7 @@ Please cite the following publications if GauXC was used in your publication:
 
 % CUDA and distributed memory implementation
 @article{williams20on,
-  author={David B. Williams--Young and Wibe A. de Jong and Hubertus J.J. van Dam and
+  author={David B. Williams-Young and Wibe A. de Jong and Hubertus J.J. van Dam and
           Chao Yang},
   title={On the Efficient Evaluation of the Exchange Correlation Potential on 
          Graphics Processing Unit Clusters},
@@ -125,14 +125,14 @@ Please cite the following publications if GauXC was used in your publication:
 
 % Algorithm for XC potential assembly and shared-memory CPU implementation
 @article{petrone18an,
-  author={Alessio Petrone and David B. Williams--Young and Shichao Sun and
+  author={Alessio Petrone and David B. Williams-Young and Shichao Sun and
           Torin F. Stetina and Xiaosong Li},
   title={An Efficient Implementation of Two-Component Relativistic Density 
          Functional Theory with Torque-Free Auxiliary Variables},
   journal={The European Physical Journal B},
   volume={91},
   number={169},
-  pages={},
+  pages={169},
   year={2018},
   doi={10.1140/epjb/e2018-90170-1},
   url={https://link.springer.com/article/10.1140/epjb/e2018-90170-1}
