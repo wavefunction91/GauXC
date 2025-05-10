@@ -21,6 +21,17 @@ ReplicatedXCIntegratorImpl<ValueType>::
 
 template <typename ValueType>
 ReplicatedXCIntegratorImpl<ValueType>::
+  ReplicatedXCIntegratorImpl( std::shared_ptr< functional_type >   func,
+                              std::shared_ptr< functional_type >   epcfunc,
+                              std::shared_ptr< LoadBalancer >      lb, 
+                              std::unique_ptr< LocalWorkDriver >&& lwd,
+                              std::shared_ptr< ReductionDriver >   rd) :
+    ReplicatedXCIntegratorImpl(func, lb, std::move(lwd), rd) {
+      epcfunc_ = epcfunc;
+}
+
+template <typename ValueType>
+ReplicatedXCIntegratorImpl<ValueType>::
   ~ReplicatedXCIntegratorImpl() noexcept = default;
 
 template <typename ValueType>
@@ -81,7 +92,7 @@ void ReplicatedXCIntegratorImpl<ValueType>::
                       int64_t ldpz,
                       value_type* VXCs, int64_t ldvxcs,
                       value_type* VXCz, int64_t ldvxcz,
-                      value_type* EXC, const IntegratorSettingsXC& ks_settings) {
+                      value_type* EXC, const IntegratorSettingsXC& ks_settings ) {
 
     eval_exc_vxc_(m,n,Ps,ldps,
                       Pz,ldpz,
@@ -114,6 +125,56 @@ void ReplicatedXCIntegratorImpl<ValueType>::
                       VXCz,ldvxcz,
                       VXCy,ldvxcy,
                       VXCx,ldvxcx,EXC, ks_settings);
+
+}
+
+template <typename ValueType>
+void ReplicatedXCIntegratorImpl<ValueType>::
+  neo_eval_exc_vxc( int64_t elec_m, int64_t elec_n, int64_t prot_m, int64_t prot_n, 
+                    const value_type* elec_Ps, int64_t elec_ldps,
+                    const value_type* prot_Ps, int64_t prot_ldps,
+                    const value_type* prot_Pz, int64_t prot_ldpz,
+                    value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                    value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                    value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                    value_type* elec_EXC,  value_type* prot_EXC,
+                    const IntegratorSettingsXC& ks_settings ){
+
+    neo_eval_exc_vxc_(elec_m,elec_n,prot_m,prot_n, 
+                      elec_Ps,  elec_ldps,
+                      prot_Ps,  prot_ldps,
+                      prot_Pz,  prot_ldpz,
+                      elec_VXCs,elec_ldvxcs,
+                      prot_VXCs,prot_ldvxcs,
+                      prot_VXCz,prot_ldvxcz,
+                      elec_EXC, prot_EXC, ks_settings); 
+
+}
+
+template <typename ValueType>
+void ReplicatedXCIntegratorImpl<ValueType>::
+  neo_eval_exc_vxc( int64_t elec_m, int64_t elec_n, int64_t prot_m, int64_t prot_n, 
+                    const value_type* elec_Ps, int64_t elec_ldps,
+                    const value_type* elec_Pz, int64_t elec_ldpz,
+                    const value_type* prot_Ps, int64_t prot_ldps,
+                    const value_type* prot_Pz, int64_t prot_ldpz,
+                    value_type* elec_VXCs,     int64_t elec_ldvxcs,
+                    value_type* elec_VXCz,     int64_t elec_ldvxcz,
+                    value_type* prot_VXCs,     int64_t prot_ldvxcs,
+                    value_type* prot_VXCz,     int64_t prot_ldvxcz,
+                    value_type* elec_EXC,  value_type* prot_EXC,
+                    const IntegratorSettingsXC& ks_settings ){
+
+    neo_eval_exc_vxc_(elec_m,elec_n,prot_m,prot_n, 
+                      elec_Ps,  elec_ldps,
+                      elec_Pz,  elec_ldpz,
+                      prot_Ps,  prot_ldps,
+                      prot_Pz,  prot_ldpz,
+                      elec_VXCs,elec_ldvxcs,
+                      elec_VXCz,elec_ldvxcz,
+                      prot_VXCs,prot_ldvxcs,
+                      prot_VXCz,prot_ldvxcz,
+                      elec_EXC, prot_EXC, ks_settings);  
 
 }
 

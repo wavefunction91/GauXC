@@ -70,9 +70,26 @@ template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_vxc_type_gks
   XCIntegrator<MatrixType>::eval_exc_vxc( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, 
                                           const IntegratorSettingsXC& ks_settings ) {
-      if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
-        return pimpl_->eval_exc_vxc(Ps, Pz, Py, Px, ks_settings);
-  };
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_exc_vxc(Ps, Pz, Py, Px, ks_settings);
+};
+
+template <typename MatrixType>
+typename XCIntegrator<MatrixType>::exc_vxc_type_neo_rks
+  XCIntegrator<MatrixType>::neo_eval_exc_vxc( const MatrixType& elec_Ps, const MatrixType& prot_Ps, const MatrixType& prot_Pz,
+                                              const IntegratorSettingsXC& ks_settings ){
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->neo_eval_exc_vxc(elec_Ps, prot_Ps, prot_Pz, ks_settings);
+};
+
+template <typename MatrixType>
+typename XCIntegrator<MatrixType>::exc_vxc_type_neo_uks
+  XCIntegrator<MatrixType>::neo_eval_exc_vxc( const MatrixType& elec_Ps, const MatrixType& elec_Pz, const MatrixType& prot_Ps, const MatrixType& prot_Pz,
+                                              const IntegratorSettingsXC& ks_settings ){
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->neo_eval_exc_vxc(elec_Ps, elec_Pz, prot_Ps, prot_Pz, ks_settings);
+};
+
 
 template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_grad_type

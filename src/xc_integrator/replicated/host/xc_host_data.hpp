@@ -30,6 +30,14 @@ struct XCHostData {
   std::vector<F> nbe_scr;
   std::vector<F> den_scr;
   std::vector<F> basis_eval;
+
+  std::vector<F> epc;
+  std::vector<F> protonic_vrho;
+ 
+  std::vector<F> protonic_zmat;
+  std::vector<F> protonic_gmat;
+  std::vector<F> protonic_den_scr;
+  std::vector<F> protonic_basis_eval;
    
   inline XCHostData() {}
 

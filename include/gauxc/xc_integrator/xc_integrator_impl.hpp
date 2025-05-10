@@ -23,6 +23,8 @@ public:
   using exc_vxc_type_rks   = typename XCIntegrator<MatrixType>::exc_vxc_type_rks;
   using exc_vxc_type_uks   = typename XCIntegrator<MatrixType>::exc_vxc_type_uks;
   using exc_vxc_type_gks   = typename XCIntegrator<MatrixType>::exc_vxc_type_gks;
+  using exc_vxc_type_neo_rks   = typename XCIntegrator<MatrixType>::exc_vxc_type_neo_rks;
+  using exc_vxc_type_neo_uks   = typename XCIntegrator<MatrixType>::exc_vxc_type_neo_uks;
   using exc_grad_type  = typename XCIntegrator<MatrixType>::exc_grad_type;
   using exx_type       = typename XCIntegrator<MatrixType>::exx_type;
 
@@ -38,6 +40,10 @@ protected:
   virtual exc_vxc_type_uks  eval_exc_vxc_ ( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_vxc_type_gks  eval_exc_vxc_ ( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, 
                                             const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual exc_vxc_type_neo_rks  neo_eval_exc_vxc_ ( const MatrixType& elec_Ps, const MatrixType& prot_Ps, const MatrixType& prot_Pz,
+                                                    const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual exc_vxc_type_neo_uks  neo_eval_exc_vxc_ ( const MatrixType& elec_Ps, const MatrixType& elec_Pz, const MatrixType& prot_Ps, const MatrixType& prot_Pz,
+                                                    const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_grad_type eval_exc_grad_( const MatrixType& P ) = 0;
   virtual exx_type      eval_exx_     ( const MatrixType&     P, 
                                         const IntegratorSettingsEXX& settings ) = 0;
@@ -105,6 +111,16 @@ public:
 
   exc_vxc_type_gks eval_exc_vxc( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, const IntegratorSettingsXC& ks_settings ) {
     return eval_exc_vxc_(Ps, Pz, Py, Px, ks_settings);
+  }
+  
+  exc_vxc_type_neo_rks neo_eval_exc_vxc( const MatrixType& elec_Ps, const MatrixType& prot_Ps, const MatrixType& prot_Pz, 
+                                         const IntegratorSettingsXC& ks_settings){
+    return neo_eval_exc_vxc_(elec_Ps, prot_Ps, prot_Pz, ks_settings);
+  }
+
+  exc_vxc_type_neo_uks neo_eval_exc_vxc( const MatrixType& elec_Ps, const MatrixType& elec_Pz, const MatrixType& prot_Ps, const MatrixType& prot_Pz, 
+                                         const IntegratorSettingsXC& ks_settings){
+    return neo_eval_exc_vxc_(elec_Ps, elec_Pz, prot_Ps, prot_Pz, ks_settings);
   }
 
   /** Integrate EXC gradient for RKS

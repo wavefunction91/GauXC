@@ -56,6 +56,46 @@ typename ReplicatedXCHostIntegratorFactory<ValueType>::ptr_return_t
 
 }
 
+
+template <typename ValueType>
+typename ReplicatedXCHostIntegratorFactory<ValueType>::ptr_return_t
+  ReplicatedXCHostIntegratorFactory<ValueType>::make_integrator_impl(
+    std::string integrator_kernel,
+    std::shared_ptr<functional_type> func,
+    std::shared_ptr<functional_type> epcfunc,
+    std::shared_ptr<LoadBalancer> lb, 
+    std::unique_ptr<LocalWorkDriver>&& lwd,
+    std::shared_ptr<ReductionDriver>   rd
+    ) {
+
+  // Make sure that the LWD is a valid LocalHostWorkDriver
+  if(not dynamic_cast<LocalHostWorkDriver*>(lwd.get())) {
+    GAUXC_GENERIC_EXCEPTION("Passed LWD Not valid for Host ExSpace");
+  }
+
+  std::transform(integrator_kernel.begin(), integrator_kernel.end(), 
+    integrator_kernel.begin(), ::toupper );
+
+  if( integrator_kernel == "DEFAULT" ) integrator_kernel = "REFERENCE";
+
+  if( integrator_kernel == "REFERENCE" )
+    return std::make_unique<ReferenceReplicatedXCHostIntegrator<ValueType>>(
+      func, epcfunc, lb, std::move(lwd), rd
+    );
+
+  else if( integrator_kernel == "SHELLBATCHED" )
+    return std::make_unique<ShellBatchedReplicatedXCHostIntegrator<ValueType>>(
+      func, epcfunc, lb, std::move(lwd), rd
+    );
+
+  else
+    GAUXC_GENERIC_EXCEPTION("INTEGRATOR KERNEL: " + integrator_kernel + " NOT RECOGNIZED");
+
+  return nullptr;
+
+
+}
+
 template class ReplicatedXCHostIntegratorFactory<double>;
 
 
