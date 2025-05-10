@@ -29,6 +29,7 @@ set( GAUXC_OBARA_SAIKA_HOST_SRC
      src/obara_saika_integrals.cxx
      src/chebyshev_boys_computation.cxx
 )
+
 target_sources( gauxc PRIVATE ${GAUXC_OBARA_SAIKA_HOST_SRC} )
 target_include_directories( gauxc PUBLIC
   $<BUILD_INTERFACE:${CMAKE_CURRENT_LIST_DIR}/include>
