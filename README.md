@@ -62,7 +62,7 @@ for flexible and agile development in the field of KS-DFT.
 
 # Major Contributors
 
-Primary Developer and Maintainer: David Williams-Young - LBNL (dbwy at lbl dot gov) 
+Primary Developer and Maintainer: David Williams--Young - LBNL (dbwy at lbl dot gov) 
 
 GauXC has received major contributions from the following developers (in no particular order):
 * Thom Popovici (LBNL)          - Optimized sn-K kernels for CPU and GPU architectures
@@ -82,7 +82,7 @@ Please cite the following publications if GauXC was used in your publication:
 % Distributed Memory Seminumerical Exact Exchange implementation
 @article{williams2023distributed,
   title = {Distributed memory, GPU accelerated Fock construction for hybrid, Gaussian basis density functional theory},
-  author = {Williams-Young, David B. and Asadchev, Andrey and Popovici, Doru Thom and Clark, David and Waldrop, Jonathan and 
+  author = {Williams--Young, David B. and Asadchev, Andrey and Popovici, Doru Thom and Clark, David and Waldrop, Jonathan and 
             Windus, Theresa L. and Valeev, Edward F. and de Jong, Wibe A.},
   journal = {The Journal of Chemical Physics},
   volume = {158},
@@ -97,7 +97,7 @@ Please cite the following publications if GauXC was used in your publication:
 @article{williams2021achieving,
   title={Achieving performance portability in Gaussian basis set density functional 
          theory on accelerator based architectures in NWChemEx},
-  author={Williams-Young, David B and Bagusetty, Abhishek and de Jong, Wibe A and 
+  author={Williams--Young, David B and Bagusetty, Abhishek and de Jong, Wibe A and 
           Doerfler, Douglas and van Dam, Hubertus JJ and V{\'a}zquez-Mayagoitia, {\'A}lvaro and 
           Windus, Theresa L and Yang, Chao},
   journal={Parallel Computing},
@@ -110,7 +110,7 @@ Please cite the following publications if GauXC was used in your publication:
 
 % CUDA and distributed memory implementation
 @article{williams20on,
-  author={David B. Williams-Young and Wibe A. de Jong and Hubertus J.J. van Dam and
+  author={David B. Williams--Young and Wibe A. de Jong and Hubertus J.J. van Dam and
           Chao Yang},
   title={On the Efficient Evaluation of the Exchange Correlation Potential on 
          Graphics Processing Unit Clusters},
@@ -125,7 +125,7 @@ Please cite the following publications if GauXC was used in your publication:
 
 % Algorithm for XC potential assembly and shared-memory CPU implementation
 @article{petrone18an,
-  author={Alessio Petrone and David B. Williams-Young and Shichao Sun and
+  author={Alessio Petrone and David B. Williams--Young and Shichao Sun and
           Torin F. Stetina and Xiaosong Li},
   title={An Efficient Implementation of Two-Component Relativistic Density 
          Functional Theory with Torque-Free Auxiliary Variables},
