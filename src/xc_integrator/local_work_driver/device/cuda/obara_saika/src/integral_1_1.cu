@@ -780,7 +780,8 @@ using namespace GauXC;
 
   }
 
-template<ObaraSaikaType type_, int points_per_subtask_, int primpair_shared_limit_>
+template<ObaraSaikaType type_, int points_per_subtask_, int primpair_shared_limit_,
+         bool pure_bra, bool pure_ket>
 struct DeviceTask11 {
   static constexpr int max_primpair_shared_limit = 32;
 
@@ -794,7 +795,7 @@ struct DeviceTask11 {
 
   static constexpr bool use_shared = (primpair_shared_limit > 0) && 
                                      (primpair_shared_limit <= max_primpair_shared_limit);
-  static constexpr int num_warps = points_per_subtask / cuda::warp_size;
+  static constexpr int num_warps = points_per_subtask / GauXC::cuda::warp_size;
   // Cannot declare shared memory array with length 0
   static constexpr int prim_buffer_size = (use_shared) ? num_warps * primpair_shared_limit : 1;
 
@@ -825,12 +826,12 @@ struct DeviceTask11 {
     const double Z_AB = param.Z_AB;
 
     static constexpr bool use_shared = (primpair_shared_limit > 0);
-    static constexpr int num_warps = points_per_subtask / cuda::warp_size;
+    static constexpr int num_warps = points_per_subtask / GauXC::cuda::warp_size;
     // Cannot declare shared memory array with length 0
     static constexpr int prim_buffer_size = (use_shared) ? num_warps * primpair_shared_limit : 1;
 
-    const int laneId = threadIdx.x % cuda::warp_size;
-    const int warpId __attribute__((unused)) = threadIdx.x / cuda::warp_size;
+    const int laneId = threadIdx.x % GauXC::cuda::warp_size;
+    const int warpId __attribute__((unused)) = threadIdx.x / GauXC::cuda::warp_size;
 
     __shared__ GauXC::PrimitivePair<double> s_prim_pairs[prim_buffer_size] __attribute__((unused));
 
@@ -859,7 +860,7 @@ struct DeviceTask11 {
       temp_7 = SCALAR_ZERO();
       temp_8 = SCALAR_ZERO();
 
-      const int pointIndex = i * cuda::warp_size + laneId;
+      const int pointIndex = i * GauXC::cuda::warp_size + laneId;
 
       if (pointIndex < npts) {
         const double point_x = s_task_data[pointIndex].x;
@@ -990,6 +991,34 @@ struct DeviceTask11 {
           SCALAR_TYPE const_value_w;
           SCALAR_TYPE tx, ty, tz, tw, t0, t1, t2;
 
+          SCALAR_TYPE Xik_0, Xik_1, Xik_2;
+          SCALAR_TYPE Xjk_0, Xjk_1, Xjk_2;
+          SCALAR_TYPE Gjk_0, Gjk_1, Gjk_2;
+
+          if constexpr (pure_bra) {
+            Xik_0 = SCALAR_LOAD((Xik + 2*ldX));
+            Xik_1 = SCALAR_LOAD((Xik + 0*ldX));
+            Xik_2 = SCALAR_LOAD((Xik + 1*ldX));
+          } else {
+            Xik_0 = SCALAR_LOAD((Xik + 0*ldX));
+            Xik_1 = SCALAR_LOAD((Xik + 1*ldX));
+            Xik_2 = SCALAR_LOAD((Xik + 2*ldX));
+          }
+
+          if constexpr (pure_ket) {
+            Xjk_0 = SCALAR_LOAD((Xjk + 2*ldX));
+            Xjk_1 = SCALAR_LOAD((Xjk + 0*ldX));
+            Xjk_2 = SCALAR_LOAD((Xjk + 1*ldX));
+          } else {
+            Xjk_0 = SCALAR_LOAD((Xjk + 0*ldX));
+            Xjk_1 = SCALAR_LOAD((Xjk + 1*ldX));
+            Xjk_2 = SCALAR_LOAD((Xjk + 2*ldX));
+          }
+
+          Gjk_0 = 0;
+          Gjk_1 = 0;
+          Gjk_2 = 0;
+
           /**** j = 0 ****/
           X_ABp = 1.0; comb_m_i = 1.0;
           Y_ABp = 1.0; comb_n_j = 1.0;
@@ -997,20 +1026,20 @@ struct DeviceTask11 {
           const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
           const_value_w = SCALAR_MUL(const_value_v, const_value);
 
-          tx = SCALAR_LOAD((Xik + 0 * ldX));
-          ty = SCALAR_LOAD((Xjk + 0 * ldX));
+          tx = Xik_0;
+          ty = Xjk_0;
           t0 = SCALAR_MUL(temp_3, const_value_w);
           tz = SCALAR_MUL(ty, t0);
           tw = SCALAR_MUL(tx, t0);
           outBuffer[threadIdx.x][0] += tz;
 
-          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          tx = Xik_1;
           t1 = SCALAR_MUL(temp_4, const_value_w);
           tz = SCALAR_MUL(ty, t1);
           tw = SCALAR_FMA(tx, t1, tw);
           outBuffer[threadIdx.x][1] += tz;
 
-          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          tx = Xik_2;
           t2 = SCALAR_MUL(temp_5, const_value_w);
           tz = SCALAR_MUL(ty, t2);
           tw = SCALAR_FMA(tx, t2, tw);
@@ -1022,24 +1051,24 @@ struct DeviceTask11 {
           const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
           const_value_w = SCALAR_MUL(const_value_v, const_value);
 
-          tx = SCALAR_LOAD((Xik + 0 * ldX));
+          tx = Xik_0;
           t0 = SCALAR_MUL(temp_0, const_value_w);
           tz = SCALAR_MUL(ty, t0);
           tw = SCALAR_FMA(tx, t0, tw);
           outBuffer[threadIdx.x][0] += tz;
 
-          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          tx = Xik_1;
           t1 = SCALAR_MUL(temp_1, const_value_w);
           tz = SCALAR_MUL(ty, t1);
           tw = SCALAR_FMA(tx, t1, tw);
           outBuffer[threadIdx.x][1] += tz;
 
-          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          tx = Xik_2;
           t2 = SCALAR_MUL(temp_2, const_value_w);
           tz = SCALAR_MUL(ty, t2);
           tw = SCALAR_FMA(tx, t2, tw);
           outBuffer[threadIdx.x][2] += tz;
-          if constexpr (!diag) atomicAdd((Gjk + 0 * ldG), tw);
+          if constexpr (!diag) Gjk_0 = tw;
 
           /**** j = 1 ****/
           X_ABp = 1.0; comb_m_i = 1.0;
@@ -1048,20 +1077,20 @@ struct DeviceTask11 {
           const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
           const_value_w = SCALAR_MUL(const_value_v, const_value);
 
-          tx = SCALAR_LOAD((Xik + 0 * ldX));
-          ty = SCALAR_LOAD((Xjk + 1 * ldX));
+          tx = Xik_0;
+          ty = Xjk_1;
           t0 = SCALAR_MUL(temp_4, const_value_w);
           tz = SCALAR_MUL(ty, t0);
           tw = SCALAR_MUL(tx, t0);
           outBuffer[threadIdx.x][0] += tz;
 
-          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          tx = Xik_1;
           t1 = SCALAR_MUL(temp_6, const_value_w);
           tz = SCALAR_MUL(ty, t1);
           tw = SCALAR_FMA(tx, t1, tw);
           outBuffer[threadIdx.x][1] += tz;
 
-          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          tx = Xik_2;
           t2 = SCALAR_MUL(temp_7, const_value_w);
           tz = SCALAR_MUL(ty, t2);
           tw = SCALAR_FMA(tx, t2, tw);
@@ -1072,24 +1101,24 @@ struct DeviceTask11 {
           const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
           const_value_w = SCALAR_MUL(const_value_v, const_value);
 
-          tx = SCALAR_LOAD((Xik + 0 * ldX));
+          tx = Xik_0;
           t0 = SCALAR_MUL(temp_0, const_value_w);
           tz = SCALAR_MUL(ty, t0);
           tw = SCALAR_FMA(tx, t0, tw);
           outBuffer[threadIdx.x][0] += tz;
 
-          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          tx = Xik_1;
           t1 = SCALAR_MUL(temp_1, const_value_w);
           tz = SCALAR_MUL(ty, t1);
           tw = SCALAR_FMA(tx, t1, tw);
           outBuffer[threadIdx.x][1] += tz;
 
-          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          tx = Xik_2;
           t2 = SCALAR_MUL(temp_2, const_value_w);
           tz = SCALAR_MUL(ty, t2);
           tw = SCALAR_FMA(tx, t2, tw);
           outBuffer[threadIdx.x][2] += tz;
-          if constexpr (!diag) atomicAdd((Gjk + 1 * ldG), tw);
+          if constexpr (!diag) Gjk_1 = tw;
 
           /**** j = 2 ****/
           X_ABp = 1.0; comb_m_i = 1.0;
@@ -1098,20 +1127,20 @@ struct DeviceTask11 {
           const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
           const_value_w = SCALAR_MUL(const_value_v, const_value);
 
-          tx = SCALAR_LOAD((Xik + 0 * ldX));
-          ty = SCALAR_LOAD((Xjk + 2 * ldX));
+          tx = Xik_0;
+          ty = Xjk_2;
           t0 = SCALAR_MUL(temp_5, const_value_w);
           tz = SCALAR_MUL(ty, t0);
           tw = SCALAR_MUL(tx, t0);
           outBuffer[threadIdx.x][0] += tz;
 
-          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          tx = Xik_1;
           t1 = SCALAR_MUL(temp_7, const_value_w);
           tz = SCALAR_MUL(ty, t1);
           tw = SCALAR_FMA(tx, t1, tw);
           outBuffer[threadIdx.x][1] += tz;
 
-          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          tx = Xik_2;
           t2 = SCALAR_MUL(temp_8, const_value_w);
           tz = SCALAR_MUL(ty, t2);
           tw = SCALAR_FMA(tx, t2, tw);
@@ -1121,28 +1150,46 @@ struct DeviceTask11 {
           const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
           const_value_w = SCALAR_MUL(const_value_v, const_value);
 
-          tx = SCALAR_LOAD((Xik + 0 * ldX));
+          tx = Xik_0;
           t0 = SCALAR_MUL(temp_0, const_value_w);
           tz = SCALAR_MUL(ty, t0);
           tw = SCALAR_FMA(tx, t0, tw);
           outBuffer[threadIdx.x][0] += tz;
 
-          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          tx = Xik_1;
           t1 = SCALAR_MUL(temp_1, const_value_w);
           tz = SCALAR_MUL(ty, t1);
           tw = SCALAR_FMA(tx, t1, tw);
           outBuffer[threadIdx.x][1] += tz;
 
-          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          tx = Xik_2;
           t2 = SCALAR_MUL(temp_2, const_value_w);
           tz = SCALAR_MUL(ty, t2);
           tw = SCALAR_FMA(tx, t2, tw);
           outBuffer[threadIdx.x][2] += tz;
-          if constexpr (!diag) atomicAdd((Gjk + 2 * ldG), tw);
+          if constexpr (!diag) Gjk_2 = tw;
 
-          atomicAdd((Gik + 0 * ldG), outBuffer[threadIdx.x][0]);
-          atomicAdd((Gik + 1 * ldG), outBuffer[threadIdx.x][1]);
-          atomicAdd((Gik + 2 * ldG), outBuffer[threadIdx.x][2]);
+          if constexpr (!diag) {
+            if constexpr (pure_ket) {
+              atomicAdd((Gjk + 2 * ldG), Gjk_0);
+              atomicAdd((Gjk + 0 * ldG), Gjk_1);
+              atomicAdd((Gjk + 1 * ldG), Gjk_2);
+            } else {
+              atomicAdd((Gjk + 0 * ldG), Gjk_0);
+              atomicAdd((Gjk + 1 * ldG), Gjk_1);
+              atomicAdd((Gjk + 2 * ldG), Gjk_2);
+            }
+          }
+
+          if constexpr (pure_bra) {
+            atomicAdd((Gik + 2 * ldG), outBuffer[threadIdx.x][0]);
+            atomicAdd((Gik + 0 * ldG), outBuffer[threadIdx.x][1]);
+            atomicAdd((Gik + 1 * ldG), outBuffer[threadIdx.x][2]);
+          } else {
+            atomicAdd((Gik + 0 * ldG), outBuffer[threadIdx.x][0]);
+            atomicAdd((Gik + 1 * ldG), outBuffer[threadIdx.x][1]);
+            atomicAdd((Gik + 2 * ldG), outBuffer[threadIdx.x][2]);
+          }
 
         }
       }
@@ -1152,14 +1199,26 @@ struct DeviceTask11 {
 };
 
 template <int primpair_limit>
-using AM11 = DeviceTask11<ObaraSaikaType::base,
-  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, primpair_limit>;
-
+using AM11_cart = DeviceTask11<ObaraSaikaType::base,
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, 
+  primpair_limit, false, false>;
 template <int primpair_limit>
-using AM1 = DeviceTask11<ObaraSaikaType::diag,
-  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, primpair_limit>;
+using AM1_cart = DeviceTask11<ObaraSaikaType::diag,
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, 
+  primpair_limit, false, false>;
+template <int primpair_limit>
+using AM11_sph = DeviceTask11<ObaraSaikaType::base,
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, 
+  primpair_limit, true, true>;
+template <int primpair_limit>
+using AM1_sph = DeviceTask11<ObaraSaikaType::diag,
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, 
+  primpair_limit, true, true>;
+
+
 
   void integral_1_1_task_batched(
+    bool sph,
     size_t ntasks, size_t nsubtask,
     int max_primpair, size_t max_nsp,
     GauXC::XCDeviceTask*                device_tasks,
@@ -1179,16 +1238,26 @@ using AM1 = DeviceTask11<ObaraSaikaType::diag,
     dim3 nblocks(nblocks_x, nblocks_y, nblocks_z);
     dim3 nthreads(alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask);
     
-    dev_integral_task_map_dispatcher<AM11>(
-      nblocks, nthreads, max_primpair, stream, 
-      ntasks, nsubtask,
-      device_tasks, task2sp, 
-      (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
-      sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
-      boys_table );
+    if(sph)
+      dev_integral_task_map_dispatcher<AM11_sph>(
+        nblocks, nthreads, max_primpair, stream, 
+        ntasks, nsubtask,
+        device_tasks, task2sp, 
+        (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
+        sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+        boys_table );
+    else
+      dev_integral_task_map_dispatcher<AM11_cart>(
+        nblocks, nthreads, max_primpair, stream, 
+        ntasks, nsubtask,
+        device_tasks, task2sp, 
+        (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
+        sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+        boys_table );
   }
 
   void integral_1_task_batched(
+    bool sph,
     size_t ntasks, size_t nsubtask,
     int max_primpair, size_t max_nsp,
     GauXC::XCDeviceTask*                device_tasks,
@@ -1208,12 +1277,21 @@ using AM1 = DeviceTask11<ObaraSaikaType::diag,
     dim3 nblocks(nblocks_x, nblocks_y, nblocks_z);
     dim3 nthreads(alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask);
     
-    dev_integral_task_map_dispatcher<AM1>(
-      nblocks, nthreads, max_primpair, stream, 
-      ntasks, nsubtask,
-      device_tasks, task2sp, 
-      (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
-      sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
-      boys_table );
+    if(sph)
+      dev_integral_task_map_dispatcher<AM1_sph>(
+        nblocks, nthreads, max_primpair, stream, 
+        ntasks, nsubtask,
+        device_tasks, task2sp, 
+        (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
+        sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+        boys_table );
+    else
+      dev_integral_task_map_dispatcher<AM1_cart>(
+        nblocks, nthreads, max_primpair, stream, 
+        ntasks, nsubtask,
+        device_tasks, task2sp, 
+        (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
+        sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+        boys_table );
   }
 }

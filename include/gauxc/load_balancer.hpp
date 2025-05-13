@@ -77,6 +77,9 @@ public:
   /// Return internal timing tracker
   const util::Timer& get_timings() const;
 
+  /// Return the total number of points for local tasks
+  size_t total_npts() const;
+
   /// Return the maximum number of points for local tasks
   size_t max_npts()       const;
 

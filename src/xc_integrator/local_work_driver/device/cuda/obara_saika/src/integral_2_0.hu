@@ -33,6 +33,7 @@ namespace XGPU {
 
   void integral_2_0_task_batched(
     bool swap,
+    bool sph,
     size_t ntasks,
     size_t nsubtasks,
     int max_primpairs, size_t max_nsp,

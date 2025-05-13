@@ -63,6 +63,7 @@ public:
 
   const util::Timer& get_timings() const;
 
+  size_t total_npts()     const;
   size_t max_npts()       const;
   size_t max_nbe()        const;
   size_t max_npts_x_nbe() const;

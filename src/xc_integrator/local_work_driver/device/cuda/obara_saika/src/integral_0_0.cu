@@ -355,7 +355,7 @@ struct DeviceTask00 {
 
   static constexpr bool use_shared = (primpair_shared_limit > 0) && 
                                      (primpair_shared_limit <= max_primpair_shared_limit);
-  static constexpr int num_warps = points_per_subtask / cuda::warp_size;
+  static constexpr int num_warps = points_per_subtask / GauXC::cuda::warp_size;
   // Cannot declare shared memory array with length 0
   static constexpr int prim_buffer_size = (use_shared) ? num_warps * primpair_shared_limit : 1;
 
@@ -382,8 +382,8 @@ struct DeviceTask00 {
     double *Gi = param.Gi;
     double *Gj = param.Gj;
 
-    const int laneId = threadIdx.x % cuda::warp_size;
-    const int warpId __attribute__((unused)) = threadIdx.x / cuda::warp_size;
+    const int laneId = threadIdx.x % GauXC::cuda::warp_size;
+    const int warpId __attribute__((unused)) = threadIdx.x / GauXC::cuda::warp_size;
 
     __shared__ GauXC::PrimitivePair<double> s_prim_pairs[prim_buffer_size] __attribute__((unused));
 
@@ -397,7 +397,7 @@ struct DeviceTask00 {
     for (int i = 0; i <  num_warps; i++) {
       double temp = SCALAR_ZERO();
 
-      const int pointIndex = i * cuda::warp_size + laneId;
+      const int pointIndex = i * GauXC::cuda::warp_size + laneId;
 
       if (pointIndex < npts) {
 

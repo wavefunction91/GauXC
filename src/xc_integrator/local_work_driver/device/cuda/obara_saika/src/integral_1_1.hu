@@ -38,6 +38,7 @@ namespace XGPU {
         cudaStream_t stream); 
 
   void integral_1_1_task_batched(
+    bool sph,
     size_t ntasks,
     size_t nsubtasks,
     int max_primpairs, size_t max_nsp,
@@ -53,6 +54,7 @@ namespace XGPU {
     cudaStream_t stream);
 
   void integral_1_task_batched(
+    bool sph,
     size_t ntasks, size_t nsubtask,
     int max_primpairs, size_t max_nsp,
     GauXC::XCDeviceTask*                device_tasks,
