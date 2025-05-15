@@ -47,6 +47,13 @@ TEST_CASE("Molecule", "[moltypes]") {
 
   size_t natoms_gen = 40;
 
+  SECTION("Default") {
+
+    Molecule mol;
+
+    CHECK(mol.natoms() == 0);
+  }
+
   SECTION("From std::vector<Atom>") {
 
     std::vector<Atom> atoms;
@@ -113,6 +120,25 @@ TEST_CASE("Molecule", "[moltypes]") {
 
   }
 
+  SECTION("Copy ctor") {
+
+    std::vector<Atom> atoms{Atom(AtomicNumber(1), 0.0, 0.0, 0.0)};
+    Molecule mol(atoms);
+
+    Molecule mol_copy(mol);
+    CHECK(mol == mol_copy);
+  }
+
+
+  SECTION("Move ctor") {
+
+    std::vector<Atom> atoms{Atom(AtomicNumber(1), 0.0, 0.0, 0.0)};
+    Molecule mol(atoms);
+
+    Molecule mol_copy(mol);
+    Molecule mol_move(std::move(mol));
+    CHECK(mol_move == mol_copy);
+  }
 
 }
 
