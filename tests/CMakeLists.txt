@@ -61,6 +61,7 @@ add_executable( gauxc_test
   runtime.cxx
   basis/parse_basis.cxx
   dd_psi_potential_test.cxx
+  2nd_derivative_test.cxx
 )
 target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
 if(GAUXC_ENABLE_CUTLASS)

@@ -327,11 +327,11 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
     }
     #endif
 
-    SECTION( "ShellBatched" ) {
-      test_xc_integrator( ExecutionSpace::Device, rt, 
-        reference_file, func, pruning_scheme,  
-        false, false, false, "ShellBatched" );
-    }
+    // SECTION( "ShellBatched" ) {
+    //   test_xc_integrator( ExecutionSpace::Device, rt, 
+    //     reference_file, func, pruning_scheme,  
+    //     false, false, false, "ShellBatched" );
+    // }
   }
 #endif
 

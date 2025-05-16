@@ -63,6 +63,7 @@ public:
   void eval_collocation_laplacian( XCDeviceData* );
   void eval_collocation_lapgrad( XCDeviceData* );
   void eval_xmat( double fac, XCDeviceData*, bool do_grad, density_id den );
+  void eval_xmat_trial( double fac, XCDeviceData*, bool do_grad, density_id den );
   void save_xmat( XCDeviceData*, bool grad, density_id den );
   
   void eval_uvars_lda ( XCDeviceData*, integrator_ks_scheme ) ;
@@ -72,16 +73,31 @@ public:
   void eval_vvars_gga ( XCDeviceData*, density_id ) ;
   void eval_vvars_mgga( XCDeviceData*, density_id, bool ) ;
 
+  void eval_tmat_lda ( XCDeviceData*, integrator_ks_scheme ) ;
+  void eval_tmat_gga ( XCDeviceData*, integrator_ks_scheme ) ;
+  void eval_tmat_mgga( XCDeviceData*, integrator_ks_scheme, bool ) ;
+  void eval_vvars_lda_trial ( XCDeviceData*, density_id ) ;
+  void eval_vvars_gga_trial ( XCDeviceData*, density_id ) ;
+  void eval_vvars_mgga_trial( XCDeviceData*, density_id, bool ) ;
+
 
   void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* );
   void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* );
   void eval_kern_exc_vxc_mgga( const functional_type&, XCDeviceData* );
 
+  void eval_kern_vxc_fxc_lda( const functional_type&, XCDeviceData* );
+  void eval_kern_vxc_fxc_gga( const functional_type&, XCDeviceData* );
+  void eval_kern_vxc_fxc_mgga( const functional_type&, XCDeviceData* );
 
   void eval_zmat_lda_vxc( XCDeviceData*, integrator_ks_scheme, density_id ) ;
   void eval_zmat_gga_vxc( XCDeviceData*, integrator_ks_scheme, density_id ) ;
   void eval_zmat_mgga_vxc( XCDeviceData*, integrator_ks_scheme, bool, density_id ) ;
   void eval_mmat_mgga_vxc( XCDeviceData*, integrator_ks_scheme, bool, density_id );
+
+  void eval_zmat_lda_fxc( XCDeviceData*, density_id ) ;
+  void eval_zmat_gga_fxc( XCDeviceData*, density_id ) ;
+  void eval_zmat_mgga_fxc( XCDeviceData*, bool, density_id ) ;
+  void eval_mmat_mgga_fxc( XCDeviceData*, bool, density_id );
 
   void eval_exx_fmat( XCDeviceData* );
   void eval_exx_gmat( XCDeviceData*, const BasisSetMap& );
@@ -89,6 +105,7 @@ public:
   void inc_exc( XCDeviceData* );
   void inc_nel( XCDeviceData* );
   void inc_vxc( XCDeviceData*, density_id, bool do_m = false );
+  void inc_fxc( XCDeviceData*, density_id, bool do_m = false );
   void inc_exc_grad_lda( XCDeviceData*, integrator_ks_scheme );
   void inc_exc_grad_gga( XCDeviceData*, integrator_ks_scheme  );
   void inc_exc_grad_mgga( XCDeviceData*, integrator_ks_scheme , bool );
@@ -99,6 +116,7 @@ public:
     host_task_iterator, host_task_iterator, const ShellPairCollection<double>& );
 
   void symmetrize_vxc( XCDeviceData*, density_id );
+  void symmetrize_fxc( XCDeviceData*, density_id );
   void symmetrize_exx_k( XCDeviceData* );
 
   std::unique_ptr<XCDeviceData> create_device_data(const DeviceRuntimeEnvironment&);

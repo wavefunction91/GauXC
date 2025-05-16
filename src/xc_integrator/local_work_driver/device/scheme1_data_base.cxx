@@ -850,7 +850,7 @@ void Scheme1DataBase::add_extra_to_indirection(
     }
   }
 
-  if( terms.exx or terms.exc_vxc or terms.exc_grad or terms.den or terms.exx_ek_screening ) {
+  if( terms.exx or terms.exc_vxc or terms.exc_grad or terms.den or terms.exx_ek_screening or terms.fxc_contraction ) {
     const size_t total_nshells_bfn = total_nshells_bfn_task_batch * sizeof(size_t);
     buffer_adaptor 
       shell_list_bfn_mem( collocation_stack.shell_list_device, total_nshells_bfn );

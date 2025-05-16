@@ -1028,6 +1028,541 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
 
 }
 
+void ReferenceLocalHostWorkDriver::eval_tmat_lda_vxc_rks( size_t npts, const double* v2rho2, const double* trho, double* A){
+	for( int32_t i = 0; i < (int32_t)npts; ++i ) 
+		A[i] = v2rho2[i] * trho[i];
+}
+
+void ReferenceLocalHostWorkDriver::eval_tmat_lda_vxc_uks( size_t npts, const double* v2rho2, const double* trho, double* A){
+	for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+		A[2*i] = v2rho2[3*i] * trho[2*i] + v2rho2[3*i+1] * trho[2*i+1];
+		A[2*i+1] = v2rho2[3*i+1] * trho[2*i] + v2rho2[3*i+2] * trho[2*i+1];
+	}
+}
+
+void ReferenceLocalHostWorkDriver::eval_tmat_gga_vxc_rks( size_t npts, const double* vgamma, 
+  const double* v2rho2, const double* v2rhogamma, const double* v2gamma2, 
+  const double* trho, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval,
+  const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B ){
+
+  for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+
+
+    //calculate trial gamma
+    const auto tgamma = tdden_x_eval[i] * dden_x_eval[i] + tdden_y_eval[i] * dden_y_eval[i] + tdden_z_eval[i] * dden_z_eval[i];
+
+    A[i] = v2rho2[i] * trho[i] + 2 * v2rhogamma[i] * tgamma;
+
+    auto B_coef = v2rhogamma[i] * trho[i] + 2 * v2gamma2[i] * tgamma;
+
+    B[i * 3]     = 2 * B_coef * dden_x_eval[i] + 2 * vgamma[i] * tdden_x_eval[i];
+    B[i * 3 + 1] = 2 * B_coef * dden_y_eval[i] + 2 * vgamma[i] * tdden_y_eval[i];
+    B[i * 3 + 2] = 2 * B_coef * dden_z_eval[i] + 2 * vgamma[i] * tdden_z_eval[i];
+
+  }
+}
+
+
+void ReferenceLocalHostWorkDriver::eval_tmat_gga_vxc_uks( size_t npts, const double* vgamma, 
+  const double* v2rho2, const double* v2rhogamma, const double* v2gamma2, 
+  const double* trho, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval,
+  const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B ){
+
+  for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+
+    // convert dden_x_eval, dden_y_eval, dden_z_eval to two-spinor representation
+    const auto dden_x_eval_a = 0.5 * (dden_x_eval[2*i] + dden_x_eval[2*i+1]);
+    const auto dden_x_eval_b = 0.5 * (dden_x_eval[2*i] - dden_x_eval[2*i+1]);
+    const auto dden_y_eval_a = 0.5 * (dden_y_eval[2*i] + dden_y_eval[2*i+1]);
+    const auto dden_y_eval_b = 0.5 * (dden_y_eval[2*i] - dden_y_eval[2*i+1]);
+    const auto dden_z_eval_a = 0.5 * (dden_z_eval[2*i] + dden_z_eval[2*i+1]);
+    const auto dden_z_eval_b = 0.5 * (dden_z_eval[2*i] - dden_z_eval[2*i+1]);
+    // convert tdden_x_eval, tdden_y_eval, tdden_z_eval to two-spinor representation
+    const auto tdden_x_eval_a = 0.5 * (tdden_x_eval[2*i] + tdden_x_eval[2*i+1]);
+    const auto tdden_x_eval_b = 0.5 * (tdden_x_eval[2*i] - tdden_x_eval[2*i+1]);
+    const auto tdden_y_eval_a = 0.5 * (tdden_y_eval[2*i] + tdden_y_eval[2*i+1]);
+    const auto tdden_y_eval_b = 0.5 * (tdden_y_eval[2*i] - tdden_y_eval[2*i+1]);
+    const auto tdden_z_eval_a = 0.5 * (tdden_z_eval[2*i] + tdden_z_eval[2*i+1]);
+    const auto tdden_z_eval_b = 0.5 * (tdden_z_eval[2*i] - tdden_z_eval[2*i+1]);
+
+    //calculate trial gamma
+    const auto tgamma_aa = tdden_x_eval_a * dden_x_eval_a + tdden_y_eval_a * dden_y_eval_a + tdden_z_eval_a * dden_z_eval_a;
+    const auto tgamma_ab = tdden_x_eval_a * dden_x_eval_b + tdden_y_eval_a * dden_y_eval_b + tdden_z_eval_a * dden_z_eval_b
+                        + tdden_x_eval_b * dden_x_eval_a + tdden_y_eval_b * dden_y_eval_a + tdden_z_eval_b * dden_z_eval_a;
+    const auto tgamma_bb = tdden_x_eval_b * dden_x_eval_b + tdden_y_eval_b * dden_y_eval_b + tdden_z_eval_b * dden_z_eval_b;
+    const auto trho_a = trho[2*i];
+    const auto trho_b = trho[2*i+1];
+
+    const auto v2rho2_a_a = v2rho2[3*i];
+    const auto v2rho2_a_b = v2rho2[3*i+1];
+    const auto v2rho2_b_b = v2rho2[3*i+2];
+    const auto v2rhogamma_a_aa = v2rhogamma[6*i];
+    const auto v2rhogamma_a_ab = v2rhogamma[6*i+1];
+    const auto v2rhogamma_a_bb = v2rhogamma[6*i+2];
+    const auto v2rhogamma_b_aa = v2rhogamma[6*i+3];
+    const auto v2rhogamma_b_ab = v2rhogamma[6*i+4];
+    const auto v2rhogamma_b_bb = v2rhogamma[6*i+5];
+    const auto v2gamma2_aa_aa = v2gamma2[6*i];
+    const auto v2gamma2_aa_ab = v2gamma2[6*i+1];
+    const auto v2gamma2_aa_bb = v2gamma2[6*i+2];
+    const auto v2gamma2_ab_ab = v2gamma2[6*i+3];
+    const auto v2gamma2_ab_bb = v2gamma2[6*i+4];
+    const auto v2gamma2_bb_bb = v2gamma2[6*i+5];
+    const auto vgamma_aa = vgamma[3*i];
+    const auto vgamma_ab = vgamma[3*i+1];
+    const auto vgamma_bb = vgamma[3*i+2];
+
+    A[2 * i] = v2rho2_a_a * trho_a + 2 * v2rhogamma_a_aa * tgamma_aa + v2rhogamma_a_ab * tgamma_ab +
+             v2rho2_a_b * trho_b + 2 * v2rhogamma_a_bb * tgamma_bb;
+    A[2 * i + 1] = v2rho2_b_b * trho_b + 2 * v2rhogamma_b_bb * tgamma_bb + v2rhogamma_b_ab * tgamma_ab +
+             v2rho2_a_b * trho_a + 2 * v2rhogamma_b_aa * tgamma_aa;
+
+    auto B_coef1 = v2rhogamma_a_aa * trho_a + 2 * v2gamma2_aa_aa * tgamma_aa + v2gamma2_aa_ab * tgamma_ab +
+             v2rhogamma_b_aa * trho_b + 2 * v2gamma2_aa_bb * tgamma_bb;
+    auto B_coef2 = v2rhogamma_a_ab * trho_a + 2 * v2gamma2_aa_ab * tgamma_aa + v2gamma2_ab_ab * tgamma_ab +
+             v2rhogamma_b_ab * trho_b + 2 * v2gamma2_ab_bb * tgamma_bb;
+
+    B[i * 6]     = 2 * B_coef1 * dden_x_eval_a + B_coef2 * dden_x_eval_b + 2 * vgamma_aa * tdden_x_eval_a + vgamma_ab * tdden_x_eval_b;
+    B[i * 6 + 1] = 2 * B_coef1 * dden_y_eval_a + B_coef2 * dden_y_eval_b + 2 * vgamma_aa * tdden_y_eval_a + vgamma_ab * tdden_y_eval_b;
+    B[i * 6 + 2] = 2 * B_coef1 * dden_z_eval_a + B_coef2 * dden_z_eval_b + 2 * vgamma_aa * tdden_z_eval_a + vgamma_ab * tdden_z_eval_b;
+
+    B_coef1 = v2rhogamma_b_bb * trho_b + 2 * v2gamma2_bb_bb * tgamma_bb + v2gamma2_ab_bb * tgamma_ab +
+             v2rhogamma_a_bb * trho_a + 2 * v2gamma2_aa_bb * tgamma_aa;
+    B_coef2 = v2rhogamma_b_ab * trho_b + 2 * v2gamma2_ab_bb * tgamma_bb + v2gamma2_ab_ab * tgamma_ab +
+             v2rhogamma_a_ab * trho_a + 2 * v2gamma2_aa_ab * tgamma_aa;
+
+    B[i * 6 + 3] = 2 * B_coef1 * dden_x_eval_b + B_coef2 * dden_x_eval_a + 2 * vgamma_bb * tdden_x_eval_b + vgamma_ab * tdden_x_eval_a;
+    B[i * 6 + 4] = 2 * B_coef1 * dden_y_eval_b + B_coef2 * dden_y_eval_a + 2 * vgamma_bb * tdden_y_eval_b + vgamma_ab * tdden_y_eval_a;
+    B[i * 6 + 5] = 2 * B_coef1 * dden_z_eval_b + B_coef2 * dden_z_eval_a + 2 * vgamma_bb * tdden_z_eval_b + vgamma_ab * tdden_z_eval_a;
+  }
+}
+
+
+void ReferenceLocalHostWorkDriver::eval_tmat_mgga_vxc_rks( size_t npts, const double* vgamma, 
+  const double* v2rho2, const double* v2rhogamma, const double* v2rholapl, const double* v2rhotau, 
+  const double* v2gamma2, const double* v2gammalapl, const double* v2gammatau,
+  const double* v2lapl2, const double* v2lapltau, const double* v2tau2, 
+  const double* trho, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, 
+  const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C){
+
+    for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+
+      //calculate trial gamma
+      const auto tgamma = tdden_x_eval[i] * dden_x_eval[i] + tdden_y_eval[i] * dden_y_eval[i] + tdden_z_eval[i] * dden_z_eval[i];
+  
+      A[i] = v2rho2[i] * trho[i] + 2 * v2rhogamma[i] * tgamma + v2rhotau[i] * ttau[i];
+      C[i] = v2rhotau[i] * trho[i] + 2 * v2gammatau[i] * tgamma + v2tau2[i] * ttau[i];
+  
+      auto B_coef = v2rhogamma[i] * trho[i] + 2 * v2gamma2[i] * tgamma + v2gammatau[i] * ttau[i];
+  
+      B[i * 3]     = 2 * B_coef * dden_x_eval[i] + 2 * vgamma[i] * tdden_x_eval[i];
+      B[i * 3 + 1] = 2 * B_coef * dden_y_eval[i] + 2 * vgamma[i] * tdden_y_eval[i];
+      B[i * 3 + 2] = 2 * B_coef * dden_z_eval[i] + 2 * vgamma[i] * tdden_z_eval[i];
+  
+    }
+
+}
+
+
+void ReferenceLocalHostWorkDriver::eval_tmat_mgga_vxc_uks( size_t npts, const double* vgamma, 
+  const double* v2rho2, const double* v2rhogamma, const double* v2rholapl, const double* v2rhotau, 
+  const double* v2gamma2, const double* v2gammalapl, const double* v2gammatau,
+  const double* v2lapl2, const double* v2lapltau, const double* v2tau2, 
+  const double* trho, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, 
+  const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C){
+
+  // Laplacian is not supported now
+  if( v2rholapl != nullptr ||  v2gammalapl != nullptr ||  v2lapltau != nullptr ||  v2lapl2 != nullptr )
+      GAUXC_GENERIC_EXCEPTION(std::string("Laplacian not supported"));
+
+  for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+
+    // convert dden_x_eval, dden_y_eval, dden_z_eval to two-spinor representation
+    const auto dden_x_eval_a = 0.5 * (dden_x_eval[2*i] + dden_x_eval[2*i+1]);
+    const auto dden_x_eval_b = 0.5 * (dden_x_eval[2*i] - dden_x_eval[2*i+1]);
+    const auto dden_y_eval_a = 0.5 * (dden_y_eval[2*i] + dden_y_eval[2*i+1]);
+    const auto dden_y_eval_b = 0.5 * (dden_y_eval[2*i] - dden_y_eval[2*i+1]);
+    const auto dden_z_eval_a = 0.5 * (dden_z_eval[2*i] + dden_z_eval[2*i+1]);
+    const auto dden_z_eval_b = 0.5 * (dden_z_eval[2*i] - dden_z_eval[2*i+1]);
+    // convert tdden_x_eval, tdden_y_eval, tdden_z_eval to two-spinor representation
+    const auto tdden_x_eval_a = 0.5 * (tdden_x_eval[2*i] + tdden_x_eval[2*i+1]);
+    const auto tdden_x_eval_b = 0.5 * (tdden_x_eval[2*i] - tdden_x_eval[2*i+1]);
+    const auto tdden_y_eval_a = 0.5 * (tdden_y_eval[2*i] + tdden_y_eval[2*i+1]);
+    const auto tdden_y_eval_b = 0.5 * (tdden_y_eval[2*i] - tdden_y_eval[2*i+1]);
+    const auto tdden_z_eval_a = 0.5 * (tdden_z_eval[2*i] + tdden_z_eval[2*i+1]);
+    const auto tdden_z_eval_b = 0.5 * (tdden_z_eval[2*i] - tdden_z_eval[2*i+1]);
+
+    //calculate trial gamma
+    const auto tgamma_aa = tdden_x_eval_a * dden_x_eval_a + tdden_y_eval_a * dden_y_eval_a + tdden_z_eval_a * dden_z_eval_a;
+    const auto tgamma_ab = tdden_x_eval_a * dden_x_eval_b + tdden_y_eval_a * dden_y_eval_b + tdden_z_eval_a * dden_z_eval_b
+                         + tdden_x_eval_b * dden_x_eval_a + tdden_y_eval_b * dden_y_eval_a + tdden_z_eval_b * dden_z_eval_a;
+    const auto tgamma_bb = tdden_x_eval_b * dden_x_eval_b + tdden_y_eval_b * dden_y_eval_b + tdden_z_eval_b * dden_z_eval_b;
+    const auto trho_a = trho[2*i];
+    const auto trho_b = trho[2*i+1];
+    const auto ttau_a = ttau[2*i];
+    const auto ttau_b = ttau[2*i+1];
+
+    const auto v2rho2_a_a = v2rho2[3*i];
+    const auto v2rho2_a_b = v2rho2[3*i+1];
+    const auto v2rho2_b_b = v2rho2[3*i+2];
+    const auto v2rhogamma_a_aa = v2rhogamma[6*i];
+    const auto v2rhogamma_a_ab = v2rhogamma[6*i+1];
+    const auto v2rhogamma_a_bb = v2rhogamma[6*i+2];
+    const auto v2rhogamma_b_aa = v2rhogamma[6*i+3];
+    const auto v2rhogamma_b_ab = v2rhogamma[6*i+4];
+    const auto v2rhogamma_b_bb = v2rhogamma[6*i+5];
+    const auto v2gamma2_aa_aa = v2gamma2[6*i];
+    const auto v2gamma2_aa_ab = v2gamma2[6*i+1];
+    const auto v2gamma2_aa_bb = v2gamma2[6*i+2];
+    const auto v2gamma2_ab_ab = v2gamma2[6*i+3];
+    const auto v2gamma2_ab_bb = v2gamma2[6*i+4];
+    const auto v2gamma2_bb_bb = v2gamma2[6*i+5];
+    const auto vgamma_aa = vgamma[3*i];
+    const auto vgamma_ab = vgamma[3*i+1];
+    const auto vgamma_bb = vgamma[3*i+2];
+    const auto v2rhotau_a_a = v2rhotau[4*i];
+    const auto v2rhotau_a_b = v2rhotau[4*i+1];
+    const auto v2rhotau_b_a = v2rhotau[4*i+2];
+    const auto v2rhotau_b_b = v2rhotau[4*i+3];
+    const auto v2tau2_a_a = v2tau2[3*i];
+    const auto v2tau2_a_b = v2tau2[3*i+1];
+    const auto v2tau2_b_b = v2tau2[3*i+2];
+    const auto v2gammatau_aa_a = v2gammatau[6*i];
+    const auto v2gammatau_aa_b = v2gammatau[6*i+1];
+    const auto v2gammatau_ab_a = v2gammatau[6*i+2];
+    const auto v2gammatau_ab_b = v2gammatau[6*i+3];
+    const auto v2gammatau_bb_a = v2gammatau[6*i+4];
+    const auto v2gammatau_bb_b = v2gammatau[6*i+5];
+
+  
+    A[2 * i] =     v2rho2_a_a * trho_a + 2 * v2rhogamma_a_aa * tgamma_aa + v2rhogamma_a_ab * tgamma_ab + v2rhotau_a_a * ttau_a
+                +  v2rho2_a_b * trho_b + 2 * v2rhogamma_a_bb * tgamma_bb + v2rhotau_a_b * ttau_b;
+    A[2 * i + 1] = v2rho2_b_b * trho_b + 2 * v2rhogamma_b_bb * tgamma_bb + v2rhogamma_b_ab * tgamma_ab + v2rhotau_b_b * ttau_b
+                +  v2rho2_a_b * trho_a + 2 * v2rhogamma_b_aa * tgamma_aa + v2rhotau_b_a * ttau_a;
+
+    C[2 * i] =     v2rhotau_a_a * trho_a + 2 * v2gammatau_aa_a * tgamma_aa + v2gammatau_ab_a * tgamma_ab + v2tau2_a_a * ttau_a
+                +  v2rhotau_b_a * trho_b + 2 * v2gammatau_bb_a * tgamma_bb + v2tau2_a_b * ttau_b;
+    C[2 * i + 1] = v2rhotau_b_b * trho_b + 2 * v2gammatau_bb_b * tgamma_bb + v2gammatau_ab_b * tgamma_ab + v2tau2_b_b * ttau_b
+                +  v2rhotau_a_b * trho_a + 2 * v2gammatau_aa_b * tgamma_aa + v2tau2_a_b * ttau_a;
+
+    auto B_coef1 = v2rhogamma_a_aa * trho_a + 2 * v2gamma2_aa_aa * tgamma_aa + v2gamma2_aa_ab * tgamma_ab + v2gammatau_aa_a * ttau_a
+                +  v2rhogamma_b_aa * trho_b + 2 * v2gamma2_aa_bb * tgamma_bb + v2gammatau_aa_b * ttau_b;
+    auto B_coef2 = v2rhogamma_a_ab * trho_a + 2 * v2gamma2_aa_ab * tgamma_aa + v2gamma2_ab_ab * tgamma_ab + v2gammatau_ab_a * ttau_a
+                +  v2rhogamma_b_ab * trho_b + 2 * v2gamma2_ab_bb * tgamma_bb + v2gammatau_ab_b * ttau_b;
+
+    B[i * 6]     = 2 * B_coef1 * dden_x_eval_a + B_coef2 * dden_x_eval_b + 2 * vgamma_aa * tdden_x_eval_a + vgamma_ab * tdden_x_eval_b;
+    B[i * 6 + 1] = 2 * B_coef1 * dden_y_eval_a + B_coef2 * dden_y_eval_b + 2 * vgamma_aa * tdden_y_eval_a + vgamma_ab * tdden_y_eval_b;
+    B[i * 6 + 2] = 2 * B_coef1 * dden_z_eval_a + B_coef2 * dden_z_eval_b + 2 * vgamma_aa * tdden_z_eval_a + vgamma_ab * tdden_z_eval_b;
+
+    B_coef1 = v2rhogamma_b_bb * trho_b + 2 * v2gamma2_bb_bb * tgamma_bb + v2gamma2_ab_bb * tgamma_ab + v2gammatau_bb_b * ttau_b
+            + v2rhogamma_a_bb * trho_a + 2 * v2gamma2_aa_bb * tgamma_aa + v2gammatau_bb_a * ttau_a;
+    B_coef2 = v2rhogamma_b_ab * trho_b + 2 * v2gamma2_ab_bb * tgamma_bb + v2gamma2_ab_ab * tgamma_ab + v2gammatau_ab_b * ttau_b
+            + v2rhogamma_a_ab * trho_a + 2 * v2gamma2_aa_ab * tgamma_aa + v2gammatau_ab_a * ttau_a;
+
+    B[i * 6 + 3] = 2 * B_coef1 * dden_x_eval_b + B_coef2 * dden_x_eval_a + 2 * vgamma_bb * tdden_x_eval_b + vgamma_ab * tdden_x_eval_a;
+    B[i * 6 + 4] = 2 * B_coef1 * dden_y_eval_b + B_coef2 * dden_y_eval_a + 2 * vgamma_bb * tdden_y_eval_b + vgamma_ab * tdden_y_eval_a;
+    B[i * 6 + 5] = 2 * B_coef1 * dden_z_eval_b + B_coef2 * dden_z_eval_a + 2 * vgamma_bb * tdden_z_eval_b + vgamma_ab * tdden_z_eval_a;
+
+  }
+}
+
+
+// Eval Z Matrix LDA VXC for two-spinors
+void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_uks_ts( size_t npts, size_t nbf,
+  const double* vrho, const double* basis_eval, double* Za, size_t ldza,
+  double* Zb, size_t ldzb ) {
+  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Za, ldza);
+  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zb, ldzb);
+  for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+  //eq. 56 https://doi.org/10.1140/epjb/e2018-90170-1
+  GauXC::blas::scal( nbf, 0.5 * vrho[2*i], Za + i*ldza, 1 );
+  GauXC::blas::scal( nbf, 0.5 * vrho[2*i+1], Zb + i*ldzb, 1 );
+  }
+}
+
+void ReferenceLocalHostWorkDriver::eval_Bvec_gga_vxc_rks_ts( size_t npts, const double* vgamma, 
+  const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* B ){
+
+  for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+    B[i*3]   = 2 * vgamma[i] * dden_x_eval[i];
+    B[i*3+1] = 2 * vgamma[i] * dden_y_eval[i];
+    B[i*3+2] = 2 * vgamma[i]* dden_z_eval[i]; 
+  }
+}
+
+void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_rks_ts( size_t npts, size_t nbf,
+  const double* A, const double* B, const double* basis_eval,
+  const double* dbasis_x_eval, const double* dbasis_y_eval,
+  const double* dbasis_z_eval, double* Z, 
+  size_t ldz) {
+
+  if( ldz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
+  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z, ldz);
+
+  for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+
+    const int32_t ioff = i * nbf;
+
+    auto* z_col = Z + ioff;
+    auto* bf_x_col = dbasis_x_eval + ioff;
+    auto* bf_y_col = dbasis_y_eval + ioff;
+    auto* bf_z_col = dbasis_z_eval + ioff;
+
+    GauXC::blas::scal( nbf, 0.5*A[i], z_col, 1 ); 
+
+    blas::axpy( nbf, B[i*3],   bf_x_col, 1, z_col, 1 );
+    blas::axpy( nbf, B[i*3+1], bf_y_col, 1, z_col, 1 );
+    blas::axpy( nbf, B[i*3+2], bf_z_col, 1, z_col, 1 );
+
+  }
+}
+
+
+void ReferenceLocalHostWorkDriver::eval_Bvec_gga_vxc_uks_ts( size_t npts, const double* vgamma, 
+  const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* B ){
+
+
+  for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+    const auto gga_fact_aa = vgamma[3*i];
+    const auto gga_fact_ab = vgamma[3*i+1];
+    const auto gga_fact_bb = vgamma[3*i+2];
+
+    // dden_x_eval, dden_y_eval, dden_z_eval are all still in Pauli representation
+    // so we need to convert them to the two spinor representation
+    const auto dden_x_eval_a = 0.5 * (dden_x_eval[2*i] + dden_x_eval[2*i+1]);
+    const auto dden_x_eval_b = 0.5 * (dden_x_eval[2*i] - dden_x_eval[2*i+1]);
+    const auto dden_y_eval_a = 0.5 * (dden_y_eval[2*i] + dden_y_eval[2*i+1]);
+    const auto dden_y_eval_b = 0.5 * (dden_y_eval[2*i] - dden_y_eval[2*i+1]);
+    const auto dden_z_eval_a = 0.5 * (dden_z_eval[2*i] + dden_z_eval[2*i+1]);
+    const auto dden_z_eval_b = 0.5 * (dden_z_eval[2*i] - dden_z_eval[2*i+1]);
+
+    B[i*6]   = 2 * gga_fact_aa * dden_x_eval_a + gga_fact_ab * dden_x_eval_b;
+    B[i*6+1] = 2 * gga_fact_aa * dden_y_eval_a + gga_fact_ab * dden_y_eval_b;
+    B[i*6+2] = 2 * gga_fact_aa * dden_z_eval_a + gga_fact_ab * dden_z_eval_b;
+    
+    B[i*6+3] = 2 * gga_fact_bb * dden_x_eval_b + gga_fact_ab * dden_x_eval_a;
+    B[i*6+4] = 2 * gga_fact_bb * dden_y_eval_b + gga_fact_ab * dden_y_eval_a;
+    B[i*6+5] = 2 * gga_fact_bb * dden_z_eval_b + gga_fact_ab * dden_z_eval_a;
+  }
+}
+void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_uks_ts( size_t npts, size_t nbf,
+  const double* A, const double* B, const double* basis_eval,
+  const double* dbasis_x_eval, const double* dbasis_y_eval,
+  const double* dbasis_z_eval, double* Za, 
+  size_t ldza, double* Zb, size_t ldzb ) {
+
+
+  if( ldza != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
+  if( ldzb != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
+  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Za, ldza);
+  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zb, ldzb);
+
+  for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+
+    const int32_t ioff = i * nbf;
+
+    auto* za_col = Za + ioff;
+    auto* zb_col = Zb + ioff;
+    auto* bf_x_col = dbasis_x_eval + ioff;
+    auto* bf_y_col = dbasis_y_eval + ioff;
+    auto* bf_z_col = dbasis_z_eval + ioff;
+
+    GauXC::blas::scal( nbf, 0.5*A[2*i], za_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
+    GauXC::blas::scal( nbf, 0.5*A[2*i+1], zb_col, 1 );
+
+    blas::axpy( nbf, B[i*6],   bf_x_col, 1, za_col, 1 );
+    blas::axpy( nbf, B[i*6+1], bf_y_col, 1, za_col, 1 );
+    blas::axpy( nbf, B[i*6+2], bf_z_col, 1, za_col, 1 );
+
+    blas::axpy( nbf, B[i*6+3], bf_x_col, 1, zb_col, 1 );
+    blas::axpy( nbf, B[i*6+4], bf_y_col, 1, zb_col, 1 );
+    blas::axpy( nbf, B[i*6+5], bf_z_col, 1, zb_col, 1 );
+
+  }
+}
+
+
+void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_uks_ts( size_t npts, size_t nbf,
+  const double* vrho, const double* vgamma, const double* basis_eval,
+  const double* dbasis_x_eval, const double* dbasis_y_eval,
+  const double* dbasis_z_eval, const double* dden_x_eval,
+  const double* dden_y_eval, const double* dden_z_eval, double* Za, 
+  size_t ldza, double* Zb, size_t ldzb ) {
+
+
+  if( ldza != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
+  if( ldzb != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
+  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Za, ldza);
+  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zb, ldzb);
+
+  for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+
+    const int32_t ioff = i * nbf;
+
+    auto* za_col = Za + ioff;
+    auto* zb_col = Zb + ioff;
+    auto* bf_x_col = dbasis_x_eval + ioff;
+    auto* bf_y_col = dbasis_y_eval + ioff;
+    auto* bf_z_col = dbasis_z_eval + ioff;
+
+    GauXC::blas::scal( nbf, 0.5*vrho[2*i], za_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
+    GauXC::blas::scal( nbf, 0.5*vrho[2*i+1], zb_col, 1 );
+
+    const auto gga_fact_aa = vgamma[3*i];
+    const auto gga_fact_ab = vgamma[3*i+1];
+    const auto gga_fact_bb = vgamma[3*i+2];
+
+    // dden_x_eval, dden_y_eval, dden_z_eval are all still in Pauli representation
+    // so we need to convert them to the two spinor representation
+    const auto dden_x_eval_a = 0.5 * (dden_x_eval[2*i] + dden_x_eval[2*i+1]);
+    const auto dden_x_eval_b = 0.5 * (dden_x_eval[2*i] - dden_x_eval[2*i+1]);
+    const auto dden_y_eval_a = 0.5 * (dden_y_eval[2*i] + dden_y_eval[2*i+1]);
+    const auto dden_y_eval_b = 0.5 * (dden_y_eval[2*i] - dden_y_eval[2*i+1]);
+    const auto dden_z_eval_a = 0.5 * (dden_z_eval[2*i] + dden_z_eval[2*i+1]);
+    const auto dden_z_eval_b = 0.5 * (dden_z_eval[2*i] - dden_z_eval[2*i+1]);
+
+    const auto x_fact_a = 2 * gga_fact_aa * dden_x_eval_a + gga_fact_ab * dden_x_eval_b;
+    const auto y_fact_a = 2 * gga_fact_aa * dden_y_eval_a + gga_fact_ab * dden_y_eval_b;
+    const auto z_fact_a = 2 * gga_fact_aa * dden_z_eval_a + gga_fact_ab * dden_z_eval_b;
+
+    const auto x_fact_b = 2 * gga_fact_bb * dden_x_eval_b + gga_fact_ab * dden_x_eval_a;
+    const auto y_fact_b = 2 * gga_fact_bb * dden_y_eval_b + gga_fact_ab * dden_y_eval_a;
+    const auto z_fact_b = 2 * gga_fact_bb * dden_z_eval_b + gga_fact_ab * dden_z_eval_a;
+
+    blas::axpy( nbf, x_fact_a, bf_x_col, 1, za_col, 1 );
+    blas::axpy( nbf, y_fact_a, bf_y_col, 1, za_col, 1 );
+    blas::axpy( nbf, z_fact_a, bf_z_col, 1, za_col, 1 );
+
+    blas::axpy( nbf, x_fact_b, bf_x_col, 1, zb_col, 1 );
+    blas::axpy( nbf, y_fact_b, bf_y_col, 1, zb_col, 1 );
+    blas::axpy( nbf, z_fact_b, bf_z_col, 1, zb_col, 1 );
+
+  }
+}
+
+void ReferenceLocalHostWorkDriver::eval_zmat_mgga_vxc_uks_ts( size_t npts, size_t nbf,
+              const double* vrho, const double* vgamma, const double* vlapl, 
+        const double* basis_eval,
+              const double* dbasis_x_eval, const double* dbasis_y_eval,
+              const double* dbasis_z_eval, const double* lbasis_eval,
+        const double* dden_x_eval,
+              const double* dden_y_eval, const double* dden_z_eval, double* Za, 
+              size_t ldza, double* Zb, size_t ldzb ) {
+
+  if( ldza != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
+  if( ldzb != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
+  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Za, ldza);
+  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zb, ldzb);
+
+  for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+
+    const int32_t ioff = i * nbf;
+
+    auto* za_col = Za + ioff;
+    auto* zb_col = Zb + ioff;
+    auto* bf_x_col = dbasis_x_eval + ioff;
+    auto* bf_y_col = dbasis_y_eval + ioff;
+    auto* bf_z_col = dbasis_z_eval + ioff;
+    auto* lbf_col = lbasis_eval + ioff;
+
+    GauXC::blas::scal( nbf, 0.5*vrho[2*i], za_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
+    GauXC::blas::scal( nbf, 0.5*vrho[2*i+1], zb_col, 1 );
+    
+    // dden_x_eval, dden_y_eval, dden_z_eval are all still in Pauli representation
+    // so we need to convert them to the two spinor representation
+    const auto dden_x_eval_a = 0.5 * (dden_x_eval[2*i] + dden_x_eval[2*i+1]);
+    const auto dden_x_eval_b = 0.5 * (dden_x_eval[2*i] - dden_x_eval[2*i+1]);
+    const auto dden_y_eval_a = 0.5 * (dden_y_eval[2*i] + dden_y_eval[2*i+1]);
+    const auto dden_y_eval_b = 0.5 * (dden_y_eval[2*i] - dden_y_eval[2*i+1]);
+    const auto dden_z_eval_a = 0.5 * (dden_z_eval[2*i] + dden_z_eval[2*i+1]);
+    const auto dden_z_eval_b = 0.5 * (dden_z_eval[2*i] - dden_z_eval[2*i+1]);
+    
+    const auto gga_fact_aa = vgamma[3*i];
+    const auto gga_fact_ab = vgamma[3*i+1];
+    const auto gga_fact_bb = vgamma[3*i+2];
+
+    const auto x_fact_a = 2 * gga_fact_aa * dden_x_eval_a + gga_fact_ab * dden_x_eval_b;
+    const auto y_fact_a = 2 * gga_fact_aa * dden_y_eval_a + gga_fact_ab * dden_y_eval_b;
+    const auto z_fact_a = 2 * gga_fact_aa * dden_z_eval_a + gga_fact_ab * dden_z_eval_b;
+
+    const auto x_fact_b = 2 * gga_fact_bb * dden_x_eval_b + gga_fact_ab * dden_x_eval_a;
+    const auto y_fact_b = 2 * gga_fact_bb * dden_y_eval_b + gga_fact_ab * dden_y_eval_a;
+    const auto z_fact_b = 2 * gga_fact_bb * dden_z_eval_b + gga_fact_ab * dden_z_eval_a;
+
+    blas::axpy( nbf, x_fact_a, bf_x_col, 1, za_col, 1 );
+    blas::axpy( nbf, y_fact_a, bf_y_col, 1, za_col, 1 );
+    blas::axpy( nbf, z_fact_a, bf_z_col, 1, za_col, 1 );
+
+    blas::axpy( nbf, x_fact_b, bf_x_col, 1, zb_col, 1 );
+    blas::axpy( nbf, y_fact_b, bf_y_col, 1, zb_col, 1 );
+    blas::axpy( nbf, z_fact_b, bf_z_col, 1, zb_col, 1 );
+
+    if (vlapl != nullptr) {
+      blas::axpy( nbf, vlapl[2*i],     lbf_col, 1, za_col, 1);
+      blas::axpy( nbf, vlapl[2*i + 1], lbf_col, 1, zb_col, 1);
+    }
+
+  }
+}
+void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t nbf, 
+        const double* vtau, const double* vlapl, 
+        const double* dbasis_x_eval, const double* dbasis_y_eval, 
+        const double* dbasis_z_eval,
+        double* mmat_xa, double* mmat_ya, double* mmat_za, size_t ldma,
+        double* mmat_xb, double* mmat_yb, double* mmat_zb, size_t ldmb) {
+
+  if( ldma != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
+  if( ldmb != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
+  
+  blas::lacpy( 'A', nbf, npts, dbasis_x_eval, nbf, mmat_xa, ldma);
+  blas::lacpy( 'A', nbf, npts, dbasis_y_eval, nbf, mmat_ya, ldma);
+  blas::lacpy( 'A', nbf, npts, dbasis_z_eval, nbf, mmat_za, ldma);
+  blas::lacpy( 'A', nbf, npts, dbasis_x_eval, nbf, mmat_xb, ldmb);
+  blas::lacpy( 'A', nbf, npts, dbasis_y_eval, nbf, mmat_yb, ldmb);
+  blas::lacpy( 'A', nbf, npts, dbasis_z_eval, nbf, mmat_zb, ldmb);
+
+  for( int32_t i = 0; i < (int32_t)npts; ++i ) {
+
+    const int32_t ioff = i * nbf;
+    auto* xa_col = mmat_xa + ioff;
+    auto* ya_col = mmat_ya + ioff;
+    auto* za_col = mmat_za + ioff;
+    auto* xb_col = mmat_xb + ioff;
+    auto* yb_col = mmat_yb + ioff;
+    auto* zb_col = mmat_zb + ioff;
+    auto* bf_x_col = dbasis_x_eval + ioff;
+    auto* bf_y_col = dbasis_y_eval + ioff;
+    auto* bf_z_col = dbasis_z_eval + ioff;
+
+    const auto tfacta = 0.25 * vtau[2*i];
+    const auto tfactb = 0.25 * vtau[2*i+1];
+
+    blas::scal( nbf, tfacta, xa_col, 1);
+    blas::scal( nbf, tfacta, ya_col, 1);
+    blas::scal( nbf, tfacta, za_col, 1);
+    blas::scal( nbf, tfactb, xb_col, 1);
+    blas::scal( nbf, tfactb, yb_col, 1);
+    blas::scal( nbf, tfactb, zb_col, 1);
+
+    if ( vlapl != nullptr ) {
+      const auto lfacta = vlapl[2*i];
+      const auto lfactb = vlapl[2*i+1];
+      blas::axpy( nbf, lfacta, bf_x_col, 1, xa_col, 1);
+      blas::axpy( nbf, lfacta, bf_y_col, 1, ya_col, 1);
+      blas::axpy( nbf, lfacta, bf_z_col, 1, za_col, 1);
+      blas::axpy( nbf, lfactb, bf_x_col, 1, xb_col, 1);
+      blas::axpy( nbf, lfactb, bf_y_col, 1, yb_col, 1);
+      blas::axpy( nbf, lfactb, bf_z_col, 1, zb_col, 1);
+    }
+
+  }
+}
+
+
+
+
+
+
   // Increment VXC by Z
   void ReferenceLocalHostWorkDriver::inc_vxc( size_t npts, size_t nbf, size_t nbe, 
 					      const double* basis_eval, const submat_map_t& submat_map, const double* Z,

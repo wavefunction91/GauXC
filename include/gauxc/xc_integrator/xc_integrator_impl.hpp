@@ -25,6 +25,8 @@ public:
   using exc_vxc_type_gks   = typename XCIntegrator<MatrixType>::exc_vxc_type_gks;
   using exc_grad_type  = typename XCIntegrator<MatrixType>::exc_grad_type;
   using exx_type       = typename XCIntegrator<MatrixType>::exx_type;
+  using fxc_contraction_type_rks   = typename XCIntegrator<MatrixType>::fxc_contraction_type_rks;
+  using fxc_contraction_type_uks   = typename XCIntegrator<MatrixType>::fxc_contraction_type_uks;
   using dd_psi_type       = typename XCIntegrator<MatrixType>::dd_psi_type;
   using dd_psi_potential_type       = typename XCIntegrator<MatrixType>::dd_psi_potential_type;
 
@@ -44,6 +46,12 @@ protected:
   virtual exc_grad_type eval_exc_grad_( const MatrixType& Ps, const MatrixType& Pz ) = 0;
   virtual exx_type      eval_exx_     ( const MatrixType&     P, 
                                         const IntegratorSettingsEXX& settings ) = 0;
+  virtual fxc_contraction_type_rks  eval_fxc_contraction_ ( const MatrixType& P,
+    const MatrixType& tP, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual fxc_contraction_type_uks  eval_fxc_contraction_ ( const MatrixType& Ps, const MatrixType& Pz, 
+    const MatrixType& tPs, const MatrixType& tPz,  const IntegratorSettingsXC& ks_settings ) = 0;
+
+
   virtual dd_psi_type   eval_dd_psi_( const MatrixType& P, unsigned max_Ylm ) = 0;
   virtual dd_psi_potential_type   eval_dd_psi_potential_( const MatrixType& X, unsigned max_Ylm ) = 0;
   virtual const util::Timer& get_timings_() const = 0;
@@ -137,6 +145,30 @@ public:
    */
   exx_type eval_exx( const MatrixType& P, const IntegratorSettingsEXX& settings ) {
     return eval_exx_(P,settings);
+  }
+
+  
+  /** Integrate FXC contraction for RKS
+   * 
+   * @param[in] P the alpha density matrix
+   * @param[in] tP the alpha trial density matrix (contructed from purturbed MO coefficients)
+   * @returns FXC contraction
+   */
+  fxc_contraction_type_rks eval_fxc_contraction( const MatrixType& P, const MatrixType& tP, const IntegratorSettingsXC& ks_settings ) {
+    return eval_fxc_contraction_(P, tP, ks_settings);
+  }
+
+  /** Integrate FXC contraction for UKS
+   *
+   *  @param[in] Ps the scalar density matrix (Pa + Pb)
+   *  @param[in] Pz the Z density matrix (Pa - Pb)
+   *  @param[in] tPs the trial scalar density matrices (contructed from purturbed MO coefficients)
+   *  @param[in] tPz the trial Z density matrices      (contructed from purturbed MO coefficients)
+   *  @returns FXC contraction
+   */
+  fxc_contraction_type_uks eval_fxc_contraction( const MatrixType& Ps, const MatrixType& Pz, 
+    const MatrixType& tPs, const MatrixType& tPz, const IntegratorSettingsXC& ks_settings ) {
+    return eval_fxc_contraction_(Ps, Pz, tPs, tPz, ks_settings);
   }
 
   /** Evaluate Psi vector for ddX

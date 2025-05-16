@@ -36,6 +36,8 @@ public:
   using exc_vxc_type_gks  = std::tuple< value_type, matrix_type, matrix_type, matrix_type, matrix_type >;
   using exc_grad_type = std::vector< value_type >;
   using exx_type      = matrix_type;
+  using fxc_contraction_type_rks = matrix_type;
+  using fxc_contraction_type_uks = std::tuple< matrix_type, matrix_type >;
   using dd_psi_type   = std::vector< value_type >;
   using dd_psi_potential_type   = matrix_type;
 
@@ -73,6 +75,11 @@ public:
 
   exx_type      eval_exx     ( const MatrixType&, 
                                const IntegratorSettingsEXX& = IntegratorSettingsEXX{} );
+
+  fxc_contraction_type_rks  eval_fxc_contraction ( const MatrixType&, const MatrixType&,
+                                  const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+  fxc_contraction_type_uks  eval_fxc_contraction ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,
+                                  const IntegratorSettingsXC& = IntegratorSettingsXC{} );
 
   dd_psi_type eval_dd_psi( const MatrixType&, unsigned );
   dd_psi_potential_type eval_dd_psi_potential( const MatrixType&, unsigned );

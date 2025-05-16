@@ -17,8 +17,16 @@ namespace GauXC {
 
 struct AoSScheme1CUTLASSBase : public AoSScheme1Base {
 
+  template<bool is_trial>
+  void eval_xmat_impl(double fac, XCDeviceData*, bool do_grad, density_id );
+  template<bool is_fxc>
+  void inc_potential_impl(XCDeviceData*, density_id, bool do_m);
+
+
   void eval_xmat(double fac, XCDeviceData*, bool do_grad, density_id ) override final;
+  void eval_xmat_trial(double fac, XCDeviceData*, bool do_grad, density_id ) override final;
   void inc_vxc( XCDeviceData*, density_id, bool ) override final;
+  void inc_fxc( XCDeviceData*, density_id, bool ) override final;
 
   struct Data;
 
@@ -46,12 +54,27 @@ struct AoSScheme1CUTLASSBase::Data : public AoSScheme1Base::Data {
     double** xmat_y_array_device   = nullptr;
     double** xmat_z_array_device   = nullptr;
 
+    double** tdmat_s_array_device = nullptr;
+    double** tdmat_z_array_device = nullptr;
+    double** tdmat_y_array_device = nullptr;
+    double** tdmat_x_array_device = nullptr;
+
     inline double** dmat_array(density_id id) {
       switch(id) {
         case DEN_S: return dmat_s_array_device;
         case DEN_Z: return dmat_z_array_device;
         case DEN_Y: return dmat_y_array_device;
         case DEN_X: return dmat_x_array_device;
+        default: GAUXC_GENERIC_EXCEPTION("dmat_array: density_id not recognized");
+      }
+    }
+
+    inline double** tdmat_array(density_id id) {
+      switch(id) {
+        case DEN_S: return tdmat_s_array_device;
+        case DEN_Z: return tdmat_z_array_device;
+        case DEN_Y: return tdmat_y_array_device;
+        case DEN_X: return tdmat_x_array_device;
         default: GAUXC_GENERIC_EXCEPTION("dmat_array: density_id not recognized");
       }
     }

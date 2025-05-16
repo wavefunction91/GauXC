@@ -10,6 +10,7 @@
 #include "reference_replicated_xc_host_integrator_exc_vxc.hpp"
 #include "reference_replicated_xc_host_integrator_exc_grad.hpp"
 #include "reference_replicated_xc_host_integrator_exx.hpp"
+#include "reference_replicated_xc_host_integrator_fxc_contraction.hpp"
 #include "reference_replicated_xc_host_integrator_dd_psi.hpp"
 #include "reference_replicated_xc_host_integrator_dd_psi_potential.hpp"
 

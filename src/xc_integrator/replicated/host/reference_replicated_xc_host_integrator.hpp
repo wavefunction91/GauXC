@@ -83,6 +83,23 @@ protected:
                   int64_t ldp, value_type* K, int64_t ldk,
                   const IntegratorSettingsEXX& settings ) override;
 
+  /// RKS FXC contraction
+  void eval_fxc_contraction_( int64_t m, int64_t n, 
+                    const value_type* P, int64_t ldp, 
+                    const value_type* tP, int64_t ldtp,
+                    value_type* FXC, int64_t ldfxc,
+                    const IntegratorSettingsXC& ks_settings ) override;
+
+  // UKS FXC contraction
+  void eval_fxc_contraction_( int64_t m, int64_t n, 
+                    const value_type* Ps, int64_t ldps,   
+                    const value_type* Pz, int64_t ldpz,
+                    const value_type* tPs, int64_t ldtps,
+                    const value_type* tPz, int64_t ldtpz,
+                    value_type* FXCs, int64_t ldfxcs,
+                    value_type* FXCz, int64_t ldfxcz,
+                    const IntegratorSettingsXC& ks_settings ) override;
+
   /// ddX PSi 
   void eval_dd_psi_( int64_t m, int64_t n, const value_type* P,
                      int64_t ldp, unsigned max_Ylm, value_type* ddPsi, int64_t ldPsi ) override;
@@ -113,6 +130,16 @@ protected:
   // Implementation details of sn-LinK
   void exx_local_work_( const value_type* P, int64_t ldp, value_type* K, int64_t ldk,
     const IntegratorSettingsEXX& settings );
+
+  // Implementation details of UKS FXC contraction
+  void fxc_contraction_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
+                            const value_type* Pz, int64_t ldpz,
+                            const value_type* tPs, int64_t ldtps,
+                            const value_type* tPz, int64_t ldtpz,
+                            value_type* FXCs, int64_t ldfxcs,
+                            value_type* FXCz, int64_t ldfxcz,
+                            value_type *N_EL, const IntegratorSettingsXC& ks_settings,
+                            task_iterator task_begin, task_iterator task_end );
 
   // Implementation details of ddX Psi
   void dd_psi_local_work_( const value_type* P, int64_t ldp, unsigned max_Ylm, value_type* ddPsi, int64_t ldPsi );    

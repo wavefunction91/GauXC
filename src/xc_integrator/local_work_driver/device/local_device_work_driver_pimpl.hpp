@@ -49,19 +49,37 @@ struct LocalDeviceWorkDriverPIMPL {
   virtual void eval_kern_exc_vxc_lda( const functional_type&, XCDeviceData* ) = 0;
   virtual void eval_kern_exc_vxc_gga( const functional_type&, XCDeviceData* ) = 0;
   virtual void eval_kern_exc_vxc_mgga( const functional_type&, XCDeviceData* ) = 0;
+  virtual void eval_kern_vxc_fxc_lda( const functional_type&, XCDeviceData* ) = 0;
+  virtual void eval_kern_vxc_fxc_gga( const functional_type&, XCDeviceData* ) = 0;
+  virtual void eval_kern_vxc_fxc_mgga( const functional_type&, XCDeviceData* ) = 0;
   virtual void eval_zmat_lda_vxc( XCDeviceData*, integrator_ks_scheme, density_id ) = 0;
   virtual void eval_zmat_gga_vxc( XCDeviceData*, integrator_ks_scheme, density_id ) = 0;
   virtual void eval_zmat_mgga_vxc( XCDeviceData*, integrator_ks_scheme, bool, density_id ) = 0;
   virtual void eval_mmat_mgga_vxc( XCDeviceData*, integrator_ks_scheme, bool, density_id ) = 0;
+  virtual void eval_zmat_lda_fxc( XCDeviceData*, density_id ) = 0;
+  virtual void eval_zmat_gga_fxc( XCDeviceData*, density_id ) = 0;
+  virtual void eval_zmat_mgga_fxc( XCDeviceData*, bool, density_id ) = 0;
+  virtual void eval_mmat_mgga_fxc( XCDeviceData*, bool, density_id ) = 0;
   virtual void inc_exc( XCDeviceData* ) = 0;
   virtual void inc_nel( XCDeviceData* ) = 0;
   virtual void inc_vxc( XCDeviceData* , density_id, bool) = 0;
+  virtual void inc_fxc( XCDeviceData* , density_id, bool) = 0;
   virtual void inc_exc_grad_lda( XCDeviceData*, integrator_ks_scheme  ) = 0;
   virtual void inc_exc_grad_gga( XCDeviceData*, integrator_ks_scheme  ) = 0;
   virtual void inc_exc_grad_mgga( XCDeviceData*, integrator_ks_scheme , bool ) = 0;
   virtual void inc_exx_k( XCDeviceData* ) = 0;
   virtual void symmetrize_vxc( XCDeviceData*, density_id ) = 0;
+  virtual void symmetrize_fxc( XCDeviceData*, density_id ) = 0;
   virtual void symmetrize_exx_k( XCDeviceData* ) = 0;
+
+  //second derivative
+  virtual void eval_xmat_trial( double fac, XCDeviceData*, bool do_grad, density_id den ) = 0;
+  virtual void eval_tmat_lda( XCDeviceData*, integrator_ks_scheme ) = 0;
+  virtual void eval_tmat_gga( XCDeviceData*, integrator_ks_scheme ) = 0;
+  virtual void eval_tmat_mgga( XCDeviceData*, integrator_ks_scheme, bool ) = 0;
+  virtual void eval_vvars_lda_trial ( XCDeviceData*, density_id ) = 0;
+  virtual void eval_vvars_gga_trial ( XCDeviceData*, density_id ) = 0;
+  virtual void eval_vvars_mgga_trial( XCDeviceData*, density_id, bool ) = 0;
 
   virtual void eval_exx_ek_screening_bfn_stats( XCDeviceData* ) = 0;
   virtual void exx_ek_shellpair_collision( double eps_E, double eps_K, 

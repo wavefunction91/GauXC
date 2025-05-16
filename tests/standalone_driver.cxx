@@ -69,6 +69,7 @@ int main(int argc, char** argv) {
     bool integrate_exc_grad = false;
     bool integrate_dd_psi   = false;
     bool integrate_dd_psi_potential  = false;
+    bool integrate_fxc_contraction   = false;
     int lmax = 2;
 
     auto string_to_upper = []( auto& str ) {
@@ -108,6 +109,7 @@ int main(int argc, char** argv) {
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_EXC_GRAD", integrate_exc_grad, bool );
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_DD_PSI",   integrate_dd_psi,   bool );
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_DD_PSI_POTENTIAL",   integrate_dd_psi_potential,   bool );
+    OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_FXC_CONTRACTION",   integrate_fxc_contraction,   bool );
     OPTIONAL_KEYWORD( "GAUXC.MAX_YLM",      lmax,  int );
 
     IntegratorSettingsSNLinK sn_link_settings;
@@ -148,7 +150,8 @@ int main(int argc, char** argv) {
                 << "  EXX (?)           = " << integrate_exx << std::endl
                 << "  EXC_GRAD (?)      = " << integrate_exc_grad << std::endl
                 << "  DD_PSI (?)        = " << integrate_dd_psi << std::endl
-                << "  DD_PSI_POTENTIAL (?)       = " << integrate_dd_psi_potential << std::endl;
+                << "  DD_PSI_POTENTIAL (?)       = " << integrate_dd_psi_potential << std::endl
+                << "  FXC_CONTRACTION (?)       = " << integrate_fxc_contraction << std::endl;
                 if(integrate_exx) {
                   std::cout << "  EXX.TOL_E         = " 
                             << sn_link_settings.energy_tol << std::endl
@@ -221,6 +224,7 @@ int main(int argc, char** argv) {
     // Read in reference data
     matrix_type P, Pz, Py, Px, VXC_ref, VXCz_ref, VXCy_ref, VXCx_ref, K_ref;
     matrix_type ddX, ddPsi_ref, ddPsi_potential_ref;
+    matrix_type FXC_ref, FXCz_ref;
     double EXC_ref;
     std::vector<double> EXC_GRAD_ref(3*mol.size());
     bool rks = true, uks = false, gks = false;
@@ -394,6 +398,26 @@ int main(int argc, char** argv) {
           ddPsi_potential_ref.fill(0);
         }
       }
+
+      if ( integrate_fxc_contraction ) {
+        try {
+          dset = file.getDataSet("/FXC");
+          auto fxc_dims = dset.getDimensions();
+          FXC_ref = matrix_type( fxc_dims[0], fxc_dims[1] );
+          dset.read( FXC_ref.data() );
+          if( not rks ) {
+            dset = file.getDataSet("/FXC_Z");
+            FXCz_ref = matrix_type( fxc_dims[0], fxc_dims[1] );
+            dset.read( FXCz_ref.data() );
+          }
+        } catch(...) {
+          if(world_rank == 0) {
+            std::cout << "** Warning: Could Not Find Reference FXC" << std::endl;
+          }
+          FXC_ref.fill(0);
+          if( not rks ) FXCz_ref.fill(0);
+        }
+      }
     }
     // Setup XC functional
     auto polar = (uks or gks) ? Spin::Polarized : Spin::Unpolarized;
@@ -421,7 +445,7 @@ int main(int argc, char** argv) {
 #endif
     auto xc_int_start = std::chrono::high_resolution_clock::now();
 
-    matrix_type VXC, VXCz, VXCy, VXCx, K;
+    matrix_type VXC, VXCz, VXCy, VXCx, K, FXC, FXCz;
     matrix_type ddPsi, ddPsiPotential;
     double EXC, N_EL;
 
@@ -483,6 +507,76 @@ int main(int argc, char** argv) {
                     << std::endl;
         }
       }
+    }
+
+    // Load trial density matrices for FXC contraction
+    matrix_type tP, tPz;
+    if( integrate_fxc_contraction ) {
+      bool create_trial_densities = false;
+      {
+      // Try to load trial density matrices from reference file
+      HighFive::File file( ref_file, HighFive::File::ReadOnly );
+      std::string tden_str = "/TRIAL_DENSITY";
+      std::string fxc_str = "/FXC";
+
+      if (!rks) {
+        tden_str = "/TRIAL_DENSITY_SCALAR";
+        fxc_str = "/FXC_SCALAR";
+      }
+
+      try {
+        auto dset = file.getDataSet(tden_str);
+        auto dims = dset.getDimensions();
+        tP = matrix_type(dims[0], dims[1]);
+        dset.read(tP.data());
+
+        if (!rks) {
+          dset = file.getDataSet("/TRIAL_DENSITY_Z");
+          tPz = matrix_type(dims[0], dims[1]);
+          dset.read(tPz.data());
+        }
+
+        // Also try to read reference FXC matrices if available
+        try {
+          dset = file.getDataSet(fxc_str);
+          FXC_ref = matrix_type(dims[0], dims[1]);
+          dset.read(FXC_ref.data());
+
+          if (!rks) {
+            dset = file.getDataSet("/FXC_Z");
+            FXCz_ref = matrix_type(dims[0], dims[1]);
+            dset.read(FXCz_ref.data());
+          }
+        } catch(...) {
+          if(world_rank == 0) {
+            std::cout << "** Warning: Could Not Find Reference FXC" << std::endl;
+          }
+          FXC_ref.fill(0);
+          if(!rks) FXCz_ref.fill(0);
+        }
+
+      } catch(...) {
+        if(world_rank == 0) {
+          std::cout << "** Trial density matrices not found, generating random symmetric matrices..." << std::endl;
+          create_trial_densities = true;
+        }
+      }
+        
+      }
+
+      if(!world_rank) {
+        std::cout << "Computing FXC contraction..." << std::endl;
+      }
+      
+      // Compute FXC contraction
+      if( rks ) {
+        FXC = integrator.eval_fxc_contraction( P, tP, IntegratorSettingsXC{} );
+      } else if( uks ) {
+        std::tie(FXC, FXCz) = integrator.eval_fxc_contraction( P, Pz, tP, tPz, IntegratorSettingsXC{} );
+      } else if( gks ) {
+        std::cout << "Warning: FXC contraction with GKS NYI!" << std::endl;
+      }
+
     }
 
     if( integrate_exx ) {
@@ -650,6 +744,16 @@ int main(int argc, char** argv) {
         std::cout << "| DD_PSI_POTENTIAL (calc) |_F = " << ddPsiPotential.norm() << std::endl;
         std::cout << "RMS DD_PSI_POTENTIAL Diff     = " << (ddPsi_potential_ref - ddPsiPotential).norm() / basis.nbf() << std::endl;
       }
+      if (integrate_fxc_contraction) {
+        std::cout << "| FXC (ref)  |_F = " << FXC_ref.norm() << std::endl;
+        std::cout << "| FXC (calc) |_F = " << FXC.norm() << std::endl;
+        std::cout << "RMS FXC Diff     = " << (FXC_ref - FXC).norm() / basis.nbf() << std::endl;
+        if (not rks) {
+          std::cout << "| FXCz (ref)  |_F = " << FXCz_ref.norm() << std::endl;
+          std::cout << "| FXCz (calc) |_F = " << FXCz.norm() << std::endl;
+          std::cout << "RMS FXCz Diff     = " << (FXCz_ref - FXCz).norm() / basis.nbf() << std::endl;
+        }
+      }
     }
 
     // Dump out new file
@@ -726,6 +830,15 @@ int main(int argc, char** argv) {
         HighFive::DataSpace dd_psi_potential_space(basis.nbf(), basis.nbf());
         dset = file.createDataSet<double>("/DD_PSI_POTENTIAL", dd_psi_potential_space);
         dset.write_raw(ddPsiPotential.data());
+      }
+
+      if (integrate_fxc_contraction) {
+        dset = file.createDataSet<double>("/FXC" + ugks_scalar, mat_space);
+        dset.write_raw(FXC.data());
+        if (not rks) {
+          dset = file.createDataSet<double>("/FXC_Z", mat_space);
+          dset.write_raw(FXCz.data());
+        }
       }
     }
 

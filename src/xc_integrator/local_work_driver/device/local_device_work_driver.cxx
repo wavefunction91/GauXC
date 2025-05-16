@@ -48,6 +48,12 @@ void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, density_id den, boo
   pimpl_->NAME(device_data, den, b);                               \
 }
 
+#define FWD_TO_PIMPL_BOOL_DEN_ID(NAME) \
+void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, bool b, density_id den ) { \
+  throw_if_invalid_pimpl(pimpl_);                               \
+  pimpl_->NAME(device_data, b, den);                               \
+}
+
 #define FWD_TO_PIMPL_KS_SCHEME(NAME) \
 void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, integrator_ks_scheme track ) { \
   throw_if_invalid_pimpl(pimpl_);                               \
@@ -85,10 +91,23 @@ FWD_TO_PIMPL_DEN_ID(eval_vvars_lda)               // V variables LDA (density)
 FWD_TO_PIMPL_DEN_ID(eval_vvars_gga)               // V variables GGA (density + grad)
 FWD_TO_PIMPL_DEN_ID_BOOL(eval_vvars_mgga)         // V variables MGGA (density + grad + tau + lapl)
 
+FWD_TO_PIMPL_KS_SCHEME(eval_tmat_lda)            // T variables LDA (trho)
+FWD_TO_PIMPL_KS_SCHEME(eval_tmat_gga)            // T variables GGA (tgamma)
+FWD_TO_PIMPL_KS_SCHEME_BOOL(eval_tmat_mgga)      // T variables MGGA (ttau, tlapl)
+FWD_TO_PIMPL_DEN_ID(eval_vvars_lda_trial)               // V variables LDA (trial density)
+FWD_TO_PIMPL_DEN_ID(eval_vvars_gga_trial)               // V variables GGA (trial density + grad)
+FWD_TO_PIMPL_DEN_ID_BOOL(eval_vvars_mgga_trial)         // V variables MGGA (trial density + grad + tau + lapl)
+
 FWD_TO_PIMPL_KS_SCHEME_DEN_ID(eval_zmat_lda_vxc)         // Eval Z Matrix LDA VXC
 FWD_TO_PIMPL_KS_SCHEME_DEN_ID(eval_zmat_gga_vxc)         // Eval Z Matrix GGA VXC
 FWD_TO_PIMPL_KS_SCHEME_BOOL_DEN_ID(eval_zmat_mgga_vxc)   // Eval Z Matrix mGGA VXC
 FWD_TO_PIMPL_KS_SCHEME_BOOL_DEN_ID(eval_mmat_mgga_vxc)   // Eval M Matrix mGGA VXC
+
+FWD_TO_PIMPL_DEN_ID(eval_zmat_lda_fxc)         // Eval Z Matrix LDA FXC
+FWD_TO_PIMPL_DEN_ID(eval_zmat_gga_fxc)         // Eval Z Matrix GGA FXC
+FWD_TO_PIMPL_BOOL_DEN_ID(eval_zmat_mgga_fxc)   // Eval Z Matrix mGGA FXC
+FWD_TO_PIMPL_BOOL_DEN_ID(eval_mmat_mgga_fxc)   // Eval M Matrix mGGA FXC
+
 
 FWD_TO_PIMPL(eval_exx_fmat)             // Eval EXX F Matrix
 //FWD_TO_PIMPL(eval_exx_gmat)           // Eval EXX G Matrix
@@ -97,6 +116,7 @@ FWD_TO_PIMPL(eval_exx_fmat)             // Eval EXX F Matrix
 FWD_TO_PIMPL(inc_exc)
 FWD_TO_PIMPL(inc_nel)
 FWD_TO_PIMPL_DEN_ID_BOOL(inc_vxc)            // Increment VXC_I by Z
+FWD_TO_PIMPL_DEN_ID_BOOL(inc_fxc)            // Increment FXC_I by Z
 
 FWD_TO_PIMPL(inc_exx_k)     
 FWD_TO_PIMPL_KS_SCHEME(inc_exc_grad_lda)
@@ -104,6 +124,7 @@ FWD_TO_PIMPL_KS_SCHEME(inc_exc_grad_gga)
 FWD_TO_PIMPL_KS_SCHEME_BOOL(inc_exc_grad_mgga)
 
 FWD_TO_PIMPL_DEN_ID(symmetrize_vxc)
+FWD_TO_PIMPL_DEN_ID(symmetrize_fxc) // Added FXC function
 FWD_TO_PIMPL(symmetrize_exx_k)
 FWD_TO_PIMPL(eval_exx_ek_screening_bfn_stats)
 
@@ -118,7 +139,10 @@ void LocalDeviceWorkDriver::save_xmat( XCDeviceData* device_data, bool do_grad, 
   throw_if_invalid_pimpl(pimpl_);
   pimpl_->save_xmat(device_data, do_grad, den);
 }
-
+void LocalDeviceWorkDriver::eval_xmat_trial( double fac, XCDeviceData* device_data, bool do_grad, density_id den ) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_xmat_trial(fac, device_data, do_grad, den);
+}
 
 void LocalDeviceWorkDriver::eval_exx_gmat( XCDeviceData* device_data, 
   const BasisSetMap& basis_map) {
@@ -144,6 +168,23 @@ void LocalDeviceWorkDriver::eval_kern_exc_vxc_mgga( const functional_type& func,
   pimpl_->eval_kern_exc_vxc_mgga(func,data);
 }
 
+void LocalDeviceWorkDriver::eval_kern_vxc_fxc_lda( const functional_type& func,
+  XCDeviceData* data) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_kern_vxc_fxc_lda(func,data);
+}
+
+void LocalDeviceWorkDriver::eval_kern_vxc_fxc_gga( const functional_type& func,
+  XCDeviceData* data) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_kern_vxc_fxc_gga(func,data);
+}
+
+void LocalDeviceWorkDriver::eval_kern_vxc_fxc_mgga( const functional_type& func,
+  XCDeviceData* data) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_kern_vxc_fxc_mgga(func,data);
+}
 
 std::unique_ptr<XCDeviceData> LocalDeviceWorkDriver::create_device_data(const DeviceRuntimeEnvironment& rt) {
   throw_if_invalid_pimpl(pimpl_);

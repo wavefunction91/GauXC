@@ -199,6 +199,40 @@ typename ReplicatedXCIntegrator<MatrixType>::exx_type
   return K;
 
 }
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::fxc_contraction_type_rks
+  ReplicatedXCIntegrator<MatrixType>::eval_fxc_contraction_( const MatrixType& P, 
+    const MatrixType& tP, const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  matrix_type FXC( P.rows(), P.cols() );
+
+  pimpl_->eval_fxc_contraction( P.rows(), P.cols(), P.data(), P.rows(),
+                        tP.data(), tP.rows(),
+                        FXC.data(), FXC.rows(), ks_settings );
+
+  return FXC;
+}
+
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::fxc_contraction_type_uks
+  ReplicatedXCIntegrator<MatrixType>::eval_fxc_contraction_( const MatrixType& Ps, const MatrixType& Pz, 
+    const MatrixType& tPs, const MatrixType& tPz, const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  matrix_type FXCs( Ps.rows(), Ps.cols() );
+  matrix_type FXCz( Pz.rows(), Pz.cols() );
+
+  pimpl_->eval_fxc_contraction( Ps.rows(), Ps.cols(), Ps.data(), Ps.rows(),
+                        Pz.data(), Pz.rows(),
+                        tPs.data(), tPs.rows(),
+                        tPz.data(), tPz.rows(),
+                        FXCs.data(), FXCs.rows(),
+                        FXCz.data(), FXCz.rows(), ks_settings );
+
+  return std::make_tuple( FXCs, FXCz );
+
+}
 
 template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::dd_psi_type

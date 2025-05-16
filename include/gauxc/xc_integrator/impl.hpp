@@ -97,6 +97,22 @@ typename XCIntegrator<MatrixType>::exx_type
 };
 
 template <typename MatrixType>
+typename XCIntegrator<MatrixType>::fxc_contraction_type_rks
+  XCIntegrator<MatrixType>::eval_fxc_contraction( const MatrixType& P, const MatrixType& tP, 
+                                               const IntegratorSettingsXC& ks_settings ) { 
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_fxc_contraction(P, tP, ks_settings);
+};
+
+template <typename MatrixType>
+typename XCIntegrator<MatrixType>::fxc_contraction_type_uks
+  XCIntegrator<MatrixType>::eval_fxc_contraction( const MatrixType& Ps, const MatrixType& Pz, 
+                           const MatrixType& tPs, const MatrixType& tPz, const IntegratorSettingsXC& ks_settings ) { 
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_fxc_contraction(Ps, Pz, tPs, tPz, ks_settings);
+};
+
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::dd_psi_type
   XCIntegrator<MatrixType>::eval_dd_psi(const MatrixType& P, unsigned max_Ylm) {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();

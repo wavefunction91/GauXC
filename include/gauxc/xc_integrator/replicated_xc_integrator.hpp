@@ -33,6 +33,8 @@ public:
   using exc_vxc_type_gks   = typename XCIntegratorImpl<MatrixType>::exc_vxc_type_gks;
   using exc_grad_type  = typename XCIntegratorImpl<MatrixType>::exc_grad_type;
   using exx_type       = typename XCIntegratorImpl<MatrixType>::exx_type;
+  using fxc_contraction_type_rks   = typename XCIntegratorImpl<MatrixType>::fxc_contraction_type_rks;
+  using fxc_contraction_type_uks   = typename XCIntegratorImpl<MatrixType>::fxc_contraction_type_uks;
   using dd_psi_type       = typename XCIntegratorImpl<MatrixType>::dd_psi_type;
   using dd_psi_potential_type       = typename XCIntegratorImpl<MatrixType>::dd_psi_potential_type;
 
@@ -51,6 +53,8 @@ private:
   exc_grad_type eval_exc_grad_( const MatrixType& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType&, const MatrixType& ) override;
   exx_type      eval_exx_     ( const MatrixType&, const IntegratorSettingsEXX& ) override;
+  fxc_contraction_type_rks  eval_fxc_contraction_ ( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
+  fxc_contraction_type_uks  eval_fxc_contraction_ ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC&) override;
   dd_psi_type   eval_dd_psi_( const MatrixType& , unsigned ) override;
   dd_psi_potential_type   eval_dd_psi_potential_( const MatrixType& , unsigned ) override;
   const util::Timer& get_timings_() const override;

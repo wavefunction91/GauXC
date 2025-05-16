@@ -127,6 +127,108 @@ struct XCDeviceTask {
   double* xmatZ_y = nullptr;
   double* xmatZ_z = nullptr;
 
+  // Second derivatives - Trial density and derivatives
+  double* tden    = nullptr;
+  double* ttau    = nullptr;
+  double* tlapl   = nullptr;
+  double* v2rho2      = nullptr;
+  double* v2rhogamma  = nullptr;
+  double* v2rholapl   = nullptr;
+  double* v2rhotau    = nullptr;
+  double* v2gamma2    = nullptr;
+  double* v2gammalapl = nullptr;
+  double* v2gammatau  = nullptr;
+  double* v2lapl2     = nullptr;
+  double* v2lapltau   = nullptr;
+  double* v2tau2      = nullptr;
+  
+  // (S,Z,Y,X) trial densities
+  double* tden_s     = nullptr;
+  double* tden_z     = nullptr;
+  double* tden_y     = nullptr;
+  double* tden_x     = nullptr;
+  double* ttau_s     = nullptr;
+  double* ttau_z     = nullptr;
+  double* ttau_y     = nullptr;
+  double* ttau_x     = nullptr;
+  double* tlapl_s    = nullptr;
+  double* tlapl_z    = nullptr;
+  double* tlapl_y    = nullptr;
+  double* tlapl_x    = nullptr;
+
+  // Del(S,Z,Y,X) trial density gradients
+  double* tdden_sx   = nullptr;
+  double* tdden_sy   = nullptr;
+  double* tdden_sz   = nullptr;
+  double* tdden_zx   = nullptr;
+  double* tdden_zy   = nullptr;
+  double* tdden_zz   = nullptr;
+  double* tdden_yx   = nullptr;
+  double* tdden_yy   = nullptr;
+  double* tdden_yz   = nullptr;
+  double* tdden_xx   = nullptr;
+  double* tdden_xy   = nullptr;
+  double* tdden_xz   = nullptr;
+  
+  //2C U variables for second derivatives
+  double* v2rho2_a_a = nullptr;
+  double* v2rho2_a_b = nullptr;
+  double* v2rho2_b_b = nullptr;
+  double* v2rhogamma_a_aa = nullptr;
+  double* v2rhogamma_a_ab = nullptr;
+  double* v2rhogamma_a_bb = nullptr;
+  double* v2rhogamma_b_aa = nullptr;
+  double* v2rhogamma_b_ab = nullptr;
+  double* v2rhogamma_b_bb = nullptr;
+  double* v2rholapl_a_a = nullptr;
+  double* v2rholapl_a_b = nullptr;
+  double* v2rholapl_b_a = nullptr;
+  double* v2rholapl_b_b = nullptr;
+  double* v2rhotau_a_a = nullptr;
+  double* v2rhotau_a_b = nullptr;
+  double* v2rhotau_b_a = nullptr;
+  double* v2rhotau_b_b = nullptr;
+  double* v2gamma2_aa_aa = nullptr;
+  double* v2gamma2_aa_ab = nullptr;
+  double* v2gamma2_aa_bb = nullptr;
+  double* v2gamma2_ab_ab = nullptr;
+  double* v2gamma2_ab_bb = nullptr;
+  double* v2gamma2_bb_bb = nullptr;
+  double* v2gammalapl_aa_a = nullptr;
+  double* v2gammalapl_aa_b = nullptr;
+  double* v2gammalapl_ab_a = nullptr;
+  double* v2gammalapl_ab_b = nullptr;
+  double* v2gammalapl_bb_a = nullptr;
+  double* v2gammalapl_bb_b = nullptr;
+  double* v2gammatau_aa_a = nullptr;
+  double* v2gammatau_aa_b = nullptr;
+  double* v2gammatau_ab_a = nullptr;
+  double* v2gammatau_ab_b = nullptr;
+  double* v2gammatau_bb_a = nullptr;
+  double* v2gammatau_bb_b = nullptr;
+  double* v2lapl2_a_a = nullptr;
+  double* v2lapl2_a_b = nullptr;
+  double* v2lapl2_b_b = nullptr;
+  double* v2lapltau_a_a = nullptr;
+  double* v2lapltau_a_b = nullptr;
+  double* v2lapltau_b_a = nullptr;
+  double* v2lapltau_b_b = nullptr;
+  double* v2tau2_a_a = nullptr;
+  double* v2tau2_a_b = nullptr;
+  double* v2tau2_b_b = nullptr;
+
+  // Second derivatives intermediate output
+  double* FXC_A_s = nullptr;
+  double* FXC_Bx_s = nullptr;
+  double* FXC_By_s = nullptr;
+  double* FXC_Bz_s = nullptr;
+  double* FXC_C_s = nullptr;
+  double* FXC_A_z = nullptr;
+  double* FXC_Bx_z = nullptr;
+  double* FXC_By_z = nullptr;
+  double* FXC_Bz_z = nullptr;
+  double* FXC_C_z = nullptr;
+
   int32_t iParent       = -1;
   double dist_nearest   = 0.;
   double * dist_scratch = nullptr;

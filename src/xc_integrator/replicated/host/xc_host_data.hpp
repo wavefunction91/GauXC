@@ -30,6 +30,27 @@ struct XCHostData {
   std::vector<F> nbe_scr;
   std::vector<F> den_scr;
   std::vector<F> basis_eval;
+
+  // Second order derivatives
+  std::vector<F> v2rho2;
+  std::vector<F> v2rhogamma;
+  std::vector<F> v2rholapl;
+  std::vector<F> v2rhotau;
+  std::vector<F> v2gamma2;
+  std::vector<F> v2gammalapl;
+  std::vector<F> v2gammatau;
+  std::vector<F> v2lapl2;
+  std::vector<F> v2lapltau;
+  std::vector<F> v2tau2;
+
+  // For Fxc contraction
+  std::vector<F> FXC_A;
+  std::vector<F> FXC_B;
+  std::vector<F> FXC_C;
+  std::vector<F> tden_scr;
+  std::vector<F> ttau;
+  std::vector<F> tlapl;
+
    
   inline XCHostData() {}
 

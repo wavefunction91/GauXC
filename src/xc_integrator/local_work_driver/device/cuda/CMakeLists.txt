@@ -20,6 +20,7 @@ target_sources(gauxc PRIVATE
   kernels/cublas_extensions.cu
   kernels/uvvars.cu
   kernels/zmat_vxc.cu
+  kernels/zmat_fxc.cu
   kernels/cuda_inc_potential.cu
   kernels/symmetrize_mat.cu
   kernels/increment_exc_grad.cu

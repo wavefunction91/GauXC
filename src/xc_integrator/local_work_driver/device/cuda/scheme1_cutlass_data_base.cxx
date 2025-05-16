@@ -37,7 +37,7 @@ size_t AoSScheme1CUTLASSBase::Data::get_mem_req( integrator_term_tracker terms,
   required_term_storage reqt(terms);
   if( reqt.task_nbe_scr ) {
     base_size += 
-      4*sizeof(double*) + // batch device pointers
+      4*sizeof(double*) + // batch device pointers (containg trial ones)
       4*sizeof(int64_t) +
       2*sizeof(cutlass::gemm::GemmCoord);  // Dimensions + leading dimensions 
                                            // (extra handled by get_static_mem_requirement)
@@ -46,11 +46,21 @@ size_t AoSScheme1CUTLASSBase::Data::get_mem_req( integrator_term_tracker terms,
     }
 
     if(is_uks or is_gks) {
-      base_size += sizeof(double*); // z dmat
+      base_size += sizeof(double*); // z dmat 
     }
     if(is_gks) {
-      base_size += 2*sizeof(double*); // x/y dmat
+      base_size += 2*sizeof(double*); // x/y dmat 
     }
+    
+    if(terms.fxc_contraction) {
+      base_size += sizeof(double*); // s tdmat
+      if(is_uks or is_gks)
+        base_size += sizeof(double*); // z tdmat
+      if(is_gks) {
+        base_size += 2*sizeof(double*); // x/y tdmat
+      }
+    }
+
   }
   return base_size;
 
@@ -99,6 +109,16 @@ AoSScheme1CUTLASSBase::Data::device_buffer_t
     cutlass_stack.dmat_x_array_device = mem.aligned_alloc<double*>( ntask, csl );
   }
 
+  if(terms.fxc_contraction) {
+    cutlass_stack.tdmat_s_array_device = mem.aligned_alloc<double*>( ntask, csl );
+    if(is_uks or is_gks)
+      cutlass_stack.tdmat_z_array_device = mem.aligned_alloc<double*>( ntask, csl );
+    if(is_gks){
+      cutlass_stack.tdmat_y_array_device = mem.aligned_alloc<double*>( ntask, csl );
+      cutlass_stack.tdmat_x_array_device = mem.aligned_alloc<double*>( ntask, csl );
+    }
+  }
+
   cutlass_stack.ld64_dmat_array_device = mem.aligned_alloc<int64_t>( ntask + 1, csl );
   cutlass_stack.ld64_zmat_array_device = mem.aligned_alloc<int64_t>( ntask + 1, csl );
   cutlass_stack.ld64_vmat_array_device = mem.aligned_alloc<int64_t>( ntask + 1, csl );
@@ -125,7 +145,7 @@ void AoSScheme1CUTLASSBase::Data::pack_and_send(
 
   const auto ntask = std::distance( task_begin, task_end );
   std::vector<double*> dmat_host( ntask ), zmat_host( ntask ), bf_host( ntask ),
-                       vmat_host( ntask );
+                       vmat_host( ntask ), tdmat_host( ntask );
   problem_sizes_host.resize(ntask);
   syr2k_sizes_host.resize(ntask);
   std::vector<int64_t> ld64_dmat_host( ntask ), ld64_zmat_host( ntask ), 
@@ -235,6 +255,49 @@ void AoSScheme1CUTLASSBase::Data::pack_and_send(
       cutlass_stack.bfy_array_device, "send bfy array" );
     device_backend_->copy_async( ntask, bfz_host.data(), 
       cutlass_stack.bfz_array_device, "send bfz array" );
+  }
+
+  if(terms.fxc_contraction) {
+    std::vector<double*> tdmat_host( ntask );
+    for( auto i = 0; i < ntask; ++i ) {
+      auto& task = host_device_tasks[i];
+      if( task.bfn_screening.ncut > 1 )
+        tdmat_host[i] = task.nbe_scr;
+      else 
+        tdmat_host[i] = static_stack.tdmat_s_device + task.bfn_screening.ibf_begin*(nbf+1);
+    }
+    device_backend_->copy_async( ntask, tdmat_host.data(), 
+      cutlass_stack.tdmat_s_array_device, "send tdmat_s array" );
+    if(is_uks or is_gks) {
+      std::vector<double*> tdmat_z_host( ntask );
+      for( auto i = 0; i < ntask; ++i ) {
+        auto& task = host_device_tasks[i];
+        if( task.bfn_screening.ncut > 1 )
+          tdmat_z_host[i] = task.nbe_scr;
+        else 
+          tdmat_z_host[i] = static_stack.tdmat_z_device + task.bfn_screening.ibf_begin*(nbf+1);
+      }
+      device_backend_->copy_async( ntask, tdmat_z_host.data(), 
+        cutlass_stack.tdmat_z_array_device, "send tdmat_z array" );
+    }
+    if(is_gks) {
+      std::vector<double*> tdmat_y_host( ntask );
+      std::vector<double*> tdmat_x_host( ntask );
+      for( auto i = 0; i < ntask; ++i ) {
+        auto& task = host_device_tasks[i];
+        if( task.bfn_screening.ncut > 1 ) {
+          tdmat_y_host[i] = task.nbe_scr;
+          tdmat_x_host[i] = task.nbe_scr;
+        } else {
+          tdmat_y_host[i] = static_stack.tdmat_y_device + task.bfn_screening.ibf_begin*(nbf+1);
+          tdmat_x_host[i] = static_stack.tdmat_x_device + task.bfn_screening.ibf_begin*(nbf+1);
+        }
+      }
+      device_backend_->copy_async( ntask, tdmat_x_host.data(), 
+        cutlass_stack.tdmat_x_array_device, "send tdmat_x array" );
+      device_backend_->copy_async( ntask, tdmat_y_host.data(), 
+        cutlass_stack.tdmat_y_array_device, "send tdmat_y array" );
+    }
   }
 
   device_backend_->master_queue_synchronize(); 

@@ -12,10 +12,18 @@
 #ifdef GAUXC_HAS_MPI
 #include <mpi.h>
 #endif
+#ifdef GAUXC_HAS_CUDA
+#include <cuda_runtime.h>
+#endif
 
 int main( int argc, char* argv[] ) {
 #ifdef GAUXC_HAS_MPI
   MPI_Init(&argc, &argv);
+  int rank;
+  MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+#ifdef GAUXC_HAS_CUDA
+  cudaSetDevice(rank);
+#endif
   int result = Catch::Session().run( argc, argv );
   MPI_Finalize();
 #else

@@ -12,9 +12,9 @@
 
 namespace GauXC {
 
-template <density_id den_select>
+template <bool trial, density_id den_select>
 __global__ void eval_vvar_lda_kern( size_t        ntasks,
-                                    XCDeviceTask* tasks_device ) {
+                                    XCDeviceTask* tasks_device) {
 
   const int batch_idx = blockIdx.z;
   if( batch_idx >= ntasks ) return;
@@ -26,10 +26,17 @@ __global__ void eval_vvar_lda_kern( size_t        ntasks,
 
   double* den_eval_device   = nullptr;
   // use the "U" variable (+/- for UKS) even though at this point the density (S/Z) is stored
-  if constexpr (den_select == DEN_S) den_eval_device = task.den_s;
-  if constexpr (den_select == DEN_Z) den_eval_device = task.den_z;
-  if constexpr (den_select == DEN_Y) den_eval_device = task.den_y;
-  if constexpr (den_select == DEN_X) den_eval_device = task.den_x;
+  if constexpr (trial){
+    if constexpr (den_select == DEN_S) den_eval_device = task.tden_s;
+    if constexpr (den_select == DEN_Z) den_eval_device = task.tden_z;
+    if constexpr (den_select == DEN_Y) den_eval_device = task.tden_y;
+    if constexpr (den_select == DEN_X) den_eval_device = task.tden_x;
+  }else{
+      if constexpr (den_select == DEN_S) den_eval_device = task.den_s;
+      if constexpr (den_select == DEN_Z) den_eval_device = task.den_z;
+      if constexpr (den_select == DEN_Y) den_eval_device = task.den_y;
+      if constexpr (den_select == DEN_X) den_eval_device = task.den_x;
+  }
 
   const auto* basis_eval_device = task.bf;
 
@@ -65,9 +72,30 @@ __global__ void eval_uvars_lda_rks_kernel( size_t ntasks, XCDeviceTask* tasks_de
   // eval_vvars populated uvar storage already in the case of LDA+RKS
   return;
 }
+__global__ void eval_tmat_lda_rks_kernel( size_t ntasks, XCDeviceTask* tasks_device) {
+
+  const int batch_idx = blockIdx.z;
+  if( batch_idx >= ntasks ) return;
+
+  const auto& task = tasks_device[ batch_idx ];
+  const auto npts  = task.npts;
+
+  const auto* v2rho2_device  = task.v2rho2;
+  const auto* weight_device  = task.weights;
+  auto* tden_s_eval_device   = task.tden_s;
+  auto* FXC_A_device   = task.FXC_A_s;
+
+  const int tid = threadIdx.x + blockIdx.x * blockDim.x;
+  if( tid < npts ) {
+    FXC_A_device[ tid ] = v2rho2_device[ tid ] * tden_s_eval_device[ tid ] * weight_device[ tid ];
+  }
+
+  return;
+}
+
 
 __global__ void eval_uvars_lda_uks_kernel( size_t        ntasks,
-                                       XCDeviceTask* tasks_device ) {
+  XCDeviceTask* tasks_device ) {
 
   const int batch_idx = blockIdx.z;
   if( batch_idx >= ntasks ) return;
@@ -89,8 +117,42 @@ __global__ void eval_uvars_lda_uks_kernel( size_t        ntasks,
   }
 }
 
+__global__ void eval_tmat_lda_uks_kernel( size_t        ntasks,
+  XCDeviceTask* tasks_device ) {
+
+  const int batch_idx = blockIdx.z;
+  if( batch_idx >= ntasks ) return;
+
+  auto& task = tasks_device[ batch_idx ];
+
+  const auto npts            = task.npts;
+
+  auto* tden_s_device   = task.tden_s;
+  auto* tden_z_device   = task.tden_z;
+  auto* FXC_A_s_device        = task.FXC_A_s;
+  auto* FXC_A_z_device        = task.FXC_A_z;
+  const auto* weight_device   = task.weights;
+
+  const auto* v2rho2_a_a_device    = task.v2rho2_a_a;
+  const auto* v2rho2_a_b_device    = task.v2rho2_a_b;
+  const auto* v2rho2_b_b_device    = task.v2rho2_b_b;
+
+  const int tid = blockIdx.x * blockDim.x + threadIdx.x;
+
+  if( tid < npts ) {
+    const auto ps = tden_s_device[ tid ];
+    const auto pz = tden_z_device[ tid ];
+    const auto trho_a_device = 0.5*(ps + pz);
+    const auto trho_b_device = 0.5*(ps - pz);
+    const auto A_a = v2rho2_a_a_device[tid] * trho_a_device + v2rho2_a_b_device[tid] * trho_b_device;
+    const auto A_b = v2rho2_b_b_device[tid] * trho_b_device + v2rho2_a_b_device[tid] * trho_a_device;
+    FXC_A_s_device[ tid ] = 0.5 * weight_device[ tid ] * (A_a + A_b);
+    FXC_A_z_device[ tid ] = 0.5 * weight_device[ tid ] * (A_a - A_b);
+  }
+}
+
 __global__ void eval_uvars_lda_gks_kernel( size_t        ntasks,
-                                       XCDeviceTask* tasks_device ) {
+                                           XCDeviceTask* tasks_device ) {
 
   const int batch_idx = blockIdx.z;
   if( batch_idx >= ntasks ) return;

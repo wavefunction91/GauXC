@@ -148,6 +148,48 @@ void ReplicatedXCIntegratorImpl<ValueType>::
 
 template <typename ValueType>
 void ReplicatedXCIntegratorImpl<ValueType>::
+eval_fxc_contraction( int64_t m, int64_t n, const value_type* P,
+                      int64_t ldp,
+                      const value_type* tP, int64_t ldtp,
+                      value_type* FXC, int64_t ldfxc,
+                      const IntegratorSettingsXC& ks_settings ) {
+
+  // For RKS, we can reuse the UKS implementation with Pz=0, tPz=0
+  // Create temporary buffers to store the z-component results
+  std::vector<value_type> temp_fxcz(m * n, 0.0);
+  value_type* FXCz = temp_fxcz.data();
+  int64_t ldfxcz = m;
+
+  eval_fxc_contraction_(m, n, P, ldp,
+                      tP, ldtp,
+                      FXC, ldfxc,
+                      ks_settings);
+
+}
+
+template <typename ValueType>
+void ReplicatedXCIntegratorImpl<ValueType>::
+eval_fxc_contraction( int64_t m, int64_t n, const value_type* Ps,
+                      int64_t ldps,
+                      const value_type* Pz, int64_t ldpz,
+                      const value_type* tPs, int64_t ldtps,
+                      const value_type* tPz, int64_t ldtpz,
+                      value_type* FXCs, int64_t ldfxcs,
+                      value_type* FXCz, int64_t ldfxcz,
+                      const IntegratorSettingsXC& ks_settings ) {
+
+  eval_fxc_contraction_(m,n,Ps,ldps,
+                        Pz,ldpz,
+                        tPs,ldtps,
+                        tPz,ldtpz,
+                        FXCs,ldfxcs,
+                        FXCz,ldfxcz,
+                        ks_settings);    
+
+}
+
+template <typename ValueType>
+void ReplicatedXCIntegratorImpl<ValueType>::
   eval_dd_psi( int64_t m, int64_t n, const value_type* P,
                int64_t ldp, unsigned max_Ylm, value_type* ddPsi, int64_t ldPsi ) {
 
