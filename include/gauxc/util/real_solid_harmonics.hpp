@@ -108,13 +108,11 @@ inline constexpr double real_solid_harmonic_coeff( int l, int m, int lx, int ly,
 
 class SphericalHarmonicTransform {
 
-  int max_l_;
   std::vector< std::vector<double> > table_;
 
 public:
 
-  inline SphericalHarmonicTransform( int max_l ) :
-    max_l_(max_l) {
+  inline SphericalHarmonicTransform( int max_l ) {
 
     table_.resize(max_l+1);
     for( auto l = 0; l <= max_l; ++ l ) {

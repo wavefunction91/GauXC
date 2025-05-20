@@ -194,21 +194,22 @@ TEST_CASE("BasisSet", "[basisset]") {
   Molecule mol = make_water();
   BasisSet<double> basis = make_631Gd(mol, SphericalType(test_spherical));
 
-  // SECTION("Copy Ctor"){
+  SECTION("Copy Ctor"){
 
-  //   BasisSet<double> basis_copy(basis);
-  //   CHECK( basis_copy.nshells() == 10 );
-  //   CHECK( basis_copy.nbf() == (test_spherical ? 18 : 19) );
+    BasisSet<double> basis_copy(basis);
+    CHECK( basis_copy.nshells() == 10 );
+    CHECK( basis_copy.nbf() == (test_spherical ? 18 : 19) );
   
-  // }
+  }
 
-  // SECTION("Move Ctor"){
+  SECTION("Move Ctor"){
 
-  //   BasisSet<double> basis_move(std::move(basis));
-  //   CHECK( basis_move.nshells() == 10 );
-  //   CHECK( basis_move.nbf() == (test_spherical ? 18 : 19) );
+    BasisSet<double> basis_copy(basis);
+    BasisSet<double> basis_move(std::move(basis_copy));
+    CHECK( basis_move.nshells() == 10 );
+    CHECK( basis_move.nbf() == (test_spherical ? 18 : 19) );
   
-  // }
+  }
 
   CHECK( basis.nshells() == 10 );
   CHECK( basis.nbf()     == (test_spherical ? 18 : 19) );

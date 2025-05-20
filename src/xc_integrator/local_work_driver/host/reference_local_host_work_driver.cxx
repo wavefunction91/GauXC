@@ -299,7 +299,7 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_mgga_rks( size_t npts, size_t nbe,
   const double* basis_eval, const double* dbasis_x_eval,
   const double *dbasis_y_eval, const double* dbasis_z_eval, const double* lbasis_eval,
   const double* X, size_t ldx, const double* mmat_x, const double* mmat_y, 
-  const double* mmat_z, size_t ldm,
+  const double* mmat_z, size_t /*ldm*/,
   double* den_eval, double* dden_x_eval, double* dden_y_eval,
   double* dden_z_eval, double* gamma, double* tau, double* lapl ) {
 
@@ -334,8 +334,8 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_mgga_uks( size_t npts, size_t nbe,
   const double* basis_eval, const double* dbasis_x_eval,
   const double *dbasis_y_eval, const double* dbasis_z_eval, const double* lbasis_eval,
   const double* Xs, size_t ldxs, const double* Xz, size_t ldxz, 
-  const double* mmat_xs, const double* mmat_ys, const double* mmat_zs, size_t ldms,
-  const double* mmat_xz, const double* mmat_yz, const double* mmat_zz, size_t ldmz,
+  const double* mmat_xs, const double* mmat_ys, const double* mmat_zs, size_t /*ldms*/,
+  const double* mmat_xz, const double* mmat_yz, const double* mmat_zz, size_t /*ldmz*/,
   double* den_eval, double* dden_x_eval, double* dden_y_eval,
   double* dden_z_eval, double* gamma, double* tau, double* lapl ) {
 
@@ -1166,7 +1166,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
       cou_offsets_map[shell_list[i]] = cou_cart_sizes[i];
     }
 
-    size_t ndo = 0;
+    //size_t ndo = 0;
     {
 #if 0
     //size_t ioff_cart = 0;
@@ -1225,7 +1225,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
       auto prim_pair_data = sh_pair.prim_pairs();
       auto nprim_pair     = sh_pair.nprim_pairs();
       
-      ndo++;  
+      //ndo++;  
       XCPU::compute_integral_shell_pair( ish == jsh,
       				   npts, _points_transposed.data(),
       				   bra.l(), ket.l(), bra_origin, ket_origin,

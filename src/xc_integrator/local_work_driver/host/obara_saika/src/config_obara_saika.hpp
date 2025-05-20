@@ -252,7 +252,7 @@ namespace XCPU {
 
 // Scalar SIMD Emulation
 #else
-#ifdef __GNUC__
+#if (defined(__GNUC__) && __cplusplus >= 202302L)
   #warning "Warning: ISA Not Specified: Using Scalar Code"
 #else
   #pragma message "Warning: ISA Not Specified: Using Scalar Code"
