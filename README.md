@@ -79,6 +79,18 @@ We have also receieved significant support from industry collaborators:
 ## GauXC
 Please cite the following publications if GauXC was used in your publication:
 ```
+% Relativistic integrals
+@article{kovtun2024relativistic,
+  author = {Kovtun, Mikael and Lambros, Eleftherios and Liu, Aodong and Tang, Diandong and Williams--Young, David B. and Li, Xiaosong},
+  title = {Accelerating Relativistic Exact-Two-Component Density Functional Theory Calculations with Graphical Processing Units},
+  journal = {Journal of Chemical Theory and Computation},
+  volume = {20},
+  number = {18},
+  pages = {7694--7699},
+  year = {2024},
+  doi = {10.1021/acs.jctc.4c00843},
+}
+
 % Distributed Memory Seminumerical Exact Exchange implementation
 @article{williams2023distributed,
   title = {Distributed memory, GPU accelerated Fock construction for hybrid, Gaussian basis density functional theory},
