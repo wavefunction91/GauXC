@@ -14,7 +14,7 @@
 
 #ifdef GAUXC_HAS_HIP
 #include "hip/hip_runtime.h"
-#include <hipblas.h>
+#include <hipblas/hipblas.h>
 
 namespace GauXC {
 

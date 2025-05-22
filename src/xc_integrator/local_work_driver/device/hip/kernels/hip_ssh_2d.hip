@@ -122,7 +122,12 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
     int cont = (iCenter < natoms);
 
     // We will continue iterating until all of the threads have cont set to 0
+
+#ifdef __HIP_PLATFORM_NVIDIA__
+    while (__any_sync(__activemask(), cont)) {
+#else
     while (__any(cont)) {
+#endif
       if (cont) {
         double2 rj[weight_unroll/2];
         double2 rab_val[weight_unroll/2];
@@ -131,8 +136,16 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
 
         #pragma unroll
         for (int k = 0; k < weight_unroll/2; k++) {
-          rj[k]      = *((double2*)(local_dist_scratch + jCenter) + k);
-          rab_val[k] = *((double2*)(local_rab          + jCenter) + k); 
+          double* addr = (double*)((double2*)(local_dist_scratch + jCenter) + k);
+          rj[k].x = addr[0];
+          rj[k].y = addr[1];
+          double* addr2 = (double*)((double2*)(local_rab + jCenter) + k);
+          rab_val[k].x = addr2[0];
+          rab_val[k].y = addr2[1];
+          // These caused a memory access violation when lddist is not a
+          // multiple of 2 as then there can be an unaligned access
+          // rj[k]      = *((double2*)(local_dist_scratch + jCenter) + k);
+          // rab_val[k] = *((double2*)(local_rab          + jCenter) + k);
         }
 
         #pragma unroll
@@ -177,7 +190,6 @@ void modify_weights_ssf_kernel_2d( int32_t npts, int32_t natoms,
       sum += parent_weight;
       weights[ipt] *= parent_weight / sum;
     }
-
 #endif
   }
 

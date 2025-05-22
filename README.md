@@ -221,8 +221,10 @@ target_link_libraries( my_target PUBLIC gauxc::gauxc )
 | `GAUXC_ENABLE_MPI`         | Enable MPI Bindings                                       | `ON`     |
 | `GAUXC_ENABLE_OPENMP`      | Enable OpenMP Bindings                                    | `ON`     |
 | `CMAKE_CUDA_ARCHITECTURES` | CUDA architechtures (e.g. 70 for Volta, 80 for Ampere)    |  --      |
+| `CMAKE_HIP_ARCHITECTURES`  | HIP architechtures (e.g. gfx90a for MI250X)               |  --      |
 | `BLAS_LIBRARIES`           | Full BLAS linker.                                         |  --      |
 | `MAGMA_ROOT_DIR`           | Install prefix for MAGMA.                                 |  --      |
+| `ROCM_PATH`                | Install prefix for ROCM.                                  |  --      |
 
 
 
