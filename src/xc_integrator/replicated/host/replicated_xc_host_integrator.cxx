@@ -56,7 +56,7 @@ typename ReplicatedXCHostIntegratorFactory<ValueType>::ptr_return_t
 
 }
 
-template class ReplicatedXCHostIntegratorFactory<double>;
+template struct ReplicatedXCHostIntegratorFactory<double>;
 
 
 } // namespace GauXC::detail

@@ -38,7 +38,7 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
                  value_type* VXCz, int64_t ldvxcz,
                  value_type* VXCy, int64_t ldvxcy,
                  value_type* VXCx, int64_t ldvxcx,
-                 value_type* EXC, const IntegratorSettingsXC& ks_settings) {
+                 value_type* EXC, const IntegratorSettingsXC& /*ks_settings*/) {
 
 
   const auto& basis = this->load_balancer_->basis();

@@ -23,17 +23,26 @@ namespace GauXC {
  */
 template <typename F>
 struct BasisSet : public std::vector<Shell<F>> {
-
+private:
+  /// Tests if the base class can be constructed from @p Args
+  template <typename... Args>
+  static constexpr auto can_construct_base_v = 
+    std::is_constructible_v<std::vector<Shell<F>>, Args...>;
+    
+public:
   /**
    *  @brief Construct a BasisSet object
-   *
+   * 
    *  Delegates to std::vector<Shell<F>>::vector
    *
-   *  @tparam Args Parameter pack for arguements that are passed to
+   *  @tparam Args Parameter pack for arguments that are passed to
    *  base constructor
+   *  @tparam <anonymous> Used to disable this method via SFINAE if the base
+   *  class can not be constructed from @p Args
    */
-  template <typename... Args>
-  BasisSet( Args&&... args ) :
+  template <typename... Args,
+            typename = std::enable_if_t<can_construct_base_v<Args...>>>
+  explicit BasisSet( Args&&... args ) :
     std::vector<Shell<F>>( std::forward<Args>(args)... )  { }
 
   /// Copy a BasisSet object
