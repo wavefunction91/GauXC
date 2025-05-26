@@ -19,7 +19,7 @@ namespace detail {
   };
 
   template <typename Integral>
-  inline intmax_t csr_index( size_t i, size_t j, Integral* row_ptr, Integral* col_ind ) {
+  inline std::intmax_t csr_index( size_t i, size_t j, Integral* row_ptr, Integral* col_ind ) {
     const auto j_st = col_ind + row_ptr[i];
     const auto j_en = col_ind + row_ptr[i+1];
     auto it = std::lower_bound(j_st, j_en, j);

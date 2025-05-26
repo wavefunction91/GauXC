@@ -1166,7 +1166,6 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
       cou_offsets_map[shell_list[i]] = cou_cart_sizes[i];
     }
 
-    size_t ndo = 0;
     {
 #if 0
     //size_t ioff_cart = 0;
@@ -1186,7 +1185,6 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
         const size_t joff_cart = cou_cart_sizes[j] * npts;
         XCPU::point ket_origin{ket.O()[0],ket.O()[1],ket.O()[2]};
         if(!need_sp(ish,jsh)) continue;
-        ++ndo;
 
         auto sh_pair = shpairs.at(ish,jsh);
         auto prim_pair_data = sh_pair.prim_pairs();
@@ -1225,7 +1223,6 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
       auto prim_pair_data = sh_pair.prim_pairs();
       auto nprim_pair     = sh_pair.nprim_pairs();
       
-      ndo++;  
       XCPU::compute_integral_shell_pair( ish == jsh,
       				   npts, _points_transposed.data(),
       				   bra.l(), ket.l(), bra_origin, ket_origin,
@@ -1236,7 +1233,6 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
     }
 #endif
     }
-    //std::cout << "NDO " << ndo << " " << ndo / double(nshells*(nshells+1)/2) << std::endl;
    
     for( auto i = 0ul; i < nbe_cart; ++i )
     for( auto j = 0ul; j < npts;     ++j ) {

@@ -131,8 +131,8 @@ public:
 
   Shell( PrimSize nprim, AngularMomentum l, SphericalType pure,
     prim_array alpha, prim_array coeff, cart_array O, bool _normalize = true ) :
-    nprim_( nprim.get() ), l_( l.get() ), pure_( pure.get() ),
-    alpha_( alpha ), coeff_( coeff ), O_( O ) {
+    alpha_( alpha ), coeff_( coeff ), O_( O ),
+    nprim_( nprim.get() ), l_( l.get() ), pure_( pure.get() ) {
 
     if( _normalize ) normalize();
     compute_shell_cutoff();

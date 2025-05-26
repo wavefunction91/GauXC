@@ -12,7 +12,7 @@ NOTICE.  This Software was developed under funding from the U.S. Department
 of Energy and the U.S. Government consequently retains certain rights.  As
 such, the U.S. Government has been granted for itself and others acting on
 its behalf a paid-up, nonexclusive, irrevocable, worldwide license in the
-Software to reproduce, distribute copies to the public, prepare derivative 
+Software to reproduce, distribute copies to the public, prepare derivative
 works, and perform publicly and display publicly, and to permit others to do so.
 
 # Synopsis
@@ -22,17 +22,17 @@ to the exchange-correlation (XC) and exact-exchange (K) energy (e.g. potential, 
 basis set discretization of Kohn-Sham density function theory (KS-DFT). GauXC
 provides efficient, scalable distributed memory XC and K integrators for both CPU and
 accelerator-based (GPU) architectures. Currently, GPU support is provided through
-the 
-[CUDA](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html) and 
+the
+[CUDA](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html) and
 [HIP](https://rocmdocs.amd.com/en/latest/Programming_Guides/HIP-GUIDE.html)
-frameworks to target NVIDIA and AMD GPUs, respectively. 
+frameworks to target NVIDIA and AMD GPUs, respectively.
 Evaluation
 of the XC functional CPU/accelerator architectures is provided by the
 [ExchCXX](https://github.com/wavefunction91/ExchCXX) library. Quadratures are generated
 by the [IntegratorXX](https://github.com/wavefunction91/IntegratorXX).
 
 GauXC is a work in progress. Its development has been funded by the U.S.
-Department of Energy Exascale Computing Project 
+Department of Energy Exascale Computing Project
 ([NWChemEx](https://github.com/NWChemEx-Project)).
 
 
@@ -62,7 +62,7 @@ for flexible and agile development in the field of KS-DFT.
 
 # Major Contributors
 
-Primary Developer and Maintainer: David Williams-Young - LBNL (dbwy at lbl dot gov) 
+Primary Developer and Maintainer: David Williams--Young - LBNL (dbwy at lbl dot gov)
 
 GauXC has received major contributions from the following developers (in no particular order):
 * Thom Popovici (LBNL)          - Optimized sn-K kernels for CPU and GPU architectures
@@ -79,10 +79,22 @@ We have also receieved significant support from industry collaborators:
 ## GauXC
 Please cite the following publications if GauXC was used in your publication:
 ```
+% Relativistic integrals
+@article{kovtun2024relativistic,
+  author = {Kovtun, Mikael and Lambros, Eleftherios and Liu, Aodong and Tang, Diandong and Williams--Young, David B. and Li, Xiaosong},
+  title = {Accelerating Relativistic Exact-Two-Component Density Functional Theory Calculations with Graphical Processing Units},
+  journal = {Journal of Chemical Theory and Computation},
+  volume = {20},
+  number = {18},
+  pages = {7694--7699},
+  year = {2024},
+  doi = {10.1021/acs.jctc.4c00843},
+}
+
 % Distributed Memory Seminumerical Exact Exchange implementation
 @article{williams2023distributed,
   title = {Distributed memory, GPU accelerated Fock construction for hybrid, Gaussian basis density functional theory},
-  author = {Williams-Young, David B. and Asadchev, Andrey and Popovici, Doru Thom and Clark, David and Waldrop, Jonathan and 
+  author = {Williams--Young, David B. and Asadchev, Andrey and Popovici, Doru Thom and Clark, David and Waldrop, Jonathan and
             Windus, Theresa L. and Valeev, Edward F. and de Jong, Wibe A.},
   journal = {The Journal of Chemical Physics},
   volume = {158},
@@ -95,10 +107,10 @@ Please cite the following publications if GauXC was used in your publication:
 
 % Performance Portability (HIP/SYCL implementations)
 @article{williams2021achieving,
-  title={Achieving performance portability in Gaussian basis set density functional 
+  title={Achieving performance portability in Gaussian basis set density functional
          theory on accelerator based architectures in NWChemEx},
-  author={Williams-Young, David B and Bagusetty, Abhishek and de Jong, Wibe A and 
-          Doerfler, Douglas and van Dam, Hubertus JJ and V{\'a}zquez-Mayagoitia, {\'A}lvaro and 
+  author={Williams--Young, David B and Bagusetty, Abhishek and de Jong, Wibe A and
+          Doerfler, Douglas and van Dam, Hubertus JJ and V{\'a}zquez-Mayagoitia, {\'A}lvaro and
           Windus, Theresa L and Yang, Chao},
   journal={Parallel Computing},
   volume={108},
@@ -112,7 +124,7 @@ Please cite the following publications if GauXC was used in your publication:
 @article{williams20on,
   author={David B. Williams--Young and Wibe A. de Jong and Hubertus J.J. van Dam and
           Chao Yang},
-  title={On the Efficient Evaluation of the Exchange Correlation Potential on 
+  title={On the Efficient Evaluation of the Exchange Correlation Potential on
          Graphics Processing Unit Clusters},
   journal={Frontiers in Chemistry},
   volume={8},
@@ -127,12 +139,12 @@ Please cite the following publications if GauXC was used in your publication:
 @article{petrone18an,
   author={Alessio Petrone and David B. Williams--Young and Shichao Sun and
           Torin F. Stetina and Xiaosong Li},
-  title={An Efficient Implementation of Two-Component Relativistic Density 
+  title={An Efficient Implementation of Two-Component Relativistic Density
          Functional Theory with Torque-Free Auxiliary Variables},
   journal={The European Physical Journal B},
   volume={91},
   number={169},
-  pages={},
+  pages={169},
   year={2018},
   doi={10.1140/epjb/e2018-90170-1},
   url={https://link.springer.com/article/10.1140/epjb/e2018-90170-1}
@@ -184,9 +196,9 @@ include(FetchContent)
 # Set GauXC CMake options (see below)
 
 # Pull master branch of GauXC
-FetchContent_Declare( gauxc 
-  GIT_REPOSITORY https://github/com/wavefunction91/GauXC.git 
-  GIT_TAG master 
+FetchContent_Declare( gauxc
+  GIT_REPOSITORY https://github/com/wavefunction91/GauXC.git
+  GIT_TAG master
 )
 FetchContent_MakeAvailable( gauxc )
 
@@ -203,11 +215,11 @@ target_link_libraries( my_target PUBLIC gauxc::gauxc )
 | `GAUXC_ENABLE_HOST`        | Enable HOST integrators                                   | `ON`     |
 | `GAUXC_ENABLE_CUDA`        | Enable CUDA integrators                                   | `OFF`    |
 | `GAUXC_ENABLE_HIP`         | Enable HIP integrators                                    | `OFF`    |
-| `GAUXC_ENABLE_MAGMA`       | Enable MAGMA for batched BLAS (No effect if no GPU)       | `ON`     | 
+| `GAUXC_ENABLE_MAGMA`       | Enable MAGMA for batched BLAS (No effect if no GPU)       | `ON`     |
 | `GAUXC_ENABLE_CUTLASS`     | Enable CUTLASS for batched BLAS (No effect if no CUDA)    | `OFF`    |
 | `GAUXC_ENABLE_NCCL`        | Enable NCCL bindings for topology aware GPU reductions    | `OFF`    |
-| `GAUXC_ENABLE_MPI`         | Enable MPI Bindings                                       | `ON`     | 
-| `GAUXC_ENABLE_OPENMP`      | Enable OpenMP Bindings                                    | `ON`     | 
+| `GAUXC_ENABLE_MPI`         | Enable MPI Bindings                                       | `ON`     |
+| `GAUXC_ENABLE_OPENMP`      | Enable OpenMP Bindings                                    | `ON`     |
 | `CMAKE_CUDA_ARCHITECTURES` | CUDA architechtures (e.g. 70 for Volta, 80 for Ampere)    |  --      |
 | `CMAKE_HIP_ARCHITECTURES`  | HIP architechtures (e.g. gfx90a for MI250X)               |  --      |
 | `BLAS_LIBRARIES`           | Full BLAS linker.                                         |  --      |
