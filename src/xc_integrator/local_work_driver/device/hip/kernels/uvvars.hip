@@ -14,11 +14,9 @@
 namespace GauXC {
 
 #ifdef __HIP_PLATFORM_NVIDIA__
-#define VVAR_KERNEL_SM_BLOCK 32
 #define GGA_KERNEL_SM_WARPS 16
 #define MGGA_KERNEL_SM_BLOCK 32
 #else
-#define VVAR_KERNEL_SM_BLOCK 16
 #define GGA_KERNEL_SM_WARPS 8
 #define MGGA_KERNEL_SM_BLOCK 16
 #endif
@@ -501,8 +499,6 @@ __global__ void eval_vvar_grad_kern( size_t        ntasks,
   double* den_y_eval_device = nullptr;
   double* den_z_eval_device = nullptr;
 
-  constexpr auto warp_size = hip::warp_size;
-
   if constexpr (den_select == DEN_S) {
     den_eval_device   = task.den_s;
     den_x_eval_device = task.dden_sx;
@@ -535,63 +531,39 @@ __global__ void eval_vvar_grad_kern( size_t        ntasks,
 
   const auto* den_basis_prod_device = task.zmat;
   
-  __shared__ double den_shared[4][warp_size][VVAR_KERNEL_SM_BLOCK+1];
+  double den_reg = 0.;
+  double dx_reg = 0.;
+  double dy_reg = 0.;
+  double dz_reg = 0.;
 
-  for ( int bid_x = blockIdx.x * blockDim.x; 
-        bid_x < nbf;
-        bid_x += blockDim.x * gridDim.x ) {
-    
-    for ( int bid_y = blockIdx.y * VVAR_KERNEL_SM_BLOCK; 
-          bid_y < npts;
-          bid_y += VVAR_KERNEL_SM_BLOCK * gridDim.y ) {
-        
-      for (int sm_y = threadIdx.y; sm_y < VVAR_KERNEL_SM_BLOCK; sm_y += blockDim.y) {
-        den_shared[0][threadIdx.x][sm_y] = 0.;
-        den_shared[1][threadIdx.x][sm_y] = 0.;
-        den_shared[2][threadIdx.x][sm_y] = 0.;
-        den_shared[3][threadIdx.x][sm_y] = 0.;
+  int ipt = blockIdx.x * blockDim.x + threadIdx.x;
 
-        if (bid_y + threadIdx.x < npts and bid_x + sm_y < nbf) { 
-          const double* db_col   = den_basis_prod_device + (bid_x + sm_y)*npts;
-          const double* bf_col   = basis_eval_device     + (bid_x + sm_y)*npts;
-          const double* bf_x_col = dbasis_x_eval_device  + (bid_x + sm_y)*npts;
-          const double* bf_y_col = dbasis_y_eval_device  + (bid_x + sm_y)*npts;
-          const double* bf_z_col = dbasis_z_eval_device  + (bid_x + sm_y)*npts;
+  if (ipt < npts) {
 
-          den_shared[0][threadIdx.x][sm_y] = bf_col  [ bid_y + threadIdx.x ] * db_col[ bid_y + threadIdx.x ];
-          den_shared[1][threadIdx.x][sm_y] = bf_x_col[ bid_y + threadIdx.x ] * db_col[ bid_y + threadIdx.x ];
-          den_shared[2][threadIdx.x][sm_y] = bf_y_col[ bid_y + threadIdx.x ] * db_col[ bid_y + threadIdx.x ];
-          den_shared[3][threadIdx.x][sm_y] = bf_z_col[ bid_y + threadIdx.x ] * db_col[ bid_y + threadIdx.x ];
-        }
-      }
-      __syncthreads();
+  // Have each thread accumulate its own reduction result into a register.
+  // There's no real _need_ for LDS because the reductions are small and
+  // therefore can be done without sharing.
+  for( int ibf = 0; ibf < nbf; ibf++ ) {
 
 
-      for (int sm_y = threadIdx.y; sm_y < VVAR_KERNEL_SM_BLOCK; sm_y += blockDim.y) {
-        const int tid_y = bid_y + sm_y;
-         double den_reg = den_shared[0][sm_y][threadIdx.x];
-        double dx_reg  = den_shared[1][sm_y][threadIdx.x];
-        double dy_reg  = den_shared[2][sm_y][threadIdx.x];
-        double dz_reg  = den_shared[3][sm_y][threadIdx.x];
+      const double* bf_col   = basis_eval_device     + ibf*npts;
+      const double* bf_x_col = dbasis_x_eval_device  + ibf*npts;
+      const double* bf_y_col = dbasis_y_eval_device  + ibf*npts;
+      const double* bf_z_col = dbasis_z_eval_device  + ibf*npts;
+      const double* db_col   = den_basis_prod_device + ibf*npts;
 
-        // Warp blocks are stored col major
-        den_reg =     hip::warp_reduce_sum<warp_size>( den_reg );
-        dx_reg  = 2. * hip::warp_reduce_sum<warp_size>( dx_reg );
-        dy_reg  = 2. * hip::warp_reduce_sum<warp_size>( dy_reg );
-        dz_reg  = 2. * hip::warp_reduce_sum<warp_size>( dz_reg );
-
-
-        if( threadIdx.x == 0 and tid_y < npts ) {
-          atomicAdd( den_eval_device   + tid_y, den_reg );
-          atomicAdd( den_x_eval_device + tid_y, dx_reg  );
-          atomicAdd( den_y_eval_device + tid_y, dy_reg  );
-          atomicAdd( den_z_eval_device + tid_y, dz_reg  );
-        }
-      }
-      __syncthreads();
-    }
+      den_reg += bf_col[ ipt ]   * db_col[ ipt ];
+      dx_reg += 2 * bf_x_col[ ipt ] * db_col[ ipt ];
+      dy_reg += 2 * bf_y_col[ ipt ] * db_col[ ipt ];
+      dz_reg += 2 * bf_z_col[ ipt ] * db_col[ ipt ];
   }
 
+
+    den_eval_device   [ipt] = den_reg;
+    den_x_eval_device [ipt] = dx_reg ;
+    den_y_eval_device [ipt] = dy_reg ;
+    den_z_eval_device [ipt] = dz_reg ;
+  }
 }
 
 
@@ -656,9 +628,9 @@ void eval_vvar( size_t ntasks, int32_t nbf_max, int32_t npts_max, bool do_grad, 
   dim3 threads;
   dim3 blocks;
   if( do_grad ) {
-    threads = dim3( hip::warp_size, hip::max_warps_per_thread_block / 2, 1 );
-    blocks = dim3( std::min(uint64_t(4), util::div_ceil( nbf_max, 4 )),
-            std::min(uint64_t(16), util::div_ceil( nbf_max, 16 )),
+    threads = dim3(hip::max_warps_per_thread_block, 1, 1);
+    blocks = dim3( util::div_ceil( npts_max,  threads.x ),
+            1,
             ntasks );
   } else {
     threads = dim3( hip::warp_size, hip::max_warps_per_thread_block, 1 );
