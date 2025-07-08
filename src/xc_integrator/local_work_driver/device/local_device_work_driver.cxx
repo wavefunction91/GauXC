@@ -64,6 +64,11 @@ void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, integrator_ks_schem
   throw_if_invalid_pimpl(pimpl_);                               \
   pimpl_->NAME(device_data, track, b);                               \
 }
+#define FWD_TO_PIMPL_KS_SCHEME_BOOL_BOOL(NAME) \
+void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, integrator_ks_scheme track, bool b1, bool b2 ) { \
+  throw_if_invalid_pimpl(pimpl_);                               \
+  pimpl_->NAME(device_data, track, b1, b2);                               \
+}
 #define FWD_TO_PIMPL_KS_SCHEME_DEN_ID(NAME) \
 void LocalDeviceWorkDriver::NAME( XCDeviceData* device_data, integrator_ks_scheme track, density_id den ) { \
   throw_if_invalid_pimpl(pimpl_);                               \
@@ -119,9 +124,9 @@ FWD_TO_PIMPL_DEN_ID_BOOL(inc_vxc)            // Increment VXC_I by Z
 FWD_TO_PIMPL_DEN_ID_BOOL(inc_fxc)            // Increment FXC_I by Z
 
 FWD_TO_PIMPL(inc_exx_k)     
-FWD_TO_PIMPL_KS_SCHEME(inc_exc_grad_lda)
-FWD_TO_PIMPL_KS_SCHEME(inc_exc_grad_gga)
-FWD_TO_PIMPL_KS_SCHEME_BOOL(inc_exc_grad_mgga)
+FWD_TO_PIMPL_KS_SCHEME_BOOL(inc_exc_grad_lda)
+FWD_TO_PIMPL_KS_SCHEME_BOOL(inc_exc_grad_gga)
+FWD_TO_PIMPL_KS_SCHEME_BOOL_BOOL(inc_exc_grad_mgga)
 
 FWD_TO_PIMPL_DEN_ID(symmetrize_vxc)
 FWD_TO_PIMPL_DEN_ID(symmetrize_fxc) // Added FXC function
@@ -196,6 +201,11 @@ void LocalDeviceWorkDriver::exx_ek_shellpair_collision( double eps_E, double eps
   const ShellPairCollection<double>& shpairs ) {
   throw_if_invalid_pimpl(pimpl_);
   pimpl_->exx_ek_shellpair_collision( eps_E, eps_K, device_data, tb, te, shpairs );
+}
+
+void LocalDeviceWorkDriver::eval_weight_1st_deriv_contracted( XCDeviceData* device_data, XCWeightAlg alg ) {
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_weight_1st_deriv_contracted(device_data, alg);
 }
 
 }

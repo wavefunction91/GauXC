@@ -15,6 +15,7 @@
 #include <gauxc/xc_task.hpp>
 #include <gauxc/util/timer.hpp>
 #include <gauxc/runtime_environment.hpp>
+#include <gauxc/enums.hpp>
 
 namespace GauXC {
 
@@ -27,6 +28,8 @@ namespace detail {
 struct LoadBalancerState {
   bool modified_weights_are_stored = false; 
     ///< Whether the load balancer currently stores partitioned weights
+  XCWeightAlg weight_alg = XCWeightAlg::NOTPARTITIONED; 
+    ///< Weight partitioning scheme used by this LoadBalancer
 };
 
 

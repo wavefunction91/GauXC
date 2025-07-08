@@ -39,6 +39,7 @@ enum class AtomicGridSizeDefault {
  *  molecular integration
  */
 enum class XCWeightAlg {
+  NOTPARTITIONED, ///< Not partitioned
   Becke, ///< The original Becke weighting scheme
   SSF,   ///< The Stratmann-Scuseria-Frisch weighting scheme
   LKO    ///< The Lauqua-Kuessman-Ochsenfeld weighting scheme

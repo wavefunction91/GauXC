@@ -21,4 +21,8 @@ struct IntegratorSettingsKS : public IntegratorSettingsXC {
   double gks_dtol = 1e-12;
 };
 
+struct IntegratorSettingsEXC_GRAD : public IntegratorSettingsKS {
+  bool include_weight_derivatives= true; // whether to include grid weight contribution and employ translational invariance, or just use Hellmann-Feynman gradient
+};
+
 }

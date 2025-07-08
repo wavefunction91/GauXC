@@ -70,8 +70,8 @@ public:
   exc_vxc_type_gks  eval_exc_vxc ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,
                                    const IntegratorSettingsXC& = IntegratorSettingsXC{});
 
-  exc_grad_type eval_exc_grad( const MatrixType& );
-  exc_grad_type eval_exc_grad( const MatrixType&, const MatrixType& );
+  exc_grad_type eval_exc_grad( const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+  exc_grad_type eval_exc_grad( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
 
   exx_type      eval_exx     ( const MatrixType&, 
                                const IntegratorSettingsEXX& = IntegratorSettingsEXX{} );

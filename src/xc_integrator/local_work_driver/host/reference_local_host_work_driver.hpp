@@ -30,6 +30,9 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
   void partition_weights( XCWeightAlg weight_alg, const Molecule& mol, 
     const MolMeta& meta, task_iterator task_begin, task_iterator task_end ) override;
 
+  void eval_weight_1st_deriv_contracted( XCWeightAlg weight_alg, const Molecule& mol, 
+    const MolMeta& meta, const XCTask& task, const double* w_times_f, double* exc_grad_w ) override;
+
   void eval_collocation( size_t npts, size_t nshells, size_t nbe, 
     const double* pts, const BasisSet<double>& basis, const int32_t* shell_list, 
     double* basis_eval ) override;

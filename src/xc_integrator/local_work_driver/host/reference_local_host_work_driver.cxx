@@ -52,6 +52,21 @@ namespace GauXC {
     }
   }
 
+  void ReferenceLocalHostWorkDriver::eval_weight_1st_deriv_contracted( 
+    XCWeightAlg weight_alg, const Molecule& mol, const MolMeta& meta, 
+    const XCTask& task, const double* w_times_f, double* exc_grad_w ) {
+    switch( weight_alg ) {
+      case XCWeightAlg::Becke:
+        reference_becke_weights_1std_contraction_host( mol, meta, task, w_times_f, exc_grad_w );
+        break;
+      case XCWeightAlg::SSF:
+        reference_ssf_weights_1std_contraction_host( mol, meta, task, w_times_f, exc_grad_w );
+        break;
+      default:
+        GAUXC_GENERIC_EXCEPTION("Weight Alg Not Supported");
+    }
+  }
+
 
   // Collocation
   void ReferenceLocalHostWorkDriver::eval_collocation( size_t npts, size_t nshells, 

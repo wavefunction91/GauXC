@@ -30,6 +30,7 @@ struct LocalDeviceWorkDriverPIMPL {
   // Public APIs
 
   virtual void partition_weights( XCDeviceData* ) = 0;
+  virtual void eval_weight_1st_deriv_contracted( XCDeviceData*, XCWeightAlg ) = 0;
   virtual void eval_collocation( XCDeviceData* ) = 0;
   virtual void eval_collocation_gradient( XCDeviceData* ) = 0;
   virtual void eval_collocation_hessian( XCDeviceData* ) = 0;
@@ -63,10 +64,10 @@ struct LocalDeviceWorkDriverPIMPL {
   virtual void inc_exc( XCDeviceData* ) = 0;
   virtual void inc_nel( XCDeviceData* ) = 0;
   virtual void inc_vxc( XCDeviceData* , density_id, bool) = 0;
-  virtual void inc_fxc( XCDeviceData* , density_id, bool) = 0;
-  virtual void inc_exc_grad_lda( XCDeviceData*, integrator_ks_scheme  ) = 0;
-  virtual void inc_exc_grad_gga( XCDeviceData*, integrator_ks_scheme  ) = 0;
-  virtual void inc_exc_grad_mgga( XCDeviceData*, integrator_ks_scheme , bool ) = 0;
+  virtual void inc_fxc( XCDeviceData* , density_id, bool) = 0;  
+  virtual void inc_exc_grad_lda( XCDeviceData*, integrator_ks_scheme, bool  ) = 0;
+  virtual void inc_exc_grad_gga( XCDeviceData*, integrator_ks_scheme, bool  ) = 0;
+  virtual void inc_exc_grad_mgga( XCDeviceData*, integrator_ks_scheme , bool, bool ) = 0;
   virtual void inc_exx_k( XCDeviceData* ) = 0;
   virtual void symmetrize_vxc( XCDeviceData*, density_id ) = 0;
   virtual void symmetrize_fxc( XCDeviceData*, density_id ) = 0;

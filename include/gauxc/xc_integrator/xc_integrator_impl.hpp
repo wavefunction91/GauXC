@@ -42,8 +42,8 @@ protected:
   virtual exc_vxc_type_uks  eval_exc_vxc_ ( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_vxc_type_gks  eval_exc_vxc_ ( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, 
                                             const IntegratorSettingsXC& ks_settings ) = 0;
-  virtual exc_grad_type eval_exc_grad_( const MatrixType& P ) = 0;
-  virtual exc_grad_type eval_exc_grad_( const MatrixType& Ps, const MatrixType& Pz ) = 0;
+  virtual exc_grad_type eval_exc_grad_( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual exc_grad_type eval_exc_grad_( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exx_type      eval_exx_     ( const MatrixType&     P, 
                                         const IntegratorSettingsEXX& settings ) = 0;
   virtual fxc_contraction_type_rks  eval_fxc_contraction_ ( const MatrixType& P,
@@ -125,8 +125,8 @@ public:
    *  @param[in] P The alpha density matrix
    *  @returns EXC gradient
    */
-  exc_grad_type eval_exc_grad( const MatrixType& P ) {
-    return eval_exc_grad_(P);
+  exc_grad_type eval_exc_grad( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
+    return eval_exc_grad_(P, ks_settings);
   }
 
   /** Integrate EXC gradient for UKS
@@ -134,8 +134,8 @@ public:
    *  @param[in] P The alpha density matrix
    *  @returns EXC gradient
    */
-  exc_grad_type eval_exc_grad( const MatrixType& Ps, const MatrixType& Pz ) {
-    return eval_exc_grad_(Ps, Pz);
+  exc_grad_type eval_exc_grad( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
+    return eval_exc_grad_(Ps, Pz, ks_settings);
   }
 
   /** Integrate Exact Exchange for RHF

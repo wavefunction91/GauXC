@@ -57,6 +57,7 @@ add_executable( gauxc_test
   environment.cxx
   collocation.cxx
   weights.cxx
+  weight_derivative_test.cxx
   standards.cxx 
   runtime.cxx
   basis/parse_basis.cxx

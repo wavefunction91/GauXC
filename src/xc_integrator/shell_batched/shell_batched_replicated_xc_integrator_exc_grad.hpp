@@ -15,7 +15,7 @@ namespace detail {
 
 template <typename BaseIntegratorType, typename IncoreIntegratorType>
 void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType>::
-  eval_exc_grad_( int64_t m, int64_t n, const value_type* P, int64_t ldp, value_type* EXC_GRAD ) { 
+  eval_exc_grad_( int64_t m, int64_t n, const value_type* P, int64_t ldp, value_type* EXC_GRAD, const IntegratorSettingsXC& settings ) { 
                  
   GAUXC_GENERIC_EXCEPTION("ShellBatched exc_grad NYI" );                 
   util::unused(m,n,P,ldp,EXC_GRAD);
@@ -24,7 +24,7 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
 template <typename BaseIntegratorType, typename IncoreIntegratorType>
 void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType>::
   eval_exc_grad_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
-                  const value_type* Pz, int64_t lpdz, value_type* EXC_GRAD ) { 
+                  const value_type* Pz, int64_t lpdz, value_type* EXC_GRAD, const IntegratorSettingsXC& settings ) { 
                  
   GAUXC_GENERIC_EXCEPTION("ShellBatched exc_grad NYI" );                 
   util::unused(m,n,Ps,ldps,Pz,lpdz,EXC_GRAD);

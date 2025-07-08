@@ -21,6 +21,10 @@ enum class DeviceBlasUplo : unsigned char {
 };
 
 template <typename T>
+void increment( device_blas_handle generic_handle, const T* X, T* Y, int N );
+
+
+template <typename T>
 void dot( device_blas_handle handle,
           int            N,
           const T*       X,

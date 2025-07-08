@@ -25,7 +25,7 @@ void HostMolecularWeights::modify_weights( LoadBalancer& lb ) const {
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
     return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
   };
-  std::sort( tasks.begin(), tasks.end(), task_comparator );
+  std::stable_sort( tasks.begin(), tasks.end(), task_comparator );
 
   // Modify the weights
   const auto& mol  = lb.molecule();
@@ -34,6 +34,7 @@ void HostMolecularWeights::modify_weights( LoadBalancer& lb ) const {
     tasks.begin(), tasks.end() );
 
   lb.state().modified_weights_are_stored = true;
+  lb.state().weight_alg = this->settings_.weight_alg;
 }
 
 }

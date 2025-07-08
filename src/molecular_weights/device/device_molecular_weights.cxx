@@ -37,7 +37,7 @@ void DeviceMolecularWeights::modify_weights( LoadBalancer& lb ) const {
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
     return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
   };
-  std::sort(task_begin, task_end, task_comparator );
+  std::stable_sort(task_begin, task_end, task_comparator );
 
   const auto& mol  = lb.molecule();
   const auto natoms = mol.natoms();
@@ -79,6 +79,7 @@ void DeviceMolecularWeights::modify_weights( LoadBalancer& lb ) const {
   rt.device_backend()->master_queue_synchronize();
  
   lb.state().modified_weights_are_stored = true;
+  lb.state().weight_alg = this->settings_.weight_alg;
 
 }
 

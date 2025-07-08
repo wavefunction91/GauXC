@@ -120,9 +120,9 @@ void ReplicatedXCIntegratorImpl<ValueType>::
 template <typename ValueType>
 void ReplicatedXCIntegratorImpl<ValueType>::
   eval_exc_grad( int64_t m, int64_t n, const value_type* P,
-                int64_t ldp, value_type* EXC_GRAD ) {
+                int64_t ldp, value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings ) {
 
-    eval_exc_grad_(m,n,P,ldp,EXC_GRAD);
+    eval_exc_grad_(m,n,P,ldp,EXC_GRAD, ks_settings);
 
 }
 
@@ -130,9 +130,9 @@ void ReplicatedXCIntegratorImpl<ValueType>::
 template <typename ValueType>
 void ReplicatedXCIntegratorImpl<ValueType>::
   eval_exc_grad( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
-                 const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD ) {
+                 const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings ) {
 
-    eval_exc_grad_(m,n,Ps,ldps,Pz,ldpz,EXC_GRAD);
+    eval_exc_grad_(m,n,Ps,ldps,Pz,ldpz,EXC_GRAD, ks_settings);
 
 }
 

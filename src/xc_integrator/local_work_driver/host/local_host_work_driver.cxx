@@ -37,6 +37,16 @@ void LocalHostWorkDriver::partition_weights( XCWeightAlg weight_alg,
 
 }
 
+void LocalHostWorkDriver::eval_weight_1st_deriv_contracted( 
+  XCWeightAlg weight_alg, const Molecule& mol, const MolMeta& meta, 
+  const XCTask& task, const double* w_times_f, double* exc_grad_w ) {
+
+  throw_if_invalid_pimpl(pimpl_);
+  pimpl_->eval_weight_1st_deriv_contracted(weight_alg, mol, meta, task, 
+    w_times_f, exc_grad_w);
+
+}
+
 
 // Collocation
 void LocalHostWorkDriver::eval_collocation( size_t npts, size_t nshells, size_t nbe, 

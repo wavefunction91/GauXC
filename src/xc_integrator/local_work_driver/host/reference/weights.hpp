@@ -32,4 +32,36 @@ void reference_lko_weights_host(
   task_iterator          task_end
 );
 
+void reference_becke_weights_1st_derivative_host(
+  const Molecule&        mol,
+  const MolMeta&         meta,
+  const XCTask& task,
+  double* weight_deri
+);
+
+void reference_ssf_weights_1st_derivative_host(
+  const Molecule&        mol,
+  const MolMeta&         meta,
+  const XCTask& task,
+  double* weight_deri
+);
+
+// Becke weights 1st derivative contracted with integrator
+void reference_becke_weights_1std_contraction_host(
+  const Molecule&        mol,
+  const MolMeta&         meta,
+  const XCTask& task,
+  const double* w_times_f,
+  double* exc_grad_w
+);
+
+// SSF weights 1st derivative contracted with integrator
+void reference_ssf_weights_1std_contraction_host(
+  const Molecule&        mol,
+  const MolMeta&         meta,
+  const XCTask& task,
+  const double* w_times_f,
+  double* exc_grad_w
+);
+
 }
