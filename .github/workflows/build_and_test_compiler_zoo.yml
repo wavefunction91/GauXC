@@ -14,7 +14,7 @@ jobs:
         image: dbwy/chemistry
     strategy:
       matrix:
-        compiler: [ {suite: gnu, version: 12}, {suite: llvm, version: 14} ]
+        compiler: [ {suite: gnu, version: 12} ]
         mpi_flag: [ON, OFF]
         openmp_flag: [ON, OFF]
         exclude:

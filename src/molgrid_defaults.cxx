@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -92,7 +96,7 @@ RadialScale default_bk_radial_scaling_factor( AtomicNumber _Z ) {
 RadialScale default_radial_scaling_factor(RadialQuad rq, AtomicNumber Z) {
   if( rq == RadialQuad::MuraKnowles ) 
     return default_mk_radial_scaling_factor(Z);
-  else if( rq == RadialQuad::TreutlerAldrichs )
+  else if( rq == RadialQuad::TreutlerAhlrichs )
     return default_ta_radial_scaling_factor(Z);
   else if( rq == RadialQuad::Becke )
     return default_bk_radial_scaling_factor(Z);

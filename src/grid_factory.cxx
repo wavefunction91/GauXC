@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -52,7 +56,7 @@ Grid AtomicGridFactory::generate_unpruned_grid( RadialQuad rq, RadialSize nrad,
       return generate_unpruned_grid( mhl_type(nrad.get(), rscal.get()),
         std::move(ang_quad), bsz );
 
-    case RadialQuad::TreutlerAldrichs:
+    case RadialQuad::TreutlerAhlrichs:
       return generate_unpruned_grid( ta_type(nrad.get(), rscal.get()),
         std::move(ang_quad), bsz );
 
@@ -118,7 +122,7 @@ Grid AtomicGridFactory::generate_pruned_grid( RadialQuad rq,
       return generate_pruned_grid(std::move(rg), std::move(rgp), bsz);
     }
 
-    case RadialQuad::TreutlerAldrichs:
+    case RadialQuad::TreutlerAhlrichs:
     {
       auto [rg, rgp] = 
         make_pruned_grid<ta_type>( nrad, pruning_regions, rscal );

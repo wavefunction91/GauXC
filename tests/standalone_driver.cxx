@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -425,7 +429,9 @@ int main(int argc, char** argv) {
     if(functional_map.key_exists(func_spec)) {
       func = functional_type( Backend::builtin, functional_map.value(func_spec), 
         polar );
-    } else { 
+    } 
+#ifdef EXCHCXX_ENABLE_LIBXC
+    else { 
       std::vector<std::pair<double, ExchCXX::XCKernel>> funcs;
       std::vector<std::string> libxc_names;
       split(libxc_names, func_spec, ",");
@@ -434,6 +440,7 @@ int main(int argc, char** argv) {
       }
       func = functional_type(funcs);
     }
+#endif
 
     // Setup Integrator
     XCIntegratorFactory<matrix_type> integrator_factory( int_exec_space , 
