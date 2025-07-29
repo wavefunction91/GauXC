@@ -13,13 +13,7 @@
 
 namespace GauXC {
 
-#ifdef __HIP_PLATFORM_NVIDIA__
 #define GGA_KERNEL_SM_WARPS 16
-#define MGGA_KERNEL_SM_BLOCK 32
-#else
-#define GGA_KERNEL_SM_WARPS 8
-#define MGGA_KERNEL_SM_BLOCK 16
-#endif
 
 __global__ void eval_uvars_lda_rks_kernel( size_t ntasks, XCDeviceTask* tasks_device) {
   // eval_vvars populated uvar storage already in the case of LDA+RKS
@@ -341,76 +335,40 @@ __global__ void eval_uvars_mgga_rks_kernel( size_t           ntasks,
     den_basis_prod_device = task.zmat;
   }
 
-  __shared__ double den_shared[3+!!need_lapl][warp_size][MGGA_KERNEL_SM_BLOCK+1];
+  int ipt = blockIdx.x * blockDim.x + threadIdx.x;
+  if (ipt < npts) {
+        double tau_reg = 0;
+        double lapl_reg = 0;
 
-  for ( int bid_x = blockIdx.x * blockDim.x; 
-        bid_x < nbf;
-        bid_x += blockDim.x * gridDim.x ) {
-    
-    for ( int bid_y = blockIdx.y * MGGA_KERNEL_SM_BLOCK; 
-          bid_y < npts;
-          bid_y += MGGA_KERNEL_SM_BLOCK * gridDim.y ) {
-        
-      for (int sm_y = threadIdx.y; sm_y < MGGA_KERNEL_SM_BLOCK; sm_y += blockDim.y) {
-        den_shared[0][threadIdx.x][sm_y] = 0.;
-        den_shared[1][threadIdx.x][sm_y] = 0.;
-        den_shared[2][threadIdx.x][sm_y] = 0.;
-        if constexpr (need_lapl)
-          den_shared[3][threadIdx.x][sm_y] = 0.;
+      for( int ibf = 0; ibf < nbf; ibf++ ) {
 
-        if (bid_y + threadIdx.x < npts and bid_x + sm_y < nbf) { 
-          const double* db_x_col = den_basis_dx_prod_device + (bid_x + sm_y)*npts;
-          const double* db_y_col = den_basis_dy_prod_device + (bid_x + sm_y)*npts;
-          const double* db_z_col = den_basis_dz_prod_device + (bid_x + sm_y)*npts;
+          const double* db_x_col = den_basis_dx_prod_device + ibf*npts;
+          const double* db_y_col = den_basis_dy_prod_device + ibf*npts;
+          const double* db_z_col = den_basis_dz_prod_device + ibf*npts;
 
-          const double* bf_x_col = dbasis_x_eval_device  + (bid_x + sm_y)*npts;
-          const double* bf_y_col = dbasis_y_eval_device  + (bid_x + sm_y)*npts;
-          const double* bf_z_col = dbasis_z_eval_device  + (bid_x + sm_y)*npts;
+          const double* bf_x_col = dbasis_x_eval_device  + ibf*npts;
+          const double* bf_y_col = dbasis_y_eval_device  + ibf*npts;
+          const double* bf_z_col = dbasis_z_eval_device  + ibf*npts;
 
 
-          den_shared[0][threadIdx.x][sm_y] = bf_x_col[ bid_y + threadIdx.x ] * db_x_col[ bid_y + threadIdx.x ];
-          den_shared[1][threadIdx.x][sm_y] = bf_y_col[ bid_y + threadIdx.x ] * db_y_col[ bid_y + threadIdx.x ];
-          den_shared[2][threadIdx.x][sm_y] = bf_z_col[ bid_y + threadIdx.x ] * db_z_col[ bid_y + threadIdx.x ];
+          tau_reg += bf_x_col[ipt] * db_x_col[ipt];
+          tau_reg += bf_y_col[ipt] * db_y_col[ipt];
+          tau_reg += bf_z_col[ipt] * db_z_col[ipt];
 
 
           if constexpr (need_lapl) {
-            const double* db_col   = den_basis_prod_device  + (bid_x + sm_y)*npts;
-            const double* bf_l_col = basis_lapl_eval_device + (bid_x + sm_y)*npts;
-            den_shared[3][threadIdx.x][sm_y] = bf_l_col[ bid_y + threadIdx.x ] * db_col[ bid_y + threadIdx.x ];
+            const double* db_col   = den_basis_prod_device  + ibf*npts;
+            const double* bf_l_col = basis_lapl_eval_device + ibf*npts;
+            lapl_reg += bf_l_col[ipt] * db_col[ipt];
           }
-        }
       }
-      __syncthreads();
 
 
-      for (int sm_y = threadIdx.y; sm_y < MGGA_KERNEL_SM_BLOCK; sm_y += blockDim.y) {
-        const int tid_y = bid_y + sm_y;
+      tau_reg  = 0.5 * tau_reg;
+      lapl_reg = 2. * lapl_reg + 4. * tau_reg;
 
-        double tx_reg  = den_shared[0][sm_y][threadIdx.x];
-        double ty_reg  = den_shared[1][sm_y][threadIdx.x];
-        double tz_reg  = den_shared[2][sm_y][threadIdx.x];
-        // Warp blocks are stored col major
-        double tau_reg = 0.0;
-        tau_reg  = 0.5 * hip::warp_reduce_sum<warp_size>( tx_reg );
-        tau_reg += 0.5 * hip::warp_reduce_sum<warp_size>( ty_reg );
-        tau_reg += 0.5 * hip::warp_reduce_sum<warp_size>( tz_reg );
-
-        double lapl_reg = 0.0;
-        if constexpr (need_lapl) {
-          lapl_reg = den_shared[3][sm_y][threadIdx.x];
-          lapl_reg = hip::warp_reduce_sum<warp_size>(lapl_reg);
-          lapl_reg = 2. * lapl_reg + 4. * tau_reg;
-        }
-
-        if( threadIdx.x == 0 and tid_y < npts ) {
-          atomicAdd( tau_eval_device   + tid_y, tau_reg );
-          if constexpr (need_lapl) {
-            atomicAdd( lapl_eval_device   + tid_y, lapl_reg );
-          }
-        }
-      }
-      __syncthreads();
-    }
+    tau_eval_device[ipt] = tau_reg;
+    lapl_eval_device[ipt] = lapl_reg;
   }
 }
 
@@ -458,10 +416,10 @@ void eval_uvars_mgga( size_t ntasks, size_t npts_total, int32_t nbf_max,
 
   // U Variables
   {
-  dim3 threads( hip::warp_size, hip::max_warps_per_thread_block / 2, 1 );
-  dim3 blocks( std::min(uint64_t(4), util::div_ceil( nbf_max, 4 )),
-               std::min(uint64_t(MGGA_KERNEL_SM_BLOCK), util::div_ceil( npts_max, MGGA_KERNEL_SM_BLOCK )),
-               ntasks );
+  dim3 threads(hip::max_warps_per_thread_block, 1,1 );
+    dim3 blocks = dim3( util::div_ceil( npts_max,  threads.x ),
+            1,
+            ntasks );
   if(do_lapl)
     eval_uvars_mgga_rks_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
   else
