@@ -457,7 +457,7 @@ void eval_uvars_mgga( size_t ntasks, size_t npts_total, int32_t nbf_max,
   {
   dim3 threads( cuda::warp_size, cuda::max_warps_per_thread_block / 2, 1 );
   dim3 blocks( std::min(uint64_t(4), util::div_ceil( nbf_max, 4 )),
-               std::min(uint64_t(16), util::div_ceil( nbf_max, 16 )),
+               std::min(uint64_t(MGGA_KERNEL_SM_BLOCK), util::div_ceil( npts_max, MGGA_KERNEL_SM_BLOCK )),
                ntasks );
   if(do_lapl)
     eval_uvars_mgga_rks_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
@@ -614,17 +614,23 @@ __global__ void eval_vvar_kern( size_t        ntasks,
 
   const auto* den_basis_prod_device = task.zmat;
 
-  const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
-  const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
-
   register double den_reg = 0.;
 
-  if( tid_x < nbf and tid_y < npts ) {
+  int start_y = blockIdx.y * blockDim.y + threadIdx.y;
 
-    const double* bf_col   = basis_eval_device     + tid_x*npts;
-    const double* db_col   = den_basis_prod_device + tid_x*npts;
+  for (int tid_x = blockIdx.x * blockDim.x + threadIdx.x; 
+       tid_x < nbf;
+       tid_x += blockDim.x * gridDim.x ) {
+    
+    for (int tid_y = start_y; 
+         tid_y < npts;
+         tid_y += blockDim.y * gridDim.y ) {
 
-    den_reg = bf_col[ tid_y ]   * db_col[ tid_y ];
+        const double* bf_col   = basis_eval_device     + tid_x*npts;
+        const double* db_col   = den_basis_prod_device + tid_x*npts;
+
+        den_reg += bf_col[ tid_y ]   * db_col[ tid_y ];
+    }
 
   }
 
@@ -634,8 +640,8 @@ __global__ void eval_vvar_kern( size_t        ntasks,
   den_reg = cuda::warp_reduce_sum<warp_size>( den_reg );
 
 
-  if( threadIdx.x == 0 and tid_y < npts ) {
-    atomicAdd( den_eval_device   + tid_y, den_reg );
+  if( threadIdx.x == 0 and start_y < npts ) {
+    atomicAdd( den_eval_device   + start_y, den_reg );
   }
   
 

@@ -224,3 +224,19 @@ install( FILES
 # Install Custom Find Modules
 include( ${linalg-cmake-modules_SOURCE_DIR}/LinAlgModulesMacros.cmake )
 install_linalg_modules( INSTALL_CONFIGDIR )
+
+# This allows specifying a lower compiler optimization level for NVHPC which fails to compile with the -O3 flag whilst leaving the remaining flags unchanged
+if (DEFINED GAUXC_OBARA_SAIKA_COMPILE_OPTIMIZATION_OPTIONS)
+    get_target_property(default_compile_options gauxc COMPILE_OPTIONS)
+    get_target_property(gauxc_sources gauxc SOURCES)
+    set_target_properties(gauxc PROPERTIES COMPILE_OPTIONS "")
+    set_source_files_properties(${gauxc_sources} PROPERTIES COMPILE_OPTIONS "${default_compile_options}")
+
+    file(GLOB OB_HOST_SRC_FILES ${CMAKE_CURRENT_LIST_DIR}/xc_integrator/local_work_driver/host/obara_saika/src/*.cxx)
+    set(adjusted_compile_options ${default_compile_options})
+    foreach (flag "[\\/\\-]O3" "[\\/\\-]Ofast" "[\\/\\-]fast")
+        string(REGEX REPLACE ${flag} ${GAUXC_OBARA_SAIKA_COMPILE_OPTIMIZATION_OPTIONS} adjusted_compile_options "${adjusted_compile_options}")
+    endforeach()
+    message("-- Setting Obara-Saika COMPILE_OPTIONS to: ${adjusted_compile_options}")
+    set_source_files_properties(${OB_HOST_SRC_FILES} PROPERTIES COMPILE_OPTIONS "${adjusted_compile_options}")
+endif()

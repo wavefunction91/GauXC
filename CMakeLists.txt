@@ -99,6 +99,12 @@ endif()
 if( GAUXC_ENABLE_HIP )
   enable_language( HIP )
   set( GAUXC_HAS_HIP TRUE CACHE BOOL "GauXC has HIP and will build HIP bindings" FORCE )
+  if(NOT DEFINED ROCM_PATH)
+    message(FATAL_ERROR "ROCM_PATH must be set")
+  endif()
+  if( NOT DEFINED CMAKE_HIP_ARCHITECTURES )
+    message( FATAL_ERROR "CMAKE_HIP_ARCHITECTURES must be set" )
+  endif()  
 endif()
 
 # Decided if we're compiling device bindings
