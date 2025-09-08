@@ -1,7 +1,46 @@
 #include "device_specific/cuda_device_constants.hpp"
 #include "../../cuda_aos_scheme1.hpp"
+#include <tuple>
+#include <cuda/std/tuple>
 
 namespace XGPU {
+
+namespace constants {
+  constexpr double sqrt_3 = 1.7320508075688772;
+}
+
+namespace sph {
+
+__inline__ __device__ auto tform_l2(
+  double xx, double xy, double xz, double yy, double yz, double zz
+) {
+
+  double m2 = constants::sqrt_3 * xy;
+  double m1 = constants::sqrt_3 * yz;
+  double z0 = zz - 0.5 * (xx + yy);
+  double p1 = constants::sqrt_3 * xz;
+  double p2 = constants::sqrt_3 * 0.5 * (xx - yy);
+
+  return cuda::std::make_tuple(m2, m1, z0, p1, p2);
+
+}
+
+__inline__ __device__ auto itform_l2(
+  double m2, double m1, double z0, double p1, double p2
+) {
+
+  double xx = 0.5 * (-z0 + constants::sqrt_3 * p2);
+  double xy = constants::sqrt_3 * m2;
+  double xz = constants::sqrt_3 * p1;
+  double yy = -0.5 * (z0 + constants::sqrt_3 * p2);
+  double yz = constants::sqrt_3 * m1;
+  double zz = z0;
+
+  return cuda::std::make_tuple(xx,xy,xz,yy,yz,zz);
+
+}
+
+}
 
 using namespace GauXC;
 
@@ -15,7 +54,7 @@ __inline__ __device__ void load_primpair_shared(
   int32_t* dst = (int32_t*) dst_t;
   const int num_transfers = n * sizeof(GauXC::PrimitivePair<double>) / sizeof(int32_t);
 
-  for (int i = laneId; i < num_transfers; i += cuda::warp_size) {
+  for (int i = laneId; i < num_transfers; i += GauXC::cuda::warp_size) {
     dst[i] = src[i]; 
   }
 }
@@ -110,7 +149,7 @@ void task_map_kernel(
 
   __shared__ double4 s_task_data[points_per_subtask];
 
-  const int warpId = threadIdx.x / cuda::warp_size;
+  const int warpId = threadIdx.x / GauXC::cuda::warp_size;
   
   const int i_subtask = blockIdx.x;
   const int i_task = subtasks[i_subtask].x;

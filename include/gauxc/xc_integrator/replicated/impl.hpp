@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -159,13 +163,27 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_gks
 
 template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type 
-  ReplicatedXCIntegrator<MatrixType>::eval_exc_grad_( const MatrixType& P ) {
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_grad_( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
 
   std::vector<value_type> EXC_GRAD( 3*pimpl_->load_balancer().molecule().natoms() );
   pimpl_->eval_exc_grad( P.rows(), P.cols(), P.data(), P.rows(),
-                         EXC_GRAD.data() );
+                         EXC_GRAD.data(), ks_settings );
+
+  return EXC_GRAD;
+
+}
+
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type 
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_grad_( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+
+  std::vector<value_type> EXC_GRAD( 3*pimpl_->load_balancer().molecule().natoms() );
+  pimpl_->eval_exc_grad( Ps.rows(), Ps.cols(), Ps.data(), Ps.rows(), Pz.data(), Pz.rows(),
+                         EXC_GRAD.data(), ks_settings );
 
   return EXC_GRAD;
 
@@ -183,6 +201,67 @@ typename ReplicatedXCIntegrator<MatrixType>::exx_type
                     K.data(), K.rows(), settings );
 
   return K;
+
+}
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::fxc_contraction_type_rks
+  ReplicatedXCIntegrator<MatrixType>::eval_fxc_contraction_( const MatrixType& P, 
+    const MatrixType& tP, const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  matrix_type FXC( P.rows(), P.cols() );
+
+  pimpl_->eval_fxc_contraction( P.rows(), P.cols(), P.data(), P.rows(),
+                        tP.data(), tP.rows(),
+                        FXC.data(), FXC.rows(), ks_settings );
+
+  return FXC;
+}
+
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::fxc_contraction_type_uks
+  ReplicatedXCIntegrator<MatrixType>::eval_fxc_contraction_( const MatrixType& Ps, const MatrixType& Pz, 
+    const MatrixType& tPs, const MatrixType& tPz, const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  matrix_type FXCs( Ps.rows(), Ps.cols() );
+  matrix_type FXCz( Pz.rows(), Pz.cols() );
+
+  pimpl_->eval_fxc_contraction( Ps.rows(), Ps.cols(), Ps.data(), Ps.rows(),
+                        Pz.data(), Pz.rows(),
+                        tPs.data(), tPs.rows(),
+                        tPz.data(), tPz.rows(),
+                        FXCs.data(), FXCs.rows(),
+                        FXCz.data(), FXCz.rows(), ks_settings );
+
+  return std::make_tuple( FXCs, FXCz );
+
+}
+
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::dd_psi_type
+  ReplicatedXCIntegrator<MatrixType>::eval_dd_psi_( const MatrixType& P, unsigned max_Ylm ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+
+  const size_t natoms = pimpl_->load_balancer().molecule().natoms();
+  const size_t Ylm_sz = (max_Ylm + 1) * ( max_Ylm + 1);
+  std::vector<value_type> ddPsi(natoms * Ylm_sz, 0.0);
+  pimpl_->eval_dd_psi(P.rows(), P.cols(), P.data(), P.rows(), max_Ylm, ddPsi.data(), Ylm_sz);
+  return ddPsi;
+}
+
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::dd_psi_potential_type
+  ReplicatedXCIntegrator<MatrixType>::eval_dd_psi_potential_( const MatrixType& X, unsigned max_Ylm ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+
+  const size_t nbf = pimpl_->load_balancer().basis().nbf();
+  matrix_type Vddx(nbf, nbf);
+  Vddx.setZero(); 
+  pimpl_->eval_dd_psi_potential(X.rows(), X.cols(), X.data(), max_Ylm, Vddx.data());
+  return Vddx;                      
 
 }
 

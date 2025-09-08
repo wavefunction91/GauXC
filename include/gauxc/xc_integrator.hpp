@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -36,6 +40,10 @@ public:
   using exc_vxc_type_gks  = std::tuple< value_type, matrix_type, matrix_type, matrix_type, matrix_type >;
   using exc_grad_type = std::vector< value_type >;
   using exx_type      = matrix_type;
+  using fxc_contraction_type_rks = matrix_type;
+  using fxc_contraction_type_uks = std::tuple< matrix_type, matrix_type >;
+  using dd_psi_type   = std::vector< value_type >;
+  using dd_psi_potential_type   = matrix_type;
 
 private:
 
@@ -66,11 +74,19 @@ public:
   exc_vxc_type_gks  eval_exc_vxc ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,
                                    const IntegratorSettingsXC& = IntegratorSettingsXC{});
 
-  exc_grad_type eval_exc_grad( const MatrixType& );
+  exc_grad_type eval_exc_grad( const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+  exc_grad_type eval_exc_grad( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
 
   exx_type      eval_exx     ( const MatrixType&, 
                                const IntegratorSettingsEXX& = IntegratorSettingsEXX{} );
 
+  fxc_contraction_type_rks  eval_fxc_contraction ( const MatrixType&, const MatrixType&,
+                                  const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+  fxc_contraction_type_uks  eval_fxc_contraction ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,
+                                  const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+
+  dd_psi_type eval_dd_psi( const MatrixType&, unsigned );
+  dd_psi_potential_type eval_dd_psi_potential( const MatrixType&, unsigned );
 
   const util::Timer& get_timings() const;
   const LoadBalancer& load_balancer() const;

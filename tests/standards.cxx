@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -1406,7 +1410,7 @@ Molecule make_ubiquitin() {
 
 BasisSet<double> make_631Gd( const Molecule& mol, SphericalType sph ) {
 
-  std::string basis_path = GAUXC_REF_DATA_PATH  "/../basis/old/6-31g*.g94";
+  std::string basis_path = GAUXC_REF_DATA_PATH  "/../basis/old/6-31g-star.g94";
   return parse_basis( mol, basis_path, sph );
 
 }

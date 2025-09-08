@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -130,8 +134,6 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
 
   // Get basis map and shell pairs
-  //BasisSetMap basis_map(basis,mol);
-  //ShellPairCollection shell_pairs(basis);
   auto& basis_map   = this->load_balancer_->basis_map();
   auto& shell_pairs = this->load_balancer_->shell_pairs();
 
@@ -257,8 +259,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     GAUXC_GENERIC_EXCEPTION("Weights Have Not Been Modified"); 
   }
 
-    task_end = std::stable_partition( task_begin, task_end,
-      []( const auto& t ) { return t.cou_screening.shell_list.size() > 0; } );
+  task_end = std::stable_partition( task_begin, task_end,
+    []( const auto& t ) { return t.cou_screening.shell_list.size() > 0; } );
 
 #if 0
   // Lexicographic ordering of tasks

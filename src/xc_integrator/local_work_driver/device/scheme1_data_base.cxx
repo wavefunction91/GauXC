@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -53,7 +57,8 @@ size_t Scheme1DataBase::get_static_mem_requirement() {
     // Task Map
     nsp * sizeof(int32_t) +      // nprim_pairs
     nsp * sizeof(shell_pair*) +  // shell_pair pointer
-    nsp * 3 * sizeof(double);    // X_AB, Y_AB, Z_AB
+    nsp * 3 * sizeof(double) +   // X_AB, Y_AB, Z_AB
+    1024 * 1024;                 // additional memory for alignment padding
 
   return size;
 }
@@ -849,7 +854,7 @@ void Scheme1DataBase::add_extra_to_indirection(
     }
   }
 
-  if( terms.exx or terms.exc_vxc or terms.exc_grad or terms.den or terms.exx_ek_screening ) {
+  if( terms.exx or terms.exc_vxc or terms.exc_grad or terms.den or terms.exx_ek_screening or terms.fxc_contraction ) {
     const size_t total_nshells_bfn = total_nshells_bfn_task_batch * sizeof(size_t);
     buffer_adaptor 
       shell_list_bfn_mem( collocation_stack.shell_list_device, total_nshells_bfn );

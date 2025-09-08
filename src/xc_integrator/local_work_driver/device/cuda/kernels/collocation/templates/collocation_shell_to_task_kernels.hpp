@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -14,10 +18,10 @@
 
 namespace GauXC {
 
-$py(do_grad = 'gradient' in type or 'hessian' in type or 'lapl' in type)\
-$py(do_hess = 'hessian' in type)\
-$py(do_lapl = 'lapl' in type)\
-$py(nt = 512)\
+$py(do_grad = 'gradient' in type or 'hessian' in type or 'lapl' in type or 'lapgrad' in type)\
+$py(do_hess = 'hessian' in type or 'lapgrad' in type)\
+$py(do_lapl = 'lapl' in type or 'lapgrad' in type)\
+$py(do_lapl_grad = 'lapgrad' in type)\
 
 __global__ __launch_bounds__($(nt),2) void collocation_device_shell_to_task_kernel_$(type)_$(L)(
   uint32_t                        nshell,
@@ -72,7 +76,6 @@ $if( do_grad )\
     auto* __restrict__ basis_y_eval = task->dbfy + shoff;
     auto* __restrict__ basis_z_eval = task->dbfz + shoff;
 $endif\
-
 $if( do_hess )\
     auto* __restrict__ basis_xx_eval = task->d2bfxx + shoff;
     auto* __restrict__ basis_xy_eval = task->d2bfxy + shoff;
@@ -83,6 +86,11 @@ $if( do_hess )\
 $endif\
 $if( do_lapl )\
     auto* __restrict__ basis_lapl_eval = task->d2bflapl + shoff;
+$endif\
+$if( do_lapl_grad )\
+    auto* __restrict__ basis_lapl_x_eval = task->d3bflapl_x + shoff;
+    auto* __restrict__ basis_lapl_y_eval = task->d3bflapl_y + shoff;
+    auto* __restrict__ basis_lapl_z_eval = task->d3bflapl_z + shoff;
 $endif\
 
     // Loop over points in task
@@ -109,6 +117,9 @@ $endif\
 $if( do_hess or do_lapl)\
       double radial_eval_alpha_squared = 0.;
 $endif\
+$if( do_lapl_grad)\
+      double radial_eval_alpha_cubed = 0.;
+$endif\
 
       #pragma unroll 1
       for( uint32_t i = 0; i < nprim; ++i ) {
@@ -122,6 +133,9 @@ $endif\
 $if( do_hess or do_lapl)\
         radial_eval_alpha_squared += a * a * e;
 $endif\
+$if( do_lapl_grad)\
+        radial_eval_alpha_cubed += a * a * a * e;
+$endif\
       }
 
 $if( do_grad )\
@@ -130,8 +144,14 @@ $endif\
 $if( do_hess or do_lapl)\
       radial_eval_alpha_squared *= 4;
 $endif\
+$if( do_lapl_grad )\
+      radial_eval_alpha_cubed *= -8;
+$endif\
 
-      
+      // Common Subexpressions
+$for( i in range(len(common_lines)) )\
+      const auto $(common_lines[i][0]) = $(common_lines[i][1]); 
+$endfor
 
       // Evaluate basis function
 $for( j in range(len(eval_lines)) )\
@@ -187,10 +207,26 @@ $for( j in range(len(eval_lines_dzz)) )\
       basis_zz_eval[ipt + $(j)*npts] = $(eval_lines_dzz[j]);
 $endfor\
 $endif\
+
 $if(do_lapl)\
       // Evaluate Laplacian of bfn 
-$for( j in range(len(eval_lines_dx)) )\
+$for( j in range(len(eval_lines_lapl)) )\
       basis_lapl_eval[ipt + $(j)*npts] = $(eval_lines_lapl[j]);
+$endfor\
+$endif\
+
+$if(do_lapl_grad)\
+      // Evaluate Laplacian gradient of bfn (dx)
+$for( j in range(len(eval_lines_lapl_x)) )\
+      basis_lapl_x_eval[ipt + $(j)*npts] = $(eval_lines_lapl_x[j]);
+$endfor\
+      // Evaluate Laplacian gradient of bfn (dy)
+$for( j in range(len(eval_lines_lapl_y)) )\
+      basis_lapl_y_eval[ipt + $(j)*npts] = $(eval_lines_lapl_y[j]);
+$endfor\
+      // Evaluate Laplacian gradient of bfn (dz)
+$for( j in range(len(eval_lines_lapl_z)) )\
+      basis_lapl_z_eval[ipt + $(j)*npts] = $(eval_lines_lapl_z[j]);
 $endfor\
 $endif\
 

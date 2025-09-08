@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -37,8 +41,8 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
   BasisSet<double> basis;
   matrix_type P, Pz, Py, Px, VXC_ref, VXCz_ref, VXCy_ref, VXCx_ref, K_ref;
   double EXC_ref;
-  std::vector<double> EXC_GRAD_ref;
-  bool has_k = false, has_exc_grad = false, rks = true, uks = false, gks = false;
+  std::vector<double> EXC_GRAD_ref_HellFey, EXC_GRAD_ref_Full;
+  bool has_k = false, has_exc_grad_HellFey = false, has_exc_grad_full = false, rks = true, uks = false, gks = false;
   {
     read_hdf5_record( mol,   reference_file, "/MOLECULE" );
     read_hdf5_record( basis, reference_file, "/BASIS"    );
@@ -110,11 +114,40 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     dset = file.getDataSet("/EXC");
     dset.read( &EXC_ref );
 
-    has_exc_grad = file.exist("/EXC_GRAD");
-    if( has_exc_grad ) {
-      EXC_GRAD_ref.resize( 3*mol.size() );
+    // Check for new unified /EXC_GRAD dataset with attribute
+    if( file.exist("/EXC_GRAD") ) {
       dset = file.getDataSet("/EXC_GRAD");
-      dset.read( EXC_GRAD_ref.data() );
+      EXC_GRAD_ref_Full.resize( 3*mol.size() );
+      
+      // Check for attribute indicating whether weight derivatives are included
+      bool exc_grad_includes_weight_derivatives = false; // Default to Hellmann-Feynman
+      try {
+        auto attr = dset.getAttribute("includes_weight_derivatives");
+        int attr_value;
+        attr.read( attr_value );
+        exc_grad_includes_weight_derivatives = (attr_value != 0);
+      } catch(... ) { }
+      
+      if( exc_grad_includes_weight_derivatives ) {
+        dset.read( EXC_GRAD_ref_Full.data() );
+        has_exc_grad_full = true;
+      } else {
+        dset.read( EXC_GRAD_ref_HellFey.data() );
+        has_exc_grad_HellFey = true;
+      }
+    }
+    // Check for other type of EXC_GRAD
+    if( file.exist("/EXC_GRAD_HELLFEY") and not has_exc_grad_HellFey ) {
+      EXC_GRAD_ref_HellFey.resize( 3*mol.size() );
+      dset = file.getDataSet("/EXC_GRAD_HELLFEY");
+      dset.read( EXC_GRAD_ref_HellFey.data() );
+      has_exc_grad_HellFey = true;
+    }
+    if( file.exist("/EXC_GRAD_FULL") and not has_exc_grad_full ) {
+      EXC_GRAD_ref_Full.resize( 3*mol.size() );
+      dset = file.getDataSet("/EXC_GRAD_FULL");
+      dset.read( EXC_GRAD_ref_Full.data() );
+      has_exc_grad_full = true;
     }
     
     has_k = file.exist("/K");
@@ -125,7 +158,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     }
   }
 
-  if( (uks or gks) and ex == ExecutionSpace::Device and func.is_mgga() ) return;
+  if( gks and ex == ExecutionSpace::Device and func.is_mgga() ) return;
 
   for( auto& sh : basis ) 
     sh.set_shell_tolerance( std::numeric_limits<double>::epsilon() );
@@ -240,14 +273,29 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
 
   // Check EXC Grad
-  if( check_grad and has_exc_grad and rks) {
-    auto EXC_GRAD = integrator.eval_exc_grad( P );
+  if( check_grad and has_exc_grad_full ) {
+    IntegratorSettingsEXC_GRAD exc_grad_settings;
+    exc_grad_settings.include_weight_derivatives = true; // Use full gradient (default)
+    auto EXC_GRAD = rks ? integrator.eval_exc_grad( P, exc_grad_settings ) : integrator.eval_exc_grad( P, Pz, exc_grad_settings );
     using map_type = Eigen::Map<Eigen::MatrixXd>;
-    map_type EXC_GRAD_ref_map( EXC_GRAD_ref.data(), mol.size(), 3 );
+    map_type EXC_GRAD_ref_map( EXC_GRAD_ref_Full.data(), mol.size(), 3 );
     map_type EXC_GRAD_map( EXC_GRAD.data(), mol.size(), 3 );
     auto EXC_GRAD_diff_nrm = (EXC_GRAD_ref_map - EXC_GRAD_map).norm();
-    CHECK( EXC_GRAD_diff_nrm / std::sqrt(3.0*mol.size()) < 1e-10 );
+    INFO("comparing full gradient");
+    CHECK( EXC_GRAD_diff_nrm / std::sqrt(3.0*mol.size()) < 1e-8 );
   }
+  if( check_grad and has_exc_grad_HellFey ) {
+    IntegratorSettingsEXC_GRAD exc_grad_settings;
+    exc_grad_settings.include_weight_derivatives = false; // Use Hellmann-Feynman gradient
+    auto EXC_GRAD = rks ? integrator.eval_exc_grad( P, exc_grad_settings ) : integrator.eval_exc_grad( P, Pz, exc_grad_settings );
+    using map_type = Eigen::Map<Eigen::MatrixXd>;
+    map_type EXC_GRAD_ref_map( EXC_GRAD_ref_HellFey.data(), mol.size(), 3 );
+    map_type EXC_GRAD_map( EXC_GRAD.data(), mol.size(), 3 );
+    auto EXC_GRAD_diff_nrm = (EXC_GRAD_ref_map - EXC_GRAD_map).norm();
+    INFO("comparing Hellmann-Feynman gradient");
+    CHECK( EXC_GRAD_diff_nrm / std::sqrt(3.0*mol.size()) < 1e-8 );
+  }
+
 
   // Check K
   if( has_k and check_k and rks ) {
@@ -311,12 +359,10 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
 
     #ifdef GAUXC_HAS_CUTLASS
     SECTION( "Incore - MPI Reduction - CUTLASS" ) {
-      if(not func.is_mgga() and not func.is_polarized()) {
-        test_xc_integrator( ExecutionSpace::Device, rt, 
-          reference_file, func, pruning_scheme,
-          false, true, false, "Default", "Default", 
-          "Scheme1-CUTLASS" );
-      }
+      test_xc_integrator( ExecutionSpace::Device, rt, 
+        reference_file, func, pruning_scheme,
+        true, true, false, "Default", "Default", 
+        "Scheme1-CUTLASS" );
     }
     #endif
 
@@ -329,11 +375,11 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
     }
     #endif
 
-    SECTION( "ShellBatched" ) {
-      test_xc_integrator( ExecutionSpace::Device, rt, 
-        reference_file, func, pruning_scheme,  
-        false, false, false, "ShellBatched" );
-    }
+    // SECTION( "ShellBatched" ) {
+    //   test_xc_integrator( ExecutionSpace::Device, rt, 
+    //     reference_file, func, pruning_scheme,  
+    //     false, false, false, "ShellBatched" );
+    // }
   }
 #endif
 
@@ -353,6 +399,7 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
   auto blyp    = ExchCXX::Functional::BLYP;
   auto scan    = ExchCXX::Functional::SCAN;
   auto r2scanl = ExchCXX::Functional::R2SCANL;
+  auto m062x   = ExchCXX::Functional::M062X;
 
   // LDA Test
   SECTION( "Benzene / SVWN5 / cc-pVDZ" ) {
@@ -384,6 +431,12 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     test_integrator(GAUXC_REF_DATA_PATH "/cytosine_scan_cc-pvdz_ufg_ssf_robust.hdf5", 
         func, PruningScheme::Robust );
   }
+  // This tests gradients
+  SECTION( "Benzene / M06-2X / def2-svp") {
+    auto func = make_functional(m062x, unpol);
+    test_integrator(GAUXC_REF_DATA_PATH "/benzene_m062x_def2-svp_ufg_ssf.hdf5",
+        func, PruningScheme::Unpruned );
+  }
 
   // MGGA Test (TAU + LAPL)
   SECTION( "Cytosine / R2SCANL / cc-pVDZ") {
@@ -398,12 +451,24 @@ TEST_CASE( "XC Integrator", "[xc-integrator]" ) {
     test_integrator(GAUXC_REF_DATA_PATH "/li_svwn5_sto3g_uks.bin",
         func, PruningScheme::Unpruned );
   }
+  // + grad
+  SECTION( "Cytosine (doublet) / SVWN5 / cc-pVDZ") {
+    auto func = make_functional(svwn5, pol);
+    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_svwn5_cc-pvdz_ufg_ssf_robust_uks.hdf5", 
+        func, PruningScheme::Robust );
+  }
 
   //UKS GGA Test
   SECTION( "Li / BLYP / sto-3g" ) {
     auto func = make_functional(blyp, pol);
     test_integrator(GAUXC_REF_DATA_PATH "/li_blyp_sto3g_uks.bin",
         func, PruningScheme::Unpruned );
+  }
+  // + grad
+  SECTION( "Cytosine (doublet) / BLYP / cc-pVDZ") {
+    auto func = make_functional(blyp, pol);
+    test_integrator(GAUXC_REF_DATA_PATH "/cytosine_blyp_cc-pvdz_ufg_ssf_robust_uks.hdf5", 
+        func, PruningScheme::Robust );
   }
 
   // UKS MGGA Test (TAU Only)

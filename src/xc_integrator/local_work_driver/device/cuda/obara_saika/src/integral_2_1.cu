@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -1197,7 +1201,8 @@ using namespace GauXC;
 
   }
 
-template<ObaraSaikaType type_, int points_per_subtask_, int primpair_shared_limit_>
+template<ObaraSaikaType type_, int points_per_subtask_, int primpair_shared_limit_,
+         bool pure_bra, bool pure_ket>
 struct DeviceTask21 {
   static constexpr int max_primpair_shared_limit = 8;
 
@@ -1210,7 +1215,7 @@ struct DeviceTask21 {
 
   static constexpr bool use_shared = (primpair_shared_limit > 0) && 
                                      (primpair_shared_limit <= max_primpair_shared_limit);
-  static constexpr int num_warps = points_per_subtask / cuda::warp_size;
+  static constexpr int num_warps = points_per_subtask / GauXC::cuda::warp_size;
   // Cannot declare shared memory array with length 0
   static constexpr int prim_buffer_size = (use_shared) ? num_warps * primpair_shared_limit : 1;
 
@@ -1240,8 +1245,8 @@ struct DeviceTask21 {
     const double Y_AB = param.Y_AB;
     const double Z_AB = param.Z_AB;
 
-    const int laneId = threadIdx.x % cuda::warp_size;
-    const int warpId __attribute__((unused)) = threadIdx.x / cuda::warp_size;
+    const int laneId = threadIdx.x % GauXC::cuda::warp_size;
+    const int warpId __attribute__((unused)) = threadIdx.x / GauXC::cuda::warp_size;
 
     __shared__ GauXC::PrimitivePair<double> s_prim_pairs[prim_buffer_size] __attribute__((unused));
 
@@ -1263,7 +1268,7 @@ struct DeviceTask21 {
       }
       for(int j = 0; j < 16; ++j) SCALAR_STORE((temp + j * blockDim.x + threadIdx.x), SCALAR_ZERO());
 
-      const int pointIndex = i * cuda::warp_size + laneId;
+      const int pointIndex = i * GauXC::cuda::warp_size + laneId;
 
       if (pointIndex < npts) {
         const double point_x = s_task_data[pointIndex].x;
@@ -1491,6 +1496,43 @@ struct DeviceTask21 {
           SCALAR_TYPE const_value_w;
           SCALAR_TYPE tx, ty, tz, tw, t0, t1, t2, t3, t4, t5;
 
+          SCALAR_TYPE Xik_0, Xik_1, Xik_2, Xik_3, Xik_4, Xik_5;
+          SCALAR_TYPE Xjk_0, Xjk_1, Xjk_2;
+          SCALAR_TYPE Gjk_0, Gjk_1, Gjk_2;
+
+          if constexpr (pure_bra) {
+            SCALAR_TYPE Xik_m2 = SCALAR_LOAD((Xik + 0*ldX));
+            SCALAR_TYPE Xik_m1 = SCALAR_LOAD((Xik + 1*ldX));
+            SCALAR_TYPE Xik_z0 = SCALAR_LOAD((Xik + 2*ldX));
+            SCALAR_TYPE Xik_p1 = SCALAR_LOAD((Xik + 3*ldX));
+            SCALAR_TYPE Xik_p2 = SCALAR_LOAD((Xik + 4*ldX));
+
+            ::cuda::std::tie(Xik_0, Xik_1, Xik_2, Xik_3, Xik_4, Xik_5) =
+              sph::itform_l2(Xik_m2, Xik_m1, Xik_z0, Xik_p1, Xik_p2);
+          } else {
+            Xik_0 = SCALAR_LOAD((Xik + 0*ldX));
+            Xik_1 = SCALAR_LOAD((Xik + 1*ldX));
+            Xik_2 = SCALAR_LOAD((Xik + 2*ldX));
+            Xik_3 = SCALAR_LOAD((Xik + 3*ldX));
+            Xik_4 = SCALAR_LOAD((Xik + 4*ldX));
+            Xik_5 = SCALAR_LOAD((Xik + 5*ldX));
+          }
+
+          
+          if constexpr (pure_ket) {
+            Xjk_0 = SCALAR_LOAD((Xjk + 2*ldX));
+            Xjk_1 = SCALAR_LOAD((Xjk + 0*ldX));
+            Xjk_2 = SCALAR_LOAD((Xjk + 1*ldX));
+          } else {
+            Xjk_0 = SCALAR_LOAD((Xjk + 0*ldX));
+            Xjk_1 = SCALAR_LOAD((Xjk + 1*ldX));
+            Xjk_2 = SCALAR_LOAD((Xjk + 2*ldX));
+          }
+
+          Gjk_0 = 0;
+          Gjk_1 = 0;
+          Gjk_2 = 0;
+
           X_ABp = 1.0; comb_m_i = 1.0;
           Y_ABp = 1.0; comb_n_j = 1.0;
           Z_ABp = 1.0; comb_p_k = 1.0;
@@ -1499,53 +1541,47 @@ struct DeviceTask21 {
 
     /*** j = 0 ***/
 
-          tx = SCALAR_LOAD((Xik + 0 * ldX));
-          ty = SCALAR_LOAD((Xjk + 0 * ldX));
+          tx = Xik_0;
+          ty = Xjk_0;
           t0 = SCALAR_LOAD((temp + 6 * blockDim.x + threadIdx.x));
           t0 = SCALAR_MUL(t0, const_value_w);
           tz = SCALAR_MUL(ty, t0);
           tw = SCALAR_MUL(tx, t0);
-          //atomicAdd((Gik + 0 * ldG), tz);
           outBuffer[0] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          tx = Xik_1;
           t1 = SCALAR_LOAD((temp + 7 * blockDim.x + threadIdx.x));
           t1 = SCALAR_MUL(t1, const_value_w);
           tz = SCALAR_MUL(ty, t1);
           tw = SCALAR_FMA(tx, t1, tw);
-          //atomicAdd((Gik + 1 * ldG), tz);
           outBuffer[1] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          tx = Xik_2;
           t2 = SCALAR_LOAD((temp + 8 * blockDim.x + threadIdx.x));
           t2 = SCALAR_MUL(t2, const_value_w);
           tz = SCALAR_MUL(ty, t2);
           tw = SCALAR_FMA(tx, t2, tw);
-          //atomicAdd((Gik + 2 * ldG), tz);
           outBuffer[2] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 3 * ldX));
+          tx = Xik_3;
           t3 = SCALAR_LOAD((temp + 9 * blockDim.x + threadIdx.x));
           t3 = SCALAR_MUL(t3, const_value_w);
           tz = SCALAR_MUL(ty, t3);
           tw = SCALAR_FMA(tx, t3, tw);
-          //atomicAdd((Gik + 3 * ldG), tz);
           outBuffer[3] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 4 * ldX));
+          tx = Xik_4;
           t4 = SCALAR_LOAD((temp + 10 * blockDim.x + threadIdx.x));
           t4 = SCALAR_MUL(t4, const_value_w);
           tz = SCALAR_MUL(ty, t4);
           tw = SCALAR_FMA(tx, t4, tw);
-          //atomicAdd((Gik + 4 * ldG), tz);
           outBuffer[4] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 5 * ldX));
+          tx = Xik_5;
           t5 = SCALAR_LOAD((temp + 11 * blockDim.x + threadIdx.x));
           t5 = SCALAR_MUL(t5, const_value_w);
           tz = SCALAR_MUL(ty, t5);
           tw = SCALAR_FMA(tx, t5, tw);
-          //atomicAdd((Gik + 5 * ldG), tz);
           outBuffer[5] += tz; 
 
           X_ABp = SCALAR_MUL(X_ABp, X_AB); comb_m_i = SCALAR_MUL(comb_m_i * 1, SCALAR_RECIPROCAL(1));
@@ -1554,54 +1590,48 @@ struct DeviceTask21 {
           const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
           const_value_w = SCALAR_MUL(const_value_v, const_value);
 
-          tx = SCALAR_LOAD((Xik + 0 * ldX));
+          tx = Xik_0;
           t0 = SCALAR_LOAD((temp + 0 * blockDim.x + threadIdx.x));
           t0 = SCALAR_MUL(t0, const_value_w);
           tz = SCALAR_MUL(ty, t0);
           tw = SCALAR_FMA(tx, t0, tw);
-          //atomicAdd((Gik + 0 * ldG), tz);
           outBuffer[0] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          tx = Xik_1;
           t1 = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
           t1 = SCALAR_MUL(t1, const_value_w);
           tz = SCALAR_MUL(ty, t1);
           tw = SCALAR_FMA(tx, t1, tw);
-          //atomicAdd((Gik + 1 * ldG), tz);
           outBuffer[1] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          tx = Xik_2;
           t2 = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
           t2 = SCALAR_MUL(t2, const_value_w);
           tz = SCALAR_MUL(ty, t2);
           tw = SCALAR_FMA(tx, t2, tw);
-          //atomicAdd((Gik + 2 * ldG), tz);
           outBuffer[2] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 3 * ldX));
+          tx = Xik_3;
           t3 = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
           t3 = SCALAR_MUL(t3, const_value_w);
           tz = SCALAR_MUL(ty, t3);
           tw = SCALAR_FMA(tx, t3, tw);
-          //atomicAdd((Gik + 3 * ldG), tz);
           outBuffer[3] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 4 * ldX));
+          tx = Xik_4;
           t4 = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
           t4 = SCALAR_MUL(t4, const_value_w);
           tz = SCALAR_MUL(ty, t4);
           tw = SCALAR_FMA(tx, t4, tw);
-          //atomicAdd((Gik + 4 * ldG), tz);
           outBuffer[4] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 5 * ldX));
+          tx = Xik_5;
           t5 = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
           t5 = SCALAR_MUL(t5, const_value_w);
           tz = SCALAR_MUL(ty, t5);
           tw = SCALAR_FMA(tx, t5, tw);
-          //atomicAdd((Gik + 5 * ldG), tz);
           outBuffer[5] += tz; 
-          atomicAdd((Gjk + 0 * ldG), tw);
+          Gjk_0 += tw;
 
 
     /*** j = 1 ***/
@@ -1610,53 +1640,47 @@ struct DeviceTask21 {
           Z_ABp = 1.0; comb_p_k = 1.0;
           const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
           const_value_w = SCALAR_MUL(const_value_v, const_value);
-          tx = SCALAR_LOAD((Xik + 0 * ldX));
-          ty = SCALAR_LOAD((Xjk + 1 * ldX));
+          tx = Xik_0;
+          ty = Xjk_1;
           t0 = SCALAR_LOAD((temp + 7 * blockDim.x + threadIdx.x));
           t0 = SCALAR_MUL(t0, const_value_w);
           tz = SCALAR_MUL(ty, t0);
           tw = SCALAR_MUL(tx, t0);
-          //atomicAdd((Gik + 0 * ldG), tz);
           outBuffer[0] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          tx = Xik_1;
           t1 = SCALAR_LOAD((temp + 9 * blockDim.x + threadIdx.x));
           t1 = SCALAR_MUL(t1, const_value_w);
           tz = SCALAR_MUL(ty, t1);
           tw = SCALAR_FMA(tx, t1, tw);
-          //atomicAdd((Gik + 1 * ldG), tz);
           outBuffer[1] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          tx = Xik_2;
           t2 = SCALAR_LOAD((temp + 10 * blockDim.x + threadIdx.x));
           t2 = SCALAR_MUL(t2, const_value_w);
           tz = SCALAR_MUL(ty, t2);
           tw = SCALAR_FMA(tx, t2, tw);
-          //atomicAdd((Gik + 2 * ldG), tz);
           outBuffer[2] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 3 * ldX));
+          tx = Xik_3;
           t3 = SCALAR_LOAD((temp + 12 * blockDim.x + threadIdx.x));
           t3 = SCALAR_MUL(t3, const_value_w);
           tz = SCALAR_MUL(ty, t3);
           tw = SCALAR_FMA(tx, t3, tw);
-          //atomicAdd((Gik + 3 * ldG), tz);
           outBuffer[3] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 4 * ldX));
+          tx = Xik_4;
           t4 = SCALAR_LOAD((temp + 13 * blockDim.x + threadIdx.x));
           t4 = SCALAR_MUL(t4, const_value_w);
           tz = SCALAR_MUL(ty, t4);
           tw = SCALAR_FMA(tx, t4, tw);
-          //atomicAdd((Gik + 4 * ldG), tz);
           outBuffer[4] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 5 * ldX));
+          tx = Xik_5;
           t5 = SCALAR_LOAD((temp + 14 * blockDim.x + threadIdx.x));
           t5 = SCALAR_MUL(t5, const_value_w);
           tz = SCALAR_MUL(ty, t5);
           tw = SCALAR_FMA(tx, t5, tw);
-          //atomicAdd((Gik + 5 * ldG), tz);
           outBuffer[5] += tz; 
 
           Y_ABp = SCALAR_MUL(Y_ABp, Y_AB); comb_n_j = SCALAR_MUL(comb_n_j * 1, SCALAR_RECIPROCAL(1));
@@ -1664,54 +1688,48 @@ struct DeviceTask21 {
           const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
           const_value_w = SCALAR_MUL(const_value_v, const_value);
 
-          tx = SCALAR_LOAD((Xik + 0 * ldX));
+          tx = Xik_0;
           t0 = SCALAR_LOAD((temp + 0 * blockDim.x + threadIdx.x));
           t0 = SCALAR_MUL(t0, const_value_w);
           tz = SCALAR_MUL(ty, t0);
           tw = SCALAR_FMA(tx, t0, tw);
-          //atomicAdd((Gik + 0 * ldG), tz);
           outBuffer[0] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          tx = Xik_1;
           t1 = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
           t1 = SCALAR_MUL(t1, const_value_w);
           tz = SCALAR_MUL(ty, t1);
           tw = SCALAR_FMA(tx, t1, tw);
-          //atomicAdd((Gik + 1 * ldG), tz);
           outBuffer[1] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          tx = Xik_2;
           t2 = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
           t2 = SCALAR_MUL(t2, const_value_w);
           tz = SCALAR_MUL(ty, t2);
           tw = SCALAR_FMA(tx, t2, tw);
-          //atomicAdd((Gik + 2 * ldG), tz);
           outBuffer[2] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 3 * ldX));
+          tx = Xik_3;
           t3 = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
           t3 = SCALAR_MUL(t3, const_value_w);
           tz = SCALAR_MUL(ty, t3);
           tw = SCALAR_FMA(tx, t3, tw);
-          //atomicAdd((Gik + 3 * ldG), tz);
           outBuffer[3] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 4 * ldX));
+          tx = Xik_4;
           t4 = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
           t4 = SCALAR_MUL(t4, const_value_w);
           tz = SCALAR_MUL(ty, t4);
           tw = SCALAR_FMA(tx, t4, tw);
-          //atomicAdd((Gik + 4 * ldG), tz);
           outBuffer[4] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 5 * ldX));
+          tx = Xik_5;
           t5 = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
           t5 = SCALAR_MUL(t5, const_value_w);
           tz = SCALAR_MUL(ty, t5);
           tw = SCALAR_FMA(tx, t5, tw);
-          //atomicAdd((Gik + 5 * ldG), tz);
           outBuffer[5] += tz; 
-          atomicAdd((Gjk + 1 * ldG), tw);
+          Gjk_1 += tw;
 
     /*** j = 2 ***/
           X_ABp = 1.0; comb_m_i = 1.0;
@@ -1720,114 +1738,126 @@ struct DeviceTask21 {
           const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
           const_value_w = SCALAR_MUL(const_value_v, const_value);
 
-          tx = SCALAR_LOAD((Xik + 0 * ldX));
-          ty = SCALAR_LOAD((Xjk + 2 * ldX));
+          tx = Xik_0;
+          ty = Xjk_2;
           t0 = SCALAR_LOAD((temp + 8 * blockDim.x + threadIdx.x));
           t0 = SCALAR_MUL(t0, const_value_w);
           tz = SCALAR_MUL(ty, t0);
           tw = SCALAR_MUL(tx, t0);
-          //atomicAdd((Gik + 0 * ldG), tz);
           outBuffer[0] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          tx = Xik_1;
           t1 = SCALAR_LOAD((temp + 10 * blockDim.x + threadIdx.x));
           t1 = SCALAR_MUL(t1, const_value_w);
           tz = SCALAR_MUL(ty, t1);
           tw = SCALAR_FMA(tx, t1, tw);
-          //atomicAdd((Gik + 1 * ldG), tz);
           outBuffer[1] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          tx = Xik_2;
           t2 = SCALAR_LOAD((temp + 11 * blockDim.x + threadIdx.x));
           t2 = SCALAR_MUL(t2, const_value_w);
           tz = SCALAR_MUL(ty, t2);
           tw = SCALAR_FMA(tx, t2, tw);
-          //atomicAdd((Gik + 2 * ldG), tz);
           outBuffer[2] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 3 * ldX));
+          tx = Xik_3;
           t3 = SCALAR_LOAD((temp + 13 * blockDim.x + threadIdx.x));
           t3 = SCALAR_MUL(t3, const_value_w);
           tz = SCALAR_MUL(ty, t3);
           tw = SCALAR_FMA(tx, t3, tw);
-          //atomicAdd((Gik + 3 * ldG), tz);
           outBuffer[3] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 4 * ldX));
+          tx = Xik_4;
           t4 = SCALAR_LOAD((temp + 14 * blockDim.x + threadIdx.x));
           t4 = SCALAR_MUL(t4, const_value_w);
           tz = SCALAR_MUL(ty, t4);
           tw = SCALAR_FMA(tx, t4, tw);
-          //atomicAdd((Gik + 4 * ldG), tz);
           outBuffer[4] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 5 * ldX));
+          tx = Xik_5;
           t5 = SCALAR_LOAD((temp + 15 * blockDim.x + threadIdx.x));
           t5 = SCALAR_MUL(t5, const_value_w);
           tz = SCALAR_MUL(ty, t5);
           tw = SCALAR_FMA(tx, t5, tw);
-          //atomicAdd((Gik + 5 * ldG), tz);
           outBuffer[5] += tz; 
 
           Z_ABp = SCALAR_MUL(Z_ABp, Z_AB); comb_p_k = SCALAR_MUL(comb_p_k * 1, SCALAR_RECIPROCAL(1));
           const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
           const_value_w = SCALAR_MUL(const_value_v, const_value);
 
-          tx = SCALAR_LOAD((Xik + 0 * ldX));
+          tx = Xik_0;
           t0 = SCALAR_LOAD((temp + 0 * blockDim.x + threadIdx.x));
           t0 = SCALAR_MUL(t0, const_value_w);
           tz = SCALAR_MUL(ty, t0);
           tw = SCALAR_FMA(tx, t0, tw);
-          //atomicAdd((Gik + 0 * ldG), tz);
           outBuffer[0] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          tx = Xik_1;
           t1 = SCALAR_LOAD((temp + 1 * blockDim.x + threadIdx.x));
           t1 = SCALAR_MUL(t1, const_value_w);
           tz = SCALAR_MUL(ty, t1);
           tw = SCALAR_FMA(tx, t1, tw);
-          //atomicAdd((Gik + 1 * ldG), tz);
           outBuffer[1] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          tx = Xik_2;
           t2 = SCALAR_LOAD((temp + 2 * blockDim.x + threadIdx.x));
           t2 = SCALAR_MUL(t2, const_value_w);
           tz = SCALAR_MUL(ty, t2);
           tw = SCALAR_FMA(tx, t2, tw);
-          //atomicAdd((Gik + 2 * ldG), tz);
           outBuffer[2] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 3 * ldX));
+          tx = Xik_3;
           t3 = SCALAR_LOAD((temp + 3 * blockDim.x + threadIdx.x));
           t3 = SCALAR_MUL(t3, const_value_w);
           tz = SCALAR_MUL(ty, t3);
           tw = SCALAR_FMA(tx, t3, tw);
-          //atomicAdd((Gik + 3 * ldG), tz);
           outBuffer[3] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 4 * ldX));
+          tx = Xik_4;
           t4 = SCALAR_LOAD((temp + 4 * blockDim.x + threadIdx.x));
           t4 = SCALAR_MUL(t4, const_value_w);
           tz = SCALAR_MUL(ty, t4);
           tw = SCALAR_FMA(tx, t4, tw);
-          //atomicAdd((Gik + 4 * ldG), tz);
           outBuffer[4] += tz; 
 
-          tx = SCALAR_LOAD((Xik + 5 * ldX));
+          tx = Xik_5;
           t5 = SCALAR_LOAD((temp + 5 * blockDim.x + threadIdx.x));
           t5 = SCALAR_MUL(t5, const_value_w);
           tz = SCALAR_MUL(ty, t5);
           tw = SCALAR_FMA(tx, t5, tw);
-          //atomicAdd((Gik + 5 * ldG), tz);
           outBuffer[5] += tz; 
-          atomicAdd((Gjk + 2 * ldG), tw);
+          //atomicAdd((Gjk + 2 * ldG), tw);
+          Gjk_2 += tw;
 
-          atomicAdd((Gik + 0 * ldG), outBuffer[0]);
-          atomicAdd((Gik + 1 * ldG), outBuffer[1]);
-          atomicAdd((Gik + 2 * ldG), outBuffer[2]);
-          atomicAdd((Gik + 3 * ldG), outBuffer[3]);
-          atomicAdd((Gik + 4 * ldG), outBuffer[4]);
-          atomicAdd((Gik + 5 * ldG), outBuffer[5]);
+          if constexpr (pure_ket) {
+            atomicAdd((Gjk + 2 * ldG), Gjk_0);
+            atomicAdd((Gjk + 0 * ldG), Gjk_1);
+            atomicAdd((Gjk + 1 * ldG), Gjk_2);
+          } else {
+            atomicAdd((Gjk + 0 * ldG), Gjk_0);
+            atomicAdd((Gjk + 1 * ldG), Gjk_1);
+            atomicAdd((Gjk + 2 * ldG), Gjk_2);
+          }
+
+          if constexpr (pure_bra) {
+            SCALAR_TYPE Gik_m2, Gik_m1, Gik_z0, Gik_p1, Gik_p2;
+              
+            ::cuda::std::tie(Gik_m2, Gik_m1, Gik_z0, Gik_p1, Gik_p2) =
+              sph::tform_l2(outBuffer[0], outBuffer[1], outBuffer[2], 
+                            outBuffer[3], outBuffer[4], outBuffer[5]);
+            atomicAdd((Gik + 0 * ldG), Gik_m2);
+            atomicAdd((Gik + 1 * ldG), Gik_m1);
+            atomicAdd((Gik + 2 * ldG), Gik_z0);
+            atomicAdd((Gik + 3 * ldG), Gik_p1);
+            atomicAdd((Gik + 4 * ldG), Gik_p2);
+          } else {
+            atomicAdd((Gik + 0 * ldG), outBuffer[0]);
+            atomicAdd((Gik + 1 * ldG), outBuffer[1]);
+            atomicAdd((Gik + 2 * ldG), outBuffer[2]);
+            atomicAdd((Gik + 3 * ldG), outBuffer[3]);
+            atomicAdd((Gik + 4 * ldG), outBuffer[4]);
+            atomicAdd((Gik + 5 * ldG), outBuffer[5]);
+          }
         }
       }
     }
@@ -1836,15 +1866,38 @@ struct DeviceTask21 {
 };
 
 template <int primpair_limit>
-using AM21_swap = DeviceTask21<ObaraSaikaType::swap, 
-  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, primpair_limit>;
+using AM21_swap_cart = DeviceTask21<ObaraSaikaType::swap, 
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, 
+  primpair_limit, false, false>;
 
 template <int primpair_limit>
-using AM21 = DeviceTask21<ObaraSaikaType::base, 
-  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, primpair_limit>;
+using AM21_cart = DeviceTask21<ObaraSaikaType::base, 
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, 
+  primpair_limit, false, false>;
+
+template <int primpair_limit>
+using AM21_swap_sc = DeviceTask21<ObaraSaikaType::swap, 
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, 
+  primpair_limit, true, false>;
+
+template <int primpair_limit>
+using AM21_sc = DeviceTask21<ObaraSaikaType::base, 
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, 
+  primpair_limit, true, false>;
+
+template <int primpair_limit>
+using AM21_swap_sph = DeviceTask21<ObaraSaikaType::swap, 
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, 
+  primpair_limit, true, true>;
+
+template <int primpair_limit>
+using AM21_sph = DeviceTask21<ObaraSaikaType::base, 
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, 
+  primpair_limit, true, true>;
 
   void integral_2_1_task_batched(
     bool swap,
+    bool sph_2, bool sph_1,
     size_t ntasks, size_t nsubtask,
     int max_primpair, size_t max_nsp,
     GauXC::XCDeviceTask*                device_tasks,
@@ -1865,21 +1918,55 @@ using AM21 = DeviceTask21<ObaraSaikaType::base,
     dim3 nthreads(alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask);
 
     if (swap) {
-      dev_integral_task_map_dispatcher<AM21_swap>(
-        nblocks, nthreads, max_primpair, stream, 
-        ntasks, nsubtask,
-        device_tasks, task2sp, 
-        (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
-        sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
-        boys_table );
+      if(sph_2 and sph_1)
+        dev_integral_task_map_dispatcher<AM21_swap_sph>(
+          nblocks, nthreads, max_primpair, stream, 
+          ntasks, nsubtask,
+          device_tasks, task2sp, 
+          (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
+          sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+          boys_table );
+      else if(sph_2)
+        dev_integral_task_map_dispatcher<AM21_swap_sc>(
+          nblocks, nthreads, max_primpair, stream, 
+          ntasks, nsubtask,
+          device_tasks, task2sp, 
+          (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
+          sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+          boys_table );
+      else
+        dev_integral_task_map_dispatcher<AM21_swap_cart>(
+          nblocks, nthreads, max_primpair, stream, 
+          ntasks, nsubtask,
+          device_tasks, task2sp, 
+          (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
+          sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+          boys_table );
     } else {
-      dev_integral_task_map_dispatcher<AM21>(
-        nblocks, nthreads, max_primpair, stream, 
-        ntasks, nsubtask,
-        device_tasks, task2sp, 
-        (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
-        sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
-        boys_table );
+      if(sph_2 and sph_1)
+        dev_integral_task_map_dispatcher<AM21_sph>(
+          nblocks, nthreads, max_primpair, stream, 
+          ntasks, nsubtask,
+          device_tasks, task2sp, 
+          (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
+          sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+          boys_table );
+      else if(sph_2)
+        dev_integral_task_map_dispatcher<AM21_sc>(
+          nblocks, nthreads, max_primpair, stream, 
+          ntasks, nsubtask,
+          device_tasks, task2sp, 
+          (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
+          sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+          boys_table );
+      else
+        dev_integral_task_map_dispatcher<AM21_cart>(
+          nblocks, nthreads, max_primpair, stream, 
+          ntasks, nsubtask,
+          device_tasks, task2sp, 
+          (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
+          sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+          boys_table );
     }
   }
 }

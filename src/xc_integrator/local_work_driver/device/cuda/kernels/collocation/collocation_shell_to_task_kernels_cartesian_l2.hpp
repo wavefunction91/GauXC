@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -64,7 +68,6 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
 
     auto* __restrict__ basis_eval = task->bf + shoff;
 
-
     // Loop over points in task
     // Assign each point to separate thread within the warp
     #pragma unroll 1
@@ -93,18 +96,22 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       }
 
 
-      
+      // Common Subexpressions
+      const auto x0 = radial_eval*x; 
+
 
       // Evaluate basis function
-      basis_eval[ipt + 0*npts] = radial_eval*x*x;
-      basis_eval[ipt + 1*npts] = radial_eval*x*y;
-      basis_eval[ipt + 2*npts] = radial_eval*x*z;
-      basis_eval[ipt + 3*npts] = radial_eval*y*y;
+      basis_eval[ipt + 0*npts] = radial_eval*(x*x);
+      basis_eval[ipt + 1*npts] = x0*y;
+      basis_eval[ipt + 2*npts] = x0*z;
+      basis_eval[ipt + 3*npts] = radial_eval*(y*y);
       basis_eval[ipt + 4*npts] = radial_eval*y*z;
-      basis_eval[ipt + 5*npts] = radial_eval*z*z;
+      basis_eval[ipt + 5*npts] = radial_eval*(z*z);
 
 
     
+
+
 
 
 
@@ -121,17 +128,17 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
       double ang_eval_3;
 
 
-      ang_eval_0 = radial_eval*x*x;
-      ang_eval_1 = radial_eval*x*y;
-      ang_eval_2 = radial_eval*x*z;
-      ang_eval_3 = radial_eval*y*y;
+      ang_eval_0 = radial_eval*(x*x);
+      ang_eval_1 = x0*y;
+      ang_eval_2 = x0*z;
+      ang_eval_3 = radial_eval*(y*y);
       basis_eval[ipt + 0*npts] = ang_eval_0;
       basis_eval[ipt + 1*npts] = ang_eval_1;
       basis_eval[ipt + 2*npts] = ang_eval_2;
       basis_eval[ipt + 3*npts] = ang_eval_3;
 
       ang_eval_0 = radial_eval*y*z;
-      ang_eval_1 = radial_eval*z*z;
+      ang_eval_1 = radial_eval*(z*z);
       basis_eval[ipt + 4*npts] = ang_eval_0;
       basis_eval[ipt + 5*npts] = ang_eval_1;
 

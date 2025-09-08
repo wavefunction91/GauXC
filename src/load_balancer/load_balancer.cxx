@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -51,6 +55,10 @@ const util::Timer& LoadBalancer::get_timings() const {
   return pimpl_->get_timings();
 }
 
+size_t LoadBalancer::total_npts() const {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->total_npts();
+}
 size_t LoadBalancer::max_npts() const {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->max_npts();

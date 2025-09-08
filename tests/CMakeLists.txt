@@ -1,7 +1,11 @@
 #
 # GauXC Copyright (c) 2020-2024, The Regents of the University of California,
 # through Lawrence Berkeley National Laboratory (subject to receipt of
-# any required approvals from the U.S. Dept. of Energy). All rights reserved.
+# any required approvals from the U.S. Dept. of Energy).
+#
+# (c) 2024-2025, Microsoft Corporation
+#
+# All rights reserved.
 #
 # See LICENSE.txt for details
 #
@@ -57,9 +61,12 @@ add_executable( gauxc_test
   environment.cxx
   collocation.cxx
   weights.cxx
+  weight_derivative_test.cxx
   standards.cxx 
   runtime.cxx
   basis/parse_basis.cxx
+  dd_psi_potential_test.cxx
+  2nd_derivative_test.cxx
 )
 target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
 if(GAUXC_ENABLE_CUTLASS)

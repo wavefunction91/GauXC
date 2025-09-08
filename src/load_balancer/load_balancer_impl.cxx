@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -59,6 +63,14 @@ const util::Timer& LoadBalancerImpl::get_timings() const {
 }
 
 
+size_t LoadBalancerImpl::total_npts() const {
+
+  return std::accumulate( local_tasks_.cbegin(), local_tasks_.cend(), 0ul,
+    []( const auto& a, const auto& b ) {
+      return a + b.points.size();
+    });
+
+}
 size_t LoadBalancerImpl::max_npts() const {
 
   if( not local_tasks_.size() ) return 0ul;

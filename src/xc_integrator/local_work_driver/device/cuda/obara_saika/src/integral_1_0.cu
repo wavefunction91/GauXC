@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -352,7 +356,8 @@ using namespace GauXC;
 
   }
 
-template<ObaraSaikaType type_, int points_per_subtask_, int primpair_shared_limit_>
+template<ObaraSaikaType type_, int points_per_subtask_, int primpair_shared_limit_,
+         bool pure_bra>
 struct DeviceTask10 {
   static constexpr int max_primpair_shared_limit = 32;
 
@@ -365,7 +370,7 @@ struct DeviceTask10 {
 
   static constexpr bool use_shared = (primpair_shared_limit > 0) && 
                                      (primpair_shared_limit <= max_primpair_shared_limit);
-  static constexpr int num_warps = points_per_subtask / cuda::warp_size;
+  static constexpr int num_warps = points_per_subtask / GauXC::cuda::warp_size;
   // Cannot declare shared memory array with length 0
   static constexpr int prim_buffer_size = (use_shared) ? num_warps * primpair_shared_limit : 1;
 
@@ -393,12 +398,12 @@ struct DeviceTask10 {
     double *Gj = param.Gj;
 
     static constexpr bool use_shared = (primpair_shared_limit > 0);
-    static constexpr int num_warps = points_per_subtask / cuda::warp_size;
+    static constexpr int num_warps = points_per_subtask / GauXC::cuda::warp_size;
     // Cannot declare shared memory array with length 0
     static constexpr int prim_buffer_size = (use_shared) ? num_warps * primpair_shared_limit : 1;
 
-    const int laneId = threadIdx.x % cuda::warp_size;
-    const int warpId __attribute__((unused)) = threadIdx.x / cuda::warp_size;
+    const int laneId = threadIdx.x % GauXC::cuda::warp_size;
+    const int warpId __attribute__((unused)) = threadIdx.x / GauXC::cuda::warp_size;
 
     __shared__ GauXC::PrimitivePair<double> s_prim_pairs[prim_buffer_size] __attribute__((unused));
 
@@ -414,7 +419,7 @@ struct DeviceTask10 {
       double temp_1 = SCALAR_ZERO();
       double temp_2 = SCALAR_ZERO();
 
-      const int pointIndex = i * cuda::warp_size + laneId;
+      const int pointIndex = i * GauXC::cuda::warp_size + laneId;
 
       if (pointIndex < npts) {
         const double point_x = s_task_data[pointIndex].x;
@@ -490,31 +495,46 @@ struct DeviceTask10 {
           SCALAR_TYPE const_value_w;
           SCALAR_TYPE tx, ty, tz, tw, t0, t1, t2;
 
+          SCALAR_TYPE Xik_0, Xik_1, Xik_2;
+
+          if constexpr (pure_bra) {
+            Xik_0 = SCALAR_LOAD((Xik + 2*ldX));
+            Xik_1 = SCALAR_LOAD((Xik + 0*ldX));
+            Xik_2 = SCALAR_LOAD((Xik + 1*ldX));
+          } else {
+            Xik_0 = SCALAR_LOAD((Xik + 0*ldX));
+            Xik_1 = SCALAR_LOAD((Xik + 1*ldX));
+            Xik_2 = SCALAR_LOAD((Xik + 2*ldX));
+          }
+
           X_ABp = 1.0; comb_m_i = 1.0;
           Y_ABp = 1.0; comb_n_j = 1.0;
           Z_ABp = 1.0; comb_p_k = 1.0;
           const_value = comb_m_i * comb_n_j * comb_p_k * X_ABp * Y_ABp * Z_ABp;
           const_value_w = SCALAR_MUL(const_value_v, const_value);
 
-          tx = SCALAR_LOAD((Xik + 0 * ldX));
+          tx = Xik_0;
           ty = SCALAR_LOAD((Xjk + 0 * ldX));
 
           t0 = SCALAR_MUL(temp_0, const_value_w);
           tz = SCALAR_MUL(ty, t0);
           tw = SCALAR_MUL(tx, t0);
-          atomicAdd((Gik + 0 * ldG), tz);
+          if constexpr (pure_bra) atomicAdd((Gik + 2 * ldG), tz);
+          else                    atomicAdd((Gik + 0 * ldG), tz);
                                          
-          tx = SCALAR_LOAD((Xik + 1 * ldX));
+          tx = Xik_1;
           t1 = SCALAR_MUL(temp_1, const_value_w);
           tz = SCALAR_MUL(ty, t1);
           tw = SCALAR_FMA(tx, t1, tw);
-          atomicAdd((Gik + 1 * ldG), tz);
+          if constexpr (pure_bra) atomicAdd((Gik + 0 * ldG), tz);
+          else                    atomicAdd((Gik + 1 * ldG), tz);
 
-          tx = SCALAR_LOAD((Xik + 2 * ldX));
+          tx = Xik_2;
           t2 = SCALAR_MUL(temp_2, const_value_w);
           tz = SCALAR_MUL(ty, t2);
           tw = SCALAR_FMA(tx, t2, tw);
-          atomicAdd((Gik + 2 * ldG), tz);
+          if constexpr (pure_bra) atomicAdd((Gik + 1 * ldG), tz);
+          else                    atomicAdd((Gik + 2 * ldG), tz);
 
           atomicAdd((Gjk + 0 * ldG), tw);
         }
@@ -525,15 +545,28 @@ struct DeviceTask10 {
 };
 
 template <int primpair_limit>
-using AM10_swap = DeviceTask10<ObaraSaikaType::swap,
-  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, primpair_limit>;
+using AM10_swap_cart = DeviceTask10<ObaraSaikaType::swap,
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, 
+  primpair_limit, false>;
 
 template <int primpair_limit>
-using AM10 = DeviceTask10<ObaraSaikaType::base,
-  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, primpair_limit>;
+using AM10_cart = DeviceTask10<ObaraSaikaType::base,
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, 
+  primpair_limit, false>;
+
+template <int primpair_limit>
+using AM10_swap_sph = DeviceTask10<ObaraSaikaType::swap,
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, 
+  primpair_limit, true>;
+
+template <int primpair_limit>
+using AM10_sph = DeviceTask10<ObaraSaikaType::base,
+  alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask, 
+  primpair_limit, true>;
 
   void integral_1_0_task_batched(
     bool swap,
+    bool sph,
     size_t ntasks, size_t nsubtask,
     int max_primpair, size_t max_nsp,
     GauXC::XCDeviceTask*                device_tasks,
@@ -554,21 +587,39 @@ using AM10 = DeviceTask10<ObaraSaikaType::base,
     dim3 nthreads(alg_constants::CudaAoSScheme1::ObaraSaika::points_per_subtask);
 
     if (swap) {
-      dev_integral_task_map_dispatcher<AM10_swap>(
-        nblocks, nthreads, max_primpair, stream, 
-        ntasks, nsubtask,
-        device_tasks, task2sp, 
-        (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
-        sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
-        boys_table );
+      if(sph)
+        dev_integral_task_map_dispatcher<AM10_swap_sph>(
+          nblocks, nthreads, max_primpair, stream, 
+          ntasks, nsubtask,
+          device_tasks, task2sp, 
+          (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
+          sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+          boys_table );
+      else
+        dev_integral_task_map_dispatcher<AM10_swap_cart>(
+          nblocks, nthreads, max_primpair, stream, 
+          ntasks, nsubtask,
+          device_tasks, task2sp, 
+          (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
+          sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+          boys_table );
     } else {
-      dev_integral_task_map_dispatcher<AM10>(
-        nblocks, nthreads, max_primpair, stream, 
-        ntasks, nsubtask,
-        device_tasks, task2sp, 
-        (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
-        sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
-        boys_table );
+      if(sph)
+        dev_integral_task_map_dispatcher<AM10_sph>(
+          nblocks, nthreads, max_primpair, stream, 
+          ntasks, nsubtask,
+          device_tasks, task2sp, 
+          (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
+          sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+          boys_table );
+      else
+        dev_integral_task_map_dispatcher<AM10_cart>(
+          nblocks, nthreads, max_primpair, stream, 
+          ntasks, nsubtask,
+          device_tasks, task2sp, 
+          (int4*) subtasks, nprim_pairs_device, prim_pair_ptr_device,
+          sp_X_AB_device, sp_Y_AB_device, sp_Z_AB_device,
+          boys_table );
     }
   }
 }

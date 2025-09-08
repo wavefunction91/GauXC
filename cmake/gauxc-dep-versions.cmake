@@ -11,13 +11,13 @@ set( GAUXC_CUTLASS_REPOSITORY https://github.com/NVIDIA/cutlass.git )
 set( GAUXC_CUTLASS_REVISION v2.10.0 )
 
 set( GAUXC_EXCHCXX_REPOSITORY https://github.com/wavefunction91/ExchCXX.git )
-set( GAUXC_EXCHCXX_REVISION   21a4700a826ec0beae1311a1d59677393bcb168f )
+set( GAUXC_EXCHCXX_REVISION   v1.0.0 )
 
 set( GAUXC_GAU2GRID_REPOSITORY https://github.com/dgasmith/gau2grid.git )
 set( GAUXC_GAU2GRID_REVISION   v2.0.6 )
 
 set( GAUXC_INTEGRATORXX_REPOSITORY https://github.com/wavefunction91/IntegratorXX.git )
-set( GAUXC_INTEGRATORXX_REVISION   ea07dedd37e7bd49ea06394eb811599002b34b49 )
+set( GAUXC_INTEGRATORXX_REVISION   cf2917c64916583cef1081011beab3085b66e352 )
 
 set( GAUXC_HIGHFIVE_REPOSITORY https://github.com/BlueBrain/HighFive.git )
 set( GAUXC_HIGHFIVE_REVISION 805f0e13d09b47c4b01d40682621904aa3b31bb8 )

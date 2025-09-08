@@ -1,16 +1,21 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
 #include <gauxc/grid_factory.hpp>
 
-#include <integratorxx/quadratures/lebedev_laikov.hpp>
-#include <integratorxx/quadratures/muraknowles.hpp>
-#include <integratorxx/quadratures/mhl.hpp>
-#include <integratorxx/quadratures/treutlerahlrichs.hpp>
+#include <integratorxx/quadratures/s2/lebedev_laikov.hpp>
+#include <integratorxx/quadratures/radial/muraknowles.hpp>
+#include <integratorxx/quadratures/radial/mhl.hpp>
+#include <integratorxx/quadratures/radial/treutlerahlrichs.hpp>
+#include <integratorxx/quadratures/radial/becke.hpp>
 #include <integratorxx/composite_quadratures/spherical_quadrature.hpp>
 #include <gauxc/exceptions.hpp>
 
@@ -30,6 +35,7 @@ Grid AtomicGridFactory::generate_grid( atomic_grid_variant gs, BatchSize bsz ) {
 Grid AtomicGridFactory::generate_unpruned_grid( RadialQuad rq, RadialSize nrad, 
   AngularSize nang, RadialScale rscal, BatchSize bsz) {
 
+  using bk_type  = IntegratorXX::Becke<double, double>;
   using mk_type  = IntegratorXX::MuraKnowles<double,double>;
   using mhl_type = IntegratorXX::MurrayHandyLaming<double,double>;
   using ta_type  = IntegratorXX::TreutlerAhlrichs<double,double>;
@@ -38,6 +44,9 @@ Grid AtomicGridFactory::generate_unpruned_grid( RadialQuad rq, RadialSize nrad,
   ll_type ang_quad( nang.get() );
 
   switch( rq ) {
+    case RadialQuad::Becke:
+      return generate_unpruned_grid( bk_type(nrad.get(), rscal.get()),
+        std::move(ang_quad), bsz );
 
     case RadialQuad::MuraKnowles:
       return generate_unpruned_grid( mk_type(nrad.get(), rscal.get()),
@@ -47,7 +56,7 @@ Grid AtomicGridFactory::generate_unpruned_grid( RadialQuad rq, RadialSize nrad,
       return generate_unpruned_grid( mhl_type(nrad.get(), rscal.get()),
         std::move(ang_quad), bsz );
 
-    case RadialQuad::TreutlerAldrichs:
+    case RadialQuad::TreutlerAhlrichs:
       return generate_unpruned_grid( ta_type(nrad.get(), rscal.get()),
         std::move(ang_quad), bsz );
 
@@ -113,11 +122,17 @@ Grid AtomicGridFactory::generate_pruned_grid( RadialQuad rq,
       return generate_pruned_grid(std::move(rg), std::move(rgp), bsz);
     }
 
-    case RadialQuad::TreutlerAldrichs:
+    case RadialQuad::TreutlerAhlrichs:
     {
       auto [rg, rgp] = 
         make_pruned_grid<ta_type>( nrad, pruning_regions, rscal );
       return generate_pruned_grid(std::move(rg), std::move(rgp), bsz);
+    }
+    case RadialQuad::Becke:
+    {
+      auto[rg, rgp] = 
+        make_pruned_grid<IntegratorXX::Becke<double,double>>( nrad, pruning_regions, rscal );
+        return generate_pruned_grid(std::move(rg), std::move(rgp), bsz);
     }
 
     default:
@@ -145,17 +160,18 @@ PrunedAtomicGridSpecification robust_psi4_pruning_scheme(
 
   // Look up order
   // XXX: THIS ONLY WORKS FOR LEBEDEV
-  using namespace IntegratorXX::detail::lebedev;
+  using angular_type = IntegratorXX::LebedevLaikov<double>; 
+  using traits = IntegratorXX::quadrature_traits<angular_type>;
   const auto asz = unp.angular_size.get();
-  const auto base_order = algebraic_order_by_npts(asz);
+  const auto base_order = traits::algebraic_order_by_npts(asz);
   if( base_order < 0 ) GAUXC_GENERIC_EXCEPTION("Invalid Base Grid");
 
   const auto med_order = 
-    next_algebraic_order(base_order > 6 ? base_order-6 : base_order);
+    traits::next_algebraic_order(base_order > 6 ? base_order-6 : base_order);
   const auto low_order = 7;
 
-  AngularSize med_sz(npts_by_algebraic_order(med_order));
-  AngularSize low_sz(npts_by_algebraic_order(low_order));
+  AngularSize med_sz(traits::npts_by_algebraic_order(med_order));
+  AngularSize low_sz(traits::npts_by_algebraic_order(low_order));
 
   // Create Pruning Regions
   const size_t rsz = unp.radial_size.get();
@@ -183,9 +199,11 @@ PrunedAtomicGridSpecification treutler_pruning_scheme(
 
   // Look up order
   // XXX: THIS ONLY WORKS FOR LEBEDEV
-  using namespace IntegratorXX::detail::lebedev;
-  AngularSize med_sz(npts_by_algebraic_order(med_order));
-  AngularSize low_sz(npts_by_algebraic_order(low_order));
+  using angular_type = IntegratorXX::LebedevLaikov<double>;
+  using traits = IntegratorXX::quadrature_traits<angular_type>;
+
+  AngularSize med_sz(traits::npts_by_algebraic_order(med_order));
+  AngularSize low_sz(traits::npts_by_algebraic_order(low_order));
 
   // Create Pruning Regions
   const size_t rsz = unp.radial_size.get();

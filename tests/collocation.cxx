@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -73,6 +77,14 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
 
   SECTION( "CUDA Shell to Task Eval Hessian" ) {
     test_cuda_collocation_shell_to_task_hessian( basis, basis_map, ref_data );
+  }
+
+  SECTION( "CUDA Shell to Task Eval Laplacian" ) {
+    test_cuda_collocation_shell_to_task_laplacian( basis, basis_map, ref_data );
+  }
+
+  SECTION( "CUDA Shell to Task Eval Laplacian Gradient" ) {
+    test_cuda_collocation_shell_to_task_lapgrad( basis, basis_map, ref_data );
   }
 #endif // GAUXC_HAS_CUDA
 

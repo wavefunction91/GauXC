@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -41,6 +45,9 @@ struct XCDeviceAoSData : public XCDeviceStackData {
     double* d2bf_zz_eval_device = nullptr; ///< 2nd Derivative of `bf_eval_device` wrt z+z
 
     double* d2bf_lapl_eval_device = nullptr; ///< Laplacian of `bf_eval_device`
+    double* d3bf_lapgrad_x_eval_device = nullptr; ///< Laplacian derivative of bf_eval_device wrt x
+    double* d3bf_lapgrad_y_eval_device = nullptr; ///< Laplacian derivative of bf_eval_device wrt y
+    double* d3bf_lapgrad_z_eval_device = nullptr; ///< Laplacian derivative of bf_eval_device wrt z
 
     // VXC Z Matrix
     double* zmat_vxc_device = nullptr;
@@ -50,6 +57,16 @@ struct XCDeviceAoSData : public XCDeviceStackData {
     double* xmat_dx_device = nullptr;
     double* xmat_dy_device = nullptr;
     double* xmat_dz_device = nullptr;
+
+    // Persistent X mat
+    double* xmatS_device    = nullptr;
+    double* xmatS_dx_device = nullptr;
+    double* xmatS_dy_device = nullptr;
+    double* xmatS_dz_device = nullptr;
+    double* xmatZ_device    = nullptr;
+    double* xmatZ_dx_device = nullptr;
+    double* xmatZ_dy_device = nullptr;
+    double* xmatZ_dz_device = nullptr;
 
     // EXX Intermediates
     double* fmat_exx_device = nullptr;

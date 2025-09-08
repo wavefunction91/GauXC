@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -74,11 +78,30 @@ protected:
                               value_type* VXCx, int64_t ldvxcx,
                               value_type* EXC, const IntegratorSettingsXC& ks_settings ) = 0;
 
-  virtual void eval_exc_grad_( int64_t m, int64_t n, const value_type* P,
-                               int64_t ldp, value_type* EXC_GRAD ) = 0;
+  virtual void eval_exc_grad_( int64_t m, int64_t n, const value_type* P, int64_t ldp, 
+                               value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual void eval_exc_grad_( int64_t m, int64_t n, const value_type* P, int64_t ldps, 
+                               const value_type* Pz, int64_t lpdz, value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual void eval_exx_( int64_t m, int64_t n, const value_type* P,
                           int64_t ldp, value_type* K, int64_t ldk,
                           const IntegratorSettingsEXX& settings ) = 0;
+  virtual void eval_fxc_contraction_( int64_t m, int64_t n, 
+                            const value_type* P, int64_t ldp,
+                            const value_type* tP, int64_t ldtp,
+                            value_type* FXC, int64_t ldfxc,
+                            const IntegratorSettingsXC& ks_settings )=0;
+  virtual void eval_fxc_contraction_( int64_t m, int64_t n, 
+                            const value_type* Ps, int64_t ldps,   
+                            const value_type* Pz, int64_t ldpz,
+                            const value_type* tPs, int64_t ldtps,
+                            const value_type* tPz, int64_t ldtpz,
+                            value_type* FXCs, int64_t ldfxcs,
+                            value_type* FXCz, int64_t ldfxcz,
+                            const IntegratorSettingsXC& ks_settings )=0;
+  virtual void eval_dd_psi_( int64_t m, int64_t n, const value_type* P, int64_t ldp, unsigned max_Ylm, 
+                             value_type* ddPsi, int64_t ldPsi ) = 0;
+  virtual void eval_dd_psi_potential_( int64_t m, int64_t n, const value_type* X, unsigned max_Ylm,
+                             value_type* Vddx) = 0;
 
 public:
 
@@ -130,12 +153,35 @@ public:
                      value_type* EXC, const IntegratorSettingsXC& ks_settings );
 
 
-  void eval_exc_grad( int64_t m, int64_t n, const value_type* P,
-                      int64_t ldp, value_type* EXC_GRAD );
+  void eval_exc_grad( int64_t m, int64_t n, const value_type* P, int64_t ldp, 
+                      value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings );
+  void eval_exc_grad( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
+                      const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings );
 
   void eval_exx( int64_t m, int64_t n, const value_type* P,
                  int64_t ldp, value_type* K, int64_t ldk,
                  const IntegratorSettingsEXX& settings );
+
+  void eval_fxc_contraction( int64_t m, int64_t n, const value_type* P,
+                      int64_t ldp,
+                      const value_type* tP, int64_t ldtp,
+                      value_type* FXC, int64_t ldfxc,
+                      const IntegratorSettingsXC& ks_settings );
+
+  void eval_fxc_contraction( int64_t m, int64_t n, const value_type* Ps,
+                      int64_t ldps,
+                      const value_type* Pz, int64_t ldpz,
+                      const value_type* tPs, int64_t ldtps,
+                      const value_type* tPz, int64_t ldtpz,
+                      value_type* FXCs, int64_t ldfxcs,
+                      value_type* FXCz, int64_t ldfxcz,
+                      const IntegratorSettingsXC& ks_settings );
+
+  void eval_dd_psi( int64_t m, int64_t n, const value_type* P,
+                     int64_t ldp, unsigned max_Ylm, 
+                     value_type* ddPsi, int64_t ldPsi );
+  void eval_dd_psi_potential( int64_t m, int64_t n, const value_type* X, unsigned max_Ylm, 
+                      value_type* Vddx );
 
   inline const util::Timer& get_timings() const { return timer_; }
 

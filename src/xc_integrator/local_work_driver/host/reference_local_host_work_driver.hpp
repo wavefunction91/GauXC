@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -29,6 +33,9 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
 
   void partition_weights( XCWeightAlg weight_alg, const Molecule& mol, 
     const MolMeta& meta, task_iterator task_begin, task_iterator task_end ) override;
+
+  void eval_weight_1st_deriv_contracted( XCWeightAlg weight_alg, const Molecule& mol, 
+    const MolMeta& meta, const XCTask& task, const double* w_times_f, double* exc_grad_w ) override;
 
   void eval_collocation( size_t npts, size_t nshells, size_t nbe, 
     const double* pts, const BasisSet<double>& basis, const int32_t* shell_list, 
@@ -174,6 +181,61 @@ struct ReferenceLocalHostWorkDriver : public detail::LocalHostWorkDriverPIMPL {
     const double* basis_eval, const submat_map_t& submat_map, const double* Z, 
     size_t ldz, double* VXC, size_t ldvxc, double* scr ) override;
 
+
+  void eval_tmat_lda_vxc_rks( size_t npts, const double* v2rho2, const double* tden_eval, double* A) override;
+  void eval_tmat_lda_vxc_uks( size_t npts, const double* v2rho2, const double* trho, double* tmat) override;
+  
+  void eval_tmat_gga_vxc_rks( size_t npts, const double* vgamma, 
+    const double* v2rho2, const double* v2rhogamma, const double* v2gamma2, 
+    const double* tden_eval, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval,
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B ) override;
+  void eval_tmat_gga_vxc_uks( size_t npts, const double* vgamma, 
+    const double* v2rho2, const double* v2rhogamma, const double* v2gamma2, 
+    const double* trho, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval,
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B ) override;
+  
+  void eval_tmat_mgga_vxc_rks( size_t npts, const double* vgamma, 
+    const double* v2rho2, const double* v2rhogamma, const double* v2rholapl, const double* v2rhotau, 
+    const double* v2gamma2, const double* v2gammalapl, const double* v2gammatau,
+    const double* v2lapl2, const double* v2lapltau, const double* v2tau2, 
+    const double* tden_eval, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, 
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C) override;
+  void eval_tmat_mgga_vxc_uks( size_t npts, const double* vgamma, 
+    const double* v2rho2, const double* v2rhogamma, const double* v2rholapl, const double* v2rhotau, 
+    const double* v2gamma2, const double* v2gammalapl, const double* v2gamma_tau,
+    const double* v2lapl2, const double* v2tau_lapl, const double* v2tau2, 
+    const double* trho, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, 
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C) override;
+
+  void eval_zmat_lda_vxc_uks_ts( size_t npts, size_t nbe, const double* vrho,
+    const double* basis_eval, double* Za, size_t ldza, double* Zb, size_t ldzb ) override;
+  void eval_Bvec_gga_vxc_uks_ts( size_t npts, const double* vgamma, 
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* B ) override;
+  void eval_zmat_gga_vxc_uks_ts( size_t npts, size_t nbf, const double* A, const double* B, const double* basis_eval,
+    const double* dbasis_x_eval, const double* dbasis_y_eval, const double* dbasis_z_eval, 
+    double* Za, size_t ldza, double* Zb, size_t ldzb ) override;
+  void eval_Bvec_gga_vxc_rks_ts( size_t npts, const double* vgamma, 
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* B ) override;
+  void eval_zmat_gga_vxc_rks_ts( size_t npts, size_t nbf, const double* A, const double* B, const double* basis_eval,
+    const double* dbasis_x_eval, const double* dbasis_y_eval, const double* dbasis_z_eval, 
+    double* Z, size_t ldz ) override;
+
+  void eval_zmat_gga_vxc_uks_ts( size_t npts, size_t nbe, const double* vrho,
+    const double* vgamma, const double* basis_eval, const double* dbasis_x_eval,
+    const double* dbasis_y_eval, const double* dbasis_z_eval,
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
+    double* Za, size_t ldza, double* Zb, size_t ldzb ) override;
+  void eval_zmat_mgga_vxc_uks_ts( size_t npts, size_t nbe, const double* vrho,
+    const double* vgamma, const double* vlapl,
+    const double* basis_eval, const double* dbasis_x_eval, const double* dbasis_y_eval, 
+    const double* dbasis_z_eval, const double* lbasis_eval,
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
+    double* Za, size_t ldza, double* Zb, size_t ldzb ) override;
+  void eval_mmat_mgga_vxc_uks_ts( size_t npts, size_t nbe, const double* vtau,
+    const double* vlapl, const double* dbasis_x_eval, const double* dbasis_y_eval, 
+    const double* dbasis_z_eval, double* mmat_xs, double* mmat_ys, double* mmat_zs,
+    size_t ldms, double* mmat_xz, double* mmat_yz, double* mmat_zz, size_t ldmz ) override;
 };
+
 
 }

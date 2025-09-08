@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -51,16 +55,20 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
 
   return base_size + 
     // Collocation + Derivatives
-    reqt.task_bfn_size     ( nbe_bfn, npts ) * sizeof(double) +
-    reqt.task_bfn_grad_size( nbe_bfn, npts ) * sizeof(double) +
-    reqt.task_bfn_hess_size( nbe_bfn, npts ) * sizeof(double) +
-    reqt.task_bfn_lapl_size( nbe_bfn, npts ) * sizeof(double) +
+    reqt.task_bfn_size     ( nbe_bfn, npts )    * sizeof(double) +
+    reqt.task_bfn_grad_size( nbe_bfn, npts )    * sizeof(double) +
+    reqt.task_bfn_hess_size( nbe_bfn, npts )    * sizeof(double) +
+    reqt.task_bfn_lapl_size( nbe_bfn, npts )    * sizeof(double) +
+    reqt.task_bfn_lapgrad_size( nbe_bfn, npts ) * sizeof(double) +
 
     // LDA/GGA Z Matrix
     reqt.task_zmat_size( nbe_bfn, npts ) * sizeof(double) +
 
     // X Matrix Gradient
     reqt.task_xmat_grad_size( nbe_bfn, npts ) * sizeof(double) +
+
+    // Persistent X Mat
+    reqt.task_xmat_persist_size( nbe_bfn, npts ) * sizeof(double) +
 
     // EXX Intermediates
     reqt.task_fmat_size( nbe_cou, npts ) * sizeof(double) +
@@ -191,6 +199,12 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
     aos_stack.d2bf_lapl_eval_device = mem.aligned_alloc<double>( bfn_msz, csl );
   }
 
+  if(reqt.task_bfn_lapgrad) {
+    aos_stack.d3bf_lapgrad_x_eval_device = mem.aligned_alloc<double>( bfn_msz, csl );
+    aos_stack.d3bf_lapgrad_y_eval_device = mem.aligned_alloc<double>( bfn_msz, csl );
+    aos_stack.d3bf_lapgrad_z_eval_device = mem.aligned_alloc<double>( bfn_msz, csl );
+  }
+
   // VXC Z Matrix
   if(reqt.task_zmat) {
     aos_stack.zmat_vxc_device = 
@@ -201,6 +215,20 @@ XCDeviceAoSData::device_buffer_t XCDeviceAoSData::allocate_dynamic_stack(
     aos_stack.xmat_dx_device = mem.aligned_alloc<double>( bfn_msz, csl);
     aos_stack.xmat_dy_device = mem.aligned_alloc<double>( bfn_msz, csl);
     aos_stack.xmat_dz_device = mem.aligned_alloc<double>( bfn_msz, csl);
+  }
+
+  // Persistent X Matrix Gradient
+  if(reqt.task_xmat_persist) {
+    aos_stack.xmatS_device    = mem.aligned_alloc<double>( bfn_msz, csl);
+    aos_stack.xmatZ_device    = mem.aligned_alloc<double>( bfn_msz, csl);
+    if(reqt.task_xmat_grad) { 
+      aos_stack.xmatS_dx_device = mem.aligned_alloc<double>( bfn_msz, csl);
+      aos_stack.xmatS_dy_device = mem.aligned_alloc<double>( bfn_msz, csl);
+      aos_stack.xmatS_dz_device = mem.aligned_alloc<double>( bfn_msz, csl);
+      aos_stack.xmatZ_dx_device = mem.aligned_alloc<double>( bfn_msz, csl);
+      aos_stack.xmatZ_dy_device = mem.aligned_alloc<double>( bfn_msz, csl);
+      aos_stack.xmatZ_dz_device = mem.aligned_alloc<double>( bfn_msz, csl);
+    }
   }
 
   // EXX Intermediates
@@ -466,9 +494,26 @@ void XCDeviceAoSData::pack_and_send(
     buffer_adaptor d2bf_lapl_mem( aos_stack.d2bf_lapl_eval_device, 
       total_nbe_bfn_npts );
 
+    buffer_adaptor d3bf_lapgrad_x_mem( aos_stack.d3bf_lapgrad_x_eval_device, 
+      total_nbe_bfn_npts );
+    buffer_adaptor d3bf_lapgrad_y_mem( aos_stack.d3bf_lapgrad_y_eval_device, 
+      total_nbe_bfn_npts );
+    buffer_adaptor d3bf_lapgrad_z_mem( aos_stack.d3bf_lapgrad_z_eval_device, 
+      total_nbe_bfn_npts );
+
     buffer_adaptor xmat_dx_mem( aos_stack.xmat_dx_device, total_nbe_bfn_npts );
     buffer_adaptor xmat_dy_mem( aos_stack.xmat_dy_device, total_nbe_bfn_npts );
     buffer_adaptor xmat_dz_mem( aos_stack.xmat_dz_device, total_nbe_bfn_npts );
+
+    buffer_adaptor xmatS_mem( aos_stack.xmatS_device, total_nbe_bfn_npts );
+    buffer_adaptor xmatS_dx_mem( aos_stack.xmatS_dx_device, total_nbe_bfn_npts );
+    buffer_adaptor xmatS_dy_mem( aos_stack.xmatS_dy_device, total_nbe_bfn_npts );
+    buffer_adaptor xmatS_dz_mem( aos_stack.xmatS_dz_device, total_nbe_bfn_npts );
+
+    buffer_adaptor xmatZ_mem( aos_stack.xmatZ_device, total_nbe_bfn_npts );
+    buffer_adaptor xmatZ_dx_mem( aos_stack.xmatZ_dx_device, total_nbe_bfn_npts );
+    buffer_adaptor xmatZ_dy_mem( aos_stack.xmatZ_dy_device, total_nbe_bfn_npts );
+    buffer_adaptor xmatZ_dz_mem( aos_stack.xmatZ_dz_device, total_nbe_bfn_npts );
     
     const bool is_rks = terms.ks_scheme == RKS;
     const bool is_uks = terms.ks_scheme == UKS;
@@ -477,38 +522,52 @@ void XCDeviceAoSData::pack_and_send(
     const bool is_gga = terms.xc_approx == GGA;
     const int den_fac   = is_pol ? 2 : 1;
     const int gamma_fac = is_pol ? 3 : 1;
-    
+    // second derivative
+    const int rhorho_fac   = is_pol ? 3 : 1;
+    const int rhogamma_fac = is_pol ? 6 : 1;
+    const int rhotau_fac   = is_pol ? 4 : 1;
 
 
     buffer_adaptor eps_mem    ( base_stack.eps_eval_device,     total_npts             );
 
     // RKS
-    buffer_adaptor den_s_mem  ( base_stack.den_s_eval_device,     total_npts  );
-    buffer_adaptor gamma_mem  ( base_stack.gamma_eval_device,     total_npts * gamma_fac );
-    buffer_adaptor vrho_mem   ( base_stack.vrho_eval_device,      total_npts * den_fac   );
-    buffer_adaptor vgamma_mem ( base_stack.vgamma_eval_device,    total_npts * gamma_fac );
-    
-    buffer_adaptor den_mem    ( base_stack.den_eval_device,       total_npts * den_fac   );
-       
+    buffer_adaptor den_s_mem  ( base_stack.den_s_eval_device,  total_npts  );
+    buffer_adaptor tau_s_mem  ( base_stack.tau_s_eval_device,  total_npts  );
+    buffer_adaptor lapl_s_mem ( base_stack.lapl_s_eval_device, total_npts  );
+    buffer_adaptor gamma_mem  ( base_stack.gamma_eval_device,  total_npts * gamma_fac );
+    buffer_adaptor vrho_mem   ( base_stack.vrho_eval_device,   total_npts * den_fac   );
+    buffer_adaptor vgamma_mem ( base_stack.vgamma_eval_device, total_npts * gamma_fac );
+    buffer_adaptor vtau_mem   ( base_stack.vtau_eval_device,   total_npts * den_fac   );
+    buffer_adaptor vlapl_mem  ( base_stack.vlapl_eval_device,  total_npts * den_fac   );
 
     // Polarized KS
-    buffer_adaptor den_z_mem  ( base_stack.den_z_eval_device,     total_npts  );
-    buffer_adaptor den_y_mem  ( base_stack.den_y_eval_device,     total_npts  );
-    buffer_adaptor den_x_mem  ( base_stack.den_x_eval_device,     total_npts  );
+    buffer_adaptor den_interleaved_mem  ( base_stack.den_interleaved_device,  total_npts * den_fac   );
+    buffer_adaptor tau_interleaved_mem  ( base_stack.tau_interleaved_device,  total_npts * den_fac   );
+    buffer_adaptor lapl_interleaved_mem ( base_stack.lapl_interleaved_device, total_npts * den_fac   );
+    buffer_adaptor den_z_mem  ( base_stack.den_z_eval_device,  total_npts  );
+    buffer_adaptor den_y_mem  ( base_stack.den_y_eval_device,  total_npts  );
+    buffer_adaptor den_x_mem  ( base_stack.den_x_eval_device,  total_npts  );
+    buffer_adaptor tau_z_mem  ( base_stack.tau_z_eval_device,  total_npts  );
+    buffer_adaptor lapl_z_mem ( base_stack.lapl_z_eval_device, total_npts  );
+
     buffer_adaptor vrho_pos_mem( base_stack.vrho_pos_eval_device, total_npts );
     buffer_adaptor vrho_neg_mem( base_stack.vrho_neg_eval_device, total_npts );
-    buffer_adaptor K_z_mem    ( base_stack.K_z_eval_device,       total_npts );
-    buffer_adaptor K_y_mem    ( base_stack.K_y_eval_device,       total_npts );
-    buffer_adaptor K_x_mem    ( base_stack.K_x_eval_device,       total_npts );
-    buffer_adaptor H_z_mem    ( base_stack.H_z_eval_device,       total_npts );
-    buffer_adaptor H_y_mem    ( base_stack.H_y_eval_device,       total_npts );
-    buffer_adaptor H_x_mem    ( base_stack.H_x_eval_device,       total_npts );
+    buffer_adaptor vtau_pos_mem( base_stack.vtau_pos_eval_device, total_npts );
+    buffer_adaptor vtau_neg_mem( base_stack.vtau_neg_eval_device, total_npts );
+    buffer_adaptor vlapl_pos_mem( base_stack.vlapl_pos_eval_device, total_npts );
+    buffer_adaptor vlapl_neg_mem( base_stack.vlapl_neg_eval_device, total_npts );
     buffer_adaptor gamma_pp_mem( base_stack.gamma_pp_eval_device, total_npts );
     buffer_adaptor gamma_pm_mem( base_stack.gamma_pm_eval_device, total_npts );
     buffer_adaptor gamma_mm_mem( base_stack.gamma_mm_eval_device, total_npts );
     buffer_adaptor vgamma_pp_mem( base_stack.vgamma_pp_eval_device, total_npts );
     buffer_adaptor vgamma_pm_mem( base_stack.vgamma_pm_eval_device, total_npts );
     buffer_adaptor vgamma_mm_mem( base_stack.vgamma_mm_eval_device, total_npts );
+    buffer_adaptor K_z_mem    ( base_stack.K_z_eval_device,       total_npts );
+    buffer_adaptor K_y_mem    ( base_stack.K_y_eval_device,       total_npts );
+    buffer_adaptor K_x_mem    ( base_stack.K_x_eval_device,       total_npts );
+    buffer_adaptor H_z_mem    ( base_stack.H_z_eval_device,       total_npts );
+    buffer_adaptor H_y_mem    ( base_stack.H_y_eval_device,       total_npts );
+    buffer_adaptor H_x_mem    ( base_stack.H_x_eval_device,       total_npts );
 
     // Gradients
     buffer_adaptor dden_sx_mem( base_stack.dden_sx_eval_device,     total_npts );
@@ -523,12 +582,101 @@ void XCDeviceAoSData::pack_and_send(
     buffer_adaptor dden_xx_mem( base_stack.dden_xx_eval_device,     total_npts );
     buffer_adaptor dden_xy_mem( base_stack.dden_xy_eval_device,     total_npts );
     buffer_adaptor dden_xz_mem( base_stack.dden_xz_eval_device,     total_npts );
-    
-    // MGGA
-    buffer_adaptor dden_lapl_mem( base_stack.den_lapl_eval_device, total_npts );
-    buffer_adaptor vlapl_mem( base_stack.vlapl_eval_device, total_npts );
-    buffer_adaptor tau_mem( base_stack.tau_eval_device, total_npts );
-    buffer_adaptor vtau_mem( base_stack.vtau_eval_device, total_npts );
+
+    // second derivative
+    // RKS
+    buffer_adaptor tden_s_mem( base_stack.tden_s_eval_device, total_npts );
+    buffer_adaptor ttau_s_mem( base_stack.ttau_s_eval_device, total_npts );
+    buffer_adaptor tlapl_s_mem( base_stack.tlapl_s_eval_device, total_npts );
+    buffer_adaptor v2rho2_mem( base_stack.v2rho2_eval_device, total_npts * rhorho_fac );
+    buffer_adaptor v2rhogamma_mem( base_stack.v2rhogamma_eval_device, total_npts * rhogamma_fac );
+    buffer_adaptor v2rholapl_mem( base_stack.v2rholapl_eval_device, total_npts * rhotau_fac );
+    buffer_adaptor v2rhotau_mem( base_stack.v2rhotau_eval_device, total_npts * rhotau_fac );
+    buffer_adaptor v2gamma2_mem( base_stack.v2gamma2_eval_device, total_npts * rhogamma_fac );
+    buffer_adaptor v2gammalapl_mem( base_stack.v2gammalapl_eval_device, total_npts * rhogamma_fac );
+    buffer_adaptor v2gammatau_mem( base_stack.v2gammatau_eval_device, total_npts * rhogamma_fac );
+    buffer_adaptor v2lapl2_mem( base_stack.v2lapl2_eval_device, total_npts * rhorho_fac );
+    buffer_adaptor v2lapltau_mem( base_stack.v2lapltau_eval_device, total_npts * rhotau_fac );
+    buffer_adaptor v2tau2_mem( base_stack.v2tau2_eval_device, total_npts * rhorho_fac );
+
+    // Polarized KS
+    buffer_adaptor tden_z_mem( base_stack.tden_z_eval_device, total_npts );
+    buffer_adaptor tden_y_mem( base_stack.tden_y_eval_device, total_npts );
+    buffer_adaptor tden_x_mem( base_stack.tden_x_eval_device, total_npts );
+    buffer_adaptor ttau_z_mem( base_stack.ttau_z_eval_device, total_npts );
+    buffer_adaptor tlapl_z_mem( base_stack.tlapl_z_eval_device, total_npts );
+
+    buffer_adaptor v2rho2_a_a_mem( base_stack.v2rho2_a_a_eval_device, total_npts );
+    buffer_adaptor v2rho2_a_b_mem( base_stack.v2rho2_a_b_eval_device, total_npts );
+    buffer_adaptor v2rho2_b_b_mem( base_stack.v2rho2_b_b_eval_device, total_npts );
+    buffer_adaptor v2rhogamma_a_aa_mem( base_stack.v2rhogamma_a_aa_eval_device, total_npts );
+    buffer_adaptor v2rhogamma_a_ab_mem( base_stack.v2rhogamma_a_ab_eval_device, total_npts );
+    buffer_adaptor v2rhogamma_a_bb_mem( base_stack.v2rhogamma_a_bb_eval_device, total_npts );
+    buffer_adaptor v2rhogamma_b_aa_mem( base_stack.v2rhogamma_b_aa_eval_device, total_npts );
+    buffer_adaptor v2rhogamma_b_ab_mem( base_stack.v2rhogamma_b_ab_eval_device, total_npts );
+    buffer_adaptor v2rhogamma_b_bb_mem( base_stack.v2rhogamma_b_bb_eval_device, total_npts );
+    buffer_adaptor v2rholapl_a_a_mem( base_stack.v2rholapl_a_a_eval_device, total_npts );
+    buffer_adaptor v2rholapl_a_b_mem( base_stack.v2rholapl_a_b_eval_device, total_npts );
+    buffer_adaptor v2rholapl_b_a_mem( base_stack.v2rholapl_b_a_eval_device, total_npts );
+    buffer_adaptor v2rholapl_b_b_mem( base_stack.v2rholapl_b_b_eval_device, total_npts );
+    buffer_adaptor v2rhotau_a_a_mem( base_stack.v2rhotau_a_a_eval_device, total_npts );
+    buffer_adaptor v2rhotau_a_b_mem( base_stack.v2rhotau_a_b_eval_device, total_npts );
+    buffer_adaptor v2rhotau_b_a_mem( base_stack.v2rhotau_b_a_eval_device, total_npts );
+    buffer_adaptor v2rhotau_b_b_mem( base_stack.v2rhotau_b_b_eval_device, total_npts );
+    buffer_adaptor v2gamma2_aa_aa_mem( base_stack.v2gamma2_aa_aa_eval_device, total_npts );
+    buffer_adaptor v2gamma2_aa_ab_mem( base_stack.v2gamma2_aa_ab_eval_device, total_npts );
+    buffer_adaptor v2gamma2_aa_bb_mem( base_stack.v2gamma2_aa_bb_eval_device, total_npts );
+    buffer_adaptor v2gamma2_ab_ab_mem( base_stack.v2gamma2_ab_ab_eval_device, total_npts );
+    buffer_adaptor v2gamma2_ab_bb_mem( base_stack.v2gamma2_ab_bb_eval_device, total_npts );
+    buffer_adaptor v2gamma2_bb_bb_mem( base_stack.v2gamma2_bb_bb_eval_device, total_npts );
+    buffer_adaptor v2gammalapl_aa_a_mem( base_stack.v2gammalapl_aa_a_eval_device, total_npts );
+    buffer_adaptor v2gammalapl_aa_b_mem( base_stack.v2gammalapl_aa_b_eval_device, total_npts );
+    buffer_adaptor v2gammalapl_ab_a_mem( base_stack.v2gammalapl_ab_a_eval_device, total_npts );
+    buffer_adaptor v2gammalapl_ab_b_mem( base_stack.v2gammalapl_ab_b_eval_device, total_npts );
+    buffer_adaptor v2gammalapl_bb_a_mem( base_stack.v2gammalapl_bb_a_eval_device, total_npts );
+    buffer_adaptor v2gammalapl_bb_b_mem( base_stack.v2gammalapl_bb_b_eval_device, total_npts );
+    buffer_adaptor v2gammatau_aa_a_mem( base_stack.v2gammatau_aa_a_eval_device, total_npts );
+    buffer_adaptor v2gammatau_aa_b_mem( base_stack.v2gammatau_aa_b_eval_device, total_npts );
+    buffer_adaptor v2gammatau_ab_a_mem( base_stack.v2gammatau_ab_a_eval_device, total_npts );
+    buffer_adaptor v2gammatau_ab_b_mem( base_stack.v2gammatau_ab_b_eval_device, total_npts );
+    buffer_adaptor v2gammatau_bb_a_mem( base_stack.v2gammatau_bb_a_eval_device, total_npts );
+    buffer_adaptor v2gammatau_bb_b_mem( base_stack.v2gammatau_bb_b_eval_device, total_npts );
+    buffer_adaptor v2lapl2_a_a_mem( base_stack.v2lapl2_a_a_eval_device, total_npts );
+    buffer_adaptor v2lapl2_a_b_mem( base_stack.v2lapl2_a_b_eval_device, total_npts );
+    buffer_adaptor v2lapl2_b_b_mem( base_stack.v2lapl2_b_b_eval_device, total_npts );
+    buffer_adaptor v2lapltau_a_a_mem( base_stack.v2lapltau_a_a_eval_device, total_npts );
+    buffer_adaptor v2lapltau_a_b_mem( base_stack.v2lapltau_a_b_eval_device, total_npts );
+    buffer_adaptor v2lapltau_b_a_mem( base_stack.v2lapltau_b_a_eval_device, total_npts );
+    buffer_adaptor v2lapltau_b_b_mem( base_stack.v2lapltau_b_b_eval_device, total_npts );
+    buffer_adaptor v2tau2_a_a_mem( base_stack.v2tau2_a_a_eval_device, total_npts );
+    buffer_adaptor v2tau2_a_b_mem( base_stack.v2tau2_a_b_eval_device, total_npts );
+    buffer_adaptor v2tau2_b_b_mem( base_stack.v2tau2_b_b_eval_device, total_npts );
+
+    // Trial density gradient 
+    buffer_adaptor tdden_sx_mem( base_stack.tdden_sx_eval_device, total_npts );
+    buffer_adaptor tdden_sy_mem( base_stack.tdden_sy_eval_device, total_npts );
+    buffer_adaptor tdden_sz_mem( base_stack.tdden_sz_eval_device, total_npts );
+    buffer_adaptor tdden_zx_mem( base_stack.tdden_zx_eval_device, total_npts );
+    buffer_adaptor tdden_zy_mem( base_stack.tdden_zy_eval_device, total_npts );
+    buffer_adaptor tdden_zz_mem( base_stack.tdden_zz_eval_device, total_npts );
+    buffer_adaptor tdden_yx_mem( base_stack.tdden_yx_eval_device, total_npts );
+    buffer_adaptor tdden_yy_mem( base_stack.tdden_yy_eval_device, total_npts );
+    buffer_adaptor tdden_yz_mem( base_stack.tdden_yz_eval_device, total_npts );
+    buffer_adaptor tdden_xx_mem( base_stack.tdden_xx_eval_device, total_npts );
+    buffer_adaptor tdden_xy_mem( base_stack.tdden_xy_eval_device, total_npts );
+    buffer_adaptor tdden_xz_mem( base_stack.tdden_xz_eval_device, total_npts );
+
+    // Intermediate matrices for contraction
+    buffer_adaptor FXC_A_s_mem(  base_stack.FXC_A_s_eval_device,  total_npts);
+    buffer_adaptor FXC_Bx_s_mem( base_stack.FXC_Bx_s_eval_device, total_npts);
+    buffer_adaptor FXC_By_s_mem( base_stack.FXC_By_s_eval_device, total_npts);
+    buffer_adaptor FXC_Bz_s_mem( base_stack.FXC_Bz_s_eval_device, total_npts);
+    buffer_adaptor FXC_C_s_mem(  base_stack.FXC_C_s_eval_device,  total_npts);
+    buffer_adaptor FXC_A_z_mem(  base_stack.FXC_A_z_eval_device,  total_npts);
+    buffer_adaptor FXC_Bx_z_mem( base_stack.FXC_Bx_z_eval_device, total_npts);
+    buffer_adaptor FXC_By_z_mem( base_stack.FXC_By_z_eval_device, total_npts);
+    buffer_adaptor FXC_Bz_z_mem( base_stack.FXC_Bz_z_eval_device, total_npts);
+    buffer_adaptor FXC_C_z_mem(  base_stack.FXC_C_z_eval_device,  total_npts);
 
     for( auto& task : host_device_tasks ) {
       const auto npts    = task.npts;
@@ -594,6 +742,11 @@ void XCDeviceAoSData::pack_and_send(
       if( reqt.task_bfn_lapl ) {
         task.d2bflapl = d2bf_lapl_mem.aligned_alloc<double>( nbe_bfn * npts, csl);
       }
+      if( reqt.task_bfn_lapgrad ) {
+        task.d3bflapl_x = d3bf_lapgrad_x_mem.aligned_alloc<double>( nbe_bfn * npts, csl);
+        task.d3bflapl_y = d3bf_lapgrad_y_mem.aligned_alloc<double>( nbe_bfn * npts, csl);
+        task.d3bflapl_z = d3bf_lapgrad_z_mem.aligned_alloc<double>( nbe_bfn * npts, csl);
+      }
 
       // X Matrix gradient
       if( reqt.task_xmat_grad ) {
@@ -602,42 +755,32 @@ void XCDeviceAoSData::pack_and_send(
         task.xmat_z = xmat_dz_mem.aligned_alloc<double>( nbe_bfn * npts, csl);
       }
 
+      // Persistent X matrix
+      if( reqt.task_xmat_persist ) {
+        task.xmatS   = xmatS_mem.aligned_alloc<double>( nbe_bfn * npts, csl);
+        task.xmatZ   = xmatZ_mem.aligned_alloc<double>( nbe_bfn * npts, csl);
+
+        if( reqt.task_xmat_grad ) {
+          task.xmatS_x = xmatS_dx_mem.aligned_alloc<double>( nbe_bfn * npts, csl);
+          task.xmatS_y = xmatS_dy_mem.aligned_alloc<double>( nbe_bfn * npts, csl);
+          task.xmatS_z = xmatS_dz_mem.aligned_alloc<double>( nbe_bfn * npts, csl);
+          task.xmatZ_x = xmatZ_dx_mem.aligned_alloc<double>( nbe_bfn * npts, csl);
+          task.xmatZ_y = xmatZ_dy_mem.aligned_alloc<double>( nbe_bfn * npts, csl);
+          task.xmatZ_z = xmatZ_dz_mem.aligned_alloc<double>( nbe_bfn * npts, csl);
+        }
+      }
+
 
       // Grid function evaluations
       if (reqt.grid_den) {
         task.den_s        = den_s_mem.aligned_alloc<double>( npts, csl );
         if(is_pol) {
-          task.den          = den_mem.aligned_alloc<double>(npts*2, csl); //Interleaved memory
+          task.den          = den_interleaved_mem.aligned_alloc<double>(npts*2, csl); //Interleaved memory
           task.den_z        = den_z_mem.aligned_alloc<double>( npts, csl);
           if ( is_gks ) {
             task.den_y        = den_y_mem.aligned_alloc<double>( npts, csl);
             task.den_x        = den_x_mem.aligned_alloc<double>( npts, csl);
           }
-        }
-      }
-
-      if( reqt.grid_vrho ) {
-        task.vrho =   vrho_mem.aligned_alloc<double>( npts*den_fac, csl);
-        if( is_pol ) {
-          task.vrho_pos     = vrho_pos_mem.aligned_alloc<double>( npts, csl);
-          task.vrho_neg     = vrho_neg_mem.aligned_alloc<double>( npts, csl); 
-        }
-      }
-
-      if( reqt.grid_vgamma ) {
-        task.vgamma = vgamma_mem.aligned_alloc<double>( npts*gamma_fac, csl);
-        if( is_pol ) {
-            task.vgamma_pp    = vgamma_pp_mem.aligned_alloc<double>( npts, csl);
-            task.vgamma_pm    = vgamma_pm_mem.aligned_alloc<double>( npts, csl);
-            task.vgamma_mm    = vgamma_mm_mem.aligned_alloc<double>( npts, csl);
-        }
-      }
-      if( reqt.grid_gamma ) {
-        task.gamma = gamma_mem.aligned_alloc<double>( npts*gamma_fac, csl);
-        if( is_pol ) {
-            task.gamma_pp    = gamma_pp_mem.aligned_alloc<double>( npts, csl);
-            task.gamma_pm    = gamma_pm_mem.aligned_alloc<double>( npts, csl);
-            task.gamma_mm    = gamma_mm_mem.aligned_alloc<double>( npts, csl);
         }
       }
 
@@ -659,6 +802,70 @@ void XCDeviceAoSData::pack_and_send(
           }
         }
       }
+
+      if( reqt.grid_gamma ) {
+        task.gamma = gamma_mem.aligned_alloc<double>( npts*gamma_fac, csl);
+        if( is_pol ) {
+            task.gamma_pp    = gamma_pp_mem.aligned_alloc<double>( npts, csl);
+            task.gamma_pm    = gamma_pm_mem.aligned_alloc<double>( npts, csl);
+            task.gamma_mm    = gamma_mm_mem.aligned_alloc<double>( npts, csl);
+        }
+      }
+
+      if (reqt.grid_tau) {
+        task.tau_s        = tau_s_mem.aligned_alloc<double>( npts, csl );
+        if(is_pol) {
+          task.tau          = tau_interleaved_mem.aligned_alloc<double>(npts*2, csl); //Interleaved memory
+          task.tau_z        = tau_z_mem.aligned_alloc<double>( npts, csl);
+        }
+      }
+
+      if (reqt.grid_lapl) {
+        task.lapl_s        = lapl_s_mem.aligned_alloc<double>( npts, csl );
+        if(is_pol) {
+          task.lapl          = lapl_interleaved_mem.aligned_alloc<double>(npts*2, csl); //Interleaved memory
+          task.lapl_z        = lapl_z_mem.aligned_alloc<double>( npts, csl);
+        }
+      }
+
+
+      
+      if(reqt.grid_eps)
+        task.eps  =   eps_mem.aligned_alloc<double>( reqt.grid_eps_size(npts), csl);
+
+      if( reqt.grid_vrho ) {
+        task.vrho =   vrho_mem.aligned_alloc<double>( npts*den_fac, csl);
+        if( is_pol ) {
+          task.vrho_pos     = vrho_pos_mem.aligned_alloc<double>( npts, csl);
+          task.vrho_neg     = vrho_neg_mem.aligned_alloc<double>( npts, csl); 
+        }
+      }
+
+      if( reqt.grid_vgamma ) {
+        task.vgamma = vgamma_mem.aligned_alloc<double>( npts*gamma_fac, csl);
+        if( is_pol ) {
+            task.vgamma_pp    = vgamma_pp_mem.aligned_alloc<double>( npts, csl);
+            task.vgamma_pm    = vgamma_pm_mem.aligned_alloc<double>( npts, csl);
+            task.vgamma_mm    = vgamma_mm_mem.aligned_alloc<double>( npts, csl);
+        }
+      }
+
+      if( reqt.grid_vtau ) {
+        task.vtau =   vtau_mem.aligned_alloc<double>( npts*den_fac, csl);
+        if( is_pol ) {
+          task.vtau_pos     = vtau_pos_mem.aligned_alloc<double>( npts, csl);
+          task.vtau_neg     = vtau_neg_mem.aligned_alloc<double>( npts, csl); 
+        }
+      }
+
+      if( reqt.grid_vlapl ) {
+        task.vlapl =   vlapl_mem.aligned_alloc<double>( npts*den_fac, csl);
+        if( is_pol ) {
+          task.vlapl_pos     = vlapl_pos_mem.aligned_alloc<double>( npts, csl);
+          task.vlapl_neg     = vlapl_neg_mem.aligned_alloc<double>( npts, csl); 
+        }
+      }
+
       
       // H, K terms (GKS)
       if( is_gks ) {
@@ -671,21 +878,6 @@ void XCDeviceAoSData::pack_and_send(
           task.H_z    = H_z_mem.aligned_alloc<double>( npts, csl );
         }
       }
-      
-      task.eps  =   eps_mem.aligned_alloc<double>( reqt.grid_eps_size(npts), csl);
-
-        
-      if(reqt.grid_den_lapl) {
-        task.denlapl = dden_lapl_mem.aligned_alloc<double>(npts, csl);
-      }
-
-      task.tau = 
-        tau_mem.aligned_alloc<double>( reqt.grid_tau_size(npts), csl);
-
-      task.vtau = 
-        vtau_mem.aligned_alloc<double>( reqt.grid_vtau_size(npts), csl);
-      task.vlapl = 
-        vlapl_mem.aligned_alloc<double>( reqt.grid_vlapl_size(npts), csl);
 
       // EXX Specific
       task.fmat = fmat_mem.aligned_alloc<double>(
@@ -698,6 +890,185 @@ void XCDeviceAoSData::pack_and_send(
         bfn_shell_indirection_mem.aligned_alloc<int32_t>( 
           reqt.task_bfn_shell_indirection_size(nbe_bfn), csl
         );
+
+      // Second derivative
+      if( terms.fxc_contraction ) {
+        // Trial density
+        if(reqt.grid_tden) {
+          task.tden_s = tden_s_mem.aligned_alloc<double>( npts, csl );
+          if(is_pol) {
+            task.tden_z = tden_z_mem.aligned_alloc<double>( npts, csl );
+            if(is_gks) {
+              task.tden_y = tden_y_mem.aligned_alloc<double>( npts, csl );
+              task.tden_x = tden_x_mem.aligned_alloc<double>( npts, csl );
+            }
+          }
+        }
+
+        if(reqt.grid_tden_grad) {
+          task.tdden_sx = tdden_sx_mem.aligned_alloc<double>( npts, csl );
+          task.tdden_sy = tdden_sy_mem.aligned_alloc<double>( npts, csl );
+          task.tdden_sz = tdden_sz_mem.aligned_alloc<double>( npts, csl );
+          if(is_pol) {
+            task.tdden_zx = tdden_zx_mem.aligned_alloc<double>( npts, csl );
+            task.tdden_zy = tdden_zy_mem.aligned_alloc<double>( npts, csl );
+            task.tdden_zz = tdden_zz_mem.aligned_alloc<double>( npts, csl );
+            if(is_gks) {
+              task.tdden_yx = tdden_yx_mem.aligned_alloc<double>( npts, csl );
+              task.tdden_yy = tdden_yy_mem.aligned_alloc<double>( npts, csl );
+              task.tdden_yz = tdden_yz_mem.aligned_alloc<double>( npts, csl );
+              task.tdden_xx = tdden_xx_mem.aligned_alloc<double>( npts, csl );
+              task.tdden_xy = tdden_xy_mem.aligned_alloc<double>( npts, csl );
+              task.tdden_xz = tdden_xz_mem.aligned_alloc<double>( npts, csl );
+            }
+          }
+        }
+
+
+        if(reqt.grid_ttau) {
+          task.ttau_s = ttau_s_mem.aligned_alloc<double>( npts, csl );
+          if(is_pol) {
+            task.ttau_z = ttau_z_mem.aligned_alloc<double>( npts, csl );
+          }
+        }
+
+        if(reqt.grid_tlapl) {
+          task.tlapl_s = tlapl_s_mem.aligned_alloc<double>( npts, csl );
+          if(is_pol) {
+            task.tlapl_z = tlapl_z_mem.aligned_alloc<double>( npts, csl );
+          }
+        }
+
+        // Second derivatives of XC functional
+        if(reqt.grid_v2rho2) {
+          task.v2rho2 = v2rho2_mem.aligned_alloc<double>( npts*rhorho_fac, csl );
+          if(is_pol) {
+            task.v2rho2_a_a = v2rho2_a_a_mem.aligned_alloc<double>( npts, csl );
+            task.v2rho2_a_b = v2rho2_a_b_mem.aligned_alloc<double>( npts, csl );
+            task.v2rho2_b_b = v2rho2_b_b_mem.aligned_alloc<double>( npts, csl );
+          }
+        }
+
+        if(reqt.grid_v2rhogamma) {
+          task.v2rhogamma = v2rhogamma_mem.aligned_alloc<double>( npts*rhogamma_fac, csl );
+          if(is_pol) {
+            task.v2rhogamma_a_aa = v2rhogamma_a_aa_mem.aligned_alloc<double>( npts, csl );
+            task.v2rhogamma_a_ab = v2rhogamma_a_ab_mem.aligned_alloc<double>( npts, csl );
+            task.v2rhogamma_a_bb = v2rhogamma_a_bb_mem.aligned_alloc<double>( npts, csl );
+            task.v2rhogamma_b_aa = v2rhogamma_b_aa_mem.aligned_alloc<double>( npts, csl );
+            task.v2rhogamma_b_ab = v2rhogamma_b_ab_mem.aligned_alloc<double>( npts, csl );
+            task.v2rhogamma_b_bb = v2rhogamma_b_bb_mem.aligned_alloc<double>( npts, csl );
+          }
+        }
+
+        if(reqt.grid_v2rholapl) {
+          task.v2rholapl = v2rholapl_mem.aligned_alloc<double>( npts*rhotau_fac, csl );
+          if(is_pol) {
+            task.v2rholapl_a_a = v2rholapl_a_a_mem.aligned_alloc<double>( npts, csl );
+            task.v2rholapl_a_b = v2rholapl_a_b_mem.aligned_alloc<double>( npts, csl );
+            task.v2rholapl_b_a = v2rholapl_b_a_mem.aligned_alloc<double>( npts, csl );
+            task.v2rholapl_b_b = v2rholapl_b_b_mem.aligned_alloc<double>( npts, csl );
+          }
+        }
+
+        if(reqt.grid_v2rhotau) {
+          task.v2rhotau = v2rhotau_mem.aligned_alloc<double>( npts*rhotau_fac, csl );
+          if(is_pol) {
+            task.v2rhotau_a_a = v2rhotau_a_a_mem.aligned_alloc<double>( npts, csl );
+            task.v2rhotau_a_b = v2rhotau_a_b_mem.aligned_alloc<double>( npts, csl );
+            task.v2rhotau_b_a = v2rhotau_b_a_mem.aligned_alloc<double>( npts, csl );
+            task.v2rhotau_b_b = v2rhotau_b_b_mem.aligned_alloc<double>( npts, csl );
+          }
+        }
+
+        if(reqt.grid_v2gamma2) {
+          task.v2gamma2 = v2gamma2_mem.aligned_alloc<double>( npts*rhogamma_fac, csl );
+          if(is_pol) {
+            task.v2gamma2_aa_aa = v2gamma2_aa_aa_mem.aligned_alloc<double>( npts, csl );
+            task.v2gamma2_aa_ab = v2gamma2_aa_ab_mem.aligned_alloc<double>( npts, csl );
+            task.v2gamma2_aa_bb = v2gamma2_aa_bb_mem.aligned_alloc<double>( npts, csl );
+            task.v2gamma2_ab_ab = v2gamma2_ab_ab_mem.aligned_alloc<double>( npts, csl );
+            task.v2gamma2_ab_bb = v2gamma2_ab_bb_mem.aligned_alloc<double>( npts, csl );
+            task.v2gamma2_bb_bb = v2gamma2_bb_bb_mem.aligned_alloc<double>( npts, csl );
+          }
+        }
+
+        if(reqt.grid_v2gammalapl) {
+          task.v2gammalapl = v2gammalapl_mem.aligned_alloc<double>( npts*rhogamma_fac, csl );
+          if(is_pol) {
+            task.v2gammalapl_aa_a = v2gammalapl_aa_a_mem.aligned_alloc<double>( npts, csl );
+            task.v2gammalapl_aa_b = v2gammalapl_aa_b_mem.aligned_alloc<double>( npts, csl );
+            task.v2gammalapl_ab_a = v2gammalapl_ab_a_mem.aligned_alloc<double>( npts, csl );
+            task.v2gammalapl_ab_b = v2gammalapl_ab_b_mem.aligned_alloc<double>( npts, csl );
+            task.v2gammalapl_bb_a = v2gammalapl_bb_a_mem.aligned_alloc<double>( npts, csl );
+            task.v2gammalapl_bb_b = v2gammalapl_bb_b_mem.aligned_alloc<double>( npts, csl );
+          }
+        }
+
+        if(reqt.grid_v2gammatau) {
+          task.v2gammatau = v2gammatau_mem.aligned_alloc<double>( npts*rhogamma_fac, csl );
+          if(is_pol) {
+            task.v2gammatau_aa_a = v2gammatau_aa_a_mem.aligned_alloc<double>( npts, csl );
+            task.v2gammatau_aa_b = v2gammatau_aa_b_mem.aligned_alloc<double>( npts, csl );
+            task.v2gammatau_ab_a = v2gammatau_ab_a_mem.aligned_alloc<double>( npts, csl );
+            task.v2gammatau_ab_b = v2gammatau_ab_b_mem.aligned_alloc<double>( npts, csl );
+            task.v2gammatau_bb_a = v2gammatau_bb_a_mem.aligned_alloc<double>( npts, csl );
+            task.v2gammatau_bb_b = v2gammatau_bb_b_mem.aligned_alloc<double>( npts, csl );
+          }
+        }
+
+        if(reqt.grid_v2lapl2) {
+          task.v2lapl2 = v2lapl2_mem.aligned_alloc<double>( npts*rhorho_fac, csl );
+          if(is_pol) {
+            task.v2lapl2_a_a = v2lapl2_a_a_mem.aligned_alloc<double>( npts, csl );
+            task.v2lapl2_a_b = v2lapl2_a_b_mem.aligned_alloc<double>( npts, csl );
+            task.v2lapl2_b_b = v2lapl2_b_b_mem.aligned_alloc<double>( npts, csl );
+          }
+        }
+
+        if(reqt.grid_v2lapltau) {
+          task.v2lapltau = v2lapltau_mem.aligned_alloc<double>( npts*rhotau_fac, csl );
+          if(is_pol) {
+            task.v2lapltau_a_a = v2lapltau_a_a_mem.aligned_alloc<double>( npts, csl );
+            task.v2lapltau_a_b = v2lapltau_a_b_mem.aligned_alloc<double>( npts, csl );
+            task.v2lapltau_b_a = v2lapltau_b_a_mem.aligned_alloc<double>( npts, csl );
+            task.v2lapltau_b_b = v2lapltau_b_b_mem.aligned_alloc<double>( npts, csl );
+          }
+        }
+
+        if(reqt.grid_v2tau2) {
+          task.v2tau2 = v2tau2_mem.aligned_alloc<double>( npts*rhorho_fac, csl );
+          if(is_pol) {
+            task.v2tau2_a_a = v2tau2_a_a_mem.aligned_alloc<double>( npts, csl );
+            task.v2tau2_a_b = v2tau2_a_b_mem.aligned_alloc<double>( npts, csl );
+            task.v2tau2_b_b = v2tau2_b_b_mem.aligned_alloc<double>( npts, csl );
+          }
+        }
+
+        // Intermediate matrices for contraction
+        if(reqt.grid_FXC_A) {
+          task.FXC_A_s = FXC_A_s_mem.aligned_alloc<double>( npts, csl );
+          if (is_pol)
+            task.FXC_A_z = FXC_A_z_mem.aligned_alloc<double>( npts, csl );
+        }
+
+        if(reqt.grid_FXC_B) {
+          task.FXC_Bx_s = FXC_Bx_s_mem.aligned_alloc<double>( npts, csl );
+          task.FXC_By_s = FXC_By_s_mem.aligned_alloc<double>( npts, csl );
+          task.FXC_Bz_s = FXC_Bz_s_mem.aligned_alloc<double>( npts, csl );
+          if (is_pol) {
+            task.FXC_Bx_z = FXC_Bx_z_mem.aligned_alloc<double>( npts, csl );
+            task.FXC_By_z = FXC_By_z_mem.aligned_alloc<double>( npts, csl );
+            task.FXC_Bz_z = FXC_Bz_z_mem.aligned_alloc<double>( npts, csl );
+          }
+        }
+
+        if(reqt.grid_FXC_C) {
+          task.FXC_C_s = FXC_C_s_mem.aligned_alloc<double>( npts, csl );
+          if (is_pol)
+            task.FXC_C_z = FXC_C_z_mem.aligned_alloc<double>( npts, csl );
+        }
+      }
 
     } // Loop over device tasks
 

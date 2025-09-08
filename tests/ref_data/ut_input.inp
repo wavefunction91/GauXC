@@ -8,4 +8,5 @@ func = svwn5
 integrate_vxc = TRUE
 integrate_exc_grad = TRUE
 integrate_exx = FALSE
+integrate_fxc_contraction = FALSE
 OUTFILE = benzene_svwn5_cc-pvdz_ufg_ssf_robust_prune.hdf5

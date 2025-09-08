@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -66,6 +70,12 @@ DeviceBackend* DeviceRuntimeEnvironment::device_backend() const {
 }
 bool DeviceRuntimeEnvironment::owns_memory() const {
   return device_runtime_pimpl_cast(pimpl_.get())->owns_memory();
+}
+void DeviceRuntimeEnvironment::release_buffer() {
+  device_runtime_pimpl_cast(pimpl_.get())->release_buffer();
+}
+void DeviceRuntimeEnvironment::set_buffer(void* p, size_t sz) {
+  device_runtime_pimpl_cast(pimpl_.get())->set_buffer(p, sz);
 }
 
 }

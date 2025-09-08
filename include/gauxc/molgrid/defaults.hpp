@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -14,6 +18,7 @@ namespace GauXC {
   double slater_radius_64(AtomicNumber);
   double slater_radius_30(AtomicNumber);
   double clementi_radius_67(AtomicNumber);
+  double uff_radius_103(AtomicNumber);
   double default_atomic_radius(AtomicNumber);
 
   RadialScale default_mk_radial_scaling_factor( AtomicNumber );

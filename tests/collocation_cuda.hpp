@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -14,7 +18,7 @@
 
 auto populate_device_cuda( const BasisSet<double>& basis,
                            const std::vector<ref_collocation_data>& ref_data,
-                           bool pop_grad, bool pop_hess ) {
+                           bool pop_grad, bool pop_hess, bool pop_lapl, bool pop_lapl_grad ) {
 
   std::vector< XCDeviceTask > tasks;
 
@@ -58,6 +62,16 @@ auto populate_device_cuda( const BasisSet<double>& basis,
       task.d2bfzz = util::cuda_malloc<double>( nbf * npts );
     }
 
+    if(pop_lapl) {
+      task.d2bflapl = util::cuda_malloc<double>( nbf * npts );
+    }
+
+    if(pop_lapl_grad) {
+      task.d3bflapl_x = util::cuda_malloc<double>( nbf * npts );
+      task.d3bflapl_y = util::cuda_malloc<double>( nbf * npts );
+      task.d3bflapl_z = util::cuda_malloc<double>( nbf * npts );
+    }
+
     //auto* pts_device = task.points;
     auto* pts_x_device = task.points_x;
     auto* pts_y_device = task.points_y;
@@ -95,7 +109,7 @@ auto populate_device_cuda( const BasisSet<double>& basis,
 
 void cuda_check_collocation( const std::vector<XCDeviceTask>& tasks,
                              const std::vector<ref_collocation_data>& ref_data,
-                             bool check_grad, bool check_hess) {
+                             bool check_grad, bool check_hess, bool check_lapl, bool check_lapl_grad) {
 
   for( int i = 0; i < tasks.size(); i++ ) {
 
@@ -158,6 +172,34 @@ void cuda_check_collocation( const std::vector<XCDeviceTask>& tasks,
       check_collocation_transpose( npts, nbe, ref_d2eval_zz, d2eval_zz.data(), "IT = " + std::to_string(i) + " BFZZ EVAL" );
     }
 
+    if( check_lapl ) {
+      auto npts = tasks[i].npts;
+      auto nbe  = tasks[i].bfn_screening.nbe;
+      auto* ref_d2eval_lapl = ref_data[i].d2eval_lapl.data();
+      std::vector<double> d2eval_lapl(npts * nbe);
+      util::cuda_copy(eval.size(), d2eval_lapl.data(), tasks[i].d2bflapl);
+      check_collocation_transpose(npts, nbe, ref_d2eval_lapl, d2eval_lapl.data(), "IT = " + std::to_string(i) + "BFLAPL EVAL" );
+    }
+
+#if 1
+    if( check_lapl_grad ) {
+      auto npts = tasks[i].npts;
+      auto nbe  = tasks[i].bfn_screening.nbe;
+      auto* ref_d3eval_lapl_x = ref_data[i].d3eval_lapl_x.data();
+      auto* ref_d3eval_lapl_y = ref_data[i].d3eval_lapl_y.data();
+      auto* ref_d3eval_lapl_z = ref_data[i].d3eval_lapl_z.data();
+      std::vector<double> d3eval_lapl_x(npts * nbe);
+      std::vector<double> d3eval_lapl_y(npts * nbe);
+      std::vector<double> d3eval_lapl_z(npts * nbe);
+      util::cuda_copy(eval.size(), d3eval_lapl_x.data(), tasks[i].d3bflapl_x);
+      util::cuda_copy(eval.size(), d3eval_lapl_y.data(), tasks[i].d3bflapl_y);
+      util::cuda_copy(eval.size(), d3eval_lapl_z.data(), tasks[i].d3bflapl_z);
+      check_collocation_transpose(npts, nbe, ref_d3eval_lapl_x, d3eval_lapl_x.data(), "IT = " + std::to_string(i) + "BFLAPL_X EVAL" );
+      check_collocation_transpose(npts, nbe, ref_d3eval_lapl_y, d3eval_lapl_y.data(), "IT = " + std::to_string(i) + "BFLAPL_Y EVAL" );
+      check_collocation_transpose(npts, nbe, ref_d3eval_lapl_z, d3eval_lapl_z.data(), "IT = " + std::to_string(i) + "BFLAPL_Z EVAL" );
+    }
+#endif
+
   }
 
 }
@@ -186,7 +228,7 @@ void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::
 
 
   device_queue stream( std::make_shared<util::cuda_stream>() );
-  auto [shells_device,tasks] = populate_device_cuda( basis, ref_data, grad, false );
+  auto [shells_device,tasks] = populate_device_cuda( basis, ref_data, grad, false, false, false );
 
 
   const auto nshells_max = std::max_element( tasks.begin(), tasks.end(),
@@ -211,7 +253,7 @@ void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::
 
   util::cuda_device_sync();
 
-  cuda_check_collocation( tasks, ref_data, grad, false );
+  cuda_check_collocation( tasks, ref_data, grad, false, false, false );
 
 
   for( auto& t : tasks ) {
@@ -249,7 +291,7 @@ void test_cuda_collocation_deriv1( const BasisSet<double>& basis,
 
 
 void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,  const BasisSetMap& basis_map,
-  std::ifstream& in_file, bool grad, bool hess) {
+  std::ifstream& in_file, bool grad, bool hess, bool lapl, bool lapl_grad) {
 
   // Load reference data
   std::vector<ref_collocation_data> ref_data;
@@ -260,7 +302,7 @@ void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,  const 
 
   // Populate base task information
   device_queue stream( std::make_shared<util::cuda_stream>() );
-  auto [shells_device,tasks] = populate_device_cuda( basis, ref_data, grad, hess );
+  auto [shells_device,tasks] = populate_device_cuda( basis, ref_data, grad, hess, lapl, lapl_grad );
 
   // Send tasks to device
   auto* tasks_device = util::cuda_malloc<XCDeviceTask>( tasks.size() );
@@ -355,8 +397,14 @@ void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,  const 
   }
 
 
-  if( hess )
+  if( lapl_grad )
+    eval_collocation_shell_to_task_lapgrad( max_l, l_batched_shell_to_task.data(), 
+      tasks_device, stream );
+  else if( hess )
     eval_collocation_shell_to_task_hessian( max_l, l_batched_shell_to_task.data(), 
+      tasks_device, stream );
+  else if( lapl )
+    eval_collocation_shell_to_task_laplacian( max_l, l_batched_shell_to_task.data(), 
       tasks_device, stream );
   else if( grad ) 
     eval_collocation_shell_to_task_gradient( max_l, l_batched_shell_to_task.data(), 
@@ -368,13 +416,15 @@ void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,  const 
 
 
   util::cuda_device_sync();
-  cuda_check_collocation( tasks, ref_data, grad, hess );
+  cuda_check_collocation( tasks, ref_data, grad, hess, lapl, lapl_grad );
 
       
   for( auto& t : tasks ) {
     util::cuda_free( t.points_x, t.points_y, t.points_z, t.bfn_screening.shell_offs, t.bfn_screening.shell_list, t.bf );
     if(grad) util::cuda_free( t.dbfx, t.dbfy, t.dbfz );
     if(hess) util::cuda_free( t.d2bfxx, t.d2bfxy, t.d2bfxz, t.d2bfyy, t.d2bfyz, t.d2bfzz );
+    if(lapl) util::cuda_free( t.d2bflapl );
+    if(lapl_grad) util::cuda_free( t.d3bflapl_x, t.d3bflapl_y, t.d3bflapl_z );
   }
   util::cuda_free( tasks_device, shells_device, shell_to_task_device );
   for( auto& s : shell_to_task ) {
@@ -387,19 +437,33 @@ void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,  const 
 void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,  
   const BasisSetMap& basis_map, std::ifstream& in_file) {
 
-  test_cuda_collocation_shell_to_task(basis,basis_map,in_file,false, false);
+  test_cuda_collocation_shell_to_task(basis,basis_map,in_file,false, false, false, false);
 
 }
 void test_cuda_collocation_shell_to_task_gradient( const BasisSet<double>& basis,  
   const BasisSetMap& basis_map, std::ifstream& in_file) {
 
-  test_cuda_collocation_shell_to_task(basis,basis_map,in_file,true, false);
+  test_cuda_collocation_shell_to_task(basis,basis_map,in_file,true, false, false, false);
 
 }
 void test_cuda_collocation_shell_to_task_hessian( const BasisSet<double>& basis,  
   const BasisSetMap& basis_map, std::ifstream& in_file) {
 
-  test_cuda_collocation_shell_to_task(basis,basis_map,in_file,true, true);
+  test_cuda_collocation_shell_to_task(basis,basis_map,in_file,true, true, false, false);
+
+}
+
+void test_cuda_collocation_shell_to_task_laplacian( const BasisSet<double>& basis,  
+  const BasisSetMap& basis_map, std::ifstream& in_file) {
+
+  test_cuda_collocation_shell_to_task(basis,basis_map,in_file,true, false, true, false);
+
+}
+
+void test_cuda_collocation_shell_to_task_lapgrad( const BasisSet<double>& basis,  
+  const BasisSetMap& basis_map, std::ifstream& in_file) {
+
+  test_cuda_collocation_shell_to_task(basis,basis_map,in_file,true, true, true, true);
 
 }
 

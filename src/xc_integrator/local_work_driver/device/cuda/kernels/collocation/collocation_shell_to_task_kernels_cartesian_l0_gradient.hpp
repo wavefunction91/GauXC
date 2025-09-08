@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -67,7 +71,6 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
     auto* __restrict__ basis_y_eval = task->dbfy + shoff;
     auto* __restrict__ basis_z_eval = task->dbfz + shoff;
 
-
     // Loop over points in task
     // Assign each point to separate thread within the warp
     #pragma unroll 1
@@ -99,7 +102,8 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
 
       radial_eval_alpha *= -2;
 
-      
+      // Common Subexpressions
+
 
       // Evaluate basis function
       basis_eval[ipt + 0*npts] = radial_eval;
@@ -114,6 +118,8 @@ __global__ __launch_bounds__(512,2) void collocation_device_shell_to_task_kernel
 
       // Evaluate first derivative of bfn wrt z
       basis_z_eval[ipt + 0*npts] = radial_eval_alpha*z;
+
+
 
 
 

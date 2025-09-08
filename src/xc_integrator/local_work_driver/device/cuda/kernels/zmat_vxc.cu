@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -393,6 +397,9 @@ __global__ void zmat_gga_vxc_gks_kernel( size_t        ntasks,
   }
 }
 
+
+
+
 template <bool need_lapl>
 __global__ void zmat_mgga_vxc_rks_kernel( size_t        ntasks,
                                      XCDeviceTask* tasks_device ) {
@@ -438,6 +445,91 @@ __global__ void zmat_mgga_vxc_rks_kernel( size_t        ntasks,
 
     if constexpr (need_lapl) {
       val += vlapl_device[tid_x] * d2basis_lapl_eval_device[ibfoff];
+    }
+
+    z_matrix_device[ ibfoff ] = val;
+  }
+}
+
+template<bool need_lapl, density_id den_selector>
+__global__ void zmat_mgga_vxc_uks_kernel( size_t        ntasks,
+                                     XCDeviceTask* tasks_device ) {
+
+  const int batch_idx = blockIdx.z;
+  if( batch_idx >= ntasks ) return;
+
+  auto& task = tasks_device[ batch_idx ];
+  const auto npts            = task.npts;
+  const auto nbf             = task.bfn_screening.nbe;
+
+  const double* vrho_pos_device    = task.vrho_pos;
+  const double* vrho_neg_device    = task.vrho_neg;
+  const double* vlapl_pos_device    = task.vlapl_pos;
+  const double* vlapl_neg_device    = task.vlapl_neg;
+  const double* vgamma_pp_device   = task.vgamma_pp;
+  const double* vgamma_pm_device   = task.vgamma_pm;
+  const double* vgamma_mm_device   = task.vgamma_mm;
+
+  const auto* den_pos_x_eval_device = task.dden_sx;
+  const auto* den_pos_y_eval_device = task.dden_sy;
+  const auto* den_pos_z_eval_device = task.dden_sz;
+  const auto* den_neg_x_eval_device = task.dden_zx;
+  const auto* den_neg_y_eval_device = task.dden_zy;
+  const auto* den_neg_z_eval_device = task.dden_zz;
+
+
+  const auto* basis_eval_device = task.bf;
+  const auto* dbasis_x_eval_device = task.dbfx;
+  const auto* dbasis_y_eval_device = task.dbfy;
+  const auto* dbasis_z_eval_device = task.dbfz;
+  const auto* d2basis_lapl_eval_device = task.d2bflapl;
+
+  auto* z_matrix_device = task.zmat;
+
+  const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
+  const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
+
+  if( tid_x < npts and tid_y < nbf ) {
+
+    const size_t ibfoff = tid_y * npts + tid_x;
+
+    const double factp = 0.25 * vrho_pos_device[tid_x];
+    const double factm = 0.25 * vrho_neg_device[tid_x];
+    
+    const auto gga_fact_pp  = vgamma_pp_device[tid_x];
+    const auto gga_fact_pm  = vgamma_pm_device[tid_x];
+    const auto gga_fact_mm  = vgamma_mm_device[tid_x];
+    
+    const auto gga_fact_1 = 0.5*(gga_fact_pp + gga_fact_pm + gga_fact_mm);
+    const auto gga_fact_2 = 0.5*(gga_fact_pp - gga_fact_mm);
+    const auto gga_fact_3 = 0.5*(gga_fact_pp - gga_fact_pm + gga_fact_mm);
+
+    double sign = 1.0;
+
+    double x_fact, y_fact, z_fact;
+
+    if constexpr ( den_selector == DEN_S ) {
+       x_fact = gga_fact_1 * den_pos_x_eval_device[ tid_x ] + gga_fact_2 * den_neg_x_eval_device[ tid_x ];
+       y_fact = gga_fact_1 * den_pos_y_eval_device[ tid_x ] + gga_fact_2 * den_neg_y_eval_device[ tid_x ];
+       z_fact = gga_fact_1 * den_pos_z_eval_device[ tid_x ] + gga_fact_2 * den_neg_z_eval_device[ tid_x ];
+    }
+    if constexpr ( den_selector == DEN_Z ) {
+       sign = -1.0;
+       x_fact = gga_fact_3 * den_neg_x_eval_device[ tid_x ] + gga_fact_2 * den_pos_x_eval_device[ tid_x ];
+       y_fact = gga_fact_3 * den_neg_y_eval_device[ tid_x ] + gga_fact_2 * den_pos_y_eval_device[ tid_x ];
+       z_fact = gga_fact_3 * den_neg_z_eval_device[ tid_x ] + gga_fact_2 * den_pos_z_eval_device[ tid_x ];
+    }
+
+    auto val = x_fact * dbasis_x_eval_device[ ibfoff ]      
+             + y_fact * dbasis_y_eval_device[ ibfoff ]
+             + z_fact * dbasis_z_eval_device[ ibfoff ] 
+             + (factp + sign * factm) * basis_eval_device[ ibfoff ];
+
+    if constexpr (need_lapl) {
+      const double lfactp = vlapl_pos_device[tid_x];
+      const double lfactm = vlapl_neg_device[tid_x];
+
+      val += 0.5 * (lfactp + sign * lfactm) * d2basis_lapl_eval_device[ ibfoff ];
     }
 
     z_matrix_device[ ibfoff ] = val;
@@ -503,6 +595,8 @@ void zmat_mgga_vxc( size_t            ntasks,
                     int32_t           max_npts,
                     XCDeviceTask*     tasks_device,
                     bool              do_lapl,
+                    integrator_ks_scheme scheme,
+                    density_id sel,
                     device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
@@ -513,10 +607,29 @@ void zmat_mgga_vxc( size_t            ntasks,
                util::div_ceil( max_nbf,  threads.y ),
                ntasks );
 
-  if(do_lapl)
-    zmat_mgga_vxc_rks_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-  else
-    zmat_mgga_vxc_rks_kernel<false><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  if(scheme == RKS) {
+    if(do_lapl)
+      zmat_mgga_vxc_rks_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+    else
+      zmat_mgga_vxc_rks_kernel<false><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  } else if(scheme == UKS) {
+    switch(sel) {
+      case DEN_S:
+        if(do_lapl)
+          zmat_mgga_vxc_uks_kernel<true, DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+        else
+          zmat_mgga_vxc_uks_kernel<false, DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+        break;
+      case DEN_Z:
+        if(do_lapl)
+          zmat_mgga_vxc_uks_kernel<true, DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+        else
+          zmat_mgga_vxc_uks_kernel<false, DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+        break;
+    }
+  } else {
+    GAUXC_GENERIC_EXCEPTION("MGGA + DEVICE + GKS NYI");
+  }
 
 }
 
@@ -571,6 +684,55 @@ __global__ void mmat_mgga_vxc_rks_kernel( size_t        ntasks,
   }
 }
 
+template <bool need_lapl, density_id id>
+__global__ void mmat_mgga_vxc_uks_kernel( size_t        ntasks,
+                                     XCDeviceTask* tasks_device ) {
+
+  const int batch_idx = blockIdx.z;
+  if( batch_idx >= ntasks ) return;
+
+  auto& task = tasks_device[ batch_idx ];
+  const auto npts            = task.npts;
+  const auto nbf             = task.bfn_screening.nbe;
+  const auto* vtau_pos_device    = task.vtau_pos;
+  const auto* vtau_neg_device    = task.vtau_neg;
+  const double* vlapl_pos_device = need_lapl ? task.vlapl_pos : nullptr;
+  const double* vlapl_neg_device = need_lapl ? task.vlapl_neg : nullptr;
+
+  const auto* dbasis_x_eval_device = task.dbfx;
+  const auto* dbasis_y_eval_device = task.dbfy;
+  const auto* dbasis_z_eval_device = task.dbfz;
+
+  auto* mmat_x = task.xmat_x;
+  auto* mmat_y = task.xmat_y;
+  auto* mmat_z = task.xmat_z;
+
+  const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
+  const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
+
+  if( tid_x < npts and tid_y < nbf ) {
+
+    double sign = 1.0;
+    if(id == DEN_Z) sign = -1;
+
+    const size_t ibfoff = tid_y * npts + tid_x;
+    const auto tfactp = 0.25 * vtau_pos_device[tid_x];
+    const auto tfactm = 0.25 * vtau_neg_device[tid_x];
+    const double fact_tau = 0.5 * (tfactp + sign * tfactm);
+    double fact_lapl = 0.0;
+    if(need_lapl) {
+      const auto lfactp = vlapl_pos_device[tid_x];
+      const auto lfactm = vlapl_neg_device[tid_x];
+      fact_lapl = 0.5 * (lfactp + sign * lfactm);
+    }
+    const double fact_1 = fact_tau + fact_lapl;
+
+    mmat_x[ ibfoff ] = fact_1 * dbasis_x_eval_device[ ibfoff ]; 
+    mmat_y[ ibfoff ] = fact_1 * dbasis_y_eval_device[ ibfoff ]; 
+    mmat_z[ ibfoff ] = fact_1 * dbasis_z_eval_device[ ibfoff ]; 
+  }
+}
+
 //__global__ void print_zmat_stats( size_t            ntasks,
 //                    XCDeviceTask*     tasks_device) {
 //
@@ -597,7 +759,7 @@ __global__ void mmat_mgga_vxc_rks_kernel( size_t        ntasks,
 //    const auto* vrho   = task.vrho;
 //    const auto* gamma = task.gamma;
 //    const auto* tau   = task.tau;
-//    const auto* lapl   = task.denlapl;
+//    const auto* lapl   = task.lapl;
 //    const auto* rho   = task.den;
 //    double enrm = 0.0, gnrm = 0.0, tnrm = 0.0, rnrm = 0.0, lnrm = 0.0;
 //    double vgnrm = 0.0, vtnrm = 0.0, vrnrm = 0.0, vlnrm = 0.0;
@@ -625,6 +787,8 @@ void mmat_mgga_vxc( size_t            ntasks,
                     int32_t           max_npts,
                     XCDeviceTask*     tasks_device,
                     bool              do_lapl,
+                    integrator_ks_scheme scheme,
+                    density_id sel,
                     device_queue queue ) {
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>() ;
@@ -635,10 +799,30 @@ void mmat_mgga_vxc( size_t            ntasks,
                util::div_ceil( max_nbf,  threads.y ),
                ntasks );
 
-  if(do_lapl)
-    mmat_mgga_vxc_rks_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
-  else
-    mmat_mgga_vxc_rks_kernel<false><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  if(scheme == RKS) {
+    if(do_lapl)
+      mmat_mgga_vxc_rks_kernel<true><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+    else
+      mmat_mgga_vxc_rks_kernel<false><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+  } else if(scheme == UKS) {
+    switch(sel) {
+      case DEN_S:
+        if(do_lapl)
+          mmat_mgga_vxc_uks_kernel<true, DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+        else
+          mmat_mgga_vxc_uks_kernel<false, DEN_S><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+        break;
+      case DEN_Z:
+        if(do_lapl)
+          mmat_mgga_vxc_uks_kernel<true, DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+        else
+          mmat_mgga_vxc_uks_kernel<false, DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, tasks_device );
+        break;
+    }
+  } else {
+    GAUXC_GENERIC_EXCEPTION("MGGA + DEVICE + GKS NYI");
+  }
+  
 
   //print_zmat_stats<<<1,1,0,stream>>>(ntasks,tasks_device);
 }

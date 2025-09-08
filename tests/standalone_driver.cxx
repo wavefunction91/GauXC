@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -51,6 +55,7 @@ int main(int argc, char** argv) {
 
     // Optional Args
     std::string grid_spec          = "ULTRAFINE";
+    std::string rad_quad_spec      = "MURAKNOWLES";
     std::string prune_spec         = "UNPRUNED";
     std::string lb_exec_space_str  = "Host";
     std::string int_exec_space_str = "Host";
@@ -66,6 +71,10 @@ int main(int argc, char** argv) {
     bool integrate_vxc      = true;
     bool integrate_exx      = false;
     bool integrate_exc_grad = false;
+    bool integrate_dd_psi   = false;
+    bool integrate_dd_psi_potential  = false;
+    bool integrate_fxc_contraction   = false;
+    int lmax = 2;
 
     auto string_to_upper = []( auto& str ) {
       std::transform( str.begin(), str.end(), str.begin(), ::toupper );
@@ -79,6 +88,7 @@ int main(int argc, char** argv) {
     OPTIONAL_KEYWORD( "GAUXC.GRID",              grid_spec,          std::string );
     OPTIONAL_KEYWORD( "GAUXC.FUNC",              func_spec,          std::string );
     OPTIONAL_KEYWORD( "GAUXC.PRUNING_SCHEME",    prune_spec,         std::string );
+    OPTIONAL_KEYWORD( "GAUXC.RAD_QUAD",          rad_quad_spec,      std::string );
     OPTIONAL_KEYWORD( "GAUXC.LB_EXEC_SPACE",     lb_exec_space_str,  std::string );
     OPTIONAL_KEYWORD( "GAUXC.INT_EXEC_SPACE",    int_exec_space_str, std::string );
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATOR_KERNEL", integrator_kernel,  std::string );
@@ -86,6 +96,7 @@ int main(int argc, char** argv) {
     OPTIONAL_KEYWORD( "GAUXC.REDUCTION_KERNEL",  reduction_kernel,   std::string );
     string_to_upper( grid_spec          );
     string_to_upper( func_spec          );
+    string_to_upper( rad_quad_spec      );
     string_to_upper( prune_spec         );
     string_to_upper( lb_exec_space_str  );
     string_to_upper( int_exec_space_str );
@@ -100,6 +111,10 @@ int main(int argc, char** argv) {
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_VXC",      integrate_vxc,      bool );
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_EXX",      integrate_exx,      bool );
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_EXC_GRAD", integrate_exc_grad, bool );
+    OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_DD_PSI",   integrate_dd_psi,   bool );
+    OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_DD_PSI_POTENTIAL",   integrate_dd_psi_potential,   bool );
+    OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_FXC_CONTRACTION",   integrate_fxc_contraction,   bool );
+    OPTIONAL_KEYWORD( "GAUXC.MAX_YLM",      lmax,  int );
 
     IntegratorSettingsSNLinK sn_link_settings;
     OPTIONAL_KEYWORD( "EXX.TOL_E", sn_link_settings.energy_tol, double );
@@ -124,6 +139,7 @@ int main(int argc, char** argv) {
       std::cout << "DRIVER SETTINGS: " << std::endl
                 << "  REF_FILE          = " << ref_file << std::endl
                 << "  GRID              = " << grid_spec << std::endl
+                << "  RAD_QUAD          = " << rad_quad_spec << std::endl
                 << "  PRUNING_SCHEME    = " << prune_spec << std::endl
                 << "  BATCH_SIZE        = " << batch_size << std::endl
                 << "  BASIS_TOL         = " << basis_tol << std::endl
@@ -136,12 +152,18 @@ int main(int argc, char** argv) {
                 << "  DEN (?)           = " << integrate_den << std::endl
                 << "  VXC (?)           = " << integrate_vxc << std::endl
                 << "  EXX (?)           = " << integrate_exx << std::endl
-                << "  EXC_GRAD (?)      = " << integrate_exc_grad << std::endl;
+                << "  EXC_GRAD (?)      = " << integrate_exc_grad << std::endl
+                << "  DD_PSI (?)        = " << integrate_dd_psi << std::endl
+                << "  DD_PSI_POTENTIAL (?)       = " << integrate_dd_psi_potential << std::endl
+                << "  FXC_CONTRACTION (?)       = " << integrate_fxc_contraction << std::endl;
                 if(integrate_exx) {
                   std::cout << "  EXX.TOL_E         = " 
                             << sn_link_settings.energy_tol << std::endl
                             << "  EXX.TOL_K         = " 
                             << sn_link_settings.k_tol << std::endl;
+                }
+                if (integrate_dd_psi || integrate_dd_psi_potential) {
+                  std::cout << " DD_MAX_YLM        = " << lmax << std::endl;
                 }
                 std::cout << std::endl;
     }
@@ -170,9 +192,19 @@ int main(int argc, char** argv) {
       {"TREUTLER", PruningScheme::Treutler}
     };
 
+    std::map< std::string, RadialQuad > rad_quad_map = {
+      {"BECKE",             RadialQuad::Becke},
+      {"MURAKNOWLES",       RadialQuad::MuraKnowles},
+      {"TREUTLERAHLRICHS",  RadialQuad::TreutlerAhlrichs},
+      {"MURRAYHANDYLAMING", RadialQuad::MurrayHandyLaming},
+      {"MK",                RadialQuad::MuraKnowles},
+      {"TA",                RadialQuad::TreutlerAhlrichs},
+      {"MHL",               RadialQuad::MurrayHandyLaming}
+    };
+
     auto mg = MolGridFactory::create_default_molgrid(mol, 
      prune_map.at(prune_spec), BatchSize(batch_size), 
-     RadialQuad::MuraKnowles, mg_map.at(grid_spec));
+     rad_quad_map.at(rad_quad_spec), mg_map.at(grid_spec));
 
     // Read BasisSet
     BasisSet<double> basis; 
@@ -195,6 +227,8 @@ int main(int argc, char** argv) {
     using matrix_type = Eigen::MatrixXd;
     // Read in reference data
     matrix_type P, Pz, Py, Px, VXC_ref, VXCz_ref, VXCy_ref, VXCx_ref, K_ref;
+    matrix_type ddX, ddPsi_ref, ddPsi_potential_ref;
+    matrix_type FXC_ref, FXCz_ref;
     double EXC_ref;
     std::vector<double> EXC_GRAD_ref(3*mol.size());
     bool rks = true, uks = false, gks = false;
@@ -325,7 +359,69 @@ int main(int argc, char** argv) {
           K_ref.fill(0);
         }
       }
+      if ( integrate_dd_psi ) {
+        int nharmonics = (lmax + 1) * (lmax + 1);
+        ddPsi_ref = matrix_type( mol.size(), nharmonics );
+        try {
+          dset = file.getDataSet("/DD_PSI");
+          dset.read( ddPsi_ref.data());
+          auto dd_psi_dims = dset.getDimensions();
+          if (dd_psi_dims[0] != mol.size() or dd_psi_dims[1] != nharmonics)
+            GAUXC_GENERIC_EXCEPTION("Incorrect dims for DD_PSI");
+        } catch(...) {
+          if(world_rank == 0) {
+            std::cout << "** Warning: Could Not Find Reference DD_PSI" << std::endl;
+          }
+          ddPsi_ref.fill(0);
+        }
+      }
 
+      if ( integrate_dd_psi_potential ) {
+        int nharmonics = (lmax + 1) * (lmax + 1);
+        ddX = matrix_type( nharmonics, mol.size() );
+        ddPsi_potential_ref = matrix_type( basis.nbf(), basis.nbf() );
+        try {
+          dset = file.getDataSet("/DD_X");
+          auto dd_x_dims = dset.getDimensions();
+          if (dd_x_dims[0] != nharmonics or dd_x_dims[1] != mol.size())
+            GAUXC_GENERIC_EXCEPTION("Incorrect dims for DD_X");
+          dset.read(ddX.data());
+        } catch(...) {
+          throw std::runtime_error("Could Not Find Input DD_X for DD_PSI_POTENTIAL");
+        }
+        try {
+          dset = file.getDataSet("/DD_PSI_POTENTIAL");
+          auto dd_psi_potential_dims = dset.getDimensions();
+          if (dd_psi_potential_dims[0] != basis.nbf() or dd_psi_potential_dims[1] != basis.nbf())
+            GAUXC_GENERIC_EXCEPTION("Incorrect dims for DD_PSI_POTENTIAL");
+          dset.read(ddPsi_potential_ref.data());
+        } catch(...) {
+          if(world_rank == 0) {
+            std::cout << "** Warning: Could Not Find Reference DD_PSI_POTENTIAL" << std::endl;
+          }
+          ddPsi_potential_ref.fill(0);
+        }
+      }
+
+      if ( integrate_fxc_contraction ) {
+        try {
+          dset = file.getDataSet("/FXC");
+          auto fxc_dims = dset.getDimensions();
+          FXC_ref = matrix_type( fxc_dims[0], fxc_dims[1] );
+          dset.read( FXC_ref.data() );
+          if( not rks ) {
+            dset = file.getDataSet("/FXC_Z");
+            FXCz_ref = matrix_type( fxc_dims[0], fxc_dims[1] );
+            dset.read( FXCz_ref.data() );
+          }
+        } catch(...) {
+          if(world_rank == 0) {
+            std::cout << "** Warning: Could Not Find Reference FXC" << std::endl;
+          }
+          FXC_ref.fill(0);
+          if( not rks ) FXCz_ref.fill(0);
+        }
+      }
     }
     // Setup XC functional
     auto polar = (uks or gks) ? Spin::Polarized : Spin::Unpolarized;
@@ -333,7 +429,9 @@ int main(int argc, char** argv) {
     if(functional_map.key_exists(func_spec)) {
       func = functional_type( Backend::builtin, functional_map.value(func_spec), 
         polar );
-    } else { 
+    } 
+#ifdef EXCHCXX_ENABLE_LIBXC
+    else { 
       std::vector<std::pair<double, ExchCXX::XCKernel>> funcs;
       std::vector<std::string> libxc_names;
       split(libxc_names, func_spec, ",");
@@ -342,6 +440,7 @@ int main(int argc, char** argv) {
       }
       func = functional_type(funcs);
     }
+#endif
 
     // Setup Integrator
     XCIntegratorFactory<matrix_type> integrator_factory( int_exec_space , 
@@ -353,7 +452,8 @@ int main(int argc, char** argv) {
 #endif
     auto xc_int_start = std::chrono::high_resolution_clock::now();
 
-    matrix_type VXC, VXCz, VXCy, VXCx, K;
+    matrix_type VXC, VXCz, VXCy, VXCx, K, FXC, FXCz;
+    matrix_type ddPsi, ddPsiPotential;
     double EXC, N_EL;
 
     std::cout << std::scientific << std::setprecision(12);
@@ -397,8 +497,7 @@ int main(int argc, char** argv) {
         EXC_GRAD = integrator.eval_exc_grad( P );
       }
       else if( uks ) {
-        std::cout << "Warning: eval_exc_grad + UKS NYI!" << std::endl;
-        //EXC_GRAD = integrator.eval_exc_grad( P, Pz );
+        EXC_GRAD = integrator.eval_exc_grad( P, Pz );
       }
       else if( gks ) {
         std::cout << "Warning: eval_exc_grad + GKS NYI!" << std::endl;
@@ -417,11 +516,93 @@ int main(int argc, char** argv) {
       }
     }
 
+    // Load trial density matrices for FXC contraction
+    matrix_type tP, tPz;
+    if( integrate_fxc_contraction ) {
+      bool create_trial_densities = false;
+      {
+      // Try to load trial density matrices from reference file
+      HighFive::File file( ref_file, HighFive::File::ReadOnly );
+      std::string tden_str = "/TRIAL_DENSITY";
+      std::string fxc_str = "/FXC";
+
+      if (!rks) {
+        tden_str = "/TRIAL_DENSITY_SCALAR";
+        fxc_str = "/FXC_SCALAR";
+      }
+
+      try {
+        auto dset = file.getDataSet(tden_str);
+        auto dims = dset.getDimensions();
+        tP = matrix_type(dims[0], dims[1]);
+        dset.read(tP.data());
+
+        if (!rks) {
+          dset = file.getDataSet("/TRIAL_DENSITY_Z");
+          tPz = matrix_type(dims[0], dims[1]);
+          dset.read(tPz.data());
+        }
+
+        // Also try to read reference FXC matrices if available
+        try {
+          dset = file.getDataSet(fxc_str);
+          FXC_ref = matrix_type(dims[0], dims[1]);
+          dset.read(FXC_ref.data());
+
+          if (!rks) {
+            dset = file.getDataSet("/FXC_Z");
+            FXCz_ref = matrix_type(dims[0], dims[1]);
+            dset.read(FXCz_ref.data());
+          }
+        } catch(...) {
+          if(world_rank == 0) {
+            std::cout << "** Warning: Could Not Find Reference FXC" << std::endl;
+          }
+          FXC_ref.fill(0);
+          if(!rks) FXCz_ref.fill(0);
+        }
+
+      } catch(...) {
+        if(world_rank == 0) {
+          std::cout << "** Trial density matrices not found, generating random symmetric matrices..." << std::endl;
+          create_trial_densities = true;
+        }
+      }
+        
+      }
+
+      if(!world_rank) {
+        std::cout << "Computing FXC contraction..." << std::endl;
+      }
+      
+      // Compute FXC contraction
+      if( rks ) {
+        FXC = integrator.eval_fxc_contraction( P, tP, IntegratorSettingsXC{} );
+      } else if( uks ) {
+        std::tie(FXC, FXCz) = integrator.eval_fxc_contraction( P, Pz, tP, tPz, IntegratorSettingsXC{} );
+      } else if( gks ) {
+        std::cout << "Warning: FXC contraction with GKS NYI!" << std::endl;
+      }
+
+    }
+
     if( integrate_exx ) {
       K = integrator.eval_exx(P, sn_link_settings);
       //matrix_type K_tmp = 0.5 * (K + K.transpose());
       //K = -K_tmp;
     } else { K = K_ref; }
+
+
+    if( integrate_dd_psi ) {
+      size_t Ylm_sz = (lmax + 1) * ( lmax + 1);
+      auto dd_psi = integrator.eval_dd_psi(P, lmax);
+      ddPsi = Eigen::Map<matrix_type>(dd_psi.data(), mol.size(), Ylm_sz);
+    } else { ddPsi = ddPsi_ref; }
+
+    if (integrate_dd_psi_potential) {
+      ddPsiPotential = integrator.eval_dd_psi_potential(ddX, lmax);
+    } else { ddPsiPotential = ddPsi_potential_ref; }
+    
 
 #ifdef GAUXC_HAS_MPI
     MPI_Barrier( MPI_COMM_WORLD );
@@ -560,6 +741,26 @@ int main(int argc, char** argv) {
       std::cout << "RMS K Diff     = " << (K_ref - K).norm() / basis.nbf()
                                          << std::endl;
       }
+      if (integrate_dd_psi) {
+        std::cout << "| DD_PSI (ref)  |_F = " << ddPsi_ref.norm() << std::endl;
+        std::cout << "| DD_PSI (calc) |_F = " << ddPsi.norm() << std::endl;
+        std::cout << "RMS DD_PSI Diff     = " << (ddPsi_ref - ddPsi).norm() / mol.size() << std::endl;
+      }
+      if (integrate_dd_psi_potential) {
+        std::cout << "| DD_PSI_POTENTIAL (ref)  |_F = " << ddPsi_potential_ref.norm() << std::endl;
+        std::cout << "| DD_PSI_POTENTIAL (calc) |_F = " << ddPsiPotential.norm() << std::endl;
+        std::cout << "RMS DD_PSI_POTENTIAL Diff     = " << (ddPsi_potential_ref - ddPsiPotential).norm() / basis.nbf() << std::endl;
+      }
+      if (integrate_fxc_contraction) {
+        std::cout << "| FXC (ref)  |_F = " << FXC_ref.norm() << std::endl;
+        std::cout << "| FXC (calc) |_F = " << FXC.norm() << std::endl;
+        std::cout << "RMS FXC Diff     = " << (FXC_ref - FXC).norm() / basis.nbf() << std::endl;
+        if (not rks) {
+          std::cout << "| FXCz (ref)  |_F = " << FXCz_ref.norm() << std::endl;
+          std::cout << "| FXCz (calc) |_F = " << FXCz.norm() << std::endl;
+          std::cout << "RMS FXCz Diff     = " << (FXCz_ref - FXCz).norm() / basis.nbf() << std::endl;
+        }
+      }
     }
 
     // Dump out new file
@@ -624,6 +825,27 @@ int main(int argc, char** argv) {
         HighFive::DataSpace grad_space( mol.size(), 3 );
         dset = file.createDataSet<double>( "/EXC_GRAD", grad_space );
         dset.write_raw( EXC_GRAD.data() );
+      }
+
+      if (integrate_dd_psi) {
+        HighFive::DataSpace dd_psi_space( mol.size(), (lmax + 1) * (lmax + 1) );
+        dset = file.createDataSet<double>("/DD_PSI", dd_psi_space);
+        dset.write_raw(ddPsi.data());
+      }
+
+      if (integrate_dd_psi_potential) {
+        HighFive::DataSpace dd_psi_potential_space(basis.nbf(), basis.nbf());
+        dset = file.createDataSet<double>("/DD_PSI_POTENTIAL", dd_psi_potential_space);
+        dset.write_raw(ddPsiPotential.data());
+      }
+
+      if (integrate_fxc_contraction) {
+        dset = file.createDataSet<double>("/FXC" + ugks_scalar, mat_space);
+        dset.write_raw(FXC.data());
+        if (not rks) {
+          dset = file.createDataSet<double>("/FXC_Z", mat_space);
+          dset.write_raw(FXCz.data());
+        }
       }
     }
 

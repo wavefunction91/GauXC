@@ -1,16 +1,20 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
 #include "catch2/catch.hpp"
 #include <gauxc/grid.hpp>
 
-#include <integratorxx/quadratures/lebedev_laikov.hpp>
-#include <integratorxx/quadratures/muraknowles.hpp>
-#include <integratorxx/quadratures/mhl.hpp>
+#include <integratorxx/quadratures/radial/muraknowles.hpp>
+#include <integratorxx/quadratures/radial/mhl.hpp>
+#include <integratorxx/quadratures/s2/lebedev_laikov.hpp>
 #include <integratorxx/composite_quadratures/spherical_quadrature.hpp>
 
 #include <random>

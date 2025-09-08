@@ -1,7 +1,11 @@
 /**
  * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
  * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy). All rights reserved.
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
  *
  * See LICENSE.txt for details
  */
@@ -49,6 +53,7 @@ struct integrator_term_tracker {
   bool exc_grad                  = false;
   bool exx                       = false;
   bool exx_ek_screening          = false;
+  bool fxc_contraction           = false;
   integrator_xc_approx xc_approx = _UNDEF_APPROX;
   integrator_ks_scheme ks_scheme = _UNDEF_SCHEME;
   inline void reset() {
@@ -72,7 +77,7 @@ struct required_term_storage {
   // Evaluation of functions on the grid (linear storage)
   bool grid_den      = false;
   bool grid_den_grad = false;
-  bool grid_den_lapl = false;
+  bool grid_lapl     = false;
   bool grid_gamma    = false;
   bool grid_tau      = false;
   bool grid_eps      = false;
@@ -80,6 +85,25 @@ struct required_term_storage {
   bool grid_vgamma   = false;
   bool grid_vtau     = false;
   bool grid_vlapl    = false;
+  
+  // Second derivative variables
+  bool grid_tden      = false;
+  bool grid_tden_grad = false;
+  bool grid_ttau      = false;
+  bool grid_tlapl     = false;
+  bool grid_v2rho2      = false;
+  bool grid_v2rhogamma  = false;
+  bool grid_v2rholapl   = false;
+  bool grid_v2rhotau    = false;
+  bool grid_v2gamma2    = false;
+  bool grid_v2gammalapl = false;
+  bool grid_v2gammatau  = false;
+  bool grid_v2lapl2     = false;
+  bool grid_v2lapltau   = false;
+  bool grid_v2tau2      = false;
+  bool grid_FXC_A           = false;
+  bool grid_FXC_B           = false;
+  bool grid_FXC_C           = false;
 
 
   // Reference flags for memory management use
@@ -114,11 +138,29 @@ struct required_term_storage {
     }
     return 0ul;
   }
-  inline size_t grid_den_lapl_size(size_t npts){ 
-    return PRDVL(grid_den_lapl, npts);
+  inline size_t grid_lapl_size(size_t npts){ 
+    if(grid_lapl) {
+      switch(ref_tracker.ks_scheme) {
+        case UKS:
+        case GKS:
+          return 4 * npts;
+        default:
+          return npts;
+      }
+    } 
+    return 0ul;
   }
   inline size_t grid_tau_size(size_t npts){ 
-    return PRDVL(grid_tau, npts);
+    if(grid_tau) {
+      switch(ref_tracker.ks_scheme) {
+        case UKS:
+        case GKS:
+          return 4 * npts;
+        default:
+          return npts;
+      }
+    } 
+    return 0ul;
   }
   inline size_t grid_eps_size(size_t npts){ 
     return PRDVL(grid_eps, npts);
@@ -147,10 +189,175 @@ struct required_term_storage {
     return 0ul;
   }
   inline size_t grid_vtau_size(size_t npts){ 
-    return PRDVL(grid_vtau, npts);
+    if(grid_vtau) {
+      switch(ref_tracker.ks_scheme) {
+        case UKS:
+        case GKS:
+          return 4 * npts;
+        default:
+          return npts;
+      }
+    } 
+    return 0ul;
   }
   inline size_t grid_vlapl_size(size_t npts){ 
-    return PRDVL(grid_vlapl, npts);
+    if(grid_vlapl) {
+      switch(ref_tracker.ks_scheme) {
+        case UKS:
+        case GKS:
+          return 4 * npts;
+        default:
+          return npts;
+      }
+    } 
+    return 0ul;
+  }
+  
+  // Size calculators for second derivative variables
+  inline size_t grid_tden_size(size_t npts){ 
+    if( grid_tden ) {
+      if( ref_tracker.ks_scheme == RKS ) return npts; 
+      // 2*npts for S,Z densities, 2*npts for interleaved density
+      if( ref_tracker.ks_scheme == UKS ) return 2*npts;
+      // Same as above, but also X,Y densities
+      if( ref_tracker.ks_scheme == GKS ) return 4*npts;  
+    }
+    return 0ul;
+  }
+  
+  inline size_t grid_tden_grad_size(size_t npts){ 
+    if( grid_tden_grad ) {
+      // 3*npts for each density in play
+      if( ref_tracker.ks_scheme == RKS ) return 3*npts;
+      if( ref_tracker.ks_scheme == UKS ) return 6*npts;
+      if( ref_tracker.ks_scheme == GKS ) return 12*npts;
+    }
+    return 0ul;
+  }
+  
+  inline size_t grid_tlapl_size(size_t npts){ 
+    if(grid_tlapl) {
+      switch(ref_tracker.ks_scheme) {
+        case UKS:
+        case GKS:
+          return 2 * npts;
+        default:
+          return npts;
+      }
+    } 
+    return 0ul;
+  }
+  
+  inline size_t grid_ttau_size(size_t npts){ 
+    if(grid_ttau) {
+      switch(ref_tracker.ks_scheme) {
+        case UKS:
+        case GKS:
+          return 2 * npts;
+        default:
+          return npts;
+      }
+    } 
+    return 0ul;
+  }
+  
+  inline size_t grid_v2rho2_size(size_t npts){
+    if(grid_v2rho2) {
+      if( ref_tracker.ks_scheme == RKS ) return npts;
+      if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 6*npts;
+    }
+    return 0ul;
+  }
+  
+  inline size_t grid_v2rhogamma_size(size_t npts){
+    if(grid_v2rhogamma) {
+      if( ref_tracker.ks_scheme == RKS ) return npts;
+      if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 12*npts;
+    }
+    return 0ul;
+  }
+  
+  inline size_t grid_v2rholapl_size(size_t npts){
+    if(grid_v2rholapl) {
+      if( ref_tracker.ks_scheme == RKS ) return npts;
+      if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 8*npts;
+    }
+    return 0ul;
+  }
+  
+  inline size_t grid_v2rhotau_size(size_t npts){
+    if(grid_v2rhotau) {
+      if( ref_tracker.ks_scheme == RKS ) return npts;
+      if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 8*npts;
+    }
+    return 0ul;
+  }
+  
+  inline size_t grid_v2gamma2_size(size_t npts){
+    if(grid_v2gamma2) {
+      if( ref_tracker.ks_scheme == RKS ) return npts;
+      if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 12*npts;
+    }
+    return 0ul;
+  }
+  
+  inline size_t grid_v2gammalapl_size(size_t npts){
+    if(grid_v2gammalapl) {
+      if( ref_tracker.ks_scheme == RKS ) return npts;
+      if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 12*npts;
+    }
+    return 0ul;
+  }
+  
+  inline size_t grid_v2gammatau_size(size_t npts){
+    if(grid_v2gammatau) {
+      if( ref_tracker.ks_scheme == RKS ) return npts;
+      if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 12*npts;
+    }
+    return 0ul;
+  }
+  
+  inline size_t grid_v2lapl2_size(size_t npts){
+    if(grid_v2lapl2) {
+      if( ref_tracker.ks_scheme == RKS ) return npts;
+      if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 6*npts;
+    }
+    return 0ul;
+  }
+  
+  inline size_t grid_v2lapltau_size(size_t npts){
+    if(grid_v2lapltau) {
+      if( ref_tracker.ks_scheme == RKS ) return npts;
+      if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 8*npts;
+    }
+    return 0ul;
+  }
+  
+  inline size_t grid_v2tau2_size(size_t npts){
+    if(grid_v2tau2) {
+      if( ref_tracker.ks_scheme == RKS ) return npts;
+      if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 6*npts;
+    }
+    return 0ul;
+  }
+
+  inline size_t grid_FXC_A_size(size_t npts){
+    if( grid_FXC_A ) {
+      if( ref_tracker.ks_scheme == RKS ) return npts;
+      if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 2*npts;
+    }
+  }
+  inline size_t grid_FXC_B_size(size_t npts){
+    if( grid_FXC_B ) {
+      if( ref_tracker.ks_scheme == RKS ) return 3*npts;
+      if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 6*npts;
+    }
+  }
+  inline size_t grid_FXC_C_size(size_t npts){
+    if( grid_FXC_C ) {
+      if( ref_tracker.ks_scheme == RKS ) return npts;
+      if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 2*npts;
+    }
   }
 
 
@@ -160,9 +367,11 @@ struct required_term_storage {
   bool task_bfn_grad      = false;
   bool task_bfn_hess      = false;
   bool task_bfn_lapl      = false;
+  bool task_bfn_lapgrad   = false;
   bool task_zmat          = false;
   bool task_xmat          = false;
   bool task_xmat_grad     = false;
+  bool task_xmat_persist  = false;
   bool task_fmat          = false;
   bool task_gmat          = false;
   bool task_nbe_scr       = false;
@@ -181,11 +390,18 @@ struct required_term_storage {
   inline size_t task_bfn_lapl_size(size_t nbe, size_t npts) {
     return PRDVL(task_bfn_lapl, nbe * npts);
   }
+  inline size_t task_bfn_lapgrad_size(size_t nbe, size_t npts) {
+    return PRDVL(task_bfn_lapgrad, 3 * nbe * npts);
+  }
   inline size_t task_zmat_size(size_t nbe, size_t npts) {
     return PRDVL(task_zmat, nbe * npts);
   }
   inline size_t task_xmat_grad_size(size_t nbe, size_t npts) {
     return PRDVL(task_xmat_grad, 3 * nbe * npts);
+  }
+  inline size_t task_xmat_persist_size(size_t nbe, size_t npts) {
+    // TODO Make this more robust
+    return PRDVL(task_xmat_persist, 2 * (task_xmat_grad ? 4 : 1) * nbe * npts);
   }
   inline size_t task_fmat_size(size_t nbe, size_t npts) {
     return PRDVL(task_fmat, nbe * npts);
@@ -305,7 +521,8 @@ struct required_term_storage {
     }
 
     // Allocated terms for XC calculations
-    const bool is_xc = tracker.exc_vxc or tracker.exc_grad;
+    const bool is_xc = tracker.exc_vxc or tracker.exc_grad or tracker.fxc_contraction;
+    const bool is_2nd_deriv = tracker.fxc_contraction;
     
     ref_tracker = tracker;
 
@@ -320,10 +537,11 @@ struct required_term_storage {
       const bool need_lapl = tracker.xc_approx == MGGA_LAPL;
       const bool is_mgga = is_xc and (need_tau or need_lapl);
       const bool is_grad = tracker.exc_grad;
+      const bool is_rks  = tracker.ks_scheme == RKS;
 
       grid_den      = true;
       grid_den_grad = is_gga or is_mgga or is_grad;
-      grid_den_lapl = need_lapl;
+      grid_lapl     = need_lapl;
       grid_gamma    = is_gga or is_mgga;
       grid_tau      = is_mgga;
       grid_eps      = true;
@@ -334,11 +552,13 @@ struct required_term_storage {
 
       task_bfn          = true;
       task_bfn_grad     = is_gga or  is_mgga or is_grad;
-      task_bfn_hess     = is_gga and is_grad;
+      task_bfn_hess     = (is_gga or is_mgga) and is_grad;
       task_bfn_lapl     = need_lapl;
+      task_bfn_lapgrad  = need_lapl and is_grad;
       task_zmat         = true;
       task_xmat         = true;
       task_xmat_grad    = is_mgga or (is_gga and is_grad);
+      task_xmat_persist = is_grad and not is_rks;
       task_nbe_scr      = true;
 
       task_submat_cut_bfn   = true;
@@ -348,6 +568,31 @@ struct required_term_storage {
       task_shell_list_bfn = true;
       task_shell_offs_bfn = true;
       shell_to_task_bfn   = true;
+    }
+
+    if(is_2nd_deriv) {
+      grid_eps      = false;
+
+      grid_tden      = true;
+      grid_tden_grad = true;
+      grid_tlapl     = true;
+      grid_ttau      = true;
+      grid_v2rho2    = true;
+      grid_v2rhogamma= true;
+      grid_v2rholapl = true;
+      grid_v2rhotau  = true;
+      grid_v2gamma2  = true;
+      grid_v2gammalapl= true;
+      grid_v2gammatau= true;
+      grid_v2lapl2   = true;
+      grid_v2lapltau = true;
+      grid_v2tau2    = true;
+      grid_FXC_A         = true;
+      grid_FXC_B         = true;
+      grid_FXC_C         = true;
+
+      // task_bfn_hess     = is_gga or is_mgga or is_grad; // TODO: Check this
+      // task_bfn_lapgrad  = need_lapl and is_grad; // TODO: Check this
     }
 
     // Density integration
@@ -409,6 +654,7 @@ std::ostream& operator<<( std::ostream& out, const integrator_term_tracker& t ) 
   out << "  WEIGHTS  " << t.weights << std::endl;
   out << "  DEN      " << t.den << std::endl;
   out << "  EXC_VXC  " << t.exc_vxc << std::endl;
+  out << "  FXC_CONTRACTION " << t.fxc_contraction << std::endl;
   out << "  EXC_GRAD " << t.exc_grad << std::endl;
   out << "  EXX      " << t.exx << std::endl;
   return out;
@@ -432,13 +678,19 @@ struct XCDeviceData {
   virtual void allocate_static_data_weights( int32_t natoms ) = 0;
   virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms, bool do_vxc ) = 0;
   virtual void allocate_static_data_den( int32_t nbf, int32_t nshells ) = 0;
-  virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms ) = 0;
+  virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms, integrator_term_tracker enabled_terms ) = 0;
   virtual void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, size_t nprim_pair_total, int32_t max_l ) = 0;
   virtual void allocate_static_data_exx_ek_screening( size_t ntasks, int32_t nbf, int32_t nshells, int nshell_pairs, int32_t max_l ) = 0;
+  virtual void allocate_static_data_fxc_contraction( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms) = 0;
 
   // Send persistent data from host to device
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
-  virtual void send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz, const double* Py, int32_t ldpy, const double* Px, int32_t ldpx, const BasisSet<double>& basis ) = 0;
+  virtual void send_static_data_density_basis( const double* Ps, int32_t ldps, 
+    const double* Pz, int32_t ldpz, const double* Py, int32_t ldpy, 
+    const double* Px, int32_t ldpx, const BasisSet<double>& basis ) = 0;
+  virtual void send_static_data_trial_density(
+    const double* tPs, int32_t ldtps, const double* tPz, int32_t ldtpz,
+    const double* tPy, int32_t ldtpy, const double* tPx, int32_t ldtpx ) = 0;
   virtual void send_static_data_shell_pairs( const BasisSet<double>&, const ShellPairCollection<double>& ) = 0;
   virtual void send_static_data_exx_ek_screening( const double* V_max, int32_t ldv, const BasisSetMap&, const ShellPairCollection<double>& ) = 0;
 
@@ -456,6 +708,9 @@ struct XCDeviceData {
 
   /// Zero out intermediates for EXX EK screening
   virtual void zero_exx_ek_screening_intermediates() = 0;
+
+  /// Zero out the FXC contraction integrands in device memory
+  virtual void zero_fxc_contraction_integrands() = 0;
 
   /** Generate task batch to execute on device
    *
@@ -487,6 +742,10 @@ struct XCDeviceData {
     double* VXCs, int32_t ldvxcs, double* VXCz, int32_t ldvxcz,
     double* VXCy, int32_t ldvxcy, double* VXCx, int32_t ldvxcx ) = 0;
 
+  virtual void retrieve_fxc_contraction_integrands( double* N_EL,
+    double* FXCs, int32_t ldfxcs, double* FXCz, int32_t ldfxcz,
+    double* FXCy, int32_t ldfxcy, double* FXCx, int32_t ldfxcx ) = 0;
+
   /** Retreive EXC Gradient integrands from device memory
    *
    *  @param[out] EXC_GRAD  Integrated XC Gradient (host) for XC task
@@ -516,6 +775,10 @@ struct XCDeviceData {
   virtual double* exc_device_data() = 0;
   virtual double* nel_device_data() = 0;
   virtual double* exx_k_device_data() = 0;
+  virtual double* fxc_z_device_data() = 0;
+  virtual double* fxc_s_device_data() = 0;
+  virtual double* fxc_y_device_data() = 0;
+  virtual double* fxc_x_device_data() = 0;
   virtual device_queue queue() = 0;
 
 
