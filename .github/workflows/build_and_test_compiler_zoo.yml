@@ -14,15 +14,27 @@ jobs:
         image: dbwy/chemistry
     strategy:
       matrix:
-        compiler: [ {suite: gnu, version: 12} ]
+        compiler:
+          - {suite: gnu,  version: 12}
+          - {suite: llvm, version: 19}
         mpi_flag: [ON, OFF]
         openmp_flag: [ON, OFF]
         exclude:
-            - compiler: {suite: llvm, version: 14}
-              openmp_flag: ON
+            - openmp_flag: ON
 
     steps:
     - uses: actions/checkout@v4
+
+    - name: Install LLVM toolchain
+      if: ${{ matrix.compiler.suite == 'llvm' }}
+      shell: bash
+      run: |
+        set -euo pipefail
+        apt-get update
+        apt-get install -y wget gnupg lsb-release software-properties-common
+        wget https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        ./llvm.sh ${{ matrix.compiler.version }} -y
 
     - name: Setup Compiler 
       shell: bash
