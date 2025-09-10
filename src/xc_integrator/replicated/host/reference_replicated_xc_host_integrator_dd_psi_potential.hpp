@@ -16,9 +16,12 @@
 #include "integrator_util/spherical_harmonics.hpp"
 #include "host/local_host_work_driver.hpp"
 #include <stdexcept>
-#include <omp.h>
 #include "host/blas.hpp"
 #include "host/util.hpp"
+
+#ifdef GAUXC_ENABLE_OPENMP
+#include <omp.h>
+#endif
 
 namespace GauXC::detail {
 template <typename ValueType>
@@ -92,12 +95,16 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Loop over tasks
   const size_t ntasks = tasks.size();
 
+  #ifdef GAUXC_ENABLE_OPENMP
   #pragma omp parallel
+  #endif
   {
 
   XCHostData<value_type> host_data; // Thread local host data
 
+  #ifdef GAUXC_ENABLE_OPENMP
   #pragma omp for schedule(dynamic)
+  #endif
   for( size_t iT = 0; iT < ntasks; ++iT ) {
 
     // Alias current task
