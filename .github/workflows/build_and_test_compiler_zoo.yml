@@ -20,7 +20,8 @@ jobs:
         mpi_flag: [ON, OFF]
         openmp_flag: [ON, OFF]
         exclude:
-            - openmp_flag: ON
+            - compiler: {suite: llvm, version: 19}
+              openmp_flag: ON
 
     steps:
     - uses: actions/checkout@v4
