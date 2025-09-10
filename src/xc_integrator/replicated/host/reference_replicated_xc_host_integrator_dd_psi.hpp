@@ -17,7 +17,9 @@
 #include "host/local_host_work_driver.hpp"
 #include <gauxc/molgrid/defaults.hpp>
 #include <stdexcept>
+#ifdef GAUXC_ENABLE_OPENMP
 #include <omp.h>
+#endif
 
 namespace GauXC::detail {
 template <typename ValueType>
@@ -96,12 +98,16 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Loop over tasks
   const size_t ntasks = tasks.size();
+  #ifdef GAUXC_ENABLE_OPENMP
   #pragma omp parallel
+  #endif
   {
 
   XCHostData<value_type> host_data; // Thread local host data
 
+  #ifdef GAUXC_ENABLE_OPENMP
   #pragma omp for schedule(dynamic) reduction(+:dd_Psi[:natom * ldPsi])
+  #endif
   for( size_t iT = 0; iT < ntasks; ++iT ) {
 
     // Alias current task
