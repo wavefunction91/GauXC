@@ -46,6 +46,13 @@ double* XCDeviceStackData::fxc_z_device_data() { return static_stack.fxc_z_devic
 double* XCDeviceStackData::fxc_y_device_data() { return static_stack.fxc_y_device; }
 double* XCDeviceStackData::fxc_x_device_data() { return static_stack.fxc_x_device; }
 
+double* XCDeviceStackData::grid_weights_device_data() { return static_stack.grid_weights_device; }
+double* XCDeviceStackData::grid_coords_device_data() { return static_stack.grid_coords_device; }
+double* XCDeviceStackData::den_eval_device_data() { return static_stack.den_eval_device; }
+double* XCDeviceStackData::dden_eval_device_data() { return static_stack.dden_eval_device; }
+double* XCDeviceStackData::tau_device_data() { return static_stack.tau_device; }
+double* XCDeviceStackData::coords_device_data() { return static_stack.coords_device; }
+
 device_queue XCDeviceStackData::queue() { 
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
   return device_backend_->queue();
@@ -133,6 +140,64 @@ void XCDeviceStackData::allocate_static_data_exc_vxc( int32_t nbf, int32_t nshel
     
 
   allocated_terms.exc_vxc = true;
+}
+
+
+void XCDeviceStackData::allocate_static_data_onedft( int32_t nbf, int32_t nshells, int32_t natoms, 
+  int32_t total_npts, integrator_term_tracker enabled_terms ) {
+
+  if( allocated_terms.onedft ) 
+    GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack OneDFT");
+  if( enabled_terms.ks_scheme == _UNDEF_SCHEME )
+    GAUXC_GENERIC_EXCEPTION("Must have a KS Scheme set to allocate Stack OneDFT");
+
+  // Save state
+  global_dims.nshells = nshells;
+  global_dims.nbf     = nbf; 
+  global_dims.natoms  = natoms; 
+  global_dims.total_npts  = total_npts;
+
+  // Allocate static memory with proper alignment
+  buffer_adaptor mem( dynmem_ptr, dynmem_sz );
+
+  static_stack.shells_device     = mem.aligned_alloc<Shell<double>>( nshells , csl);
+  static_stack.exc_device        = mem.aligned_alloc<double>( 1 , csl);
+  static_stack.nel_device        = mem.aligned_alloc<double>( 1 , csl);
+  static_stack.acc_scr_device    = mem.aligned_alloc<double>( 1 , csl);
+  static_stack.coords_device     = mem.aligned_alloc<double>( 3 * natoms, csl );
+
+  allocated_terms.ks_scheme = enabled_terms.ks_scheme;
+  static_stack.dmat_s_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+  if( not (allocated_terms.ks_scheme == RKS) ) {
+      static_stack.dmat_z_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+      if( allocated_terms.ks_scheme == GKS ) {
+        GAUXC_GENERIC_EXCEPTION("GKS NYI for OneDFT Device");
+      }
+  }
+
+  static_stack.vxc_s_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+  if( not (allocated_terms.ks_scheme == RKS) ) {
+      static_stack.vxc_z_device  = mem.aligned_alloc<double>( nbf * nbf , csl );
+  }
+  if (enabled_terms.ks_scheme == RKS) {
+    GAUXC_GENERIC_EXCEPTION("RKS NYI for OneDFT Device");
+  } else if (enabled_terms.ks_scheme == UKS) {
+    static_stack.grid_weights_device = mem.aligned_alloc<double>( total_npts , csl );
+    static_stack.grid_coords_device  = mem.aligned_alloc<double>( 3 * total_npts , csl );
+    static_stack.den_eval_device     = mem.aligned_alloc<double>( 2 * total_npts , csl );
+    static_stack.dden_eval_device    = mem.aligned_alloc<double>( 2 * 3 * total_npts , csl );
+    static_stack.tau_device          = mem.aligned_alloc<double>( 2 * total_npts , csl );
+    
+    static_stack.den_grad_device     = mem.aligned_alloc<double>( 2 * total_npts , csl );
+    static_stack.dden_grad_device    = mem.aligned_alloc<double>( 2 * 3 * total_npts , csl );
+    static_stack.tau_grad_device     = mem.aligned_alloc<double>( 2 * total_npts , csl );
+  }
+
+  // Get current stack location
+  dynmem_ptr = mem.stack();
+  dynmem_sz  = mem.nleft(); 
+
+  allocated_terms.onedft = true;
 }
 
 void XCDeviceStackData::allocate_static_data_fxc_contraction( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms ) {
@@ -341,6 +406,78 @@ void XCDeviceStackData::send_static_data_weights( const Molecule& mol, const Mol
     static_stack.rab_device, ldatoms, "RAB H2D" );
 
   device_backend_->master_queue_synchronize(); 
+}
+
+void XCDeviceStackData::send_static_data_onedft( const Molecule& mol, const double* Ps, 
+  int32_t ldps, const double* Pz, int32_t ldpz, const double* Py, 
+  int32_t ldpy, const double* Px, int32_t ldpx, const BasisSet<double>& basis ) {
+  
+  const bool is_gks = (Pz != nullptr) and (Py != nullptr) and (Px != nullptr);
+  const bool is_uks = (Pz != nullptr) and (Py == nullptr) and (Px == nullptr);
+  const bool is_rks = (Ps != nullptr) and (not is_uks and not is_gks);
+  if( not is_rks and not is_uks and not is_gks )
+    GAUXC_GENERIC_EXCEPTION("Densities do not match RKS, UKS, or GKS schemes");
+
+  if( not (allocated_terms.onedft ) )
+    GAUXC_GENERIC_EXCEPTION("OneDFT Stack Not Allocated");
+
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
+
+  // Copy Atomic Coordinates
+  const auto natoms = global_dims.natoms;
+  std::vector<double> coords( 3*natoms );
+  for( auto i = 0ul; i < natoms; ++i ) {
+    coords[ 3*i + 0 ] = mol[i].x;
+    coords[ 3*i + 1 ] = mol[i].y;
+    coords[ 3*i + 2 ] = mol[i].z;
+  }
+  device_backend_->copy_async( 3*natoms, coords.data(), static_stack.coords_device, 
+    "Coords H2D" );
+
+  const auto nbf    = global_dims.nbf;
+  // Check dimensions and copy density
+  if( ldps != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPs must bf NBF");
+  device_backend_->copy_async( nbf*nbf, Ps, static_stack.dmat_s_device, "P_scalar H2D" );
+  if( not is_rks ) {
+    if( ldpz != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPz must bf NBF");
+    device_backend_->copy_async( nbf*nbf, Pz, static_stack.dmat_z_device, "P_z H2D" );
+    if( is_gks ) {
+      if( ldpy != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPy must bf NBF");
+      if( ldpx != (int)nbf ) GAUXC_GENERIC_EXCEPTION("LDPx must bf NBF");
+      device_backend_->copy_async( nbf*nbf, Py, static_stack.dmat_y_device, "P_y H2D" );
+      device_backend_->copy_async( nbf*nbf, Px, static_stack.dmat_x_device, "P_x H2D" );
+    }
+  }
+
+  // Copy Basis Set
+  device_backend_->copy_async( basis.nshells(), basis.data(), static_stack.shells_device,
+    "Shells H2D" );
+
+  device_backend_->master_queue_synchronize(); 
+
+}
+
+void XCDeviceStackData::send_static_data_onedft_results( int32_t total_npts, int32_t ndm, 
+  const double* EXC, const double* DEN, const double* DDEN, const double* TAU) {
+
+  if( not (allocated_terms.onedft ) )
+    GAUXC_GENERIC_EXCEPTION("OneDFT Stack Not Allocated");
+
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
+
+  device_backend_->copy_async(1, EXC, static_stack.exc_device, "Copy OneDFT EXC");
+  
+  device_backend_->copy_async(ndm * total_npts, DEN, static_stack.den_grad_device, 
+                              "Copy OneDFT den_grad_device");
+  
+  if (DDEN != nullptr) {
+    device_backend_->copy_async(ndm * 3 * total_npts, DDEN, static_stack.dden_grad_device, 
+                                "Copy OneDFT dden_grad_device");
+  }
+  if (TAU != nullptr) {
+    device_backend_->copy_async(ndm * total_npts, TAU, static_stack.tau_grad_device,
+                                "Copy OneDFT tau_grad_device");
+  }
 }
 
 void XCDeviceStackData::send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz, const double* Py, int32_t ldpy, const double* Px, int32_t ldpx,
@@ -636,6 +773,28 @@ void XCDeviceStackData::retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
     device_backend_->copy_async( nbf*nbf, static_stack.vxc_x_device, VXCx,  "VXCx D2H" );
 
 }
+
+void XCDeviceStackData::retrieve_onedft_features( int32_t total_npts, int32_t ndm, 
+  double* DEN, double* DDEN, double* TAU, double* POINTS, double* WEIGHTS) {
+
+  if( DEN )
+    device_backend_->copy_async( total_npts*ndm, static_stack.den_eval_device, DEN,  "DEN D2H" );
+
+  if( DDEN )
+    device_backend_->copy_async( total_npts*ndm*3, static_stack.dden_eval_device, DDEN,  "DDEN D2H" );
+
+  if( TAU )
+    device_backend_->copy_async( total_npts*ndm, static_stack.tau_device, TAU,  "TAU D2H" );
+
+  if( POINTS )
+    device_backend_->copy_async( total_npts*3, static_stack.grid_coords_device, POINTS,  "POINTS D2H" );
+
+  if( WEIGHTS )
+    device_backend_->copy_async( total_npts, static_stack.grid_weights_device, WEIGHTS,  "WEIGHTS D2H" );
+
+}
+
+
 
 void XCDeviceStackData::retrieve_fxc_contraction_integrands( double* N_EL,
   double* FXCs, int32_t ldfxcs, double* FXCz, int32_t ldfxcz,

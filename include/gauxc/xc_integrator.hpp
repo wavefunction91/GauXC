@@ -69,6 +69,8 @@ public:
                                    const IntegratorSettingsXC& = IntegratorSettingsXC{} );
   exc_vxc_type_gks  eval_exc_vxc ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,
                                    const IntegratorSettingsXC& = IntegratorSettingsXC{});
+  exc_vxc_type_uks eval_exc_vxc_onedft( const MatrixType&, const MatrixType&,
+                                const IntegratorSettingsXC& = IntegratorSettingsXC{} );
 
   exc_grad_type eval_exc_grad( const MatrixType& );
   exc_grad_type eval_exc_grad( const MatrixType&, const MatrixType& );

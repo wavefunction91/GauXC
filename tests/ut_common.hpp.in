@@ -17,3 +17,4 @@
 #include "eigen3_matrix_serialization.hpp"
 
 #cmakedefine GAUXC_REF_DATA_PATH "@GAUXC_REF_DATA_PATH@"
+#cmakedefine GAUXC_ONEDFT_MODEL_PATH "@GAUXC_ONEDFT_MODEL_PATH@"

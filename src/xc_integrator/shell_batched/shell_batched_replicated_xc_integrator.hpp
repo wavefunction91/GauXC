@@ -81,7 +81,10 @@ protected:
                       value_type* VXCx, int64_t ldvxcx,
                       value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
 
-
+  void eval_exc_vxc_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
+                     const value_type* Pz, int64_t ldpz, value_type* VXCs, int64_t ldvxcs,
+                     value_type* VXCz, int64_t ldvxcz, value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
+                     
   /// RKS EXC Gradient
   void eval_exc_grad_( int64_t m, int64_t n, const value_type* P, int64_t ldp, 
                        value_type* EXC_GRAD ) override;

@@ -52,7 +52,7 @@ Grid AtomicGridFactory::generate_unpruned_grid( RadialQuad rq, RadialSize nrad,
       return generate_unpruned_grid( mhl_type(nrad.get(), rscal.get()),
         std::move(ang_quad), bsz );
 
-    case RadialQuad::TreutlerAldrichs:
+    case RadialQuad::TreutlerAhlrichs:
       return generate_unpruned_grid( ta_type(nrad.get(), rscal.get()),
         std::move(ang_quad), bsz );
 
@@ -118,7 +118,7 @@ Grid AtomicGridFactory::generate_pruned_grid( RadialQuad rq,
       return generate_pruned_grid(std::move(rg), std::move(rgp), bsz);
     }
 
-    case RadialQuad::TreutlerAldrichs:
+    case RadialQuad::TreutlerAhlrichs:
     {
       auto [rg, rgp] = 
         make_pruned_grid<ta_type>( nrad, pruning_regions, rscal );

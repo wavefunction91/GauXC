@@ -61,6 +61,7 @@ add_executable( gauxc_test
   runtime.cxx
   basis/parse_basis.cxx
   dd_psi_potential_test.cxx
+  onedft_test.cxx
   2nd_derivative_test.cxx
 )
 target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
@@ -71,6 +72,7 @@ endif()
 
 
 set( GAUXC_REF_DATA_PATH "${PROJECT_SOURCE_DIR}/tests/ref_data" )
+set( GAUXC_ONEDFT_MODEL_PATH "${PROJECT_SOURCE_DIR}/data/onedft_models" )
 configure_file( ut_common.hpp.in ${PROJECT_BINARY_DIR}/tests/ut_common.hpp )
 target_include_directories( gauxc_test PRIVATE ${PROJECT_BINARY_DIR}/tests )
 target_include_directories( gauxc_test PRIVATE ${PROJECT_SOURCE_DIR}/tests )

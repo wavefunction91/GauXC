@@ -101,6 +101,14 @@ protected:
   void eval_dd_psi_potential_( int64_t m, int64_t n, const value_type* X, 
                     unsigned max_Ylm, value_type* Vddx ) override;
 
+  void eval_exc_vxc_onedft_(int64_t m, int64_t n, const value_type* Ps,
+                    int64_t ldps,
+                    const value_type* Pz,
+                    int64_t ldpz,
+                    value_type* VXCs, int64_t ldvxcs,
+                    value_type* VXCz, int64_t ldvxcz,
+                    value_type* EXC, const IntegratorSettingsXC& settings ) override;
+
   void integrate_den_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                             value_type *N_EL,
                             host_task_iterator task_begin, host_task_iterator task_end,
@@ -125,6 +133,19 @@ protected:
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data );
 
+  void pre_onedft_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
+                            const value_type* Pz, int64_t ldpz,
+                            const value_type* Py, int64_t ldpy,
+                            const value_type* Px, int64_t ldpx,
+                            host_task_iterator task_begin, host_task_iterator task_end,
+                            XCDeviceData& device_data, const integrator_term_tracker enabled_terms );
+
+  void post_onedft_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
+                            const value_type* Pz, int64_t ldpz,
+                            const value_type* Py, int64_t ldpy,
+                            const value_type* Px, int64_t ldpx,
+                            host_task_iterator task_begin, host_task_iterator task_end,
+                            XCDeviceData& device_data, const integrator_term_tracker enabled_terms );
   void fxc_contraction_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
                             const value_type* Pz, int64_t ldpz,
                             const value_type* tPs, int64_t ldtps,

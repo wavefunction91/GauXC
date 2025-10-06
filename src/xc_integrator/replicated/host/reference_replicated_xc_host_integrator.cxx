@@ -13,6 +13,7 @@
 #include "reference_replicated_xc_host_integrator_fxc_contraction.hpp"
 #include "reference_replicated_xc_host_integrator_dd_psi.hpp"
 #include "reference_replicated_xc_host_integrator_dd_psi_potential.hpp"
+#include "reference_replicated_xc_host_integrator_onedft.hpp"
 
 namespace GauXC::detail {
 

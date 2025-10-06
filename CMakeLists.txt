@@ -35,6 +35,7 @@ option( GAUXC_ENABLE_OPENMP     "Enable OpenMP Compilation"   ON  )
 option( GAUXC_ENABLE_TESTS      "Enable Unit Tests"           ON  )
 option( GAUXC_ENABLE_GAU2GRID   "Enable Gau2Grid Collocation" ON  )
 option( GAUXC_ENABLE_HDF5       "Enable HDF5 Bindings"        ON  )
+option( GAUXC_ENABLE_ONEDFT     "Enable ONEDFT Functional"    ON )
 option( GAUXC_USE_FAST_RSQRT    "Enable Fast RSQRT"           OFF )
 option( GAUXC_BLAS_PREFER_ILP64 "Prefer ILP64 for host BLAS"  OFF )
 option( GAUXC_LINK_CUDA_STATIC  "Link GauXC with static CUDA libs"  OFF )
@@ -64,6 +65,7 @@ set( GAUXC_HAS_HDF5       FALSE CACHE BOOL "" FORCE )
 set( GAUXC_HAS_MAGMA      FALSE CACHE BOOL "" FORCE )
 set( GAUXC_HAS_NCCL       FALSE CACHE BOOL "" FORCE )
 set( GAUXC_HAS_CUTLASS    FALSE CACHE BOOL "" FORCE )
+set( GAUXC_HAS_ONEDFT    FALSE CACHE BOOL "" FORCE )
 set( GAUXC_BLAS_IS_LP64   FALSE CACHE BOOL "" FORCE )
 
 mark_as_advanced( FORCE 
@@ -77,6 +79,7 @@ mark_as_advanced( FORCE
   GAUXC_HAS_MAGMA    
   GAUXC_HAS_NCCL     
   GAUXC_HAS_CUTLASS  
+  GAUXC_HAS_ONEDFT
   GAUXC_BLAS_IS_LP64 
 )
 

@@ -49,6 +49,7 @@ struct integrator_term_tracker {
   bool exc_grad                  = false;
   bool exx                       = false;
   bool exx_ek_screening          = false;
+  bool onedft                    = false;
   bool fxc_contraction           = false;
   integrator_xc_approx xc_approx = _UNDEF_APPROX;
   integrator_ks_scheme ks_scheme = _UNDEF_SCHEME;
@@ -517,7 +518,7 @@ struct required_term_storage {
     }
 
     // Allocated terms for XC calculations
-    const bool is_xc = tracker.exc_vxc or tracker.exc_grad or tracker.fxc_contraction;
+    const bool is_xc = tracker.exc_vxc or tracker.exc_grad or tracker.fxc_contraction or tracker.onedft;
     const bool is_2nd_deriv = tracker.fxc_contraction;
     
     ref_tracker = tracker;
@@ -672,6 +673,7 @@ struct XCDeviceData {
   /// Allocate device memory for data that will persist on the device.
   virtual void reset_allocations() = 0;
   virtual void allocate_static_data_weights( int32_t natoms ) = 0;
+  virtual void allocate_static_data_onedft( int32_t nbf, int32_t nshells, int32_t natoms, int32_t total_npts, integrator_term_tracker enabled_terms ) = 0;
   virtual void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms, bool do_vxc ) = 0;
   virtual void allocate_static_data_den( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms, integrator_term_tracker enabled_terms ) = 0;
@@ -681,6 +683,8 @@ struct XCDeviceData {
 
   // Send persistent data from host to device
   virtual void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) = 0;
+  virtual void send_static_data_onedft( const Molecule& mol, const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz, const double* Py, int32_t ldpy, const double* Px, int32_t ldpx, const BasisSet<double>& basis ) = 0;
+  virtual void send_static_data_onedft_results( int32_t total_npts, int32_t ndm, const double* EXC, const double* DEN, const double* DDEN, const double* TAU) = 0;
   virtual void send_static_data_density_basis( const double* Ps, int32_t ldps, 
     const double* Pz, int32_t ldpz, const double* Py, int32_t ldpy, 
     const double* Px, int32_t ldpx, const BasisSet<double>& basis ) = 0;
@@ -738,6 +742,11 @@ struct XCDeviceData {
     double* VXCs, int32_t ldvxcs, double* VXCz, int32_t ldvxcz,
     double* VXCy, int32_t ldvxcy, double* VXCx, int32_t ldvxcx ) = 0;
 
+  /** Retreive OneDFT features from device memory
+   */
+  virtual void retrieve_onedft_features( int32_t total_npts, int32_t ndm, double* DEN, 
+    double* DDEN, double* TAU, double* POINTS, double* WEIGHTS ) = 0;
+    
   virtual void retrieve_fxc_contraction_integrands( double* N_EL,
     double* FXCs, int32_t ldfxcs, double* FXCz, int32_t ldfxcz,
     double* FXCy, int32_t ldfxcy, double* FXCx, int32_t ldfxcx ) = 0;
@@ -771,6 +780,14 @@ struct XCDeviceData {
   virtual double* exc_device_data() = 0;
   virtual double* nel_device_data() = 0;
   virtual double* exx_k_device_data() = 0;
+
+  virtual double* grid_weights_device_data() = 0;
+  virtual double* grid_coords_device_data() = 0;
+  virtual double* den_eval_device_data() = 0;
+  virtual double* dden_eval_device_data() = 0;
+  virtual double* tau_device_data() = 0;
+  virtual double* coords_device_data() = 0;
+
   virtual double* fxc_z_device_data() = 0;
   virtual double* fxc_s_device_data() = 0;
   virtual double* fxc_y_device_data() = 0;

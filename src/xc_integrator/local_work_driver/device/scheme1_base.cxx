@@ -7,6 +7,7 @@
  */
 #include "scheme1_base.hpp"
 #include "device/common/zmat_vxc.hpp"
+#include "device/common/onedft.hpp"
 #include "device/common/zmat_fxc.hpp"
 #include "device/common/collocation_device.hpp"
 #include "device/common/device_blas.hpp"
@@ -308,6 +309,58 @@ void AoSScheme1Base::eval_zmat_mgga_vxc( XCDeviceData* _data, integrator_ks_sche
 
 
   data->device_backend_->check_error("zmat_mgga" __FILE__ ": " + std::to_string(__LINE__));
+}
+
+void AoSScheme1Base::eval_zmat_onedft( XCDeviceData* _data, integrator_term_tracker track, density_id den ) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+  size_t nbe_max = 0, npts_max = 0;
+  for( auto& task : tasks ) {
+    nbe_max  = std::max( nbe_max, task.bfn_screening.nbe );
+    npts_max = std::max( npts_max, task.npts );
+  }
+
+  auto aos_stack     = data->aos_stack;
+  zmat_onedft_vxc( ntasks, nbe_max, npts_max, aos_stack.device_tasks,
+    track.xc_approx, den, data->device_backend_->queue() );
+  data->device_backend_->check_error("zmat_lda" __FILE__ ": " + std::to_string(__LINE__));
+}
+
+void AoSScheme1Base::sz_to_ab_onedft( XCDeviceData* _data, size_t offset ) {
+
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+  auto backend = data->device_backend_;
+  
+  auto static_stack = data->static_stack;
+  auto base_stack    = data->base_stack;
+  size_t npoints = data->total_npts_task_batch;
+  size_t total_npts = data->global_dims.total_npts;
+
+  double* dden_x_eval_a = static_stack.dden_eval_device + offset;
+  double* dden_y_eval_a = static_stack.dden_eval_device + total_npts + offset;
+  double* dden_z_eval_a = static_stack.dden_eval_device + total_npts*2 + offset;
+
+  double* dden_x_eval_b = static_stack.dden_eval_device + total_npts*3 + offset;
+  double* dden_y_eval_b = static_stack.dden_eval_device + total_npts*4 + offset;
+  double* dden_z_eval_b = static_stack.dden_eval_device + total_npts*5 + offset;
+
+  sz_to_ab(npoints, base_stack.dden_sx_eval_device, base_stack.dden_zx_eval_device, 
+    dden_x_eval_a, dden_x_eval_b, data->device_backend_->queue());
+  sz_to_ab(npoints, base_stack.dden_sy_eval_device, base_stack.dden_zy_eval_device, 
+    dden_y_eval_a, dden_y_eval_b, data->device_backend_->queue());
+  sz_to_ab(npoints, base_stack.dden_sz_eval_device, base_stack.dden_zz_eval_device,
+    dden_z_eval_a, dden_z_eval_b, data->device_backend_->queue());
+
+  data->device_backend_->check_error("sz_to_ab_onedft" __FILE__ ": " + std::to_string(__LINE__));
 }
 
 void AoSScheme1Base::eval_zmat_lda_fxc( XCDeviceData* _data, density_id den ) {

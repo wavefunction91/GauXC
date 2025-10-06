@@ -18,7 +18,7 @@ enum class RadialQuad {
   Becke,             ///< Becke radial quadrature
   MuraKnowles,       ///< Mura-Knowles radial quadrature
   MurrayHandyLaming, ///< Murray-Handy-Laming radial quadrature
-  TreutlerAldrichs   ///< Treutler-Aldrichs radial quadrature
+  TreutlerAhlrichs   ///< Treutler-Ahlrichs radial quadrature
 };
 
 /**
@@ -30,8 +30,8 @@ enum class AtomicGridSizeDefault {
   FineGrid,       ///< Fine grid      (least accurate)
   UltraFineGrid,  ///< Ultrafine grid (appropriate accuracy)
   SuperFineGrid,  ///< Superfine grid (most accurate)
-  GM3,            ///< Treutler-Aldrichs GM3
-  GM5             ///< Treutlet-Aldrichs GM5
+  GM3,            ///< Treutler-Ahlrichs GM3
+  GM5             ///< Treutlet-Ahlrichs GM5
 };
 
 /**

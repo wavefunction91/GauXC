@@ -364,7 +364,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       do_zmat_vxc(DEN_Y);
       do_zmat_vxc(DEN_X);
     }
-  } 
+  }
 
   } // Loop over batches of batches 
 

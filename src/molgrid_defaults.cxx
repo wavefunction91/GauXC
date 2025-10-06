@@ -92,7 +92,7 @@ RadialScale default_bk_radial_scaling_factor( AtomicNumber _Z ) {
 RadialScale default_radial_scaling_factor(RadialQuad rq, AtomicNumber Z) {
   if( rq == RadialQuad::MuraKnowles ) 
     return default_mk_radial_scaling_factor(Z);
-  else if( rq == RadialQuad::TreutlerAldrichs )
+  else if( rq == RadialQuad::TreutlerAhlrichs )
     return default_ta_radial_scaling_factor(Z);
   else if( rq == RadialQuad::Becke )
     return default_bk_radial_scaling_factor(Z);

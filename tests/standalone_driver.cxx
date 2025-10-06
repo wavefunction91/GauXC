@@ -31,15 +31,6 @@ int main(int argc, char** argv) {
 #endif
   {
 
-    // Set up runtimes
-    #ifdef GAUXC_HAS_DEVICE
-    auto rt = DeviceRuntimeEnvironment( GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.9 );
-    #else
-    auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
-    #endif
-    auto world_rank = rt.comm_rank();
-    auto world_size = rt.comm_size();
-
     std::vector< std::string > opts( argc );
     for( int i = 0; i < argc; ++i ) opts[i] = argv[i];
 
@@ -62,6 +53,7 @@ int main(int argc, char** argv) {
     size_t      batch_size = 512;
     double      basis_tol  = 1e-10;
     std::string func_spec  = "PBE0";
+    double      mem_sz   = 0.5;
 
     bool integrate_den      = false;
     bool integrate_vxc      = true;
@@ -69,6 +61,8 @@ int main(int argc, char** argv) {
     bool integrate_exc_grad = false;
     bool integrate_dd_psi   = false;
     bool integrate_dd_psi_potential  = false;
+    
+    std::string onedft_model  = "NONE";
     bool integrate_fxc_contraction   = false;
     int lmax = 2;
 
@@ -109,13 +103,33 @@ int main(int argc, char** argv) {
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_EXC_GRAD", integrate_exc_grad, bool );
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_DD_PSI",   integrate_dd_psi,   bool );
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_DD_PSI_POTENTIAL",   integrate_dd_psi_potential,   bool );
+    OPTIONAL_KEYWORD( "GAUXC.ONEDFT_MODEL",       onedft_model,std::string );
+    OPTIONAL_KEYWORD( "GAUXC.MAX_YLM",            lmax,                int );
+    OPTIONAL_KEYWORD( "GAUXC.MEMORY_SIZE",        mem_sz,              double );
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_FXC_CONTRACTION",   integrate_fxc_contraction,   bool );
-    OPTIONAL_KEYWORD( "GAUXC.MAX_YLM",      lmax,  int );
 
     IntegratorSettingsSNLinK sn_link_settings;
     OPTIONAL_KEYWORD( "EXX.TOL_E", sn_link_settings.energy_tol, double );
     OPTIONAL_KEYWORD( "EXX.TOL_K", sn_link_settings.k_tol,      double );
 
+    // Set up runtimes
+  #ifdef GAUXC_HAS_DEVICE
+    auto rt = DeviceRuntimeEnvironment( GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.9 );
+    // Caluclate GauXC Device buffer size
+    size_t available_mem, total_mem;
+    cudaMemGetInfo(&available_mem, &total_mem);
+    int device_id;
+    cudaGetDevice(&device_id);
+    size_t sz    = mem_sz * available_mem;  
+    void* p;
+    cudaMallocAsync(&p, sz, 0);
+    cudaStreamSynchronize(0);
+    rt.set_buffer(p, sz);
+  #else
+    auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
+  #endif
+    auto world_rank = rt.comm_rank();
+    auto world_size = rt.comm_size();
 
     #ifdef GAUXC_HAS_DEVICE
     std::map< std::string, ExecutionSpace > exec_space_map = {
@@ -151,7 +165,9 @@ int main(int argc, char** argv) {
                 << "  EXC_GRAD (?)      = " << integrate_exc_grad << std::endl
                 << "  DD_PSI (?)        = " << integrate_dd_psi << std::endl
                 << "  DD_PSI_POTENTIAL (?)       = " << integrate_dd_psi_potential << std::endl
-                << "  FXC_CONTRACTION (?)       = " << integrate_fxc_contraction << std::endl;
+                << "  ONEDFT_MODEL    = " << onedft_model << std::endl
+                << "  FXC_CONTRACTION (?)       = " << integrate_fxc_contraction << std::endl
+                << "  MEMORY_SIZE       = " << mem_sz << std::endl;
                 if(integrate_exx) {
                   std::cout << "  EXX.TOL_E         = " 
                             << sn_link_settings.energy_tol << std::endl
@@ -425,7 +441,9 @@ int main(int argc, char** argv) {
     if(functional_map.key_exists(func_spec)) {
       func = functional_type( Backend::builtin, functional_map.value(func_spec), 
         polar );
-    } else { 
+    }
+#ifdef EXCHCXX_ENABLE_LIBXC
+    else { 
       std::vector<std::pair<double, ExchCXX::XCKernel>> funcs;
       std::vector<std::string> libxc_names;
       split(libxc_names, func_spec, ",");
@@ -434,6 +452,7 @@ int main(int argc, char** argv) {
       }
       func = functional_type(funcs);
     }
+#endif
 
     // Setup Integrator
     XCIntegratorFactory<matrix_type> integrator_factory( int_exec_space , 
@@ -461,14 +480,22 @@ int main(int argc, char** argv) {
     }
 
     if( integrate_vxc ) {
-      if( rks ) {
-        std::tie(EXC, VXC) = integrator.eval_exc_vxc( P );
-      }
-      else if ( uks ) {
-        std::tie(EXC, VXC, VXCz) = integrator.eval_exc_vxc( P, Pz );
-      }
-      else if ( gks ) {
-        std::tie(EXC, VXC, VXCz, VXCy, VXCx) = integrator.eval_exc_vxc( P, Pz, Py, Px );
+      if (onedft_model != "NONE") {
+        OneDFTSettings onedft_settings;
+        onedft_settings.model = onedft_model;
+        if (not uks)
+          GAUXC_GENERIC_EXCEPTION("OneDFT only supports UKS for now");
+        std::tie(EXC, VXC, VXCz) = integrator.eval_exc_vxc_onedft( P, Pz, onedft_settings );
+      } else {
+        if( rks ) {
+          std::tie(EXC, VXC) = integrator.eval_exc_vxc( P );
+        }
+        else if ( uks ) {
+          std::tie(EXC, VXC, VXCz) = integrator.eval_exc_vxc( P, Pz );
+        }
+        else if ( gks ) {
+          std::tie(EXC, VXC, VXCz, VXCy, VXCx) = integrator.eval_exc_vxc( P, Pz, Py, Px );
+        }
       }
       std::cout << std::scientific << std::setprecision(12);
       if(!world_rank) std::cout << "EXC = " << EXC << std::endl;

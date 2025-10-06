@@ -24,6 +24,7 @@ struct allocated_dims {
   size_t natoms       = 0; ///< Number of atoms allocated for static data
   size_t max_l        = 0; ///< Highest angular momentum value used
   size_t ntask_ek     = 0; ///< Number of total tasks allocated for static data (EK)
+  size_t total_npts   = 0; ///< Total number of grid points allocated for onedft data
 };
 
 /// Base type for XCDeviceData instances that use stack data allocation.
@@ -83,6 +84,18 @@ struct XCDeviceStackData : public XCDeviceData {
     double* fxc_z_device    = nullptr;  /// Ditto for Z,Y,X densities
     double* fxc_y_device    = nullptr;
     double* fxc_x_device    = nullptr;
+
+    // onedft input and output
+    double* grid_weights_device = nullptr; ///< Grid weights
+    double* grid_coords_device  = nullptr; ///< Grid coordinates
+    double* den_eval_device     = nullptr; ///< Grid densities
+    double* dden_eval_device = nullptr; ///< Grid density gradients
+    double* tau_device    = nullptr;
+
+    // onedft output
+    double* den_grad_device     = nullptr; ///< Grid density gradients
+    double* dden_grad_device    = nullptr; ///< Grid density gradients eps gradients
+    double* tau_grad_device     = nullptr;
 
     inline void reset() { std::memset( this, 0, sizeof(static_data) ); }
 
@@ -319,6 +332,7 @@ struct XCDeviceStackData : public XCDeviceData {
   host_task_iterator generate_buffers( integrator_term_tracker, const BasisSetMap&,
     host_task_iterator, host_task_iterator) override final;
   void allocate_static_data_weights( int32_t natoms ) override final;
+  void allocate_static_data_onedft( int32_t nbf, int32_t nshells, int32_t natoms, int32_t total_npts, integrator_term_tracker enabled_terms ) override final;
   void allocate_static_data_exc_vxc( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms, bool do_vxc ) override final;
   void allocate_static_data_fxc_contraction( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms ) override final;
   void allocate_static_data_den( int32_t nbf, int32_t nshells ) override final;
@@ -329,6 +343,9 @@ struct XCDeviceStackData : public XCDeviceData {
   void send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz,
                                         const double* Py, int32_t ldpy, const double* Px, int32_t ldpx,
     const BasisSet<double>& basis ) override final;
+  void send_static_data_onedft( const Molecule& mol, const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz, const double* Py, 
+      int32_t ldpy, const double* Px, int32_t ldpx, const BasisSet<double>& basis ) override final;
+  void send_static_data_onedft_results( int32_t total_npts, int32_t ndm, const double* EXC, const double* DEN, const double* DDEN, const double* TAU) override final;
   void send_static_data_trial_density(
     const double* tPs, int32_t ldtps, const double* tPz, int32_t ldtpz,
     const double* tPy, int32_t ldtpy, const double* tPx, int32_t ldtpx ) override final;
@@ -344,6 +361,8 @@ struct XCDeviceStackData : public XCDeviceData {
   void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
     double* VXCscalar, int32_t ldvxcscalar, double* VXCz, int32_t ldvxcz,
     double* VXCy     , int32_t ldvxcy     , double* VXCx, int32_t ldvxcx ) override final;
+  void retrieve_onedft_features( int32_t total_npts, int32_t ndm, double* DEN, 
+    double* DDEN, double* TAU, double* POINTS, double* WEIGHTS) override final;
   void retrieve_fxc_contraction_integrands( double* N_EL,
     double* FXCs, int32_t ldfxcs, double* FXCz, int32_t ldfxcz,
     double* FXCy, int32_t ldfxcy, double* FXCx, int32_t ldfxcx ) override final;
@@ -360,6 +379,14 @@ struct XCDeviceStackData : public XCDeviceData {
   double* exc_device_data() override;
   double* nel_device_data() override;
   double* exx_k_device_data() override;
+
+  double* grid_weights_device_data() override;
+  double* grid_coords_device_data() override;
+  double* den_eval_device_data() override;
+  double* dden_eval_device_data() override;
+  double* tau_device_data() override;
+  double* coords_device_data() override;
+
   double* fxc_s_device_data() override;
   double* fxc_z_device_data() override;
   double* fxc_y_device_data() override;

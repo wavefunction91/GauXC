@@ -12,7 +12,7 @@
 #include "incore_replicated_xc_device_integrator_exx.hpp"
 #include "incore_replicated_xc_device_integrator_fxc_contraction.hpp"
 #include "incore_replicated_xc_device_integrator_dd.hpp"
-
+#include "incore_replicated_xc_device_integrator_onedft.hpp"
 namespace GauXC  {
 namespace detail {
 

@@ -643,7 +643,6 @@ void zmat_mgga_vxc( size_t            ntasks,
 
 
 
-
 template <bool need_lapl>
 __global__ void mmat_mgga_vxc_rks_kernel( size_t        ntasks,
                                      XCDeviceTask* tasks_device ) {

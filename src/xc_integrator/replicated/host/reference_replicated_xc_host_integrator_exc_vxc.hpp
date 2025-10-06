@@ -93,7 +93,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   });
 
-
+  
 }
 
 

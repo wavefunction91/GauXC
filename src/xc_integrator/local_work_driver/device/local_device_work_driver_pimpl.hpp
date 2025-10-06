@@ -55,6 +55,8 @@ struct LocalDeviceWorkDriverPIMPL {
   virtual void eval_zmat_lda_vxc( XCDeviceData*, integrator_ks_scheme, density_id ) = 0;
   virtual void eval_zmat_gga_vxc( XCDeviceData*, integrator_ks_scheme, density_id ) = 0;
   virtual void eval_zmat_mgga_vxc( XCDeviceData*, integrator_ks_scheme, bool, density_id ) = 0;
+  virtual void eval_zmat_onedft( XCDeviceData*, integrator_term_tracker, density_id ) = 0;
+  virtual void sz_to_ab_onedft( XCDeviceData*, size_t ) = 0;
   virtual void eval_mmat_mgga_vxc( XCDeviceData*, integrator_ks_scheme, bool, density_id ) = 0;
   virtual void eval_zmat_lda_fxc( XCDeviceData*, density_id ) = 0;
   virtual void eval_zmat_gga_fxc( XCDeviceData*, density_id ) = 0;

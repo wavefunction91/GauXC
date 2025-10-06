@@ -21,4 +21,8 @@ struct IntegratorSettingsKS : public IntegratorSettingsXC {
   double gks_dtol = 1e-12;
 };
 
+struct OneDFTSettings : public IntegratorSettingsXC {
+  std::string model;
+};
+
 }

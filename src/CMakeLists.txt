@@ -23,12 +23,20 @@ else()
   message( STATUS "GauXC Disabling MPI" )
 endif()
 
+if ( GAUXC_ENABLE_ONEDFT )
+  message( STATUS "GauXC Enabling OneDFT" )
+  include( gauxc-onedft      )
+  set(GAUXC_HAS_ONEDFT TRUE CACHE BOOL "GauXC Has OneDFT" FORCE)
+  set(GAUXC_ONEDFT_MODEL_PATH "${PROJECT_SOURCE_DIR}/data/onedft_models" )
+else()
+  message( STATUS "GauXC Disabling OneDFT" )
+endif()
+
 # Required Dependencies
 include( gauxc-integratorxx )
 include( gauxc-exchcxx      )
 
-
-add_library( gauxc STATIC 
+add_library( gauxc 
   grid.cxx 
   grid_impl.cxx 
   grid_factory.cxx
@@ -90,6 +98,10 @@ if( GAUXC_HAS_MPI )
   target_link_libraries( gauxc PUBLIC MPI::MPI_C MPI::MPI_CXX )
 endif()
 
+if ( GAUXC_HAS_ONEDFT )
+  target_link_libraries( gauxc PUBLIC "${TORCH_LIBRARIES}")
+endif()
+
 add_subdirectory( runtime_environment )
 add_subdirectory( molecular_weights )
 add_subdirectory( xc_integrator )
@@ -111,12 +123,19 @@ if(GAUXC_HAS_DEVICE)
   set(GAUXC_GPU_SNLINK_MAX_AM 2)
 endif()
 
+if (GAUXC_HAS_ONEDFT)
+  set(GAUXC_ONEDFT_MODEL_PATH_INSTALL "${CMAKE_INSTALL_PREFIX}/share/gauxc/onedft_models")
+  install( 
+    DIRECTORY  ${GAUXC_ONEDFT_MODEL_PATH}
+    DESTINATION "${CMAKE_INSTALL_PREFIX}/share/gauxc"
+  )
+endif()
+
 # Generate config file
 configure_file( 
   ${PROJECT_SOURCE_DIR}/include/gauxc/gauxc_config.hpp.in
   ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
 )
-
 
 include( GNUInstallDirs )
 
@@ -142,7 +161,8 @@ set(export_properties
   "GAUXC_HAS_MPI"
   "GAUXC_HAS_OPENMP"
   "GAUXC_HAS_HDF5"
- 
+  "GAUXC_HAS_ONEDFT"
+  
   # may become configurable in the future
   "GAUXC_CPU_XC_MAX_AM"
   "GAUXC_CPU_SNLINK_MAX_AM"
@@ -162,6 +182,7 @@ set_target_properties(gauxc
     "GAUXC_HAS_MPI"        ${GAUXC_HAS_MPI}
     "GAUXC_HAS_OPENMP"     ${GAUXC_HAS_OPENMP}
     "GAUXC_HAS_HDF5"       ${GAUXC_HAS_HDF5}
+    "GAUXC_HAS_ONEDFT"     ${GAUXC_HAS_ONEDFT}
     "GAUXC_CPU_XC_MAX_AM"     ${GAUXC_CPU_XC_MAX_AM}     
     "GAUXC_CPU_SNLINK_MAX_AM" ${GAUXC_CPU_SNLINK_MAX_AM}
     "GAUXC_GPU_XC_MAX_AM"     ${GAUXC_GPU_XC_MAX_AM}     

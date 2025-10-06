@@ -48,6 +48,26 @@ struct XCTask {
     }
   };
 
+  struct features {
+    // inputs for onedft
+    std::vector<double> den_eval;
+    std::vector<double> dden_x_eval;
+    std::vector<double> dden_y_eval;
+    std::vector<double> dden_z_eval;
+    std::vector<double> tau;
+    // results from onedft
+    std::vector<double> vdden_eval_a;
+    std::vector<double> vdden_eval_b;
+    std::vector<double> vdden_x_eval_a;
+    std::vector<double> vdden_x_eval_b;
+    std::vector<double> vdden_y_eval_a;
+    std::vector<double> vdden_y_eval_b;
+    std::vector<double> vdden_z_eval_a;
+    std::vector<double> vdden_z_eval_b;
+    std::vector<double> vtau;
+  };
+  features feat;
+
   inline size_t volume() const {
     return 2 * sizeof(int32_t) +
       (3*points.size() + weights.size() + 2) * sizeof(double) +

@@ -39,6 +39,9 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   void eval_zmat_mgga_vxc( XCDeviceData*, integrator_ks_scheme, bool, density_id ) override final;
   void eval_mmat_mgga_vxc( XCDeviceData*, integrator_ks_scheme, bool, density_id ) override final;
 
+  void eval_zmat_onedft( XCDeviceData*, integrator_term_tracker, density_id ) override final;
+  void sz_to_ab_onedft( XCDeviceData*, size_t ) override final;
+  
   void eval_zmat_lda_fxc( XCDeviceData*, density_id ) override final;
   void eval_zmat_gga_fxc( XCDeviceData*, density_id ) override final;
   void eval_zmat_mgga_fxc( XCDeviceData*, bool, density_id ) override final;

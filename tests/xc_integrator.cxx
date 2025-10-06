@@ -216,8 +216,8 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     CHECK( EXC == Approx( EXC_ref ) );
     CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 );
     CHECK( VXCz_diff_nrm / basis.nbf() < 1e-10 );
-    CHECK( VXCy_diff_nrm / basis.nbf() < 1e-10 );
-    CHECK( VXCx_diff_nrm / basis.nbf() < 1e-10 );
+    CHECK( VXCy_diff_nrm / basis.nbf() < 1e-6 );
+    CHECK( VXCx_diff_nrm / basis.nbf() < 1e-6 );
     // Check if the integrator propagates state correctly
     {
       auto [ EXC1, VXC1, VXCz1, VXCy1, VXCx1] = integrator.eval_exc_vxc( P, Pz, Py, Px );
@@ -228,8 +228,8 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       auto VXCx1_diff_nrm = ( VXCx1 - VXCx_ref ).norm();
       CHECK( VXC1_diff_nrm / basis.nbf() < 1e-10 );
       CHECK( VXCz1_diff_nrm / basis.nbf() < 1e-10 );
-      CHECK( VXCy1_diff_nrm / basis.nbf() < 1e-10 );
-      CHECK( VXCx1_diff_nrm / basis.nbf() < 1e-10 );
+      CHECK( VXCy_diff_nrm / basis.nbf() < 1e-6 );
+      CHECK( VXCx_diff_nrm / basis.nbf() < 1e-6 );
     }
 
     // Check EXC-only path

@@ -44,4 +44,5 @@ void mmat_mgga_vxc( size_t        ntasks,
                     integrator_ks_scheme s,
                     density_id sel,
                     device_queue queue );
+
 }

@@ -103,6 +103,15 @@ FWD_TO_PIMPL_KS_SCHEME_DEN_ID(eval_zmat_gga_vxc)         // Eval Z Matrix GGA VX
 FWD_TO_PIMPL_KS_SCHEME_BOOL_DEN_ID(eval_zmat_mgga_vxc)   // Eval Z Matrix mGGA VXC
 FWD_TO_PIMPL_KS_SCHEME_BOOL_DEN_ID(eval_mmat_mgga_vxc)   // Eval M Matrix mGGA VXC
 
+void LocalDeviceWorkDriver::eval_zmat_onedft( XCDeviceData* device_data, integrator_term_tracker track, density_id den ) { 
+  throw_if_invalid_pimpl(pimpl_);                               
+  pimpl_->eval_zmat_onedft(device_data, track, den);                               
+}
+
+void LocalDeviceWorkDriver::sz_to_ab_onedft( XCDeviceData* device_data, size_t offset ) { 
+  throw_if_invalid_pimpl(pimpl_);                               
+  pimpl_->sz_to_ab_onedft(device_data, offset);                               
+}
 FWD_TO_PIMPL_DEN_ID(eval_zmat_lda_fxc)         // Eval Z Matrix LDA FXC
 FWD_TO_PIMPL_DEN_ID(eval_zmat_gga_fxc)         // Eval Z Matrix GGA FXC
 FWD_TO_PIMPL_BOOL_DEN_ID(eval_zmat_mgga_fxc)   // Eval Z Matrix mGGA FXC

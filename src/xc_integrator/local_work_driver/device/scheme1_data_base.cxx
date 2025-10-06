@@ -46,6 +46,8 @@ size_t Scheme1DataBase::get_static_mem_requirement() {
   size_t size = 0;
 
   const size_t nsp = global_dims.nshell_pairs;
+  const size_t total_npts = global_dims.total_npts;
+  
   size += 
     // Shell Pair map
     global_dims.nshells * sizeof(ShellToTaskDevice) +
@@ -53,7 +55,8 @@ size_t Scheme1DataBase::get_static_mem_requirement() {
     // Task Map
     nsp * sizeof(int32_t) +      // nprim_pairs
     nsp * sizeof(shell_pair*) +  // shell_pair pointer
-    nsp * 3 * sizeof(double) +   // X_AB, Y_AB, Z_AB
+    nsp * 3 * sizeof(double) +    // X_AB, Y_AB, Z_AB
+    total_npts * 24 * sizeof(double) +   // space for onedft features and results
     1024 * 1024;                 // additional memory for alignment padding
 
   return size;

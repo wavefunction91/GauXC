@@ -94,6 +94,9 @@ public:
   void eval_zmat_mgga_vxc( XCDeviceData*, integrator_ks_scheme, bool, density_id ) ;
   void eval_mmat_mgga_vxc( XCDeviceData*, integrator_ks_scheme, bool, density_id );
 
+  void eval_zmat_onedft( XCDeviceData*, integrator_term_tracker, density_id );
+  void sz_to_ab_onedft( XCDeviceData*, size_t );
+  
   void eval_zmat_lda_fxc( XCDeviceData*, density_id ) ;
   void eval_zmat_gga_fxc( XCDeviceData*, density_id ) ;
   void eval_zmat_mgga_fxc( XCDeviceData*, bool, density_id ) ;

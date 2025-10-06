@@ -158,6 +158,22 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_gks
 }
 
 template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_uks
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_onedft_( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  matrix_type VXCs( Ps.rows(), Ps.cols() );
+  matrix_type VXCz( Pz.rows(), Pz.cols() );
+  value_type  EXC;
+
+  pimpl_->eval_exc_vxc_onedft( Ps.rows(), Ps.cols(), Ps.data(), Ps.rows(),
+                       Pz.data(), Pz.rows(),
+                       VXCs.data(), VXCs.rows(),
+                       VXCz.data(), VXCz.rows(), &EXC, ks_settings );
+  return std::make_tuple( EXC, VXCs, VXCz );
+}
+
+template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type 
   ReplicatedXCIntegrator<MatrixType>::eval_exc_grad_( const MatrixType& P ) {
 
