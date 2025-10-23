@@ -14,8 +14,16 @@ jobs:
     - uses: mamba-org/setup-micromamba@v2
       with:
         environment-name: gauxc
-        create-args: python=3.11 c-compiler cxx-compiler fortran-compiler mpich cmake hdf5
-        channels: conda-forge
+        create-args: >-
+          python=3.11
+          c-compiler
+          cxx-compiler
+          fortran-compiler
+          mpich
+          cmake
+          hdf5
+          openblas
+        init-shell: bash
         cache-environment: true
     - name: Build
       shell: micromamba-shell {0}
@@ -36,8 +44,16 @@ jobs:
     - uses: mamba-org/setup-micromamba@v2
       with:
         environment-name: gauxc
-        create-args: python=3.11 c-compiler cxx-compiler fortran-compiler mpich cmake hdf5
-        channels: conda-forge
+        create-args: >-
+          python=3.11
+          c-compiler
+          cxx-compiler
+          fortran-compiler
+          mpich
+          cmake
+          hdf5
+          openblas
+        init-shell: bash
         cache-environment: true
     - name: Install LLVM
       if: matrix.compiler == 'llvm-19'
