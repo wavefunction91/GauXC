@@ -1,0 +1,60 @@
+name: Build and Test
+
+on:
+  push:
+    branches: [ master, main, develop ]
+  pull_request:
+    branches: [ master, main, develop ]
+
+jobs:
+  macos-m1:
+    runs-on: macos-14
+    steps:
+    - uses: actions/checkout@v4
+    - uses: mamba-org/setup-micromamba@v2
+      with:
+        environment-name: gauxc
+        create-args: python=3.11 c-compiler cxx-compiler fortran-compiler mpich cmake hdf5
+        channels: conda-forge
+        cache-environment: true
+    - name: Build
+      shell: micromamba-shell {0}
+      run: |
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGAUXC_ENABLE_MPI=ON -DGAUXC_ENABLE_TESTS=ON -DBUILD_TESTING=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+        cmake --build build -j3
+    - name: Test
+      shell: micromamba-shell {0}
+      run: ctest --test-dir build --output-on-failure
+
+  ubuntu:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        compiler: [gnu-12, llvm-19]
+    steps:
+    - uses: actions/checkout@v4
+    - uses: mamba-org/setup-micromamba@v2
+      with:
+        environment-name: gauxc
+        create-args: python=3.11 c-compiler cxx-compiler fortran-compiler mpich cmake hdf5
+        channels: conda-forge
+        cache-environment: true
+    - name: Install LLVM
+      if: matrix.compiler == 'llvm-19'
+      run: |
+        wget -q https://apt.llvm.org/llvm.sh
+        chmod +x llvm.sh
+        sudo ./llvm.sh 19
+    - name: Build
+      shell: micromamba-shell {0}
+      run: |
+        if [ "${{ matrix.compiler }}" = "llvm-19" ]; then
+          export CC=clang-19 CXX=clang++-19
+        else
+          export CC=gcc-12 CXX=g++-12
+        fi
+        cmake -S . -B build -DCMAKE_BUILD_TYPE=Release -DGAUXC_ENABLE_MPI=ON -DGAUXC_ENABLE_TESTS=ON -DBUILD_TESTING=ON -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+        cmake --build build -j2
+    - name: Test
+      shell: micromamba-shell {0}
+      run: ctest --test-dir build --output-on-failure
