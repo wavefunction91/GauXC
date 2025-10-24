@@ -185,20 +185,20 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup Compiler 
+    - name: Setup Compiler
       shell: bash
       run: $GITHUB_WORKSPACE/.github/workflows/scripts/compiler_setup.sh gnu 12
 
     - name: Configure CMake
       shell: bash
       run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
-                 -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/install 
+                 -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/install
                  -DCMAKE_PREFIX_PATH=${ENV_PREFIX_PATH}
                  -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
 
     - name: Build
       shell: bash
-      run: cmake --build ${{runner.workspace}}/build -j2 
+      run: cmake --build ${{runner.workspace}}/build -j2
 
     - name: Install
       shell: bash
@@ -206,10 +206,68 @@ jobs:
 
     - name: CMake Discovery Configure
       shell: bash
-      run: cmake -S $GITHUB_WORKSPACE/tests/cmake/discovery -B ${{runner.workspace}}/cmake_discovery_build 
+      run: cmake -S $GITHUB_WORKSPACE/tests/cmake/discovery -B ${{runner.workspace}}/cmake_discovery_build
                  -DCMAKE_PREFIX_PATH="${{runner.workspace}}/install;${ENV_PREFIX_PATH}"
                  -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
 
     - name: CMake Discovery Build
       shell: bash
       run: cmake --build ${{runner.workspace}}/cmake_discovery_build -j2
+
+  macos_build:
+    name: macOS Build and Test
+    runs-on: macos-14
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - uses: mamba-org/setup-micromamba@v2
+      with:
+        environment-name: gauxc
+        create-args: >-
+          python=3.11
+          c-compiler
+          cxx-compiler
+          fortran-compiler
+          mpich
+          cmake
+          hdf5
+          openblas
+          ccache
+        init-shell: bash
+        cache-environment: true
+
+    - name: Setup ccache
+      shell: micromamba-shell {0}
+      run: |
+        ccache --set-config=max_size=2G
+        ccache --set-config=compression=true
+        echo "CMAKE_C_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+        echo "CMAKE_CXX_COMPILER_LAUNCHER=ccache" >> $GITHUB_ENV
+
+    - name: Restore ccache
+      uses: actions/cache@v4
+      with:
+        path: ~/.ccache
+        key: ccache-macos-${{ github.sha }}
+        restore-keys: |
+          ccache-macos-
+
+    - name: Build
+      shell: micromamba-shell {0}
+      run: |
+        cmake -S . -B build \
+          -DCMAKE_BUILD_TYPE=Release \
+          -DGAUXC_ENABLE_MPI=ON \
+          -DGAUXC_ENABLE_TESTS=ON \
+          -DBUILD_TESTING=ON \
+          -DCMAKE_POLICY_VERSION_MINIMUM=3.5
+        cmake --build build -j3
+
+    - name: ccache statistics
+      shell: micromamba-shell {0}
+      run: ccache --show-stats
+
+    - name: Test
+      shell: micromamba-shell {0}
+      run: ctest --test-dir build --output-on-failure
