@@ -7,3 +7,8 @@ src/xc_integrator/local_work_driver/host/obara_saika/generator/integral*
 src/xc_integrator/local_work_driver/host/obara_saika/generator/obara*
 src/xc_integrator/local_work_driver/host/obara_saika/generator/*.x
 *.swp
+
+# Build directories
+build/
+_build/
+cmake-build-*/
