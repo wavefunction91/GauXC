@@ -32,7 +32,7 @@ include( gauxc-integratorxx )
 include( gauxc-exchcxx      )
 
 
-add_library( gauxc STATIC 
+add_library( gauxc 
   grid.cxx 
   grid_impl.cxx 
   grid_factory.cxx
