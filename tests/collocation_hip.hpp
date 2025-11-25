@@ -11,6 +11,8 @@
  */
 #ifdef GAUXC_HAS_HIP
 #include "collocation_common.hpp"
+#include "hdf5_test_serialization.hpp"
+#include "hdf5_test_serialization_impl.hpp"
 #include "device/common/collocation_device.hpp"
 #include "device_specific/hip_util.hpp"
 #include <gauxc/basisset_map.hpp>
@@ -177,16 +179,12 @@ void hip_check_collocation( const std::vector<XCDeviceTask>& tasks,
 
 
 
-void test_hip_collocation_masked_combined( const BasisSet<double>& basis, std::ifstream& in_file, bool grad ) {
+void test_hip_collocation_masked_combined( const BasisSet<double>& basis, const std::string& filename, bool grad ) {
 
 
 
   std::vector<ref_collocation_data> ref_data;
-
-  {
-    cereal::BinaryInputArchive ar( in_file );
-    ar( ref_data );
-  }
+  read_collocation_data(ref_data, filename);
 
 
   device_queue stream( std::make_shared<util::hip_stream>() );

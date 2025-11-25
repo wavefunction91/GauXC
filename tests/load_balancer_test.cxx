@@ -10,6 +10,7 @@
  * See LICENSE.txt for details
  */
 #include "ut_common.hpp"
+#include "hdf5_test_serialization.hpp"
 #include <gauxc/load_balancer.hpp>
 #include <gauxc/molgrid/defaults.hpp>
 
@@ -23,7 +24,7 @@ void gen_ref_lb_data( std::vector<XCTask>& tasks ) {
   int world_size = rt.comm_size();
 
   std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_cc-pvdz_ufg_tasks_" + std::to_string(world_size) + "mpi_rank" + std::to_string(world_rank) + 
-    "_pv" + std::to_string(1) + ".bin";
+    "_pv" + std::to_string(1) + ".hdf5";
 
   // Points / Weights not stored in reference data to 
   // save space
@@ -32,9 +33,7 @@ void gen_ref_lb_data( std::vector<XCTask>& tasks ) {
     t.weights.clear();
   }
 
-  std::ofstream of( ref_file, std::ios::binary );
-  cereal::BinaryOutputArchive ar(of);
-  ar( tasks );
+  write_xctask_vector(tasks, ref_file);
 
 }
 
@@ -45,14 +44,10 @@ void check_lb_data( const std::vector<XCTask>& tasks ) {
   int world_size = rt.comm_size();
 
   std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_cc-pvdz_ufg_tasks_" + std::to_string(world_size) + "mpi_rank" + std::to_string(world_rank) + 
-    "_pv" + std::to_string(1) + ".bin";
+    "_pv" + std::to_string(1) + ".hdf5";
 
   std::vector<XCTask> ref_tasks;
-  {
-    std::ifstream ifile( ref_file, std::ios::binary );
-    cereal::BinaryInputArchive ar(ifile);
-    ar( ref_tasks );
-  }
+  read_xctask_vector(ref_tasks, ref_file);
 
   REQUIRE( tasks.size() == ref_tasks.size() );
 

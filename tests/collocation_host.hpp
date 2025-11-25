@@ -11,10 +11,12 @@
  */
 #ifdef GAUXC_HAS_HOST
 #include "collocation_common.hpp"
+#include "hdf5_test_serialization.hpp"
+#include "hdf5_test_serialization_impl.hpp"
 #include "host/reference/collocation.hpp"
 
 void generate_collocation_data( const Molecule& mol, const BasisSet<double>& basis,
-                                std::ofstream& out_file, size_t ntask_save = 10 ) {
+                                const std::string& filename, size_t ntask_save = 10 ) {
 
 
   auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
@@ -101,24 +103,17 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
 
   }
 
-  {
-    cereal::BinaryOutputArchive ar( out_file );
-    ar( ref_data );
-  }
+  write_collocation_data(ref_data, filename);
 
 }
 
 
-void test_host_collocation( const BasisSet<double>& basis, std::ifstream& in_file) {
+void test_host_collocation( const BasisSet<double>& basis, const std::string& filename) {
 
 
 
   std::vector<ref_collocation_data> ref_data;
-
-  {
-    cereal::BinaryInputArchive ar( in_file );
-    ar( ref_data );
-  }
+  read_collocation_data(ref_data, filename);
 
   for( auto& d : ref_data ) {
 
@@ -143,16 +138,10 @@ void test_host_collocation( const BasisSet<double>& basis, std::ifstream& in_fil
 
 }
 
-void test_host_collocation_deriv1( const BasisSet<double>& basis, std::ifstream& in_file) {
-
-
+void test_host_collocation_deriv1( const BasisSet<double>& basis, const std::string& filename) {
 
   std::vector<ref_collocation_data> ref_data;
-
-  {
-    cereal::BinaryInputArchive ar( in_file );
-    ar( ref_data );
-  }
+  read_collocation_data(ref_data, filename);
 
   for( auto& d : ref_data ) {
 
@@ -186,16 +175,48 @@ void test_host_collocation_deriv1( const BasisSet<double>& basis, std::ifstream&
 
 }
 
-void test_host_collocation_deriv2( const BasisSet<double>& basis, std::ifstream& in_file) {
+void test_host_collocation_deriv3( const BasisSet<double>& basis, const std::string& filename) {
 
 
 
   std::vector<ref_collocation_data> ref_data;
+  read_collocation_data(ref_data, filename); 
+  
+  const auto& d = ref_data[0];
+  const auto npts = d.pts.size();
+  const auto nbf  = d.eval.size() / npts;
 
-  {
-    cereal::BinaryInputArchive ar( in_file );
-    ar( ref_data );
-  }
+    const auto& mask = d.mask;
+    const auto& pts  = d.pts;
+
+    std::vector<double> eval   ( nbf * npts ),
+                        deval_x( nbf * npts ),
+                        deval_y( nbf * npts ),
+                        deval_z( nbf * npts );
+
+
+    gau2grid_collocation_gradient( npts, mask.size(), nbf,
+                                   pts.data()->data(), basis,
+                                   mask.data(),
+                                   eval.data(), deval_x.data(),
+                                   deval_y.data(), deval_z.data() );
+
+    for( auto i = 0; i < npts * nbf; ++i )
+      CHECK( eval[i] == Approx( d.eval[i] ) );
+    for( auto i = 0; i < npts * nbf; ++i )
+      CHECK( deval_x[i] == Approx( d.deval_x[i] ) );
+    for( auto i = 0; i < npts * nbf; ++i )
+      CHECK( deval_y[i] == Approx( d.deval_y[i] ) );
+    for( auto i = 0; i < npts * nbf; ++i )
+      CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
+}
+
+void test_host_collocation_deriv2( const BasisSet<double>& basis, const std::string& filename) {
+
+
+
+  std::vector<ref_collocation_data> ref_data;
+  read_collocation_data(ref_data, filename);
 
   for( auto& d : ref_data ) {
 

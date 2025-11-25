@@ -11,20 +11,18 @@
  */
 #pragma once
 #include "weights_generate.hpp"
-#include <fstream>
+#include "hdf5_test_serialization.hpp"
+#include "hdf5_test_serialization_impl.hpp"
 #include <string>
 
 #ifdef GAUXC_HAS_HOST
 #include "host/reference/weights.hpp"
 using namespace GauXC;
 
-void test_host_weights( std::ifstream& in_file, XCWeightAlg weight_alg ) {
+void test_host_weights( const std::string& filename, XCWeightAlg weight_alg ) {
 
   ref_weights_data ref_data;
-  {
-    cereal::BinaryInputArchive ar( in_file );
-    ar( ref_data );
-  }
+  read_weights_data(ref_data, filename);
 
   switch(weight_alg) {
     case XCWeightAlg::Becke:

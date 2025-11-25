@@ -13,33 +13,21 @@
 #include <gauxc/molgrid.hpp>
 #include <gauxc/molgrid/defaults.hpp>
 #include <gauxc/load_balancer.hpp>
+#include "collocation_common.hpp"  // has ref_weights_data
+#include "hdf5_test_serialization.hpp"
+#include "hdf5_test_serialization_impl.hpp"
 
 
 using namespace GauXC;
 
-struct ref_weights_data {
-  Molecule                  mol;
-  std::shared_ptr<MolMeta>  meta;
-  std::vector< XCTask > tasks_unm;
-  std::vector< XCTask > tasks_mod; // This is only the weights
-
-  template <typename Archive>
-  void load( Archive& ar ) {
-    ar( mol, tasks_unm, tasks_mod );
-    meta = std::make_shared<MolMeta>(mol);
-  }
-  template <typename Archive>
-  void save( Archive& ar ) const {
-    ar( mol, tasks_unm, tasks_mod );
-  }
-};
+// Note: ref_weights_data is defined in collocation_common.hpp
 
 
 #ifdef GAUXC_HAS_HOST
 #include "host/reference/weights.hpp"
 
 void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
-                            std::ofstream& out_file, XCWeightAlg weight_alg,
+                            const std::string& filename, XCWeightAlg weight_alg,
                             size_t ntask_save = 15 ) {
 
 
@@ -98,10 +86,7 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
   }
   ref_data.tasks_mod = tasks;
 
-  {
-    cereal::BinaryOutputArchive ar( out_file );
-    ar( ref_data );
-  }
+  write_weights_data(ref_data, filename);
 
 }
 #endif
