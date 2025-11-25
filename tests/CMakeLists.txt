@@ -91,15 +91,6 @@ target_include_directories( standalone_driver PRIVATE ${PROJECT_SOURCE_DIR}/test
 #target_include_directories( grid_opt PRIVATE ${PROJECT_BINARY_DIR}/tests )
 #target_include_directories( grid_opt PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
-add_executable( migrate_cereal_to_hdf5 migrate_cereal_to_hdf5.cxx standards.cxx basis/parse_basis.cxx )
-target_link_libraries( migrate_cereal_to_hdf5 PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
-target_include_directories( migrate_cereal_to_hdf5 PRIVATE ${PROJECT_BINARY_DIR}/tests )
-target_include_directories( migrate_cereal_to_hdf5 PRIVATE ${PROJECT_SOURCE_DIR}/tests )
-
-add_executable( test_roundtrip test_roundtrip.cxx standards.cxx basis/parse_basis.cxx )
-target_link_libraries( test_roundtrip PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
-target_include_directories( test_roundtrip PRIVATE ${PROJECT_BINARY_DIR}/tests )
-target_include_directories( test_roundtrip PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
 add_test( NAME GAUXC_SERIAL_TEST COMMAND $<TARGET_FILE:gauxc_test> )
 if( GAUXC_ENABLE_MPI )
