@@ -55,38 +55,48 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
   SECTION( "Host Eval Hessian" ) {
     test_host_collocation_deriv2( basis, ref_file );
   }
+
+  SECTION( "Host Eval Laplacian Gradient" ) {
+    test_host_collocation_deriv3( basis, ref_file );
+  }
 #endif
 
 #ifdef GAUXC_HAS_CUDA
   BasisSetMap basis_map( basis, mol );
   SECTION( "CUDA Eval" ) {
-    test_cuda_collocation_masked_combined( basis, ref_file, false );
+    test_cuda_collocation( basis, ref_file );
+  }
+  SECTION( "CUDA Shell to Task Eval" ) {
+    test_cuda_collocation_shell_to_task( basis, basis_map, ref_file );
   }
 
   SECTION( "CUDA Eval Grad" ) {
-    test_cuda_collocation_masked_combined( basis, ref_file, true );
+    test_cuda_collocation_deriv1( basis, ref_file );
+  }
+  SECTION( "CUDA Shell to Task Eval Grad" ) {
+    test_cuda_collocation_shell_to_task_gradient( basis, basis_map, ref_file );
   }
 
-  SECTION( "CUDA Eval Hessian" ) {
-    test_cuda_collocation_masked_combined_deriv2( basis, ref_file, false, false );
+  SECTION( "CUDA Shell to Task Eval Hessian" ) {
+    test_cuda_collocation_shell_to_task_hessian( basis, basis_map, ref_file );
   }
 
-  SECTION( "CUDA Eval Laplacian" ) {
-    test_cuda_collocation_masked_combined_deriv2( basis, ref_file, true, false );
+  SECTION( "CUDA Shell to Task Eval Laplacian" ) {
+    test_cuda_collocation_shell_to_task_laplacian( basis, basis_map, ref_file );
   }
 
-  SECTION( "CUDA Eval Laplacian Gradient" ) {
-    test_cuda_collocation_masked_combined_deriv2( basis, ref_file, true, true );
+  SECTION( "CUDA Shell to Task Eval Laplacian Gradient" ) {
+    test_cuda_collocation_shell_to_task_lapgrad( basis, basis_map, ref_file );
   }
 #endif // GAUXC_HAS_CUDA
 
 #ifdef GAUXC_HAS_HIP
   SECTION( "HIP Eval" ) {
-    test_hip_collocation_masked_combined( basis, ref_file, false );
+    test_hip_collocation( basis, ref_file );
   }
 
   SECTION( "HIP Eval Grad" ) {
-    test_hip_collocation_masked_combined( basis, ref_file, true );
+    test_hip_collocation_deriv1( basis, ref_file );
   }
 #endif // GAUXC_HAS_HIP
 
