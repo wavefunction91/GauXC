@@ -39,7 +39,6 @@ else()
 endif()
 
 include( gauxc-eigen3 )
-include( gauxc-cereal )
 
 #add_library( catch2_main STATIC ut_main.cxx)
 #target_link_libraries( catch2_main PUBLIC gauxc_catch2 )
@@ -68,7 +67,7 @@ add_executable( gauxc_test
   dd_psi_potential_test.cxx
   2nd_derivative_test.cxx
 )
-target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
+target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen )
 if(GAUXC_ENABLE_CUTLASS)
   include(gauxc-cutlass)
   target_link_libraries(gauxc_test PUBLIC gauxc_cutlass)
@@ -82,12 +81,12 @@ target_include_directories( gauxc_test PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
 
 add_executable( standalone_driver standalone_driver.cxx standards.cxx basis/parse_basis.cxx ini_input.cxx )
-target_link_libraries( standalone_driver PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
+target_link_libraries( standalone_driver PUBLIC gauxc gauxc_catch2 Eigen3::Eigen )
 target_include_directories( standalone_driver PRIVATE ${PROJECT_BINARY_DIR}/tests )
 target_include_directories( standalone_driver PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
 #add_executable( grid_opt grid_opt.cxx standards.cxx basis/parse_basis.cxx ini_input.cxx )
-#target_link_libraries( grid_opt PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
+#target_link_libraries( grid_opt PUBLIC gauxc gauxc_catch2 Eigen3::Eigen )
 #target_include_directories( grid_opt PRIVATE ${PROJECT_BINARY_DIR}/tests )
 #target_include_directories( grid_opt PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
