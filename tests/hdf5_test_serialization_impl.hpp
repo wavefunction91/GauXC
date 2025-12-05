@@ -11,9 +11,7 @@
  */
 #pragma once
 
-// This file contains implementations for HDF5 serialization of test data structures
-// Must include collocation_common.hpp before this file to define ref_collocation_data and ref_weights_data
-
+#include "collocation_common.hpp"
 #include "hdf5_test_serialization.hpp"
 
 namespace GauXC {
