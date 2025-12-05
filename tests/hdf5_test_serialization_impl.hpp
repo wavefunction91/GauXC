@@ -12,10 +12,7 @@
 #pragma once
 
 // This file contains implementations for HDF5 serialization of test data structures
-// Must include struct definitions before this file
-#ifndef REF_COLLOCATION_DATA_DEFINED
-#error "collocation_common.hpp must be included before hdf5_test_serialization_impl.hpp"
-#endif
+// Must include collocation_common.hpp before this file to define ref_collocation_data and ref_weights_data
 
 #include "hdf5_test_serialization.hpp"
 

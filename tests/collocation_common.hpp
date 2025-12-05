@@ -22,7 +22,6 @@
 using namespace GauXC;
 
 #define MAX_NPTS_CHECK 67
-#define REF_COLLOCATION_DATA_DEFINED  // Guard for hdf5_test_serialization_impl.hpp
 
 struct ref_collocation_data {
   std::vector<int32_t>              mask;
