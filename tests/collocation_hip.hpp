@@ -11,6 +11,8 @@
  */
 #ifdef GAUXC_HAS_HIP
 #include "collocation_common.hpp"
+#include "hdf5_test_serialization.hpp"
+#include "hdf5_test_serialization_impl.hpp"
 #include "device/common/collocation_device.hpp"
 #include "device_specific/hip_util.hpp"
 #include <gauxc/basisset_map.hpp>
@@ -177,16 +179,12 @@ void hip_check_collocation( const std::vector<XCDeviceTask>& tasks,
 
 
 
-void test_hip_collocation_masked_combined( const BasisSet<double>& basis, std::ifstream& in_file, bool grad ) {
+void test_hip_collocation_masked_combined( const BasisSet<double>& basis, const std::string& filename, bool grad ) {
 
 
 
   std::vector<ref_collocation_data> ref_data;
-
-  {
-    cereal::BinaryInputArchive ar( in_file );
-    ar( ref_data );
-  }
+  read_collocation_data(ref_data, filename);
 
 
   device_queue stream( std::make_shared<util::hip_stream>() );
@@ -226,15 +224,16 @@ void test_hip_collocation_masked_combined( const BasisSet<double>& basis, std::i
 }
 
 void test_hip_collocation( const BasisSet<double>& basis, 
-  std::ifstream& in_file ) {
+  const std::string& filename ) {
 
-  test_hip_collocation_masked_combined( basis, in_file, false );
+  test_hip_collocation_masked_combined( basis, filename, false );
 
 }
-void test_hip_collocation_deriv1( const BasisSet<double>& basis,
-  std::ifstream& in_file ) {
 
-  test_hip_collocation_masked_combined( basis, in_file, true );
+void test_hip_collocation_deriv1( const BasisSet<double>& basis,
+  const std::string& filename ) {
+
+  test_hip_collocation_masked_combined( basis, filename, true );
 
 }
   
@@ -253,14 +252,11 @@ void test_hip_collocation_deriv1( const BasisSet<double>& basis,
 
 #if 0
 void test_hip_collocation_shell_to_task( const BasisSet<double>& basis,  const BasisSetMap& basis_map,
-  std::ifstream& in_file, bool grad, bool hess) {
+  const std::string& filename, bool grad, bool hess) {
 
   // Load reference data
   std::vector<ref_collocation_data> ref_data;
-  {
-    cereal::BinaryInputArchive ar( in_file );
-    ar( ref_data );
-  }
+  read_collocation_data(ref_data, filename);
 
   // Populate base task information
   device_queue stream( std::make_shared<util::hip_stream>() );
@@ -389,21 +385,21 @@ void test_hip_collocation_shell_to_task( const BasisSet<double>& basis,  const B
 
 
 void test_hip_collocation_shell_to_task( const BasisSet<double>& basis,  
-  const BasisSetMap& basis_map, std::ifstream& in_file) {
+  const BasisSetMap& basis_map, const std::string& filename) {
 
-  test_hip_collocation_shell_to_task(basis,basis_map,in_file,false, false);
+  test_hip_collocation_shell_to_task(basis,basis_map,filename,false, false);
 
 }
 void test_hip_collocation_shell_to_task_gradient( const BasisSet<double>& basis,  
-  const BasisSetMap& basis_map, std::ifstream& in_file) {
+  const BasisSetMap& basis_map, const std::string& filename) {
 
-  test_hip_collocation_shell_to_task(basis,basis_map,in_file,true, false);
+  test_hip_collocation_shell_to_task(basis,basis_map,filename,true, false);
 
 }
 void test_hip_collocation_shell_to_task_hessian( const BasisSet<double>& basis,  
-  const BasisSetMap& basis_map, std::ifstream& in_file) {
+  const BasisSetMap& basis_map, const std::string& filename) {
 
-  test_hip_collocation_shell_to_task(basis,basis_map,in_file,true, true);
+  test_hip_collocation_shell_to_task(basis,basis_map,filename,true, true);
 
 }
 #endif

@@ -46,18 +46,6 @@ struct Atom {
   Atom( AtomicNumber _Z, double _x, double _y, double _z ) :
     Z(_Z), x(_x), y(_y), z(_z) { }
 
-  /**
-   *  @brief (De)serialize an atom object to/from a particular cereal archive
-   *
-   *  @tparam Archive Cereal archive type
-   *
-   *  @param[in/out] ar Cereal archive
-   */
-  template <typename Archive>
-  void serialize( Archive& ar ) {
-    ar(  Z, x, y, z );
-  }
-
 }; // struct Atom
 
 /**

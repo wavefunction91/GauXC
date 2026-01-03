@@ -11,6 +11,8 @@
  */
 #ifdef GAUXC_HAS_CUDA
 #include "collocation_common.hpp"
+#include "hdf5_test_serialization.hpp"
+#include "hdf5_test_serialization_impl.hpp"
 #include "device/common/collocation_device.hpp"
 #include "device_specific/cuda_util.hpp"
 #include <gauxc/basisset_map.hpp>
@@ -215,16 +217,12 @@ void cuda_check_collocation( const std::vector<XCDeviceTask>& tasks,
 
 
 
-void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::ifstream& in_file, bool grad ) {
+void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, const std::string& filename, bool grad ) {
 
 
 
   std::vector<ref_collocation_data> ref_data;
-
-  {
-    cereal::BinaryInputArchive ar( in_file );
-    ar( ref_data );
-  }
+  read_collocation_data(ref_data, filename);
 
 
   device_queue stream( std::make_shared<util::cuda_stream>() );
@@ -264,15 +262,16 @@ void test_cuda_collocation_masked_combined( const BasisSet<double>& basis, std::
 }
 
 void test_cuda_collocation( const BasisSet<double>& basis, 
-  std::ifstream& in_file ) {
+  const std::string& filename ) {
 
-  test_cuda_collocation_masked_combined( basis, in_file, false );
+  test_cuda_collocation_masked_combined( basis, filename, false );
 
 }
-void test_cuda_collocation_deriv1( const BasisSet<double>& basis,
-  std::ifstream& in_file ) {
 
-  test_cuda_collocation_masked_combined( basis, in_file, true );
+void test_cuda_collocation_deriv1( const BasisSet<double>& basis,
+  const std::string& filename ) {
+
+  test_cuda_collocation_masked_combined( basis, filename, true );
 
 }
   
@@ -291,14 +290,11 @@ void test_cuda_collocation_deriv1( const BasisSet<double>& basis,
 
 
 void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,  const BasisSetMap& basis_map,
-  std::ifstream& in_file, bool grad, bool hess, bool lapl, bool lapl_grad) {
+  const std::string& filename, bool grad, bool hess, bool lapl, bool lapl_grad) {
 
   // Load reference data
   std::vector<ref_collocation_data> ref_data;
-  {
-    cereal::BinaryInputArchive ar( in_file );
-    ar( ref_data );
-  }
+  read_collocation_data(ref_data, filename);
 
   // Populate base task information
   device_queue stream( std::make_shared<util::cuda_stream>() );
@@ -435,35 +431,35 @@ void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,  const 
 
 
 void test_cuda_collocation_shell_to_task( const BasisSet<double>& basis,  
-  const BasisSetMap& basis_map, std::ifstream& in_file) {
+  const BasisSetMap& basis_map, const std::string& filename) {
 
-  test_cuda_collocation_shell_to_task(basis,basis_map,in_file,false, false, false, false);
+  test_cuda_collocation_shell_to_task(basis,basis_map,filename,false, false, false, false);
 
 }
 void test_cuda_collocation_shell_to_task_gradient( const BasisSet<double>& basis,  
-  const BasisSetMap& basis_map, std::ifstream& in_file) {
+  const BasisSetMap& basis_map, const std::string& filename) {
 
-  test_cuda_collocation_shell_to_task(basis,basis_map,in_file,true, false, false, false);
+  test_cuda_collocation_shell_to_task(basis,basis_map,filename,true, false, false, false);
 
 }
 void test_cuda_collocation_shell_to_task_hessian( const BasisSet<double>& basis,  
-  const BasisSetMap& basis_map, std::ifstream& in_file) {
+  const BasisSetMap& basis_map, const std::string& filename) {
 
-  test_cuda_collocation_shell_to_task(basis,basis_map,in_file,true, true, false, false);
+  test_cuda_collocation_shell_to_task(basis,basis_map,filename,true, true, false, false);
 
 }
 
 void test_cuda_collocation_shell_to_task_laplacian( const BasisSet<double>& basis,  
-  const BasisSetMap& basis_map, std::ifstream& in_file) {
+  const BasisSetMap& basis_map, const std::string& filename) {
 
-  test_cuda_collocation_shell_to_task(basis,basis_map,in_file,true, false, true, false);
+  test_cuda_collocation_shell_to_task(basis,basis_map,filename,true, false, true, false);
 
 }
 
 void test_cuda_collocation_shell_to_task_lapgrad( const BasisSet<double>& basis,  
-  const BasisSetMap& basis_map, std::ifstream& in_file) {
+  const BasisSetMap& basis_map, const std::string& filename) {
 
-  test_cuda_collocation_shell_to_task(basis,basis_map,in_file,true, true, true, true);
+  test_cuda_collocation_shell_to_task(basis,basis_map,filename,true, true, true, true);
 
 }
 

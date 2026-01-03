@@ -36,53 +36,41 @@ TEST_CASE( "Partition Weights", "[weights]" ) {
   BasisSet<double> basis = make_631Gd( mol, SphericalType(true) );
   for( auto& sh : basis ) sh.set_shell_tolerance( 1e-6 );
 
-  {
-  std::ofstream ref_data( "benzene_weights_becke.bin", std::ios::binary );
-  generate_weights_data( mol, basis, ref_data, XCWeightAlg::Becke );  
-  }
-  {
-  std::ofstream ref_data( "benzene_weights_ssf.bin", std::ios::binary );
-  generate_weights_data( mol, basis, ref_data, XCWeightAlg::SSF );  
-  }
-  {
-  std::ofstream ref_data( "benzene_weights_lko.bin", std::ios::binary );
-  generate_weights_data( mol, basis, ref_data, XCWeightAlg::LKO );  
-  }
+  generate_weights_data( mol, basis, "benzene_weights_becke.hdf5", XCWeightAlg::Becke );  
+  generate_weights_data( mol, basis, "benzene_weights_ssf.hdf5", XCWeightAlg::SSF );  
+  generate_weights_data( mol, basis, "benzene_weights_lko.hdf5", XCWeightAlg::LKO );
   return;
 #else
 
 
 #ifdef GAUXC_HAS_HOST
   SECTION("Becke") {
-  std::ifstream ref_data( GAUXC_REF_DATA_PATH "/benzene_weights_becke.bin", 
-                          std::ios::binary );
-  test_host_weights( ref_data, XCWeightAlg::Becke );
+  std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_weights_becke.hdf5";
+  test_host_weights( ref_file, XCWeightAlg::Becke );
   }
   SECTION("LKO") {
-  std::ifstream ref_data( GAUXC_REF_DATA_PATH "/benzene_weights_lko.bin", 
-                          std::ios::binary );
-  test_host_weights( ref_data, XCWeightAlg::LKO );
+  std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_weights_lko.hdf5";
+  test_host_weights( ref_file, XCWeightAlg::LKO );
   }
 #endif
 
 
   SECTION("SSF") {
 
-  std::ifstream ref_data( GAUXC_REF_DATA_PATH "/benzene_weights_ssf.bin", 
-                          std::ios::binary );
+  std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_weights_ssf.hdf5";
 
 #ifdef GAUXC_HAS_HOST
   SECTION( "Host Weights" ) {
-    test_host_weights( ref_data, XCWeightAlg::SSF );
+    test_host_weights( ref_file, XCWeightAlg::SSF );
   }
 #endif
 
 #ifdef GAUXC_HAS_DEVICE
   SECTION( "Device Weights" ) {
 #ifdef GAUXC_HAS_CUDA
-    test_cuda_weights( ref_data );
+    test_cuda_weights( ref_file );
 #elif defined(GAUXC_HAS_HIP)
-    test_hip_weights( ref_data );
+    test_hip_weights( ref_file );
 #endif
   }
 #endif

@@ -37,64 +37,66 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
 
 #ifdef GENERATE_TESTS
 
-  std::ofstream ref_data( "water_cc-pVDZ_collocation.bin", std::ios::binary );
-  generate_collocation_data( mol, basis, ref_data );
+  generate_collocation_data( mol, basis, "water_cc-pVDZ_collocation.hdf5" );
 
 #else
 
-  std::ifstream ref_data( GAUXC_REF_DATA_PATH "/water_cc-pVDZ_collocation.bin",
-                          std::ios::binary );
+  std::string ref_file = GAUXC_REF_DATA_PATH "/water_cc-pVDZ_collocation.hdf5";
 
 #ifdef GAUXC_HAS_HOST
   SECTION( "Host Eval" ) {
-    test_host_collocation( basis, ref_data );
+    test_host_collocation( basis, ref_file );
   }
 
   SECTION( "Host Eval Grad" ) {
-    test_host_collocation_deriv1( basis, ref_data );
+    test_host_collocation_deriv1( basis, ref_file );
   }
 
   SECTION( "Host Eval Hessian" ) {
-    test_host_collocation_deriv2( basis, ref_data );
+    test_host_collocation_deriv2( basis, ref_file );
+  }
+
+  SECTION( "Host Eval Laplacian Gradient" ) {
+    test_host_collocation_deriv3( basis, ref_file );
   }
 #endif
 
 #ifdef GAUXC_HAS_CUDA
   BasisSetMap basis_map( basis, mol );
   SECTION( "CUDA Eval" ) {
-    test_cuda_collocation( basis, ref_data );
+    test_cuda_collocation( basis, ref_file );
   }
   SECTION( "CUDA Shell to Task Eval" ) {
-    test_cuda_collocation_shell_to_task( basis, basis_map, ref_data );
+    test_cuda_collocation_shell_to_task( basis, basis_map, ref_file );
   }
 
   SECTION( "CUDA Eval Grad" ) {
-    test_cuda_collocation_deriv1( basis, ref_data );
+    test_cuda_collocation_deriv1( basis, ref_file );
   }
   SECTION( "CUDA Shell to Task Eval Grad" ) {
-    test_cuda_collocation_shell_to_task_gradient( basis, basis_map, ref_data );
+    test_cuda_collocation_shell_to_task_gradient( basis, basis_map, ref_file );
   }
 
   SECTION( "CUDA Shell to Task Eval Hessian" ) {
-    test_cuda_collocation_shell_to_task_hessian( basis, basis_map, ref_data );
+    test_cuda_collocation_shell_to_task_hessian( basis, basis_map, ref_file );
   }
 
   SECTION( "CUDA Shell to Task Eval Laplacian" ) {
-    test_cuda_collocation_shell_to_task_laplacian( basis, basis_map, ref_data );
+    test_cuda_collocation_shell_to_task_laplacian( basis, basis_map, ref_file );
   }
 
   SECTION( "CUDA Shell to Task Eval Laplacian Gradient" ) {
-    test_cuda_collocation_shell_to_task_lapgrad( basis, basis_map, ref_data );
+    test_cuda_collocation_shell_to_task_lapgrad( basis, basis_map, ref_file );
   }
 #endif // GAUXC_HAS_CUDA
 
 #ifdef GAUXC_HAS_HIP
   SECTION( "HIP Eval" ) {
-    test_hip_collocation( basis, ref_data );
+    test_hip_collocation( basis, ref_file );
   }
 
   SECTION( "HIP Eval Grad" ) {
-    test_hip_collocation_deriv1( basis, ref_data );
+    test_hip_collocation_deriv1( basis, ref_file );
   }
 #endif // GAUXC_HAS_HIP
 

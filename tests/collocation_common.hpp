@@ -49,7 +49,20 @@ struct ref_collocation_data {
 
 };
 
-void check_collocation_transpose( int npts, int nbf, const double* ref_val, const double* comp_val, std::string msg = "" ) {
+// Weights reference data structure
+struct ref_weights_data {
+  Molecule                   mol;
+  std::shared_ptr<MolMeta>   meta;
+  std::vector<XCTask>        tasks_unm;
+  std::vector<XCTask>        tasks_mod;
+
+  template <typename Archive>
+  void serialize( Archive& ar ) {
+    ar( mol, tasks_unm, tasks_mod );
+  }
+};
+
+inline void check_collocation_transpose( int npts, int nbf, const double* ref_val, const double* comp_val, std::string msg = "" ) {
 
   // Check transpose
   for( int i = 0; i < nbf;  ++i )
@@ -60,7 +73,7 @@ void check_collocation_transpose( int npts, int nbf, const double* ref_val, cons
 
 }
 
-void check_collocation( int npts, int nbf, const double* ref_val, const double* comp_val ) {
+inline void check_collocation( int npts, int nbf, const double* ref_val, const double* comp_val ) {
 
   for( int i = 0; i < nbf;  ++i )
   for( int j = 0; j < npts; ++j ) {

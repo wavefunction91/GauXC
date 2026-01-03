@@ -51,7 +51,6 @@ for flexible and agile development in the field of KS-DFT.
 * [Gau2Grid](https://github.com/dgasmith/gau2grid) (pregenerated source packaged with GauXC)
 * MPI (Optional)
 * OpenMP (CPU parallelism, Optional)
-* [Cereal](https://github.com/USCiLab/cereal) (Optional)
 * [HDF5](https://www.hdfgroup.org/solutions/hdf5/) (Optional)
 * [Eigen3](https://eigen.tuxfamily.org/dox/) (Testing Only)
 * [CUDA](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)/[cuBLAS](https://docs.nvidia.com/cuda/cublas/index.html) (Required only if CUDA enabled)

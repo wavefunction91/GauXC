@@ -11,7 +11,8 @@
  */
 #pragma once
 #include "weights_generate.hpp"
-#include <fstream>
+#include "hdf5_test_serialization.hpp"
+#include "hdf5_test_serialization_impl.hpp"
 #include <string>
 #include <gauxc/util/div_ceil.hpp>
 
@@ -26,13 +27,10 @@
 
 
                         
-void test_hip_weights( std::ifstream& in_file ) {
+void test_hip_weights( const std::string& filename ) {
 
   ref_weights_data ref_data;
-  {
-    cereal::BinaryInputArchive ar( in_file );
-    ar( ref_data );
-  }
+  read_weights_data(ref_data, filename);
 
   //std::vector< std::array<double,3> > points;
   std::vector< double > points_x, points_y, points_z;

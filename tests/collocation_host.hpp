@@ -11,10 +11,12 @@
  */
 #ifdef GAUXC_HAS_HOST
 #include "collocation_common.hpp"
+#include "hdf5_test_serialization.hpp"
+#include "hdf5_test_serialization_impl.hpp"
 #include "host/reference/collocation.hpp"
 
 void generate_collocation_data( const Molecule& mol, const BasisSet<double>& basis,
-                                std::ofstream& out_file, size_t ntask_save = 10 ) {
+                                const std::string& filename, size_t ntask_save = 10 ) {
 
 
   auto rt = RuntimeEnvironment(GAUXC_MPI_CODE(MPI_COMM_WORLD));
@@ -101,24 +103,17 @@ void generate_collocation_data( const Molecule& mol, const BasisSet<double>& bas
 
   }
 
-  {
-    cereal::BinaryOutputArchive ar( out_file );
-    ar( ref_data );
-  }
+  write_collocation_data(ref_data, filename);
 
 }
 
 
-void test_host_collocation( const BasisSet<double>& basis, std::ifstream& in_file) {
+void test_host_collocation( const BasisSet<double>& basis, const std::string& filename) {
 
 
 
   std::vector<ref_collocation_data> ref_data;
-
-  {
-    cereal::BinaryInputArchive ar( in_file );
-    ar( ref_data );
-  }
+  read_collocation_data(ref_data, filename);
 
   for( auto& d : ref_data ) {
 
@@ -143,16 +138,10 @@ void test_host_collocation( const BasisSet<double>& basis, std::ifstream& in_fil
 
 }
 
-void test_host_collocation_deriv1( const BasisSet<double>& basis, std::ifstream& in_file) {
-
-
+void test_host_collocation_deriv1( const BasisSet<double>& basis, const std::string& filename) {
 
   std::vector<ref_collocation_data> ref_data;
-
-  {
-    cereal::BinaryInputArchive ar( in_file );
-    ar( ref_data );
-  }
+  read_collocation_data(ref_data, filename);
 
   for( auto& d : ref_data ) {
 
@@ -186,16 +175,12 @@ void test_host_collocation_deriv1( const BasisSet<double>& basis, std::ifstream&
 
 }
 
-void test_host_collocation_deriv2( const BasisSet<double>& basis, std::ifstream& in_file) {
+void test_host_collocation_deriv2( const BasisSet<double>& basis, const std::string& filename) {
 
 
 
   std::vector<ref_collocation_data> ref_data;
-
-  {
-    cereal::BinaryInputArchive ar( in_file );
-    ar( ref_data );
-  }
+  read_collocation_data(ref_data, filename);
 
   for( auto& d : ref_data ) {
 
@@ -246,5 +231,79 @@ void test_host_collocation_deriv2( const BasisSet<double>& basis, std::ifstream&
       CHECK( d2eval_zz[i] == Approx( d.d2eval_zz[i] ) );
   }
 
+}
+
+void test_host_collocation_deriv3( const BasisSet<double>& basis, const std::string& filename) {
+
+  std::vector<ref_collocation_data> ref_data;
+  read_collocation_data(ref_data, filename); 
+  
+  for( auto& d : ref_data ) {
+    const auto npts = d.pts.size();
+    const auto nbf  = d.eval.size() / npts;
+
+    const auto& mask = d.mask;
+    const auto& pts  = d.pts;
+
+    std::vector<double> eval   ( nbf * npts ),
+                        deval_x( nbf * npts ),
+                        deval_y( nbf * npts ),
+                        deval_z( nbf * npts ),
+                        d2eval_xx( nbf * npts ),
+                        d2eval_xy( nbf * npts ),
+                        d2eval_xz( nbf * npts ),
+                        d2eval_yy( nbf * npts ),
+                        d2eval_yz( nbf * npts ),
+                        d2eval_zz( nbf * npts ),
+                        d3eval_xxx( nbf * npts ),
+                        d3eval_xxy( nbf * npts ),
+                        d3eval_xxz( nbf * npts ),
+                        d3eval_xyy( nbf * npts ),
+                        d3eval_xyz( nbf * npts ),
+                        d3eval_xzz( nbf * npts ),
+                        d3eval_yyy( nbf * npts ),
+                        d3eval_yyz( nbf * npts ),
+                        d3eval_yzz( nbf * npts ),
+                        d3eval_zzz( nbf * npts );
+
+
+    gau2grid_collocation_der3( npts, mask.size(), nbf,
+      pts.data()->data(), basis, mask.data(), eval.data(), 
+      deval_x.data(), deval_y.data(), deval_z.data(),
+      d2eval_xx.data(), d2eval_xy.data(), d2eval_xz.data(),
+      d2eval_yy.data(), d2eval_yz.data(), d2eval_zz.data(),
+      d3eval_xxx.data(), d3eval_xxy.data(), d3eval_xxz.data(),
+      d3eval_xyy.data(), d3eval_xyz.data(), d3eval_xzz.data(),
+      d3eval_yyy.data(), d3eval_yyz.data(), d3eval_yzz.data(),
+      d3eval_zzz.data());
+
+    // Compute laplacian gradient from 3rd derivatives
+    std::vector<double> d3eval_lapl_x(nbf * npts);
+    std::vector<double> d3eval_lapl_y(nbf * npts);
+    std::vector<double> d3eval_lapl_z(nbf * npts);
+    for(auto i = 0ul; i < nbf*npts; ++i) {
+      d3eval_lapl_x[i] = d3eval_xxx[i] + d3eval_xyy[i] + d3eval_xzz[i];
+      d3eval_lapl_y[i] = d3eval_xxy[i] + d3eval_yyy[i] + d3eval_yzz[i];
+      d3eval_lapl_z[i] = d3eval_xxz[i] + d3eval_yyz[i] + d3eval_zzz[i];
+    }
+
+    // Check base function and 1st derivatives
+    for( auto i = 0ul; i < npts * nbf; ++i )
+      CHECK( eval[i] == Approx( d.eval[i] ) );
+    for( auto i = 0ul; i < npts * nbf; ++i )
+      CHECK( deval_x[i] == Approx( d.deval_x[i] ) );
+    for( auto i = 0ul; i < npts * nbf; ++i )
+      CHECK( deval_y[i] == Approx( d.deval_y[i] ) );
+    for( auto i = 0ul; i < npts * nbf; ++i )
+      CHECK( deval_z[i] == Approx( d.deval_z[i] ) );
+
+    // Check laplacian gradient (3rd derivatives)
+    for( auto i = 0ul; i < npts * nbf; ++i )
+      CHECK( d3eval_lapl_x[i] == Approx( d.d3eval_lapl_x[i] ) );
+    for( auto i = 0ul; i < npts * nbf; ++i )
+      CHECK( d3eval_lapl_y[i] == Approx( d.d3eval_lapl_y[i] ) );
+    for( auto i = 0ul; i < npts * nbf; ++i )
+      CHECK( d3eval_lapl_z[i] == Approx( d.d3eval_lapl_z[i] ) );
+  }
 }
 #endif
