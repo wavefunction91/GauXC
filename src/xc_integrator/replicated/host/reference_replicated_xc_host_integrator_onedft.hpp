@@ -129,7 +129,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     auto exc = (exc_on_grid * features_dict.at(feat_map.at(ONEDFT_FEATURE::WEIGHTS))).sum();
     exc.backward();
     EXC[0] = exc.item().to<double>();
-    std::cout << "EXC: " << EXC[0] << std::endl;
   }
   // MPI_Bcast(EXC, 1, MPI_DOUBLE, 0, rt.comm());
   // TODO: stop here if only exc
@@ -674,7 +673,7 @@ FeatureDict prepare_onedft_features(const int ndm, std::vector<XCTask>& tasks, c
                   const std::vector<std::string> feature_keys, const RuntimeEnvironment& rt,
                   std::vector<int>& sendcounts, std::vector<int>& displs) {
   std::vector<double> den_eval, dden_eval, tau, grid_coords, grid_weights;
-  size_t total_npts = std::accumulate( tasks.begin(), tasks.end(), 0ul,
+  int total_npts = std::accumulate( tasks.begin(), tasks.end(), 0,
     [](const auto& a, const auto& b) { return a + b.npts; } );
   grid_coords.reserve(total_npts * 3);
   grid_weights.reserve(total_npts);
@@ -716,7 +715,7 @@ FeatureDict prepare_onedft_features(const int ndm, std::vector<XCTask>& tasks, c
   );
   FeatureDict featmap;
   if (world_rank == 0) {
-    size_t natoms = mol.size();
+    int natoms = mol.size();
     std::vector<double> coarse_0_atomic_coords (natoms*3); 
     for (int i = 0; i < natoms; i++) {
       coarse_0_atomic_coords[3*i] = mol[i].x;
