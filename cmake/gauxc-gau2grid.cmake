@@ -29,7 +29,7 @@ if( GAUXC_ENABLE_GAU2GRID )
           message( STATUS "Something Went Horribly Wrong With Gau2Grid discovery!" )
         endif()
 
-        set(GAUXC_HAS_EXT_GG TRUE CACHE BOOL "GauXC is using an external Gau2Grid dependency" FORCE)
+        set( GAUXC_HAS_EXT_GG TRUE CACHE BOOL "GauXC is using an external Gau2Grid dependency" FORCE )
       else()
       
         message( STATUS "Building Pregenerated Gau2grid" )
@@ -38,7 +38,7 @@ if( GAUXC_ENABLE_GAU2GRID )
       endif()
     
     else()
-      set(GAUXC_HAS_EXT_GG TRUE CACHE BOOL "GauXC is using an external Gau2Grid dependency" FORCE)
+      set( GAUXC_HAS_EXT_GG TRUE CACHE BOOL "GauXC is using an external Gau2Grid dependency" FORCE )
     endif() # If not discoverable
   endif() # If target not present
 

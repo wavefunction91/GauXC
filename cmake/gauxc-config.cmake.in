@@ -31,7 +31,7 @@ if(GAUXC_HAS_OPENMP)
   find_dependency( OpenMP )
 endif()
 
-if(GAUXC_HAS_EXT_GG AND NOT TARGET gau2grid::gg)
+if( GAUXC_HAS_EXT_GG AND NOT TARGET gau2grid::gg )
   find_dependency( gau2grid )
 endif()
 
