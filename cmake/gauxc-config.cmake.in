@@ -19,6 +19,7 @@ set( GAUXC_HAS_CUTLASS    @GAUXC_HAS_CUTLASS@   )
 set( GAUXC_HAS_MPI        @GAUXC_HAS_MPI@       )
 set( GAUXC_HAS_OPENMP     @GAUXC_HAS_OPENMP@    )
 set( GAUXC_HAS_GAU2GRID   @GAUXC_HAS_GAU2GRID@  )
+set( GAUXC_HAS_EXT_GG     @GAUXC_HAS_EXT_GG@    )
 set( GAUXC_HAS_HDF5       @GAUXC_HAS_HDF5@      )
 set( GAUXC_BLAS_IS_LP64   @GAUXC_BLAS_IS_LP64@  )
 
@@ -30,7 +31,7 @@ if(GAUXC_HAS_OPENMP)
   find_dependency( OpenMP )
 endif()
 
-if(GAUXC_HAS_GAU2GRID AND NOT TARGET gau2grid::gg)
+if(GAUXC_HAS_EXT_GG AND NOT TARGET gau2grid::gg)
   find_dependency( gau2grid )
 endif()
 
