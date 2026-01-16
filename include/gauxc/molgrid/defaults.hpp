@@ -30,10 +30,10 @@ namespace GauXC {
   /// Return the default atomic radius (Bohr) for a given atomic number.
   double default_atomic_radius(AtomicNumber);
 
-  /// Return the default Murray-Handy-Laming radial scaling factor for an atomic number.
+  /// Return the default Mura-Knowles radial scaling factor for an atomic number.
   RadialScale default_mk_radial_scaling_factor( AtomicNumber );
 
-  /// Return the default Mura-Knowles radial scaling factor for an atomic number.
+  /// Return the default Murray-Handy-Laming radial scaling factor for an atomic number.
   RadialScale default_mhl_radial_scaling_factor( AtomicNumber );
 
   /// Return the default Treutler-Ahlrichs radial scaling factor for an atomic number.
