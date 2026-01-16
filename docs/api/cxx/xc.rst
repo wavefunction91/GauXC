@@ -18,3 +18,9 @@ The :cpp:class:`GauXC::XCIntegratorFactory` creates integrators based on user-de
 
 .. doxygenstruct:: GauXC::IntegratorSettingsEXC_GRAD
    :members:
+
+.. doxygenstruct:: GauXC::IntegratorSettingsEXX
+   :members:
+
+.. doxygenstruct:: GauXC::IntegratorSettingsSNLinK
+   :members:
