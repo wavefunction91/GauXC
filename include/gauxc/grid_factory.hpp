@@ -63,9 +63,9 @@ PrunedAtomicGridSpecification treutler_pruning_scheme(
 
 /// High-level specification of pruning schemes for atomic quadratures
 enum class PruningScheme {
-  Unpruned, /// Unpruned atomic quadrature
-  Robust,   /// The "Robust" scheme of Psi4
-  Treutler  /// The Treutler-Ahlrichs scheme
+  Unpruned, ///< Unpruned atomic quadrature
+  Robust,   ///< The "Robust" scheme of Psi4
+  Treutler  ///< The Treutler-Ahlrichs scheme
 };
 
 /// Generate a pruning specification from a specificed pruning scheme and 
