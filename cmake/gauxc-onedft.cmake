@@ -2,12 +2,13 @@ find_package(nlohmann_json)
 if( NOT nlohmann_json_FOUND )
 
   message( STATUS "Could Not Find nlohmann_json... Building" )
-  message( STATUS "NLOHMANN_JSON REPO = ${GAUXC_NLOHMANN_JSON_REPOSITORY}" )
+  message( STATUS "NLOHMANN_JSON URL = ${GAUXC_NLOHMANN_JSON_URL}" )
 
   FetchContent_Declare(
     nlohmann_json
-    GIT_REPOSITORY ${GAUXC_NLOHMANN_JSON_REPOSITORY}
-    GIT_TAG        ${GAUXC_NLOHMANN_JSON_REVISION}
+    URL ${GAUXC_NLOHMANN_JSON_URL}
+    URL_HASH SHA256=${GAUXC_NLOHMANN_JSON_SHA256}
+    DOWNLOAD_EXTRACT_TIMESTAMP ON
   )
 
   FetchContent_GetProperties( nlohmann_json )
