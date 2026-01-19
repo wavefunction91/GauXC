@@ -31,8 +31,7 @@ endif()
 include( gauxc-integratorxx )
 include( gauxc-exchcxx      )
 
-
-add_library( gauxc 
+add_library( gauxc
   grid.cxx 
   grid_impl.cxx 
   grid_factory.cxx
@@ -40,8 +39,29 @@ add_library( gauxc
   molgrid.cxx 
   molgrid_impl.cxx 
   molgrid_defaults.cxx 
-  atomic_radii.cxx 
+  atomic_radii.cxx
 )
+
+if( GAUXC_ENABLE_C )
+  message( STATUS "GauXC Enabling C API" )
+  target_sources( gauxc PRIVATE
+    c_status.cxx
+    c_types.cxx
+    c_molecule.cxx
+    c_basisset.cxx
+    c_molgrid.cxx
+    c_runtime_environment.cxx
+    c_load_balancer.cxx
+    c_molecular_weights.cxx
+    c_matrix.cxx
+    c_functional.cxx
+    c_xc_integrator.cxx
+  )
+  set(GAUXC_HAS_C TRUE CACHE BOOL "GauXC Has C API" FORCE)
+else()
+  message( STATUS "GauXC Disabling C API" )
+endif()
+
 
 target_include_directories( gauxc
   PUBLIC
@@ -117,8 +137,8 @@ endif()
 
 # Generate config file
 configure_file( 
-  ${PROJECT_SOURCE_DIR}/include/gauxc/gauxc_config.hpp.in
-  ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
+  ${PROJECT_SOURCE_DIR}/include/gauxc/gauxc_config.h.in
+  ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.h
 )
 
 
@@ -136,6 +156,7 @@ set_target_properties( gauxc PROPERTIES EXPORT_NAME gauxc )
 
 set(export_properties
   # currently configurable properties 
+  "GAUXC_HAS_C"
   "GAUXC_HAS_HOST"
   "GAUXC_HAS_DEVICE"
   "GAUXC_HAS_CUDA"
@@ -156,6 +177,7 @@ set(export_properties
 
 set_target_properties(gauxc
   PROPERTIES
+    "GAUXC_HAS_C"          ${GAUXC_HAS_C}
     "GAUXC_HAS_HOST"       ${GAUXC_HAS_HOST}
     "GAUXC_HAS_DEVICE"     ${GAUXC_HAS_DEVICE}
     "GAUXC_HAS_CUDA"       ${GAUXC_HAS_CUDA}
@@ -178,16 +200,23 @@ export(EXPORT gauxc-targets
       NAMESPACE gauxc::
       FILE "${PROJECT_BINARY_DIR}/gauxc-targets.cmake")
 
-# Install static headers
+# Install static C++ headers
 install( 
   DIRECTORY   ${PROJECT_SOURCE_DIR}/include
   DESTINATION .
   FILES_MATCHING PATTERN "*.hpp"
 )
 
+# Install static C headers
+install( 
+  DIRECTORY   ${PROJECT_SOURCE_DIR}/include
+  DESTINATION .
+  FILES_MATCHING PATTERN "*.h"
+)
+
 # Install generated headers
 install(
-  FILES       ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
+  FILES       ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.h
   DESTINATION include/gauxc
 )
   
