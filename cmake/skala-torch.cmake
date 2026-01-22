@@ -6,22 +6,34 @@ if(NOT Torch_FOUND)
    
     # Set libtorch version and download URL
     set(LIBTORCH_VERSION "2.9.1")
+    set(USE_CUDA_LIBTORCH FALSE) #default is not to use the cuda version but cpu version
+    if(GAUXC_HAS_CUDA)
+        set(SUPPORTED_CUDA_VERSION_STRINGS "126" "128" "130")
+        set(CUDA_VERSION_STRING ${CUDAToolkit_VERSION_MAJOR}${CUDAToolkit_VERSION_MINOR})
+        if(CUDA_VERSION_STRING IN_LIST SUPPORTED_CUDA_VERSION_STRINGS)
+	    set(USE_CUDA_LIBTORCH TRUE)
+        else()
+	    message(Found ${CUDAToolkit_VERSION}, for which there is no libtorch to download.)
+	    message(Falling back to cpu version of libtorch.)
+        endif()
+    endif()
+	
    
     # Determine the appropriate libtorch variant based on platform and CUDA availability
     if(UNIX AND NOT APPLE)
         # Linux
-        if(GAUXC_HAS_CUDA)
-            set(LIBTORCH_URL "https://download.pytorch.org/libtorch/cu121/libtorch-cxx11-abi-shared-with-deps-${LIBTORCH_VERSION}%2Bcu121.zip")
+        if(USE_CUDA_LIBTORCH)
+	    set(LIBTORCH_URL "https://download.pytorch.org/libtorch/cu${CUDA_VERSION_STRING}/libtorch-shared-with-deps-${LIBTORCH_VERSION}%2Bcu${CUDA_VERSION_STRING}.zip")
         else()
-            set(LIBTORCH_URL "https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-${LIBTORCH_VERSION}%2Bcpu.zip"
+            set(LIBTORCH_URL "https://download.pytorch.org/libtorch/cpu/libtorch-shared-with-deps-${LIBTORCH_VERSION}%2Bcpu.zip")
         endif()
     elseif(APPLE)
         # macOS (CPU only)
         set(LIBTORCH_URL "https://download.pytorch.org/libtorch/cpu/libtorch-macos-arm64-${LIBTORCH_VERSION}.zip")
     elseif(WIN32)
         # Windows
-        if(GAUXC_HAS_CUDA)
-            set(LIBTORCH_URL "https://download.pytorch.org/libtorch/cu121/libtorch-win-shared-with-deps-${LIBTORCH_VERSION}%2Bcu121.zip")
+        if(USE_CUDA_LIBTORCH)
+	    set(LIBTORCH_URL "https://download.pytorch.org/libtorch/cu${CUDA_VERSION_STRING}/libtorch-win-shared-with-deps-${LIBTORCH_VERSION}%2Bcu${CUDA_VERSION_STRING}.zip")
         else()
             set(LIBTORCH_URL "https://download.pytorch.org/libtorch/cpu/libtorch-win-shared-with-deps-${LIBTORCH_VERSION}%2Bcpu.zip")
         endif()
