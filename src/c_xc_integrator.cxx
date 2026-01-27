@@ -266,6 +266,38 @@ void gauxc_integrator_eval_exc_vxc_uks(
   }
 }
 
+void gauxc_integrator_eval_exc_vxc_onedft_uks(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  const GauXCMatrix density_matrix_s,
+  const GauXCMatrix density_matrix_z,
+  const char* model,
+  double* exc_out,
+  GauXCMatrix* vxc_matrix_s,
+  GauXCMatrix* vxc_matrix_z
+) {
+  vxc_matrix_s->ptr = nullptr;
+  vxc_matrix_z->ptr = nullptr;
+  OneDFTSettings onedft_settings;
+  onedft_settings.model = std::string(model);
+
+  try {
+    auto& dm_s = *detail::get_matrix_ptr(density_matrix_s);
+    auto& dm_z = *detail::get_matrix_ptr(density_matrix_z);
+
+    auto [exc, vxc_s, vxc_z] = integrator.owned
+      ? detail::get_xc_integrator_ptr(integrator)->eval_exc_vxc_onedft(dm_s, dm_z, onedft_settings)
+      : detail::get_xc_integrator_shared(integrator)->get()->eval_exc_vxc_onedft(dm_s, dm_z, onedft_settings);
+
+    *exc_out = exc;
+    vxc_matrix_s->ptr = new detail::CMatrix(std::move(vxc_s));
+    vxc_matrix_z->ptr = new detail::CMatrix(std::move(vxc_z));
+    status->code = 0;
+  } catch (...) {
+    status->code = 1;
+  }
+}
+
 void gauxc_integrator_eval_exc_vxc_gks(
   GauXCStatus* status,
   const GauXCIntegrator integrator,

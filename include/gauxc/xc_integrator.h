@@ -216,6 +216,28 @@ extern void gauxc_integrator_eval_exc_vxc_uks(
 );
 
 /**
+ * @brief Evaluate the exchange-correlation energy and potential for UKS.
+ * @param status Status object to capture any errors.
+ * @param integrator Handle to the XCIntegrator.
+ * @param density_matrix_s Density matrix container for total density.
+ * @param density_matrix_z Density matrix container for spin density.
+ * @param model String specifying the OneDFT model to use.
+ * @param exc Pointer to store the exchange-correlation energy.
+ * @param vxc_matrix_s Matrix container to store the exchange-correlation potential for total density.
+ * @param vxc_matrix_z Matrix container to store the exchange-correlation potential for spin density
+ */
+extern void gauxc_integrator_eval_exc_vxc_onedft_uks(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  const GauXCMatrix density_matrix_s,
+  const GauXCMatrix density_matrix_z,
+  const char* model,
+  double* exc,
+  GauXCMatrix* vxc_matrix_s,
+  GauXCMatrix* vxc_matrix_z
+);
+
+/**
  * @brief Evaluate the exchange-correlation energy and potential for GKS.
  * @param status Status object to capture any errors.
  * @param integrator Handle to the XCIntegrator.
