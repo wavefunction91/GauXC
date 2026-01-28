@@ -29,18 +29,20 @@ if( GAUXC_ENABLE_GAU2GRID )
           message( STATUS "Something Went Horribly Wrong With Gau2Grid discovery!" )
         endif()
 
-        set( GAUXC_HAS_EXT_GG TRUE CACHE BOOL "GauXC is using an external Gau2Grid dependency" FORCE )
+        set( GAUXC_HAS_GAU2GRID External CACHE STRING "GauXC has Gau2Grid and will build bindings" FORCE )
       else()
       
         message( STATUS "Building Pregenerated Gau2grid" )
         add_subdirectory( ${PROJECT_SOURCE_DIR}/external/gau2grid ${PROJECT_BINARY_DIR}/external/gau2grid )
+        set( GAUXC_HAS_GAU2GRID Vendored CACHE STRING "GauXC has Gau2Grid and will build bindings" FORCE )
       
       endif()
     
     else()
-      set( GAUXC_HAS_EXT_GG TRUE CACHE BOOL "GauXC is using an external Gau2Grid dependency" FORCE )
+      set( GAUXC_HAS_GAU2GRID External CACHE STRING "GauXC has Gau2Grid and will build bindings" FORCE )
     endif() # If not discoverable
+  else()
+    set( GAUXC_HAS_GAU2GRID External CACHE STRING "GauXC has Gau2Grid and will build bindings" FORCE )
   endif() # If target not present
 
-  set(GAUXC_HAS_GAU2GRID TRUE CACHE BOOL "GauXC has Gau2Grid and will build bindings" FORCE)
 endif() # If enabled
