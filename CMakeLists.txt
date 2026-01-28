@@ -53,9 +53,14 @@ cmake_dependent_option( GAUXC_ENABLE_CUTLASS
   "Enable CUTLASS Linear Algebra" OFF  
   "GAUXC_ENABLE_CUDA"             OFF 
 )
+cmake_dependent_option( GAUXC_ENABLE_FORTRAN
+  "Enable Fortran API"            OFF
+  "GAUXC_ENABLE_C"                ON
+)
 
 # Default the feature variables
 set( GAUXC_HAS_C          FALSE CACHE BOOL "" FORCE )
+set( GAUXC_HAS_FORTRAN    FALSE CACHE BOOL "" FORCE )
 set( GAUXC_HAS_HOST       FALSE CACHE BOOL "" FORCE )
 set( GAUXC_HAS_CUDA       FALSE CACHE BOOL "" FORCE )
 set( GAUXC_HAS_HIP        FALSE CACHE BOOL "" FORCE )
@@ -70,6 +75,7 @@ set( GAUXC_BLAS_IS_LP64   FALSE CACHE BOOL "" FORCE )
 
 mark_as_advanced( FORCE 
   GAUXC_HAS_C
+  GAUXC_HAS_FORTRAN
   GAUXC_HAS_HOST     
   GAUXC_HAS_CUDA     
   GAUXC_HAS_HIP      
@@ -89,6 +95,10 @@ if( NOT GAUXC_ENABLE_GAU2GRID )
                         will be made optional in a future release of GauXC [WIP]" ) 
 endif()
 
+if( GAUXC_ENABLE_FORTRAN )
+  enable_language( Fortran )
+  set( GAUXC_HAS_FORTRAN TRUE CACHE BOOL "GauXC has Fortran API" FORCE )
+endif()
 
 if( GAUXC_ENABLE_HOST ) 
   set(GAUXC_HAS_HOST TRUE CACHE BOOL "GauXC has Host Bindings" FORCE)
