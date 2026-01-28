@@ -32,6 +32,7 @@ module gauxc_integrator
     & gauxc_integrator_eval_exc_gks, &
     & gauxc_integrator_eval_exc_vxc_rks, &
     & gauxc_integrator_eval_exc_vxc_uks, &
+    & gauxc_integrator_eval_exc_vxc_onedft_uks, &
     & gauxc_integrator_eval_exc_vxc_gks
 
   public :: &
@@ -282,6 +283,37 @@ module gauxc_integrator
     end subroutine gauxc_integrator_eval_exc_vxc_gks
   end interface gauxc_eval_exc_vxc
 
+  interface
+    !> @brief Evaluate the exchange-correlation energy and potential for UKS.
+    subroutine gauxc_integrator_eval_exc_vxc_onedft_uks_c(status, integrator, &
+      density_matrix_s, density_matrix_z, model, exc, vxc_matrix_s, vxc_matrix_z) &
+      bind(c, name="gauxc_integrator_eval_exc_vxc_onedft_uks")
+      import :: gauxc_status_type, gauxc_integrator_type, gauxc_matrix_type, c_double, &
+        & c_char
+      implicit none
+      !> @param status Status object to capture any errors.
+      type(gauxc_status_type), intent(out) :: status
+      !> @param integrator Handle to the XCIntegrator.
+      type(gauxc_integrator_type), value :: integrator
+      !> @param density_matrix_s Density matrix container for total density.
+      type(gauxc_matrix_type), value :: density_matrix_s
+      !> @param density_matrix_z Density matrix container for spin density.
+      type(gauxc_matrix_type), value :: density_matrix_z
+      !> @param String specifying the OneDFT model to use.
+      character(kind=c_char), intent(in) :: model(*)
+      !> @param exc Pointer to store the exchange-correlation energy.
+      real(c_double), intent(out) :: exc
+      !> @param vxc_matrix_s Matrix container for total density potential.
+      type(gauxc_matrix_type), intent(out) :: vxc_matrix_s
+      !> @param vxc_matrix_z Matrix container for spin density potential.
+      type(gauxc_matrix_type), intent(out) :: vxc_matrix_z
+    end subroutine gauxc_integrator_eval_exc_vxc_onedft_uks_c
+  end interface
+
+  interface gauxc_eval_exc_vxc
+    module procedure gauxc_integrator_eval_exc_vxc_onedft_uks
+  end interface gauxc_eval_exc_vxc
+
 contains
 
   !> @brief Create a new XCIntegratorFactory instance.
@@ -321,4 +353,33 @@ contains
       c_integrator_input_type, c_integrator_kernel_name, &
       c_local_work_kernel_name, c_reduction_kernel_name)
   end function gauxc_integrator_factory_new
+
+  !> @brief Evaluate the exchange-correlation energy and potential for UKS.
+  subroutine gauxc_integrator_eval_exc_vxc_onedft_uks(status, integrator, &
+    density_matrix_s, density_matrix_z, model, exc, vxc_matrix_s, vxc_matrix_z)
+    !> @param status Status object to capture any errors.
+    type(gauxc_status_type), intent(out) :: status
+    !> @param integrator Handle to the XCIntegrator.
+    type(gauxc_integrator_type), value :: integrator
+    !> @param density_matrix_s Density matrix container for total density.
+    type(gauxc_matrix_type), value :: density_matrix_s
+    !> @param density_matrix_z Density matrix container for spin density.
+    type(gauxc_matrix_type), value :: density_matrix_z
+    !> @param String specifying the OneDFT model to use.
+    character(kind=c_char, len=*), intent(in) :: model
+    !> @param exc Pointer to store the exchange-correlation energy.
+    real(c_double), intent(inout) :: exc
+    !> @param vxc_matrix_s Matrix container for total density potential.
+    type(gauxc_matrix_type), intent(inout) :: vxc_matrix_s
+    !> @param vxc_matrix_z Matrix container for spin density potential.
+    type(gauxc_matrix_type), intent(inout) :: vxc_matrix_z
+
+    character(kind=c_char), allocatable :: c_model(:)
+
+    c_model = transfer(model//c_null_char, [character(kind=c_char) ::], &
+      & len(model)+1)
+
+    call gauxc_integrator_eval_exc_vxc_onedft_uks_c(status, integrator, &
+      density_matrix_s, density_matrix_z, c_model, exc, vxc_matrix_s, vxc_matrix_z)
+  end subroutine gauxc_integrator_eval_exc_vxc_onedft_uks
 end module gauxc_integrator
