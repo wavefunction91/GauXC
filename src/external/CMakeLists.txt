@@ -17,11 +17,11 @@ if( GAUXC_ENABLE_HDF5 )
     message(STATUS "Enabling HDF5 Bindings")
     find_package(HighFive QUIET)
     if(NOT HighFive_FOUND)
-      message(STATUS "HighFive REPO = ${GAUXC_HIGHFIVE_REPOSITORY}")
-      message(STATUS "HighFive REV  = ${GAUXC_HIGHFIVE_REVISION}  ")
+      message(STATUS "HighFive URL = ${GAUXC_HIGHFIVE_URL}")
       FetchContent_Declare( HighFive
-        GIT_REPOSITORY ${GAUXC_HIGHFIVE_REPOSITORY}
-        GIT_TAG        ${GAUXC_HIGHFIVE_REVISION}  
+        URL ${GAUXC_HIGHFIVE_URL}
+        URL_HASH SHA256=${GAUXC_HIGHFIVE_SHA256}
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
       )
     
       set(HIGHFIVE_USE_BOOST OFF CACHE BOOL "" )

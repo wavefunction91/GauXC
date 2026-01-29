@@ -8,13 +8,13 @@ endforeach()
 include( gauxc-dep-versions )
 
 message( STATUS "Building Local CUTLASS Installation" )
-message( STATUS "CUTLASS REPO = ${GAUXC_CUTLASS_REPOSITORY}" )
-message( STATUS "CUTLASS REV  = ${GAUXC_CUTLASS_REVISION}"   )
+message( STATUS "CUTLASS URL = ${GAUXC_CUTLASS_URL}" )
 
 FetchContent_Declare(
   cutlass
-  GIT_REPOSITORY ${GAUXC_CUTLASS_REPOSITORY} 
-  GIT_TAG        ${GAUXC_CUTLASS_REVISION} 
+  URL ${GAUXC_CUTLASS_URL}
+  URL_HASH SHA256=${GAUXC_CUTLASS_SHA256}
+  DOWNLOAD_EXTRACT_TIMESTAMP TRUE
 )
 
 FetchContent_GetProperties( cutlass )

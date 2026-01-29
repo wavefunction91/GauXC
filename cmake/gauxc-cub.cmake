@@ -5,13 +5,13 @@ if( GAUXC_HAS_CUDA )
     include( gauxc-dep-versions )
 
     message( STATUS "Building Local CUB Installation" )
-    message( STATUS "CUB REPO = ${GAUXC_CUB_REPOSITORY}" )
-    message( STATUS "CUB REV  = ${GAUXC_CUB_REVISION}"   )
+    message( STATUS "CUB URL = ${GAUXC_CUB_URL}" )
 
     FetchContent_Declare(
       cub
-      GIT_REPOSITORY ${GAUXC_CUB_REPOSITORY} 
-      GIT_TAG        ${GAUXC_CUB_REVISION} 
+      URL ${GAUXC_CUB_URL}
+      URL_HASH SHA256=${GAUXC_CUB_SHA256}
+      DOWNLOAD_EXTRACT_TIMESTAMP TRUE
     )
 
     FetchContent_GetProperties( cub )

@@ -12,13 +12,13 @@ if( GAUXC_ENABLE_GAU2GRID )
         
         include( gauxc-dep-versions )
         
-        message( STATUS "GAU2GRID REPO = ${GAUXC_GAU2GRID_REPOSITORY}" )
-        message( STATUS "GAU2GRID REV  = ${GAUXC_GAU2GRID_REVISION}"   )
+        message( STATUS "GAU2GRID URL = ${GAUXC_GAU2GRID_URL}" )
         
         FetchContent_Declare(
           gau2grid
-          GIT_REPOSITORY ${GAUXC_GAU2GRID_REPOSITORY} 
-          GIT_TAG        ${GAUXC_GAU2GRID_REVISION} 
+          URL ${GAUXC_GAU2GRID_URL}
+          URL_HASH SHA256=${GAUXC_GAU2GRID_SHA256}
+          DOWNLOAD_EXTRACT_TIMESTAMP TRUE
         )
         
         set( MAX_AM 6 CACHE STRING "" )
