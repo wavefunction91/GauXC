@@ -27,6 +27,7 @@ endif()
 
 
 # GauXC Options
+option( GAUXC_ENABLE_C          "Enable C API"                ON  )
 option( GAUXC_ENABLE_HOST       "Enable Host Integrator"      ON  )
 option( GAUXC_ENABLE_CUDA       "Enable CUDA Bindings"        OFF )
 option( GAUXC_ENABLE_HIP        "Enable HIP Bindings"         OFF )
@@ -55,6 +56,7 @@ cmake_dependent_option( GAUXC_ENABLE_CUTLASS
 )
 
 # Default the feature variables
+set( GAUXC_HAS_C          FALSE CACHE BOOL "" FORCE )
 set( GAUXC_HAS_HOST       FALSE CACHE BOOL "" FORCE )
 set( GAUXC_HAS_CUDA       FALSE CACHE BOOL "" FORCE )
 set( GAUXC_HAS_HIP        FALSE CACHE BOOL "" FORCE )
@@ -69,6 +71,7 @@ set( GAUXC_HAS_ONEDFT    FALSE CACHE BOOL "" FORCE )
 set( GAUXC_BLAS_IS_LP64   FALSE CACHE BOOL "" FORCE )
 
 mark_as_advanced( FORCE 
+  GAUXC_HAS_C
   GAUXC_HAS_HOST     
   GAUXC_HAS_CUDA     
   GAUXC_HAS_HIP      

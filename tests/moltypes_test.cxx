@@ -23,6 +23,11 @@
 
 #include <gauxc/gauxc_config.hpp>
 
+#ifdef GAUXC_HAS_C
+#include <gauxc/molecule.h>
+#include <gauxc/external/hdf5.h>
+#endif
+
 #ifdef GAUXC_HAS_MPI
 #include <mpi.h>
 #endif
@@ -41,6 +46,16 @@ TEST_CASE("Atom", "[moltypes]") {
   CHECK( atom.y       == y );
   CHECK( atom.z       == z );
 
+#ifdef GAUXC_HAS_C
+  SECTION("C Interop") {
+    C::GauXCAtom c_atom = { Z, x, y, z };
+
+    CHECK( c_atom.Z == atom.Z.get() );
+    CHECK( c_atom.x == atom.x );
+    CHECK( c_atom.y == atom.y );
+    CHECK( c_atom.z == atom.z );
+  }
+#endif
 }
 
 TEST_CASE("Molecule", "[moltypes]") {
@@ -57,6 +72,19 @@ TEST_CASE("Molecule", "[moltypes]") {
 
     CHECK(mol.natoms() == 0);
   }
+
+#ifdef GAUXC_HAS_C
+  SECTION("Default C") {
+    C::GauXCStatus status;
+    C::GauXCMolecule mol = C::gauxc_molecule_new(&status);
+    CHECK(status.code == 0);
+    CHECK(C::gauxc_molecule_natoms(&status, mol) == 0);
+    CHECK(status.code == 0);
+
+    C::gauxc_molecule_delete(&status, &mol);
+    CHECK(status.code == 0);
+  }
+#endif
 
   SECTION("From std::vector<Atom>") {
 
@@ -179,27 +207,67 @@ TEST_CASE("HDF5-MOLECULE", "[moltypes]") {
   if( world_rank ) return; // Only run on root rank
 #endif
 
-
+  SECTION("HDF5 IO") {
   Molecule mol = make_water();
   
-  // Write file
-  const std::string fname = GAUXC_REF_DATA_PATH "/test_mol.hdf5";
-  //if( std::filesystem::exists(fname) ) std::filesystem::remove(fname);
-  auto file_exists = [](const auto& f ) {
-    std::ifstream file(f); return file.good();
-  };
-  if(file_exists(fname)) std::remove(fname.c_str());
+    // Write file
+    const std::string fname = GAUXC_REF_DATA_PATH "/test_mol.hdf5";
+    //if( std::filesystem::exists(fname) ) std::filesystem::remove(fname);
+    auto file_exists = [](const auto& f ) {
+      std::ifstream file(f); return file.good();
+    };
+    if(file_exists(fname)) std::remove(fname.c_str());
 
-  write_hdf5_record( mol, fname , "/MOL" );
+    write_hdf5_record( mol, fname , "/MOL" );
 
-  // Read File
-  Molecule mol_read;
-  read_hdf5_record( mol_read, fname, "/MOL" );
+    // Read File
+    Molecule mol_read;
+    read_hdf5_record( mol_read, fname, "/MOL" );
 
-  // Check that IO was correct
-  CHECK( mol == mol_read );
+    // Check that IO was correct
+    CHECK( mol == mol_read );
 
-  //std::filesystem::remove(fname); // Delete the test file
-  std::remove(fname.c_str());
+    //std::filesystem::remove(fname); // Delete the test file
+    std::remove(fname.c_str());
+  }
+
+#ifdef GAUXC_HAS_C
+  SECTION("C HDF5 IO") {
+    C::GauXCStatus status;
+
+    C::GauXCMolecule mol;
+    C::GauXCAtom atoms[3] = {
+      { 8, 0.000000000000000,  0.000000000000000,  0.000000000000000 },
+      { 1, 1.579252144093028,  2.174611055780858,  0.000000000000000 },
+      { 1, 1.579252144093028, -2.174611055780858,  0.000000000000000 }
+    };
+    mol = C::gauxc_molecule_new_from_atoms(&status, atoms, 3);
+    CHECK(status.code == 0);
+
+    auto file_exists = [](const auto& f ) {
+      std::ifstream file(f); return file.good();
+    };
+    // Write file
+    const std::string fname_c = GAUXC_REF_DATA_PATH "/test_mol_c.hdf5";
+    if(file_exists(fname_c)) std::remove(fname_c.c_str());
+
+    C::gauxc_molecule_write_hdf5_record(&status, mol, fname_c.c_str(), "/MOL");
+    CHECK(status.code == 0);
+
+    C::GauXCMolecule mol_read = C::gauxc_molecule_new(&status);
+    CHECK(status.code == 0);
+
+    C::gauxc_molecule_read_hdf5_record(&status, mol_read, fname_c.c_str(), "/MOL");
+    CHECK(status.code == 0);
+
+    CHECK(C::gauxc_molecule_equal(&status, mol, mol_read));
+    CHECK(status.code == 0);
+
+    C::gauxc_molecule_delete(&status, &mol);
+    CHECK(status.code == 0);
+    C::gauxc_molecule_delete(&status, &mol_read);
+    CHECK(status.code == 0);
+  }
+#endif
 
 }

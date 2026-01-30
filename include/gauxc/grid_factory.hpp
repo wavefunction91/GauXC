@@ -11,6 +11,7 @@
  */
 #pragma once
 #include <gauxc/grid.hpp>
+#include <gauxc/enums.hpp>
 #include <integratorxx/composite_quadratures/spherical_quadrature.hpp>
 #include <integratorxx/composite_quadratures/pruned_spherical_quadrature.hpp>
 
@@ -60,13 +61,6 @@ PrunedAtomicGridSpecification robust_psi4_pruning_scheme(
 PrunedAtomicGridSpecification treutler_pruning_scheme(
   UnprunedAtomicGridSpecification
 );
-
-/// High-level specification of pruning schemes for atomic quadratures
-enum class PruningScheme {
-  Unpruned, /// Unpruned atomic quadrature
-  Robust,   /// The "Robust" scheme of Psi4
-  Treutler  /// The Treutler-Ahlrichs scheme
-};
 
 /// Generate a pruning specification from a specificed pruning scheme and 
 /// an unpruned grid specification
