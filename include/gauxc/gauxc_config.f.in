@@ -1,16 +1,4 @@
-/**
- * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
- * through Lawrence Berkeley National Laboratory (subject to receipt of
- * any required approvals from the U.S. Dept. of Energy).
- *
- * (c) 2024-2025, Microsoft Corporation
- *
- * All rights reserved.
- *
- * See LICENSE.txt for details
- */
-#pragma once
-
+#cmakedefine GAUXC_HAS_C
 #cmakedefine GAUXC_HAS_FORTRAN
 #cmakedefine GAUXC_HAS_HOST
 #cmakedefine GAUXC_HAS_CUDA
@@ -21,13 +9,7 @@
 #cmakedefine GAUXC_HAS_CUTLASS
 #cmakedefine GAUXC_HAS_GAU2GRID
 #cmakedefine GAUXC_HAS_HDF5
-#cmakedefine GAUXC_HAS_ONEDFT
 #cmakedefine GAUXC_USE_FAST_RSQRT
-
-#ifdef GAUXC_HAS_ONEDFT
-#cmakedefine GAUXC_ONEDFT_MODEL_PATH "@GAUXC_ONEDFT_MODEL_PATH@"
-#cmakedefine GAUXC_ONEDFT_MODEL_PATH_INSTALL "@GAUXC_ONEDFT_MODEL_PATH_INSTALL@"
-#endif
 
 #ifdef GAUXC_HAS_HOST
 #cmakedefine GAUXC_CPU_XC_MAX_AM     @GAUXC_CPU_XC_MAX_AM@
