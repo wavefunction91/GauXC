@@ -55,7 +55,7 @@ cmake_dependent_option( GAUXC_ENABLE_CUTLASS
 )
 cmake_dependent_option( GAUXC_ENABLE_FORTRAN
   "Enable Fortran API"            OFF
-  "GAUXC_ENABLE_C"                ON
+  "GAUXC_ENABLE_C"                OFF
 )
 
 # Default the feature variables

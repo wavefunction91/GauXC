@@ -175,7 +175,7 @@ configure_file(
   ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.h
 )
 
-if( GAUXC_HAS_FORTRAN )
+if( GAUXC_ENABLE_FORTRAN )
   # Generate config file
   configure_file( 
     ${PROJECT_SOURCE_DIR}/include/gauxc/gauxc_config.f.in
@@ -257,7 +257,7 @@ install(
   FILES_MATCHING PATTERN "*.h"
 )
 
-if( GAUXC_HAS_FORTRAN )
+if( GAUXC_ENABLE_FORTRAN )
   # Install Fortran modules
   install(
     DIRECTORY ${PROJECT_BINARY_DIR}/modules/
@@ -272,7 +272,7 @@ install(
   DESTINATION include/gauxc
 )
 
-if( GAUXC_HAS_FORTRAN )
+if( GAUXC_ENABLE_FORTRAN )
   install(
     FILES       ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.f
     DESTINATION include/gauxc
