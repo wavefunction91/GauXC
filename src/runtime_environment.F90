@@ -72,7 +72,7 @@ module gauxc_runtime_environment
       import :: gauxc_runtime_environment_type, gauxc_status_type, c_int
       implicit none
       type(gauxc_status_type), intent(out) :: status
-      type(gauxc_runtime_environment_type), intent(in) :: rt
+      type(gauxc_runtime_environment_type), value :: rt
       integer(c_int) :: comm_size
     end function gauxc_runtime_environment_comm_rank
   end interface
@@ -82,7 +82,7 @@ module gauxc_runtime_environment
       import :: gauxc_runtime_environment_type, gauxc_status_type, c_int
       implicit none
       type(gauxc_status_type), intent(out) :: status
-      type(gauxc_runtime_environment_type), intent(in) :: rt
+      type(gauxc_runtime_environment_type), value :: rt
       integer(c_int) :: comm_size
     end function gauxc_runtime_environment_comm_size
   end interface
