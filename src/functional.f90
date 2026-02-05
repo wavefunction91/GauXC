@@ -564,7 +564,7 @@ module gauxc_xc_functional
       import :: gauxc_status_type, gauxc_functional_type, c_char, c_bool
       type(gauxc_status_type), intent(out) :: status
       character(kind=c_char), intent(in) :: functional_spec(*)
-      logical(c_bool), intent(in) :: polarized
+      logical(c_bool), value :: polarized
       type(gauxc_functional_type) :: func
     end function gauxc_functional_from_string_c
 
@@ -573,8 +573,8 @@ module gauxc_xc_functional
       & result(func) bind(c)
       import :: gauxc_status_type, gauxc_functional_type, c_int, c_bool
       type(gauxc_status_type), intent(out) :: status
-      integer(c_int), intent(in) :: functional_enum
-      logical(c_bool), intent(in) :: polarized
+      integer(c_int), value :: functional_enum
+      logical(c_bool), value :: polarized
       type(gauxc_functional_type) :: func
     end function gauxc_functional_from_enum
   end interface

@@ -45,7 +45,7 @@ contains
       call c_f_pointer(status%message, pmsg, [slen])
       msg = transfer(pmsg(1:slen), "")
     else
-      msg = "Success, no errors."
+      msg = ""
     end if
   end function gauxc_status_message
 
