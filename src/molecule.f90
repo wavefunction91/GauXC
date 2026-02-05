@@ -21,7 +21,7 @@ module gauxc_molecule
     & gauxc_molecule_new, &
     & gauxc_molecule_new_from_atoms, &
     & gauxc_molecule_delete, &
-    & gauxc_molecule_get_natoms, &
+    & gauxc_molecule_natoms, &
     & gauxc_molecule_equals
 
   public :: &
@@ -77,7 +77,7 @@ module gauxc_molecule
 
   interface
     !> @brief Get the number of atoms in the molecule
-    function gauxc_molecule_get_natoms(status, molecule) result(natoms) bind(c)
+    function gauxc_molecule_natoms(status, molecule) result(natoms) bind(c)
       import :: c_size_t, gauxc_status_type, gauxc_molecule_type
       implicit none
       !> @param status Status of the operation
@@ -86,7 +86,7 @@ module gauxc_molecule
       type(gauxc_molecule_type), value :: molecule
       !> @return Number of atoms in the molecule
       integer(c_size_t) :: natoms
-    end function gauxc_molecule_get_natoms
+    end function gauxc_molecule_natoms
 
     !> @brief Check if two Molecule instances are equal
     function gauxc_molecule_equals(status, mol_a, mol_b) result(is_equal) bind(c)
