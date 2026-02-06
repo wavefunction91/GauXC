@@ -11,6 +11,7 @@
  */
 #pragma once
 
+#include <gauxc/exceptions.hpp>
 #include <gauxc/shell.h>
 #include <gauxc/shell.hpp>
 #include <gauxc/basisset.h>
@@ -20,10 +21,14 @@ namespace GauXC::detail {
 static inline BasisSet<double>* get_basisset_ptr(C::GauXCBasisSet basis) noexcept {
   return static_cast<BasisSet<double>*>(basis.ptr);
 }
-static inline Shell<double> convert_shell(C::GauXCShell shell, bool normalize) noexcept {
+static inline Shell<double> convert_shell(C::GauXCShell shell, bool normalize) {
   Shell<double>::prim_array alpha{};
   Shell<double>::prim_array coeff{};
   Shell<double>::cart_array O{0.0, 0.0, 0.0};
+
+  if (shell.nprim > detail::shell_nprim_max) {
+    GAUXC_GENERIC_EXCEPTION("Number of primitives in shell exceeds maximum allowed");
+  }
 
   for( int32_t i = 0; i < shell.nprim; ++i ) {
     alpha[i] = shell.exponents[i];
