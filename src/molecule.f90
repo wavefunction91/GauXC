@@ -22,7 +22,7 @@ module gauxc_molecule
     & gauxc_molecule_new_from_atoms, &
     & gauxc_molecule_delete, &
     & gauxc_molecule_natoms, &
-    & gauxc_molecule_equals
+    & gauxc_molecule_equal
 
   public :: &
     & gauxc_delete
@@ -89,7 +89,7 @@ module gauxc_molecule
     end function gauxc_molecule_natoms
 
     !> @brief Check if two Molecule instances are equal
-    function gauxc_molecule_equals(status, mol_a, mol_b) result(is_equal) bind(c)
+    function gauxc_molecule_equal(status, mol_a, mol_b) result(is_equal) bind(c)
       import :: gauxc_status_type, gauxc_molecule_type, c_bool
       implicit none
       !> @param status Status of the operation
@@ -100,7 +100,7 @@ module gauxc_molecule
       type(gauxc_molecule_type), value :: mol_b
       !> @return Logical indicating if the two molecules are equal
       logical(c_bool) :: is_equal
-    end function gauxc_molecule_equals
+    end function gauxc_molecule_equal
   end interface
 
 contains

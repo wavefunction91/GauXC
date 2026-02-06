@@ -12,7 +12,7 @@
 
 !> @brief Module defining the runtime environment for GauXC
 module gauxc_runtime_environment
-  use iso_c_binding, only : c_ptr, c_null_ptr, c_int
+  use iso_c_binding, only : c_ptr, c_null_ptr, c_int, c_double, c_size_t
   use gauxc_status, only : gauxc_status_type
   use gauxc_types, only : gauxc_header_type, gauxc_type_runtime_environment
   implicit none
