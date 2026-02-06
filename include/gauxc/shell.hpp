@@ -138,6 +138,9 @@ public:
     alpha_( alpha ), coeff_( coeff ), O_( O ),
     nprim_( nprim.get() ), l_( l.get() ), pure_( pure.get() ) {
 
+    if(nprim_ > detail::shell_nprim_max)
+      throw std::out_of_range("Shell has too many primitives!\n");
+
     if( _normalize ) normalize();
     compute_shell_cutoff();
 
