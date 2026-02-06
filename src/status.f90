@@ -10,7 +10,7 @@
 
 !> @brief Module defining the status codes for GauXC
 module gauxc_status
-  use iso_c_binding, only : c_ptr, c_null_ptr, c_int, c_char, c_int, &
+  use iso_c_binding, only : c_ptr, c_null_ptr, c_int, c_char, &
     & c_f_pointer, c_associated
   implicit none
   private

@@ -39,11 +39,6 @@ GauXCBasisSet gauxc_basisset_new_from_shells(GauXCStatus* status, GauXCShell* sh
   GauXCBasisSet basis{};
   basis.hdr = GauXCHeader{GauXC_Type_BasisSet};
   basis.ptr = nullptr;
-  if (nshells > detail::shell_nprim_max) {
-    status->code = 1;
-    status->message = detail::strdup("Number of primitives in shell exceeds maximum allowed");
-    return basis;
-  }
   BasisSet<double>* basis_ptr = nullptr;
   try {
     basis_ptr = new BasisSet<double>();

@@ -11,6 +11,7 @@
  */
 #pragma once
 
+#cmakedefine GAUXC_HAS_C
 #cmakedefine GAUXC_HAS_FORTRAN
 #cmakedefine GAUXC_HAS_HOST
 #cmakedefine GAUXC_HAS_CUDA
