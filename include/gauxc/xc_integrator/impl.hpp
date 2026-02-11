@@ -43,6 +43,12 @@ typename XCIntegrator<MatrixType>::value_type
 }
 
 template <typename MatrixType>
+void XCIntegrator<MatrixType>::eval_exc( value_type& EXC, const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->eval_exc(EXC, P, ks_settings);
+}
+
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::value_type
   XCIntegrator<MatrixType>::eval_exc( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
@@ -50,10 +56,23 @@ typename XCIntegrator<MatrixType>::value_type
 }
 
 template <typename MatrixType>
+void XCIntegrator<MatrixType>::eval_exc( value_type& EXC, const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->eval_exc(EXC, Ps, Pz, ks_settings);
+}
+
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::value_type
   XCIntegrator<MatrixType>::eval_exc( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, const IntegratorSettingsXC& ks_settings ) {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->eval_exc(Ps, Pz, Py, Px, ks_settings);
+}
+
+template <typename MatrixType>
+void XCIntegrator<MatrixType>::eval_exc( value_type& EXC, const MatrixType& Ps, const MatrixType& Pz,
+                                         const MatrixType& Py, const MatrixType& Px, const IntegratorSettingsXC& ks_settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->eval_exc(EXC, Ps, Pz, Py, Px, ks_settings);
 }
 
 template <typename MatrixType>
@@ -109,11 +128,24 @@ typename XCIntegrator<MatrixType>::exc_grad_type
 };
 
 template <typename MatrixType>
+void XCIntegrator<MatrixType>::eval_exc_grad( exc_grad_type& EXC_GRAD, const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->eval_exc_grad(EXC_GRAD, P, ks_settings);
+}
+
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_grad_type
   XCIntegrator<MatrixType>::eval_exc_grad( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->eval_exc_grad(Ps, Pz, ks_settings);
 };
+
+template <typename MatrixType>
+void XCIntegrator<MatrixType>::eval_exc_grad( exc_grad_type& EXC_GRAD, const MatrixType& Ps, const MatrixType& Pz,
+                                              const IntegratorSettingsXC& ks_settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->eval_exc_grad(EXC_GRAD, Ps, Pz, ks_settings);
+}
 
 template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exx_type
@@ -124,12 +156,25 @@ typename XCIntegrator<MatrixType>::exx_type
 };
 
 template <typename MatrixType>
+void XCIntegrator<MatrixType>::eval_exx( MatrixType& K, const MatrixType& P, const IntegratorSettingsEXX& settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->eval_exx(K, P, settings);
+}
+
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::fxc_contraction_type_rks
   XCIntegrator<MatrixType>::eval_fxc_contraction( const MatrixType& P, const MatrixType& tP, 
                                                const IntegratorSettingsXC& ks_settings ) { 
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->eval_fxc_contraction(P, tP, ks_settings);
 };
+
+template <typename MatrixType>
+void XCIntegrator<MatrixType>::eval_fxc_contraction( MatrixType& FXC, const MatrixType& P, const MatrixType& tP,
+                                                     const IntegratorSettingsXC& ks_settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->eval_fxc_contraction(FXC, P, tP, ks_settings);
+}
 
 template <typename MatrixType>
 typename XCIntegrator<MatrixType>::fxc_contraction_type_uks
@@ -140,6 +185,13 @@ typename XCIntegrator<MatrixType>::fxc_contraction_type_uks
 };
 
 template <typename MatrixType>
+void XCIntegrator<MatrixType>::eval_fxc_contraction( MatrixType& FXCs, MatrixType& FXCz, const MatrixType& Ps, const MatrixType& Pz,
+                                                     const MatrixType& tPs, const MatrixType& tPz, const IntegratorSettingsXC& ks_settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->eval_fxc_contraction(FXCs, FXCz, Ps, Pz, tPs, tPz, ks_settings);
+}
+
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::dd_psi_type
   XCIntegrator<MatrixType>::eval_dd_psi(const MatrixType& P, unsigned max_Ylm) {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
@@ -147,10 +199,22 @@ typename XCIntegrator<MatrixType>::dd_psi_type
 }
 
 template <typename MatrixType>
+void XCIntegrator<MatrixType>::eval_dd_psi( dd_psi_type& ddPsi, const MatrixType& P, unsigned max_Ylm ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->eval_dd_psi(ddPsi, P, max_Ylm);
+}
+
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::dd_psi_potential_type
   XCIntegrator<MatrixType>::eval_dd_psi_potential(const MatrixType& X, unsigned max_Ylm) {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->eval_dd_psi_potential(X, max_Ylm);
+}
+
+template <typename MatrixType>
+void XCIntegrator<MatrixType>::eval_dd_psi_potential( MatrixType& Vddx, const MatrixType& X, unsigned max_Ylm ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->eval_dd_psi_potential(Vddx, X, max_Ylm);
 }
 
 

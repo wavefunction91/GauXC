@@ -41,6 +41,9 @@ protected:
   virtual value_type        eval_exc_     ( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual value_type        eval_exc_     ( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual value_type        eval_exc_     ( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual void              eval_exc_     ( value_type& EXC, const MatrixType& P, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual void              eval_exc_     ( value_type& EXC, const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual void              eval_exc_     ( value_type& EXC, const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, const IntegratorSettingsXC& ks_settings ) = 0;
 
   virtual exc_vxc_type_rks  eval_exc_vxc_ ( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_vxc_type_uks  eval_exc_vxc_ ( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
@@ -54,16 +57,26 @@ protected:
                               const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_grad_type eval_exc_grad_( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_grad_type eval_exc_grad_( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual void eval_exc_grad_( exc_grad_type& EXC_GRAD, const MatrixType& P, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual void eval_exc_grad_( exc_grad_type& EXC_GRAD, const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exx_type      eval_exx_     ( const MatrixType&     P, 
+                                        const IntegratorSettingsEXX& settings ) = 0;
+  virtual void          eval_exx_     ( MatrixType& K, const MatrixType& P,
                                         const IntegratorSettingsEXX& settings ) = 0;
   virtual fxc_contraction_type_rks  eval_fxc_contraction_ ( const MatrixType& P,
     const MatrixType& tP, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual fxc_contraction_type_uks  eval_fxc_contraction_ ( const MatrixType& Ps, const MatrixType& Pz, 
     const MatrixType& tPs, const MatrixType& tPz,  const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual void eval_fxc_contraction_ ( MatrixType& FXC, const MatrixType& P, const MatrixType& tP,
+    const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual void eval_fxc_contraction_ ( MatrixType& FXCs, MatrixType& FXCz, const MatrixType& Ps, const MatrixType& Pz,
+    const MatrixType& tPs, const MatrixType& tPz, const IntegratorSettingsXC& ks_settings ) = 0;
 
 
   virtual dd_psi_type   eval_dd_psi_( const MatrixType& P, unsigned max_Ylm ) = 0;
   virtual dd_psi_potential_type   eval_dd_psi_potential_( const MatrixType& X, unsigned max_Ylm ) = 0;
+  virtual void eval_dd_psi_( dd_psi_type& ddPsi, const MatrixType& P, unsigned max_Ylm ) = 0;
+  virtual void eval_dd_psi_potential_( MatrixType& Vddx, const MatrixType& X, unsigned max_Ylm ) = 0;
   virtual const util::Timer& get_timings_() const = 0;
   virtual const LoadBalancer& get_load_balancer_() const = 0;
   virtual LoadBalancer& get_load_balancer_() = 0;
@@ -95,6 +108,10 @@ public:
     return eval_exc_(P, ks_settings);
   }
 
+  void eval_exc( value_type& EXC, const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
+    eval_exc_( EXC, P, ks_settings );
+  }
+
   /** Integrate EXC for UKS
    *
    *  @param[in] P The alpha density matrix
@@ -104,6 +121,10 @@ public:
     return eval_exc_(Ps, Pz, ks_settings);
   }
 
+  void eval_exc( value_type& EXC, const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
+    eval_exc_( EXC, Ps, Pz, ks_settings );
+  }
+
   /** Integrate EXC for GKS
    *
    *  @param[in] P The alpha density matrix
@@ -111,6 +132,11 @@ public:
    */
   value_type eval_exc( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px,  const IntegratorSettingsXC& ks_settings ) {
     return eval_exc_(Ps, Pz, Py, Px, ks_settings);
+  }
+
+  void eval_exc( value_type& EXC, const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px,
+                 const IntegratorSettingsXC& ks_settings ) {
+    eval_exc_( EXC, Ps, Pz, Py, Px, ks_settings );
   }
 
   /** Integrate EXC / VXC (Mean field terms) for RKS
@@ -154,6 +180,10 @@ public:
     return eval_exc_grad_(P, ks_settings);
   }
 
+  void eval_exc_grad( exc_grad_type& EXC_GRAD, const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
+    eval_exc_grad_( EXC_GRAD, P, ks_settings );
+  }
+
   /** Integrate EXC gradient for UKS
    *
    *  @param[in] P The alpha density matrix
@@ -161,6 +191,10 @@ public:
    */
   exc_grad_type eval_exc_grad( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
     return eval_exc_grad_(Ps, Pz, ks_settings);
+  }
+
+  void eval_exc_grad( exc_grad_type& EXC_GRAD, const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
+    eval_exc_grad_( EXC_GRAD, Ps, Pz, ks_settings );
   }
 
   /** Integrate Exact Exchange for RHF
@@ -172,6 +206,10 @@ public:
     return eval_exx_(P,settings);
   }
 
+  void eval_exx( MatrixType& K, const MatrixType& P, const IntegratorSettingsEXX& settings ) {
+    eval_exx_( K, P, settings );
+  }
+
   
   /** Integrate FXC contraction for RKS
    * 
@@ -181,6 +219,10 @@ public:
    */
   fxc_contraction_type_rks eval_fxc_contraction( const MatrixType& P, const MatrixType& tP, const IntegratorSettingsXC& ks_settings ) {
     return eval_fxc_contraction_(P, tP, ks_settings);
+  }
+
+  void eval_fxc_contraction( MatrixType& FXC, const MatrixType& P, const MatrixType& tP, const IntegratorSettingsXC& ks_settings ) {
+    eval_fxc_contraction_( FXC, P, tP, ks_settings );
   }
 
   /** Integrate FXC contraction for UKS
@@ -196,6 +238,11 @@ public:
     return eval_fxc_contraction_(Ps, Pz, tPs, tPz, ks_settings);
   }
 
+  void eval_fxc_contraction( MatrixType& FXCs, MatrixType& FXCz, const MatrixType& Ps, const MatrixType& Pz,
+                             const MatrixType& tPs, const MatrixType& tPz, const IntegratorSettingsXC& ks_settings ) {
+    eval_fxc_contraction_( FXCs, FXCz, Ps, Pz, tPs, tPz, ks_settings );
+  }
+
   /** Evaluate Psi vector for ddX
    *
    *  @param[in] P        The density matrix
@@ -206,6 +253,10 @@ public:
     return eval_dd_psi_(P,max_Ylm);
   }
 
+  void eval_dd_psi( dd_psi_type& ddPsi, const MatrixType& P, unsigned max_Ylm ) {
+    eval_dd_psi_( ddPsi, P, max_Ylm );
+  }
+
   /** Evaluate Psi Potential for ddX
    *
    *  @param[in] X        The local ASC coefficients, (nharmonics, atom) array in column-major ordering.
@@ -214,6 +265,10 @@ public:
    */   
   dd_psi_potential_type eval_dd_psi_potential( const MatrixType& X, unsigned max_Ylm ) {
     return eval_dd_psi_potential_(X,max_Ylm);
+  }
+
+  void eval_dd_psi_potential( MatrixType& Vddx, const MatrixType& X, unsigned max_Ylm ) {
+    eval_dd_psi_potential_( Vddx, X, max_Ylm );
   }
 
   /** Get internal timers

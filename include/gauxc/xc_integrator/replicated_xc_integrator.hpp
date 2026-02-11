@@ -51,6 +51,9 @@ private:
   value_type    eval_exc_     ( const MatrixType&, const IntegratorSettingsXC& ) override;
   value_type    eval_exc_     ( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
   value_type    eval_exc_     ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
+  void          eval_exc_     ( value_type&, const MatrixType&, const IntegratorSettingsXC& ) override;
+  void          eval_exc_     ( value_type&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
+  void          eval_exc_     ( value_type&, const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
   exc_vxc_type_rks  eval_exc_vxc_ ( const MatrixType&, const IntegratorSettingsXC& ) override;
   exc_vxc_type_uks  eval_exc_vxc_ ( const MatrixType&, const MatrixType&, const IntegratorSettingsXC&) override;
   exc_vxc_type_gks  eval_exc_vxc_ ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
@@ -60,11 +63,18 @@ private:
                       const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType&, const IntegratorSettingsXC& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
+  void          eval_exc_grad_( exc_grad_type&, const MatrixType&, const IntegratorSettingsXC& ) override;
+  void          eval_exc_grad_( exc_grad_type&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
   exx_type      eval_exx_     ( const MatrixType&, const IntegratorSettingsEXX& ) override;
+  void          eval_exx_     ( MatrixType&, const MatrixType&, const IntegratorSettingsEXX& ) override;
   fxc_contraction_type_rks  eval_fxc_contraction_ ( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
   fxc_contraction_type_uks  eval_fxc_contraction_ ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC&) override;
+  void          eval_fxc_contraction_ ( MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
+  void          eval_fxc_contraction_ ( MatrixType&, MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC&) override;
   dd_psi_type   eval_dd_psi_( const MatrixType& , unsigned ) override;
   dd_psi_potential_type   eval_dd_psi_potential_( const MatrixType& , unsigned ) override;
+  void          eval_dd_psi_( dd_psi_type&, const MatrixType&, unsigned ) override;
+  void          eval_dd_psi_potential_( MatrixType&, const MatrixType&, unsigned ) override;
   const util::Timer& get_timings_() const override;
   const LoadBalancer& get_load_balancer_() const override;
   LoadBalancer& get_load_balancer_() override;

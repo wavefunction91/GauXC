@@ -64,8 +64,12 @@ public:
   value_type    integrate_den( const MatrixType& );
 
   value_type    eval_exc( const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+  void          eval_exc( value_type&, const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
   value_type    eval_exc( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+  void          eval_exc( value_type&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
   value_type    eval_exc( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,  const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+  void          eval_exc( value_type&, const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,
+                           const IntegratorSettingsXC& = IntegratorSettingsXC{} );
 
   exc_vxc_type_rks  eval_exc_vxc ( const MatrixType&, 
                                    const IntegratorSettingsXC& = IntegratorSettingsXC{} );
@@ -82,18 +86,28 @@ public:
                        const IntegratorSettingsXC& = IntegratorSettingsXC{});
 
   exc_grad_type eval_exc_grad( const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+  void          eval_exc_grad( exc_grad_type&, const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
   exc_grad_type eval_exc_grad( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+  void          eval_exc_grad( exc_grad_type&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
 
   exx_type      eval_exx     ( const MatrixType&, 
+                               const IntegratorSettingsEXX& = IntegratorSettingsEXX{} );
+  void          eval_exx     ( MatrixType&, const MatrixType&, 
                                const IntegratorSettingsEXX& = IntegratorSettingsEXX{} );
 
   fxc_contraction_type_rks  eval_fxc_contraction ( const MatrixType&, const MatrixType&,
                                   const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+  void          eval_fxc_contraction ( MatrixType&, const MatrixType&, const MatrixType&, 
+                                   const IntegratorSettingsXC& = IntegratorSettingsXC{} );
   fxc_contraction_type_uks  eval_fxc_contraction ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,
                                   const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+  void          eval_fxc_contraction ( MatrixType&, MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,
+                                   const IntegratorSettingsXC& = IntegratorSettingsXC{} );
 
   dd_psi_type eval_dd_psi( const MatrixType&, unsigned );
+  void eval_dd_psi( dd_psi_type&, const MatrixType&, unsigned );
   dd_psi_potential_type eval_dd_psi_potential( const MatrixType&, unsigned );
+  void eval_dd_psi_potential( MatrixType&, const MatrixType&, unsigned );
 
   const util::Timer& get_timings() const;
   const LoadBalancer& load_balancer() const;

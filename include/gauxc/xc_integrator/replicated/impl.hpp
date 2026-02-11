@@ -78,6 +78,13 @@ typename ReplicatedXCIntegrator<MatrixType>::value_type
 }
 
 template <typename MatrixType>
+void ReplicatedXCIntegrator<MatrixType>::eval_exc_( value_type& EXC, const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->eval_exc( P.rows(), P.cols(), P.data(), P.rows(), &EXC, ks_settings );
+}
+
+template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::value_type 
   ReplicatedXCIntegrator<MatrixType>::eval_exc_( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
 
@@ -91,6 +98,14 @@ typename ReplicatedXCIntegrator<MatrixType>::value_type
 }
 
 template <typename MatrixType>
+void ReplicatedXCIntegrator<MatrixType>::eval_exc_( value_type& EXC, const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  const size_t n = Ps.rows();
+  pimpl_->eval_exc( n, n, Ps.data(), n, Pz.data(), n, &EXC, ks_settings );
+}
+
+template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::value_type 
   ReplicatedXCIntegrator<MatrixType>::eval_exc_( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, const IntegratorSettingsXC& ks_settings ) {
 
@@ -101,6 +116,15 @@ typename ReplicatedXCIntegrator<MatrixType>::value_type
   pimpl_->eval_exc( n, n, Ps.data(), n, Pz.data(), n, Py.data(), n, Px.data(), n, &EXC, ks_settings );
 
   return EXC;
+}
+
+template <typename MatrixType>
+void ReplicatedXCIntegrator<MatrixType>::eval_exc_( value_type& EXC, const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px,
+                                                    const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  const size_t n = Ps.rows();
+  pimpl_->eval_exc( n, n, Ps.data(), n, Pz.data(), n, Py.data(), n, Px.data(), n, &EXC, ks_settings );
 }
 
 template <typename MatrixType>
@@ -235,6 +259,18 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type
 }
 
 template <typename MatrixType>
+void ReplicatedXCIntegrator<MatrixType>::eval_exc_grad_( exc_grad_type& EXC_GRAD, const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+
+  const size_t natoms = pimpl_->load_balancer().molecule().natoms();
+  const size_t grad_sz = 3 * natoms;
+  if( EXC_GRAD.size() < grad_sz ) EXC_GRAD.resize( grad_sz );
+
+  pimpl_->eval_exc_grad( P.rows(), P.cols(), P.data(), P.rows(), EXC_GRAD.data(), ks_settings );
+}
+
+template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type 
   ReplicatedXCIntegrator<MatrixType>::eval_exc_grad_( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
 
@@ -246,6 +282,18 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type
 
   return EXC_GRAD;
 
+}
+
+template <typename MatrixType>
+void ReplicatedXCIntegrator<MatrixType>::eval_exc_grad_( exc_grad_type& EXC_GRAD, const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+
+  const size_t natoms = pimpl_->load_balancer().molecule().natoms();
+  const size_t grad_sz = 3 * natoms;
+  if( EXC_GRAD.size() < grad_sz ) EXC_GRAD.resize( grad_sz );
+
+  pimpl_->eval_exc_grad( Ps.rows(), Ps.cols(), Ps.data(), Ps.rows(), Pz.data(), Pz.rows(), EXC_GRAD.data(), ks_settings );
 }
 
 template <typename MatrixType>
@@ -262,6 +310,16 @@ typename ReplicatedXCIntegrator<MatrixType>::exx_type
   return K;
 
 }
+
+template <typename MatrixType>
+void ReplicatedXCIntegrator<MatrixType>::eval_exx_( MatrixType& K, const MatrixType& P, const IntegratorSettingsEXX& settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  if( K.rows() < P.rows() || K.cols() < P.cols() )
+    GAUXC_GENERIC_EXCEPTION("Dimension mismatch in preallocated K matrix");
+
+  pimpl_->eval_exx( P.rows(), P.cols(), P.data(), P.rows(), K.data(), K.rows(), settings );
+}
 template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::fxc_contraction_type_rks
   ReplicatedXCIntegrator<MatrixType>::eval_fxc_contraction_( const MatrixType& P, 
@@ -275,6 +333,19 @@ typename ReplicatedXCIntegrator<MatrixType>::fxc_contraction_type_rks
                         FXC.data(), FXC.rows(), ks_settings );
 
   return FXC;
+}
+
+template <typename MatrixType>
+void ReplicatedXCIntegrator<MatrixType>::eval_fxc_contraction_( MatrixType& FXC, const MatrixType& P,
+  const MatrixType& tP, const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  if( FXC.rows() < P.rows() || FXC.cols() < P.cols() )
+    GAUXC_GENERIC_EXCEPTION("Dimension mismatch in preallocated FXC matrix");
+
+  pimpl_->eval_fxc_contraction( P.rows(), P.cols(), P.data(), P.rows(),
+                        tP.data(), tP.rows(),
+                        FXC.data(), FXC.rows(), ks_settings );
 }
 
 template <typename MatrixType>
@@ -298,6 +369,25 @@ typename ReplicatedXCIntegrator<MatrixType>::fxc_contraction_type_uks
 }
 
 template <typename MatrixType>
+void ReplicatedXCIntegrator<MatrixType>::eval_fxc_contraction_( MatrixType& FXCs, MatrixType& FXCz,
+  const MatrixType& Ps, const MatrixType& Pz, const MatrixType& tPs, const MatrixType& tPz,
+  const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  if( FXCs.rows() < Ps.rows() || FXCs.cols() < Ps.cols() )
+    GAUXC_GENERIC_EXCEPTION("Dimension mismatch in preallocated FXCs matrix");
+  if( FXCz.rows() < Pz.rows() || FXCz.cols() < Pz.cols() )
+    GAUXC_GENERIC_EXCEPTION("Dimension mismatch in preallocated FXCz matrix");
+
+  pimpl_->eval_fxc_contraction( Ps.rows(), Ps.cols(), Ps.data(), Ps.rows(),
+                        Pz.data(), Pz.rows(),
+                        tPs.data(), tPs.rows(),
+                        tPz.data(), tPz.rows(),
+                        FXCs.data(), FXCs.rows(),
+                        FXCz.data(), FXCz.rows(), ks_settings );
+}
+
+template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::dd_psi_type
   ReplicatedXCIntegrator<MatrixType>::eval_dd_psi_( const MatrixType& P, unsigned max_Ylm ) {
 
@@ -308,6 +398,19 @@ typename ReplicatedXCIntegrator<MatrixType>::dd_psi_type
   std::vector<value_type> ddPsi(natoms * Ylm_sz, 0.0);
   pimpl_->eval_dd_psi(P.rows(), P.cols(), P.data(), P.rows(), max_Ylm, ddPsi.data(), Ylm_sz);
   return ddPsi;
+}
+
+template <typename MatrixType>
+void ReplicatedXCIntegrator<MatrixType>::eval_dd_psi_( dd_psi_type& ddPsi, const MatrixType& P, unsigned max_Ylm ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+
+  const size_t natoms = pimpl_->load_balancer().molecule().natoms();
+  const size_t Ylm_sz = (max_Ylm + 1) * ( max_Ylm + 1);
+  const size_t psi_sz = natoms * Ylm_sz;
+  if( ddPsi.size() < psi_sz ) ddPsi.resize( psi_sz );
+
+  pimpl_->eval_dd_psi(P.rows(), P.cols(), P.data(), P.rows(), max_Ylm, ddPsi.data(), Ylm_sz);
 }
 
 template <typename MatrixType>
@@ -322,6 +425,19 @@ typename ReplicatedXCIntegrator<MatrixType>::dd_psi_potential_type
   pimpl_->eval_dd_psi_potential(X.rows(), X.cols(), X.data(), max_Ylm, Vddx.data());
   return Vddx;                      
 
+}
+
+template <typename MatrixType>
+void ReplicatedXCIntegrator<MatrixType>::eval_dd_psi_potential_( MatrixType& Vddx, const MatrixType& X, unsigned max_Ylm ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+
+  const size_t nbf = pimpl_->load_balancer().basis().nbf();
+  if( Vddx.rows() < nbf || Vddx.cols() < nbf )
+    GAUXC_GENERIC_EXCEPTION("Dimension mismatch in preallocated Vddx matrix");
+
+  Vddx.setZero();
+  pimpl_->eval_dd_psi_potential(X.rows(), X.cols(), X.data(), max_Ylm, Vddx.data());
 }
 
 }
