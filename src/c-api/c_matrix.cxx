@@ -11,8 +11,9 @@
  */
 
 #include <gauxc/matrix.h>
-#include <gauxc/util/c_matrix.hpp>
-#include <gauxc/util/c_status.hpp>
+
+#include "c_matrix.hpp"
+#include "c_status.hpp"
 
 namespace GauXC::C {
 extern "C" {
@@ -20,7 +21,7 @@ extern "C" {
 GauXCMatrix gauxc_matrix_empty(
   GauXCStatus* status
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   GauXCMatrix matrix;
   matrix.hdr = GauXCHeader{GauXC_Type_Matrix};
   matrix.ptr = new detail::CMatrix();
@@ -33,15 +34,13 @@ GauXCMatrix gauxc_matrix_new(
   const size_t rows,
   const size_t cols
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   GauXCMatrix matrix;
   matrix.hdr = GauXCHeader{GauXC_Type_Matrix};
   try { // can throw std::bad_alloc
     matrix.ptr = new detail::CMatrix( rows, cols );
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
-    matrix.ptr = nullptr;
+    detail::gauxc_status_handle(status, 1, e.what());
   }
   return matrix;
 }
@@ -52,12 +51,11 @@ void gauxc_matrix_resize(
     const size_t rows,
     const size_t cols
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   try { // can throw std::bad_alloc
     detail::get_matrix_ptr(matrix)->resize( rows, cols );
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
 }
 
@@ -65,7 +63,7 @@ void gauxc_matrix_set_zero(
     GauXCStatus* status,
     const GauXCMatrix matrix
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   detail::get_matrix_ptr(matrix)->setZero();
 }
 
@@ -73,7 +71,7 @@ size_t gauxc_matrix_rows(
     GauXCStatus* status,
     const GauXCMatrix matrix
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   return detail::get_matrix_ptr(matrix)->rows();
 }
 
@@ -81,7 +79,7 @@ size_t gauxc_matrix_cols(
     GauXCStatus* status,
     const GauXCMatrix matrix
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   return detail::get_matrix_ptr(matrix)->cols();
 }
 
@@ -89,7 +87,7 @@ detail::CMatrix::value_type* gauxc_matrix_data(
     GauXCStatus* status,
     const GauXCMatrix matrix
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   return detail::get_matrix_ptr(matrix)->data();
 }
 
@@ -97,7 +95,7 @@ void gauxc_matrix_delete(
   GauXCStatus* status,
   GauXCMatrix* matrix
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   if(matrix == nullptr) return;
   if(matrix->ptr != nullptr)
     delete detail::get_matrix_ptr(*matrix);

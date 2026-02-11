@@ -14,9 +14,10 @@
 #include <gauxc/xc_integrator.h>
 #include <gauxc/xc_integrator.hpp>
 #include <gauxc/xc_integrator/integrator_factory.hpp>
-#include <gauxc/util/c_matrix.hpp>
-#include <gauxc/util/c_load_balancer.hpp>
-#include <gauxc/util/c_functional.hpp>
+
+#include "c_matrix.hpp"
+#include "c_load_balancer.hpp"
+#include "c_functional.hpp"
 
 namespace GauXC::detail {
 

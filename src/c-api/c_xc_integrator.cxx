@@ -12,10 +12,11 @@
 
 #include <gauxc/xc_integrator.h>
 #include <gauxc/xc_integrator.hpp>
-#include <gauxc/util/c_load_balancer.hpp>
-#include <gauxc/util/c_functional.hpp>
-#include <gauxc/util/c_xc_integrator.hpp>
-#include <gauxc/util/c_status.hpp>
+
+#include "c_load_balancer.hpp"
+#include "c_functional.hpp"
+#include "c_xc_integrator.hpp"
+#include "c_status.hpp"
 
 namespace GauXC::C {
 extern "C" {
@@ -24,7 +25,7 @@ void gauxc_integrator_delete(
   GauXCStatus* status,
   GauXCIntegrator* integrator
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   if (integrator == nullptr) return;
   if (integrator->ptr != nullptr) {
     if (integrator->owned)
@@ -39,7 +40,7 @@ void gauxc_integrator_factory_delete(
   GauXCStatus* status,
   GauXCIntegratorFactory* factory
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   if (factory == nullptr) return;
   if (factory->ptr != nullptr)
     delete detail::get_xc_integrator_factory_ptr(*factory);
@@ -54,6 +55,7 @@ GauXCIntegratorFactory gauxc_integrator_factory_new(
   const char* local_work_kernel_name,
   const char* reduction_kernel_name
 ) {
+  detail::gauxc_status_init(status);
   GauXCIntegratorFactory factory{};
   factory.hdr = GauXCHeader{GauXC_Type_IntegratorFactory};
   factory.ptr = nullptr;
@@ -66,10 +68,8 @@ GauXCIntegratorFactory gauxc_integrator_factory_new(
       std::string(local_work_kernel_name),
       std::string(reduction_kernel_name)
     );
-    status->code = 0;
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
   return factory;
 }
@@ -81,6 +81,7 @@ GauXCIntegrator gauxc_integrator_factory_get_instance(
   const GauXCFunctional functional,
   const GauXCLoadBalancer lb
 ) {
+  detail::gauxc_status_init(status);
   GauXCIntegrator integrator{};
   integrator.hdr = GauXCHeader{GauXC_Type_Integrator};
   integrator.ptr = nullptr;
@@ -89,10 +90,8 @@ GauXCIntegrator gauxc_integrator_factory_get_instance(
   try {
     auto integrator_instance = detail::get_integrator_instance(factory, functional, lb);
     integrator.ptr = new XCIntegrator<detail::CMatrix>(std::move(integrator_instance));
-    status->code = 0;
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
   return integrator;
 }
@@ -103,6 +102,7 @@ GauXCIntegrator gauxc_integrator_factory_get_shared_instance(
   const GauXCFunctional functional,
   const GauXCLoadBalancer lb
 ) {
+  detail::gauxc_status_init(status);
   GauXCIntegrator integrator{};
   integrator.hdr = GauXCHeader{GauXC_Type_Integrator};
   integrator.ptr = nullptr;
@@ -111,10 +111,8 @@ GauXCIntegrator gauxc_integrator_factory_get_shared_instance(
   try {
     auto integrator_instance = detail::get_shared_integrator_instance(factory, functional, lb);
     integrator.ptr = new std::shared_ptr<XCIntegrator<detail::CMatrix>>(std::move(integrator_instance));
-    status->code = 0;
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
   return integrator;
 }
@@ -125,6 +123,7 @@ void gauxc_integrator_integrate_den(
   const GauXCMatrix density_matrix,
   double* den_out
 ) {
+  detail::gauxc_status_init(status);
   try {
     auto& dm = *detail::get_matrix_ptr(density_matrix);
 
@@ -133,10 +132,8 @@ void gauxc_integrator_integrate_den(
       : detail::get_xc_integrator_shared(integrator)->get()->integrate_den(dm);
 
     *den_out = den;
-    status->code = 0;
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
 }
 
@@ -146,6 +143,7 @@ void gauxc_integrator_eval_exc_rks(
   const GauXCMatrix density_matrix,
   double* exc_out
 ) {
+  detail::gauxc_status_init(status);
   try {
     auto& dm = *detail::get_matrix_ptr(density_matrix);
 
@@ -154,10 +152,8 @@ void gauxc_integrator_eval_exc_rks(
       : detail::get_xc_integrator_shared(integrator)->get()->eval_exc(dm);
 
     *exc_out = exc;
-    status->code = 0;
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
 }
 
@@ -168,6 +164,7 @@ void gauxc_integrator_eval_exc_uks(
   const GauXCMatrix density_matrix_z,
   double* exc_out
 ) {
+  detail::gauxc_status_init(status);
   try {
     auto& dm_s = *detail::get_matrix_ptr(density_matrix_s);
     auto& dm_z = *detail::get_matrix_ptr(density_matrix_z);
@@ -177,10 +174,8 @@ void gauxc_integrator_eval_exc_uks(
       : detail::get_xc_integrator_shared(integrator)->get()->eval_exc(dm_s, dm_z);
 
     *exc_out = exc;
-    status->code = 0;
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
 }
 
@@ -193,6 +188,7 @@ void gauxc_integrator_eval_exc_gks(
   const GauXCMatrix density_matrix_y,
   double* exc_out
 ) {
+  detail::gauxc_status_init(status);
   try {
     auto& dm_s = *detail::get_matrix_ptr(density_matrix_s);
     auto& dm_z = *detail::get_matrix_ptr(density_matrix_z);
@@ -204,10 +200,8 @@ void gauxc_integrator_eval_exc_gks(
       : detail::get_xc_integrator_shared(integrator)->get()->eval_exc(dm_s, dm_z, dm_x, dm_y);
 
     *exc_out = exc;
-    status->code = 0;
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
 }
 
@@ -218,6 +212,7 @@ void gauxc_integrator_eval_exc_vxc_rks(
   double* exc_out,
   GauXCMatrix* vxc_matrix
 ) {
+  detail::gauxc_status_init(status);
   vxc_matrix->ptr = nullptr;
 
   try {
@@ -229,10 +224,8 @@ void gauxc_integrator_eval_exc_vxc_rks(
 
     *exc_out = exc;
     vxc_matrix->ptr = new detail::CMatrix(std::move(vxc));
-    status->code = 0;
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
 }
 
@@ -245,6 +238,7 @@ void gauxc_integrator_eval_exc_vxc_uks(
   GauXCMatrix* vxc_matrix_s,
   GauXCMatrix* vxc_matrix_z
 ) {
+  detail::gauxc_status_init(status);
   vxc_matrix_s->ptr = nullptr;
   vxc_matrix_z->ptr = nullptr;
 
@@ -259,10 +253,8 @@ void gauxc_integrator_eval_exc_vxc_uks(
     *exc_out = exc;
     vxc_matrix_s->ptr = new detail::CMatrix(std::move(vxc_s));
     vxc_matrix_z->ptr = new detail::CMatrix(std::move(vxc_z));
-    status->code = 0;
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
 }
 
@@ -279,6 +271,7 @@ void gauxc_integrator_eval_exc_vxc_gks(
   GauXCMatrix* vxc_matrix_x,
   GauXCMatrix* vxc_matrix_y
 ) {
+  detail::gauxc_status_init(status);
   vxc_matrix_s->ptr = nullptr;
   vxc_matrix_z->ptr = nullptr;
   vxc_matrix_x->ptr = nullptr;
@@ -299,10 +292,8 @@ void gauxc_integrator_eval_exc_vxc_gks(
     vxc_matrix_z->ptr = new detail::CMatrix(std::move(vxc_z));
     vxc_matrix_x->ptr = new detail::CMatrix(std::move(vxc_x));
     vxc_matrix_y->ptr = new detail::CMatrix(std::move(vxc_y));
-    status->code = 0;
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
 }
 
