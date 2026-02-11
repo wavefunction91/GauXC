@@ -54,6 +54,10 @@ private:
   exc_vxc_type_rks  eval_exc_vxc_ ( const MatrixType&, const IntegratorSettingsXC& ) override;
   exc_vxc_type_uks  eval_exc_vxc_ ( const MatrixType&, const MatrixType&, const IntegratorSettingsXC&) override;
   exc_vxc_type_gks  eval_exc_vxc_ ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
+  void eval_exc_vxc_( value_type& EXC, MatrixType& VXC, const MatrixType&, const IntegratorSettingsXC& ) override;
+  void eval_exc_vxc_( value_type& EXC, MatrixType& VXCs, MatrixType& VXCz, const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
+  void eval_exc_vxc_( value_type& EXC, MatrixType& VXCs, MatrixType& VXCz, MatrixType& VXCy, MatrixType& VXCx,
+                      const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType&, const IntegratorSettingsXC& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
   exx_type      eval_exx_     ( const MatrixType&, const IntegratorSettingsEXX& ) override;

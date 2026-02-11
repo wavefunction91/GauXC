@@ -119,6 +119,36 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_rks
 }
 
 template <typename MatrixType>
+void
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_(value_type& EXC, MatrixType& VXC, const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  if( VXC.rows() < P.rows() || VXC.cols() < P.cols() ) 
+    GAUXC_GENERIC_EXCEPTION("Dimension mismatch in preallocated VXC matrix");
+
+  pimpl_->eval_exc_vxc( P.rows(), P.cols(), P.data(), P.rows(),
+                        VXC.data(), VXC.rows(), &EXC, ks_settings );
+}
+
+template <typename MatrixType>
+void
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( value_type& EXC, MatrixType& VXCs, MatrixType& VXCz,
+                                                     const MatrixType& Ps, const MatrixType& Pz,
+                                                     const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  if( VXCs.rows() < Ps.rows() || VXCs.cols() < Ps.cols() )
+    GAUXC_GENERIC_EXCEPTION("Dimension mismatch in preallocated VXCs matrix");
+  if( VXCz.rows() < Pz.rows() || VXCz.cols() < Pz.cols() )
+    GAUXC_GENERIC_EXCEPTION("Dimension mismatch in preallocated VXCz matrix");
+
+  pimpl_->eval_exc_vxc( Ps.rows(), Ps.cols(), Ps.data(), Ps.rows(),
+                        Pz.data(), Pz.rows(),
+                        VXCs.data(), VXCs.rows(),
+                        VXCz.data(), VXCz.rows(), &EXC, ks_settings );
+}
+
+template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_uks
   ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
 
@@ -158,6 +188,35 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_vxc_type_gks
                         VXCx.data(), VXCx.rows(), &EXC, ks_settings );
 
   return std::make_tuple( EXC, VXCs, VXCz, VXCy, VXCx);
+
+}
+
+template <typename MatrixType>
+void
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_vxc_( value_type& EXC, MatrixType& VXCs, MatrixType& VXCz,
+                                                     MatrixType& VXCy, MatrixType& VXCx,
+                                                     const MatrixType& Ps, const MatrixType& Pz,
+                                                     const MatrixType& Py, const MatrixType& Px,
+                                                     const IntegratorSettingsXC& ks_settings) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  if( VXCs.rows() < Ps.rows() || VXCs.cols() < Ps.cols() )
+    GAUXC_GENERIC_EXCEPTION("Dimension mismatch in preallocated VXCs matrix");
+  if( VXCz.rows() < Pz.rows() || VXCz.cols() < Pz.cols() )
+    GAUXC_GENERIC_EXCEPTION("Dimension mismatch in preallocated VXCz matrix");
+  if( VXCy.rows() < Py.rows() || VXCy.cols() < Py.cols() )
+    GAUXC_GENERIC_EXCEPTION("Dimension mismatch in preallocated VXCy matrix");
+  if( VXCx.rows() < Px.rows() || VXCx.cols() < Px.cols() )
+    GAUXC_GENERIC_EXCEPTION("Dimension mismatch in preallocated VXCx matrix");
+
+  pimpl_->eval_exc_vxc( Ps.rows(), Ps.cols(), Ps.data(), Ps.rows(),
+                        Pz.data(), Pz.rows(),
+                        Py.data(), Py.rows(),
+                        Px.data(), Px.rows(),
+                        VXCs.data(), VXCs.rows(),
+                        VXCz.data(), VXCz.rows(),
+                        VXCy.data(), VXCy.rows(),
+                        VXCx.data(), VXCx.rows(), &EXC, ks_settings );
 
 }
 

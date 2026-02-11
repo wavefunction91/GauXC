@@ -64,11 +64,26 @@ typename XCIntegrator<MatrixType>::exc_vxc_type_rks
 };
 
 template <typename MatrixType>
+void XCIntegrator<MatrixType>::eval_exc_vxc( value_type& EXC, MatrixType& VXC, const MatrixType& P,
+                                             const IntegratorSettingsXC& ks_settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->eval_exc_vxc(EXC, VXC, P, ks_settings);
+}
+
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_vxc_type_uks
   XCIntegrator<MatrixType>::eval_exc_vxc( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->eval_exc_vxc(Ps, Pz, ks_settings);
 };
+
+template <typename MatrixType>
+void XCIntegrator<MatrixType>::eval_exc_vxc( value_type& EXC, MatrixType& VXCs, MatrixType& VXCz,
+                                             const MatrixType& Ps, const MatrixType& Pz,
+                                             const IntegratorSettingsXC& ks_settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->eval_exc_vxc(EXC, VXCs, VXCz, Ps, Pz, ks_settings);
+}
 
 template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_vxc_type_gks
@@ -77,6 +92,14 @@ typename XCIntegrator<MatrixType>::exc_vxc_type_gks
       if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
         return pimpl_->eval_exc_vxc(Ps, Pz, Py, Px, ks_settings);
   };
+
+template <typename MatrixType>
+void XCIntegrator<MatrixType>::eval_exc_vxc( value_type& EXC, MatrixType& VXCs, MatrixType& VXCz, MatrixType& VXCy, MatrixType& VXCx,
+                                             const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px,
+                                             const IntegratorSettingsXC& ks_settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->eval_exc_vxc(EXC, VXCs, VXCz, VXCy, VXCx, Ps, Pz, Py, Px, ks_settings);
+}
 
 template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exc_grad_type

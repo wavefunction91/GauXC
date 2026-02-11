@@ -203,6 +203,16 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     auto VXC_diff_nrm = ( VXC - VXC_ref ).norm();
     CHECK( EXC == Approx( EXC_ref ) );
     CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 ); 
+
+    // Check preallocated EXC/VXC API
+    {
+      matrix_type VXC_out( P.rows(), P.cols() );
+      double EXC_out = 0.0;
+      integrator.eval_exc_vxc( EXC_out, VXC_out, P );
+      auto VXC_out_diff_nrm = ( VXC_out - VXC_ref ).norm();
+      CHECK( EXC_out == Approx( EXC_ref ) );
+      CHECK( VXC_out_diff_nrm / basis.nbf() < 1e-10 );
+    }
     // Check if the integrator propagates state correctly
     {
       auto [ EXC1, VXC1 ] = integrator.eval_exc_vxc( P );
@@ -224,6 +234,19 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     CHECK( EXC == Approx( EXC_ref ) );
     CHECK( VXC_diff_nrm / basis.nbf() < 1e-10 );
     CHECK( VXCz_diff_nrm / basis.nbf() < 1e-10 );
+
+    // Check preallocated EXC/VXC API
+    {
+      matrix_type VXC_out( P.rows(), P.cols() );
+      matrix_type VXCz_out( Pz.rows(), Pz.cols() );
+      double EXC_out = 0.0;
+      integrator.eval_exc_vxc( EXC_out, VXC_out, VXCz_out, P, Pz );
+      auto VXC_out_diff_nrm = ( VXC_out - VXC_ref ).norm();
+      auto VXCz_out_diff_nrm = ( VXCz_out - VXCz_ref ).norm();
+      CHECK( EXC_out == Approx( EXC_ref ) );
+      CHECK( VXC_out_diff_nrm / basis.nbf() < 1e-10 );
+      CHECK( VXCz_out_diff_nrm / basis.nbf() < 1e-10 );
+    }
     // Check if the integrator propagates state correctly
     {
       auto [ EXC1, VXC1, VXCz1 ] = integrator.eval_exc_vxc( P, Pz );
@@ -251,6 +274,25 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     CHECK( VXCz_diff_nrm / basis.nbf() < 1e-10 );
     CHECK( VXCy_diff_nrm / basis.nbf() < 1e-10 );
     CHECK( VXCx_diff_nrm / basis.nbf() < 1e-10 );
+
+    // Check preallocated EXC/VXC API
+    {
+      matrix_type VXC_out( P.rows(), P.cols() );
+      matrix_type VXCz_out( Pz.rows(), Pz.cols() );
+      matrix_type VXCy_out( Py.rows(), Py.cols() );
+      matrix_type VXCx_out( Px.rows(), Px.cols() );
+      double EXC_out = 0.0;
+      integrator.eval_exc_vxc( EXC_out, VXC_out, VXCz_out, VXCy_out, VXCx_out, P, Pz, Py, Px );
+      auto VXC_out_diff_nrm = ( VXC_out - VXC_ref ).norm();
+      auto VXCz_out_diff_nrm = ( VXCz_out - VXCz_ref ).norm();
+      auto VXCy_out_diff_nrm = ( VXCy_out - VXCy_ref ).norm();
+      auto VXCx_out_diff_nrm = ( VXCx_out - VXCx_ref ).norm();
+      CHECK( EXC_out == Approx( EXC_ref ) );
+      CHECK( VXC_out_diff_nrm / basis.nbf() < 1e-10 );
+      CHECK( VXCz_out_diff_nrm / basis.nbf() < 1e-10 );
+      CHECK( VXCy_out_diff_nrm / basis.nbf() < 1e-10 );
+      CHECK( VXCx_out_diff_nrm / basis.nbf() < 1e-10 );
+    }
     // Check if the integrator propagates state correctly
     {
       auto [ EXC1, VXC1, VXCz1, VXCy1, VXCx1] = integrator.eval_exc_vxc( P, Pz, Py, Px );

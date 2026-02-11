@@ -46,6 +46,12 @@ protected:
   virtual exc_vxc_type_uks  eval_exc_vxc_ ( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_vxc_type_gks  eval_exc_vxc_ ( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, 
                                             const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual void eval_exc_vxc_( value_type& EXC, MatrixType& VXC, const MatrixType& P, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual void eval_exc_vxc_( value_type& EXC, MatrixType& VXCs, MatrixType& VXCz, const MatrixType& Ps, const MatrixType& Pz,
+                              const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual void eval_exc_vxc_( value_type& EXC, MatrixType& VXCs, MatrixType& VXCz, MatrixType& VXCy, MatrixType& VXCx,
+                              const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px,
+                              const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_grad_type eval_exc_grad_( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_grad_type eval_exc_grad_( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exx_type      eval_exx_     ( const MatrixType&     P, 
@@ -116,12 +122,27 @@ public:
     return eval_exc_vxc_(P, ks_settings);
   }
 
+  void eval_exc_vxc( value_type& EXC, MatrixType& VXC, const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
+    eval_exc_vxc_( EXC, VXC, P, ks_settings );
+  }
+
   exc_vxc_type_uks eval_exc_vxc( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
     return eval_exc_vxc_(Ps, Pz, ks_settings);
   }
 
+  void eval_exc_vxc( value_type& EXC, MatrixType& VXCs, MatrixType& VXCz, const MatrixType& Ps, const MatrixType& Pz,
+                     const IntegratorSettingsXC& ks_settings ) {
+    eval_exc_vxc_( EXC, VXCs, VXCz, Ps, Pz, ks_settings );
+  }
+
   exc_vxc_type_gks eval_exc_vxc( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px, const IntegratorSettingsXC& ks_settings ) {
     return eval_exc_vxc_(Ps, Pz, Py, Px, ks_settings);
+  }
+
+  void eval_exc_vxc( value_type& EXC, MatrixType& VXCs, MatrixType& VXCz, MatrixType& VXCy, MatrixType& VXCx,
+                     const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px,
+                     const IntegratorSettingsXC& ks_settings ) {
+    eval_exc_vxc_( EXC, VXCs, VXCz, VXCy, VXCx, Ps, Pz, Py, Px, ks_settings );
   }
 
   /** Integrate EXC gradient for RKS
