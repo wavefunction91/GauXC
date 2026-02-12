@@ -9,12 +9,14 @@
  *
  * See LICENSE.txt for details
  */
-#include "catch2/catch.hpp"
+#include <catch2/catch_all.hpp>
 #include "standards.hpp"
 
 #include <random>
 #include <algorithm>
 
 #include <fstream>
+
+using Catch::Approx;
 
 #cmakedefine GAUXC_REF_DATA_PATH "@GAUXC_REF_DATA_PATH@"

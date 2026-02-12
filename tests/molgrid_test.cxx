@@ -9,7 +9,7 @@
  *
  * See LICENSE.txt for details
  */
-#include "catch2/catch.hpp"
+#include <catch2/catch_all.hpp>
 #include <gauxc/molgrid.hpp>
 #include <gauxc/molgrid/defaults.hpp>
 
@@ -17,6 +17,7 @@
 #include <random>
 
 using namespace GauXC;
+using Catch::Approx;
 
 TEST_CASE("MolGrid Defaults", "[molgrid]") {
 
