@@ -15,52 +15,10 @@
 #include <gauxc/xc_integrator.hpp>
 #include <gauxc/xc_integrator/integrator_factory.hpp>
 
-#include "c_matrix.hpp"
-#include "c_load_balancer.hpp"
-#include "c_functional.hpp"
-
 namespace GauXC::detail {
 
-static inline XCIntegrator<CMatrix>* get_xc_integrator_ptr(C::GauXCIntegrator integrator) noexcept {
-  return static_cast<XCIntegrator<CMatrix>*>(integrator.ptr);
-}
-static inline std::shared_ptr<XCIntegrator<CMatrix>>* get_xc_integrator_shared(C::GauXCIntegrator integrator) noexcept {
-  return static_cast<std::shared_ptr<XCIntegrator<CMatrix>>*>(integrator.ptr);
-}
-static inline XCIntegratorFactory<CMatrix>* get_xc_integrator_factory_ptr(C::GauXCIntegratorFactory factory) noexcept {
-  return static_cast<XCIntegratorFactory<CMatrix>*>(factory.ptr);
-}
-static inline XCIntegrator<CMatrix> get_integrator_instance(
-  C::GauXCIntegratorFactory factory,
-  C::GauXCFunctional functional,
-  C::GauXCLoadBalancer lb
-) {
-  if (lb.owned)
-    return get_xc_integrator_factory_ptr(factory)->get_instance(
-      *get_functional_ptr(functional),
-      *get_load_balancer_ptr(lb)
-    );
-  else
-    return get_xc_integrator_factory_ptr(factory)->get_instance(
-      *get_functional_ptr(functional),
-      **get_load_balancer_shared(lb)
-    );
-}
-static inline std::shared_ptr<XCIntegrator<CMatrix>> get_shared_integrator_instance(
-  C::GauXCIntegratorFactory factory,
-  C::GauXCFunctional functional,
-  C::GauXCLoadBalancer lb
-) {
-  if (lb.owned)
-    return get_xc_integrator_factory_ptr(factory)->get_shared_instance(
-      *get_functional_ptr(functional),
-      *get_load_balancer_ptr(lb)
-    );
-  else
-    return get_xc_integrator_factory_ptr(factory)->get_shared_instance(
-      *get_functional_ptr(functional),
-      **get_load_balancer_shared(lb)
-    );
+static inline ReplicatedXCIntegratorImpl<double>* get_xc_integrator_ptr(C::GauXCIntegrator integrator) noexcept {
+  return static_cast<ReplicatedXCIntegratorImpl<double>*>(integrator.ptr);
 }
 
 } // namespace GauXC::detail

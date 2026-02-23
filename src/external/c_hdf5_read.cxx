@@ -15,7 +15,6 @@
 #include "c_status.hpp"
 #include "c_molecule.hpp"
 #include "c_basisset.hpp"
-#include "c_matrix.hpp"
 #include "hdf5_util.hpp"
 
 namespace GauXC::C {
@@ -58,35 +57,6 @@ void gauxc_basisset_read_hdf5_record(
   detail::gauxc_status_init(status);
   try {
     read_hdf5_record( *detail::get_basisset_ptr(basis), std::string(fname), std::string(dset) );
-  } catch(std::exception& e) {
-    detail::gauxc_status_handle(status, 1, e.what());
-  }
-}
-
-/**
- * @brief Read a CMatrix record from an HDF5 file.
- * @param status Status object to capture any errors.
- * @param matrix Handle to the CMatrix to read into.
- * @param fname Name of the HDF5 file.
- * @param dset Name of the dataset within the HDF5 file.
- */
-void gauxc_matrix_read_hdf5_record(
-  GauXCStatus* status,
-  GauXCMatrix matrix,
-  const char* fname,
-  const char* dset
-) {
-  detail::gauxc_status_init(status);
-  detail::CMatrix& mat = *detail::get_matrix_ptr(matrix);
-  try {
-    HighFive::File file( std::string(fname), HighFive::File::ReadOnly );
-
-    auto dataset = file.getDataSet(std::string(dset));
-    auto dims = dataset.getDimensions();
-
-    mat.resize( dims[0], dims[1] );
-
-    dataset.read(mat.data());
   } catch(std::exception& e) {
     detail::gauxc_status_handle(status, 1, e.what());
   }

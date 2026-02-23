@@ -52,30 +52,10 @@ GauXCMolecularWeights gauxc_molecular_weights_factory_get_instance(
   GauXCMolecularWeights mw{};
   mw.hdr = GauXCHeader{GauXC_Type_MolecularWeights};
   mw.ptr = nullptr;
-  mw.owned = true;
 
   try {
     MolecularWeights mw_instance = detail::get_molecular_weights_factory_ptr(mwf)->get_instance();
     mw.ptr = new MolecularWeights( std::move(mw_instance) );
-  } catch (std::exception& e) {
-    detail::gauxc_status_handle(status, 1, e.what());
-  }
-  return mw;
-}
-
-GauXCMolecularWeights gauxc_molecular_weights_factory_get_shared_instance(
-  GauXCStatus* status,
-  const GauXCMolecularWeightsFactory mwf
-) {
-  detail::gauxc_status_init(status);
-  GauXCMolecularWeights mw{};
-  mw.hdr = GauXCHeader{GauXC_Type_MolecularWeights};
-  mw.ptr = nullptr;
-  mw.owned = false;
-
-  try {
-    auto mw_instance_ptr = detail::get_molecular_weights_factory_ptr(mwf)->get_shared_instance();
-    mw.ptr = new std::shared_ptr<MolecularWeights>( std::move(mw_instance_ptr) );
   } catch (std::exception& e) {
     detail::gauxc_status_handle(status, 1, e.what());
   }
@@ -89,25 +69,9 @@ void gauxc_molecular_weights_modify_weights(
 ) {
   detail::gauxc_status_init(status);
   try {
-    if (mw.owned) {
-      if (lb.owned)
-        detail::get_molecular_weights_ptr(mw)->modify_weights(
-          *detail::get_load_balancer_ptr(lb)
-        );
-      else
-        detail::get_molecular_weights_ptr(mw)->modify_weights(
-          **detail::get_load_balancer_shared(lb)
-        );
-    } else {
-      if (lb.owned)
-        detail::get_molecular_weights_shared(mw)->get()->modify_weights(
-          *detail::get_load_balancer_ptr(lb)
-        );
-      else
-        detail::get_molecular_weights_shared(mw)->get()->modify_weights(
-          **detail::get_load_balancer_shared(lb)
-        );
-    }
+    detail::get_molecular_weights_ptr(mw)->modify_weights(
+      **detail::get_load_balancer_ptr(lb)
+    );
   } catch (std::exception& e) {
     detail::gauxc_status_handle(status, 1, e.what());
   }
@@ -121,10 +85,7 @@ void gauxc_molecular_weights_delete(
   detail::gauxc_status_init(status);
   if(mw == nullptr) return;
   if(mw->ptr != nullptr) {
-    if (mw->owned)
-      delete detail::get_molecular_weights_ptr(*mw);
-    else
-      delete detail::get_molecular_weights_shared(*mw);
+    delete detail::get_molecular_weights_ptr(*mw);
   }
   mw->ptr = nullptr;
 }

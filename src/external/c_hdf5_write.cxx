@@ -14,7 +14,6 @@
 
 #include "c_molecule.hpp"
 #include "c_basisset.hpp"
-#include "c_matrix.hpp"
 #include "c_status.hpp"
 #include "hdf5_util.hpp"
 
@@ -58,33 +57,6 @@ void gauxc_basisset_write_hdf5_record(
   detail::gauxc_status_init(status);
   try {
     write_hdf5_record( *detail::get_basisset_ptr(basis), std::string(fname), std::string(dset) );
-  } catch(std::exception& e) {
-    detail::gauxc_status_handle(status, 1, e.what());
-  }
-}
-
-/**
- * @brief Write a CMatrix record to an HDF5 file.
- * @param status Status object to capture any errors.
- * @param matrix Handle to the CMatrix to write.
- * @param fname Name of the HDF5 file.
- * @param dset Name of the dataset within the HDF5 file.
- */
-void gauxc_matrix_write_hdf5_record(
-  GauXCStatus* status,
-  GauXCMatrix matrix,
-  const char* fname,
-  const char* dset
-) {
-  detail::gauxc_status_init(status);
-  detail::CMatrix& mat = *detail::get_matrix_ptr(matrix);
-  try {
-    HighFive::File file( std::string(fname), HighFive::File::OpenOrCreate );
-
-    HighFive::DataSpace dataspace({ mat.rows(), mat.cols() });
-    auto dataset = file.createDataSet<double>(std::string(dset), dataspace);
-
-    dataset.write_raw(mat.data());
   } catch(std::exception& e) {
     detail::gauxc_status_handle(status, 1, e.what());
   }

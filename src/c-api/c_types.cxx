@@ -20,7 +20,6 @@
 #include <gauxc/molecular_weights.h>
 #include <gauxc/functional.h>
 #include <gauxc/xc_integrator.h>
-#include <gauxc/matrix.h>
 
 #include "c_status.hpp"
 
@@ -86,16 +85,6 @@ void gauxc_object_delete(GauXCStatus* status, void** obj) {
      case GauXC_Type_Integrator: {
        GauXCIntegrator* integrator = reinterpret_cast<GauXCIntegrator*>(*obj);
        gauxc_integrator_delete(status, integrator);
-       break;
-     }
-     case GauXC_Type_IntegratorFactory: { 
-       GauXCIntegratorFactory* integrator_factory = reinterpret_cast<GauXCIntegratorFactory*>(*obj);
-       gauxc_integrator_factory_delete(status, integrator_factory);
-       break;
-     }
-     case GauXC_Type_Matrix: {
-       GauXCMatrix* matrix = reinterpret_cast<GauXCMatrix*>(*obj);
-       gauxc_matrix_delete(status, matrix);
        break;
      }
      default: {

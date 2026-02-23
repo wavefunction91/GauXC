@@ -19,7 +19,6 @@ target_sources( gauxc PRIVATE
   c_runtime_environment.cxx
   c_load_balancer.cxx
   c_molecular_weights.cxx
-  c_matrix.cxx
   c_functional.cxx
   c_xc_integrator.cxx
 )

@@ -38,7 +38,7 @@ enum GauXC_AtomicGridSizeDefault {
   GauXC_AtomicGridSizeDefault_UltraFineGrid,  ///< Ultrafine grid (appropriate accuracy)
   GauXC_AtomicGridSizeDefault_SuperFineGrid,  ///< Superfine grid (most accurate)
   GauXC_AtomicGridSizeDefault_GM3,            ///< Treutler-Ahlrichs GM3
-  GauXC_AtomicGridSizeDefault_GM5             ///< Treutlet-Ahlrichs GM5
+  GauXC_AtomicGridSizeDefault_GM5             ///< Treutler-Ahlrichs GM5
 };
 
 /**
@@ -62,9 +62,9 @@ enum GauXC_ExecutionSpace {
 
 /// Supported Algorithms / Integrands
 enum GauXC_SupportedAlg {
-  GauXC_SupportedAlg_XC,
-  GauXC_SupportedAlg_DEN,
-  GauXC_SupportedAlg_SNLINK
+  GauXC_SupportedAlg_XC,     ///< Exchange-correlation integration
+  GauXC_SupportedAlg_DEN,    ///< Density integration
+  GauXC_SupportedAlg_SNLINK  ///< Seminumerical Coulomb/exchange (snLinK)
 };
 
 /// High-level specification of pruning schemes for atomic quadratures
