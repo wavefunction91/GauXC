@@ -31,8 +31,8 @@ typedef struct GauXCShell {
   int32_t l;        ///< Angular momentum.
   bool    pure;     ///< Spherical (true) or Cartesian (false) functions.
   int32_t nprim;    ///< Number of primitives.
-  double  exponents[32];    ///< Pointer to array of primitive exponents.
-  double  coefficients[32]; ///< Pointer to array of contraction coefficients.
+  double  exponents[32];    ///< Primitive exponents (up to 32).
+  double  coefficients[32]; ///< Contraction coefficients (up to 32).
   double  origin[3];        ///< Shell origin.
   double  shell_tolerance;  ///< Shell tolerance.
 } GauXCShell;

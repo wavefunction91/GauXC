@@ -11,12 +11,13 @@
  */
 #include <gauxc/load_balancer.h>
 #include <gauxc/load_balancer.hpp>
-#include <gauxc/util/c_molecule.hpp>
-#include <gauxc/util/c_basisset.hpp>
-#include <gauxc/util/c_molgrid.hpp>
-#include <gauxc/util/c_runtime_environment.hpp>
-#include <gauxc/util/c_load_balancer.hpp>
-#include <gauxc/util/c_status.hpp>
+
+#include "c_molecule.hpp"
+#include "c_basisset.hpp"
+#include "c_molgrid.hpp"
+#include "c_runtime_environment.hpp"
+#include "c_load_balancer.hpp"
+#include "c_status.hpp"
 
 namespace GauXC::C {
 extern "C" {
@@ -25,13 +26,10 @@ void gauxc_load_balancer_delete(
   GauXCStatus* status,
   GauXCLoadBalancer* lb
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   if(lb == nullptr) return;
   if(lb->ptr != nullptr) {
-    if (lb->owned)
-      delete detail::get_load_balancer_ptr(*lb);
-    else
-      delete detail::get_load_balancer_shared(*lb);
+    delete detail::get_load_balancer_ptr(*lb);
   }
   lb->ptr = nullptr;
 }
@@ -41,7 +39,7 @@ GauXCLoadBalancerFactory gauxc_load_balancer_factory_new(
   enum GauXC_ExecutionSpace ex,
   const char* kernel_name
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   GauXCLoadBalancerFactory lbf{};
   lbf.hdr = GauXCHeader{GauXC_Type_LoadBalancerFactory};
   lbf.ptr = nullptr;
@@ -52,8 +50,7 @@ GauXCLoadBalancerFactory gauxc_load_balancer_factory_new(
       std::string(kernel_name)
     );
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
   return lbf;
 }
@@ -62,7 +59,7 @@ void gauxc_load_balancer_factory_delete(
   GauXCStatus* status,
   GauXCLoadBalancerFactory* lbf
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   if(lbf == nullptr) return;
   if(lbf->ptr != nullptr)
     delete detail::get_load_balancer_factory_ptr(*lbf);
@@ -77,40 +74,10 @@ GauXCLoadBalancer gauxc_load_balancer_factory_get_instance(
   const GauXCMolGrid mg,
   const GauXCBasisSet bs
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   GauXCLoadBalancer lb{};
   lb.hdr = GauXCHeader{GauXC_Type_LoadBalancer};
   lb.ptr = nullptr;
-  lb.owned = true;
-
-  try {
-    LoadBalancer lb_instance = detail::get_load_balancer_factory_ptr(lbf)->get_instance(
-      *detail::get_runtime_environment_ptr(rt),
-      *detail::get_molecule_ptr(mol),
-      *detail::get_molgrid_ptr(mg),
-      *detail::get_basisset_ptr(bs)
-    );
-    lb.ptr = new LoadBalancer( std::move(lb_instance) );
-  } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
-  }
-  return lb;
-}
-
-GauXCLoadBalancer gauxc_load_balancer_factory_get_shared_instance(
-  GauXCStatus* status,
-  const GauXCLoadBalancerFactory lbf,
-  const GauXCRuntimeEnvironment rt,
-  const GauXCMolecule mol,
-  const GauXCMolGrid mg,
-  const GauXCBasisSet bs
-) {
-  status->code = 0;
-  GauXCLoadBalancer lb{};
-  lb.hdr = GauXCHeader{GauXC_Type_LoadBalancer};
-  lb.ptr = nullptr;
-  lb.owned = false;
 
   try {
     auto lb_instance_ptr = detail::get_load_balancer_factory_ptr(lbf)->get_shared_instance(
@@ -121,8 +88,7 @@ GauXCLoadBalancer gauxc_load_balancer_factory_get_shared_instance(
     );
     lb.ptr = new std::shared_ptr<LoadBalancer>( std::move(lb_instance_ptr) );
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
   return lb;
 }

@@ -25,8 +25,8 @@
 #include <gauxc/atom.h>
 
 #ifdef __cplusplus
-namespace GauXC::C {
 extern "C" {
+namespace GauXC::C {
 #endif
 
 /**
@@ -82,6 +82,6 @@ extern bool gauxc_molecule_equal(
 );
 
 #ifdef __cplusplus
-} // extern "C"
 } // namespace GauXC::C
+} // extern "C"
 #endif

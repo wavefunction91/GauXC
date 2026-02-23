@@ -14,7 +14,6 @@
 #include <gauxc/status.h>
 #include <gauxc/basisset.h>
 #include <gauxc/molecule.h>
-#include <gauxc/matrix.h>
 
 #ifdef __cplusplus
 namespace GauXC::C {
@@ -50,20 +49,6 @@ extern void gauxc_basisset_write_hdf5_record(
 );
 
 /**
- * @brief Write a CMatrix record to an HDF5 file.
- * @param status Status object to capture any errors.
- * @param matrix Handle to the CMatrix to write.
- * @param fname Name of the HDF5 file.
- * @param dset Name of the dataset within the HDF5 file.
- */
-extern void gauxc_matrix_write_hdf5_record(
-  GauXCStatus* status,
-  GauXCMatrix matrix,
-  const char* fname,
-  const char* dset
-);
-
-/**
  * @brief Read a Molecule record from an HDF5 file.
  * @param status Status object to capture any errors.
  * @param mol Handle to the Molecule to read into.
@@ -87,20 +72,6 @@ extern void gauxc_molecule_read_hdf5_record(
 extern void gauxc_basisset_read_hdf5_record(
   GauXCStatus* status,
   GauXCBasisSet basis,
-  const char* fname,
-  const char* dset
-);
-
-/**
- * @brief Read a CMatrix record from an HDF5 file.
- * @param status Status object to capture any errors.
- * @param matrix Handle to the CMatrix to read into.
- * @param fname Name of the HDF5 file.
- * @param dset Name of the dataset within the HDF5 file.
- */
-extern void gauxc_matrix_read_hdf5_record(
-  GauXCStatus* status,
-  GauXCMatrix matrix,
   const char* fname,
   const char* dset
 );

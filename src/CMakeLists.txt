@@ -44,19 +44,7 @@ add_library( gauxc
 
 if( GAUXC_ENABLE_C )
   message( STATUS "GauXC Enabling C API" )
-  target_sources( gauxc PRIVATE
-    c_status.cxx
-    c_types.cxx
-    c_molecule.cxx
-    c_basisset.cxx
-    c_molgrid.cxx
-    c_runtime_environment.cxx
-    c_load_balancer.cxx
-    c_molecular_weights.cxx
-    c_matrix.cxx
-    c_functional.cxx
-    c_xc_integrator.cxx
-  )
+  add_subdirectory(c-api)
   set(GAUXC_HAS_C TRUE CACHE BOOL "GauXC Has C API" FORCE)
 else()
   message( STATUS "GauXC Disabling C API" )

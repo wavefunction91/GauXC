@@ -24,8 +24,8 @@
 #include <gauxc/load_balancer.h>
 
 #ifdef __cplusplus
-namespace GauXC::C {
 extern "C" {
+namespace GauXC::C {
 #endif
 
 /**
@@ -42,7 +42,6 @@ typedef struct GauXCMolecularWeightsSettings {
 typedef struct GauXCMolecularWeights {
   GauXCHeader hdr; ///< Header for internal use.
   void* ptr; ///< Pointer to the MolecularWeights instance.
-  bool owned; ///< Whether this instance owns the MolecularWeights.
 } GauXCMolecularWeights;
 
 /**
@@ -111,20 +110,7 @@ extern GauXCMolecularWeights gauxc_molecular_weights_factory_get_instance(
     const GauXCMolecularWeightsFactory factory
 );
 
-/**
- * @brief Get shared MolecularWeights instance from a MolecularWeightsFactory.
- * @param status Status object to capture any errors.
- * @param factory Handle to the MolecularWeightsFactory.
- * @return Handle to the created MolecularWeights.
- */
-extern GauXCMolecularWeights gauxc_molecular_weights_factory_get_shared_instance(
-    GauXCStatus* status,
-    const GauXCMolecularWeightsFactory factory
-);
-
-
-
 #ifdef __cplusplus
-} // extern "C"
 } // namespace GauXC::C
+} // extern "C"
 #endif

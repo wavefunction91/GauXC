@@ -11,8 +11,9 @@
  */
 #include <gauxc/runtime_environment.h>
 #include <gauxc/runtime_environment.hpp>
-#include <gauxc/util/c_runtime_environment.hpp>
-#include <gauxc/util/c_status.hpp>
+
+#include "c_runtime_environment.hpp"
+#include "c_status.hpp"
 
 namespace GauXC::C {
 extern "C" {
@@ -21,6 +22,7 @@ GauXCRuntimeEnvironment gauxc_runtime_environment_new(
   GauXCStatus* status
   GAUXC_MPI_CODE(, MPI_Comm comm) 
 ) {
+  detail::gauxc_status_init(status);
   GauXCRuntimeEnvironment env{};
   env.ptr = nullptr;
 #ifdef GAUXC_HAS_DEVICE
@@ -30,16 +32,14 @@ GauXCRuntimeEnvironment gauxc_runtime_environment_new(
   try {
     env.ptr = new RuntimeEnvironment(GAUXC_MPI_CODE(comm));
     env.hdr = GauXCHeader{GauXC_Type_RuntimeEnvironment};
-    status->code = 0;
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
   return env;
 }
 
 void gauxc_runtime_environment_delete(GauXCStatus* status, GauXCRuntimeEnvironment* env) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   if (env == nullptr) return;
   if (env->ptr != nullptr)
     delete detail::get_runtime_environment_ptr(*env);
@@ -52,12 +52,12 @@ void gauxc_runtime_environment_delete(GauXCStatus* status, GauXCRuntimeEnvironme
 }
 
 int gauxc_runtime_environment_comm_rank(GauXCStatus* status, const GauXCRuntimeEnvironment env) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   return detail::get_runtime_environment_ptr(env)->comm_rank();
 }
 
 int gauxc_runtime_environment_comm_size(GauXCStatus* status, const GauXCRuntimeEnvironment env) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   return detail::get_runtime_environment_ptr(env)->comm_size();
 }
 
@@ -67,6 +67,7 @@ GauXCRuntimeEnvironment gauxc_device_runtime_environment_new(
   GAUXC_MPI_CODE(MPI_Comm comm,)
   double fill_fraction
 ) {
+  detail::gauxc_status_init(status);
   GauXCRuntimeEnvironment env{};
   env.hdr = GauXCHeader{GauXC_Type_RuntimeEnvironment};
   env.ptr = nullptr;
@@ -76,10 +77,8 @@ GauXCRuntimeEnvironment gauxc_device_runtime_environment_new(
     env.device_ptr = new DeviceRuntimeEnvironment(
       GAUXC_MPI_CODE(comm,) fill_fraction
     );
-    status->code = 0;
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
   return env;
 }
@@ -90,6 +89,7 @@ GauXCRuntimeEnvironment gauxc_device_runtime_environment_new_mem(
   void* mem,
   size_t mem_sz
 ) {
+  detail::gauxc_status_init(status);
   GauXCRuntimeEnvironment env{};
   env.hdr = GauXCHeader{GauXC_Type_RuntimeEnvironment};
   env.ptr = nullptr;
@@ -99,10 +99,8 @@ GauXCRuntimeEnvironment gauxc_device_runtime_environment_new_mem(
     env.device_ptr = new DeviceRuntimeEnvironment(
       GAUXC_MPI_CODE(comm,) mem, mem_sz
     );
-    status->code = 0;
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
   return env;
 }

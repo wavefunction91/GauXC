@@ -15,10 +15,7 @@
 #include <gauxc/load_balancer.hpp>
 
 namespace GauXC::detail {
-static inline LoadBalancer* get_load_balancer_ptr(C::GauXCLoadBalancer lb) noexcept {
-  return static_cast<LoadBalancer*>(lb.ptr);
-}
-static inline std::shared_ptr<LoadBalancer>* get_load_balancer_shared(C::GauXCLoadBalancer lb) noexcept {
+static inline std::shared_ptr<LoadBalancer>* get_load_balancer_ptr(C::GauXCLoadBalancer lb) noexcept {
   return static_cast<std::shared_ptr<LoadBalancer>*>(lb.ptr);
 }
 static inline LoadBalancerFactory* get_load_balancer_factory_ptr(C::GauXCLoadBalancerFactory lbf) noexcept {

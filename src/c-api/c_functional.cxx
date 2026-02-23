@@ -11,11 +11,12 @@
  */
 
 #include <gauxc/functional.h>
-#include <gauxc/util/c_functional.hpp>
-#include <gauxc/util/c_status.hpp>
 #include <exchcxx/xc_kernel.hpp>
 #include <exchcxx/enums/spin.hpp>
 #include <exchcxx/enums/backend.hpp>
+
+#include "c_functional.hpp"
+#include "c_status.hpp"
 
 namespace GauXC::detail {
 /**
@@ -54,7 +55,7 @@ GauXCFunctional gauxc_functional_from_string(
   const char* functional_spec,
   bool polarized
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   GauXCFunctional functional{};
   functional.hdr = GauXCHeader{GauXC_Type_Functional};
   functional.ptr = nullptr;
@@ -80,8 +81,7 @@ GauXCFunctional gauxc_functional_from_string(
 
     functional.ptr = new functional_type( std::move(func) );
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
   return functional;
 }
@@ -91,7 +91,7 @@ GauXCFunctional gauxc_functional_from_enum(
   enum GauXC_Functional functional_enum,
   bool polarized
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   GauXCFunctional functional{};
   functional.hdr = GauXCHeader{GauXC_Type_Functional};
   functional.ptr = nullptr;
@@ -103,8 +103,7 @@ GauXCFunctional gauxc_functional_from_enum(
 
     functional.ptr = new functional_type( std::move(func) );
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
   return functional;
 }
@@ -113,7 +112,7 @@ void gauxc_functional_delete(
   GauXCStatus* status,
   GauXCFunctional* functional
 ) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   if(functional == nullptr) return;
   if(functional->ptr != nullptr)
     delete detail::get_functional_ptr(*functional);
