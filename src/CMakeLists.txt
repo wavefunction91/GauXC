@@ -160,6 +160,7 @@ set(export_properties
   "GAUXC_HAS_CUTLASS"
   "GAUXC_HAS_NCCL"
   "GAUXC_HAS_MPI"
+  "GAUXC_HAS_MPI_F08"
   "GAUXC_HAS_OPENMP"
   "GAUXC_HAS_HDF5"
  
@@ -182,6 +183,7 @@ set_target_properties(gauxc
     "GAUXC_HAS_CUTLASS"    ${GAUXC_HAS_CUTLASS}
     "GAUXC_HAS_NCCL"       ${GAUXC_HAS_NCCL}
     "GAUXC_HAS_MPI"        ${GAUXC_HAS_MPI}
+    "GAUXC_HAS_MPI_F08"    ${GAUXC_HAS_MPI_F08}
     "GAUXC_HAS_OPENMP"     ${GAUXC_HAS_OPENMP}
     "GAUXC_HAS_HDF5"       ${GAUXC_HAS_HDF5}
     "GAUXC_CPU_XC_MAX_AM"     ${GAUXC_CPU_XC_MAX_AM}     
