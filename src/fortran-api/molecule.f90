@@ -30,7 +30,7 @@ module gauxc_molecule
   !> @brief C interoperable molecule type
   type, bind(c), public :: gauxc_molecule_type
     !> Header containing type information
-    type(gauxc_header_type) :: header = gauxc_header_type(gauxc_type_molecule)
+    type(gauxc_header_type) :: hdr = gauxc_header_type(gauxc_type_molecule)
     !> Pointer to the internal molecule object
     type(c_ptr) :: ptr = c_null_ptr
   end type gauxc_molecule_type

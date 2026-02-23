@@ -28,7 +28,7 @@ module gauxc_basisset
   !> @brief C interoperable basis set type
   type, bind(c), public :: gauxc_basisset_type
     !> Header containing type information
-    type(gauxc_header_type) :: header = gauxc_header_type(gauxc_type_basisset)
+    type(gauxc_header_type) :: hdr = gauxc_header_type(gauxc_type_basisset)
     !> Pointer to the internal basis set object
     type(c_ptr) :: ptr = c_null_ptr
   end type gauxc_basisset_type

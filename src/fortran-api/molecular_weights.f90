@@ -24,13 +24,11 @@ module gauxc_molecular_weights
     & gauxc_molecular_weights_modify_weights, &
     & gauxc_molecular_weights_factory_new, &
     & gauxc_molecular_weights_factory_delete, &
-    & gauxc_molecular_weights_factory_get_instance, &
-    & gauxc_molecular_weights_factory_get_shared_instance
+    & gauxc_molecular_weights_factory_get_instance
 
   public :: &
     & gauxc_delete, &
-    & gauxc_get_instance, &
-    & gauxc_get_shared_instance
+    & gauxc_get_instance
 
   !> @brief Settings for molecular grid weights
   type, bind(c), public :: gauxc_molecular_weights_settings
@@ -42,7 +40,6 @@ module gauxc_molecular_weights
   type, bind(c), public :: gauxc_molecular_weights_type
     type(gauxc_header_type) :: hdr = gauxc_header_type(gauxc_type_molecular_weights)
     type(c_ptr) :: ptr = c_null_ptr
-    logical(c_bool) :: owned = .true.
   end type gauxc_molecular_weights_type
 
   !> @brief Create a MolecularWeightsFactory handle
@@ -117,20 +114,6 @@ module gauxc_molecular_weights
     end function gauxc_molecular_weights_factory_get_instance
   end interface gauxc_get_instance
 
-  interface gauxc_get_shared_instance
-    !> @brief Get shared MolecularWeights instance from a MolecularWeightsFactory.
-    function gauxc_molecular_weights_factory_get_shared_instance(status, factory) result(mw) bind(c)
-      import :: gauxc_status_type, gauxc_molecular_weights_factory_type, gauxc_molecular_weights_type
-      implicit none
-      !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
-      !> @param factory Handle to the MolecularWeightsFactory.
-      type(gauxc_molecular_weights_factory_type), value :: factory
-      !> @return Handle to the created MolecularWeights.
-      type(gauxc_molecular_weights_type) :: mw
-    end function gauxc_molecular_weights_factory_get_shared_instance
-  end interface gauxc_get_shared_instance
-
 contains
 
   !> @brief Create a new MolecularWeightsFactory instance.
@@ -141,18 +124,31 @@ contains
     !> @param ex Execution space.
     integer(c_int), value :: ex
     !> @param local_work_kernel_name Name of the LocalWorkDriver kernel to use.
-    character(kind=c_char, len=*), intent(in) :: local_work_kernel_name
+    character(kind=c_char, len=*), intent(in), optional :: local_work_kernel_name
     !> @param settings Settings for the MolecularWeights calculation.
-    type(gauxc_molecular_weights_settings), value :: settings
+    type(gauxc_molecular_weights_settings), intent(in), optional :: settings
     !> @return Handle to the created MolecularWeightsFactory.
     type(gauxc_molecular_weights_factory_type) :: factory
 
+    type(gauxc_molecular_weights_settings) :: settings_
+    character(kind=c_char, len=*), parameter :: default_kernel = "Default"
     character(kind=c_char), allocatable :: c_local_work_kernel_name(:)
 
-    c_local_work_kernel_name = transfer(local_work_kernel_name//c_null_char, &
-      & [character(kind=c_char) ::], len(local_work_kernel_name)+1)
+    if (present(local_work_kernel_name)) then
+      c_local_work_kernel_name = transfer(local_work_kernel_name // c_null_char, &
+        & [character(kind=c_char) ::], len(local_work_kernel_name) + 1)
+    else
+      c_local_work_kernel_name = transfer(default_kernel // c_null_char, &
+        & [character(kind=c_char) ::], len(default_kernel) + 1)
+    end if
+
+    if (present(settings)) then
+      settings_ = settings
+    else
+      settings_ = gauxc_molecular_weights_settings()
+    end if
 
     factory = gauxc_molecular_weights_factory_new_c(status, ex, &
-      c_local_work_kernel_name, settings)
+      c_local_work_kernel_name, settings_)
   end function gauxc_molecular_weights_factory_new
 end module gauxc_molecular_weights

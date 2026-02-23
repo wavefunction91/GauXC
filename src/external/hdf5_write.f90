@@ -14,14 +14,12 @@ module gauxc_external_hdf5_write
   use gauxc_status, only : gauxc_status_type
   use gauxc_molecule, only : gauxc_molecule_type
   use gauxc_basisset, only : gauxc_basisset_type
-  use gauxc_matrix, only : gauxc_matrix_type
   implicit none
   private
 
   public :: &
     & gauxc_molecule_write_hdf5_record, &
-    & gauxc_basisset_write_hdf5_record, &
-    & gauxc_matrix_write_hdf5_record
+    & gauxc_basisset_write_hdf5_record
 
   public :: &
     & gauxc_write_hdf5_record
@@ -55,25 +53,11 @@ module gauxc_external_hdf5_write
       character(kind=c_char), intent(in) :: dset(*)
     end subroutine gauxc_basisset_write_hdf5_record_c
 
-    !> @brief Write a GauXC matrix to an HDF5 file
-    subroutine gauxc_matrix_write_hdf5_record_c(status, matrix, fname, dset) &
-      & bind(c, name="gauxc_matrix_write_hdf5_record")
-      import :: gauxc_status_type, gauxc_matrix_type, c_char
-      !> @param status GauXC status object
-      type(gauxc_status_type), intent(out) :: status
-      !> @param matrix GauXC matrix object to write
-      type(gauxc_matrix_type), value :: matrix
-      !> @param fname Name of HDF5 file
-      character(kind=c_char), intent(in) :: fname(*)
-      !> @param dset Name of dataset within HDF5 file
-      character(kind=c_char), intent(in) :: dset(*)
-    end subroutine gauxc_matrix_write_hdf5_record_c
   end interface
 
   interface gauxc_write_hdf5_record
     module procedure gauxc_molecule_write_hdf5_record
     module procedure gauxc_basisset_write_hdf5_record
-    module procedure gauxc_matrix_write_hdf5_record
   end interface gauxc_write_hdf5_record
 
 contains
@@ -121,26 +105,4 @@ contains
 
     call gauxc_basisset_write_hdf5_record_c(status, basis, c_fname, c_dset)
   end subroutine gauxc_basisset_write_hdf5_record
-
-  !> @brief Write a GauXC matrix to an HDF5 file
-  subroutine gauxc_matrix_write_hdf5_record(status, matrix, fname, dset)
-    !> @param status GauXC status object
-    type(gauxc_status_type), intent(out) :: status
-    !> @param matrix GauXC matrix object to write
-    type(gauxc_matrix_type), value :: matrix
-    !> @param fname Name of HDF5 file
-    character(kind=c_char, len=*), intent(in) :: fname
-    !> @param dset Name of dataset within HDF5 file
-    character(kind=c_char, len=*), intent(in) :: dset
-
-    character(kind=c_char), allocatable :: c_fname(:)
-    character(kind=c_char), allocatable :: c_dset(:)
-
-    c_fname = transfer(fname // c_null_char, [character(kind=c_char) ::], &
-      & len(fname) + 1)
-    c_dset = transfer(dset // c_null_char, [character(kind=c_char) ::], &
-      & len(dset) + 1)
-
-    call gauxc_matrix_write_hdf5_record_c(status, matrix, c_fname, c_dset)
-  end subroutine gauxc_matrix_write_hdf5_record
 end module gauxc_external_hdf5_write

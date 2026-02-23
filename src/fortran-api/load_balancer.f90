@@ -25,18 +25,15 @@ module gauxc_load_balancer
     & gauxc_load_balancer_factory_new, &
     & gauxc_load_balancer_factory_delete, &
     & gauxc_load_balancer_factory_get_instance, &
-    & gauxc_load_balancer_factory_get_shared_instance, &
     & gauxc_load_balancer_delete
 
   public :: &
     & gauxc_delete, &
-    & gauxc_get_instance, &
-    & gauxc_get_shared_instance
+    & gauxc_get_instance
 
   type, bind(c), public :: gauxc_load_balancer_type
     type(gauxc_header_type) :: hdr = gauxc_header_type(gauxc_type_load_balancer)
     type(c_ptr) :: ptr = c_null_ptr
-    logical(c_bool) :: owned = .true.
   end type gauxc_load_balancer_type
 
   type, bind(c), public :: gauxc_load_balancer_factory_type
@@ -98,31 +95,6 @@ module gauxc_load_balancer
     end function gauxc_load_balancer_factory_get_instance
   end interface gauxc_get_instance
 
-  interface gauxc_get_shared_instance
-    !> @brief Create a shared LoadBalancer instance from a LoadBalancerFactory.
-    function gauxc_load_balancer_factory_get_shared_instance( &
-      status, factory, env, mol, mg, basis) result(lb) bind(c)
-      import :: gauxc_status_type, gauxc_load_balancer_factory_type, &
-        & gauxc_load_balancer_type, gauxc_molecule_type, gauxc_molgrid_type, &
-        & gauxc_basisset_type, gauxc_runtime_environment_type, c_ptr
-      implicit none
-      !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(inout) :: status
-      !> @param factory Handle to the LoadBalancerFactory.
-      type(gauxc_load_balancer_factory_type), value :: factory
-      !> @param env Handle to the RuntimeEnvironment.
-      type(gauxc_runtime_environment_type), value :: env
-      !> @param mol Handle to the Molecule.
-      type(gauxc_molecule_type), value :: mol
-      !> @param mg Handle to the MolGrid.
-      type(gauxc_molgrid_type), value :: mg
-      !> @param basis Handle to the BasisSet.
-      type(gauxc_basisset_type), value :: basis
-      !> @return Handle to the created LoadBalancer.
-      type(gauxc_load_balancer_type) :: lb
-    end function gauxc_load_balancer_factory_get_shared_instance
-  end interface gauxc_get_shared_instance
-
   interface gauxc_delete
     !> @brief Delete a LoadBalancer instance.
     subroutine gauxc_load_balancer_delete(status, lb) bind(c)
@@ -144,14 +116,20 @@ contains
     !> @param ex Execution space.
     integer(c_int), value :: ex
     !> @param kernel_name Name of the load balancing kernel to use.
-    character(kind=c_char, len=*), intent(in) :: kernel_name
+    character(kind=c_char, len=*), intent(in), optional :: kernel_name
     !> @return Handle to the created LoadBalancerFactory.
     type(gauxc_load_balancer_factory_type) :: lbf
 
+    character(kind=c_char, len=*), parameter :: default_kernel = "Default"
     character(kind=c_char), allocatable :: c_kernel_name(:)
 
-    c_kernel_name = transfer(kernel_name // c_null_char, &
-      & [character(kind=c_char) ::], len(kernel_name) + 1)
+    if (present(kernel_name)) then
+      c_kernel_name = transfer(kernel_name // c_null_char, &
+        & [character(kind=c_char) ::], len(kernel_name) + 1)
+    else
+      c_kernel_name = transfer(default_kernel // c_null_char, &
+        & [character(kind=c_char) ::], len(default_kernel) + 1)
+    end if
 
     lbf = gauxc_load_balancer_factory_new_c(status, ex, c_kernel_name)
   end function gauxc_load_balancer_factory_new

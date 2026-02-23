@@ -52,35 +52,8 @@ endif()
 
 if( GAUXC_ENABLE_FORTRAN )
   message( STATUS "GauXC Enabling Fortran API" )
-  target_sources( gauxc PRIVATE
-    status.f90
-    types.f90
-    enums.f90
-    atom.f90
-    molecule.f90
-    shell.f90
-    basisset.f90
-    molgrid.f90
-    runtime_environment.F90
-    load_balancer.f90
-    molecular_weights.f90
-    matrix.f90
-    functional.f90
-    xc_integrator.f90
-  )
+  add_subdirectory(fortran-api)
   set(GAUXC_HAS_FORTRAN TRUE CACHE BOOL "GauXC Has Fortran API" FORCE)
-  set_target_properties( gauxc PROPERTIES
-    Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/modules
-  )
-  if(NOT EXISTS ${PROJECT_BINARY_DIR}/modules)
-    file(MAKE_DIRECTORY ${PROJECT_BINARY_DIR}/modules)
-  endif()
-  target_include_directories(
-    gauxc
-    PUBLIC
-    $<BUILD_INTERFACE:${PROJECT_BINARY_DIR}/modules>
-    $<INSTALL_INTERFACE:include/gauxc/modules>
-  )
 else()
   message( STATUS "GauXC Disabling Fortran API" )
 endif()
@@ -163,14 +136,6 @@ configure_file(
   ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.h
 )
 
-if( GAUXC_ENABLE_FORTRAN )
-  # Generate config file
-  configure_file( 
-    ${PROJECT_SOURCE_DIR}/include/gauxc/gauxc_config.f.in
-    ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.f
-  )
-endif()
-
 include( GNUInstallDirs )
 
 # TARGETS
@@ -245,27 +210,11 @@ install(
   FILES_MATCHING PATTERN "*.h"
 )
 
-if( GAUXC_ENABLE_FORTRAN )
-  # Install Fortran modules
-  install(
-    DIRECTORY ${PROJECT_BINARY_DIR}/modules/
-    DESTINATION include/gauxc/modules
-    FILES_MATCHING PATTERN "*.mod"
-  )
-endif()
-
 # Install generated headers
 install(
   FILES       ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.h
   DESTINATION include/gauxc
 )
-
-if( GAUXC_ENABLE_FORTRAN )
-  install(
-    FILES       ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.f
-    DESTINATION include/gauxc
-  )
-endif()
 
 # Export target to script
 set( INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/gauxc )
