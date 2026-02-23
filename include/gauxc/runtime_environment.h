@@ -42,7 +42,7 @@ typedef struct GauXCRuntimeEnvironment {
  * @param comm MPI Communicator (if applicable).
  * @return Handle to the created RuntimeEnvironment.
  */
-GauXCRuntimeEnvironment gauxc_runtime_environment_new( 
+extern GauXCRuntimeEnvironment gauxc_runtime_environment_new(
   GauXCStatus* status
   GAUXC_MPI_CODE(, MPI_Comm comm) 
 );
@@ -86,7 +86,7 @@ extern int gauxc_runtime_environment_comm_size(
  * @param fill_fraction Fraction of device memory to use.
  * @return Handle to the created DeviceRuntimeEnvironment.
  */
-GauXCRuntimeEnvironment gauxc_device_runtime_environment_new( 
+extern GauXCRuntimeEnvironment gauxc_device_runtime_environment_new(
   GauXCStatus* status,
   GAUXC_MPI_CODE(MPI_Comm comm,)
   double fill_fraction
@@ -100,7 +100,7 @@ GauXCRuntimeEnvironment gauxc_device_runtime_environment_new(
  * @param mem_sz Size of preallocated device memory.
  * @return Handle to the created DeviceRuntimeEnvironment.
  */
-GauXCRuntimeEnvironment gauxc_device_runtime_environment_new_mem( 
+extern GauXCRuntimeEnvironment gauxc_device_runtime_environment_new_mem(
   GauXCStatus* status,
   GAUXC_MPI_CODE(MPI_Comm comm,)
   void* mem, 

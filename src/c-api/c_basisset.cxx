@@ -9,33 +9,34 @@
  *
  * See LICENSE.txt for details
  */
+#include <exception>
+
 #include <gauxc/shell.h>
 #include <gauxc/shell.hpp>
 #include <gauxc/basisset.h>
 #include <gauxc/basisset.hpp>
-#include <gauxc/util/c_basisset.hpp>
-#include <gauxc/util/c_status.hpp>
-#include <exception>
+
+#include "c_basisset.hpp"
+#include "c_status.hpp"
 
 namespace GauXC::C {
 extern "C" {
 
 GauXCBasisSet gauxc_basisset_new(GauXCStatus* status) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   GauXCBasisSet basis{};
   basis.hdr = GauXCHeader{GauXC_Type_BasisSet};
   basis.ptr = nullptr;
   try {
     basis.ptr = new BasisSet<double>();
   } catch (std::exception& e) {
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
   return basis;
 }
 
 GauXCBasisSet gauxc_basisset_new_from_shells(GauXCStatus* status, GauXCShell* shells, size_t nshells, bool normalize) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   GauXCBasisSet basis{};
   basis.hdr = GauXCHeader{GauXC_Type_BasisSet};
   basis.ptr = nullptr;
@@ -49,14 +50,13 @@ GauXCBasisSet gauxc_basisset_new_from_shells(GauXCStatus* status, GauXCShell* sh
     basis.ptr = basis_ptr;
   } catch (std::exception& e) {
     delete basis_ptr;
-    status->code = 1;
-    status->message = detail::strdup(e.what());
+    detail::gauxc_status_handle(status, 1, e.what());
   }
   return basis;
 }
 
 void gauxc_basisset_delete(GauXCStatus* status, GauXCBasisSet* basis) {
-  status->code = 0;
+  detail::gauxc_status_init(status);
   if (basis == nullptr) return;
   if (basis->ptr != nullptr)
     delete detail::get_basisset_ptr(*basis);

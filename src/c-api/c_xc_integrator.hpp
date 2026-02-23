@@ -11,16 +11,14 @@
  */
 #pragma once
 
-#include <cstring>
+#include <gauxc/xc_integrator.h>
+#include <gauxc/xc_integrator.hpp>
+#include <gauxc/xc_integrator/integrator_factory.hpp>
 
 namespace GauXC::detail {
 
-static inline char* strdup(const char* str) {
-  if(str == nullptr) return nullptr;
-  size_t len = std::strlen(str);
-  char* copy = new char[len + 1];
-  std::strcpy(copy, str);
-  return copy;
+static inline ReplicatedXCIntegratorImpl<double>* get_xc_integrator_ptr(C::GauXCIntegrator integrator) noexcept {
+  return static_cast<ReplicatedXCIntegratorImpl<double>*>(integrator.ptr);
 }
 
-}
+} // namespace GauXC::detail

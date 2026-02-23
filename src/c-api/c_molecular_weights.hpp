@@ -18,9 +18,6 @@ namespace GauXC::detail {
 static inline MolecularWeights* get_molecular_weights_ptr(C::GauXCMolecularWeights mw) noexcept {
   return static_cast<MolecularWeights*>(mw.ptr);
 }
-static inline std::shared_ptr<MolecularWeights>* get_molecular_weights_shared(C::GauXCMolecularWeights mw) noexcept {
-  return static_cast<std::shared_ptr<MolecularWeights>*>(mw.ptr);
-}
 static inline MolecularWeightsFactory* get_molecular_weights_factory_ptr(C::GauXCMolecularWeightsFactory mwf) noexcept {
   return static_cast<MolecularWeightsFactory*>(mwf.ptr);
 }

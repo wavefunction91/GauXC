@@ -26,7 +26,7 @@ static inline Shell<double> convert_shell(C::GauXCShell shell, bool normalize) {
   Shell<double>::prim_array coeff{};
   Shell<double>::cart_array O{0.0, 0.0, 0.0};
 
-  if (shell.nprim > detail::shell_nprim_max) {
+  if ((size_t)shell.nprim > detail::shell_nprim_max) {
     GAUXC_GENERIC_EXCEPTION("Number of primitives in shell exceeds maximum allowed");
   }
 

@@ -67,6 +67,7 @@ add_executable( gauxc_test
   dd_psi_potential_test.cxx
   onedft_test.cxx
   2nd_derivative_test.cxx
+  c_api_test.cxx
 )
 target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen )
 if(GAUXC_ENABLE_CUTLASS)
@@ -98,4 +99,27 @@ if( GAUXC_ENABLE_MPI )
   add_test( NAME GAUXC_MPI_TEST
             COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} $<TARGET_FILE:gauxc_test> ${MPIEXEC_POSTFLAGS}
   )
+endif()
+
+if( GAUXC_ENABLE_FORTRAN )
+  message( STATUS "Building GauXC Fortran API Tests" )
+
+  include( gauxc-test-drive )
+
+  add_executable( gauxc_fortran_test
+    fortran_main.F90
+    fortran_api_test.f90
+  )
+  if( GAUXC_ENABLE_MPI AND TARGET MPI::MPI_Fortran )
+    target_link_libraries( gauxc_fortran_test PRIVATE gauxc gauxc_test_drive MPI::MPI_Fortran )
+  else()
+    target_link_libraries( gauxc_fortran_test PRIVATE gauxc gauxc_test_drive )
+  endif()
+
+  add_test( NAME GAUXC_FORTRAN_SERIAL_TEST COMMAND $<TARGET_FILE:gauxc_fortran_test> )
+  if( GAUXC_ENABLE_MPI )
+    add_test( NAME GAUXC_FORTRAN_MPI_TEST
+              COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} $<TARGET_FILE:gauxc_fortran_test> ${MPIEXEC_POSTFLAGS}
+    )
+  endif()
 endif()

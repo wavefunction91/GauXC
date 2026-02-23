@@ -10,6 +10,7 @@
  * See LICENSE.txt for details
  */
 #include <gauxc/status.h>
+#include <cstdlib>
 
 namespace GauXC::C {
 extern "C" {
@@ -17,7 +18,7 @@ extern "C" {
 void gauxc_status_delete(GauXCStatus* status) {
   if(status == nullptr) return;
   if(status->message != nullptr) {
-    delete[] status->message;
+    std::free(status->message);
     status->message = nullptr;
   }
   status->code = 0;

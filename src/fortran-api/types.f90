@@ -18,7 +18,7 @@ module gauxc_types
     & gauxc_type_runtime_environment, gauxc_type_load_balancer, &
     & gauxc_type_load_balancer_factory, gauxc_type_molecular_weights, &
     & gauxc_type_molecular_weights_factory, gauxc_type_functional, &
-    & gauxc_type_integrator, gauxc_type_integrator_factory, gauxc_type_matrix
+    & gauxc_type_integrator
 
   enum, bind(c)
     enumerator :: gauxc_type_molecule = 1_c_int
@@ -31,8 +31,6 @@ module gauxc_types
     enumerator :: gauxc_type_molecular_weights_factory = 8_c_int
     enumerator :: gauxc_type_functional = 9_c_int
     enumerator :: gauxc_type_integrator = 10_c_int
-    enumerator :: gauxc_type_integrator_factory = 11_c_int
-    enumerator :: gauxc_type_matrix = 12_c_int
   end enum
 
   !> @brief C interoperable header type

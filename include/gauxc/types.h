@@ -19,8 +19,8 @@
 #include <gauxc/status.h>
 
 #ifdef __cplusplus
-namespace GauXC::C {
 extern "C" {
+namespace GauXC::C {
 #endif
  
 enum GauXC_Type {
@@ -34,8 +34,6 @@ enum GauXC_Type {
   GauXC_Type_MolecularWeightsFactory = 8,
   GauXC_Type_Functional = 9,
   GauXC_Type_Integrator = 10,
-  GauXC_Type_IntegratorFactory = 11,
-  GauXC_Type_Matrix = 12
 };
 
 /**
@@ -58,7 +56,7 @@ extern void gauxc_object_delete(
 /**
  * @brief Delete all GauXC objects.
  * @param status Status object to capture any errors.
- * @param ptrs Array of GauXCHeader objects.
+ * @param ptrs Array of pointers to GauXC objects.
  * @param nptrs Number of pointers in the array.
  */
 extern void gauxc_objects_delete(
@@ -68,6 +66,6 @@ extern void gauxc_objects_delete(
 );
 
 #ifdef __cplusplus
-} // extern "C"
 } // namespace GauXC::C
+} // extern "C"
 #endif

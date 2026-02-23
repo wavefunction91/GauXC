@@ -39,7 +39,6 @@ namespace GauXC::C {
 typedef struct GauXCLoadBalancer {
   GauXCHeader hdr; ///< Header for internal use.
   void* ptr; ///< Pointer to the LoadBalancer instance.
-  bool owned; ///< Whether this instance owns the LoadBalancer.
 } GauXCLoadBalancer;
 
 /**
@@ -94,25 +93,6 @@ extern void gauxc_load_balancer_factory_delete(
  * @return Handle to the created LoadBalancer.
  */
 extern GauXCLoadBalancer gauxc_load_balancer_factory_get_instance(
-    GauXCStatus* status,
-    const GauXCLoadBalancerFactory factory,
-    const GauXCRuntimeEnvironment env,
-    const GauXCMolecule mol,
-    const GauXCMolGrid mg,
-    const GauXCBasisSet basis
-);
-
-/**
- * @brief Create a new shared LoadBalancer instance from a LoadBalancerFactory.
- * @param status Status object to capture any errors.
- * @param factory Handle to the LoadBalancerFactory.
- * @param env Handle to the RuntimeEnvironment.
- * @param mol Handle to the Molecule.
- * @param mg Handle to the MolGrid.
- * @param basis Handle to the BasisSet.
- * @return Handle to the created LoadBalancer.
- */
-extern GauXCLoadBalancer gauxc_load_balancer_factory_get_shared_instance(
     GauXCStatus* status,
     const GauXCLoadBalancerFactory factory,
     const GauXCRuntimeEnvironment env,
