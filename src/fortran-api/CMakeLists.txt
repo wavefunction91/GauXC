@@ -24,6 +24,7 @@ target_sources( gauxc PRIVATE
   molecular_weights.f90
   functional.f90
   xc_integrator.f90
+  f_runtime_environment.cxx
 )
 set_target_properties( gauxc PROPERTIES
   Fortran_MODULE_DIRECTORY ${PROJECT_BINARY_DIR}/modules
@@ -39,7 +40,9 @@ target_include_directories(
 )
 if(GAUXC_ENABLE_MPI)
   target_link_libraries( gauxc PUBLIC MPI::MPI_Fortran )
+  set( GAUXC_HAS_MPI_F08 TRUE CACHE BOOL "GauXC has MPI Fortran 2008 bindings" FORCE )
 endif()
+
 
 # Generate config file
 configure_file( 

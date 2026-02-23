@@ -4,6 +4,7 @@
 #cmakedefine GAUXC_HAS_CUDA
 #cmakedefine GAUXC_HAS_HIP
 #cmakedefine GAUXC_HAS_MPI
+#cmakedefine GAUXC_HAS_MPI_F08
 #cmakedefine GAUXC_HAS_MAGMA
 #cmakedefine GAUXC_HAS_NCCL
 #cmakedefine GAUXC_HAS_CUTLASS
