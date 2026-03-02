@@ -16,7 +16,7 @@
 #else
 #include <stddef.h>
 #endif
-#include <gauxc/status.h>
+#include <gauxc/c/status.h>
 
 #ifdef __cplusplus
 extern "C" {

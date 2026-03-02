@@ -9,9 +9,10 @@
  *
  * See LICENSE.txt for details
  */
-#include <gauxc/atom.h>
+#include <gauxc/c/atom.h>
+#include <gauxc/c/molecule.h>
+
 #include <gauxc/atom.hpp>
-#include <gauxc/molecule.h>
 #include <gauxc/molecule.hpp>
 
 #include "c_molecule.hpp"

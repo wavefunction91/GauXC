@@ -125,10 +125,9 @@ endif()
 
 # Generate config file
 configure_file( 
-  ${PROJECT_SOURCE_DIR}/include/gauxc/gauxc_config.h.in
-  ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.h
+  ${PROJECT_SOURCE_DIR}/include/gauxc/gauxc_config.hpp.in
+  ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
 )
-
 
 include( GNUInstallDirs )
 
@@ -195,19 +194,12 @@ install(
   FILES_MATCHING PATTERN "*.hpp"
 )
 
-# Install static C headers
-install( 
-  DIRECTORY   ${PROJECT_SOURCE_DIR}/include
-  DESTINATION .
-  FILES_MATCHING PATTERN "*.h"
-)
-
 # Install generated headers
 install(
-  FILES       ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.h
+  FILES       ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
   DESTINATION include/gauxc
 )
-  
+
    
 # Export target to script
 set( INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/gauxc )

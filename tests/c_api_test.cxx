@@ -14,22 +14,22 @@
 
 #ifdef GAUXC_HAS_C
 
-#include <gauxc/status.h>
-#include <gauxc/types.h>
-#include <gauxc/atom.h>
-#include <gauxc/shell.h>
-#include <gauxc/enums.h>
-#include <gauxc/molecule.h>
-#include <gauxc/basisset.h>
-#include <gauxc/molgrid.h>
-#include <gauxc/runtime_environment.h>
-#include <gauxc/load_balancer.h>
-#include <gauxc/molecular_weights.h>
-#include <gauxc/functional.h>
-#include <gauxc/xc_integrator.h>
+#include <gauxc/c/status.h>
+#include <gauxc/c/types.h>
+#include <gauxc/c/atom.h>
+#include <gauxc/c/shell.h>
+#include <gauxc/c/enums.h>
+#include <gauxc/c/molecule.h>
+#include <gauxc/c/basisset.h>
+#include <gauxc/c/molgrid.h>
+#include <gauxc/c/runtime_environment.h>
+#include <gauxc/c/load_balancer.h>
+#include <gauxc/c/molecular_weights.h>
+#include <gauxc/c/functional.h>
+#include <gauxc/c/xc_integrator.h>
 
 #ifdef GAUXC_HAS_HDF5
-#include <gauxc/external/hdf5.h>
+#include <gauxc/c/hdf5.h>
 #include <gauxc/external/hdf5.hpp>
 #endif
 

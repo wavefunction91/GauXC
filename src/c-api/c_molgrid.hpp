@@ -11,7 +11,8 @@
  */
 #pragma once
 
-#include <gauxc/molgrid.h>
+#include <gauxc/c/molgrid.h>
+
 #include <gauxc/molgrid.hpp>
 
 namespace GauXC::detail {

@@ -10,7 +10,8 @@
  * See LICENSE.txt for details
  */
 
-#include <gauxc/functional.h>
+#include <gauxc/c/functional.h>
+
 #include <exchcxx/xc_kernel.hpp>
 #include <exchcxx/enums/spin.hpp>
 #include <exchcxx/enums/backend.hpp>

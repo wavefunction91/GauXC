@@ -20,9 +20,9 @@
 #include <stdbool.h>
 #include <stddef.h>
 #endif
-#include <gauxc/types.h>
-#include <gauxc/status.h>
-#include <gauxc/shell.h>
+#include <gauxc/c/types.h>
+#include <gauxc/c/status.h>
+#include <gauxc/c/shell.h>
 
 #ifdef __cplusplus
 extern "C" {

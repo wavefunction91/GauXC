@@ -10,7 +10,9 @@
  * See LICENSE.txt for details
  */
 #pragma once
-#include <gauxc/molecule.h>
+
+#include <gauxc/c/molecule.h>
+
 #include <gauxc/molecule.hpp>
 
 namespace GauXC::detail {

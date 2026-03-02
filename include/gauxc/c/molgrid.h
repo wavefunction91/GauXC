@@ -16,10 +16,10 @@
 #else
 #include <stdint.h>
 #endif
-#include <gauxc/types.h>
-#include <gauxc/status.h>
-#include <gauxc/enums.h>
-#include <gauxc/molecule.h>
+#include <gauxc/c/types.h>
+#include <gauxc/c/status.h>
+#include <gauxc/c/enums.h>
+#include <gauxc/c/molecule.h>
 
 #ifdef __cplusplus
 extern "C" {

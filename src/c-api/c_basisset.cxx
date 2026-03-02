@@ -11,9 +11,10 @@
  */
 #include <exception>
 
-#include <gauxc/shell.h>
+#include <gauxc/c/shell.h>
+#include <gauxc/c/basisset.h>
+
 #include <gauxc/shell.hpp>
-#include <gauxc/basisset.h>
 #include <gauxc/basisset.hpp>
 
 #include "c_basisset.hpp"

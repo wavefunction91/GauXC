@@ -9,7 +9,8 @@
  *
  * See LICENSE.txt for details
  */
-#include <gauxc/load_balancer.h>
+#include <gauxc/c/load_balancer.h>
+
 #include <gauxc/load_balancer.hpp>
 
 #include "c_molecule.hpp"
