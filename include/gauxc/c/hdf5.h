@@ -9,11 +9,11 @@
  *
  * See LICENSE.txt for details
  */
-#include <gauxc/gauxc_config.h>
+#include <gauxc/c/gauxc_config.h>
 #ifdef GAUXC_HAS_HDF5
-#include <gauxc/status.h>
-#include <gauxc/basisset.h>
-#include <gauxc/molecule.h>
+#include <gauxc/c/status.h>
+#include <gauxc/c/basisset.h>
+#include <gauxc/c/molecule.h>
 
 #ifdef __cplusplus
 namespace GauXC::C {

@@ -9,9 +9,10 @@
  *
  * See LICENSE.txt for details
  */
-#include <gauxc/molecular_weights.h>
+#include <gauxc/c/molecular_weights.h>
+#include <gauxc/c/load_balancer.h>
+
 #include <gauxc/molecular_weights.hpp>
-#include <gauxc/load_balancer.h>
 #include <gauxc/load_balancer.hpp>
 
 #include "c_molecular_weights.hpp"

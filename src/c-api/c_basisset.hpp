@@ -11,10 +11,11 @@
  */
 #pragma once
 
+#include <gauxc/c/shell.h>
+#include <gauxc/c/basisset.h>
+
 #include <gauxc/exceptions.hpp>
-#include <gauxc/shell.h>
 #include <gauxc/shell.hpp>
-#include <gauxc/basisset.h>
 #include <gauxc/basisset.hpp>
 
 namespace GauXC::detail {

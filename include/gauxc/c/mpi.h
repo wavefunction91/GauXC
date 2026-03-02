@@ -10,7 +10,7 @@
  * See LICENSE.txt for details
  */
 #pragma once
-#include <gauxc/gauxc_config.h>
+#include <gauxc/c/gauxc_config.h>
 
 #ifdef GAUXC_HAS_MPI
   #define GAUXC_MPI_CODE(...) __VA_ARGS__

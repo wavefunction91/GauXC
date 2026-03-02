@@ -9,7 +9,8 @@
  *
  * See LICENSE.txt for details
  */
-#include <gauxc/runtime_environment.h>
+#include <gauxc/c/runtime_environment.h>
+
 #include <gauxc/runtime_environment.hpp>
 
 #include "c_runtime_environment.hpp"

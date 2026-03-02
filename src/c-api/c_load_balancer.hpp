@@ -11,7 +11,8 @@
  */
 #pragma once
 
-#include <gauxc/load_balancer.h>
+#include <gauxc/c/load_balancer.h>
+
 #include <gauxc/load_balancer.hpp>
 
 namespace GauXC::detail {

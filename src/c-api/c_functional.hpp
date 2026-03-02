@@ -10,7 +10,9 @@
  * See LICENSE.txt for details
  */
 #pragma once
-#include <gauxc/functional.h>
+
+#include <gauxc/c/functional.h>
+
 #include <gauxc/xc_integrator.hpp>
 
 namespace GauXC::detail {

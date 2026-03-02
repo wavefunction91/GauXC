@@ -23,3 +23,22 @@ target_sources( gauxc PRIVATE
   c_xc_integrator.cxx
 )
 target_include_directories( gauxc PRIVATE ${CMAKE_CURRENT_SOURCE_DIR})
+
+# Generate config file
+configure_file(
+  ${PROJECT_SOURCE_DIR}/include/gauxc/c/gauxc_config.h.in
+  ${PROJECT_BINARY_DIR}/include/gauxc/c/gauxc_config.h
+)
+
+# Install static C headers
+install(
+  DIRECTORY   ${PROJECT_SOURCE_DIR}/include
+  DESTINATION .
+  FILES_MATCHING PATTERN "*.h"
+)
+
+# Install generated headers
+install(
+  FILES       ${PROJECT_BINARY_DIR}/include/gauxc/c/gauxc_config.h
+  DESTINATION include/gauxc/c
+)

@@ -18,10 +18,10 @@
 #include <stdint.h>
 #include <stdbool.h>
 #endif
-#include <gauxc/types.h>
-#include <gauxc/status.h>
-#include <gauxc/enums.h>
-#include <gauxc/load_balancer.h>
+#include <gauxc/c/types.h>
+#include <gauxc/c/status.h>
+#include <gauxc/c/enums.h>
+#include <gauxc/c/load_balancer.h>
 
 #ifdef __cplusplus
 extern "C" {

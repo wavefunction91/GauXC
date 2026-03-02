@@ -10,7 +10,8 @@
  * See LICENSE.txt for details
  */
 
-#include <gauxc/xc_integrator.h>
+#include <gauxc/c/xc_integrator.h>
+
 #include <gauxc/xc_integrator/replicated/replicated_xc_host_integrator.hpp>
 #ifdef GAUXC_HAS_DEVICE
 #include <gauxc/xc_integrator/replicated/replicated_xc_device_integrator.hpp>

@@ -9,9 +9,10 @@
  *
  * See LICENSE.txt for details
  */
-#include <gauxc/enums.h>
-#include <gauxc/molecule.h>
-#include <gauxc/molgrid.h>
+#include <gauxc/c/enums.h>
+#include <gauxc/c/molecule.h>
+#include <gauxc/c/molgrid.h>
+
 #include <gauxc/molgrid.hpp>
 #include <gauxc/molgrid/defaults.hpp>
 

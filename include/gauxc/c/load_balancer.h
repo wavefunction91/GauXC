@@ -20,13 +20,13 @@
 #include <stddef.h>
 #include <stdbool.h>
 #endif
-#include <gauxc/types.h>
-#include <gauxc/status.h>
-#include <gauxc/enums.h>
-#include <gauxc/runtime_environment.h>
-#include <gauxc/molecule.h>
-#include <gauxc/molgrid.h>
-#include <gauxc/basisset.h>
+#include <gauxc/c/types.h>
+#include <gauxc/c/status.h>
+#include <gauxc/c/enums.h>
+#include <gauxc/c/runtime_environment.h>
+#include <gauxc/c/molecule.h>
+#include <gauxc/c/molgrid.h>
+#include <gauxc/c/basisset.h>
 
 #ifdef __cplusplus
 extern "C" {

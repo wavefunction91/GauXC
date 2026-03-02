@@ -9,8 +9,8 @@
  *
  * See LICENSE.txt for details
  */
-#include <gauxc/runtime_environment.h>
-#include <gauxc/util/mpi.h>
+#include <gauxc/c/runtime_environment.h>
+#include <gauxc/c/mpi.h>
 
 namespace GauXC::C {
 extern "C" {

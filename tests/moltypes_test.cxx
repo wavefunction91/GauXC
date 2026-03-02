@@ -24,8 +24,8 @@
 #include <gauxc/gauxc_config.hpp>
 
 #ifdef GAUXC_HAS_C
-#include <gauxc/molecule.h>
-#include <gauxc/external/hdf5.h>
+#include <gauxc/c/molecule.h>
+#include <gauxc/c/hdf5.h>
 #endif
 
 #ifdef GAUXC_HAS_MPI
