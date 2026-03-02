@@ -17,7 +17,7 @@ extern "C" {
 
 GauXCRuntimeEnvironment gauxc_runtime_environment_new_f( 
   GauXCStatus* status
-  GAUXC_MPI_CODE(, MPI_Comm comm) 
+  GAUXC_MPI_CODE(, MPI_Fint comm)
 ) {
   return gauxc_runtime_environment_new(status GAUXC_MPI_CODE(, MPI_Comm_f2c(comm)));
 }
@@ -25,7 +25,7 @@ GauXCRuntimeEnvironment gauxc_runtime_environment_new_f(
 #ifdef GAUXC_HAS_DEVICE
 GauXCRuntimeEnvironment gauxc_device_runtime_environment_new_f( 
   GauXCStatus* status,
-  GAUXC_MPI_CODE(MPI_Comm comm,)
+  GAUXC_MPI_CODE(MPI_Fint comm,)
   double fill_fraction
 ) {
   return gauxc_device_runtime_environment_new(status GAUXC_MPI_CODE(, MPI_Comm_f2c(comm)), fill_fraction);
@@ -33,7 +33,7 @@ GauXCRuntimeEnvironment gauxc_device_runtime_environment_new_f(
 
 GauXCRuntimeEnvironment gauxc_device_runtime_environment_new_mem_f( 
   GauXCStatus* status,
-  GAUXC_MPI_CODE(MPI_Comm comm,)
+  GAUXC_MPI_CODE(MPI_Fint comm,)
   void* mem,
   size_t mem_sz
 ) {
