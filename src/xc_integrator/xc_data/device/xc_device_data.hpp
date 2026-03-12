@@ -376,6 +376,7 @@ struct required_term_storage {
   bool task_gmat          = false;
   bool task_nbe_scr       = false;
   bool task_bfn_shell_indirection = false;
+  bool task_exx_collision = false;
 
 
   inline size_t task_bfn_size(size_t nbe, size_t npts) {
@@ -505,6 +506,12 @@ struct required_term_storage {
   inline size_t task_to_shell_pair_cou_subtask_size(size_t npts, size_t subtask_size) {
     const size_t num_subtasks = util::div_ceil(npts, subtask_size);
     return PRDVL(task_to_shell_pair_cou, num_subtasks);
+  }
+  inline size_t task_exx_collision_size(size_t nshells) {
+    const size_t nslt = (nshells * (nshells+1)) / 2
+                      + nshells
+                      ;
+    return PRDVL(task_exx_collision, nslt);
   }
 
 
@@ -638,6 +645,7 @@ struct required_term_storage {
       task_shell_offs_bfn        = true;
       task_bfn_shell_indirection = true;
       shell_to_task_bfn          = true;
+      task_exx_collision         = true;
     }
 
   }

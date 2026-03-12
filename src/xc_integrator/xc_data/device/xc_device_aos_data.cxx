@@ -52,6 +52,7 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   const size_t nbe_cou      = task.cou_screening.nbe;
   const size_t ncut_cou     = submat_cut_cou.size();
   const size_t nblock_cou   = submat_block_cou.size();
+  const size_t nshells      = global_dims.nshells;
 
   return base_size + 
     // Collocation + Derivatives
@@ -88,6 +89,9 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
     // Map from packed to unpacked indices
     reqt.task_bfn_shell_indirection_size( nbe_bfn ) * sizeof(int32_t) +
   
+    // Scratch memory to store shell pairs
+    reqt.task_exx_collision_size( nshells ) * sizeof(int64_t) +
+
     // Memory associated with task indirection: valid for both AoS and SoA
     reqt.task_indirection_size() * sizeof(XCDeviceTask);
 }

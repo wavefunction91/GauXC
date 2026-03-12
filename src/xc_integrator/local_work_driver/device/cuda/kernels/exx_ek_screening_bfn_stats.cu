@@ -199,8 +199,8 @@ __global__ void exx_ek_shellpair_collision_shared_kernel(
   int           LD_coll,
   uint32_t*     rc_collisions,
   int           LD_rc,
-  uint32_t*     counts,
-  uint32_t*     rc_counts
+  uint64_t*     counts,
+  uint64_t*     rc_counts
 ) {
 
   extern __shared__ uint32_t s_rc_collisions[];
@@ -253,13 +253,13 @@ __global__ void exx_ek_shellpair_collision_shared_kernel(
 
 
     // TODO use thread block level reduction before writing to global memory
-    uint32_t count = 0;
+    unsigned long long count = 0;
     for(int ij = threadIdx.x; ij < LD_coll; ij+=blockDim.x)  count += __popc(collisions[i_task * LD_coll + ij]);
-    atomicAdd(&(counts[i_task]), count);
+    atomicAdd((unsigned long long *)&(counts[i_task]), count);
 
     count = 0;
     for(int ij = threadIdx.x; ij < LD_rc; ij+=blockDim.x)  count += __popc(rc_collisions[i_task * LD_rc + ij]);
-    atomicAdd(&(rc_counts[i_task]), count);
+    atomicAdd((unsigned long long *)&(rc_counts[i_task]), count);
     __syncthreads();
   }
 
@@ -289,7 +289,7 @@ __global__ void print_coll(size_t ntasks, size_t nshells, uint32_t* collisions,
   }
 }
 
-__global__ void print_counts(size_t ntasks, uint32_t* counts) {
+__global__ void print_counts(size_t ntasks, uint64_t* counts) {
 
 
   for(auto i_task = 0 ; i_task < ntasks; ++i_task) {
@@ -308,8 +308,8 @@ __global__ void bitvector_to_position_list_shellpair(
   size_t nsp,
   size_t LD_bit,
   const uint32_t* collisions,
-  const uint32_t* counts,
-  uint32_t*       position_list
+  const uint64_t* counts,
+  uint64_t*       position_list
 ) {
 
   constexpr auto warp_size = cuda::warp_size;
@@ -370,9 +370,9 @@ __global__ void bitvector_to_position_list_shells(
            size_t  nshells, 
            size_t  LD_bit,
     const uint32_t* collisions, 
-    const uint32_t* counts, 
+    const uint64_t* counts, 
     const int32_t* shell_size,
-          uint32_t* position_list, 
+          uint64_t* position_list, 
            size_t* nbe_list
 ) {
   constexpr auto warp_size = cuda::warp_size;
@@ -500,8 +500,8 @@ void exx_ek_shellpair_collision(
   using dur_t = std::chrono::duration<double,std::milli>;
 
   cudaStream_t stream = queue.queue_as<util::cuda_stream>();
-  std::vector<uint32_t> counts_host    (ntasks);
-  std::vector<uint32_t> rc_counts_host (ntasks);
+  std::vector<uint64_t> counts_host    (ntasks);
+  std::vector<uint64_t> rc_counts_host (ntasks);
 
   const size_t nshell_pairs = shpairs.npairs();
   const size_t LD_coll   = util::div_ceil(nshell_pairs, 32);
@@ -533,9 +533,9 @@ void exx_ek_shellpair_collision(
   buffer_adaptor full_stack(dyn_stack, dyn_size);
 
   auto collisions    = full_stack.aligned_alloc<uint32_t>(ntasks * LD_coll);
-  auto counts        = full_stack.aligned_alloc<uint32_t>(ntasks);
+  auto counts        = full_stack.aligned_alloc<uint64_t>(ntasks);
   auto rc_collisions = full_stack.aligned_alloc<uint32_t>(ntasks * LD_rc);
-  auto rc_counts     = full_stack.aligned_alloc<uint32_t>(ntasks);
+  auto rc_counts     = full_stack.aligned_alloc<uint64_t>(ntasks);
 
   auto sp_check_st = hrt_t::now();
   util::cuda_set_zero_async( ntasks * LD_coll,collisions.ptr,    stream, "Zero Coll");
@@ -641,8 +641,8 @@ void exx_ek_shellpair_collision(
   auto scan_en = hrt_t::now();
   dur_t scan_dur = scan_en - scan_st;
 
-  uint32_t total_sp_count = counts_host[ntasks-1];
-  uint32_t total_s_count = rc_counts_host[ntasks-1];
+  uint64_t total_sp_count = counts_host[ntasks-1];
+  uint64_t total_s_count = rc_counts_host[ntasks-1];
 
   //size_t global_sp_count = total_sp_count;
   //MPI_Allreduce(MPI_IN_PLACE, &global_sp_count, 1, MPI_UINT64_T, MPI_SUM,
@@ -653,8 +653,8 @@ void exx_ek_shellpair_collision(
 
   auto bv_st = hrt_t::now();
 
-  auto position_sp_list_device = full_stack.aligned_alloc<uint32_t>(total_sp_count);
-  auto position_s_list_device  = full_stack.aligned_alloc<uint32_t>(total_s_count);
+  auto position_sp_list_device = full_stack.aligned_alloc<uint64_t>(total_sp_count);
+  auto position_s_list_device  = full_stack.aligned_alloc<uint64_t>(total_s_count);
   auto nbe_list                = full_stack.aligned_alloc<size_t>(ntasks);
   {
   dim3 threads(32,32);
@@ -668,7 +668,7 @@ void exx_ek_shellpair_collision(
   );
   }
 
-  std::vector<uint32_t> position_sp_list(total_sp_count);
+  std::vector<uint64_t> position_sp_list(total_sp_count);
   util::cuda_copy(total_sp_count, position_sp_list.data(), position_sp_list_device.ptr, "Position List ShellPair");
 
   auto bv_en = hrt_t::now();
@@ -676,7 +676,7 @@ void exx_ek_shellpair_collision(
 
 
   auto d2h_st = hrt_t::now();
-  std::vector<uint32_t> position_s_list(total_s_count);
+  std::vector<uint64_t> position_s_list(total_s_count);
   std::vector<size_t> nbe_list_host(ntasks);
   util::cuda_copy(total_s_count, position_s_list.data(), position_s_list_device.ptr, "Position List Shell");
   util::cuda_copy(ntasks, nbe_list_host.data(), nbe_list.ptr, "NBE List");
