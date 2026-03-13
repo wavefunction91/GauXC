@@ -57,6 +57,10 @@ struct XCDeviceStackData : public XCDeviceData {
     double* exc_device     = nullptr;  ///< EXC storage (1)
     double* nel_device     = nullptr;  ///< N_EL storage (1)
     double* exx_k_device   = nullptr;  ///< EXX K storage (nbf,nbf)
+    double* exx_kx_device   = nullptr;  ///< EXX dK/dx intermediates storage (nbf,nbf)
+    double* exx_ky_device   = nullptr;  ///< EXX dK/dy intermediates storage (nbf,nbf)
+    double* exx_kz_device   = nullptr;  ///< EXX dK/dz intermediates storage (nbf,nbf)
+    double* exx_bfgrad_device = nullptr;  ///< EXX gradient storage (nbf)
     double* acc_scr_device = nullptr;  ///< Accumulaion scratch (1)
     double* exc_grad_device = nullptr; ///< EXC Gradient storage (3*natoms)
     double* fxc_device     = nullptr; ///< FXC contraction storage (nbf,nbf)
@@ -328,6 +332,7 @@ struct XCDeviceStackData : public XCDeviceData {
   void allocate_static_data_den( int32_t nbf, int32_t nshells ) override final;
   void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms, integrator_term_tracker enabled_terms ) override final;
   void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, size_t nprim_pair_total, int32_t max_l ) override final;
+  void allocate_static_data_exx_grad( int32_t nbf, int32_t nshells, size_t nshell_pairs, size_t nprim_pair_total, int32_t max_l ) override final;
   void allocate_static_data_exx_ek_screening( size_t ntasks, int32_t nbf, int32_t nshells, int nshell_pairs, int32_t max_l ) override final;
   void send_static_data_weights( const Molecule& mol, const MolMeta& meta ) override final;
   void send_static_data_density_basis( const double* Ps, int32_t ldps, const double* Pz, int32_t ldpz,
@@ -344,6 +349,7 @@ struct XCDeviceStackData : public XCDeviceData {
   void zero_fxc_contraction_integrands() override final;
   void zero_exc_grad_integrands() override final;
   void zero_exx_integrands() override final;
+  void zero_exx_grad_integrands() override final;
   void zero_exx_ek_screening_intermediates() override final;
   void retrieve_exc_vxc_integrands( double* EXC, double* N_EL,
     double* VXCscalar, int32_t ldvxcscalar, double* VXCz, int32_t ldvxcz,
@@ -354,6 +360,7 @@ struct XCDeviceStackData : public XCDeviceData {
   void retrieve_exc_grad_integrands( double* EXC_GRAD, double* N_EL ) override final;
   void retrieve_den_integrands( double* N_EL ) override final;
   void retrieve_exx_integrands( double* K, int32_t ldk ) override final;
+  void retrieve_exx_grad( double* grad ) override final;
   void retrieve_exx_ek_max_bfn_sum( double* MBS, int32_t nt) override final;
   void copy_weights_to_tasks( host_task_iterator task_begin, host_task_iterator task_end ) override final;
 
@@ -364,6 +371,7 @@ struct XCDeviceStackData : public XCDeviceData {
   double* exc_device_data() override;
   double* nel_device_data() override;
   double* exx_k_device_data() override;
+  double* exx_grad_device_data() override;
   double* fxc_s_device_data() override;
   double* fxc_z_device_data() override;
   double* fxc_y_device_data() override;

@@ -197,4 +197,12 @@ void AoSScheme1MAGMABase::inc_exx_k( XCDeviceData* _data){
 #endif
 }
 
+void AoSScheme1MAGMABase::eval_exx_kgrad( XCDeviceData* _data){
+  GAUXC_GENERIC_EXCEPTION("EXX grad + Magma NYI");
+}
+
+void AoSScheme1MAGMABase::inc_exx_kgrad( XCDeviceData* _data){
+  GAUXC_GENERIC_EXCEPTION("EXX grad + Magma NYI");
+}
+
 }

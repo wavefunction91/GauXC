@@ -29,6 +29,7 @@ public:
   using exc_vxc_type_gks   = typename XCIntegrator<MatrixType>::exc_vxc_type_gks;
   using exc_grad_type  = typename XCIntegrator<MatrixType>::exc_grad_type;
   using exx_type       = typename XCIntegrator<MatrixType>::exx_type;
+  using exx_grad_type  = typename XCIntegrator<MatrixType>::exx_grad_type;
   using fxc_contraction_type_rks   = typename XCIntegrator<MatrixType>::fxc_contraction_type_rks;
   using fxc_contraction_type_uks   = typename XCIntegrator<MatrixType>::fxc_contraction_type_uks;
   using dd_psi_type       = typename XCIntegrator<MatrixType>::dd_psi_type;
@@ -49,6 +50,8 @@ protected:
   virtual exc_grad_type eval_exc_grad_( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_grad_type eval_exc_grad_( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exx_type      eval_exx_     ( const MatrixType&     P, 
+                                        const IntegratorSettingsEXX& settings ) = 0;
+  virtual exx_grad_type eval_exx_grad_    ( const MatrixType&     P,
                                         const IntegratorSettingsEXX& settings ) = 0;
   virtual fxc_contraction_type_rks  eval_fxc_contraction_ ( const MatrixType& P,
     const MatrixType& tP, const IntegratorSettingsXC& ks_settings ) = 0;
@@ -151,6 +154,15 @@ public:
     return eval_exx_(P,settings);
   }
 
+  /** Integrate Exact Exchange nuclear
+   *  derivatives for RHF
+   *
+   *  @param[in] P The alpha density matrix
+   *  @returns Excact Exchange Matrix
+   */
+  exx_grad_type eval_exx_grad( const MatrixType& P, const IntegratorSettingsEXX& settings ) {
+    return eval_exx_grad_(P,settings);
+  }
   
   /** Integrate FXC contraction for RKS
    * 

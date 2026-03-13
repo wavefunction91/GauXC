@@ -101,6 +101,14 @@ typename XCIntegrator<MatrixType>::exx_type
 };
 
 template <typename MatrixType>
+typename XCIntegrator<MatrixType>::exx_grad_type
+  XCIntegrator<MatrixType>::eval_exx_grad( const MatrixType&     P,
+                                           const IntegratorSettingsEXX& settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_exx_grad(P,settings);
+};
+
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::fxc_contraction_type_rks
   XCIntegrator<MatrixType>::eval_fxc_contraction( const MatrixType& P, const MatrixType& tP, 
                                                const IntegratorSettingsXC& ks_settings ) { 

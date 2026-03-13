@@ -45,6 +45,7 @@ double* XCDeviceStackData::vxc_x_device_data() { return static_stack.vxc_x_devic
 double* XCDeviceStackData::exc_device_data() { return static_stack.exc_device; }
 double* XCDeviceStackData::nel_device_data() { return static_stack.nel_device; }
 double* XCDeviceStackData::exx_k_device_data() { return static_stack.exx_k_device; }
+double* XCDeviceStackData::exx_grad_device_data() { return static_stack.exx_bfgrad_device; }
 double* XCDeviceStackData::fxc_s_device_data() { return static_stack.fxc_s_device; }
 double* XCDeviceStackData::fxc_z_device_data() { return static_stack.fxc_z_device; }
 double* XCDeviceStackData::fxc_y_device_data() { return static_stack.fxc_y_device; }
@@ -271,6 +272,27 @@ void XCDeviceStackData::allocate_static_data_exx( int32_t nbf, int32_t nshells, 
   dynmem_sz  = mem.nleft(); 
 
   allocated_terms.exx = true;
+}
+
+void XCDeviceStackData::allocate_static_data_exx_grad( int32_t nbf, int32_t nshells, size_t nshell_pairs, size_t nprim_pair_total, int32_t max_l ) {
+
+  allocate_static_data_exx(nbf, nshells, nshell_pairs, nprim_pair_total, max_l);
+
+  if( allocated_terms.exx_grad )
+    GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXC GRAD");
+
+  // Allocate static memory with proper alignment
+  buffer_adaptor mem( dynmem_ptr, dynmem_sz );
+  static_stack.exx_kx_device = mem.aligned_alloc<double>( nbf * nbf , csl);
+  static_stack.exx_ky_device = mem.aligned_alloc<double>( nbf * nbf , csl);
+  static_stack.exx_kz_device = mem.aligned_alloc<double>( nbf * nbf , csl);
+  static_stack.exx_bfgrad_device   = mem.aligned_alloc<double>( 3*nbf , csl);
+
+  // Get current stack location
+  dynmem_ptr = mem.stack();
+  dynmem_sz  = mem.nleft();
+
+  allocated_terms.exx_grad = true;
 }
 
 void XCDeviceStackData::allocate_static_data_exx_ek_screening( size_t ntasks, int32_t nbf, int32_t nshells, int nshell_pairs, int32_t max_l ) {
@@ -603,6 +625,18 @@ void XCDeviceStackData::zero_exx_integrands() {
 
 }
 
+void XCDeviceStackData::zero_exx_grad_integrands() {
+
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
+
+  const auto nbf = global_dims.nbf;
+  device_backend_->set_zero( 3*nbf, static_stack.exx_bfgrad_device, "EXX Gradient Zero" );
+  device_backend_->set_zero( nbf*nbf, static_stack.exx_kx_device, "Kx Zero" );
+  device_backend_->set_zero( nbf*nbf, static_stack.exx_ky_device, "Ky Zero" );
+  device_backend_->set_zero( nbf*nbf, static_stack.exx_kz_device, "Kz Zero" );
+
+}
+
 void XCDeviceStackData::zero_exx_ek_screening_intermediates() {
 
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
@@ -691,6 +725,15 @@ void XCDeviceStackData::retrieve_exx_integrands( double* K, int32_t ldk ) {
   if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
   
   device_backend_->copy_async( nbf*nbf, static_stack.exx_k_device, K,  "K D2H" );
+
+}
+
+void XCDeviceStackData::retrieve_exx_grad( double* grad ) {
+
+  const auto nbf = global_dims.nbf;
+  if( not device_backend_ ) GAUXC_GENERIC_EXCEPTION("Invalid Device Backend");
+
+  device_backend_->copy_async( 3*nbf, static_stack.exx_bfgrad_device, grad,  "K grad" );
 
 }
 

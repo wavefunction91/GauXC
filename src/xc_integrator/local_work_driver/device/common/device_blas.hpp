@@ -47,6 +47,22 @@ void gdot( device_blas_handle handle,
            T*             SCR,
            T*             RES );
 
+template <typename T>
+void matrix_reduce_rows( device_blas_handle handle,
+                         int            M,
+                         int            N,
+                         const T*       A,
+                         int            LDA,
+                         T*             X );
+
+template <typename T>
+void matrix_reduce_cols( device_blas_handle handle,
+                         int            M,
+                         int            N,
+                         const T*       A,
+                         int            LDA,
+                         T*             X );
+
 
 template <typename T>
 void hadamard_product( device_blas_handle handle,
