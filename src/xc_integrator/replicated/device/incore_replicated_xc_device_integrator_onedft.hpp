@@ -193,6 +193,14 @@ eval_exc_vxc_onedft_( int64_t m, int64_t n,
       (is_gga || is_mgga) ? dden_eval.data() : nullptr,
       is_mgga ? tau.data() : nullptr,
       grid_coords.data(), grid_weights.data() );
+    // Build host coords from molecule (avoids passing GPU pointer with CPU TensorOptions)
+    std::vector<double> host_coords(natoms * 3);
+    for (size_t i = 0; i < natoms; i++) {
+      host_coords[3*i]   = mol[i].x;
+      host_coords[3*i+1] = mol[i].y;
+      host_coords[3*i+2] = mol[i].z;
+    }
+
     int total_npts_sum = mpi_gather_onedft_inputs_gpu(den_eval, dden_eval, tau, grid_coords, grid_weights,
       total_npts, world_rank, world_size, recvcounts, displs);
     if (world_rank == 0) {
@@ -200,7 +208,7 @@ eval_exc_vxc_onedft_( int64_t m, int64_t n,
       features_dict = prepare_onedft_features(
         natoms, total_npts_sum, ndm, options, feature_keys, den_eval.data(),
         dden_eval.data(), tau.data(), grid_coords.data(), grid_weights.data(),
-        device_data_ptr->coords_device_data()
+        host_coords.data()
       );
     }
   }
