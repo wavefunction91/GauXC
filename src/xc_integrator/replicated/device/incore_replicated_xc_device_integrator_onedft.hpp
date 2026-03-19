@@ -220,6 +220,8 @@ eval_exc_vxc_onedft_( int64_t m, int64_t n,
     c10::cuda::CUDACachingAllocator::emptyCache();
     EXC[0] = exc.item<double>();
     // std::cout << "EXC: " << EXC[0] << std::endl;
+  } else {
+    EXC[0] = 0.0;
   }
 
   if ( world_size == 1 ) {

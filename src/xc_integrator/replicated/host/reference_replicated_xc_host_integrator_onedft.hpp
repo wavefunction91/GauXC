@@ -129,8 +129,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     auto exc = (exc_on_grid * features_dict.at(feat_map.at(ONEDFT_FEATURE::WEIGHTS))).sum();
     exc.backward();
     EXC[0] = exc.item().to<double>();
+  } else {
+    EXC[0] = 0.0;
   }
-  // MPI_Bcast(EXC, 1, MPI_DOUBLE, 0, rt.comm());
   // TODO: stop here if only exc
 
   send_buffer_onedft_outputs(2/*ndm*/, features_dict, tasks, rt, sendcounts, displs);
