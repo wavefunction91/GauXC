@@ -47,9 +47,10 @@ module gauxc_molecule
     end function gauxc_molecule_new
   end interface gauxc_molecule_new
 
-  interface gauxc_molecule_new
+  interface gauxc_molecule_new_from_atoms
     !> @brief Create a new Molecule instance from an array of Atoms
-    function gauxc_molecule_new_from_atoms(status, atoms, natoms) result(molecule) bind(c)
+    function gauxc_molecule_new_from_atoms_c(status, atoms, natoms) result(molecule) &
+      & bind(c, name="gauxc_molecule_new_from_atoms")
       import :: c_size_t, gauxc_status_type, gauxc_atom_type, gauxc_molecule_type
       implicit none
       !> @param status Status of the operation
@@ -60,8 +61,9 @@ module gauxc_molecule
       integer(c_size_t), value :: natoms
       !> @return Pointer to the newly created molecule object
       type(gauxc_molecule_type) :: molecule
-    end function gauxc_molecule_new_from_atoms
-  end interface gauxc_molecule_new
+    end function gauxc_molecule_new_from_atoms_c
+    module procedure gauxc_molecule_new_from_atoms
+  end interface gauxc_molecule_new_from_atoms
 
   interface gauxc_delete
     !> @brief Delete a GauXC molecule object
@@ -104,5 +106,17 @@ module gauxc_molecule
   end interface
 
 contains
+
+  !> @brief Create a new Molecule instance from an array of Atoms
+  function gauxc_molecule_new_from_atoms(status, atoms, natoms) result(molecule)
+    !> @param status Status of the operation
+    type(gauxc_status_type), intent(out) :: status
+    !> @param atoms Pointer to an array of Atom objects
+    type(gauxc_atom_type), intent(in) :: atoms(:)
+    !> @return Pointer to the newly created molecule object
+    type(gauxc_molecule_type) :: molecule
+
+    molecule = gauxc_molecule_new_from_atoms_c(status, atoms, size(atoms, kind=c_size_t))
+  end function gauxc_molecule_new_from_atoms
 
 end module gauxc_molecule

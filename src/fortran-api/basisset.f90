@@ -43,9 +43,12 @@ module gauxc_basisset
       !> @return Pointer to the newly created basis set object
       type(gauxc_basisset_type) :: basis
     end function gauxc_basisset_new
+  end interface
 
+  interface gauxc_basisset_new_from_shells
     !> @brief Create a new BasisSet instance from an array of Shells
-    function gauxc_basisset_new_from_shells(status, shells, nshells) result(basis) bind(c)
+    function gauxc_basisset_new_from_shells_c(status, shells, nshells) result(basis) &
+      & bind(c, name="gauxc_basisset_new_from_shells")
       import :: c_size_t, gauxc_status_type, gauxc_shell_type, gauxc_basisset_type
       implicit none
       !> @param status Status of the operation
@@ -56,8 +59,9 @@ module gauxc_basisset
       integer(c_size_t), value :: nshells
       !> @return Pointer to the newly created basis set object
       type(gauxc_basisset_type) :: basis
-    end function gauxc_basisset_new_from_shells
-  end interface
+    end function gauxc_basisset_new_from_shells_c
+    module procedure gauxc_basisset_new_from_shells
+  end interface gauxc_basisset_new_from_shells
 
   interface gauxc_delete
     !> @brief Delete a GauXC basis set object
@@ -72,5 +76,17 @@ module gauxc_basisset
   end interface gauxc_delete
 
 contains
+
+  !> @brief Create a new BasisSet instance from an array of Shells
+  function gauxc_basisset_new_from_shells(status, shells) result(basis)
+    !> @param status Status of the operation
+    type(gauxc_status_type), intent(out) :: status
+    !> @param shells Pointer to an array of Shell objects
+    type(gauxc_shell_type), intent(in) :: shells(:)
+    !> @return Pointer to the newly created basis set object
+    type(gauxc_basisset_type) :: basis
+
+    basis = gauxc_basisset_new_from_shells_c(status, shells, size(shells, kind=c_size_t))
+  end function gauxc_basisset_new_from_shells
 
 end module gauxc_basisset
