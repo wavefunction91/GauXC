@@ -11,7 +11,8 @@
  */
 #pragma once
 
-#include <gauxc/xc_integrator.h>
+#include <gauxc/c/xc_integrator.h>
+
 #include <gauxc/xc_integrator.hpp>
 #include <gauxc/xc_integrator/integrator_factory.hpp>
 

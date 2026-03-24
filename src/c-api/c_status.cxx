@@ -9,7 +9,8 @@
  *
  * See LICENSE.txt for details
  */
-#include <gauxc/status.h>
+#include <gauxc/c/status.h>
+
 #include <cstdlib>
 
 namespace GauXC::C {

@@ -9,7 +9,8 @@
  *
  * See LICENSE.txt for details
  */
-#include <gauxc/external/hdf5.h>
+#include <gauxc/c/hdf5.h>
+
 #include <gauxc/external/hdf5.hpp>
 
 #include "c_molecule.hpp"

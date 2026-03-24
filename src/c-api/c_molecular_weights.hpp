@@ -11,7 +11,8 @@
  */
 #pragma once
 
-#include <gauxc/molecular_weights.h>
+#include <gauxc/c/molecular_weights.h>
+
 #include <gauxc/molecular_weights.hpp>
 
 namespace GauXC::detail {

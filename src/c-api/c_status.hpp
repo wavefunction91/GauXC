@@ -13,7 +13,8 @@
 
 #include <cstring>
 
-#include <gauxc/status.h>
+#include <gauxc/c/status.h>
+
 #include <gauxc/exceptions.hpp>
 
 namespace GauXC::detail {

@@ -167,11 +167,11 @@ contains
     call check(error, int(natoms, kind=c_int64_t), 0_c_int64_t)
     if (allocated(error)) return
 
-    mol_a = gauxc_molecule_new_from_atoms(status, atoms, int(size(atoms), kind=c_size_t))
+    mol_a = gauxc_molecule_new_from_atoms(status, atoms, size(atoms, kind=c_size_t))
     call expect_status_ok(error, status, "gauxc_molecule_new_from_atoms(a)")
     if (allocated(error)) return
 
-    mol_b = gauxc_molecule_new_from_atoms(status, atoms, int(size(atoms), kind=c_size_t))
+    mol_b = gauxc_molecule_new_from_atoms(status, atoms)
     call expect_status_ok(error, status, "gauxc_molecule_new_from_atoms(b)")
     if (allocated(error)) return
 
@@ -206,7 +206,7 @@ contains
     type(gauxc_basisset_type) :: basis
 
     call fill_minimal_shells(shells)
-    basis = gauxc_basisset_new_from_shells(status, shells, int(size(shells), kind=c_size_t))
+    basis = gauxc_basisset_new_from_shells(status, shells, size(shells, kind=c_size_t))
     call expect_status_ok(error, status, "gauxc_basisset_new_from_shells")
     if (allocated(error)) return
 
@@ -298,7 +298,7 @@ contains
     call fill_water_atoms(atoms)
     call fill_minimal_shells(shells)
 
-    mol = gauxc_molecule_new_from_atoms(status, atoms, int(size(atoms), kind=c_size_t))
+    mol = gauxc_molecule_new_from_atoms(status, atoms)
     call expect_status_ok(error, status, "pipeline: molecule")
     if (allocated(error)) return
     call check(error, mol%hdr%type, gauxc_type_molecule)
@@ -306,7 +306,7 @@ contains
     call check(error, c_associated(mol%ptr), "mol pointer not associated")
     if ((allocated(error))) return
 
-    basis = gauxc_basisset_new_from_shells(status, shells, int(size(shells), kind=c_size_t))
+    basis = gauxc_basisset_new_from_shells(status, shells)
     call expect_status_ok(error, status, "pipeline: basis")
     if (allocated(error)) return
     call check(error, basis%hdr%type, gauxc_type_basisset)

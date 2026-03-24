@@ -16,9 +16,9 @@
 #else
 #include <stddef.h>
 #endif
-#include <gauxc/types.h>
-#include <gauxc/status.h>
-#include <gauxc/util/mpi.h>
+#include <gauxc/c/types.h>
+#include <gauxc/c/status.h>
+#include <gauxc/c/mpi.h>
 
 #ifdef __cplusplus
 extern "C" {

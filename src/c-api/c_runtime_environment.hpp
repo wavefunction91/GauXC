@@ -11,7 +11,8 @@
  */
 #pragma once
 
-#include <gauxc/runtime_environment.h>
+#include <gauxc/c/runtime_environment.h>
+
 #include <gauxc/runtime_environment.hpp>
 
 namespace GauXC::detail {
