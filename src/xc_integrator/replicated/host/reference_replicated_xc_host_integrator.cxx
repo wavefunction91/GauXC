@@ -17,7 +17,9 @@
 #include "reference_replicated_xc_host_integrator_fxc_contraction.hpp"
 #include "reference_replicated_xc_host_integrator_dd_psi.hpp"
 #include "reference_replicated_xc_host_integrator_dd_psi_potential.hpp"
+#ifdef GAUXC_HAS_ONEDFT
 #include "reference_replicated_xc_host_integrator_onedft.hpp"
+#endif
 
 namespace GauXC::detail {
 

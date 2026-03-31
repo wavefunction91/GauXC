@@ -11,5 +11,7 @@
 #
 target_sources( gauxc PRIVATE integrator_common.cxx integral_bounds.cxx 
                             exx_screening.cxx 
-                            spherical_harmonics.cxx 
-                            onedft_util.cxx )
+                            spherical_harmonics.cxx )
+if( GAUXC_HAS_ONEDFT )
+  target_sources( gauxc PRIVATE onedft_util.cxx )
+endif()

@@ -16,7 +16,9 @@
 #include "incore_replicated_xc_device_integrator_exx.hpp"
 #include "incore_replicated_xc_device_integrator_fxc_contraction.hpp"
 #include "incore_replicated_xc_device_integrator_dd.hpp"
+#ifdef GAUXC_HAS_ONEDFT
 #include "incore_replicated_xc_device_integrator_onedft.hpp"
+#endif
 namespace GauXC  {
 namespace detail {
 
