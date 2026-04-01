@@ -13,6 +13,7 @@
 #include "device/common/device_blas.hpp"
 #include "integrator_util/onedft_util.hpp"
 #include <cuda_runtime.h>
+#include <c10/cuda/CUDACachingAllocator.h>
 #include "device/cuda/cuda_backend.hpp"
 #include <cstddef> // for size_t
 
