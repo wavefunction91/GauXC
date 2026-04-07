@@ -88,6 +88,8 @@ protected:
                                value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual void eval_exc_grad_( int64_t m, int64_t n, const value_type* P, int64_t ldps, 
                                const value_type* Pz, int64_t lpdz, value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual void eval_exc_grad_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
+                               const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual void eval_exx_( int64_t m, int64_t n, const value_type* P,
                           int64_t ldp, value_type* K, int64_t ldk,
                           const IntegratorSettingsEXX& settings ) = 0;
@@ -168,6 +170,8 @@ public:
   void eval_exc_grad( int64_t m, int64_t n, const value_type* P, int64_t ldp, 
                       value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings );
   void eval_exc_grad( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
+                      const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings );
+  void eval_exc_grad_onedft( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
                       const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings );
 
   void eval_exx( int64_t m, int64_t n, const value_type* P,

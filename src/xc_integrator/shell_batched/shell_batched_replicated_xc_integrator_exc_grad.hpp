@@ -34,5 +34,14 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
   util::unused(m,n,Ps,ldps,Pz,lpdz,EXC_GRAD);
 }
 
+template <typename BaseIntegratorType, typename IncoreIntegratorType>
+void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType>::
+  eval_exc_grad_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
+                  const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD, const IntegratorSettingsXC& settings ) { 
+                 
+  GAUXC_GENERIC_EXCEPTION("ShellBatched exc_grad_onedft NYI" );                 
+  util::unused(m,n,Ps,ldps,Pz,ldpz,EXC_GRAD);
+}
+
 }
 }

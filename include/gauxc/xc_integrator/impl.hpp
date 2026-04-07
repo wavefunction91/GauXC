@@ -100,6 +100,13 @@ typename XCIntegrator<MatrixType>::exc_grad_type
 };
 
 template <typename MatrixType>
+typename XCIntegrator<MatrixType>::exc_grad_type
+  XCIntegrator<MatrixType>::eval_exc_grad_onedft( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_exc_grad_onedft(Ps, Pz, ks_settings);
+};
+
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exx_type
   XCIntegrator<MatrixType>::eval_exx( const MatrixType&     P,
                                       const IntegratorSettingsEXX& settings ) {

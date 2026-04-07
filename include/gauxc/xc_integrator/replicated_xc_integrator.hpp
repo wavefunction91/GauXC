@@ -57,6 +57,7 @@ private:
   exc_vxc_type_uks eval_exc_vxc_onedft_  ( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType&, const IntegratorSettingsXC& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
+  exc_grad_type eval_exc_grad_onedft_( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
   exx_type      eval_exx_     ( const MatrixType&, const IntegratorSettingsEXX& ) override;
   fxc_contraction_type_rks  eval_fxc_contraction_ ( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
   fxc_contraction_type_uks  eval_fxc_contraction_ ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC&) override;

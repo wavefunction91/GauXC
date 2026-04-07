@@ -70,6 +70,8 @@ struct XCTask {
     std::vector<double> vdden_z_eval_a;
     std::vector<double> vdden_z_eval_b;
     std::vector<double> vtau;
+    // energy density per grid point (for gradient weight derivative)
+    std::vector<double> eps;
   };
   features feat;
 

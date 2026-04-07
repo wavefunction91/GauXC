@@ -31,6 +31,10 @@ void HostMolecularWeights::modify_weights( LoadBalancer& lb ) const {
   };
   std::stable_sort( tasks.begin(), tasks.end(), task_comparator );
 
+  // Save raw quadrature weights before partition modifies them in-place.
+  // These are needed by OneDFT models that use atomic_grid_weights.
+  for( auto& task : tasks ) task.raw_weights = task.weights;
+
   // Modify the weights
   const auto& mol  = lb.molecule();
   const auto& meta = lb.molmeta();

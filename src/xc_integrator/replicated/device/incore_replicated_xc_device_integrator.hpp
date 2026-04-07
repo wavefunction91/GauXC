@@ -113,6 +113,10 @@ protected:
                     value_type* VXCz, int64_t ldvxcz,
                     value_type* EXC, const IntegratorSettingsXC& settings ) override;
 
+  void eval_exc_grad_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
+                    const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD,
+                    const IntegratorSettingsXC& settings ) override;
+
   void integrate_den_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                             value_type *N_EL,
                             host_task_iterator task_begin, host_task_iterator task_end,

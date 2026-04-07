@@ -63,6 +63,7 @@ struct AoSScheme1Base : public detail::LocalDeviceWorkDriverPIMPL {
   void inc_exc_grad_lda( XCDeviceData*, integrator_ks_scheme, bool  ) override final;
   void inc_exc_grad_gga( XCDeviceData*, integrator_ks_scheme, bool  ) override final;
   void inc_exc_grad_mgga( XCDeviceData*, integrator_ks_scheme , bool, bool ) override final;
+  void transform_onedft_vxc_for_grad( XCDeviceData* ) override final;
   void symmetrize_vxc( XCDeviceData* , density_id) override final;
   void symmetrize_fxc( XCDeviceData* , density_id) override final;
   void symmetrize_exx_k( XCDeviceData* ) override final;

@@ -21,6 +21,7 @@
 #include "device/common/inc_potential.hpp"
 #include "device/common/symmetrize_mat.hpp"
 #include "device/common/increment_exc_grad.hpp"
+#include "device/common/onedft_exc_grad.hpp"
 #include "device/common/exx_ek_screening.hpp"
 
 #include "buffer_adaptor.hpp"
@@ -1960,6 +1961,28 @@ void AoSScheme1Base::inc_exc_grad_mgga( XCDeviceData* _data, integrator_ks_schem
     data->static_stack.exc_grad_device,
     with_weight_derivatives,
     data->device_backend_->queue() ); 
+#endif
+}
+
+void AoSScheme1Base::transform_onedft_vxc_for_grad( XCDeviceData* _data ) {
+#ifdef GAUXC_HAS_HIP
+  GAUXC_GENERIC_EXCEPTION("OneDFT Grad Transform NYI for HIP Backends");
+#else
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+  size_t npts_max = 0;
+  for( auto& task : tasks ) {
+    npts_max = std::max( npts_max, task.npts );
+  }
+
+  GauXC::transform_onedft_vxc_for_grad( ntasks, npts_max,
+    data->aos_stack.device_tasks,
+    data->device_backend_->queue() );
 #endif
 }
 

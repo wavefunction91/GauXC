@@ -150,3 +150,176 @@ TEST_CASE( "OneDFT", "[onedft]" ) {
         test_integrator( GAUXC_REF_DATA_PATH "/onedft_he_def2qzvp_lda_uks.hdf5", GAUXC_ONEDFT_MODEL_PATH "/lda.fun" );
         }
 }
+
+#include <gauxc/xc_integrator/replicated/impl.hpp>
+// Include the OneDFT utility header for reorder helper functions
+#include "../../src/xc_integrator/integrator_util/onedft_util.hpp"
+
+TEST_CASE( "Atom Reorder Permutation", "[onedft][reorder]" ) {
+
+  // Scenario: 2 ranks, 3 atoms
+  // Rank 0 has: atom0=2pts, atom1=3pts, atom2=1pt  (6 pts total)
+  // Rank 1 has: atom0=1pt,  atom1=0pts, atom2=2pts (3 pts total)
+  //
+  // Rank-ordered layout (what MPI_Gatherv produces):
+  //   [r0_a0(2), r0_a1(3), r0_a2(1), r1_a0(1), r1_a1(0), r1_a2(2)]
+  //   indices: 0 1 | 2 3 4 | 5 | 6 | | 7 8
+  //
+  // Atom-ordered layout (what we want):
+  //   [a0_r0(2), a0_r1(1), a1_r0(3), a1_r1(0), a2_r0(1), a2_r1(2)]
+  //   indices: 0 1 | 2 | 3 4 5 | | 6 | 7 8
+
+  int natoms = 3;
+  int world_size = 2;
+  // all_rank_atom_sizes: [rank0_atom0, rank0_atom1, rank0_atom2, rank1_atom0, rank1_atom1, rank1_atom2]
+  std::vector<int64_t> all_rank_atom_sizes = {2, 3, 1, 1, 0, 2};
+  std::vector<int> sendcounts = {6, 3};
+  std::vector<int> displs = {0, 6};
+
+  SECTION("Permutation correctness") {
+    auto [perm, inv_perm] = GauXC::build_atom_reorder_perm(
+      all_rank_atom_sizes, sendcounts, displs, natoms, world_size);
+
+    REQUIRE(perm.size() == 9);
+    REQUIRE(inv_perm.size() == 9);
+
+    // Expected mapping:
+    // rank-ordered idx -> atom-ordered idx
+    // r0_a0: src 0->dst 0, src 1->dst 1
+    // r0_a1: src 2->dst 3, src 3->dst 4, src 4->dst 5
+    // r0_a2: src 5->dst 6
+    // r1_a0: src 6->dst 2
+    // r1_a1: (empty)
+    // r1_a2: src 7->dst 7, src 8->dst 8
+    CHECK(perm[0] == 0);
+    CHECK(perm[1] == 1);
+    CHECK(perm[2] == 3);
+    CHECK(perm[3] == 4);
+    CHECK(perm[4] == 5);
+    CHECK(perm[5] == 6);
+    CHECK(perm[6] == 2);
+    CHECK(perm[7] == 7);
+    CHECK(perm[8] == 8);
+
+    // Round-trip: inv_perm[perm[i]] == i
+    for (int64_t i = 0; i < 9; ++i) {
+      CHECK(inv_perm[perm[i]] == i);
+    }
+  }
+
+  SECTION("Strided permutation with stride 3 (coords)") {
+    auto [perm, inv_perm] = GauXC::build_atom_reorder_perm(
+      all_rank_atom_sizes, sendcounts, displs, natoms, world_size);
+
+    // 9 points, stride 3 -> 27 doubles
+    // Rank-ordered data: point i has values [i*10, i*10+1, i*10+2]
+    std::vector<double> src(27);
+    for (int i = 0; i < 9; ++i) {
+      src[i*3]   = i * 10.0;
+      src[i*3+1] = i * 10.0 + 1.0;
+      src[i*3+2] = i * 10.0 + 2.0;
+    }
+
+    std::vector<double> dst(27, -1.0);
+    GauXC::apply_strided_permutation(src.data(), dst.data(), perm, 9, 3);
+
+    // Verify: dst[perm[i]*3..] should equal src[i*3..]
+    for (int i = 0; i < 9; ++i) {
+      int64_t j = perm[i];
+      CHECK(dst[j*3]   == src[i*3]);
+      CHECK(dst[j*3+1] == src[i*3+1]);
+      CHECK(dst[j*3+2] == src[i*3+2]);
+    }
+  }
+
+  SECTION("Round-trip: forward then inverse restores original") {
+    auto [perm, inv_perm] = GauXC::build_atom_reorder_perm(
+      all_rank_atom_sizes, sendcounts, displs, natoms, world_size);
+
+    // Stride 1 (like grid_weights)
+    std::vector<double> original(9);
+    for (int i = 0; i < 9; ++i) original[i] = i * 1.5 + 0.7;
+
+    // Forward: rank-ordered -> atom-ordered
+    std::vector<double> atom_ordered(9);
+    GauXC::apply_strided_permutation(original.data(), atom_ordered.data(), perm, 9, 1);
+
+    // Inverse: atom-ordered -> rank-ordered
+    std::vector<double> restored(9);
+    GauXC::apply_strided_permutation(atom_ordered.data(), restored.data(), inv_perm, 9, 1);
+
+    for (int i = 0; i < 9; ++i) {
+      CHECK(restored[i] == Approx(original[i]));
+    }
+  }
+
+  SECTION("Single rank is identity permutation") {
+    // With 1 rank, no reorder is needed
+    std::vector<int64_t> single_rank_sizes = {2, 3, 1};
+    std::vector<int> sc = {6};
+    std::vector<int> dp = {0};
+
+    auto [perm, inv_perm] = GauXC::build_atom_reorder_perm(
+      single_rank_sizes, sc, dp, 3, 1);
+
+    for (int64_t i = 0; i < 6; ++i) {
+      CHECK(perm[i] == i);
+      CHECK(inv_perm[i] == i);
+    }
+  }
+
+  SECTION("reorder_to_atom_order / reorder_to_rank_order round-trip") {
+    auto [perm, inv_perm] = GauXC::build_atom_reorder_perm(
+      all_rank_atom_sizes, sendcounts, displs, natoms, world_size);
+    int64_t npts = 9;
+
+    // Create synthetic interleaved data matching the real layouts
+    std::vector<double> weights(npts), den(npts*2), coords(npts*3), dden(npts*6), tau_v(npts*2);
+    for (int64_t i = 0; i < npts; ++i) {
+      weights[i] = i * 0.1;
+      den[i*2] = i * 1.0; den[i*2+1] = i * 1.0 + 100;
+      coords[i*3] = i; coords[i*3+1] = i+0.1; coords[i*3+2] = i+0.2;
+      for (int c = 0; c < 6; ++c) dden[i*6+c] = i * 10.0 + c;
+      tau_v[i*2] = i * 5.0; tau_v[i*2+1] = i * 5.0 + 50;
+    }
+    // Save originals
+    auto orig_weights = weights, orig_den = den, orig_coords = coords;
+    auto orig_dden = dden, orig_tau = tau_v;
+
+    // Forward: rank-order → atom-order
+    GauXC::reorder_to_atom_order(weights, den, coords, dden, tau_v, perm, npts);
+
+    // Verify data actually changed (perm is non-trivial)
+    bool any_different = false;
+    for (int64_t i = 0; i < npts && !any_different; ++i)
+      if (weights[i] != orig_weights[i]) any_different = true;
+    CHECK(any_different);
+
+    // Now simulate the gradient path: convert interleaved atom-ordered data
+    // to channel-first layout (as mpi_scatter_onedft_outputs does)
+    std::vector<double> grad_den(npts*2), grad_dden(npts*6), grad_tau(npts*2);
+    // Channel-first: [alpha(npts) | beta(npts)]
+    for (int64_t i = 0; i < npts; ++i) {
+      grad_den[i] = den[i*2];              // alpha channel
+      grad_den[npts+i] = den[i*2+1];       // beta channel
+      grad_tau[i] = tau_v[i*2];
+      grad_tau[npts+i] = tau_v[i*2+1];
+      // dden channel-first: [dXa(npts)|dYa|dZa|dXb|dYb|dZb]
+      for (int c = 0; c < 6; ++c)
+        grad_dden[c*npts+i] = dden[i*6+c];
+    }
+
+    // Inverse: atom-order → rank-order
+    GauXC::reorder_to_rank_order(grad_den, grad_dden, grad_tau, inv_perm, npts, true, true);
+
+    // Verify round-trip: channel-first rank-ordered should match original interleaved
+    for (int64_t i = 0; i < npts; ++i) {
+      CHECK(grad_den[i] == Approx(orig_den[i*2]));
+      CHECK(grad_den[npts+i] == Approx(orig_den[i*2+1]));
+      CHECK(grad_tau[i] == Approx(orig_tau[i*2]));
+      CHECK(grad_tau[npts+i] == Approx(orig_tau[i*2+1]));
+      for (int c = 0; c < 6; ++c)
+        CHECK(grad_dden[c*npts+i] == Approx(orig_dden[i*6+c]));
+    }
+  }
+}

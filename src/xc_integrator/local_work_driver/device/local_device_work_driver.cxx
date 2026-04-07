@@ -140,6 +140,7 @@ FWD_TO_PIMPL(inc_exx_k)
 FWD_TO_PIMPL_KS_SCHEME_BOOL(inc_exc_grad_lda)
 FWD_TO_PIMPL_KS_SCHEME_BOOL(inc_exc_grad_gga)
 FWD_TO_PIMPL_KS_SCHEME_BOOL_BOOL(inc_exc_grad_mgga)
+FWD_TO_PIMPL(transform_onedft_vxc_for_grad)
 
 FWD_TO_PIMPL_DEN_ID(symmetrize_vxc)
 FWD_TO_PIMPL_DEN_ID(symmetrize_fxc) // Added FXC function
