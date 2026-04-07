@@ -27,6 +27,7 @@ struct XCTask {
   int32_t                              iParent = -1;
   std::vector< std::array<double,3> >  points;
   std::vector< double  >               weights;
+  std::vector< double  >               raw_weights; // pre-partition quadrature weights
   int32_t                              npts = 0;
 
   double                               dist_nearest;
@@ -86,6 +87,8 @@ struct XCTask {
       GAUXC_GENERIC_EXCEPTION("Cannot Perform Requested Merge: Incompatible Tasks");
     points.insert( points.end(), other.points.begin(), other.points.end() );
     weights.insert( weights.end(), other.weights.begin(), other.weights.end() );
+    if( !other.raw_weights.empty() )
+      raw_weights.insert( raw_weights.end(), other.raw_weights.begin(), other.raw_weights.end() );
     npts = points.size();
   }
 
@@ -98,17 +101,24 @@ struct XCTask {
         return a + t.points.size();
       });
 
+    bool has_raw = !raw_weights.empty() || 
+      std::any_of(begin, end, [](const auto& t){ return !t.raw_weights.empty(); });
+
     size_t new_sz = old_sz + pts_add;
     points.resize( new_sz );
     weights.resize( new_sz );
+    if( has_raw ) raw_weights.resize( new_sz );
 
     auto points_it  = points.begin()  + old_sz;
     auto weights_it = weights.begin() + old_sz;
+    auto raw_it     = has_raw ? raw_weights.begin() + old_sz : raw_weights.end();
     for( auto it = begin; it != end; ++it ) {
       if( !equiv_with(*it) )
         GAUXC_GENERIC_EXCEPTION("Cannot Perform Requested Task Merge");
       points_it  = std::copy( it->points.begin(), it->points.end(), points_it );
       weights_it = std::copy( it->weights.begin(), it->weights.end(), weights_it );
+      if( has_raw && !it->raw_weights.empty() )
+        raw_it = std::copy( it->raw_weights.begin(), it->raw_weights.end(), raw_it );
     }
 
     npts = points.size();
