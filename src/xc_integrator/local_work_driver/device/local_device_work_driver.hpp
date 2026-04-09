@@ -117,6 +117,7 @@ public:
   void inc_exc_grad_lda( XCDeviceData*, integrator_ks_scheme, bool );
   void inc_exc_grad_gga( XCDeviceData*, integrator_ks_scheme, bool );
   void inc_exc_grad_mgga( XCDeviceData*, integrator_ks_scheme , bool, bool );
+  void transform_onedft_vxc_for_grad( XCDeviceData* );
   void inc_exx_k( XCDeviceData* );
 
   void eval_exx_ek_screening_bfn_stats( XCDeviceData* );

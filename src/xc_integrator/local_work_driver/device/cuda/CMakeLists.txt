@@ -30,6 +30,7 @@ target_sources(gauxc PRIVATE
   kernels/increment_exc_grad.cu
   kernels/exx_ek_screening_bfn_stats.cu
   kernels/onedft.cu
+  kernels/onedft_exc_grad.cu
 )
 
 # Check if CMAKE_CUDA_ARCHITECTURES is set

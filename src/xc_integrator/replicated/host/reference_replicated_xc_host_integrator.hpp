@@ -79,10 +79,16 @@ protected:
   void eval_exc_vxc_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
                      const value_type* Pz, int64_t ldpz, value_type* VXCs, int64_t ldvxcs,
                      value_type* VXCz, int64_t ldvxcz, value_type* EXC, const IntegratorSettingsXC& ks_settings ) override;
+  void eval_exc_grad_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
+                     const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings ) override;
 #else
   void eval_exc_vxc_onedft_( int64_t, int64_t, const value_type*, int64_t,
                      const value_type*, int64_t, value_type*, int64_t,
                      value_type*, int64_t, value_type*, const IntegratorSettingsXC& ) override {
+    throw std::runtime_error("OneDFT support not compiled");
+  }
+  void eval_exc_grad_onedft_( int64_t, int64_t, const value_type*, int64_t,
+                     const value_type*, int64_t, value_type*, const IntegratorSettingsXC& ) override {
     throw std::runtime_error("OneDFT support not compiled");
   }
 #endif
@@ -172,6 +178,11 @@ protected:
     value_type* VXCs, int64_t ldvxcs,
     value_type* VXCz, int64_t ldvxcz,
     const bool is_gga, const bool is_mgga, const bool needs_laplacian);
+
+  void exc_grad_local_work_onedft_( const value_type* Ps, int64_t ldps, const value_type* Pz, int64_t ldpz,
+                              value_type* EXC_GRAD,
+                              const std::vector<double>& eps_on_grid,
+                              const bool is_gga, const bool is_mgga);
 #endif
 
 

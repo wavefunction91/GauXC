@@ -197,6 +197,12 @@ void XCDeviceStackData::allocate_static_data_onedft( int32_t nbf, int32_t nshell
     static_stack.tau_grad_device     = mem.aligned_alloc<double>( 2 * total_npts , csl );
   }
 
+  // Allocate gradient accumulator for OneDFT gradient computation
+  if( enabled_terms.exc_grad ) {
+    static_stack.exc_grad_device = mem.aligned_alloc<double>( 3 * natoms, csl );
+    allocated_terms.exc_grad = true;
+  }
+
   // Get current stack location
   dynmem_ptr = mem.stack();
   dynmem_sz  = mem.nleft(); 
