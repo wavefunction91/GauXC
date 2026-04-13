@@ -108,7 +108,7 @@ module gauxc_molecule
 contains
 
   !> @brief Create a new Molecule instance from an array of Atoms
-  function gauxc_molecule_new_from_atoms(status, atoms, natoms) result(molecule)
+  function gauxc_molecule_new_from_atoms(status, atoms) result(molecule)
     !> @param status Status of the operation
     type(gauxc_status_type), intent(out) :: status
     !> @param atoms Pointer to an array of Atom objects
