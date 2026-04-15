@@ -41,6 +41,10 @@ GauXCMolecule gauxc_molecule_new_from_atoms(GauXCStatus* status, const GauXCAtom
   GauXCMolecule mol{};
   mol.hdr = GauXCHeader{GauXC_Type_Molecule};
   mol.ptr = nullptr;
+  if (atoms == nullptr || natoms == 0) {
+    detail::gauxc_status_handle(status, 1, "Atom list is null or empty");
+    return mol;
+  }
   Molecule* mol_ptr = nullptr;
 
   try {

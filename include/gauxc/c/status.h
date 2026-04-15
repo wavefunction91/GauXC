@@ -16,6 +16,11 @@ extern "C" {
 namespace GauXC::C {
 #endif
 
+/**
+ * @brief Status object for GauXC C API functions.
+ *
+ * Important, always initialize the status object before passing to any C API function.
+ */
 typedef struct GauXCStatus {
   int code;
   char* message;

@@ -35,6 +35,10 @@ GauXCMolGrid gauxc_molgrid_new_default(
   GauXCMolGrid mg{};
   mg.hdr = GauXCHeader{GauXC_Type_MolGrid};
   mg.ptr = nullptr;
+  if (mol.ptr == nullptr || mol.hdr.type != GauXC_Type_Molecule) {
+    detail::gauxc_status_handle(status, 1, "Invalid Molecule handle");
+    return mg;
+  }
 
   try {
     auto grid_map = MolGridFactory::create_default_gridmap(
