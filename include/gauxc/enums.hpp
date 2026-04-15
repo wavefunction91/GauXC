@@ -35,7 +35,17 @@ enum class AtomicGridSizeDefault {
   UltraFineGrid,  ///< Ultrafine grid (appropriate accuracy)
   SuperFineGrid,  ///< Superfine grid (most accurate)
   GM3,            ///< Treutler-Ahlrichs GM3
-  GM5             ///< Treutlet-Ahlrichs GM5
+  GM5,            ///< Treutler-Ahlrichs GM5
+  PySCF0,         ///< PySCF default level 0
+  PySCF1,         ///< PySCF default level 1
+  PySCF2,         ///< PySCF default level 2 (angular points ~ fine grid)
+  PySCF3,         ///< PySCF default level 3
+  PySCF4,         ///< PySCF default level 4 (radial points ~ fine grid, angular points ~ ultrafine grid)
+  PySCF5,         ///< PySCF default level 5
+  PySCF6,         ///< PySCF default level 6 (radial points ~ ultrafine grid, angular points ~ superfine grid)
+  PySCF7,         ///< PySCF default level 7
+  PySCF8,         ///< PySCF default level 8
+  PySCF9          ///< PySCF default level 9 (radial points ~ superfine grid)
 };
 
 /**

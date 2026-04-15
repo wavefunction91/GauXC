@@ -15,6 +15,40 @@
 
 namespace GauXC {
 
+namespace detail {
+
+inline RadialSize get_pyscf_radial_size( AtomicNumber Z, int level ) {
+  if (level < 0 || level > 8) 
+    GAUXC_GENERIC_EXCEPTION("Invalid PySCF grid level: " + std::to_string(level) + ". Valid levels are 0-8.");
+
+  if ( Z.get() <= 2 ) {
+    if (level == 0) return RadialSize( 10 );
+    return RadialSize( 20 + 10*level );  // ..., 30, 40, 50, ...
+  } else if ( Z.get() <= 10 ) {
+    if (level == 0) return RadialSize( 15 );
+    if (level == 1) return RadialSize( 40 );
+    return RadialSize( 30 + 15 * level );  // ..., 60, 75, 90, ...
+  } else if ( Z.get() <= 18 ) {
+    if (level == 0) return RadialSize( 20 );
+    return RadialSize( 35 + 15 * level );  // ..., 50, 65, 80, ...
+  } else if ( Z.get() <= 36 ) {
+    if (level == 0) return RadialSize( 30 );
+    return RadialSize( 45 + 15 * level );  // ..., 60, 75, 90, ...
+  } else if ( Z.get() <= 54 ) {
+    if (level == 0) return RadialSize( 35 );
+    return RadialSize( 50 + 15 * level );  // ..., 65, 80, 95, ...
+  } else if ( Z.get() <= 86 ) {
+    if (level == 0) return RadialSize( 40 );
+    return RadialSize( 55 + 15 * level );  // ..., 70, 85, 100, ...
+  } else if ( Z.get() <= 118 ) {
+    if (level == 0) return RadialSize( 50 );
+    return RadialSize( 60 + 15 * level );  // ..., 75, 90, 105, ...
+  } else {
+    GAUXC_GENERIC_EXCEPTION("Z > 118 Not Supported for PySCF Grid Defaults");
+  }
+}
+}
+
 RadialScale default_mk_radial_scaling_factor( AtomicNumber _Z ) {
   auto Z = _Z.get();
   switch(Z) {
@@ -116,6 +150,36 @@ std::tuple<RadialSize,AngularSize>
 
     case AtomicGridSizeDefault::GM5:
       return std::make_tuple( RadialSize(50), AngularSize(302) );
+
+    case AtomicGridSizeDefault::PySCF0:
+      return std::make_tuple( detail::get_pyscf_radial_size(Z, 0), Z.get() <= 2 ? AngularSize(50) : (Z.get() <= 10 ? AngularSize(86) : AngularSize(110)));
+
+    case AtomicGridSizeDefault::PySCF1:
+      return std::make_tuple( detail::get_pyscf_radial_size(Z, 1), Z.get() <= 2 ? AngularSize(110) : AngularSize(194));
+
+    case AtomicGridSizeDefault::PySCF2:
+      return std::make_tuple( detail::get_pyscf_radial_size(Z, 2), Z.get() <= 2 ? AngularSize(194) : AngularSize(302));
+
+    case AtomicGridSizeDefault::PySCF3:
+      return std::make_tuple( detail::get_pyscf_radial_size(Z, 3), Z.get() <= 10 ? AngularSize(302) : AngularSize(434));
+
+    case AtomicGridSizeDefault::PySCF4:
+      return std::make_tuple( detail::get_pyscf_radial_size(Z, 4), Z.get() <= 2 ? AngularSize(434) : AngularSize(590));
+
+    case AtomicGridSizeDefault::PySCF5:
+      return std::make_tuple( detail::get_pyscf_radial_size(Z, 5), Z.get() <= 2 ? AngularSize(590) : AngularSize(770));
+
+    case AtomicGridSizeDefault::PySCF6:
+      return std::make_tuple( detail::get_pyscf_radial_size(Z, 6), Z.get() <= 2 ? AngularSize(770) : AngularSize(974));
+
+    case AtomicGridSizeDefault::PySCF7:
+      return std::make_tuple( detail::get_pyscf_radial_size(Z, 7), Z.get() <= 2 ? AngularSize(974) : AngularSize(1202));
+
+    case AtomicGridSizeDefault::PySCF8:
+      return std::make_tuple( detail::get_pyscf_radial_size(Z, 8), AngularSize(1202));
+
+    case AtomicGridSizeDefault::PySCF9:
+      return std::make_tuple( RadialSize(200), AngularSize(1454) );
 
     case AtomicGridSizeDefault::FineGrid:
       return std::make_tuple( RadialSize(75), AngularSize(302) );
