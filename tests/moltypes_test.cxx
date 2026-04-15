@@ -75,7 +75,7 @@ TEST_CASE("Molecule", "[moltypes]") {
 
 #ifdef GAUXC_HAS_C
   SECTION("Default C") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCMolecule mol = C::gauxc_molecule_new(&status);
     CHECK(status.code == 0);
     CHECK(C::gauxc_molecule_natoms(&status, mol) == 0);
@@ -233,7 +233,7 @@ TEST_CASE("HDF5-MOLECULE", "[moltypes]") {
 
 #ifdef GAUXC_HAS_C
   SECTION("C HDF5 IO") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
 
     C::GauXCMolecule mol;
     C::GauXCAtom atoms[3] = {

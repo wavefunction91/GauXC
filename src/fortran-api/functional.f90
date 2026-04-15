@@ -441,7 +441,7 @@ module gauxc_xc_functional
     function gauxc_functional_from_string_c(status, functional_spec, polarized) &
       & result(func) bind(c, name="gauxc_functional_from_string")
       import :: gauxc_status_type, gauxc_functional_type, c_char, c_bool
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       character(kind=c_char), intent(in) :: functional_spec(*)
       logical(c_bool), value :: polarized
       type(gauxc_functional_type) :: func
@@ -451,7 +451,7 @@ module gauxc_xc_functional
     function gauxc_functional_from_enum(status, functional_enum, polarized) &
       & result(func) bind(c)
       import :: gauxc_status_type, gauxc_functional_type, c_int, c_bool
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       integer(c_int), value :: functional_enum
       logical(c_bool), value :: polarized
       type(gauxc_functional_type) :: func
@@ -462,7 +462,7 @@ module gauxc_xc_functional
     !> @brief Destroy a GauXCFunctional
     subroutine gauxc_functional_delete(status, func) bind(c)
       import :: gauxc_status_type, gauxc_functional_type
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       type(gauxc_functional_type), intent(inout) :: func
     end subroutine gauxc_functional_delete
   end interface gauxc_delete
@@ -472,7 +472,7 @@ contains
   !> @brief Create a GauXCFunctional from a string specification
   function gauxc_functional_from_string(status, functional_spec, polarized) &
     & result(func)
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     character(kind=c_char, len=*), intent(in) :: functional_spec
     logical(c_bool), intent(in) :: polarized
     type(gauxc_functional_type) :: func

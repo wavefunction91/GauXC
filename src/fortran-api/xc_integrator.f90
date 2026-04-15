@@ -54,7 +54,7 @@ module gauxc_integrator
       import :: gauxc_status_type, gauxc_integrator_type
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param integrator Handle to the XCIntegrator to delete.
       type(gauxc_integrator_type), intent(inout) :: integrator
     end subroutine gauxc_integrator_delete
@@ -69,7 +69,7 @@ module gauxc_integrator
         & gauxc_load_balancer_type, c_int, c_char
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param func Handle to the functional.
       type(gauxc_functional_type), value :: func
       !> @param lb Handle to the load balancer.
@@ -96,7 +96,7 @@ module gauxc_integrator
       import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param integrator Handle to the XCIntegrator.
       type(gauxc_integrator_type), value :: integrator
       !> @param m Number of rows in the density matrix.
@@ -120,7 +120,7 @@ module gauxc_integrator
       import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param integrator Handle to the XCIntegrator.
       type(gauxc_integrator_type), value :: integrator
       !> @param m Number of rows in the density matrix.
@@ -143,7 +143,7 @@ module gauxc_integrator
       import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param integrator Handle to the XCIntegrator.
       type(gauxc_integrator_type), value :: integrator
       !> @param m Number of rows in the density matrices.
@@ -171,7 +171,7 @@ module gauxc_integrator
       import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param integrator Handle to the XCIntegrator.
       type(gauxc_integrator_type), value :: integrator
       !> @param m Number of rows in the density matrices.
@@ -208,7 +208,7 @@ module gauxc_integrator
       import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param integrator Handle to the XCIntegrator.
       type(gauxc_integrator_type), value :: integrator
       !> @param m Number of rows in the density matrix.
@@ -236,7 +236,7 @@ module gauxc_integrator
       import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param integrator Handle to the XCIntegrator.
       type(gauxc_integrator_type), value :: integrator
       !> @param m Number of rows in the density matrices.
@@ -310,7 +310,7 @@ module gauxc_integrator
       import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param integrator Handle to the XCIntegrator.
       type(gauxc_integrator_type), value :: integrator
       !> @param m Number of rows in the density matrices.
@@ -362,7 +362,7 @@ module gauxc_integrator
       import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param integrator Handle to the XCIntegrator.
       type(gauxc_integrator_type), value :: integrator
       !> @param m Number of rows in the density matrix.
@@ -384,7 +384,7 @@ module gauxc_integrator
       import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param integrator Handle to the XCIntegrator.
       type(gauxc_integrator_type), value :: integrator
       !> @param m Number of rows in the density matrices.
@@ -439,7 +439,7 @@ module gauxc_integrator
       import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param integrator Handle to the XCIntegrator.
       type(gauxc_integrator_type), value :: integrator
       !> @param m Number of rows in the density matrix.
@@ -465,7 +465,7 @@ module gauxc_integrator
       import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param integrator Handle to the XCIntegrator.
       type(gauxc_integrator_type), value :: integrator
       !> @param m Number of rows in the density matrix.
@@ -495,7 +495,7 @@ module gauxc_integrator
       import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param integrator Handle to the XCIntegrator.
       type(gauxc_integrator_type), value :: integrator
       !> @param m Number of rows in the density matrices.
@@ -537,7 +537,7 @@ contains
     integrator_input_type, integrator_kernel_name, local_work_kernel_name, &
     reduction_kernel_name) result(integrator)
     !> @param status Status object to capture any errors.
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param func Handle to the functional.
     type(gauxc_functional_type), value :: func
     !> @param lb Handle to the load balancer.
@@ -602,7 +602,7 @@ contains
   !> @brief Integrate the density matrix to get the number of electrons.
   subroutine gauxc_integrator_integrate_den(status, integrator, density_matrix, den)
     !> @param status Status object to capture any errors.
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
     type(gauxc_integrator_type), value :: integrator
     !> @param density_matrix Pointer to the density matrix data.
@@ -621,7 +621,7 @@ contains
   !> @brief Evaluate the exchange-correlation energy for RKS.
   subroutine gauxc_integrator_eval_exc_rks(status, integrator, density_matrix, exc)
     !> @param status Status object to capture any errors.
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
     type(gauxc_integrator_type), value :: integrator
     !> @param density_matrix Pointer to the density matrix data.
@@ -641,7 +641,7 @@ contains
   subroutine gauxc_integrator_eval_exc_uks(status, integrator, &
       & density_matrix_s, density_matrix_z, exc)
     !> @param status Status object to capture any errors.
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
     type(gauxc_integrator_type), value :: integrator
     !> @param density_matrix_s Pointer to the total density matrix data.
@@ -665,7 +665,7 @@ contains
   subroutine gauxc_integrator_eval_exc_gks(status, integrator, &
       & density_matrix_s, density_matrix_z, density_matrix_y, density_matrix_x, exc)
     !> @param status Status object to capture any errors.
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
     type(gauxc_integrator_type), value :: integrator
     !> @param density_matrix_s Pointer to the total density matrix data.
@@ -696,7 +696,7 @@ contains
   subroutine gauxc_integrator_eval_exc_vxc_rks(status, integrator, &
       & density_matrix, exc, vxc_matrix)
     !> @param status Status object to capture any errors.
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
     type(gauxc_integrator_type), value :: integrator
     !> @param density_matrix Pointer to the density matrix data.
@@ -722,7 +722,7 @@ contains
       & density_matrix_s, density_matrix_z, &
       & exc, vxc_matrix_s, vxc_matrix_z)
     !> @param status Status object to capture any errors.
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
     type(gauxc_integrator_type), value :: integrator
     !> @param density_matrix_s Pointer to the total density matrix data.
@@ -791,7 +791,7 @@ contains
       & density_matrix_s, density_matrix_z, density_matrix_y, density_matrix_x, &
       & exc, vxc_matrix_s, vxc_matrix_z, vxc_matrix_y, vxc_matrix_x)
     !> @param status Status object to capture any errors.
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
     type(gauxc_integrator_type), value :: integrator
     !> @param density_matrix_s Pointer to the total density matrix data.
@@ -834,7 +834,7 @@ contains
   subroutine gauxc_integrator_eval_exc_grad_rks(status, integrator, &
       & density_matrix, exc_grad)
     !> @param status Status object to capture any errors.
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
     type(gauxc_integrator_type), value :: integrator
     !> @param density_matrix Pointer to the density matrix data.
@@ -855,7 +855,7 @@ contains
   subroutine gauxc_integrator_eval_exc_grad_uks(status, integrator, &
       & density_matrix_s, density_matrix_z, exc_grad)
     !> @param status Status object to capture any errors.
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
     type(gauxc_integrator_type), value :: integrator
     !> @param density_matrix_s Pointer to the total density matrix data.
@@ -905,7 +905,7 @@ contains
   subroutine gauxc_integrator_eval_exx_rks(status, integrator, &
       & density_matrix, k_matrix)
     !> @param status Status object to capture any errors.
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
     type(gauxc_integrator_type), value :: integrator
     !> @param density_matrix Pointer to the density matrix data.
@@ -927,7 +927,7 @@ contains
   subroutine gauxc_integrator_eval_fxc_contraction_rks(status, integrator, &
       & density_matrix, t_density_matrix, fxc_contraction_matrix)
     !> @param status Status object to capture any errors.
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
     type(gauxc_integrator_type), value :: integrator
     !> @param density_matrix Pointer to the density matrix data.
@@ -954,7 +954,7 @@ contains
       & t_density_matrix_s, t_density_matrix_z, &
       & fxc_contraction_matrix_s, fxc_contraction_matrix_z)
     !> @param status Status object to capture any errors.
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
     type(gauxc_integrator_type), value :: integrator
     !> @param density_matrix_s Pointer to the total density matrix data.

@@ -156,7 +156,7 @@ void gauxc_integrator_integrate_den(
   double* den
 ) {
   detail::gauxc_status_init(status);
-  if (integrator.ptr == nullptr) {
+  if (integrator.ptr == nullptr || integrator.hdr.type != GauXC_Type_Integrator) {
     detail::gauxc_status_handle(status, 1, "Invalid Integrator handle");
     return;
   }
@@ -188,7 +188,7 @@ void gauxc_integrator_eval_exc_rks(
   double* exc
 ) {
   detail::gauxc_status_init(status);
-  if (integrator.ptr == nullptr) {
+  if (integrator.ptr == nullptr || integrator.hdr.type != GauXC_Type_Integrator) {
     detail::gauxc_status_handle(status, 1, "Invalid Integrator handle");
     return;
   }
