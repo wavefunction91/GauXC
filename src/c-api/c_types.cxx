@@ -28,7 +28,7 @@ extern "C" {
 
 void gauxc_object_delete(GauXCStatus* status, void** obj) {
    detail::gauxc_status_init(status);
-   if(obj == nullptr) return;
+   if(obj == nullptr || *obj == nullptr) return;
 
    struct GauXCObject {
       GauXCHeader hdr;

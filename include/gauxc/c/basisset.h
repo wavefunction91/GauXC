@@ -54,7 +54,7 @@ extern GauXCBasisSet gauxc_basisset_new( GauXCStatus* status );
  */
 extern GauXCBasisSet gauxc_basisset_new_from_shells(
    GauXCStatus* status,
-   GauXCShell* shells,
+   const GauXCShell* shells,
    size_t nshells,
    bool normalize
 );

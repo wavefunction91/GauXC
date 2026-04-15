@@ -32,6 +32,10 @@ GauXCMolecularWeightsFactory gauxc_molecular_weights_factory_new(
   GauXCMolecularWeightsFactory mwf{};
   mwf.hdr = GauXCHeader{GauXC_Type_MolecularWeightsFactory};
   mwf.ptr = nullptr;
+  if (kernel_name == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Kernel name string cannot be null");
+    return mwf;
+  }
 
   try {
     mwf.ptr = new MolecularWeightsFactory(
@@ -53,6 +57,10 @@ GauXCMolecularWeights gauxc_molecular_weights_factory_get_instance(
   GauXCMolecularWeights mw{};
   mw.hdr = GauXCHeader{GauXC_Type_MolecularWeights};
   mw.ptr = nullptr;
+  if (mwf.ptr == nullptr || mwf.hdr.type != GauXC_Type_MolecularWeightsFactory) {
+    detail::gauxc_status_handle(status, 1, "Invalid MolecularWeightsFactory handle");
+    return mw;
+  }
 
   try {
     MolecularWeights mw_instance = detail::get_molecular_weights_factory_ptr(mwf)->get_instance();
@@ -69,6 +77,14 @@ void gauxc_molecular_weights_modify_weights(
   const GauXCLoadBalancer lb
 ) {
   detail::gauxc_status_init(status);
+  if (mw.ptr == nullptr || mw.hdr.type != GauXC_Type_MolecularWeights) {
+    detail::gauxc_status_handle(status, 1, "Invalid MolecularWeights handle");
+    return;
+  }
+  if (lb.ptr == nullptr || lb.hdr.type != GauXC_Type_LoadBalancer) {
+    detail::gauxc_status_handle(status, 1, "Invalid LoadBalancer handle");
+    return;
+  }
   try {
     detail::get_molecular_weights_ptr(mw)->modify_weights(
       **detail::get_load_balancer_ptr(lb)

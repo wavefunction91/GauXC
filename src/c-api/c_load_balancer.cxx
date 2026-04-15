@@ -44,6 +44,10 @@ GauXCLoadBalancerFactory gauxc_load_balancer_factory_new(
   GauXCLoadBalancerFactory lbf{};
   lbf.hdr = GauXCHeader{GauXC_Type_LoadBalancerFactory};
   lbf.ptr = nullptr;
+  if (kernel_name == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Kernel name string cannot be null");
+    return lbf;
+  }
 
   try {
     lbf.ptr = new LoadBalancerFactory(
@@ -79,6 +83,26 @@ GauXCLoadBalancer gauxc_load_balancer_factory_get_instance(
   GauXCLoadBalancer lb{};
   lb.hdr = GauXCHeader{GauXC_Type_LoadBalancer};
   lb.ptr = nullptr;
+  if (lbf.ptr == nullptr || lbf.hdr.type != GauXC_Type_LoadBalancerFactory) {
+    detail::gauxc_status_handle(status, 1, "Invalid LoadBalancerFactory handle");
+    return lb;
+  }
+  if (rt.hdr.type != GauXC_Type_RuntimeEnvironment) {
+    detail::gauxc_status_handle(status, 1, "Invalid RuntimeEnvironment handle");
+    return lb;
+  }
+  if (mol.ptr == nullptr || mol.hdr.type != GauXC_Type_Molecule) {
+    detail::gauxc_status_handle(status, 1, "Invalid Molecule handle");
+    return lb;
+  }
+  if (mg.ptr == nullptr || mg.hdr.type != GauXC_Type_MolGrid) {
+    detail::gauxc_status_handle(status, 1, "Invalid MolGrid handle");
+    return lb;
+  }
+  if (bs.ptr == nullptr || bs.hdr.type != GauXC_Type_BasisSet) {
+    detail::gauxc_status_handle(status, 1, "Invalid BasisSet handle");
+    return lb;
+  }
 
   try {
     auto lb_instance_ptr = detail::get_load_balancer_factory_ptr(lbf)->get_shared_instance(

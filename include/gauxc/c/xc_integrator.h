@@ -303,6 +303,136 @@ extern void gauxc_integrator_eval_exc_vxc_gks(
   const int64_t vxc_ld_x
 );
 
+/**
+ * @brief Evaluate the exchange-correlation energy gradient for RKS.
+ * @param status Status object to capture any errors.
+ * @param integrator Handle to the XCIntegrator.
+ * @param m Number of rows in the density matrix.
+ * @param n Number of columns in the density matrix.
+ * @param density_matrix Pointer to the density matrix data.
+ * @param ldp Leading dimension of the density matrix.
+ * @param exc_grad Pointer to store the exchange-correlation energy gradient.
+ */
+extern void gauxc_integrator_eval_exc_grad_rks(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  const int64_t m,
+  const int64_t n,
+  const double* density_matrix,
+  const int64_t ldp,
+  double* exc_grad
+);
+
+/**
+ * @brief Evaluate the exchange-correlation energy gradient for UKS.
+ * @param status Status object to capture any errors.
+ * @param integrator Handle to the XCIntegrator.
+ * @param m Number of rows in the density matrix.
+ * @param n Number of columns in the density matrix.
+ * @param density_matrix_s Pointer to the density matrix data for total density.
+ * @param ldp_s Leading dimension of the total density matrix.
+ * @param density_matrix_z Pointer to the density matrix data for spin density.
+ * @param ldp_z Leading dimension of the spin density matrix.
+ * @param exc_grad Pointer to store the exchange-correlation energy gradient.
+ */
+extern void gauxc_integrator_eval_exc_grad_uks(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  const int64_t m,
+  const int64_t n,
+  const double* density_matrix_s,
+  const int64_t ldp_s,
+  const double* density_matrix_z,
+  const int64_t ldp_z,
+  double* exc_grad
+);
+
+/**
+ * @brief Evaluate the exact exchange energy for RKS.
+ * @param status Status object to capture any errors.
+ * @param integrator Handle to the XCIntegrator.
+ * @param m Number of rows in the density matrix.
+ * @param n Number of columns in the density matrix.
+ * @param density_matrix Pointer to the density matrix data.
+ * @param ldp Leading dimension of the density matrix.
+ * @param K Pointer to store the exact exchange energy.
+ * @param ldk Leading dimension of the K matrix.
+ */
+extern void gauxc_integrator_eval_exx_rks(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  const int64_t m,
+  const int64_t n,
+  const double* density_matrix,
+  const int64_t ldp,
+  double* K,
+  const int64_t ldk
+);
+
+/**
+ * @brief Evaluate the FXC contraction for RKS.
+ * @param status Status object to capture any errors.
+ * @param integrator Handle to the XCIntegrator.
+ * @param m Number of rows in the density matrix.
+ * @param n Number of columns in the density matrix.
+ * @param density_matrix Pointer to the density matrix data.
+ * @param ldp Leading dimension of the density matrix.
+ * @param t_density_matrix Pointer to the density matrix data.
+ * @param ldtp Leading dimension of the density matrix.
+ * @param fxc Matrix container to store the FXC contraction result.
+ * @param ldfxc Leading dimension of the FXC contraction matrix.
+ */
+extern void gauxc_integrator_eval_fxc_contraction_rks(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  const int64_t m,
+  const int64_t n,
+  const double* density_matrix,
+  const int64_t ldp,
+  const double* t_density_matrix,
+  const int64_t ltdp,
+  double* fxc,
+  const int64_t ldfxc
+);
+
+/**
+ * @brief Evaluate the FXC contraction for UKS.
+ * @param status Status object to capture any errors.
+ * @param integrator Handle to the XCIntegrator.
+ * @param m Number of rows in the density matrix.
+ * @param n Number of columns in the density matrix.
+ * @param density_matrix_s Pointer to the density matrix data for total density.
+ * @param ldp_s Leading dimension of the total density matrix.
+ * @param density_matrix_z Pointer to the density matrix data for spin density.
+ * @param ldp_z Leading dimension of the spin density matrix.
+ * @param t_density_matrix_s Pointer to the density matrix data for total density.
+ * @param ldtp_s Leading dimension of the total density matrix.
+ * @param t_density_matrix_z Pointer to the density matrix data for spin density.
+ * @param ldtp_z Leading dimension of the spin density matrix.
+ * @param fxc_s Matrix container to store the FXC contraction result for total density.
+ * @param ldfxc_s Leading dimension of the FXC contraction matrix for total density.
+ * @param fxc_z Matrix container to store the FXC contraction result for spin density.
+ * @param ldfxc_z Leading dimension of the FXC contraction matrix for spin density.
+ */
+extern void gauxc_integrator_eval_fxc_contraction_uks(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  const int64_t m,
+  const int64_t n,
+  const double* density_matrix_s,
+  const int64_t ldp_s,
+  const double* density_matrix_z,
+  const int64_t ldp_z,
+  const double* t_density_matrix_s,
+  const int64_t ldtp_s,
+  const double* t_density_matrix_z,
+  const int64_t ldtp_z,
+  double* fxc_s,
+  const int64_t ldfxc_s,
+  double* fxc_z,
+  const int64_t ldfxc_z
+);
+
 #ifdef __cplusplus
 } // namespace GauXC::C
 } // extern "C"

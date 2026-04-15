@@ -42,23 +42,33 @@ GauXCRuntimeEnvironment gauxc_runtime_environment_new(
 void gauxc_runtime_environment_delete(GauXCStatus* status, GauXCRuntimeEnvironment* env) {
   detail::gauxc_status_init(status);
   if (env == nullptr) return;
-  if (env->ptr != nullptr)
-    delete detail::get_runtime_environment_ptr(*env);
+  if (env->ptr != nullptr) {
+    delete env->ptr;
+  }
   env->ptr = nullptr;
 #ifdef GAUXC_HAS_DEVICE
-  if (env->device_ptr != nullptr)
-    delete detail::get_device_runtime_environment_ptr(*env);
+  if (env->device_ptr != nullptr) {
+    delete env->device_ptr;
+  }
   env->device_ptr = nullptr;
 #endif
 }
 
 int gauxc_runtime_environment_comm_rank(GauXCStatus* status, const GauXCRuntimeEnvironment env) {
   detail::gauxc_status_init(status);
+  if (env.hdr.type != GauXC_Type_RuntimeEnvironment) {
+    detail::gauxc_status_handle(status, 1, "Invalid RuntimeEnvironment handle");
+    return -1;
+  }
   return detail::get_runtime_environment_ptr(env)->comm_rank();
 }
 
 int gauxc_runtime_environment_comm_size(GauXCStatus* status, const GauXCRuntimeEnvironment env) {
   detail::gauxc_status_init(status);
+  if (env.hdr.type != GauXC_Type_RuntimeEnvironment) {
+    detail::gauxc_status_handle(status, 1, "Invalid RuntimeEnvironment handle");
+    return -1;
+  }
   return detail::get_runtime_environment_ptr(env)->comm_size();
 }
 

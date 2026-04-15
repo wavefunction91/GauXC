@@ -12,6 +12,7 @@
 #pragma once
 
 #include <cstring>
+#include <cstdlib>
 
 #include <gauxc/c/status.h>
 
@@ -22,6 +23,7 @@ namespace GauXC::detail {
 static inline void gauxc_status_init(C::GauXCStatus* status) {
    if (status != nullptr) {
      status->code = 0;
+     std::free(status->message);
      status->message = nullptr;
    }
 }
