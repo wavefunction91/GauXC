@@ -27,12 +27,20 @@ module gauxc_integrator
     & gauxc_integrator_eval_exc_gks, &
     & gauxc_integrator_eval_exc_vxc_rks, &
     & gauxc_integrator_eval_exc_vxc_uks, &
-    & gauxc_integrator_eval_exc_vxc_gks
+    & gauxc_integrator_eval_exc_vxc_gks, &
+    & gauxc_integrator_eval_exc_grad_rks, &
+    & gauxc_integrator_eval_exc_grad_uks, &
+    & gauxc_integrator_eval_exx_rks, &
+    & gauxc_integrator_eval_fxc_contraction_rks, &
+    & gauxc_integrator_eval_fxc_contraction_uks
 
   public :: &
     & gauxc_delete, &
     & gauxc_eval_exc, &
-    & gauxc_eval_exc_vxc
+    & gauxc_eval_exc_vxc, &
+    & gauxc_eval_exc_grad, &
+    & gauxc_eval_exx, &
+    & gauxc_eval_fxc_contraction
 
   !> @brief GauXC XCIntegrator handle
   type, bind(c), public :: gauxc_integrator_type
@@ -309,6 +317,169 @@ module gauxc_integrator
     module procedure gauxc_integrator_eval_exc_vxc_gks
   end interface gauxc_eval_exc_vxc
 
+  interface gauxc_eval_exc_grad
+    subroutine gauxc_integrator_eval_exc_grad_rks_c(status, integrator, m, n, density_matrix, ldp, exc, vxc_matrix, ldvxc, exc_grad) &
+        & bind(c, name="gauxc_integrator_eval_exc_grad_rks")
+      import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
+      implicit none
+      !> @param status Status object to capture any errors.
+      type(gauxc_status_type), intent(out) :: status
+      !> @param integrator Handle to the XCIntegrator.
+      type(gauxc_integrator_type), value :: integrator
+      !> @param m Number of rows in the density matrix.
+      integer(c_int64_t), value :: m
+      !> @param n Number of columns in the density matrix.
+      integer(c_int64_t), value :: n
+      !> @param density_matrix Pointer to the density matrix data.
+      real(c_double), intent(in) :: density_matrix(ldp, *)
+      !> @param ldp Leading dimension of the density matrix.
+      integer(c_int64_t), value :: ldp
+      !> @param exc Pointer to store the exchange-correlation energy.
+      real(c_double), intent(out) :: exc
+      !> @param vxc_matrix Pointer to the potential matrix data.
+      real(c_double), intent(out) :: vxc_matrix(ldvxc, *)
+      !> @param ldvxc Leading dimension of the potential matrix.
+      integer(c_int64_t), value :: ldvxc
+      !> @param exc_grad Pointer to the gradient.
+      real(c_double), intent(out) :: exc_grad(*)
+    end subroutine gauxc_integrator_eval_exc_grad_rks_c
+    module procedure gauxc_integrator_eval_exc_grad_rks
+
+    subroutine gauxc_integrator_eval_exc_grad_uks_c(status, integrator, m, n, &
+        & density_matrix_s, ldp_s, density_matrix_z, ldp_z, &
+        & exc, vxc_matrix_s, ldvxc_s, vxc_matrix_z, ldvxc_z, exc_grad) &
+        & bind(c, name="gauxc_integrator_eval_exc_grad_uks")
+      import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
+      implicit none
+      !> @param status Status object to capture any errors.
+      type(gauxc_status_type), intent(out) :: status
+      !> @param integrator Handle to the XCIntegrator.
+      type(gauxc_integrator_type), value :: integrator
+      !> @param m Number of rows in the density matrices.
+      integer(c_int64_t), value :: m
+      !> @param n Number of columns in the density matrices.
+      integer(c_int64_t), value :: n
+      !> @param density_matrix_s Pointer to the total density matrix data.
+      real(c_double), intent(in) :: density_matrix_s(ldp_s, *)
+      !> @param ldp_s Leading dimension of the total density matrix.
+      integer(c_int64_t), value :: ldp_s
+      !> @param density_matrix_z Pointer to the spin density matrix data.
+      real(c_double), intent(in) :: density_matrix_z(ldp_z, *)
+      !> @param ldp_z Leading dimension of the spin density matrix.
+      integer(c_int64_t), value :: ldp_z
+      !> @param exc Pointer to store the exchange-correlation energy.
+      real(c_double), intent(out) :: exc
+      !> @param vxc_matrix_s Pointer to the total density potential matrix data.
+      real(c_double), intent(out) :: vxc_matrix_s(ldvxc_s, *)
+      !> @param ldvxc_s Leading dimension of the total density potential matrix.
+      integer(c_int64_t), value :: ldvxc_s
+      !> @param vxc_matrix_z Pointer to the spin density potential matrix data.
+      real(c_double), intent(out) :: vxc_matrix_z(ldvxc_z, *)
+      !> @param ldvxc_z Leading dimension of the spin density potential matrix.
+      integer(c_int64_t), value :: ldvxc_z
+      !> @param exc_grad Pointer to the gradient.
+      real(c_double), intent(out) :: exc_grad(*)
+    end subroutine gauxc_integrator_eval_exc_grad_uks_c
+    module procedure gauxc_integrator_eval_exc_grad_uks
+  end interface gauxc_eval_exc_grad
+
+  interface gauxc_eval_exx
+    subroutine gauxc_integrator_eval_exx_rks_c(status, integrator, m, n, density_matrix, ldp, k_matrix, ldk) &
+        & bind(c, name="gauxc_integrator_eval_exx_rks")
+      import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
+      implicit none
+      !> @param status Status object to capture any errors.
+      type(gauxc_status_type), intent(out) :: status
+      !> @param integrator Handle to the XCIntegrator.
+      type(gauxc_integrator_type), value :: integrator
+      !> @param m Number of rows in the density matrix.
+      integer(c_int64_t), value :: m
+      !> @param n Number of columns in the density matrix.
+      integer(c_int64_t), value :: n
+      !> @param density_matrix Pointer to the density matrix data.
+      real(c_double), intent(in) :: density_matrix(ldp, *)
+      !> @param ldp Leading dimension of the density matrix.
+      integer(c_int64_t), value :: ldp
+      !> @param k_matrix Pointer to the exchange matrix data.
+      real(c_double), intent(out) :: k_matrix(ldk, *)
+      !> @param ldk Leading dimension of the exchange matrix.
+      integer(c_int64_t), value :: ldk
+    end subroutine gauxc_integrator_eval_exx_rks_c
+    module procedure gauxc_integrator_eval_exx_rks
+  end interface gauxc_eval_exx
+
+  interface gauxc_eval_fxc_contraction
+    subroutine gauxc_integrator_eval_fxc_contraction_rks_c(status, integrator, m, n, &
+        & density_matrix, ldp, t_density_matrix, ldtp, fxc_contraction_matrix, ldfxc) &
+        & bind(c, name="gauxc_integrator_eval_fxc_contraction_rks")
+      import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
+      implicit none
+      !> @param status Status object to capture any errors.
+      type(gauxc_status_type), intent(out) :: status
+      !> @param integrator Handle to the XCIntegrator.
+      type(gauxc_integrator_type), value :: integrator
+      !> @param m Number of rows in the density matrix.
+      integer(c_int64_t), value :: m
+      !> @param n Number of columns in the density matrix.
+      integer(c_int64_t), value :: n
+      !> @param density_matrix Pointer to the density matrix data.
+      real(c_double), intent(in) :: density_matrix(ldp, *)
+      !> @param ldp Leading dimension of the density matrix.
+      integer(c_int64_t), value :: ldp
+      !> @param t_density_matrix Pointer to the density matrix data.
+      real(c_double), intent(in) :: t_density_matrix(ldtp, *)
+      !> @param ldtp Leading dimension of the t_density_matrix.
+      integer(c_int64_t), value :: ldtp
+      !> @param fxc_contraction_matrix Pointer to the fxc contraction matrix data.
+      real(c_double), intent(out) :: fxc_contraction_matrix(ldfxc, *)
+      !> @param ldfxc Leading dimension of the fxc contraction matrix.
+      integer(c_int64_t), value :: ldfxc
+    end subroutine gauxc_integrator_eval_fxc_contraction_rks_c
+    module procedure gauxc_integrator_eval_fxc_contraction_rks
+
+    subroutine gauxc_integrator_eval_fxc_contraction_uks_c(status, integrator, m, n, &
+        & density_matrix_s, ldp_s, density_matrix_z, ldp_z, &
+        & t_density_matrix_s, ldtp_s, t_density_matrix_z, ldtp_z, &
+        & fxc_contraction_matrix_s, ldfxc_s, fxc_contraction_matrix_z, ldfxc_z) &
+        & bind(c, name="gauxc_integrator_eval_fxc_contraction_uks")
+      import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
+      implicit none
+      !> @param status Status object to capture any errors.
+      type(gauxc_status_type), intent(out) :: status
+      !> @param integrator Handle to the XCIntegrator.
+      type(gauxc_integrator_type), value :: integrator
+      !> @param m Number of rows in the density matrices.
+      integer(c_int64_t), value :: m
+      !> @param n Number of columns in the density matrices.
+      integer(c_int64_t), value :: n
+      !> @param density_matrix_s Pointer to the total density matrix data.
+      real(c_double), intent(in) :: density_matrix_s(ldp_s, *)
+      !> @param ldp_s Leading dimension of the total density matrix.
+      integer(c_int64_t), value :: ldp_s
+      !> @param density_matrix_z Pointer to the spin density matrix data.
+      real(c_double), intent(in) :: density_matrix_z(ldp_z, *)
+      !> @param ldp_z Leading dimension of the spin density matrix.
+      integer(c_int64_t), value :: ldp_z
+      !> @param t_density_matrix_s Pointer to the total density matrix data.
+      real(c_double), intent(in) :: t_density_matrix_s(ldtp_s, *)
+      !> @param ldtp_s Leading dimension of the total density matrix.
+      integer(c_int64_t), value :: ldtp_s
+      !> @param t_density_matrix_z Pointer to the spin density matrix data.
+      real(c_double), intent(in) :: t_density_matrix_z(ldtp_z, *)
+      !> @param ldtp_z Leading dimension of the spin density matrix.
+      integer(c_int64_t), value :: ldtp_z
+      !> @param fxc_contraction_matrix_s Pointer to the total density fxc contraction matrix data.
+      real(c_double), intent(out) :: fxc_contraction_matrix_s(ldfxc_s, *)
+      !> @param ldfxc_s Leading dimension of the total density fxc contraction matrix.
+      integer(c_int64_t), value :: ldfxc_s
+      !> @param fxc_contraction_matrix_z Pointer to the spin density fxc contraction matrix data.
+      real(c_double), intent(out) :: fxc_contraction_matrix_z(ldfxc_z, *)
+      !> @param ldfxc_z Leading dimension of the spin density fxc contraction matrix.
+      integer(c_int64_t), value :: ldfxc_z
+    end subroutine gauxc_integrator_eval_fxc_contraction_uks_c
+    module procedure gauxc_integrator_eval_fxc_contraction_uks
+  end interface gauxc_eval_fxc_contraction
+
 contains
 
   !> @brief Create a new XCIntegrator instance.
@@ -572,4 +743,150 @@ contains
       & density_matrix_s, ldp_s, density_matrix_z, ldp_z, density_matrix_y, ldp_y, density_matrix_x, ldp_x, &
       & exc, vxc_matrix_s, ldvxc_s, vxc_matrix_z, ldvxc_z, vxc_matrix_y, ldvxc_y, vxc_matrix_x, ldvxc_x)
   end subroutine gauxc_integrator_eval_exc_vxc_gks
+
+  subroutine gauxc_integrator_eval_exc_grad_rks(status, integrator, &
+      & density_matrix, exc, vxc_matrix, exc_grad)
+    !> @param status Status object to capture any errors.
+    type(gauxc_status_type), intent(out) :: status
+    !> @param integrator Handle to the XCIntegrator.
+    type(gauxc_integrator_type), value :: integrator
+    !> @param density_matrix Pointer to the density matrix data.
+    real(c_double), contiguous, intent(in) :: density_matrix(:, :)
+    !> @param exc Pointer to store the exchange-correlation energy.
+    real(c_double), intent(out) :: exc
+    !> @param vxc_matrix Pointer to the potential matrix data.
+    real(c_double), contiguous, intent(out) :: vxc_matrix(:, :)
+    !> @param exc_grad Pointer to the gradient.
+    real(c_double), contiguous, intent(out) :: exc_grad(:)
+
+    integer(c_int64_t) :: m, n, ldp, ldvxc
+
+    m = size(density_matrix, 1, kind=c_int64_t)
+    n = size(density_matrix, 2, kind=c_int64_t)
+    ldp = size(density_matrix, 1, kind=c_int64_t)
+    ldvxc = size(vxc_matrix, 1, kind=c_int64_t)
+
+    call gauxc_integrator_eval_exc_grad_rks_c(status, integrator, m, n, &
+      & density_matrix, ldp, exc, vxc_matrix, ldvxc, exc_grad)
+  end subroutine gauxc_integrator_eval_exc_grad_rks
+
+  subroutine gauxc_integrator_eval_exc_grad_uks(status, integrator, &
+      & density_matrix_s, density_matrix_z, &
+      & exc, vxc_matrix_s, vxc_matrix_z, exc_grad)
+    !> @param status Status object to capture any errors.
+    type(gauxc_status_type), intent(out) :: status
+    !> @param integrator Handle to the XCIntegrator.
+    type(gauxc_integrator_type), value :: integrator
+    !> @param density_matrix_s Pointer to the total density matrix data.
+    real(c_double), contiguous, intent(in) :: density_matrix_s(:, :)
+    !> @param density_matrix_z Pointer to the spin density matrix data.
+    real(c_double), contiguous, intent(in) :: density_matrix_z(:, :)
+    !> @param exc Pointer to store the exchange-correlation energy.
+    real(c_double), intent(out) :: exc
+    !> @param vxc_matrix_s Pointer to the total density potential matrix data.
+    real(c_double), contiguous, intent(out) :: vxc_matrix_s(:, :)
+    !> @param vxc_matrix_z Pointer to the spin density potential matrix data.
+    real(c_double), contiguous, intent(out) :: vxc_matrix_z(:, :)
+    !> @param exc_grad Pointer to the gradient.
+    real(c_double), contiguous, intent(out) :: exc_grad(:)
+
+    integer(c_int64_t) :: m, n, ldp_s, ldp_z, ldvxc_s, ldvxc_z
+
+    m = size(density_matrix_s, 1, kind=c_int64_t)
+    n = size(density_matrix_s, 2, kind=c_int64_t)
+    ldp_s = size(density_matrix_s, 1, kind=c_int64_t)
+    ldp_z = size(density_matrix_z, 1, kind=c_int64_t)
+    ldvxc_s = size(vxc_matrix_s, 1, kind=c_int64_t)
+    ldvxc_z = size(vxc_matrix_z, 1, kind=c_int64_t)
+    call gauxc_integrator_eval_exc_grad_uks_c(status, integrator, m, n, &
+      & density_matrix_s, ldp_s, density_matrix_z, ldp_z, &
+      & exc, vxc_matrix_s, ldvxc_s, vxc_matrix_z, ldvxc_z, exc_grad)
+  end subroutine gauxc_integrator_eval_exc_grad_uks
+
+  subroutine gauxc_integrator_eval_exx_rks(status, integrator, &
+      & density_matrix, k_matrix)
+    !> @param status Status object to capture any errors.
+    type(gauxc_status_type), intent(out) :: status
+    !> @param integrator Handle to the XCIntegrator.
+    type(gauxc_integrator_type), value :: integrator
+    !> @param density_matrix Pointer to the density matrix data.
+    real(c_double), contiguous, intent(in) :: density_matrix(:, :)
+    !> @param k_matrix Pointer to the exchange matrix data.
+    real(c_double), contiguous, intent(out) :: k_matrix(:, :)
+
+    integer(c_int64_t) :: m, n, ldp, ldk
+
+    m = size(density_matrix, 1, kind=c_int64_t)
+    n = size(density_matrix, 2, kind=c_int64_t)
+    ldp = size(density_matrix, 1, kind=c_int64_t)
+    ldk = size(k_matrix, 1, kind=c_int64_t)
+
+    call gauxc_integrator_eval_exx_rks_c(status, integrator, m, n, &
+      & density_matrix, ldp, k_matrix, ldk)
+  end subroutine gauxc_integrator_eval_exx_rks
+
+  subroutine gauxc_integrator_eval_fxc_contraction_rks(status, integrator, &
+      & density_matrix, t_density_matrix, fxc_contraction_matrix)
+    !> @param status Status object to capture any errors.
+    type(gauxc_status_type), intent(out) :: status
+    !> @param integrator Handle to the XCIntegrator.
+    type(gauxc_integrator_type), value :: integrator
+    !> @param density_matrix Pointer to the density matrix data.
+    real(c_double), contiguous, intent(in) :: density_matrix(:, :)
+    !> @param t_density_matrix Pointer to the density matrix data.
+    real(c_double), contiguous, intent(in) :: t_density_matrix(:, :)
+    !> @param fxc_contraction_matrix Pointer to the fxc contraction matrix data.
+    real(c_double), contiguous, intent(out) :: fxc_contraction_matrix(:, :)
+
+    integer(c_int64_t) :: m, n, ldp, ldtp, ldfxc
+
+    m = size(density_matrix, 1, kind=c_int64_t)
+    n = size(density_matrix, 2, kind=c_int64_t)
+    ldp = size(density_matrix, 1, kind=c_int64_t)
+    ldtp = size(t_density_matrix, 1, kind=c_int64_t)
+    ldfxc = size(fxc_contraction_matrix, 1, kind=c_int64_t)
+
+    call gauxc_integrator_eval_fxc_contraction_rks_c(status, integrator, m, n, &
+      & density_matrix, ldp, t_density_matrix, ldtp, fxc_contraction_matrix, ldfxc)
+  end subroutine gauxc_integrator_eval_fxc_contraction_rks
+
+  subroutine gauxc_integrator_eval_fxc_contraction_uks(status, integrator, &
+      & density_matrix_s, density_matrix_z, &
+      & t_density_matrix_s, t_density_matrix_z, &
+      & fxc_contraction_matrix_s, fxc_contraction_matrix_z)
+    !> @param status Status object to capture any errors.
+    type(gauxc_status_type), intent(out) :: status
+    !> @param integrator Handle to the XCIntegrator.
+    type(gauxc_integrator_type), value :: integrator
+    !> @param density_matrix_s Pointer to the total density matrix data.
+    real(c_double), contiguous, intent(in) :: density_matrix_s(:, :)
+    !> @param density_matrix_z Pointer to the spin density matrix data.
+    real(c_double), contiguous, intent(in) :: density_matrix_z(:, :)
+    !> @param t_density_matrix_s Pointer to the total density matrix data.
+    real(c_double), contiguous, intent(in) :: t_density_matrix_s(:, :)
+    !> @param t_density_matrix_z Pointer to the spin density matrix data.
+    real(c_double), contiguous, intent(in) :: t_density_matrix_z(:, :)
+    !> @param fxc_contraction_matrix_s Pointer to the total density fxc contraction matrix data.
+    real(c_double), contiguous, intent(out) :: fxc_contraction_matrix_s(:, :)
+    !> @param fxc_contraction_matrix_z Pointer to the spin density fxc contraction matrix data.
+    real(c_double), contiguous, intent(out) :: fxc_contraction_matrix_z(:, :)
+
+    integer(c_int64_t) :: m, n, ldp_s, ldp_z, ldtp_s, ldtp_z, &
+      & ldfxc_s, ldfxc_z
+
+    m = size(density_matrix_s, 1, kind=c_int64_t)
+    n = size(density_matrix_s, 2, kind=c_int64_t)
+    ldp_s = size(density_matrix_s, 1, kind=c_int64_t)
+    ldp_z = size(density_matrix_z, 1, kind=c_int64_t)
+    ldtp_s = size(t_density_matrix_s, 1, kind=c_int64_t)
+    ldtp_z = size(t_density_matrix_z, 1, kind=c_int64_t)
+    ldfxc_s = size(fxc_contraction_matrix_s, 1, kind=c_int64_t)
+    ldfxc_z = size(fxc_contraction_matrix_z, 1, kind=c_int64_t)
+
+    call gauxc_integrator_eval_fxc_contraction_uks_c(status, integrator, m, n, &
+      & density_matrix_s, ldp_s, density_matrix_z, ldp_z, &
+      & t_density_matrix_s, ldtp_s, t_density_matrix_z, ldtp_z, &
+      & fxc_contraction_matrix_s, ldfxc_s, fxc_contraction_matrix_z, ldfxc_z)
+  end subroutine gauxc_integrator_eval_fxc_contraction_uks
+
 end module gauxc_integrator
