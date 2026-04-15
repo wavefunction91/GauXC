@@ -40,6 +40,7 @@
 #include <highfive/H5File.hpp>
 
 #include <cstring>
+#include <cstdlib>
 #include <vector>
 #include <numeric>
 #include <cmath>
@@ -68,7 +69,7 @@ static void make_water_atoms(C::GauXCAtom atoms[3]) {
 TEST_CASE("C-API Status", "[c-api]") {
 
   SECTION("Init and delete") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     status.code = 0;
     status.message = nullptr;
     C::gauxc_status_delete(&status);
@@ -79,6 +80,20 @@ TEST_CASE("C-API Status", "[c-api]") {
   SECTION("Delete null status") {
     // Should not crash
     C::gauxc_status_delete(nullptr);
+  }
+
+  SECTION("API call clears prior status message") {
+    C::GauXCStatus status;
+    status.code = 99;
+    status.message = static_cast<char*>(std::malloc(6));
+    std::memcpy(status.message, "error", 6);
+
+    C::GauXCMolecule mol = C::gauxc_molecule_new(&status);
+    CHECK(status.code == 0);
+    CHECK(status.message == nullptr);
+
+    C::gauxc_molecule_delete(&status, &mol);
+    C::gauxc_status_delete(&status);
   }
 }
 
@@ -160,7 +175,7 @@ TEST_CASE("C-API Enum Correspondence", "[c-api]") {
 TEST_CASE("C-API Molecule", "[c-api]") {
 
   SECTION("Default construction") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCMolecule mol = C::gauxc_molecule_new(&status);
     CHECK(status.code == 0);
     CHECK(C::gauxc_molecule_natoms(&status, mol) == 0);
@@ -171,7 +186,7 @@ TEST_CASE("C-API Molecule", "[c-api]") {
   }
 
   SECTION("From atoms") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCAtom atoms[3];
     make_water_atoms(atoms);
 
@@ -184,7 +199,7 @@ TEST_CASE("C-API Molecule", "[c-api]") {
   }
 
   SECTION("Equality") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCAtom atoms[3];
     make_water_atoms(atoms);
 
@@ -209,7 +224,7 @@ TEST_CASE("C-API Molecule", "[c-api]") {
   }
 
   SECTION("Double delete safety") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCMolecule mol = C::gauxc_molecule_new(&status);
     CHECK(status.code == 0);
     C::gauxc_molecule_delete(&status, &mol);
@@ -221,7 +236,7 @@ TEST_CASE("C-API Molecule", "[c-api]") {
   }
 
   SECTION("Null molecule natoms") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCMolecule mol{};
     mol.ptr = nullptr;
     CHECK(C::gauxc_molecule_natoms(&status, mol) == 0);
@@ -241,7 +256,7 @@ TEST_CASE("C-API Molecule HDF5", "[c-api]") {
 #endif
 
   SECTION("Write and read") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCAtom atoms[3];
     make_water_atoms(atoms);
 
@@ -276,7 +291,7 @@ TEST_CASE("C-API Molecule HDF5", "[c-api]") {
 TEST_CASE("C-API BasisSet", "[c-api]") {
 
   SECTION("Default construction") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCBasisSet basis = C::gauxc_basisset_new(&status);
     CHECK(status.code == 0);
     C::gauxc_basisset_delete(&status, &basis);
@@ -285,7 +300,7 @@ TEST_CASE("C-API BasisSet", "[c-api]") {
   }
 
   SECTION("From shells") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
 
     // Minimal H 1s shell: single Gaussian
     C::GauXCShell shells[1];
@@ -307,7 +322,7 @@ TEST_CASE("C-API BasisSet", "[c-api]") {
   }
 
   SECTION("Normalized vs unnormalized") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
 
     C::GauXCShell shells[1];
     std::memset(shells, 0, sizeof(shells));
@@ -344,7 +359,7 @@ TEST_CASE("C-API BasisSet HDF5", "[c-api]") {
 #endif
 
   SECTION("Write and read") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
 
     // Build a basis set from shells
     C::GauXCShell shells[2];
@@ -400,7 +415,7 @@ TEST_CASE("C-API BasisSet HDF5", "[c-api]") {
 TEST_CASE("C-API Functional", "[c-api]") {
 
   SECTION("From string") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
 
     C::GauXCFunctional func = C::gauxc_functional_from_string(&status, "SVWN5", false);
     CHECK(status.code == 0);
@@ -410,7 +425,7 @@ TEST_CASE("C-API Functional", "[c-api]") {
   }
 
   SECTION("From string (various functionals)") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     const char* names[] = {"SVWN5", "PBE0", "BLYP"};
     for (auto name : names) {
       C::GauXCFunctional func = C::gauxc_functional_from_string(&status, name, false);
@@ -421,7 +436,7 @@ TEST_CASE("C-API Functional", "[c-api]") {
   }
 
   SECTION("From string (polarized)") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCFunctional func_pol = C::gauxc_functional_from_string(&status, "SVWN5", true);
     CHECK(status.code == 0);
     C::GauXCFunctional func_unpol = C::gauxc_functional_from_string(&status, "SVWN5", false);
@@ -431,7 +446,7 @@ TEST_CASE("C-API Functional", "[c-api]") {
   }
 
   SECTION("From enum") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCFunctional func = C::gauxc_functional_from_enum(
       &status, GauXC_Functional_SVWN5, false);
     CHECK(status.code == 0);
@@ -440,7 +455,7 @@ TEST_CASE("C-API Functional", "[c-api]") {
   }
 
   SECTION("From enum (various)") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     GauXC_Functional enums[] = { GauXC_Functional_SVWN5, GauXC_Functional_PBE0, 
                                   GauXC_Functional_BLYP, GauXC_Functional_B3LYP };
     for (auto e : enums) {
@@ -452,7 +467,7 @@ TEST_CASE("C-API Functional", "[c-api]") {
   }
 
   SECTION("Invalid string") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCFunctional func = C::gauxc_functional_from_string(
       &status, "THIS_FUNCTIONAL_DOES_NOT_EXIST", false);
     CHECK(status.code != 0);
@@ -466,7 +481,7 @@ TEST_CASE("C-API Functional", "[c-api]") {
 // ============================================================================
 TEST_CASE("C-API MolGrid", "[c-api]") {
 
-  C::GauXCStatus status;
+  C::GauXCStatus status{0, nullptr};
   C::GauXCAtom atoms[3];
   make_water_atoms(atoms);
   C::GauXCMolecule mol = C::gauxc_molecule_new_from_atoms(&status, atoms, 3);
@@ -539,7 +554,7 @@ TEST_CASE("C-API MolGrid", "[c-api]") {
 TEST_CASE("C-API RuntimeEnvironment", "[c-api]") {
 
   SECTION("Host construction") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCRuntimeEnvironment env = C::gauxc_runtime_environment_new(
       &status GAUXC_MPI_CODE(, MPI_COMM_WORLD));
     CHECK(status.code == 0);
@@ -549,7 +564,7 @@ TEST_CASE("C-API RuntimeEnvironment", "[c-api]") {
   }
 
   SECTION("Comm rank and size") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCRuntimeEnvironment env = C::gauxc_runtime_environment_new(
       &status GAUXC_MPI_CODE(, MPI_COMM_WORLD));
     CHECK(status.code == 0);
@@ -572,7 +587,7 @@ TEST_CASE("C-API RuntimeEnvironment", "[c-api]") {
 // ============================================================================
 TEST_CASE("C-API LoadBalancer", "[c-api]") {
 
-  C::GauXCStatus status;
+  C::GauXCStatus status{0, nullptr};
 
   SECTION("Factory creation and deletion") {
     C::GauXCLoadBalancerFactory lbf = C::gauxc_load_balancer_factory_new(
@@ -649,7 +664,7 @@ TEST_CASE("C-API LoadBalancer", "[c-api]") {
 // ============================================================================
 TEST_CASE("C-API MolecularWeights", "[c-api]") {
 
-  C::GauXCStatus status;
+  C::GauXCStatus status{0, nullptr};
 
   SECTION("Factory creation (SSF)") {
     C::GauXCMolecularWeightsSettings settings;
@@ -758,7 +773,7 @@ TEST_CASE("C-API MolecularWeights", "[c-api]") {
 // ============================================================================
 TEST_CASE("C-API Header Type Tags", "[c-api]") {
 
-  C::GauXCStatus status;
+  C::GauXCStatus status{0, nullptr};
 
   SECTION("Molecule header") {
     C::GauXCMolecule mol = C::gauxc_molecule_new(&status);
@@ -872,7 +887,7 @@ TEST_CASE("C-API Header Type Tags", "[c-api]") {
 TEST_CASE("C-API Generic Delete", "[c-api]") {
 
   SECTION("Delete molecule via gauxc_object_delete") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCMolecule mol = C::gauxc_molecule_new(&status);
     CHECK(status.code == 0);
 
@@ -884,7 +899,7 @@ TEST_CASE("C-API Generic Delete", "[c-api]") {
   }
 
   SECTION("Delete basisset via gauxc_object_delete") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCBasisSet basis = C::gauxc_basisset_new(&status);
     CHECK(status.code == 0);
 
@@ -895,7 +910,7 @@ TEST_CASE("C-API Generic Delete", "[c-api]") {
   }
 
   SECTION("Delete functional via gauxc_object_delete") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCFunctional func = C::gauxc_functional_from_enum(
       &status, GauXC_Functional_SVWN5, false);
     CHECK(status.code == 0);
@@ -907,13 +922,13 @@ TEST_CASE("C-API Generic Delete", "[c-api]") {
   }
 
   SECTION("Null pointer safety") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::gauxc_object_delete(&status, nullptr);
     // Should not crash — status may or may not be set
   }
 
   SECTION("Batch delete via gauxc_objects_delete") {
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCMolecule mol = C::gauxc_molecule_new(&status);
     CHECK(status.code == 0);
     C::GauXCBasisSet basis = C::gauxc_basisset_new(&status);
@@ -933,7 +948,7 @@ TEST_CASE("C-API Generic Delete", "[c-api]") {
 
 // Helper struct to hold all C-API pipeline objects
 struct CApiPipeline {
-  C::GauXCStatus status;
+  C::GauXCStatus status{0, nullptr};
   C::GauXCMolecule mol;
   C::GauXCBasisSet basis;
   C::GauXCMolGrid mg;
@@ -1068,7 +1083,7 @@ TEST_CASE("C-API XCIntegrator", "[c-api]") {
 
   SECTION("Invalid integrator type") {
     // Build pipeline but with invalid integrator type
-    C::GauXCStatus status;
+    C::GauXCStatus status{0, nullptr};
     C::GauXCAtom atoms[3];
     make_water_atoms(atoms);
     C::GauXCMolecule mol = C::gauxc_molecule_new_from_atoms(&status, atoms, 3);
