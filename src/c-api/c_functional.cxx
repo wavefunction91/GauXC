@@ -60,6 +60,10 @@ GauXCFunctional gauxc_functional_from_string(
   GauXCFunctional functional{};
   functional.hdr = GauXCHeader{GauXC_Type_Functional};
   functional.ptr = nullptr;
+  if (functional_spec == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Functional specification string cannot be null");
+    return functional;
+  }
 
   try {
     auto polar = polarized ? ExchCXX::Spin::Polarized : ExchCXX::Spin::Unpolarized;

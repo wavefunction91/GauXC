@@ -36,7 +36,7 @@ GauXCBasisSet gauxc_basisset_new(GauXCStatus* status) {
   return basis;
 }
 
-GauXCBasisSet gauxc_basisset_new_from_shells(GauXCStatus* status, GauXCShell* shells, size_t nshells, bool normalize) {
+GauXCBasisSet gauxc_basisset_new_from_shells(GauXCStatus* status, const GauXCShell* shells, size_t nshells, bool normalize) {
   detail::gauxc_status_init(status);
   GauXCBasisSet basis{};
   basis.hdr = GauXCHeader{GauXC_Type_BasisSet};

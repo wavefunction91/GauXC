@@ -36,7 +36,7 @@ GauXCMolecule gauxc_molecule_new(GauXCStatus* status) {
   return mol;
 }
 
-GauXCMolecule gauxc_molecule_new_from_atoms(GauXCStatus* status, GauXCAtom* atoms, size_t natoms) {
+GauXCMolecule gauxc_molecule_new_from_atoms(GauXCStatus* status, const GauXCAtom* atoms, size_t natoms) {
   detail::gauxc_status_init(status);
   GauXCMolecule mol{};
   mol.hdr = GauXCHeader{GauXC_Type_Molecule};
@@ -67,7 +67,10 @@ void gauxc_molecule_delete(GauXCStatus* status, GauXCMolecule* mol) {
 
 size_t gauxc_molecule_natoms(GauXCStatus* status, const GauXCMolecule mol) {
   detail::gauxc_status_init(status);
-  if (mol.ptr == nullptr) return 0;
+  if (mol.ptr == nullptr || mol.hdr.type != GauXC_Type_Molecule) {
+    detail::gauxc_status_handle(status, 1, "Invalid Molecule handle");
+    return 0;
+  }
   return detail::get_molecule_ptr(mol)->natoms();
 }
 
@@ -77,7 +80,10 @@ bool gauxc_molecule_equal(
   const GauXCMolecule mol_b
 ) {
   detail::gauxc_status_init(status);
-  if (mol_a.ptr == nullptr || mol_b.ptr == nullptr) return false;
+  if (mol_a.ptr == nullptr || mol_b.ptr == nullptr || mol_a.hdr.type != GauXC_Type_Molecule || mol_b.hdr.type != GauXC_Type_Molecule) {
+    detail::gauxc_status_handle(status, 1, "Invalid Molecule handle");
+    return false;
+  }
   return *detail::get_molecule_ptr(mol_a) == *detail::get_molecule_ptr(mol_b);
 }
 

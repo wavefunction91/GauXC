@@ -9,6 +9,8 @@
  *
  * See LICENSE.txt for details
  */
+#pragma once
+
 #include <gauxc/c/gauxc_config.h>
 #ifdef GAUXC_HAS_HDF5
 #include <gauxc/c/status.h>
