@@ -318,7 +318,8 @@ module gauxc_integrator
   end interface gauxc_eval_exc_vxc
 
   interface gauxc_eval_exc_grad
-    subroutine gauxc_integrator_eval_exc_grad_rks_c(status, integrator, m, n, density_matrix, ldp, exc, vxc_matrix, ldvxc, exc_grad) &
+    subroutine gauxc_integrator_eval_exc_grad_rks_c(status, integrator, m, n, &
+        & density_matrix, ldp, exc_grad) &
         & bind(c, name="gauxc_integrator_eval_exc_grad_rks")
       import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
       implicit none
@@ -334,20 +335,13 @@ module gauxc_integrator
       real(c_double), intent(in) :: density_matrix(ldp, *)
       !> @param ldp Leading dimension of the density matrix.
       integer(c_int64_t), value :: ldp
-      !> @param exc Pointer to store the exchange-correlation energy.
-      real(c_double), intent(out) :: exc
-      !> @param vxc_matrix Pointer to the potential matrix data.
-      real(c_double), intent(out) :: vxc_matrix(ldvxc, *)
-      !> @param ldvxc Leading dimension of the potential matrix.
-      integer(c_int64_t), value :: ldvxc
       !> @param exc_grad Pointer to the gradient.
       real(c_double), intent(out) :: exc_grad(*)
     end subroutine gauxc_integrator_eval_exc_grad_rks_c
     module procedure gauxc_integrator_eval_exc_grad_rks
 
     subroutine gauxc_integrator_eval_exc_grad_uks_c(status, integrator, m, n, &
-        & density_matrix_s, ldp_s, density_matrix_z, ldp_z, &
-        & exc, vxc_matrix_s, ldvxc_s, vxc_matrix_z, ldvxc_z, exc_grad) &
+        & density_matrix_s, ldp_s, density_matrix_z, ldp_z, exc_grad) &
         & bind(c, name="gauxc_integrator_eval_exc_grad_uks")
       import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t
       implicit none
@@ -367,16 +361,6 @@ module gauxc_integrator
       real(c_double), intent(in) :: density_matrix_z(ldp_z, *)
       !> @param ldp_z Leading dimension of the spin density matrix.
       integer(c_int64_t), value :: ldp_z
-      !> @param exc Pointer to store the exchange-correlation energy.
-      real(c_double), intent(out) :: exc
-      !> @param vxc_matrix_s Pointer to the total density potential matrix data.
-      real(c_double), intent(out) :: vxc_matrix_s(ldvxc_s, *)
-      !> @param ldvxc_s Leading dimension of the total density potential matrix.
-      integer(c_int64_t), value :: ldvxc_s
-      !> @param vxc_matrix_z Pointer to the spin density potential matrix data.
-      real(c_double), intent(out) :: vxc_matrix_z(ldvxc_z, *)
-      !> @param ldvxc_z Leading dimension of the spin density potential matrix.
-      integer(c_int64_t), value :: ldvxc_z
       !> @param exc_grad Pointer to the gradient.
       real(c_double), intent(out) :: exc_grad(*)
     end subroutine gauxc_integrator_eval_exc_grad_uks_c
@@ -745,34 +729,28 @@ contains
   end subroutine gauxc_integrator_eval_exc_vxc_gks
 
   subroutine gauxc_integrator_eval_exc_grad_rks(status, integrator, &
-      & density_matrix, exc, vxc_matrix, exc_grad)
+      & density_matrix, exc_grad)
     !> @param status Status object to capture any errors.
     type(gauxc_status_type), intent(out) :: status
     !> @param integrator Handle to the XCIntegrator.
     type(gauxc_integrator_type), value :: integrator
     !> @param density_matrix Pointer to the density matrix data.
     real(c_double), contiguous, intent(in) :: density_matrix(:, :)
-    !> @param exc Pointer to store the exchange-correlation energy.
-    real(c_double), intent(out) :: exc
-    !> @param vxc_matrix Pointer to the potential matrix data.
-    real(c_double), contiguous, intent(out) :: vxc_matrix(:, :)
     !> @param exc_grad Pointer to the gradient.
     real(c_double), contiguous, intent(out) :: exc_grad(:)
 
-    integer(c_int64_t) :: m, n, ldp, ldvxc
+    integer(c_int64_t) :: m, n, ldp
 
     m = size(density_matrix, 1, kind=c_int64_t)
     n = size(density_matrix, 2, kind=c_int64_t)
     ldp = size(density_matrix, 1, kind=c_int64_t)
-    ldvxc = size(vxc_matrix, 1, kind=c_int64_t)
 
     call gauxc_integrator_eval_exc_grad_rks_c(status, integrator, m, n, &
-      & density_matrix, ldp, exc, vxc_matrix, ldvxc, exc_grad)
+      & density_matrix, ldp, exc_grad)
   end subroutine gauxc_integrator_eval_exc_grad_rks
 
   subroutine gauxc_integrator_eval_exc_grad_uks(status, integrator, &
-      & density_matrix_s, density_matrix_z, &
-      & exc, vxc_matrix_s, vxc_matrix_z, exc_grad)
+      & density_matrix_s, density_matrix_z, exc_grad)
     !> @param status Status object to capture any errors.
     type(gauxc_status_type), intent(out) :: status
     !> @param integrator Handle to the XCIntegrator.
@@ -781,26 +759,17 @@ contains
     real(c_double), contiguous, intent(in) :: density_matrix_s(:, :)
     !> @param density_matrix_z Pointer to the spin density matrix data.
     real(c_double), contiguous, intent(in) :: density_matrix_z(:, :)
-    !> @param exc Pointer to store the exchange-correlation energy.
-    real(c_double), intent(out) :: exc
-    !> @param vxc_matrix_s Pointer to the total density potential matrix data.
-    real(c_double), contiguous, intent(out) :: vxc_matrix_s(:, :)
-    !> @param vxc_matrix_z Pointer to the spin density potential matrix data.
-    real(c_double), contiguous, intent(out) :: vxc_matrix_z(:, :)
     !> @param exc_grad Pointer to the gradient.
     real(c_double), contiguous, intent(out) :: exc_grad(:)
 
-    integer(c_int64_t) :: m, n, ldp_s, ldp_z, ldvxc_s, ldvxc_z
+    integer(c_int64_t) :: m, n, ldp_s, ldp_z
 
     m = size(density_matrix_s, 1, kind=c_int64_t)
     n = size(density_matrix_s, 2, kind=c_int64_t)
     ldp_s = size(density_matrix_s, 1, kind=c_int64_t)
     ldp_z = size(density_matrix_z, 1, kind=c_int64_t)
-    ldvxc_s = size(vxc_matrix_s, 1, kind=c_int64_t)
-    ldvxc_z = size(vxc_matrix_z, 1, kind=c_int64_t)
     call gauxc_integrator_eval_exc_grad_uks_c(status, integrator, m, n, &
-      & density_matrix_s, ldp_s, density_matrix_z, ldp_z, &
-      & exc, vxc_matrix_s, ldvxc_s, vxc_matrix_z, ldvxc_z, exc_grad)
+      & density_matrix_s, ldp_s, density_matrix_z, ldp_z, exc_grad)
   end subroutine gauxc_integrator_eval_exc_grad_uks
 
   subroutine gauxc_integrator_eval_exx_rks(status, integrator, &
