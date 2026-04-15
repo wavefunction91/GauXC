@@ -51,7 +51,7 @@ extern GauXCMolecule gauxc_molecule_new(GauXCStatus* status);
  * @param natoms Number of atoms in the array.
  * @return Handle to the created Molecule.
  */
-extern GauXCMolecule gauxc_molecule_new_from_atoms(GauXCStatus* status, GauXCAtom* atoms, size_t natoms );
+extern GauXCMolecule gauxc_molecule_new_from_atoms(GauXCStatus* status, const GauXCAtom* atoms, size_t natoms );
 
 /**
  * @brief Delete a Molecule instance.

@@ -35,6 +35,18 @@ void gauxc_molecule_read_hdf5_record(
   const char* dset
 ) {
   detail::gauxc_status_init(status);
+  if (mol.ptr == nullptr || mol.hdr.type != GauXC_Type_Molecule) {
+    detail::gauxc_status_handle(status, 1, "Invalid Molecule handle");
+    return;
+  }
+  if (fname == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Filename cannot be null");
+    return;
+  }
+  if (dset == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Dataset name cannot be null");
+    return;
+  }
   try {
     read_hdf5_record( *detail::get_molecule_ptr(mol), std::string(fname), std::string(dset) );
   } catch(std::exception& e) {
@@ -56,6 +68,18 @@ void gauxc_basisset_read_hdf5_record(
   const char* dset
 ) {
   detail::gauxc_status_init(status);
+  if (basis.ptr == nullptr || basis.hdr.type != GauXC_Type_BasisSet) {
+    detail::gauxc_status_handle(status, 1, "Invalid BasisSet handle");
+    return;
+  }
+  if (fname == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Filename cannot be null");
+    return;
+  }
+  if (dset == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Dataset name cannot be null");
+    return;
+  }
   try {
     read_hdf5_record( *detail::get_basisset_ptr(basis), std::string(fname), std::string(dset) );
   } catch(std::exception& e) {
