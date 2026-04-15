@@ -48,13 +48,7 @@ typedef struct GauXCHeader {
  *
  * @param status Status object to capture any errors.
  * @param handle Address of the GauXC handle object pointer to delete
- *               (e.g., `(void**)&mol` where `mol` is a `GauXCMolecule*`).
  * 
- * This function expects a pointer to a GauXC handle object pointer. For example,
- * for a molecule handle `GauXCMolecule* mol`, you must pass `&mol` to this
- * function (type `void**` after implicit conversion), not the underlying
- * implementation pointer stored inside the handle.
- *
  * The function will delete the underlying GauXC object associated with the
  * handle and may set the handle to `NULL` on success.
  */
@@ -70,11 +64,6 @@ extern void gauxc_object_delete(
  * @param handles Array of pointers to GauXC handle objects.
  * @param nhandles Number of handles in the array.
  * 
- * This function is the batched counterpart of gauxc_object_delete. It expects
- * an array of pointers to GauXC handle object pointers. Each element of
- * `handles` should be the address of a handle object pointer (e.g., entries of
- * type `GauXCMolecule**`, passed as `void**`).
- *
  * For each element, the underlying GauXC object will be deleted and the
  * corresponding handle pointer may be set to `NULL` on success.
  */

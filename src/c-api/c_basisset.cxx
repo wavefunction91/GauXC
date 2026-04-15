@@ -41,6 +41,10 @@ GauXCBasisSet gauxc_basisset_new_from_shells(GauXCStatus* status, const GauXCShe
   GauXCBasisSet basis{};
   basis.hdr = GauXCHeader{GauXC_Type_BasisSet};
   basis.ptr = nullptr;
+  if (shells == nullptr || nshells == 0) {
+    detail::gauxc_status_handle(status, 1, "Shell list is null or empty");
+    return basis;
+  }
   BasisSet<double>* basis_ptr = nullptr;
   try {
     basis_ptr = new BasisSet<double>();
