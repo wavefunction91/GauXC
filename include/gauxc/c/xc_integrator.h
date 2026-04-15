@@ -348,6 +348,32 @@ extern void gauxc_integrator_eval_exc_grad_uks(
 );
 
 /**
+ * @brief Evaluate the exchange-correlation energy gradient for UKS using a specific model.
+ * @param status Status object to capture any errors.
+ * @param integrator Handle to the XCIntegrator.
+ * @param m Number of rows in the density matrix.
+ * @param n Number of columns in the density matrix.
+ * @param density_matrix_s Pointer to the density matrix data for total density.
+ * @param ldp_s Leading dimension of the total density matrix.
+ * @param density_matrix_z Pointer to the density matrix data for spin density.
+ * @param ldp_z Leading dimension of the spin density matrix.
+ * @param model String specifying the OneDFT model to use.
+ * @param exc_grad Pointer to store the exchange-correlation energy gradient.
+ */
+extern void gauxc_integrator_eval_exc_grad_onedft_uks(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  const int64_t m,
+  const int64_t n,
+  const double* density_matrix_s,
+  const int64_t ldp_s,
+  const double* density_matrix_z,
+  const int64_t ldp_z,
+  const char* model,
+  double* exc_grad
+);
+
+/**
  * @brief Evaluate the exact exchange energy for RKS.
  * @param status Status object to capture any errors.
  * @param integrator Handle to the XCIntegrator.

@@ -416,6 +416,34 @@ void gauxc_integrator_eval_exc_vxc_onedft_uks(
   int64_t vxc_ld_z
 ) {
   detail::gauxc_status_init(status);
+  if (integrator.ptr == nullptr || integrator.hdr.type != GauXC_Type_Integrator) {
+    detail::gauxc_status_handle(status, 1, "Invalid Integrator handle");
+    return;
+  }
+  if (density_matrix_s == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Density matrix S pointer cannot be null");
+    return;
+  }
+  if (density_matrix_z == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Density matrix Z pointer cannot be null");
+    return;
+  }
+  if (model == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Model string cannot be null");
+    return;
+  }
+  if (exc == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Exc output pointer cannot be null");
+    return;
+  }
+  if (vxc_matrix_s == nullptr) {
+    detail::gauxc_status_handle(status, 1, "VXC matrix S pointer cannot be null");
+    return;
+  }
+  if (vxc_matrix_z == nullptr) {
+    detail::gauxc_status_handle(status, 1, "VXC matrix Z pointer cannot be null");
+    return;
+  }
   OneDFTSettings settings{};
   settings.model = std::string(model);
   try {
@@ -583,6 +611,53 @@ void gauxc_integrator_eval_exc_grad_uks(
       density_matrix_z, ldp_z,
       exc_grad,
       IntegratorSettingsXC{} );
+  } catch (std::exception& e) {
+    detail::gauxc_status_handle(status, 1, e.what());
+  }
+}
+
+void gauxc_integrator_eval_exc_grad_onedft_uks(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  int64_t m,
+  int64_t n,
+  const double* density_matrix_s,
+  int64_t ldp_s,
+  const double* density_matrix_z,
+  int64_t ldp_z,
+  const char* model,
+  double* exc_grad
+) {
+  detail::gauxc_status_init(status);
+  if (integrator.ptr == nullptr || integrator.hdr.type != GauXC_Type_Integrator) {
+    detail::gauxc_status_handle(status, 1, "Invalid Integrator handle");
+    return;
+  }
+  if (density_matrix_s == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Density matrix S pointer cannot be null");
+    return;
+  }
+  if (density_matrix_z == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Density matrix Z pointer cannot be null");
+    return;
+  }
+  if (model == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Model string cannot be null");
+    return;
+  }
+  if (exc_grad == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Exc gradient output pointer cannot be null");
+    return;
+  }
+  OneDFTSettings settings{};
+  settings.model = std::string(model);
+  try {
+    detail::get_xc_integrator_ptr(integrator)->eval_exc_grad_onedft(
+      m, n,
+      density_matrix_s, ldp_s,
+      density_matrix_z, ldp_z,
+      exc_grad,
+      settings );
   } catch (std::exception& e) {
     detail::gauxc_status_handle(status, 1, e.what());
   }

@@ -403,6 +403,34 @@ module gauxc_integrator
       real(c_double), intent(out) :: exc_grad(*)
     end subroutine gauxc_integrator_eval_exc_grad_uks_c
     module procedure gauxc_integrator_eval_exc_grad_uks
+
+    subroutine gauxc_integrator_eval_exc_grad_onedft_uks_c(status, integrator, m, n, &
+        & density_matrix_s, ldp_s, density_matrix_z, ldp_z, model, exc_grad) &
+        & bind(c, name="gauxc_integrator_eval_exc_grad_onedft_uks")
+      import :: gauxc_status_type, gauxc_integrator_type, c_double, c_int64_t, c_char
+      implicit none
+      !> @param status Status object to capture any errors.
+      type(gauxc_status_type), intent(out) :: status
+      !> @param integrator Handle to the XCIntegrator.
+      type(gauxc_integrator_type), value :: integrator
+      !> @param m Number of rows in the density matrices.
+      integer(c_int64_t), value :: m
+      !> @param n Number of columns in the density matrices.
+      integer(c_int64_t), value :: n
+      !> @param density_matrix_s Pointer to the total density matrix data.
+      real(c_double), intent(in) :: density_matrix_s(ldp_s, *)
+      !> @param ldp_s Leading dimension of the total density matrix.
+      integer(c_int64_t), value :: ldp_s
+      !> @param density_matrix_z Pointer to the spin density matrix data.
+      real(c_double), intent(in) :: density_matrix_z(ldp_z, *)
+      !> @param ldp_z Leading dimension of the spin density matrix.
+      integer(c_int64_t), value :: ldp_z
+      !> @param model String specifying the OneDFT model to use.
+      character(kind=c_char), intent(in) :: model(*)
+      !> @param exc_grad Pointer to the gradient.
+      real(c_double), intent(out) :: exc_grad(*)
+    end subroutine gauxc_integrator_eval_exc_grad_onedft_uks_c
+    module procedure gauxc_integrator_eval_exc_grad_onedft_uks
   end interface gauxc_eval_exc_grad
 
   interface gauxc_eval_exx
@@ -846,6 +874,33 @@ contains
     call gauxc_integrator_eval_exc_grad_uks_c(status, integrator, m, n, &
       & density_matrix_s, ldp_s, density_matrix_z, ldp_z, exc_grad)
   end subroutine gauxc_integrator_eval_exc_grad_uks
+
+  subroutine gauxc_integrator_eval_exc_grad_onedft_uks(status, integrator, &
+      & density_matrix_s, density_matrix_z, model, exc_grad)
+    !> @param status Status object to capture any errors.
+    type(gauxc_status_type), intent(out) :: status
+    !> @param integrator Handle to the XCIntegrator.
+    type(gauxc_integrator_type), value :: integrator
+    !> @param density_matrix_s Pointer to the total density matrix data.
+    real(c_double), contiguous, intent(in) :: density_matrix_s(:, :)
+    !> @param density_matrix_z Pointer to the spin density matrix data.
+    real(c_double), contiguous, intent(in) :: density_matrix_z(:, :)
+    !> @param model Name of the XC model to use.
+    character(kind=c_char, len=*), intent(in) :: model
+    !> @param exc_grad Pointer to the gradient.
+    real(c_double), contiguous, intent(out) :: exc_grad(:)
+
+    integer(c_int64_t) :: m, n, ldp_s, ldp_z
+    character(kind=c_char), allocatable :: c_model(:)
+    c_model = transfer(model//c_null_char, [character(kind=c_char) ::], len(model)+1)
+
+    m = size(density_matrix_s, 1, kind=c_int64_t)
+    n = size(density_matrix_s, 2, kind=c_int64_t)
+    ldp_s = size(density_matrix_s, 1, kind=c_int64_t)
+    ldp_z = size(density_matrix_z, 1, kind=c_int64_t)
+    call gauxc_integrator_eval_exc_grad_onedft_uks_c(status, integrator, m, n, &
+      & density_matrix_s, ldp_s, density_matrix_z, ldp_z, c_model, exc_grad)
+  end subroutine gauxc_integrator_eval_exc_grad_onedft_uks
 
   subroutine gauxc_integrator_eval_exx_rks(status, integrator, &
       & density_matrix, k_matrix)
