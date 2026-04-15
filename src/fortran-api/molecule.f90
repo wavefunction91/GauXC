@@ -41,7 +41,7 @@ module gauxc_molecule
       import :: gauxc_status_type, gauxc_molecule_type
       implicit none
       !> @param status Status of the operation
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @return Pointer to the newly created molecule object
       type(gauxc_molecule_type) :: molecule
     end function gauxc_molecule_new
@@ -54,7 +54,7 @@ module gauxc_molecule
       import :: c_size_t, gauxc_status_type, gauxc_atom_type, gauxc_molecule_type
       implicit none
       !> @param status Status of the operation
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param atoms Pointer to an array of Atom objects
       type(gauxc_atom_type), intent(in) :: atoms(*)
       !> @param natoms Number of atoms in the array
@@ -71,7 +71,7 @@ module gauxc_molecule
       import :: c_ptr, gauxc_status_type, gauxc_molecule_type
       implicit none
       !> @param status Status of the operation
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param molecule Pointer to the molecule object to delete
       type(gauxc_molecule_type), intent(inout) :: molecule
     end subroutine gauxc_molecule_delete
@@ -83,7 +83,7 @@ module gauxc_molecule
       import :: c_size_t, gauxc_status_type, gauxc_molecule_type
       implicit none
       !> @param status Status of the operation
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param molecule Pointer to the molecule object
       type(gauxc_molecule_type), value :: molecule
       !> @return Number of atoms in the molecule
@@ -95,7 +95,7 @@ module gauxc_molecule
       import :: gauxc_status_type, gauxc_molecule_type, c_bool
       implicit none
       !> @param status Status of the operation
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param mol_a Pointer to the first molecule object
       type(gauxc_molecule_type), value :: mol_a
       !> @param mol_b Pointer to the second molecule object
@@ -110,7 +110,7 @@ contains
   !> @brief Create a new Molecule instance from an array of Atoms
   function gauxc_molecule_new_from_atoms(status, atoms) result(molecule)
     !> @param status Status of the operation
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param atoms Pointer to an array of Atom objects
     type(gauxc_atom_type), intent(in) :: atoms(:)
     !> @return Pointer to the newly created molecule object

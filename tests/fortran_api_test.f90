@@ -1,6 +1,6 @@
 module fortran_api_test
   use, intrinsic :: iso_c_binding, only : c_bool, c_char, c_double, c_int, c_int32_t, c_int64_t, c_size_t, &
-    & c_associated
+    & c_null_ptr, c_associated
   use testdrive, only : new_unittest, unittest_type, error_type, check, test_failed
   use gauxc_status, only : gauxc_status_type, gauxc_status_message
   use gauxc_types, only : gauxc_type_molecule, gauxc_type_basisset, gauxc_type_molgrid, &
@@ -33,6 +33,13 @@ module fortran_api_test
   public :: collect_fortran_api_suite
 
 contains
+
+  subroutine init_status(status)
+    type(gauxc_status_type), intent(out) :: status
+
+    status%code = 0_c_int
+    status%message = c_null_ptr
+  end subroutine init_status
 
   subroutine collect_fortran_api_suite(testsuite)
     type(unittest_type), allocatable, intent(out) :: testsuite(:)
@@ -117,7 +124,7 @@ contains
     type(error_type), allocatable, intent(out) :: error
     type(gauxc_status_type) :: status
 
-    status%code = 0_c_int
+    call init_status(status)
     call check(error, gauxc_status_message(status), "")
     if (allocated(error)) return
   end subroutine test_status_message
@@ -154,6 +161,7 @@ contains
     logical :: is_equal
 
     call fill_water_atoms(atoms)
+    call init_status(status)
 
     mol_empty = gauxc_molecule_new(status)
     call expect_status_ok(error, status, "gauxc_molecule_new")
@@ -206,6 +214,7 @@ contains
     type(gauxc_basisset_type) :: basis
 
     call fill_minimal_shells(shells)
+    call init_status(status)
     basis = gauxc_basisset_new_from_shells(status, shells, size(shells, kind=c_size_t))
     call expect_status_ok(error, status, "gauxc_basisset_new_from_shells")
     if (allocated(error)) return
@@ -223,6 +232,7 @@ contains
     type(gauxc_runtime_environment_type) :: rt
     integer(c_int) :: rank, nproc
 
+    call init_status(status)
     rt = gauxc_runtime_environment_new(status)
     call expect_status_ok(error, status, "gauxc_runtime_environment_new")
     if (allocated(error)) return
@@ -255,6 +265,7 @@ contains
     type(gauxc_functional_type) :: func_from_str, func_from_enum
     character(kind=c_char, len=*), parameter :: svwn5 = "SVWN5"
 
+    call init_status(status)
     func_from_str = gauxc_functional_from_string(status, svwn5, .false._c_bool)
     call expect_status_ok(error, status, "gauxc_functional_from_string")
     if (allocated(error)) return
@@ -295,6 +306,7 @@ contains
     character(kind=c_char, len=*), parameter :: kernel_default = "Default"
     character(kind=c_char, len=*), parameter :: func_name = "PBE"
 
+    call init_status(status)
     call fill_water_atoms(atoms)
     call fill_minimal_shells(shells)
 

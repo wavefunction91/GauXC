@@ -39,7 +39,7 @@ module gauxc_basisset
       import :: gauxc_basisset_type, gauxc_status_type
       implicit none
       !> @param status Status of the operation
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @return Pointer to the newly created basis set object
       type(gauxc_basisset_type) :: basis
     end function gauxc_basisset_new
@@ -52,7 +52,7 @@ module gauxc_basisset
       import :: c_size_t, gauxc_status_type, gauxc_shell_type, gauxc_basisset_type
       implicit none
       !> @param status Status of the operation
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param shells Pointer to an array of Shell objects
       type(gauxc_shell_type), intent(in) :: shells(*)
       !> @param nshells Number of shells in the array
@@ -69,7 +69,7 @@ module gauxc_basisset
       import :: gauxc_status_type, gauxc_basisset_type
       implicit none
       !> @param status Status of the operation
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param basis Pointer to the basis set object to delete
       type(gauxc_basisset_type), intent(inout) :: basis
     end subroutine gauxc_basisset_delete
@@ -80,7 +80,7 @@ contains
   !> @brief Create a new BasisSet instance from an array of Shells
   function gauxc_basisset_new_from_shells(status, shells) result(basis)
     !> @param status Status of the operation
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param shells Pointer to an array of Shell objects
     type(gauxc_shell_type), intent(in) :: shells(:)
     !> @return Pointer to the newly created basis set object

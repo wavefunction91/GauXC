@@ -56,7 +56,7 @@ module gauxc_runtime_environment
       & result(rt) bind(c, name="gauxc_runtime_environment_new_f")
       import :: gauxc_runtime_environment_type, gauxc_status_type, c_int
       implicit none
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
 #ifdef GAUXC_HAS_MPI
       integer(c_int), value :: comm
 #endif
@@ -78,7 +78,7 @@ module gauxc_runtime_environment
     subroutine gauxc_runtime_environment_delete(status, rt) bind(c)
       import :: gauxc_runtime_environment_type, gauxc_status_type
       implicit none
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       type(gauxc_runtime_environment_type), intent(inout) :: rt
     end subroutine gauxc_runtime_environment_delete
   end interface gauxc_delete
@@ -87,7 +87,7 @@ module gauxc_runtime_environment
     function gauxc_runtime_environment_comm_rank(status, rt) result(comm_size) bind(c)
       import :: gauxc_runtime_environment_type, gauxc_status_type, c_int
       implicit none
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       type(gauxc_runtime_environment_type), value :: rt
       integer(c_int) :: comm_size
     end function gauxc_runtime_environment_comm_rank
@@ -97,7 +97,7 @@ module gauxc_runtime_environment
     function gauxc_runtime_environment_comm_size(status, rt) result(comm_size) bind(c)
       import :: gauxc_runtime_environment_type, gauxc_status_type, c_int
       implicit none
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       type(gauxc_runtime_environment_type), value :: rt
       integer(c_int) :: comm_size
     end function gauxc_runtime_environment_comm_size
@@ -113,7 +113,7 @@ module gauxc_runtime_environment
       & result(rt) bind(c, name="gauxc_device_runtime_environment_new_f")
       import :: gauxc_runtime_environment_type, gauxc_status_type, c_int, c_double
       implicit none
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
 #ifdef GAUXC_HAS_MPI
       integer(c_int), value :: comm
 #endif
@@ -130,7 +130,7 @@ module gauxc_runtime_environment
       & result(rt) bind(c, name="gauxc_device_runtime_environment_new_mem_f")
       import :: gauxc_runtime_environment_type, gauxc_status_type, c_int, c_size_t, c_ptr
       implicit none
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
 #ifdef GAUXC_HAS_MPI
       integer(c_int), value :: comm
 #endif
@@ -163,7 +163,7 @@ module gauxc_runtime_environment
 contains
 
   function gauxc_runtime_environment_new(status) result(rt)
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     type(gauxc_runtime_environment_type) :: rt
 
 #ifdef GAUXC_HAS_MPI
@@ -179,7 +179,7 @@ contains
 
 #ifdef GAUXC_HAS_MPI
   function gauxc_runtime_environment_new_mpi(status, comm) result(rt)
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     integer, intent(in) :: comm
     type(gauxc_runtime_environment_type) :: rt
 
@@ -189,7 +189,7 @@ contains
 
 #ifdef GAUXC_HAS_MPI_F08
   function gauxc_runtime_environment_new_mpi_f08(status, comm) result(rt)
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     type(MPI_Comm), intent(in) :: comm
     type(gauxc_runtime_environment_type) :: rt
 
@@ -201,7 +201,7 @@ contains
   function gauxc_device_runtime_environment_new &
     & (status, fill_fraction) &
     & result(rt)
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     real(c_double), value :: fill_fraction
     type(gauxc_runtime_environment_type) :: rt
 
@@ -220,7 +220,7 @@ contains
   function gauxc_device_runtime_environment_new_mpi &
     & (status, comm, fill_fraction) &
     & result(rt)
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     integer, intent(in) :: comm
     real(c_double), value :: fill_fraction
     type(gauxc_runtime_environment_type) :: rt
@@ -233,7 +233,7 @@ contains
   function gauxc_device_runtime_environment_new_mpi_f08 &
     & (status, comm, fill_fraction) &
     & result(rt)
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     type(MPI_Comm), intent(in) :: comm
     real(c_double), value :: fill_fraction
     type(gauxc_runtime_environment_type) :: rt
@@ -245,7 +245,7 @@ contains
   function gauxc_device_runtime_environment_new_mem &
     & (status, mem, mem_sz) &
     & result(rt)
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     type(c_ptr), value :: mem
     integer(c_size_t), value :: mem_sz
     type(gauxc_runtime_environment_type) :: rt
@@ -265,7 +265,7 @@ contains
   function gauxc_device_runtime_environment_new_mem_mpi &
     & (status, comm, mem, mem_sz) &
     & result(rt)
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     integer, intent(in) :: comm
     type(c_ptr), value :: mem
     integer(c_size_t), value :: mem_sz
@@ -279,7 +279,7 @@ contains
   function gauxc_device_runtime_environment_new_mem_mpi_f08 &
     & (status, comm, mem, mem_sz) &
     & result(rt)
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     type(MPI_Comm), intent(in) :: comm
     type(c_ptr), value :: mem
     integer(c_size_t), value :: mem_sz

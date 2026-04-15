@@ -40,7 +40,7 @@ module gauxc_molgrid
         & c_int, c_int64_t
       implicit none
       !> @param status GauXC status object
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param mol Molecule to generate grid for
       type(gauxc_molecule_type), value :: mol
       !> @param pruning_scheme Pruning scheme to use
@@ -62,7 +62,7 @@ module gauxc_molgrid
       import :: gauxc_status_type, gauxc_molgrid_type
       implicit none
       !> @param status GauXC status object
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param molgrid MolGrid handle to delete
       type(gauxc_molgrid_type), intent(inout) :: molgrid
     end subroutine gauxc_molgrid_delete

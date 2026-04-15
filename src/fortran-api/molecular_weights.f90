@@ -53,7 +53,7 @@ module gauxc_molecular_weights
     subroutine gauxc_molecular_weights_delete(status, mw) bind(c)
       import :: gauxc_status_type, gauxc_molecular_weights_type
       implicit none
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       type(gauxc_molecular_weights_type), intent(inout) :: mw
     end subroutine gauxc_molecular_weights_delete
   end interface gauxc_delete
@@ -64,7 +64,7 @@ module gauxc_molecular_weights
       import :: gauxc_status_type, gauxc_molecular_weights_type, gauxc_load_balancer_type
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param mw Handle to the MolecularWeights.
       type(gauxc_molecular_weights_type), value :: mw
       !> @param lb Handle to the LoadBalancer.
@@ -78,7 +78,7 @@ module gauxc_molecular_weights
         & gauxc_molecular_weights_settings
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param ex Execution space.
       integer(c_int), value :: ex
       !> @param local_work_kernel_name Name of the LocalWorkDriver kernel to use.
@@ -95,7 +95,7 @@ module gauxc_molecular_weights
     subroutine gauxc_molecular_weights_factory_delete(status, factory) bind(c)
       import :: gauxc_status_type, gauxc_molecular_weights_factory_type
       implicit none
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       type(gauxc_molecular_weights_factory_type), intent(inout) :: factory
     end subroutine gauxc_molecular_weights_factory_delete
   end interface gauxc_delete
@@ -106,7 +106,7 @@ module gauxc_molecular_weights
       import :: gauxc_status_type, gauxc_molecular_weights_factory_type, gauxc_molecular_weights_type
       implicit none
       !> @param status Status object to capture any errors.
-      type(gauxc_status_type), intent(out) :: status
+      type(gauxc_status_type), intent(inout) :: status
       !> @param factory Handle to the MolecularWeightsFactory.
       type(gauxc_molecular_weights_factory_type), value :: factory
       !> @return Handle to the created MolecularWeights.
@@ -120,7 +120,7 @@ contains
   function gauxc_molecular_weights_factory_new(status, ex, local_work_kernel_name, settings) &
     & result(factory)
     !> @param status Status object to capture any errors.
-    type(gauxc_status_type), intent(out) :: status
+    type(gauxc_status_type), intent(inout) :: status
     !> @param ex Execution space.
     integer(c_int), value :: ex
     !> @param local_work_kernel_name Name of the LocalWorkDriver kernel to use.
