@@ -82,7 +82,7 @@ target_link_libraries( gauxc PUBLIC
   ExchCXX::ExchCXX 
   IntegratorXX::IntegratorXX 
 )
-if( TARGET OpenMP::OpenMP_CXX )
+if( GAUXC_HAS_OPENMP AND TARGET OpenMP::OpenMP_CXX )
   target_link_libraries( gauxc PUBLIC OpenMP::OpenMP_CXX )
 else()
   find_package(Threads REQUIRED)
