@@ -17,101 +17,125 @@
 namespace GauXC {
 
 namespace detail {
-  // Implementation base class for MolecularWeights
+  /// Forward declaration of MolecularWeights implementation.
   class MolecularWeightsImpl;
 }
 
+/**
+ *  @brief Settings for molecular weight partitioning.
+ *
+ *  Controls the weight partitioning algorithm and optional size adjustments
+ *  used when computing molecular quadrature weights.
+ */
 struct MolecularWeightsSettings { 
-    XCWeightAlg weight_alg = XCWeightAlg::SSF; ///< Weight partitioning scheme
-    bool becke_size_adjustment = false; ///< Whether to use Becke size adjustments
+    XCWeightAlg weight_alg = XCWeightAlg::SSF; ///< Weight partitioning scheme.
+    bool becke_size_adjustment = false;        ///< Whether to use Becke size adjustments.
 };
 
 
-/// A class which applies molecular partition weights to pre-generated quadrature
-/// tasks.
+/**
+ *  @brief Applies molecular partition weights to pre-generated quadrature tasks.
+ *
+ *  This class computes and modifies the quadrature weights stored in a
+ *  LoadBalancer according to a specified partitioning scheme (e.g., SSF, Becke).
+ */
 class MolecularWeights {
 
 public:
 
-  using load_balancer_type = LoadBalancer;
-  using load_balancer_reference = load_balancer_type&;
+  using load_balancer_type = LoadBalancer;              ///< LoadBalancer type alias.
+  using load_balancer_reference = load_balancer_type&;  ///< Reference to LoadBalancer.
 
 private:
 
-  using pimpl_type = detail::MolecularWeightsImpl;
-  using pimpl_ptr_type = std::unique_ptr<pimpl_type>;
-  pimpl_ptr_type pimpl_; ///< Pointer to implementation instance
+  using pimpl_type = detail::MolecularWeightsImpl;       ///< Implementation type.
+  using pimpl_ptr_type = std::unique_ptr<pimpl_type>;    ///< Unique pointer to impl.
+  pimpl_ptr_type pimpl_;                                 ///< Pointer to implementation instance.
 
 public:
 
-  // Delete default ctor
+  /// Deleted default constructor.
   MolecularWeights() = delete;
 
-  // Destructor (default)
+  /// Destructor.
   ~MolecularWeights() noexcept;
 
-  /// Construct a MolecularWeights instance from preconstructed implementation
+  /**
+   *  @brief Construct from a pre-built implementation.
+   *  @param ptr Unique pointer to implementation instance.
+   */
   MolecularWeights( pimpl_ptr_type&& ptr );
 
-  // Delete copy ctor
+  /// Deleted copy constructor.
   MolecularWeights( const MolecularWeights& ) = delete;
 
-  // Move a MolecularWeights instance
+  /// Move constructor.
   MolecularWeights( MolecularWeights&& ) noexcept;
 
-  /// Apply weight partitioning scheme to pre-generated local quadrature tasks
+  /**
+   *  @brief Apply weight partitioning to local quadrature tasks.
+   *  @param lb Reference to the LoadBalancer whose weights will be modified.
+   */
   void modify_weights(load_balancer_reference lb) const;
 
-  /// Return local timing tracker
+  /**
+   *  @brief Get the local timing tracker.
+   *  @return Const reference to internal timer.
+   */
   const util::Timer& get_timings() const;
 
 }; // class MolecularWeights
 
 
-/// A factory to generate MolecularWeights instances 
+/**
+ *  @brief Factory for constructing MolecularWeights instances.
+ *
+ *  Provides a configurable interface to generate MolecularWeights objects
+ *  for host or device execution spaces with specified settings.
+ */
 class MolecularWeightsFactory {
 
 public:
 
-    // Delete default ctor
+    /// Deleted default constructor.
     MolecularWeightsFactory() = delete;
 
     /**
-     * @brief Construct a factory which generates a specific kind of MolecularWeights 
+     *  @brief Construct a factory for generating MolecularWeights instances.
      *
-     * @param[in] ex Execution space for the MolecularWeights phase. 
-     *               Acceptable values:
-     *               - Host: Run MolecularWeights on CPU
-     *               - Device: Run MolecularWeights on GPU (if enabled)
-     *
-     * @param[in] local_work_kernel_name Specification of the LocalWorkDriver 
-     *                                   kernel underlying the MolecularWeights
-     *                                   instasnce. 
-     *
-     *                                   See documentation for LocalWorkDriver for
-     *                                   details.
-     *
-     * @param[in] s Settings for the MolecularWeights calculation.
+     *  @param ex Execution space for weight computation.
+     *            Acceptable values:
+     *            - Host: Run on CPU.
+     *            - Device: Run on GPU (if enabled).
+     *  @param local_work_kernel_name Specification of the LocalWorkDriver kernel.
+     *                                See LocalWorkDriver documentation for details.
+     *  @param s Settings for the MolecularWeights calculation.
      */
     MolecularWeightsFactory( ExecutionSpace ex, 
                              std::string local_work_kernel_name,
                              MolecularWeightsSettings s);
 
 
-    /// Generate a shared-pointer MolecularWeights instance 
+    /**
+     *  @brief Generate a shared-pointer MolecularWeights instance.
+     *  @return Shared pointer to a new MolecularWeights object.
+     */
     std::shared_ptr<MolecularWeights> get_shared_instance();
 
-    /// Generate a MolecularWeights instance 
+    /**
+     *  @brief Generate a MolecularWeights instance.
+     *  @return Newly constructed MolecularWeights object.
+     */
     inline MolecularWeights get_instance(){
       return MolecularWeights( std::move( *get_shared_instance() ) );
     };
 
 private:
 
-    ExecutionSpace ex_; ///< Execution space for the MolecularWeights phase
-    std::string lwd_kernel_; ///< LocalWorkDriver kernel for the MolecularWeights phase
-    MolecularWeightsSettings settings_; ///< Settings for the MolecualarWeights phase
+    ExecutionSpace ex_;                  ///< Execution space for weight computation.
+    std::string lwd_kernel_;             ///< LocalWorkDriver kernel name.
+    MolecularWeightsSettings settings_;  ///< Settings for weight calculation.
 
-}; // class MolecularWeightsSettings
+}; // class MolecularWeightsFactory
 
 }

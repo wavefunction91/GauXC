@@ -28,8 +28,10 @@ namespace GauXC {
 
 namespace detail {
 
+  /// Maximum number of primitives allowed per shell.
   static constexpr size_t shell_nprim_max = 32ul;
 
+  /// Double factorial values (K-1)!! used for shell normalization.
   static constexpr std::array<int64_t,31> df_Kminus1 = 
     {{ 1LL, 1LL, 1LL, 2LL, 3LL, 8LL, 15LL, 48LL, 105LL, 384LL, 945LL, 3840LL, 
        10395LL, 46080LL, 135135LL, 645120LL, 2027025LL, 10321920LL, 34459425LL, 
@@ -37,38 +39,59 @@ namespace detail {
        316234143225LL, 1961990553600LL, 7905853580625LL, 51011754393600LL, 
        213458046676875LL, 1428329123020800LL, 6190283353629375LL }};
 
+  /// Default tolerance for shell contribution evaluation.
   static constexpr double default_shell_tolerance = 1e-10;
 
 }
 
+/// Named type wrapper for the number of primitives in a shell.
 using PrimSize        = detail::NamedType< int32_t, struct PrimSizeType >;
+/// Named type wrapper for angular momentum quantum number.
 using AngularMomentum = detail::NamedType< int32_t, struct AngularMomentumType >;
+/// Named type wrapper for spherical/Cartesian flag.
 using SphericalType   = detail::NamedType< int32_t, struct SphericalTypeType >;
 
+/**
+ *  @brief A class to represent the state of contracted Gaussian basis functions.
+ *
+ *  This class stores the exponents, contraction coefficients, origin, and
+ *  angular momentum for a single shell in a Gaussian basis set.
+ *
+ *  @tparam F Floating-point type for exponents and coefficients.
+ */
 template <typename F>
 class alignas(256) Shell {
 
 public:
 
+  /// Array type for storing primitive exponents and coefficients.
   using prim_array = std::array< F, detail::shell_nprim_max >;
+  /// Array type for storing the 3D Cartesian origin.
   using cart_array = std::array< double, 3 >;
 
 private:
 
-  prim_array alpha_;
-  prim_array coeff_;
-  cart_array O_;
+  prim_array alpha_; ///< Exponents of primitives.
+  prim_array coeff_; ///< Contraction coefficients.
+  cart_array O_;     ///< Origin of the shell (x, y, z).
 
-  int32_t nprim_;
-  int32_t l_;
-  int32_t pure_;
+  int32_t nprim_; ///< Number of primitives.
+  int32_t l_;     ///< Angular momentum of the shell.
+  int32_t pure_;  ///< pure=1: spherical Gaussians; pure=0: Cartesian Gaussians.
 
-  double cutoff_radius_;
-  double shell_tolerance_{detail::default_shell_tolerance}; 
+  double cutoff_radius_; ///< Real-space cutoff radius for evaluating shell contributions.
+  double shell_tolerance_{detail::default_shell_tolerance};  ///< Tolerance for evaluating shell contributions.
 
   //double _pad_; // Pad to be a multiple of 16
     
-  // Shamelessly adapted from Libint...
+  /**
+   *  @brief Normalize the contraction coefficients.
+   *
+   *  Adjusts contraction coefficients so that the shell is properly normalized.
+   *  Adapted from Libint normalization routines.
+   *
+   *  @note Assumes that @c nprim_, @c l_, @c alpha_, and @c coeff_ have been set.
+   */
   void normalize() {
 
     assert( l_ <= 15 );
@@ -108,6 +131,14 @@ private:
 
   }
 
+  /**
+   *  @brief Compute the real-space cutoff radius for this shell.
+   *
+   *  The cutoff radius determines the distance beyond which shell contributions
+   *  are considered negligible according to the shell tolerance.
+   *
+   *  @note Assumes that @c nprim_, @c l_, @c alpha_, and @c coeff_ have been set.
+   */
   void compute_shell_cutoff() {
 
 #if 0
@@ -131,8 +162,21 @@ private:
   }
 public:
 
+  /// Default constructor. Creates an empty shell with no primitives.
+  /// @note The cutoff radius is undefined until initialized by other methods.
   Shell() : nprim_(0), l_(0), pure_(false) { };
 
+  /**
+   *  @brief Construct a shell with specified parameters.
+   *
+   *  @param nprim      Number of primitives in the shell.
+   *  @param l          Angular momentum quantum number.
+   *  @param pure       Spherical (1) or Cartesian (0) Gaussians.
+   *  @param alpha      Array of primitive exponents.
+   *  @param coeff      Array of contraction coefficients.
+   *  @param O          Cartesian origin of the shell.
+   *  @param _normalize If true, normalize the contraction coefficients (default: true).
+   */
   Shell( PrimSize nprim, AngularMomentum l, SphericalType pure,
     prim_array alpha, prim_array coeff, cart_array O, bool _normalize = true ) :
     alpha_( alpha ), coeff_( coeff ), O_( O ),
@@ -143,6 +187,13 @@ public:
 
   }
   
+  /**
+   *  @brief Set tolerance for evaluating shell contributions.
+   *
+   *  Recomputes the cutoff radius if the tolerance changes.
+   *
+   *  @param tol New tolerance value.
+   */
   void set_shell_tolerance( double tol ) {
     if( tol != shell_tolerance_ ) {
       shell_tolerance_ = tol;
@@ -151,67 +202,143 @@ public:
   }
 
 
+  /// Default destructor.
   ~Shell() noexcept = default;
 
+  /// Default copy constructor.
   Shell( const Shell& )          = default;
+  /// Default move constructor.
   Shell( Shell&&      ) noexcept = default;
 
+  /// Default copy assignment operator.
   Shell& operator=(const Shell&)     = default;
+  /// Default move assignment operator.
   Shell& operator=(Shell&&) noexcept = default;
 
 
+  /// @brief Get the number of primitives.
+  /// @return Number of primitives in the shell.
   inline HOST_DEVICE_ACCESSIBLE int32_t nprim() const { return nprim_; }
+
+  /// @brief Get the angular momentum quantum number.
+  /// @return Angular momentum of the shell.
   inline HOST_DEVICE_ACCESSIBLE int32_t l()     const { return l_;     }
+
+  /// @brief Check if the shell uses spherical harmonics.
+  /// @return 1 for spherical, 0 for Cartesian.
+  /// @note This flag matches the value stored in @c SphericalType.
   inline HOST_DEVICE_ACCESSIBLE int32_t pure()  const { return pure_;  }
 
+  /// @brief Get pointer to the exponent data.
+  /// @return Const pointer to the array of exponents.
   inline HOST_DEVICE_ACCESSIBLE const F* alpha_data()  const { 
     return detail::contiguous_data(alpha_); 
   }
+
+  /// @brief Get pointer to the coefficient data.
+  /// @return Const pointer to the array of contraction coefficients.
   inline HOST_DEVICE_ACCESSIBLE const F* coeff_data()  const { 
     return detail::contiguous_data(coeff_); 
   }
+
+  /// @brief Get pointer to the origin data.
+  /// @return Const pointer to the 3D origin array.
   inline HOST_DEVICE_ACCESSIBLE const double* O_data() const { 
     return detail::contiguous_data(O_);     
   }
+
+  /// @brief Get mutable pointer to the exponent data.
+  /// @return Pointer to the array of exponents.
   inline HOST_DEVICE_ACCESSIBLE  F* alpha_data()   { 
     return detail::contiguous_data(alpha_); 
   }
+
+  /// @brief Get mutable pointer to the coefficient data.
+  /// @return Pointer to the array of contraction coefficients.
   inline HOST_DEVICE_ACCESSIBLE  F* coeff_data()   { 
     return detail::contiguous_data(coeff_); 
   }
+
+  /// @brief Get mutable pointer to the origin data.
+  /// @return Pointer to the 3D origin array.
   inline HOST_DEVICE_ACCESSIBLE  double* O_data()  { 
     return detail::contiguous_data(O_);     
   }
 
+  /// @brief Get the cutoff radius.
+  /// @return Real-space cutoff radius for this shell.
   inline HOST_DEVICE_ACCESSIBLE double cutoff_radius() const { 
     return cutoff_radius_;
   }
 
+  /// @brief Get the Cartesian size of the shell.
+  /// @return Number of Cartesian basis functions: (l+1)*(l+2)/2.
   inline HOST_DEVICE_ACCESSIBLE int32_t cart_size() const {
     return (l_+1)*(l_+2)/2;
   }
+
+  /// @brief Get the spherical size of the shell.
+  /// @return Number of spherical basis functions: 2*l+1.
   inline HOST_DEVICE_ACCESSIBLE int32_t pure_size() const {
     return 2*l_ + 1;
   }
-  inline HOST_DEVICE_ACCESSIBLE int32_t size() const {;
+
+  /// @brief Get the size of the shell.
+  /// @return Number of basis functions (spherical or Cartesian based on pure_).
+  inline HOST_DEVICE_ACCESSIBLE int32_t size() const {
     return pure_ ? pure_size() : cart_size();
   }
 
+  /// @brief Get the exponent array (const).
+  /// @return Const reference to the exponent array.
   inline const prim_array& alpha()  const { return alpha_; }
+
+  /// @brief Get the coefficient array (const).
+  /// @return Const reference to the contraction coefficient array.
   inline const prim_array& coeff()  const { return coeff_; }
+
+  /// @brief Get the origin array (const).
+  /// @return Const reference to the origin array.
   inline const cart_array& O()      const { return O_;     }
+
+  /// @brief Get the exponent array (mutable).
+  /// @return Reference to the exponent array.
   inline       prim_array& alpha()        { return alpha_; }
+
+  /// @brief Get the coefficient array (mutable).
+  /// @return Reference to the contraction coefficient array.
   inline       prim_array& coeff()        { return coeff_; }
+
+  /// @brief Get the origin array (mutable).
+  /// @return Reference to the origin array.
   inline       cart_array& O()            { return O_;     }
 
+  /// @brief Set the spherical/Cartesian flag.
+  /// @param p True for spherical, false for Cartesian.
+  /// @note This flag matches the value stored in @c SphericalType.
   inline void set_pure(bool p) { pure_ = p; }
 
+  /**
+   *  @brief Serialize the shell for archival storage.
+   *  @tparam Archive Archive type (e.g., cereal).
+   *  @param ar Archive reference.
+   *  @note Includes cached cutoff radius and tolerance.
+   */
   template <typename Archive>
   void serialize( Archive& ar ) {
     ar( nprim_, l_, pure_, alpha_, coeff_, O_, cutoff_radius_, shell_tolerance_ );
   }
 
 
+  /**
+   *  @brief Compare two shells for equality.
+   *
+   *  Checks that both shells have the same number of primitives, angular momentum,
+   *  spherical flag, origin, exponents, and coefficients.
+   *
+   *  @param other Shell to compare against.
+   *  @return True if the shells are equal.
+   */
   bool operator==( const Shell& other ) const {
     if( other.nprim_ != nprim_ ) return false;
     if( other.l_ != l_ ) return false;
@@ -229,6 +356,17 @@ public:
 };
 
 
+/**
+ *  @brief Stream insertion operator for Shell.
+ *
+ *  Outputs a human-readable representation of the shell including origin,
+ *  angular momentum, spherical flag, and primitive exponents/coefficients.
+ *
+ *  @tparam T Floating-point type of the shell.
+ *  @param os Output stream.
+ *  @param sh Shell to output.
+ *  @return Reference to the output stream.
+ */
 template <typename T>
 inline std::ostream& operator<<( std::ostream& os, const Shell<T>& sh ) {
     os << "GauXC::Shell:( O={" 
