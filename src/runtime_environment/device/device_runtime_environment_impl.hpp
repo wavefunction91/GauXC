@@ -44,6 +44,7 @@ public:
 
     // Allocate Device Memory
     auto avail = device_backend_->get_available_mem();
+    GAUXC_MPI_CODE(MPI_Barrier(c);)
     avail = std::min( avail, detail::memory_cap() );
 
     std::tie( device_memory_, device_memory_size_ ) = 

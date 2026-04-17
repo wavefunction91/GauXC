@@ -17,7 +17,7 @@
 #include "device_queue.hpp"
 #include "device_blas_handle.hpp"
 #include <gauxc/gauxc_config.hpp>
-#include "gauxc/runtime_environment.hpp"
+#include <gauxc/util/mpi.hpp>
 
 #ifdef GAUXC_HAS_MAGMA
 #include "device_specific/magma_util.hpp"

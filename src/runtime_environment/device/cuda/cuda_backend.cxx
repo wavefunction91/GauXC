@@ -10,6 +10,7 @@
  * See LICENSE.txt for details
  */
 #include "cuda_backend.hpp"
+#include <gauxc/exceptions.hpp>
 
 namespace GauXC {
 
@@ -39,8 +40,10 @@ CUDABackend::CUDABackend(MPI_Comm c)
   int ndev;
   auto stat = cudaGetDeviceCount(&ndev);
   GAUXC_CUDA_ERROR("CUDA backend init failed", stat);
+  if(ndev <= 0) GAUXC_GENERIC_EXCEPTION("No CUDA devices found");
   gpuid = local_rank % ndev;
-  cudaSetDevice(gpuid);
+  stat = cudaSetDevice(gpuid);
+  GAUXC_CUDA_ERROR("cudaSetDevice failed", stat);
 
   // Create CUDA Stream and CUBLAS Handles and make them talk to eachother
   master_stream = std::make_shared< util::cuda_stream >();
@@ -55,7 +58,12 @@ CUDABackend::CUDABackend(MPI_Comm c)
 }
 #endif
 
-CUDABackend::~CUDABackend() noexcept = default;
+CUDABackend::~CUDABackend() noexcept {
+#ifdef GAUXC_HAS_MPI
+  if(local_comm != MPI_COMM_NULL)
+    MPI_Comm_free(&local_comm);
+#endif
+}
 
 CUDABackend::device_buffer_t CUDABackend::allocate_device_buffer(int64_t sz) {
   void* ptr;
@@ -75,7 +83,6 @@ size_t CUDABackend::get_available_mem() {
   double factor = 1.0 / ((local_size - 1) / ndev + 1);
   factor = (factor > 1.0 ? 1.0 : factor);
   cuda_avail = size_t(cuda_avail * factor);
-  MPI_Barrier(local_comm);
 #endif
   return cuda_avail;
 }

@@ -130,6 +130,7 @@ void HIPBackend::check_error_(std::string msg) {
 
 std::unique_ptr<DeviceBackend> make_device_backend(GAUXC_MPI_CODE(MPI_Comm c))
 {
+  GAUXC_MPI_CODE((void)c;)
   return std::make_unique<HIPBackend>();
 }
 }
