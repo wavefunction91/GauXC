@@ -52,9 +52,8 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
   const size_t nbe_cou      = task.cou_screening.nbe;
   const size_t ncut_cou     = submat_cut_cou.size();
   const size_t nblock_cou   = submat_block_cou.size();
-  const size_t nshells      = global_dims.nshells;
 
-  return base_size + 
+  size_t mem_req = base_size +
     // Collocation + Derivatives
     reqt.task_bfn_size     ( nbe_bfn, npts )    * sizeof(double) +
     reqt.task_bfn_grad_size( nbe_bfn, npts )    * sizeof(double) +
@@ -88,12 +87,27 @@ size_t XCDeviceAoSData::get_mem_req( integrator_term_tracker terms,
 
     // Map from packed to unpacked indices
     reqt.task_bfn_shell_indirection_size( nbe_bfn ) * sizeof(int32_t) +
-  
-    // Scratch memory to store shell pairs
-    reqt.task_exx_collision_size( nshells ) * sizeof(int64_t) +
 
     // Memory associated with task indirection: valid for both AoS and SoA
     reqt.task_indirection_size() * sizeof(XCDeviceTask);
+
+  // Collision reuses dynamic memory after bfn_stats completes, so the
+  // per-task requirement is max(mem_coll + mem_bfn_stats, mem_collision).
+  if (reqt.task_exx_collision) {
+    const size_t nshells      = global_dims.nshells;
+    const size_t nshell_pairs = global_dims.nshell_pairs;
+    const size_t nbf          = global_dims.nbf;
+    size_t coll_scratch =
+      reqt.task_exx_coll_bitvec_size(nshell_pairs, nshells) * sizeof(uint32_t) +
+      2 * sizeof(uint64_t) +  // counts + rc_counts
+      std::max(
+        reqt.task_exx_coll_fmax_size(nshells, nbf)              * sizeof(double),
+        reqt.task_exx_coll_position_size(nshell_pairs, nshells)  * sizeof(uint32_t)
+          + sizeof(size_t)
+      );
+    return std::max(mem_req, coll_scratch);
+  }
+  return mem_req;
 }
 
 

@@ -507,13 +507,21 @@ struct required_term_storage {
     const size_t num_subtasks = util::div_ceil(npts, subtask_size);
     return PRDVL(task_to_shell_pair_cou, num_subtasks);
   }
-  inline size_t task_exx_collision_size(size_t nshells) {
-    const size_t nslt = (nshells * (nshells+1)) / 2
-                      + nshells
-                      ;
-    return PRDVL(task_exx_collision, nslt);
-  }
 
+  inline size_t task_exx_coll_bitvec_size(size_t nshell_pairs, size_t nshells) {
+    // collision + rc_collision bitvectors
+    const size_t LD_coll = (nshell_pairs + 31) / 32;
+    const size_t LD_rc   = (nshells      + 31) / 32;
+    return PRDVL(task_exx_collision, LD_coll + LD_rc);
+  }
+  inline size_t task_exx_coll_fmax_size(size_t nshells, size_t nbf) {
+    // fmax scratch (fmax_bfn + fmax_shell)
+    return PRDVL(task_exx_collision, nbf + nshells);
+  }
+  inline size_t task_exx_coll_position_size(size_t nshell_pairs, size_t nshells) {
+    // position lists (shell-pairs + shells)
+    return PRDVL(task_exx_collision, nshell_pairs + nshells);
+  }
 
 
   inline explicit required_term_storage(integrator_term_tracker tracker) {
