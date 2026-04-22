@@ -60,7 +60,7 @@ struct XCDeviceStackData : public XCDeviceData {
     double* exx_kx_device   = nullptr;  ///< EXX dK/dx intermediates storage (nbf,nbf)
     double* exx_ky_device   = nullptr;  ///< EXX dK/dy intermediates storage (nbf,nbf)
     double* exx_kz_device   = nullptr;  ///< EXX dK/dz intermediates storage (nbf,nbf)
-    double* exx_bfgrad_device = nullptr;  ///< EXX gradient storage (nbf)
+    double* exx_bfgrad_device = nullptr;  ///< EXX gradient storage (3*nbf)
     double* acc_scr_device = nullptr;  ///< Accumulaion scratch (1)
     double* exc_grad_device = nullptr; ///< EXC Gradient storage (3*natoms)
     double* fxc_device     = nullptr; ///< FXC contraction storage (nbf,nbf)

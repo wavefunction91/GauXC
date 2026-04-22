@@ -615,7 +615,7 @@ int main(int argc, char** argv) {
         else if( gks ) {
           std::cout << "Warning: eval_exx_grad + GKS NYI!" << std::endl;
         }
-        if(!world_rank) {
+        if(!world_rank && !EXX_GRAD.empty()) {
           std::cout << "EXX Gradient:" << std::endl;
           std::cout << std::scientific << std::setprecision(6);
           for( auto iAt = 0; iAt < mol.size(); ++iAt ) {
@@ -777,7 +777,7 @@ int main(int argc, char** argv) {
       std::cout << "| K (calc) |_F = " << K.norm() << std::endl;
       std::cout << "RMS K Diff     = " << (K_ref - K).norm() / basis.nbf()
                                          << std::endl;
-        if(integrate_exc_grad) {
+        if(integrate_exc_grad && !EXX_GRAD.empty()) {
         double exx_grad_ref_nrm(0.), exx_grad_calc_nrm(0.), exx_grad_diff_nrm(0.);
         for( auto i = 0; i < 3*mol.size(); ++i ) {
           const auto ref_val = EXX_GRAD_ref[i];
@@ -874,7 +874,7 @@ int main(int argc, char** argv) {
       if( integrate_exx ) {
         dset = file.createDataSet<double>( "/K", mat_space );
         dset.write_raw( K.data() );
-        if( integrate_exc_grad ) {
+        if( integrate_exc_grad && !EXX_GRAD.empty() ) {
           HighFive::DataSpace grad_space( mol.size(), 3 );
           dset = file.createDataSet<double>( "/EXX_GRAD", grad_space );
           dset.write_raw( EXX_GRAD.data() );

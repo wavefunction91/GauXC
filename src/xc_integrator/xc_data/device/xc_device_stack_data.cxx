@@ -279,7 +279,7 @@ void XCDeviceStackData::allocate_static_data_exx_grad( int32_t nbf, int32_t nshe
   allocate_static_data_exx(nbf, nshells, nshell_pairs, nprim_pair_total, max_l);
 
   if( allocated_terms.exx_grad )
-    GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXC GRAD");
+    GAUXC_GENERIC_EXCEPTION("Attempting to reallocate Stack EXX GRAD");
 
   // Allocate static memory with proper alignment
   buffer_adaptor mem( dynmem_ptr, dynmem_sz );

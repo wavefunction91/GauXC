@@ -16,11 +16,11 @@ namespace detail {
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
   eval_exx_grad_( int64_t m, int64_t n, const value_type* P,
-                 int64_t ldp, value_type* EXC_GRAD,
+                 int64_t ldp, value_type* EXX_GRAD,
                  const IntegratorSettingsEXX& settings ) {
 
-  GAUXC_GENERIC_EXCEPTION("HostReplicated exc_grad NYI" );
-  util::unused(m,n,P,ldp,EXC_GRAD);
+  GAUXC_GENERIC_EXCEPTION("HostReplicated exx_grad NYI" );
+  util::unused(m,n,P,ldp,EXX_GRAD,settings);
 }
 
 }

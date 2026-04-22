@@ -158,7 +158,7 @@ public:
    *  derivatives for RHF
    *
    *  @param[in] P The alpha density matrix
-   *  @returns Excact Exchange Matrix
+   *  @returns Exact Exchange Gradient
    */
   exx_grad_type eval_exx_grad( const MatrixType& P, const IntegratorSettingsEXX& settings ) {
     return eval_exx_grad_(P,settings);

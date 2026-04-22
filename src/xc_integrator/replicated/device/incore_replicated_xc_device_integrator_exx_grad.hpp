@@ -72,7 +72,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // Reduce results in device memory
     this->timer_.time_op("XCIntegrator.Allreduce_EXX_GRAD", [&](){
       this->reduction_driver_->allreduce_inplace(
-        device_data_ptr->exx_grad_device_data(), nbf, ReductionOp::Sum,
+        device_data_ptr->exx_grad_device_data(), 3*nbf, ReductionOp::Sum,
         device_data_ptr->queue());
     });
 
