@@ -28,7 +28,7 @@ __global__ void modify_weights_ssf_kernel_1d(
         int32_t                           ldRAB,
   const double*                           coords,
   const double*                           dist_scratch,
-        int32_t                           lddist,
+        size_t                            lddist,
   const int32_t*                          iparent_device,
   const double*                           dist_nearest_device,
         double*                           weights_device
@@ -131,7 +131,7 @@ __global__ void modify_weights_ssf_kernel_1d(
 }
 
 void partition_weights_ssf_1d( int32_t npts, int32_t natoms, const double* RAB,
-  int32_t ldRAB, const double* coords, const double* dist, int32_t lddist,
+  int32_t ldRAB, const double* coords, const double* dist, size_t lddist,
   const int32_t* iparent, const double* dist_nearest, double* weights,
   cudaStream_t stream ) {
 
@@ -153,7 +153,7 @@ __global__ void eval_weight_1st_deriv_contracted_ssf_kernel_1d(
   const double*                           points_y,
   const double*                           points_z,
   const double*                           dist_scratch,
-        int32_t                           lddist,
+        size_t                            lddist,
   const int32_t*                          iparent_device,
   const double*                           dist_nearest_device,
   const double*       __restrict__        w_times_f_device,
@@ -352,7 +352,7 @@ __global__ void eval_weight_1st_deriv_contracted_ssf_kernel_1d(
 void eval_weight_1st_deriv_contracted_ssf_1d( int32_t npts, int32_t natoms, const double* RAB,
   int32_t ldRAB, const double* coords, 
   const double* points_x, const double* points_y, const double* points_z,
-  const double* dist, int32_t lddist,
+  const double* dist, size_t lddist,
   const int32_t* iparent, const double* dist_nearest, const double* w_times_f,
   double* exc_grad_w, cudaStream_t stream){
 
