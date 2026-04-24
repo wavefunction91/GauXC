@@ -309,7 +309,7 @@ __global__ void bitvector_to_position_list_shellpair(
   size_t LD_bit,
   const uint32_t* collisions,
   const uint64_t* counts,
-  uint64_t*       position_list
+  uint32_t*       position_list
 ) {
 
   constexpr auto warp_size = cuda::warp_size;
@@ -372,7 +372,7 @@ __global__ void bitvector_to_position_list_shells(
     const uint32_t* collisions, 
     const uint64_t* counts, 
     const int32_t* shell_size,
-          uint64_t* position_list, 
+          uint32_t* position_list,
            size_t* nbe_list
 ) {
   constexpr auto warp_size = cuda::warp_size;
@@ -653,8 +653,8 @@ void exx_ek_shellpair_collision(
 
   auto bv_st = hrt_t::now();
 
-  auto position_sp_list_device = full_stack.aligned_alloc<uint64_t>(total_sp_count);
-  auto position_s_list_device  = full_stack.aligned_alloc<uint64_t>(total_s_count);
+  auto position_sp_list_device = full_stack.aligned_alloc<uint32_t>(total_sp_count);
+  auto position_s_list_device  = full_stack.aligned_alloc<uint32_t>(total_s_count);
   auto nbe_list                = full_stack.aligned_alloc<size_t>(ntasks);
   {
   dim3 threads(32,32);
@@ -668,7 +668,7 @@ void exx_ek_shellpair_collision(
   );
   }
 
-  std::vector<uint64_t> position_sp_list(total_sp_count);
+  std::vector<uint32_t> position_sp_list(total_sp_count);
   util::cuda_copy(total_sp_count, position_sp_list.data(), position_sp_list_device.ptr, "Position List ShellPair");
 
   auto bv_en = hrt_t::now();
@@ -676,7 +676,7 @@ void exx_ek_shellpair_collision(
 
 
   auto d2h_st = hrt_t::now();
-  std::vector<uint64_t> position_s_list(total_s_count);
+  std::vector<uint32_t> position_s_list(total_s_count);
   std::vector<size_t> nbe_list_host(ntasks);
   util::cuda_copy(total_s_count, position_s_list.data(), position_s_list_device.ptr, "Position List Shell");
   util::cuda_copy(ntasks, nbe_list_host.data(), nbe_list.ptr, "NBE List");
