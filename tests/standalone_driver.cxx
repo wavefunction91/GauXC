@@ -187,9 +187,13 @@ int main(int argc, char** argv) {
     };
 
     std::map< std::string, PruningScheme > prune_map = {
-      {"UNPRUNED", PruningScheme::Unpruned},
-      {"ROBUST",   PruningScheme::Robust},
-      {"TREUTLER", PruningScheme::Treutler}
+      {"UNPRUNED",       PruningScheme::Unpruned},
+      {"ROBUST",         PruningScheme::Robust},
+      {"TREUTLER",       PruningScheme::Treutler},
+      {"PYSCF_TREUTLER", PruningScheme::PySCF_Treutler},
+      {"PYSCF_SG1",      PruningScheme::PySCF_SG1},
+      {"PYSCF_NWCHEM",   PruningScheme::PySCF_NWChem},
+      {"PYSCF_SGX",      PruningScheme::PySCF_SGX}
     };
 
     std::map< std::string, RadialQuad > rad_quad_map = {
