@@ -10,7 +10,7 @@
 
 !> @brief Module defining basis set functionality for GauXC
 module gauxc_basisset
-  use iso_c_binding, only : c_ptr, c_null_ptr, c_size_t
+  use iso_c_binding, only : c_ptr, c_null_ptr, c_size_t, c_bool
   use gauxc_status, only : gauxc_status_type
   use gauxc_types, only : gauxc_header_type, gauxc_type_basisset
   use gauxc_shell, only : gauxc_shell_type
@@ -47,9 +47,12 @@ module gauxc_basisset
 
   interface gauxc_basisset_new_from_shells
     !> @brief Create a new BasisSet instance from an array of Shells
-    function gauxc_basisset_new_from_shells_c(status, shells, nshells) result(basis) &
+    function gauxc_basisset_new_from_shells_c(&
+      status, shells, nshells, normalize) result(basis) &
+
       & bind(c, name="gauxc_basisset_new_from_shells")
-      import :: c_size_t, gauxc_status_type, gauxc_shell_type, gauxc_basisset_type
+      import :: c_size_t, gauxc_status_type, gauxc_shell_type, &
+                gauxc_basisset_type, c_bool
       implicit none
       !> @param status Status of the operation
       type(gauxc_status_type), intent(inout) :: status
@@ -57,6 +60,8 @@ module gauxc_basisset
       type(gauxc_shell_type), intent(in) :: shells(*)
       !> @param nshells Number of shells in the array
       integer(c_size_t), value :: nshells
+      !> @param normalize Whether to normalize the basis functions
+      logical(c_bool), value :: normalize
       !> @return Pointer to the newly created basis set object
       type(gauxc_basisset_type) :: basis
     end function gauxc_basisset_new_from_shells_c
@@ -78,15 +83,25 @@ module gauxc_basisset
 contains
 
   !> @brief Create a new BasisSet instance from an array of Shells
-  function gauxc_basisset_new_from_shells(status, shells) result(basis)
+  function gauxc_basisset_new_from_shells(status, shells, normalize) &
+    result(basis)
     !> @param status Status of the operation
     type(gauxc_status_type), intent(inout) :: status
     !> @param shells Pointer to an array of Shell objects
     type(gauxc_shell_type), intent(in) :: shells(:)
+    !> @param normalize Whether to normalize the basis functions
+    logical, intent(in), optional :: normalize
     !> @return Pointer to the newly created basis set object
     type(gauxc_basisset_type) :: basis
 
-    basis = gauxc_basisset_new_from_shells_c(status, shells, size(shells, kind=c_size_t))
+    logical :: normalize_resolved
+
+    normalize_resolved = .true.
+    if (present(normalize)) normalize_resolved = normalize
+
+    basis = gauxc_basisset_new_from_shells_c( &
+      status, shells, size(shells, kind=c_size_t), &
+      logical(normalize, kind=c_bool))
   end function gauxc_basisset_new_from_shells
 
 end module gauxc_basisset
