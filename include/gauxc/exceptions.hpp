@@ -76,8 +76,13 @@ public:
 
 }
 
+#ifdef _MSC_VER
+#define GAUXC_GENERIC_EXCEPTION( MSG ) \
+  throw generic_gauxc_exception( __FILE__, __FUNCSIG__, __LINE__, MSG )
+#else
 #define GAUXC_GENERIC_EXCEPTION( MSG ) \
   throw generic_gauxc_exception( __FILE__, __PRETTY_FUNCTION__, __LINE__, MSG )
+#endif
 
 #define GAUXC_PIMPL_NOT_INITIALIZED() \
   GAUXC_GENERIC_EXCEPTION("PIMPL NOT INITIALIZED")

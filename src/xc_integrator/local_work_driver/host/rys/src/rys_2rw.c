@@ -6,7 +6,7 @@
 #define MAX(a,b)    ((a) < (b) ? (b) : (a))
 #define MIN(a,b)    ((a) > (b) ? (b) : (a))
 
-void rys_2rw(int nt, const double tval[restrict], double rts[restrict], double wts[restrict]) {
+void rys_2rw(int nt, const double *__restrict tval, double *__restrict rts, double *__restrict wts) {
   int jump2[41] =
     { 1, 2, 2, 3, 3, 4, 4, 4, 4, 4, 5, 5, 5, 5, 5, 6, 6, 6, 6, 6, 6, 6,
       6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 7, 7, 7, 7, 7, 7, 7, 8

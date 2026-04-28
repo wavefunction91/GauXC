@@ -5,9 +5,9 @@ void rys_xrw(int nt,
 	     int ntgqp,
 	     int ngqp,
 	     int nmom,
-	     const double tval[restrict],
-	     const double ryszero[restrict],
-	     double rts[restrict],
-	     double wts[restrict]);
+	     const double *__restrict tval,
+	     const double *__restrict ryszero,
+	     double *__restrict rts,
+	     double *__restrict wts);
 
 #endif

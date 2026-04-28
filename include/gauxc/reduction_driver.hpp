@@ -11,6 +11,7 @@
  */
 #pragma once
 #include <memory>
+#include <string>
 #include <gauxc/gauxc_config.hpp>
 #include <gauxc/runtime_environment.hpp>
 #include <typeindex>

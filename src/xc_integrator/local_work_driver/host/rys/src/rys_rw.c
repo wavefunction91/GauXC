@@ -3,6 +3,9 @@
 #include <string.h>
 #include <assert.h>
 #include <math.h>
+#ifdef _MSC_VER
+#include <malloc.h>
+#endif
 
 #include "boys.h"
 
@@ -15,9 +18,9 @@
 
 void rys_rw(int nt,
 	    int ngqp,
-	    double tval[restrict],
-	    double rts[restrict],
-	    double wts[restrict]) {
+	    double *__restrict tval,
+	    double *__restrict rts,
+	    double *__restrict wts) {
   switch (ngqp) {
   case 1:
     rys_1rw(nt, tval, rts, wts);
@@ -36,7 +39,11 @@ void rys_rw(int nt,
     return;
   default:
     {
+#ifdef _MSC_VER
+      double *ryszero = (double *)_malloca(nt * sizeof(double));
+#else
       double ryszero[nt];
+#endif
       
       for (int n = 0; n < nt; n++) {
 	const double t = tval[n];
@@ -61,7 +68,10 @@ void rys_rw(int nt,
       int nmom = (ngqp << 1) - 1;
       
       rys_xrw(nt, ntgqp, ngqp, nmom, tval, ryszero, rts, wts);
-      
+
+#ifdef _MSC_VER
+      _freea(ryszero);
+#endif
       return;
     }
   }

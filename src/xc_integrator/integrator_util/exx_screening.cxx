@@ -13,6 +13,7 @@
 #include "host/blas.hpp"
 #include <gauxc/util/div_ceil.hpp>
 #include <chrono>
+#include <bit>
 //#include <mpi.h>
 //#include <fstream>
 #ifdef GAUXC_HAS_CUDA
@@ -195,7 +196,7 @@ void exx_ek_screening(
     }
 
     uint32_t total_shells = 0;
-    for( auto x : task_ek_shells ) total_shells += __builtin_popcount(x);
+    for( auto x : task_ek_shells ) total_shells += std::popcount(x);
 
     std::vector<uint32_t> ek_shells; ek_shells.reserve(total_shells);
     for( auto i_block = 0u; i_block < util::div_ceil(nshells,32); ++i_block ) {
