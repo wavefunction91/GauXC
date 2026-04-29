@@ -18,6 +18,8 @@
 #include <tuple>
 #include <vector>
 
+#include <omp.h>
+
 #include <gauxc/basisset_map.hpp>
 #include <gauxc/external/cube.hpp>
 #include <gauxc/exceptions.hpp>
@@ -393,10 +395,117 @@ void OrbitalEvaluator::eval_orbitals(const CubeGrid& grid,
   const auto& shell_cutoff_r2 = pimpl_->shell_cutoff_r2;
   const BasisSetMap& basis_map = *pimpl_->basis_map;
 
+  // Choose between task pipeline and omp-for based on saturation.
+  // When n_batches >> nthreads, omp-for already fully saturates all cores
+  // and the task pipeline's scheduling overhead is a net negative.
+  const int nthreads = omp_get_max_threads();
+  const bool use_pipeline = (n_batches < 2 * nthreads);
+
+  if (use_pipeline) {
+  // Pipelined evaluation (3d): overlap collocation of batch B+1 with
+  // GEMM of batch B using OMP tasks with dependency tags.
+  struct Slot {
+    std::vector<double> pts;
+    std::vector<double> ao;
+    std::vector<double> C_comp;
+    std::vector<int32_t> shells;
+    int32_t nbe;
+    int64_t p0, np;
+  };
+
+  const int nslots =
+      std::min<int64_t>(nthreads, n_batches);
+  std::vector<Slot> slots(nslots);
+  for (auto& s : slots) {
+    s.pts.resize(static_cast<size_t>(batch_size) * 3);
+    s.ao.resize(static_cast<size_t>(nbf) * batch_size);
+    s.C_comp.resize(static_cast<size_t>(nbf) * nmo);
+    s.shells.reserve(nshells_total);
+    s.nbe = 0;
+    s.p0 = 0;
+    s.np = 0;
+  }
+
+  // Dependency tag array — raw array for omp depend().
+  std::unique_ptr<char[]> dtag(new char[nslots]{});
+  char* dtag_ptr = dtag.get();
+  (void)dtag_ptr;  // used only in omp depend() clauses
+
+#pragma omp parallel
+#pragma omp single
+  {
+    for (int64_t b = 0; b < n_batches; ++b) {
+      const int si = static_cast<int>(b % nslots);
+
+      // Phase A: generate points, screen shells, eval collocation.
+#pragma omp task shared(slots, grid, basis, shell_cutoff_r2) \
+    depend(out: dtag_ptr[si]) firstprivate(b, si)
+      {
+        Slot& sl = slots[si];
+        sl.p0 = b * batch_size;
+        sl.np = std::min<int64_t>(batch_size, npts - sl.p0);
+
+        fill_batch_pts(grid, sl.p0, sl.np, sl.pts.data());
+        const PointBbox bbox = compute_bbox(sl.pts.data(), sl.np);
+        sl.shells.clear();
+        sl.nbe = 0;
+        for (int32_t s = 0; s < nshells_total; ++s) {
+          if (dist2_center_to_bbox(basis[s].O_data(), bbox) <
+              shell_cutoff_r2[s]) {
+            sl.shells.push_back(s);
+            sl.nbe += basis[s].size();
+          }
+        }
+        if (sl.nbe > 0) {
+          driver->eval_collocation(
+              static_cast<size_t>(sl.np),
+              static_cast<size_t>(sl.shells.size()),
+              static_cast<size_t>(sl.nbe), sl.pts.data(), basis,
+              sl.shells.data(), sl.ao.data());
+        }
+      }
+
+      // Phase B: gather C + GEMM → out.
+#pragma omp task shared(slots, out, C, basis_map) \
+    depend(in: dtag_ptr[si]) firstprivate(b, si)
+      {
+        Slot& sl = slots[si];
+        if (sl.nbe == 0) {
+          for (int32_t j = 0; j < nmo; ++j) {
+            double* oc = out + static_cast<size_t>(j) * ldo + sl.p0;
+            std::fill(oc, oc + sl.np, 0.0);
+          }
+        } else {
+          const int32_t nbe = sl.nbe;
+          {
+            int32_t row = 0;
+            for (int32_t s : sl.shells) {
+              const auto rng = basis_map.shell_to_ao_range(s);
+              const int32_t shell_nbe = rng.second - rng.first;
+              for (int32_t j = 0; j < nmo; ++j) {
+                const double* C_col = C + static_cast<size_t>(j) * ldc;
+                double* dst = sl.C_comp.data() +
+                              static_cast<size_t>(j) * nbe + row;
+                std::copy(C_col + rng.first, C_col + rng.second, dst);
+              }
+              row += shell_nbe;
+            }
+          }
+
+          blas::gemm<double>(
+              'T', 'N', static_cast<int>(sl.np), static_cast<int>(nmo),
+              nbe, 1.0, sl.ao.data(), nbe, sl.C_comp.data(), nbe,
+              0.0, out + sl.p0, static_cast<int>(ldo));
+        }
+      }
+    }
+  }
+
+  } else {
+    // Saturated path: plain omp-for, lower overhead at high thread counts.
+
 #pragma omp parallel
   {
-    // batch_pts replaces the full 3*npts coordinate array; only batch_size
-    // coordinates are live at a time (~192 KB for batch_size=8192).
     std::vector<double> batch_pts(static_cast<size_t>(batch_size) * 3);
     std::vector<double> ao_buf(static_cast<size_t>(nbf) * batch_size);
     std::vector<double> C_compressed(static_cast<size_t>(nbf) * nmo);
@@ -454,6 +563,7 @@ void OrbitalEvaluator::eval_orbitals(const CubeGrid& grid,
           0.0, out + p0, static_cast<int>(ldo));
     }
   }
+  }  // end saturated fallback
 }
 
 void OrbitalEvaluator::eval_density(const CubeGrid& grid,
