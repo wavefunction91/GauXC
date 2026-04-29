@@ -65,6 +65,14 @@ struct CubeGrid {
    *  `eval_density`.
    */
   std::vector<double> points() const;
+
+  /** @brief Write grid-point coordinates into a caller-supplied buffer.
+   *
+   *  Same layout as `points()` but writes into `out`, which must have room
+   *  for at least 3*num_points() doubles. Use this to avoid a heap
+   *  allocation when the caller already owns a suitably sized buffer.
+   */
+  void points_into(double* out) const;
 };
 
 /** @brief Write a Gaussian cube file.

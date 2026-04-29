@@ -19,6 +19,7 @@
 #include <vector>
 
 #include <gauxc/basisset_map.hpp>
+#include <gauxc/external/cube.hpp>
 #include <gauxc/exceptions.hpp>
 #include <gauxc/molecule.hpp>
 #include <gauxc/xc_integrator/local_work_driver.hpp>
@@ -47,6 +48,22 @@ inline int64_t choose_batch_size(int32_t nbf) {
 /// `eval_xmat` route directly to GEMM without invoking the gather path.
 inline LocalHostWorkDriver::submat_map_t full_submat_map(int32_t nbf) {
   return {{ {int32_t{0}, nbf, int32_t{0}} }};
+}
+
+/// Fill `pts[3*np]` with grid-point coordinates for batch [p0, p0+np).
+/// Avoids materialising the full 3*N point array for grid-based evaluation.
+inline void fill_batch_pts(const CubeGrid& g, int64_t p0, int64_t np,
+                           double* pts) {
+  const int64_t nz = g.nz, ny = g.ny;
+  for (int64_t i = 0; i < np; ++i) {
+    const int64_t k  = p0 + i;
+    const int64_t iz = k % nz;
+    const int64_t iy = (k / nz) % ny;
+    const int64_t ix = k / (ny * nz);
+    pts[3 * i + 0] = g.origin[0] + static_cast<double>(ix) * g.spacing[0];
+    pts[3 * i + 1] = g.origin[1] + static_cast<double>(iy) * g.spacing[1];
+    pts[3 * i + 2] = g.origin[2] + static_cast<double>(iz) * g.spacing[2];
+  }
 }
 
 /// Axis-aligned bbox of a set of npts AoS points (length 3*npts).
@@ -334,6 +351,191 @@ void OrbitalEvaluator::eval_density(int64_t npts, const double* points,
           /*basis_eval=*/ao_buf.data(),
           /*X=*/dm_ao_buf.data(), /*ldx=*/static_cast<size_t>(nbe),
           /*den_eval=*/out + p0);
+    }
+  }
+}
+
+// ---------------------------------------------------------------------------
+// CubeGrid overloads (3b): generate per-batch point coordinates on-the-fly,
+// avoiding the 3*num_points()*8 byte temporary coordinate array.
+// ---------------------------------------------------------------------------
+
+void OrbitalEvaluator::eval_orbital(const CubeGrid& grid,
+                                    const double* C, double* out) const {
+  eval_orbitals(grid, /*nmo=*/1, C, /*ldc=*/pimpl_->nbf_, out,
+                /*ldo=*/grid.num_points());
+}
+
+void OrbitalEvaluator::eval_orbitals(const CubeGrid& grid,
+                                     int32_t nmo, const double* C, int64_t ldc,
+                                     double* out, int64_t ldo) const {
+  const int64_t npts = grid.num_points();
+  if (npts == 0 || nmo == 0) return;
+  if (C == nullptr || out == nullptr) {
+    GAUXC_GENERIC_EXCEPTION(
+        "OrbitalEvaluator::eval_orbitals(grid): null pointer argument.");
+  }
+  const int32_t nbf = pimpl_->nbf_;
+  if (ldc < nbf) {
+    GAUXC_GENERIC_EXCEPTION(
+        "OrbitalEvaluator::eval_orbitals(grid): ldc must be >= nbf().");
+  }
+  if (ldo < npts) {
+    GAUXC_GENERIC_EXCEPTION(
+        "OrbitalEvaluator::eval_orbitals(grid): ldo must be >= npts.");
+  }
+
+  const int32_t nshells_total = pimpl_->basis.nshells();
+  const int64_t batch_size = choose_batch_size(nbf);
+  const int64_t n_batches = (npts + batch_size - 1) / batch_size;
+  LocalHostWorkDriver* driver = pimpl_->host_driver;
+  const BasisSet<double>& basis = pimpl_->basis;
+  const auto& shell_cutoff_r2 = pimpl_->shell_cutoff_r2;
+  const BasisSetMap& basis_map = *pimpl_->basis_map;
+
+#pragma omp parallel
+  {
+    // batch_pts replaces the full 3*npts coordinate array; only batch_size
+    // coordinates are live at a time (~192 KB for batch_size=8192).
+    std::vector<double> batch_pts(static_cast<size_t>(batch_size) * 3);
+    std::vector<double> ao_buf(static_cast<size_t>(nbf) * batch_size);
+    std::vector<double> C_compressed(static_cast<size_t>(nbf) * nmo);
+    std::vector<int32_t> screened_shells;
+    screened_shells.reserve(nshells_total);
+
+#pragma omp for schedule(dynamic, 1)
+    for (int64_t b = 0; b < n_batches; ++b) {
+      const int64_t p0 = b * batch_size;
+      const int64_t np = std::min<int64_t>(batch_size, npts - p0);
+
+      fill_batch_pts(grid, p0, np, batch_pts.data());
+      const PointBbox bbox = compute_bbox(batch_pts.data(), np);
+      screened_shells.clear();
+      int32_t nbe = 0;
+      for (int32_t s = 0; s < nshells_total; ++s) {
+        if (dist2_center_to_bbox(basis[s].O_data(), bbox) <
+            shell_cutoff_r2[s]) {
+          screened_shells.push_back(s);
+          nbe += basis[s].size();
+        }
+      }
+      if (nbe == 0) {
+        for (int32_t j = 0; j < nmo; ++j) {
+          double* out_col = out + static_cast<size_t>(j) * ldo + p0;
+          std::fill(out_col, out_col + np, 0.0);
+        }
+        continue;
+      }
+
+      driver->eval_collocation(
+          static_cast<size_t>(np),
+          static_cast<size_t>(screened_shells.size()),
+          static_cast<size_t>(nbe), batch_pts.data(), basis,
+          screened_shells.data(), ao_buf.data());
+
+      {
+        int32_t row = 0;
+        for (int32_t s : screened_shells) {
+          const auto rng = basis_map.shell_to_ao_range(s);
+          const int32_t shell_nbe = rng.second - rng.first;
+          for (int32_t j = 0; j < nmo; ++j) {
+            const double* C_col = C + static_cast<size_t>(j) * ldc;
+            double* dst = C_compressed.data() +
+                          static_cast<size_t>(j) * nbe + row;
+            std::copy(C_col + rng.first, C_col + rng.second, dst);
+          }
+          row += shell_nbe;
+        }
+      }
+
+      blas::gemm<double>(
+          'T', 'N', static_cast<int>(np), static_cast<int>(nmo), nbe,
+          1.0, ao_buf.data(), nbe, C_compressed.data(), nbe,
+          0.0, out + p0, static_cast<int>(ldo));
+    }
+  }
+}
+
+void OrbitalEvaluator::eval_density(const CubeGrid& grid,
+                                    const double* D, int64_t ldd,
+                                    double* out) const {
+  const int64_t npts = grid.num_points();
+  if (npts == 0) return;
+  if (D == nullptr || out == nullptr) {
+    GAUXC_GENERIC_EXCEPTION(
+        "OrbitalEvaluator::eval_density(grid): null pointer argument.");
+  }
+  const int32_t nbf = pimpl_->nbf_;
+  if (ldd < nbf) {
+    GAUXC_GENERIC_EXCEPTION(
+        "OrbitalEvaluator::eval_density(grid): ldd must be >= nbf().");
+  }
+
+  const int32_t nshells_total = pimpl_->basis.nshells();
+  const int64_t batch_size = choose_batch_size(nbf);
+  const int64_t n_batches = (npts + batch_size - 1) / batch_size;
+  LocalHostWorkDriver* driver = pimpl_->host_driver;
+  const BasisSet<double>& basis = pimpl_->basis;
+  const auto& shell_cutoff_r2 = pimpl_->shell_cutoff_r2;
+  const BasisSetMap& basis_map = *pimpl_->basis_map;
+
+#pragma omp parallel
+  {
+    std::vector<double> batch_pts(static_cast<size_t>(batch_size) * 3);
+    std::vector<double> ao_buf(static_cast<size_t>(nbf) * batch_size);
+    std::vector<double> dm_ao_buf(static_cast<size_t>(nbf) * batch_size);
+    std::vector<double> xmat_scr(static_cast<size_t>(nbf) * nbf);
+    std::vector<int32_t> screened_shells;
+    screened_shells.reserve(nshells_total);
+
+#pragma omp for schedule(dynamic, 1)
+    for (int64_t b = 0; b < n_batches; ++b) {
+      const int64_t p0 = b * batch_size;
+      const int64_t np = std::min<int64_t>(batch_size, npts - p0);
+
+      fill_batch_pts(grid, p0, np, batch_pts.data());
+      const PointBbox bbox = compute_bbox(batch_pts.data(), np);
+      screened_shells.clear();
+      int32_t nbe = 0;
+      for (int32_t s = 0; s < nshells_total; ++s) {
+        if (dist2_center_to_bbox(basis[s].O_data(), bbox) <
+            shell_cutoff_r2[s]) {
+          screened_shells.push_back(s);
+          nbe += basis[s].size();
+        }
+      }
+      if (nbe == 0) {
+        std::fill(out + p0, out + p0 + np, 0.0);
+        continue;
+      }
+
+      driver->eval_collocation(
+          static_cast<size_t>(np),
+          static_cast<size_t>(screened_shells.size()),
+          static_cast<size_t>(nbe), batch_pts.data(), basis,
+          screened_shells.data(), ao_buf.data());
+
+      LocalHostWorkDriver::submat_map_t submat_map;
+      if (nbe == nbf) {
+        submat_map = full_submat_map(nbf);
+      } else {
+        std::tie(submat_map, std::ignore) =
+            gen_compressed_submat_map(basis_map, screened_shells, nbf, nbf);
+      }
+
+      driver->eval_xmat(
+          static_cast<size_t>(np), static_cast<size_t>(nbf),
+          static_cast<size_t>(nbe), submat_map, 1.0,
+          D, static_cast<size_t>(ldd),
+          ao_buf.data(), static_cast<size_t>(nbe),
+          dm_ao_buf.data(), static_cast<size_t>(nbe),
+          xmat_scr.data());
+
+      driver->eval_uvvar_lda_rks(
+          static_cast<size_t>(np), static_cast<size_t>(nbe),
+          ao_buf.data(),
+          dm_ao_buf.data(), static_cast<size_t>(nbe),
+          out + p0);
     }
   }
 }

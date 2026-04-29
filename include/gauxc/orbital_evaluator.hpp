@@ -16,6 +16,7 @@
 
 #include <gauxc/basisset.hpp>
 #include <gauxc/enums.hpp>
+#include <gauxc/external/cube.hpp>
 
 namespace GauXC {
 
@@ -94,6 +95,26 @@ class OrbitalEvaluator {
    *  @param[out] out     Length-npts array of density values.
    */
   void eval_density(int64_t npts, const double* points,
+                    const double* D, int64_t ldd,
+                    double* out) const;
+
+  /** @brief Evaluate a single MO on a CubeGrid without materialising all 3*N
+   *         grid-point coordinates.
+   */
+  void eval_orbital(const CubeGrid& grid,
+                    const double* C, double* out) const;
+
+  /** @brief Evaluate `nmo` MOs on a CubeGrid without materialising all 3*N
+   *         grid-point coordinates.
+   */
+  void eval_orbitals(const CubeGrid& grid,
+                     int32_t nmo, const double* C, int64_t ldc,
+                     double* out, int64_t ldo) const;
+
+  /** @brief Evaluate the electron density on a CubeGrid without materialising
+   *         all 3*N grid-point coordinates.
+   */
+  void eval_density(const CubeGrid& grid,
                     const double* D, int64_t ldd,
                     double* out) const;
 

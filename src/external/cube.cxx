@@ -71,6 +71,11 @@ CubeGrid CubeGrid::from_molecule(const Molecule& mol, int64_t nx, int64_t ny,
 
 std::vector<double> CubeGrid::points() const {
   std::vector<double> pts(static_cast<size_t>(num_points()) * 3);
+  points_into(pts.data());
+  return pts;
+}
+
+void CubeGrid::points_into(double* out) const {
   size_t k = 0;
   for (int64_t ix = 0; ix < nx; ++ix) {
     const double x = origin[0] + spacing[0] * static_cast<double>(ix);
@@ -78,14 +83,13 @@ std::vector<double> CubeGrid::points() const {
       const double y = origin[1] + spacing[1] * static_cast<double>(iy);
       for (int64_t iz = 0; iz < nz; ++iz) {
         const double z = origin[2] + spacing[2] * static_cast<double>(iz);
-        pts[3 * k + 0] = x;
-        pts[3 * k + 1] = y;
-        pts[3 * k + 2] = z;
+        out[3 * k + 0] = x;
+        out[3 * k + 1] = y;
+        out[3 * k + 2] = z;
         ++k;
       }
     }
   }
-  return pts;
 }
 
 // Hand-rolled %13.5E formatter. Required field is fixed 13 chars
