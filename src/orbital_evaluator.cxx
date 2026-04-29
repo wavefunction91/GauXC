@@ -12,13 +12,18 @@
 #include <gauxc/orbital_evaluator.hpp>
 
 #include <algorithm>
+#include <array>
 #include <numeric>
 #include <stdexcept>
+#include <tuple>
 #include <vector>
 
+#include <gauxc/basisset_map.hpp>
 #include <gauxc/exceptions.hpp>
+#include <gauxc/molecule.hpp>
 #include <gauxc/xc_integrator/local_work_driver.hpp>
 
+#include "xc_integrator/integrator_util/integrator_common.hpp"
 #include "xc_integrator/local_work_driver/host/blas.hpp"
 #include "xc_integrator/local_work_driver/host/local_host_work_driver.hpp"
 
@@ -44,6 +49,42 @@ inline LocalHostWorkDriver::submat_map_t full_submat_map(int32_t nbf) {
   return {{ {int32_t{0}, nbf, int32_t{0}} }};
 }
 
+/// Axis-aligned bbox of a set of npts AoS points (length 3*npts).
+struct PointBbox {
+  std::array<double, 3> lo;
+  std::array<double, 3> hi;
+};
+inline PointBbox compute_bbox(const double* points, int64_t npts) {
+  PointBbox b{{points[0], points[1], points[2]},
+              {points[0], points[1], points[2]}};
+  for (int64_t p = 1; p < npts; ++p) {
+    const double* xyz = points + 3 * p;
+    for (int k = 0; k < 3; ++k) {
+      if (xyz[k] < b.lo[k]) b.lo[k] = xyz[k];
+      if (xyz[k] > b.hi[k]) b.hi[k] = xyz[k];
+    }
+  }
+  return b;
+}
+
+/// Squared distance from `center` to the nearest point in the axis-aligned
+/// bbox `[lo, hi]^3`. Zero if the center lies inside the bbox.
+inline double dist2_center_to_bbox(const double* center,
+                                   const PointBbox& bbox) {
+  double d2 = 0.0;
+  for (int k = 0; k < 3; ++k) {
+    const double c = center[k];
+    if (c < bbox.lo[k]) {
+      const double dx = bbox.lo[k] - c;
+      d2 += dx * dx;
+    } else if (c > bbox.hi[k]) {
+      const double dx = c - bbox.hi[k];
+      d2 += dx * dx;
+    }
+  }
+  return d2;
+}
+
 }  // namespace
 
 struct OrbitalEvaluator::Impl {
@@ -51,6 +92,13 @@ struct OrbitalEvaluator::Impl {
   std::unique_ptr<LocalWorkDriver> driver_owner;
   LocalHostWorkDriver* host_driver = nullptr;  // non-owning view
   std::vector<int32_t> shell_list;
+  // BasisSetMap powers shell -> AO range lookups for the screened
+  // submat_map. We don't have a Molecule available so we pass an empty
+  // one; the only field that needs it (shell_to_center) is unused here.
+  std::unique_ptr<BasisSetMap> basis_map;
+  // Per-shell squared cutoff radius, cached so the screening loop is just
+  // a comparison instead of a square root per shell per batch.
+  std::vector<double> shell_cutoff_r2;
   int32_t nbf_ = 0;
 
   void init(BasisSet<double> bs, ExecutionSpace exec) {
@@ -73,6 +121,14 @@ struct OrbitalEvaluator::Impl {
     shell_list.resize(basis.size());
     std::iota(shell_list.begin(), shell_list.end(), int32_t{0});
     nbf_ = basis.nbf();
+
+    basis_map = std::make_unique<BasisSetMap>(basis, Molecule{});
+
+    shell_cutoff_r2.resize(basis.size());
+    for (size_t s = 0; s < basis.size(); ++s) {
+      const double r = basis[s].cutoff_radius();
+      shell_cutoff_r2[s] = r * r;
+    }
   }
 };
 
@@ -116,34 +172,79 @@ void OrbitalEvaluator::eval_orbitals(int64_t npts, const double* points,
         "OrbitalEvaluator::eval_orbitals: ldo must be >= npts.");
   }
 
-  const int32_t nshells = pimpl_->basis.nshells();
+  const int32_t nshells_total = pimpl_->basis.nshells();
   const int64_t batch_size = choose_batch_size(nbf);
   const int64_t n_batches = (npts + batch_size - 1) / batch_size;
   LocalHostWorkDriver* driver = pimpl_->host_driver;
-  const int32_t* shell_list = pimpl_->shell_list.data();
   const BasisSet<double>& basis = pimpl_->basis;
+  const auto& shell_cutoff_r2 = pimpl_->shell_cutoff_r2;
+  const BasisSetMap& basis_map = *pimpl_->basis_map;
 
 #pragma omp parallel
   {
     std::vector<double> ao_buf(static_cast<size_t>(nbf) * batch_size);
+    std::vector<double> C_compressed(static_cast<size_t>(nbf) * nmo);
+    std::vector<int32_t> screened_shells;
+    screened_shells.reserve(nshells_total);
 
 #pragma omp for schedule(dynamic, 1)
     for (int64_t b = 0; b < n_batches; ++b) {
       const int64_t p0 = b * batch_size;
       const int64_t np = std::min<int64_t>(batch_size, npts - p0);
 
-      driver->eval_collocation(static_cast<size_t>(np),
-                               static_cast<size_t>(nshells),
-                               static_cast<size_t>(nbf), points + 3 * p0,
-                               basis, shell_list, ao_buf.data());
+      // Per-batch shell screening: keep shells whose cutoff_radius reaches
+      // any point of this batch's bounding box.
+      const PointBbox bbox = compute_bbox(points + 3 * p0, np);
+      screened_shells.clear();
+      int32_t nbe = 0;
+      for (int32_t s = 0; s < nshells_total; ++s) {
+        if (dist2_center_to_bbox(basis[s].O_data(), bbox) <
+            shell_cutoff_r2[s]) {
+          screened_shells.push_back(s);
+          nbe += basis[s].size();
+        }
+      }
+      if (nbe == 0) {
+        // All shells screen out for this batch -> orbital is identically
+        // zero. Zero the slab and skip eval.
+        for (int32_t j = 0; j < nmo; ++j) {
+          double* out_col = out + static_cast<size_t>(j) * ldo + p0;
+          std::fill(out_col, out_col + np, 0.0);
+        }
+        continue;
+      }
 
-      // out_slab(np, nmo) = ao^T(np, nbf) @ C(nbf, nmo); j-th MO column
-      // lives at out + j*ldo + p0.
+      driver->eval_collocation(
+          static_cast<size_t>(np),
+          static_cast<size_t>(screened_shells.size()),
+          static_cast<size_t>(nbe), points + 3 * p0, basis,
+          screened_shells.data(), ao_buf.data());
+
+      // Gather the rows of C corresponding to surviving shells into a
+      // contiguous (nbe, nmo) col-major buffer so the contraction is a
+      // dense GEMM.
+      {
+        int32_t row = 0;
+        for (int32_t s : screened_shells) {
+          const auto rng = basis_map.shell_to_ao_range(s);
+          const int32_t shell_nbe = rng.second - rng.first;
+          for (int32_t j = 0; j < nmo; ++j) {
+            const double* C_col = C + static_cast<size_t>(j) * ldc;
+            double* dst = C_compressed.data() +
+                          static_cast<size_t>(j) * nbe + row;
+            std::copy(C_col + rng.first, C_col + rng.second, dst);
+          }
+          row += shell_nbe;
+        }
+      }
+
+      // out_slab(np, nmo) = ao^T(np, nbe) @ C_compressed(nbe, nmo); j-th MO
+      // column lives at out + j*ldo + p0.
       blas::gemm<double>(
           /*TA=*/'T', /*TB=*/'N',
           /*M=*/static_cast<int>(np), /*N=*/static_cast<int>(nmo),
-          /*K=*/nbf, /*ALPHA=*/1.0, /*A=*/ao_buf.data(), /*LDA=*/nbf,
-          /*B=*/C, /*LDB=*/static_cast<int>(ldc), /*BETA=*/0.0,
+          /*K=*/nbe, /*ALPHA=*/1.0, /*A=*/ao_buf.data(), /*LDA=*/nbe,
+          /*B=*/C_compressed.data(), /*LDB=*/nbe, /*BETA=*/0.0,
           /*C=*/out + p0, /*LDC=*/static_cast<int>(ldo));
     }
   }
@@ -163,46 +264,75 @@ void OrbitalEvaluator::eval_density(int64_t npts, const double* points,
         "OrbitalEvaluator::eval_density: ldd must be >= nbf().");
   }
 
-  const int32_t nshells = pimpl_->basis.nshells();
+  const int32_t nshells_total = pimpl_->basis.nshells();
   const int64_t batch_size = choose_batch_size(nbf);
   const int64_t n_batches = (npts + batch_size - 1) / batch_size;
   LocalHostWorkDriver* driver = pimpl_->host_driver;
-  const int32_t* shell_list = pimpl_->shell_list.data();
   const BasisSet<double>& basis = pimpl_->basis;
+  const auto& shell_cutoff_r2 = pimpl_->shell_cutoff_r2;
+  const BasisSetMap& basis_map = *pimpl_->basis_map;
 
 #pragma omp parallel
   {
     std::vector<double> ao_buf(static_cast<size_t>(nbf) * batch_size);
     std::vector<double> dm_ao_buf(static_cast<size_t>(nbf) * batch_size);
-    // Sized for the eval_xmat submat-gather contract; unused on the
-    // nbe == nbf fast path but allocated unconditionally for safety.
+    // eval_xmat scratch when the submat-gather path is taken; sized for
+    // worst case (nbe == nbf).
     std::vector<double> xmat_scr(static_cast<size_t>(nbf) * nbf);
-    auto submat_map = full_submat_map(nbf);
+    std::vector<int32_t> screened_shells;
+    screened_shells.reserve(nshells_total);
 
 #pragma omp for schedule(dynamic, 1)
     for (int64_t b = 0; b < n_batches; ++b) {
       const int64_t p0 = b * batch_size;
       const int64_t np = std::min<int64_t>(batch_size, npts - p0);
 
-      driver->eval_collocation(static_cast<size_t>(np),
-                               static_cast<size_t>(nshells),
-                               static_cast<size_t>(nbf), points + 3 * p0,
-                               basis, shell_list, ao_buf.data());
+      const PointBbox bbox = compute_bbox(points + 3 * p0, np);
+      screened_shells.clear();
+      int32_t nbe = 0;
+      for (int32_t s = 0; s < nshells_total; ++s) {
+        if (dist2_center_to_bbox(basis[s].O_data(), bbox) <
+            shell_cutoff_r2[s]) {
+          screened_shells.push_back(s);
+          nbe += basis[s].size();
+        }
+      }
+      if (nbe == 0) {
+        std::fill(out + p0, out + p0 + np, 0.0);
+        continue;
+      }
 
-      // dm_ao = D @ ao
+      driver->eval_collocation(
+          static_cast<size_t>(np),
+          static_cast<size_t>(screened_shells.size()),
+          static_cast<size_t>(nbe), points + 3 * p0, basis,
+          screened_shells.data(), ao_buf.data());
+
+      // Build the compressed submat_map for this batch (gather the rows
+      // of D corresponding to surviving shells). Falls through to a single
+      // direct-gemm submat_map when nbe == nbf.
+      LocalHostWorkDriver::submat_map_t submat_map;
+      if (nbe == nbf) {
+        submat_map = full_submat_map(nbf);
+      } else {
+        std::tie(submat_map, std::ignore) =
+            gen_compressed_submat_map(basis_map, screened_shells, nbf, nbf);
+      }
+
+      // dm_ao = D_compressed @ ao
       driver->eval_xmat(
           /*npts=*/static_cast<size_t>(np), /*nbf=*/static_cast<size_t>(nbf),
-          /*nbe=*/static_cast<size_t>(nbf), submat_map, /*fac=*/1.0,
+          /*nbe=*/static_cast<size_t>(nbe), submat_map, /*fac=*/1.0,
           /*P=*/D, /*ldp=*/static_cast<size_t>(ldd),
-          /*basis_eval=*/ao_buf.data(), /*ldb=*/static_cast<size_t>(nbf),
-          /*X=*/dm_ao_buf.data(), /*ldx=*/static_cast<size_t>(nbf),
+          /*basis_eval=*/ao_buf.data(), /*ldb=*/static_cast<size_t>(nbe),
+          /*X=*/dm_ao_buf.data(), /*ldx=*/static_cast<size_t>(nbe),
           /*scr=*/xmat_scr.data());
 
       // rho[p] = sum_mu ao(mu, p) * dm_ao(mu, p)
       driver->eval_uvvar_lda_rks(
-          /*npts=*/static_cast<size_t>(np), /*nbe=*/static_cast<size_t>(nbf),
+          /*npts=*/static_cast<size_t>(np), /*nbe=*/static_cast<size_t>(nbe),
           /*basis_eval=*/ao_buf.data(),
-          /*X=*/dm_ao_buf.data(), /*ldx=*/static_cast<size_t>(nbf),
+          /*X=*/dm_ao_buf.data(), /*ldx=*/static_cast<size_t>(nbe),
           /*den_eval=*/out + p0);
     }
   }
