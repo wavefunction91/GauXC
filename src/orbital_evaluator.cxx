@@ -120,6 +120,20 @@ struct OrbitalEvaluator::Impl {
   std::vector<double> shell_cutoff_r2;
   int32_t nbf_ = 0;
 
+  // Per-thread scratch for eval_xmat in eval_density. Allocated once
+  // per evaluator rather than once per eval_density call, saving
+  // nthreads * nbf^2 * 8 bytes of allocation churn per call.
+  mutable std::vector<std::vector<double>> xmat_scratch_pool;
+
+  /// Return a pointer to thread-local xmat scratch of size nbf*nbf.
+  /// Must be called from inside an omp parallel region whose thread
+  /// count does not exceed the value of omp_get_max_threads() at
+  /// construction time.
+  double* xmat_scratch() const {
+    auto& buf = xmat_scratch_pool[omp_get_thread_num()];
+    return buf.data();
+  }
+
   void init(BasisSet<double> bs, ExecutionSpace exec) {
     if (exec != ExecutionSpace::Host) {
       GAUXC_GENERIC_EXCEPTION(
@@ -147,6 +161,12 @@ struct OrbitalEvaluator::Impl {
     for (size_t s = 0; s < basis.size(); ++s) {
       const double r = basis[s].cutoff_radius();
       shell_cutoff_r2[s] = r * r;
+    }
+
+    // Pre-size the scratch pool for the current OMP thread count.
+    xmat_scratch_pool.resize(omp_get_max_threads());
+    for (auto& buf : xmat_scratch_pool) {
+      buf.resize(static_cast<size_t>(nbf_) * nbf_);
     }
   }
 };
@@ -295,9 +315,6 @@ void OrbitalEvaluator::eval_density(int64_t npts, const double* points,
   {
     std::vector<double> ao_buf(static_cast<size_t>(nbf) * batch_size);
     std::vector<double> dm_ao_buf(static_cast<size_t>(nbf) * batch_size);
-    // eval_xmat scratch when the submat-gather path is taken; sized for
-    // worst case (nbe == nbf).
-    std::vector<double> xmat_scr(static_cast<size_t>(nbf) * nbf);
     std::vector<int32_t> screened_shells;
     screened_shells.reserve(nshells_total);
 
@@ -345,7 +362,7 @@ void OrbitalEvaluator::eval_density(int64_t npts, const double* points,
           /*P=*/D, /*ldp=*/static_cast<size_t>(ldd),
           /*basis_eval=*/ao_buf.data(), /*ldb=*/static_cast<size_t>(nbe),
           /*X=*/dm_ao_buf.data(), /*ldx=*/static_cast<size_t>(nbe),
-          /*scr=*/xmat_scr.data());
+          /*scr=*/pimpl_->xmat_scratch());
 
       // rho[p] = sum_mu ao(mu, p) * dm_ao(mu, p)
       driver->eval_uvvar_lda_rks(
@@ -594,7 +611,6 @@ void OrbitalEvaluator::eval_density(const CubeGrid& grid,
     std::vector<double> batch_pts(static_cast<size_t>(batch_size) * 3);
     std::vector<double> ao_buf(static_cast<size_t>(nbf) * batch_size);
     std::vector<double> dm_ao_buf(static_cast<size_t>(nbf) * batch_size);
-    std::vector<double> xmat_scr(static_cast<size_t>(nbf) * nbf);
     std::vector<int32_t> screened_shells;
     screened_shells.reserve(nshells_total);
 
@@ -639,7 +655,7 @@ void OrbitalEvaluator::eval_density(const CubeGrid& grid,
           D, static_cast<size_t>(ldd),
           ao_buf.data(), static_cast<size_t>(nbe),
           dm_ao_buf.data(), static_cast<size_t>(nbe),
-          xmat_scr.data());
+          pimpl_->xmat_scratch());
 
       driver->eval_uvvar_lda_rks(
           static_cast<size_t>(np), static_cast<size_t>(nbe),
