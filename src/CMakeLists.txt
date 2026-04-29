@@ -41,6 +41,7 @@ add_library( gauxc
   molgrid_impl.cxx 
   molgrid_defaults.cxx 
   atomic_radii.cxx 
+  orbital_evaluator.cxx
 )
 
 target_include_directories( gauxc
