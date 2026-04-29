@@ -9,6 +9,9 @@
 #
 # See LICENSE.txt for details
 #
+# Cube file writer is a self-contained utility (no third-party deps); always build it.
+target_sources( gauxc PRIVATE cube.cxx )
+
 if( GAUXC_ENABLE_HDF5 )
   include(FetchContent)
   find_package(HDF5)
