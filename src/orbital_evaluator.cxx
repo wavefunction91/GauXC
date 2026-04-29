@@ -18,7 +18,12 @@
 #include <tuple>
 #include <vector>
 
+#ifdef _OPENMP
 #include <omp.h>
+#else
+inline int omp_get_max_threads() { return 1; }
+inline int omp_get_thread_num()  { return 0; }
+#endif
 
 #include <gauxc/basisset_map.hpp>
 #include <gauxc/external/cube.hpp>
@@ -375,7 +380,7 @@ void OrbitalEvaluator::eval_density(int64_t npts, const double* points,
 }
 
 // ---------------------------------------------------------------------------
-// CubeGrid overloads (3b): generate per-batch point coordinates on-the-fly,
+// CubeGrid overloads: generate per-batch point coordinates on-the-fly,
 // avoiding the 3*num_points()*8 byte temporary coordinate array.
 // ---------------------------------------------------------------------------
 
@@ -419,7 +424,7 @@ void OrbitalEvaluator::eval_orbitals(const CubeGrid& grid,
   const bool use_pipeline = (n_batches < 2 * nthreads);
 
   if (use_pipeline) {
-  // Pipelined evaluation (3d): overlap collocation of batch B+1 with
+  // Pipelined evaluation: overlap collocation of batch B+1 with
   // GEMM of batch B using OMP tasks with dependency tags.
   struct Slot {
     std::vector<double> pts;

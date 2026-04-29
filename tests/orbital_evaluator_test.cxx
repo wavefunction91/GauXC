@@ -17,9 +17,8 @@
 #include <fstream>
 #include <random>
 #include <sstream>
+#include <string>
 #include <vector>
-
-#include <unistd.h>
 
 #include <gauxc/external/cube.hpp>
 #include <gauxc/orbital_evaluator.hpp>
@@ -37,6 +36,12 @@
 using namespace GauXC;
 
 namespace {
+
+/// Generate a unique temp path for test files (avoids tmpnam warning).
+std::string make_temp_path(const char* suffix) {
+  static int counter = 0;
+  return std::string("/tmp/gauxc_test_") + std::to_string(++counter) + suffix;
+}
 
 /// Build a deterministic PRNG-based set of points within a small bounding box
 /// around the molecule. Avoids putting samples too close to nuclei to keep
@@ -169,6 +174,54 @@ TEST_CASE("OrbitalEvaluator / Water cc-pVDZ matches eval_collocation",
   }
 }
 
+TEST_CASE("CubeGrid eval overloads match pointer-based eval",
+          "[orbital_evaluator]") {
+  auto mol = make_water();
+  auto basis = make_ccpvdz(mol, SphericalType(true));
+  for (auto& sh : basis) sh.set_shell_tolerance(1e-12);
+  const int32_t nbf = basis.nbf();
+  OrbitalEvaluator eval(basis);
+
+  // Small grid for fast testing.
+  auto grid = CubeGrid::from_molecule(mol, 6, 7, 8);
+  const int64_t npts = grid.num_points();
+  auto pts = grid.points();
+
+  // Random MO coefficients.
+  std::mt19937 rng(42u);
+  std::uniform_real_distribution<double> dist(-1.0, 1.0);
+  std::vector<double> C(static_cast<size_t>(nbf));
+  for (auto& v : C) v = dist(rng);
+
+  SECTION("eval_orbital(grid) matches eval_orbital(npts, points)") {
+    std::vector<double> ref(static_cast<size_t>(npts));
+    eval.eval_orbital(npts, pts.data(), C.data(), ref.data());
+
+    std::vector<double> out(static_cast<size_t>(npts));
+    eval.eval_orbital(grid, C.data(), out.data());
+
+    for (int64_t p = 0; p < npts; ++p) {
+      CHECK(out[p] == Approx(ref[p]).margin(1e-12));
+    }
+  }
+
+  SECTION("eval_density(grid) matches eval_density(npts, points)") {
+    // Identity density.
+    std::vector<double> D(static_cast<size_t>(nbf) * nbf, 0.0);
+    for (int32_t i = 0; i < nbf; ++i) D[i * nbf + i] = 1.0;
+
+    std::vector<double> ref(static_cast<size_t>(npts));
+    eval.eval_density(npts, pts.data(), D.data(), nbf, ref.data());
+
+    std::vector<double> out(static_cast<size_t>(npts));
+    eval.eval_density(grid, D.data(), nbf, out.data());
+
+    for (int64_t p = 0; p < npts; ++p) {
+      CHECK(out[p] == Approx(ref[p]).margin(1e-12));
+    }
+  }
+}
+
 TEST_CASE("CubeGrid construction and grid-points layout", "[cube]") {
   auto mol = make_water();
   CubeGrid g = CubeGrid::from_molecule(mol, /*nx=*/16, /*ny=*/12, /*nz=*/8,
@@ -213,9 +266,8 @@ TEST_CASE("write_cube round-trips header and field data", "[cube]") {
                                     std::pow(10.0, (i % 5) - 2);
   }
 
-  // Use a tmp path under /tmp.
-  const std::string path = std::string("/tmp/gauxc_cube_test_") +
-                           std::to_string(::getpid()) + ".cube";
+  // Use a tmp path.
+  const std::string path = make_temp_path(".cube");
   write_cube(path, mol, grid, field.data(), "Test cube");
 
   // Parse back.
@@ -303,8 +355,7 @@ TEST_CASE("write_cube agrees with snprintf %13.5E formatting", "[cube]") {
                                -2.71828,   1.0,      -1.0,       1e-300,
                                1.234e+05};
 
-  const std::string path = std::string("/tmp/gauxc_cube_format_") +
-                           std::to_string(::getpid()) + ".cube";
+  const std::string path = make_temp_path(".cube");
   write_cube(path, mol, grid, field.data(), "fmt");
 
   std::ifstream in(path);
@@ -345,7 +396,7 @@ TEST_CASE("write_cube_hdf5 round-trip", "[cube]") {
   std::vector<double> field(npts);
   for (int64_t i = 0; i < npts; ++i) field[i] = 0.01 * i - 0.5;
 
-  const std::string path = "/tmp/_gauxc_test_cube.h5";
+  const std::string path = make_temp_path(".h5");
   write_cube_hdf5(path, mol, grid, field.data(), "test cube");
 
   // Read back and verify.
