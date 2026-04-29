@@ -33,9 +33,3 @@
 #cmakedefine GAUXC_GPU_XC_MAX_AM     @GAUXC_GPU_XC_MAX_AM@
 #cmakedefine GAUXC_GPU_SNLINK_MAX_AM @GAUXC_GPU_SNLINK_MAX_AM@
 #endif
-
-#if defined(__CUDACC__) || defined(__HIPCC__)
-  #define HOST_DEVICE_ACCESSIBLE __host__ __device__
-#else
-  #define HOST_DEVICE_ACCESSIBLE
-#endif

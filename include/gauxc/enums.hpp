@@ -19,10 +19,10 @@ namespace GauXC {
  *  Generally mapped to equivalent enums in IntegratorXX
  */
 enum class RadialQuad {
-  Becke,             ///< Becke radial quadrature
-  MuraKnowles,       ///< Mura-Knowles radial quadrature
-  MurrayHandyLaming, ///< Murray-Handy-Laming radial quadrature
-  TreutlerAhlrichs   ///< Treutler-Ahlrichs radial quadrature
+  Becke,              ///< Becke radial quadrature
+  MuraKnowles,        ///< Mura-Knowles radial quadrature
+  MurrayHandyLaming,  ///< Murray-Handy-Laming radial quadrature
+  TreutlerAhlrichs    ///< Treutler-Ahlrichs radial quadrature
 };
 
 /**
@@ -35,7 +35,7 @@ enum class AtomicGridSizeDefault {
   UltraFineGrid,  ///< Ultrafine grid (appropriate accuracy)
   SuperFineGrid,  ///< Superfine grid (most accurate)
   GM3,            ///< Treutler-Ahlrichs GM3
-  GM5             ///< Treutlet-Ahlrichs GM5
+  GM5             ///< Treutler-Ahlrichs GM5
 };
 
 /**
@@ -43,25 +43,33 @@ enum class AtomicGridSizeDefault {
  *  molecular integration
  */
 enum class XCWeightAlg {
-  NOTPARTITIONED, ///< Not partitioned
-  Becke, ///< The original Becke weighting scheme
-  SSF,   ///< The Stratmann-Scuseria-Frisch weighting scheme
-  LKO    ///< The Lauqua-Kuessman-Ochsenfeld weighting scheme
+  NOTPARTITIONED,  ///< Not partitioned
+  Becke,           ///< The original Becke weighting scheme
+  SSF,             ///< The Stratmann-Scuseria-Frisch weighting scheme
+  LKO              ///< The Lauqua-Kuessman-Ochsenfeld weighting scheme
 };
 
 /**
  *  @brief Specification of the execution space for various operations
  */
 enum class ExecutionSpace {
-  Host,  ///< Execute task on the host
-  Device ///< Execute task on the device (e.g. GPU)
+  Host,   ///< Execute task on the host
+  Device  ///< Execute task on the device (e.g. GPU)
 };
 
 /// Supported Algorithms / Integrands
 enum class SupportedAlg {
   XC,
   DEN,
-  SNLINK
+  SNLINK,
 };
+
+/// High-level specification of pruning schemes for atomic quadratures
+enum class PruningScheme {
+  Unpruned,  ///< Unpruned atomic quadrature
+  Robust,    ///< The "Robust" scheme of Psi4
+  Treutler   ///< The Treutler-Ahlrichs scheme
+};
+
 
 } // namespace GauXC
