@@ -35,7 +35,7 @@ if( GAUXC_ENABLE_HDF5 )
       FetchContent_MakeAvailable( HighFive )
     
     endif()
-    target_sources( gauxc PRIVATE hdf5_write.cxx hdf5_read.cxx )
+    target_sources( gauxc PRIVATE hdf5_write.cxx hdf5_read.cxx cube_hdf5.cxx )
     target_link_libraries( gauxc PUBLIC HighFive )
   else()
     message(WARNING "GAUXC_ENABLE_HDF5 was enabled, but HDF5 was not found, Disabling HDF5 Bindings")

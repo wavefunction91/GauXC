@@ -24,6 +24,10 @@
 #include <gauxc/external/cube.hpp>
 #include <gauxc/orbital_evaluator.hpp>
 #include <gauxc/xc_integrator/local_work_driver.hpp>
+#include <gauxc/gauxc_config.hpp>
+#ifdef GAUXC_HAS_HDF5
+#include <highfive/H5File.hpp>
+#endif
 
 #include "standards.hpp"
 
@@ -330,3 +334,77 @@ TEST_CASE("write_cube agrees with snprintf %13.5E formatting", "[cube]") {
 
   std::remove(path.c_str());
 }
+
+#ifdef GAUXC_HAS_HDF5
+TEST_CASE("write_cube_hdf5 round-trip", "[cube]") {
+  auto mol = make_water();
+  auto grid = CubeGrid::from_molecule(mol, 4, 5, 6);
+
+  // Fill a small field with known values.
+  const int64_t npts = grid.num_points();
+  std::vector<double> field(npts);
+  for (int64_t i = 0; i < npts; ++i) field[i] = 0.01 * i - 0.5;
+
+  const std::string path = "/tmp/_gauxc_test_cube.h5";
+  write_cube_hdf5(path, mol, grid, field.data(), "test cube");
+
+  // Read back and verify.
+  HighFive::File file(path, HighFive::File::ReadOnly);
+
+  // Field shape and values.
+  auto ds = file.getDataSet("field");
+  auto dims = ds.getDimensions();
+  REQUIRE(dims.size() == 3);
+  CHECK(dims[0] == static_cast<size_t>(grid.nx));
+  CHECK(dims[1] == static_cast<size_t>(grid.ny));
+  CHECK(dims[2] == static_cast<size_t>(grid.nz));
+
+  std::vector<double> read_field(npts);
+  ds.read(read_field.data());
+  for (int64_t i = 0; i < npts; ++i) {
+    CHECK(read_field[i] == Approx(field[i]).epsilon(1e-14));
+  }
+
+  // Comment attribute.
+  std::string cmt;
+  ds.getAttribute("comment").read(cmt);
+  CHECK(cmt == "test cube");
+
+  // Grid metadata.
+  auto grp_grid = file.getGroup("grid");
+  std::vector<double> origin, spacing;
+  std::vector<int64_t> shape;
+  grp_grid.getDataSet("origin").read(origin);
+  grp_grid.getDataSet("spacing").read(spacing);
+  grp_grid.getDataSet("shape").read(shape);
+  REQUIRE(origin.size() == 3);
+  REQUIRE(spacing.size() == 3);
+  REQUIRE(shape.size() == 3);
+  for (int k = 0; k < 3; ++k) {
+    CHECK(origin[k] == Approx(grid.origin[k]).epsilon(1e-14));
+    CHECK(spacing[k] == Approx(grid.spacing[k]).epsilon(1e-14));
+  }
+  CHECK(shape[0] == grid.nx);
+  CHECK(shape[1] == grid.ny);
+  CHECK(shape[2] == grid.nz);
+
+  // Atoms.
+  auto grp_atoms = file.getGroup("atoms");
+  std::vector<int64_t> Z;
+  grp_atoms.getDataSet("Z").read(Z);
+  REQUIRE(Z.size() == mol.size());
+  for (size_t i = 0; i < mol.size(); ++i) {
+    CHECK(Z[i] == static_cast<int64_t>(mol[i].Z.get()));
+  }
+
+  std::vector<double> coords(mol.size() * 3);
+  grp_atoms.getDataSet("coords").read(coords.data());
+  for (size_t i = 0; i < mol.size(); ++i) {
+    CHECK(coords[3 * i + 0] == Approx(mol[i].x).epsilon(1e-14));
+    CHECK(coords[3 * i + 1] == Approx(mol[i].y).epsilon(1e-14));
+    CHECK(coords[3 * i + 2] == Approx(mol[i].z).epsilon(1e-14));
+  }
+
+  std::remove(path.c_str());
+}
+#endif

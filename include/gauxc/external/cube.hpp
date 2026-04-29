@@ -100,4 +100,34 @@ void write_cube(const std::string& path,
                 const double* field,
                 const std::string& comment = "");
 
+#ifdef GAUXC_HAS_HDF5
+/** @brief Write a cube field to an HDF5 file.
+ *
+ *  Stores the grid specification, molecular geometry, and scalar field in a
+ *  single HDF5 file for downstream analysis. The field is stored as a 3D
+ *  dataset of shape (nx, ny, nz) in row-major order with iz varying fastest
+ *  (matching the cube-file convention).
+ *
+ *  HDF5 layout:
+ *    /field          (nx, ny, nz) float64 — the scalar field
+ *    /grid/origin    (3,) float64
+ *    /grid/spacing   (3,) float64
+ *    /grid/shape     (3,) int64   — {nx, ny, nz}
+ *    /atoms/Z        (natom,) int64
+ *    /atoms/coords   (natom, 3) float64
+ *    /comment        scalar string attribute on /field
+ *
+ *  @param path     Output path. Parent directory must exist.
+ *  @param mol      Molecule (atomic numbers + Cartesian coordinates in Bohr).
+ *  @param grid     Grid specification.
+ *  @param field    Length-`grid.num_points()` scalar field.
+ *  @param comment  Optional comment stored as an attribute on /field.
+ */
+void write_cube_hdf5(const std::string& path,
+                     const Molecule& mol,
+                     const CubeGrid& grid,
+                     const double* field,
+                     const std::string& comment = "");
+#endif
+
 }  // namespace GauXC
