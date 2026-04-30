@@ -215,7 +215,7 @@ contains
 
     call fill_minimal_shells(shells)
     call init_status(status)
-    basis = gauxc_basisset_new_from_shells(status, shells, size(shells, kind=c_size_t))
+    basis = gauxc_basisset_new_from_shells(status, shells, size(shells, kind=c_size_t), .true._c_bool)
     call expect_status_ok(error, status, "gauxc_basisset_new_from_shells")
     if (allocated(error)) return
 

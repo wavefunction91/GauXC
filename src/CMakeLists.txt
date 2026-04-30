@@ -151,10 +151,7 @@ set_target_properties( gauxc PROPERTIES EXPORT_NAME gauxc )
 set(export_properties
   # currently configurable properties 
   "GAUXC_HAS_C"
-<<<<<<< HEAD
   "GAUXC_HAS_FORTRAN"
-=======
->>>>>>> master
   "GAUXC_HAS_HOST"
   "GAUXC_HAS_DEVICE"
   "GAUXC_HAS_CUDA"
@@ -177,10 +174,7 @@ set(export_properties
 set_target_properties(gauxc
   PROPERTIES
     "GAUXC_HAS_C"          ${GAUXC_HAS_C}
-<<<<<<< HEAD
     "GAUXC_HAS_FORTRAN"    ${GAUXC_HAS_FORTRAN}
-=======
->>>>>>> master
     "GAUXC_HAS_HOST"       ${GAUXC_HAS_HOST}
     "GAUXC_HAS_DEVICE"     ${GAUXC_HAS_DEVICE}
     "GAUXC_HAS_CUDA"       ${GAUXC_HAS_CUDA}
@@ -217,10 +211,6 @@ install(
   DESTINATION include/gauxc
 )
 
-<<<<<<< HEAD
-=======
-   
->>>>>>> master
 # Export target to script
 set( INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/gauxc )
 install( EXPORT gauxc-targets
