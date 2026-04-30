@@ -17,6 +17,9 @@ message( STATUS "Building GauXC Tests" )
 add_library( gauxc_catch2 INTERFACE )
 
 find_package( Catch2 CONFIG QUIET )
+if( Catch2_FOUND AND Catch2_VERSION VERSION_GREATER_EQUAL 3 )
+  message(FATAL_ERROR "Catch2 v${Catch2_VERSION} found, but tests require Catch2 v2 (catch2/catch.hpp). Please install v2.")
+endif()
 if( NOT Catch2_FOUND )
 
   FetchContent_Declare(
