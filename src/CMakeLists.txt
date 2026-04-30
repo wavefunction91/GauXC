@@ -31,8 +31,7 @@ endif()
 include( gauxc-integratorxx )
 include( gauxc-exchcxx      )
 
-
-add_library( gauxc 
+add_library( gauxc
   grid.cxx 
   grid_impl.cxx 
   grid_factory.cxx
@@ -40,8 +39,17 @@ add_library( gauxc
   molgrid.cxx 
   molgrid_impl.cxx 
   molgrid_defaults.cxx 
-  atomic_radii.cxx 
+  atomic_radii.cxx
 )
+
+if( GAUXC_ENABLE_C )
+  message( STATUS "GauXC Enabling C API" )
+  add_subdirectory(c-api)
+  set(GAUXC_HAS_C TRUE CACHE BOOL "GauXC Has C API" FORCE)
+else()
+  message( STATUS "GauXC Disabling C API" )
+endif()
+
 
 target_include_directories( gauxc
   PUBLIC
@@ -82,7 +90,7 @@ target_link_libraries( gauxc PUBLIC
   ExchCXX::ExchCXX 
   IntegratorXX::IntegratorXX 
 )
-if( TARGET OpenMP::OpenMP_CXX )
+if( GAUXC_HAS_OPENMP AND TARGET OpenMP::OpenMP_CXX )
   target_link_libraries( gauxc PUBLIC OpenMP::OpenMP_CXX )
 else()
   find_package(Threads REQUIRED)
@@ -121,7 +129,6 @@ configure_file(
   ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
 )
 
-
 include( GNUInstallDirs )
 
 # TARGETS
@@ -136,6 +143,7 @@ set_target_properties( gauxc PROPERTIES EXPORT_NAME gauxc )
 
 set(export_properties
   # currently configurable properties 
+  "GAUXC_HAS_C"
   "GAUXC_HAS_HOST"
   "GAUXC_HAS_DEVICE"
   "GAUXC_HAS_CUDA"
@@ -156,6 +164,7 @@ set(export_properties
 
 set_target_properties(gauxc
   PROPERTIES
+    "GAUXC_HAS_C"          ${GAUXC_HAS_C}
     "GAUXC_HAS_HOST"       ${GAUXC_HAS_HOST}
     "GAUXC_HAS_DEVICE"     ${GAUXC_HAS_DEVICE}
     "GAUXC_HAS_CUDA"       ${GAUXC_HAS_CUDA}
@@ -178,7 +187,7 @@ export(EXPORT gauxc-targets
       NAMESPACE gauxc::
       FILE "${PROJECT_BINARY_DIR}/gauxc-targets.cmake")
 
-# Install static headers
+# Install static C++ headers
 install( 
   DIRECTORY   ${PROJECT_SOURCE_DIR}/include
   DESTINATION .
@@ -190,7 +199,7 @@ install(
   FILES       ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
   DESTINATION include/gauxc
 )
-  
+
    
 # Export target to script
 set( INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/gauxc )
