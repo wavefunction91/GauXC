@@ -20,12 +20,17 @@
 #include <string>
 #include <vector>
 
+#include <unistd.h>  // getpid
+
 #include <gauxc/external/cube.hpp>
 #include <gauxc/orbital_evaluator.hpp>
 #include <gauxc/xc_integrator/local_work_driver.hpp>
 #include <gauxc/gauxc_config.hpp>
 #ifdef GAUXC_HAS_HDF5
 #include <highfive/H5File.hpp>
+#endif
+#ifdef GAUXC_HAS_MPI
+#include <mpi.h>
 #endif
 
 #include "standards.hpp"
@@ -38,9 +43,29 @@ using namespace GauXC;
 namespace {
 
 /// Generate a unique temp path for test files (avoids tmpnam warning).
+/// Includes the PID so concurrent MPI ranks (which share /tmp on a single
+/// node) do not collide on the same file.
 std::string make_temp_path(const char* suffix) {
   static int counter = 0;
-  return std::string("/tmp/gauxc_test_") + std::to_string(++counter) + suffix;
+  return std::string("/tmp/gauxc_test_") + std::to_string(::getpid()) +
+         "_" + std::to_string(++counter) + suffix;
+}
+
+/// Returns true on the root MPI rank (or always when MPI is disabled).
+/// I/O test cases below run only on rank 0 to avoid concurrent ranks racing
+/// on the same /tmp file paths during MPI test runs.
+bool is_root_rank() {
+#ifdef GAUXC_HAS_MPI
+  int rank = 0;
+  int initialized = 0;
+  MPI_Initialized(&initialized);
+  if (initialized) {
+    MPI_Comm_rank(MPI_COMM_WORLD, &rank);
+  }
+  return rank == 0;
+#else
+  return true;
+#endif
 }
 
 /// Build a deterministic PRNG-based set of points within a small bounding box
@@ -256,6 +281,7 @@ TEST_CASE("CubeGrid construction and grid-points layout", "[cube]") {
 }
 
 TEST_CASE("write_cube round-trips header and field data", "[cube]") {
+  if (!is_root_rank()) return;  // I/O on /tmp; avoid MPI rank collisions.
   auto mol = make_water();
   CubeGrid grid = CubeGrid::from_molecule(mol, /*nx=*/5, /*ny=*/4, /*nz=*/7,
                                           /*margin=*/2.0);
@@ -339,6 +365,7 @@ TEST_CASE("write_cube round-trips header and field data", "[cube]") {
 }
 
 TEST_CASE("write_cube agrees with snprintf %13.5E formatting", "[cube]") {
+  if (!is_root_rank()) return;  // I/O on /tmp; avoid MPI rank collisions.
   // Spot-check the custom formatter against snprintf for a battery of values
   // by writing a tiny cube file and parsing it back. This is a stronger check
   // than the round-trip above since we compare the byte stream.
@@ -388,6 +415,7 @@ TEST_CASE("write_cube agrees with snprintf %13.5E formatting", "[cube]") {
 
 #ifdef GAUXC_HAS_HDF5
 TEST_CASE("write_cube_hdf5 round-trip", "[cube]") {
+  if (!is_root_rank()) return;  // I/O on /tmp; avoid MPI rank collisions.
   auto mol = make_water();
   auto grid = CubeGrid::from_molecule(mol, 4, 5, 6);
 
