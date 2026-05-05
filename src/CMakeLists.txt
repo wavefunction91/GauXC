@@ -78,6 +78,36 @@ if( GAUXC_CXX_HAS_WSHADOW )
   target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wshadow> )
 endif()
 
+if(MSVC)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options( gauxc PRIVATE
+      -Wno-covered-switch-default
+      -Wno-documentation
+      -Wno-documentation-unknown-command
+      -Wno-implicit-int-float-conversion
+      -Wno-language-extension-token
+      -Wno-reserved-identifier
+      -Wno-shorten-64-to-32
+      -Wno-sign-compare
+      -Wno-undef
+    )
+  else()
+    target_compile_options( gauxc PRIVATE
+      /W2
+      /wd4100  # unreferenced parameter
+      /wd4101  # unreferenced local variable
+    #   /wd4018  # signed/unsigned mismatch
+    #   /wd4100  # unreferenced parameter
+    #   /wd4189  # unreferenced local variable
+      /wd4242  # 'identifier': conversion from 'type1' to 'type2', possible loss of data
+    #   /wd4388  # signed/unsigned mismatch
+    #   /wd4464  # relative include path contains '..'
+    #   /wd4668  # undefined preprocessor macro
+      /wd5219  # implicit conversion from 'type-1' to 'type-2', possible loss of data
+    )
+  endif()
+endif()
+
 target_link_libraries( gauxc PUBLIC 
   ExchCXX::ExchCXX 
   IntegratorXX::IntegratorXX 
