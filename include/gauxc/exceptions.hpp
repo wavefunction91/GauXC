@@ -54,7 +54,7 @@ class generic_gauxc_exception : public std::exception {
         << "  Line     " << line_  << std::endl;
      auto msg = ss.str();
 
-     return strdup( msg.c_str() );
+     return _strdup( msg.c_str() );
   };
 
 public:
