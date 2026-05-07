@@ -96,13 +96,7 @@ if(MSVC)
       /W2
       /wd4100  # unreferenced parameter
       /wd4101  # unreferenced local variable
-    #   /wd4018  # signed/unsigned mismatch
-    #   /wd4100  # unreferenced parameter
-    #   /wd4189  # unreferenced local variable
       /wd4242  # 'identifier': conversion from 'type1' to 'type2', possible loss of data
-    #   /wd4388  # signed/unsigned mismatch
-    #   /wd4464  # relative include path contains '..'
-    #   /wd4668  # undefined preprocessor macro
       /wd5219  # implicit conversion from 'type-1' to 'type-2', possible loss of data
     )
   endif()
