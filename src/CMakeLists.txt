@@ -119,7 +119,10 @@ if( GAUXC_HAS_MPI )
 endif()
 
 if ( GAUXC_HAS_ONEDFT )
-  target_link_libraries( gauxc PUBLIC "${TORCH_LIBRARIES}" nlohmann_json::nlohmann_json)
+  get_target_property(GAUXC_NLOHMANN_JSON_INCLUDE_DIRS
+    nlohmann_json::nlohmann_json INTERFACE_INCLUDE_DIRECTORIES)
+  target_include_directories(gauxc PRIVATE ${GAUXC_NLOHMANN_JSON_INCLUDE_DIRS})
+  target_link_libraries( gauxc PUBLIC "${TORCH_LIBRARIES}")
 endif()
 
 add_subdirectory( runtime_environment )
