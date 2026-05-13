@@ -10,6 +10,7 @@
 #cmakedefine GAUXC_HAS_CUTLASS
 #cmakedefine GAUXC_HAS_GAU2GRID
 #cmakedefine GAUXC_HAS_HDF5
+#cmakedefine GAUXC_HAS_ONEDFT
 #cmakedefine GAUXC_USE_FAST_RSQRT
 
 #ifdef GAUXC_HAS_HOST
