@@ -27,11 +27,9 @@ module gauxc_integrator
     & gauxc_integrator_eval_exc_gks, &
     & gauxc_integrator_eval_exc_vxc_rks, &
     & gauxc_integrator_eval_exc_vxc_uks, &
-    & gauxc_integrator_eval_exc_vxc_onedft_uks, &
     & gauxc_integrator_eval_exc_vxc_gks, &
     & gauxc_integrator_eval_exc_grad_rks, &
     & gauxc_integrator_eval_exc_grad_uks, &
-    & gauxc_integrator_eval_exc_grad_onedft_uks, &
     & gauxc_integrator_eval_exx_rks, &
     & gauxc_integrator_eval_fxc_contraction_rks, &
     & gauxc_integrator_eval_fxc_contraction_uks
