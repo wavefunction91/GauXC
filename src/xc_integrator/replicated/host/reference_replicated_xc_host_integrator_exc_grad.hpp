@@ -328,9 +328,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     }
 
 
-    // Evaluate X matrix (2 * P * B/Bx/By/Bz) -> store in Z
-    // XXX: This assumes that bfn + gradients are contiguous in memory
-    const auto xmat_fac = is_rks ? 2.0 : 1.0;
+// Evaluate X matrix (P * B/Bx/By/Bz) -> store in Z
+     // XXX: This assumes that bfn + gradients are contiguous in memory
+     const auto xmat_fac = 1.0;
     const int  xmat_len = func.is_lda() ? 1 : 4;
     lwd->eval_xmat( xmat_len*npts, nbf, nbe, submat_map, xmat_fac, Ps, ldps, basis_eval, nbe,
                     xNmat, nbe, nbe_scr );

@@ -1,8 +1,12 @@
 set( GAUXC_LINALG_MODULES_REPOSITORY https://github.com/wavefunction91/linalg-cmake-modules.git )
 set( GAUXC_LINALG_MODULES_REVISION  9d2c273a671d6811e9fd432f6a4fa3d915b144b8 )
 
-set ( GAUXC_NLOHMANN_JSON_URL https://github.com/nlohmann/json/releases/download/v3.12.0/include.zip )
-set ( GAUXC_NLOHMANN_JSON_SHA256 b8cb0ef2dd7f57f18933997c9934bb1fa962594f701cd5a8d3c2c80541559372 )
+if( NOT DEFINED GAUXC_NLOHMANN_JSON_URL )
+  set ( GAUXC_NLOHMANN_JSON_URL https://github.com/nlohmann/json/releases/download/v3.12.0/include.zip )
+endif()
+if( NOT DEFINED GAUXC_NLOHMANN_JSON_SHA256 )
+  set ( GAUXC_NLOHMANN_JSON_SHA256 b8cb0ef2dd7f57f18933997c9934bb1fa962594f701cd5a8d3c2c80541559372 )
+endif()
 
 set( GAUXC_CUB_REPOSITORY https://github.com/NVIDIA/cub.git )
 set( GAUXC_CUB_REVISION   1.10.0 )

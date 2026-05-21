@@ -954,75 +954,33 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     this->load_balancer_->molecule(), feature_keys, rt,
     sendcounts, displs, atom_reorder_inv_perm);
 
-  // Step 3: Forward + backward with grad on points and coords
-  std::vector<double> eps_on_grid_global; // exc_on_grid values for weight derivative
-  std::vector<double> points_grad_global; // [total_npts * 3]
-  std::vector<double> coords_grad_global; // [natoms * 3]
+// Step 3: Forward + backward for density-feature derivatives
+  std::vector<double> eps_on_grid_global;
   const int natoms = this->load_balancer_->molecule().natoms();
 
   if (world_rank == 0) {
-    // Enable requires_grad on points and coords tensors
-    if (features_dict.find(feat_map.at(ONEDFT_FEATURE::POINTS)) != features_dict.end()) {
-      features_dict.at(feat_map.at(ONEDFT_FEATURE::POINTS)).requires_grad_(true);
-    }
-    if (features_dict.find(feat_map.at(ONEDFT_FEATURE::COORDS)) != features_dict.end()) {
-      features_dict.at(feat_map.at(ONEDFT_FEATURE::COORDS)).requires_grad_(true);
-    }
-
-    auto exc_on_grid = get_exc(exc_func, features_dict);
-    if (exc_on_grid.isnan().any().item<bool>()) {
-      GAUXC_GENERIC_EXCEPTION("exc_on_grid has NaN");
-    }
-    auto exc = (exc_on_grid * features_dict.at(feat_map.at(ONEDFT_FEATURE::WEIGHTS))).sum();
-    exc.backward();
-
-    // Extract eps_on_grid for weight derivative term
-    int total_npts = exc_on_grid.size(0);
-    at::Tensor eps_cpu = exc_on_grid.detach().cpu().contiguous();
-    eps_on_grid_global.resize(total_npts);
-    std::memcpy(eps_on_grid_global.data(), eps_cpu.data_ptr<double>(), total_npts * sizeof(double));
-
-    // Extract points.grad() -> per-grid-point forces
-    if (features_dict.find(feat_map.at(ONEDFT_FEATURE::POINTS)) != features_dict.end()) {
-      auto pg = features_dict.at(feat_map.at(ONEDFT_FEATURE::POINTS)).grad();
-      if (pg.defined()) {
-        at::Tensor pg_cpu = pg.cpu().contiguous();
-        points_grad_global.resize(total_npts * 3);
-        std::memcpy(points_grad_global.data(), pg_cpu.data_ptr<double>(), total_npts * 3 * sizeof(double));
+      auto exc_on_grid = get_exc(exc_func, features_dict);
+      if (exc_on_grid.isnan().any().item<bool>()) {
+        GAUXC_GENERIC_EXCEPTION("exc_on_grid has NaN");
       }
-    }
+      auto exc = (exc_on_grid * features_dict.at(feat_map.at(ONEDFT_FEATURE::WEIGHTS))).sum();
+      exc.backward();
 
-    // Extract coords.grad() -> per-atom forces
-    if (features_dict.find(feat_map.at(ONEDFT_FEATURE::COORDS)) != features_dict.end()) {
-      auto cg = features_dict.at(feat_map.at(ONEDFT_FEATURE::COORDS)).grad();
-      if (cg.defined()) {
-        at::Tensor cg_cpu = cg.cpu().contiguous();
-        coords_grad_global.resize(natoms * 3);
-        std::memcpy(coords_grad_global.data(), cg_cpu.data_ptr<double>(), natoms * 3 * sizeof(double));
-      }
-    }
+    // Extract exc_on_grid for the quadrature-weight derivative term.
+      int total_npts = exc_on_grid.size(0);
+      at::Tensor eps_cpu = exc_on_grid.detach().cpu().contiguous();
+      eps_on_grid_global.resize(total_npts);
+      std::memcpy(eps_on_grid_global.data(), eps_cpu.data_ptr<double>(), total_npts * sizeof(double));
 
-    // Reorder eps_on_grid from atom-order back to rank-order for scatter
-    if (!atom_reorder_inv_perm.empty()) {
-      std::vector<double> tmp(total_npts);
-      for (int64_t i = 0; i < total_npts; i++) {
-        tmp[atom_reorder_inv_perm[i]] = eps_on_grid_global[i];
-      }
-      eps_on_grid_global = std::move(tmp);
-
-      // Also reorder points_grad
-      if (!points_grad_global.empty()) {
-        std::vector<double> tmp3(total_npts * 3);
+      // Reorder eps_on_grid from atom-order back to rank-order for scatter
+      if (!atom_reorder_inv_perm.empty()) {
+        std::vector<double> tmp(total_npts);
         for (int64_t i = 0; i < total_npts; i++) {
-          int64_t j = atom_reorder_inv_perm[i];
-          tmp3[j*3+0] = points_grad_global[i*3+0];
-          tmp3[j*3+1] = points_grad_global[i*3+1];
-          tmp3[j*3+2] = points_grad_global[i*3+2];
+          tmp[atom_reorder_inv_perm[i]] = eps_on_grid_global[i];
         }
-        points_grad_global = std::move(tmp3);
+        eps_on_grid_global = std::move(tmp);
       }
     }
-  }
 
   // Step 4: Scatter Vxc back to tasks
   send_buffer_onedft_outputs(2/*ndm*/, features_dict, tasks, rt, sendcounts, displs, atom_reorder_inv_perm);
@@ -1039,34 +997,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Zero out EXC_GRAD
   for (int i = 0; i < 3*natoms; ++i) EXC_GRAD[i] = 0.0;
-
-  // Step 6: Add autograd forces BEFORE Pulay (which re-sorts tasks!)
-  // points.grad gives ∂E/∂r_g. Since grid points move with their parent atom,
-  // the force on atom A = Σ_{g∈A} points_grad[g].
-  // NOTE: Must be done while tasks are still in iParent-sorted order
-  //       (matching points_grad_global layout). exc_grad_local_work_onedft_
-  //       re-sorts tasks by workload, breaking the correspondence.
-  if (!points_grad_global.empty() && world_rank == 0) {
-    size_t offset = 0;
-    for (const auto& task : tasks) {
-      int iParent = task.iParent;
-      for (size_t ipt = 0; ipt < task.points.size(); ++ipt) {
-        EXC_GRAD[3*iParent + 0] += points_grad_global[(offset + ipt)*3 + 0];
-        EXC_GRAD[3*iParent + 1] += points_grad_global[(offset + ipt)*3 + 1];
-        EXC_GRAD[3*iParent + 2] += points_grad_global[(offset + ipt)*3 + 2];
-      }
-      offset += task.points.size();
-    }
-  }
-
-  // coords.grad gives ∂E/∂R_A directly (no task-order dependence)
-  if (!coords_grad_global.empty() && world_rank == 0) {
-    for (int a = 0; a < natoms; ++a) {
-      EXC_GRAD[3*a + 0] += coords_grad_global[3*a + 0];
-      EXC_GRAD[3*a + 1] += coords_grad_global[3*a + 1];
-      EXC_GRAD[3*a + 2] += coords_grad_global[3*a + 2];
-    }
-  }
 
   // Step 5: Pulay + weight derivative term (re-sorts tasks internally!)
   this->timer_.time_op("XCIntegrator.LocalWork2", [&](){
