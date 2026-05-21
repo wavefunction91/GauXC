@@ -810,7 +810,7 @@ eval_exc_grad_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
     // Keep on device for model inference
     int64_t max_grid_size = *std::max_element(
       atomic_grid_sizes_vec.begin(), atomic_grid_sizes_vec.end());
-    // For gradient, density-feature derivatives are evaluated on CPU tensors.
+    // For gradient, we need CPU tensors since we need requires_grad on points/coords
     // Retrieve features to host
     std::vector<double> grid_weights(total_npts), grid_coords(total_npts * 3);
     den_eval.resize(total_npts * ndm);
@@ -875,33 +875,76 @@ eval_exc_grad_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
     }
   }
 
-// Phase 3: Forward + backward for density-feature derivatives
+  // Phase 3: Forward + backward with requires_grad on POINTS and COORDS
   std::vector<double> eps_on_grid_global;
+  std::vector<double> points_grad_global;
+  std::vector<double> coords_grad_global;
 
   if (world_rank == 0) {
-      auto exc_on_grid = get_exc(exc_func, features_dict);
-      if (exc_on_grid.isnan().any().item<bool>()) {
-        GAUXC_GENERIC_EXCEPTION("exc_on_grid has NaN");
-      }
-      auto exc = (exc_on_grid * features_dict.at(feat_map.at(ONEDFT_FEATURE::WEIGHTS))).sum();
-      exc.backward();
+    // Enable requires_grad on points and coords
+    if (features_dict.find(feat_map.at(ONEDFT_FEATURE::POINTS)) != features_dict.end()) {
+      features_dict.at(feat_map.at(ONEDFT_FEATURE::POINTS)).requires_grad_(true);
+    }
+    if (features_dict.find(feat_map.at(ONEDFT_FEATURE::COORDS)) != features_dict.end()) {
+      features_dict.at(feat_map.at(ONEDFT_FEATURE::COORDS)).requires_grad_(true);
+    }
 
-    // Extract exc_on_grid for the quadrature-weight derivative.
-      int total_npts_model = exc_on_grid.size(0);
-      at::Tensor eps_cpu = exc_on_grid.detach().cpu().contiguous();
-      eps_on_grid_global.resize(total_npts_model);
-      std::memcpy(eps_on_grid_global.data(), eps_cpu.data_ptr<double>(),
-                  total_npts_model * sizeof(double));
+    auto exc_on_grid = get_exc(exc_func, features_dict);
+    if (exc_on_grid.isnan().any().item<bool>()) {
+      GAUXC_GENERIC_EXCEPTION("exc_on_grid has NaN");
+    }
+    auto exc = (exc_on_grid * features_dict.at(feat_map.at(ONEDFT_FEATURE::WEIGHTS))).sum();
+    exc.backward();
 
-    // Reorder eps_on_grid from atom-order back to rank-order
-      if (!atom_reorder_inv_perm.empty()) {
-        std::vector<double> tmp(total_npts_model);
-        for (int64_t i = 0; i < total_npts_model; i++) {
-          tmp[atom_reorder_inv_perm[i]] = eps_on_grid_global[i];
-        }
-        eps_on_grid_global = std::move(tmp);
+    // Extract eps_on_grid for weight derivative
+    int total_npts_model = exc_on_grid.size(0);
+    at::Tensor eps_cpu = exc_on_grid.detach().cpu().contiguous();
+    eps_on_grid_global.resize(total_npts_model);
+    std::memcpy(eps_on_grid_global.data(), eps_cpu.data_ptr<double>(),
+                total_npts_model * sizeof(double));
+
+    // Extract points.grad()
+    if (features_dict.find(feat_map.at(ONEDFT_FEATURE::POINTS)) != features_dict.end()) {
+      auto pg = features_dict.at(feat_map.at(ONEDFT_FEATURE::POINTS)).grad();
+      if (pg.defined()) {
+        at::Tensor pg_cpu = pg.cpu().contiguous();
+        points_grad_global.resize(total_npts_model * 3);
+        std::memcpy(points_grad_global.data(), pg_cpu.data_ptr<double>(),
+                    total_npts_model * 3 * sizeof(double));
       }
     }
+
+    // Extract coords.grad()
+    if (features_dict.find(feat_map.at(ONEDFT_FEATURE::COORDS)) != features_dict.end()) {
+      auto cg = features_dict.at(feat_map.at(ONEDFT_FEATURE::COORDS)).grad();
+      if (cg.defined()) {
+        at::Tensor cg_cpu = cg.cpu().contiguous();
+        coords_grad_global.resize(natoms * 3);
+        std::memcpy(coords_grad_global.data(), cg_cpu.data_ptr<double>(),
+                    natoms * 3 * sizeof(double));
+      }
+    }
+
+    // Reorder eps_on_grid and points_grad from atom-order back to rank-order
+    if (!atom_reorder_inv_perm.empty()) {
+      std::vector<double> tmp(total_npts_model);
+      for (int64_t i = 0; i < total_npts_model; i++) {
+        tmp[atom_reorder_inv_perm[i]] = eps_on_grid_global[i];
+      }
+      eps_on_grid_global = std::move(tmp);
+
+      if (!points_grad_global.empty()) {
+        std::vector<double> tmp3(total_npts_model * 3);
+        for (int64_t i = 0; i < total_npts_model; i++) {
+          int64_t j = atom_reorder_inv_perm[i];
+          tmp3[j*3+0] = points_grad_global[i*3+0];
+          tmp3[j*3+1] = points_grad_global[i*3+1];
+          tmp3[j*3+2] = points_grad_global[i*3+2];
+        }
+        points_grad_global = std::move(tmp3);
+      }
+    }
+  }
 
   // Phase 4: Send OneDFT Vxc outputs back to device
   if (world_size == 1) {
@@ -1074,6 +1117,31 @@ eval_exc_grad_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
   double N_EL;
   device_data_ptr->retrieve_exc_grad_integrands( EXC_GRAD, &N_EL );
   rt.device_backend()->master_queue_synchronize();
+
+  // Phase 6: Add autograd forces (points -> parent atoms, coords -> direct)
+  if (!points_grad_global.empty() && world_rank == 0) {
+    size_t pg_offset = 0;
+    // Iterate in iParent order — re-sort tasks
+    std::stable_sort(tasks.begin(), tasks.end(),
+      [](const auto& a, const auto& b) { return a.iParent < b.iParent; });
+    for (const auto& task : tasks) {
+      int iParent = task.iParent;
+      for (size_t ipt = 0; ipt < task.points.size(); ++ipt) {
+        EXC_GRAD[3*iParent + 0] += points_grad_global[(pg_offset + ipt)*3 + 0];
+        EXC_GRAD[3*iParent + 1] += points_grad_global[(pg_offset + ipt)*3 + 1];
+        EXC_GRAD[3*iParent + 2] += points_grad_global[(pg_offset + ipt)*3 + 2];
+      }
+      pg_offset += task.points.size();
+    }
+  }
+
+  if (!coords_grad_global.empty() && world_rank == 0) {
+    for (int a = 0; a < natoms; ++a) {
+      EXC_GRAD[3*a + 0] += coords_grad_global[3*a + 0];
+      EXC_GRAD[3*a + 1] += coords_grad_global[3*a + 1];
+      EXC_GRAD[3*a + 2] += coords_grad_global[3*a + 2];
+    }
+  }
 
   // Phase 7: Allreduce
   this->timer_.time_op("XCIntegrator.Allreduce", [&](){
