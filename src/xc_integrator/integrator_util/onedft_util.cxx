@@ -435,11 +435,6 @@ AtomReorderResult mpi_gather_and_reorder(
     if (rt.comm_size() > 1) {
       total_npts = mpi_gather_onedft_inputs(den_eval, dden_eval, tau, grid_coords,
         grid_weights, total_npts, world_rank, rt.comm_size(), sendcounts, displs);
-    }
-   );
-
-  GAUXC_MPI_CODE(
-    if (rt.comm_size() > 1) {
       int world_size = rt.comm_size();
 
       // Gather per-rank per-atom sizes to rank 0
@@ -641,11 +636,6 @@ AtomReorderResult mpi_gather_and_reorder_gpu(
     if (rt.comm_size() > 1) {
       total_npts = mpi_gather_onedft_inputs_gpu(den_eval, dden_eval, tau, grid_coords,
         grid_weights, total_npts, world_rank, rt.comm_size(), sendcounts, displs);
-    }
-   );
-
-  GAUXC_MPI_CODE(
-    if (rt.comm_size() > 1) {
       int world_size = rt.comm_size();
 
       std::vector<int64_t> all_rank_atom_sizes(world_rank == 0 ? world_size * natoms : 0);
