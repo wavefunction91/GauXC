@@ -3,8 +3,6 @@
 #ifdef GAUXC_HAS_CUDA
 #include <cuda_runtime.h>
 #endif
-#include <algorithm>
-#include <cctype>
 #include <iostream>
 #include <map>
 #include <gauxc/exceptions.hpp>
@@ -43,36 +41,21 @@ std::string map_model(const std::string& model, torch::DeviceType device) {
             GAUXC_GENERIC_EXCEPTION("Neither GAUXC_ONEDFT_MODEL_PATH nor GAUXC_ONEDFT_MODEL_PATH_INSTALL exist");
         }
     }
-if (std::filesystem::exists(model_path + "/" + model)) {
-         return model_path + "/" + model;
-     }
-     std::string model_key = model;
-     std::transform(model_key.begin(), model_key.end(), model_key.begin(),
-                    [](unsigned char c){ return std::toupper(c); });
-     const auto resolve_model_file = [&](const std::string& filename) {
-         const std::string source_path = model_path + "/" + filename;
-         if (std::filesystem::exists(source_path)) {
-             return source_path;
-         }
-         const std::string install_path = std::string(GAUXC_ONEDFT_MODEL_PATH_INSTALL) + "/" + filename;
-         if (std::filesystem::exists(install_path)) {
-             return install_path;
-         }
-         GAUXC_GENERIC_EXCEPTION("Model " + filename + " not found in " + model_path +
-             " or " + std::string(GAUXC_ONEDFT_MODEL_PATH_INSTALL));
-     };
-      // check if model is in the form of "PBE", "TPSS", "LDA", "ONEDFT"
-     if (model_key == "PBE") {
-         return resolve_model_file("pbe.fun");
-     } else if (model_key == "TPSS") {
-         return resolve_model_file("tpss.fun");
-     } else if (model_key == "LDA") {
-         return resolve_model_file("lda.fun");
-     } else if (model_key == "SKALA" || model_key == "SKALA-1.1" || model_key == "SKALA_1.1") {
-         return resolve_model_file("skala-1.1.fun");
-     } else {
-         GAUXC_GENERIC_EXCEPTION("Model " + model + " not found in " + model_path);
-     }
+    if (std::filesystem::exists(model_path + "/" + model)) {
+        return model_path + "/" + model;
+    }
+    // check if model is in the form of "PBE", "TPSS", "LDA", "ONEDFT"
+    if (model == "PBE") {
+        return model_path + "/pbe.fun";
+    } else if (model == "TPSS") {
+        return model_path + "/tpss.fun";
+    } else if (model == "LDA") {
+        return model_path + "/lda.fun";
+    } else if (model == "SKALA") {
+        GAUXC_GENERIC_EXCEPTION("To use the Skala functional, specify a local checkpoint path.");
+    } else {
+        GAUXC_GENERIC_EXCEPTION("Model " + model + " not found in " + model_path);
+    }
 }
 
 std::tuple<torch::jit::Method, std::vector<std::string>>
