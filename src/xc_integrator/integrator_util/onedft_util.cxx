@@ -432,9 +432,11 @@ AtomReorderResult mpi_gather_and_reorder(
   int world_rank = rt.comm_rank();
 
   GAUXC_MPI_CODE(
-    total_npts = mpi_gather_onedft_inputs(den_eval, dden_eval, tau, grid_coords,
-      grid_weights, total_npts, world_rank, rt.comm_size(), sendcounts, displs);
-  );
+    if (rt.comm_size() > 1) {
+      total_npts = mpi_gather_onedft_inputs(den_eval, dden_eval, tau, grid_coords,
+        grid_weights, total_npts, world_rank, rt.comm_size(), sendcounts, displs);
+    }
+   );
 
   GAUXC_MPI_CODE(
     if (rt.comm_size() > 1) {
@@ -636,9 +638,11 @@ AtomReorderResult mpi_gather_and_reorder_gpu(
   bool is_mgga = !tau.empty();
 
   GAUXC_MPI_CODE(
-    total_npts = mpi_gather_onedft_inputs_gpu(den_eval, dden_eval, tau, grid_coords,
-      grid_weights, total_npts, world_rank, rt.comm_size(), sendcounts, displs);
-  );
+    if (rt.comm_size() > 1) {
+      total_npts = mpi_gather_onedft_inputs_gpu(den_eval, dden_eval, tau, grid_coords,
+        grid_weights, total_npts, world_rank, rt.comm_size(), sendcounts, displs);
+    }
+   );
 
   GAUXC_MPI_CODE(
     if (rt.comm_size() > 1) {
