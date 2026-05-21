@@ -243,7 +243,7 @@ namespace GauXC::detail {
       else if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
       else                     lwd->eval_collocation( &device_data );
         
-      const double xmat_fac = 1.0;
+      const double xmat_fac = is_rks ? 2.0 : 1.0;
       const bool need_xmat_grad = func.is_mgga();
 
       // Evaluate X matrix and V vars

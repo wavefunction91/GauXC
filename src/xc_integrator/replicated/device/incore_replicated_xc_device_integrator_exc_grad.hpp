@@ -221,7 +221,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     else                         lwd->eval_collocation_gradient( &device_data );
 
     // Evaluate X matrix and V vars
-    const auto xmat_fac = 1.0;
+    const auto xmat_fac = is_rks ? 2.0 : 1.0;
     const auto need_lapl = func.needs_laplacian();
     const auto need_xmat_grad = not func.is_lda();
     auto do_xmat_vvar = [&](density_id den_id) {
