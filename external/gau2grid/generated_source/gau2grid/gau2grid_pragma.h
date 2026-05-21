@@ -64,19 +64,10 @@
     #define PRAGMA_VECTORIZE                                 _Pragma("GCC ivdep")
     #define PRAGMA_RESTRICT                                  __restrict__
 
-#if (defined(__GNUC__) || defined(__GNUG__)) && \
-    !defined(__APPLE__) && !defined(__clang__)
-static inline void* gg_aligned_alloc(const size_t alignment, const size_t size) {
-    const size_t aligned_size =
-        ((size + alignment - 1) / alignment) * alignment;
-    return aligned_alloc(alignment, aligned_size);
-}
-#endif
-
 #elif defined(__GNUC__) || defined(__GNUG__)
     // pragmas for GCC
 
-    #define ALIGNED_MALLOC(alignment, size)                  gg_aligned_alloc(alignment, size)
+    #define ALIGNED_MALLOC(alignment, size)                  aligned_alloc(alignment, size)
     #define ALIGNED_FREE(ptr)                                free(ptr)
     #define ASSUME_ALIGNED(ptr, width)
 
