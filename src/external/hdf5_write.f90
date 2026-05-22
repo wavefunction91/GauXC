@@ -76,9 +76,9 @@ contains
     character(kind=c_char), allocatable :: c_fname(:)
     character(kind=c_char), allocatable :: c_dset(:)
 
-    c_fname = transfer(fname // c_null_char, [character(kind=c_char) ::], &
+    c_fname = transfer(TRIM(fname) // c_null_char, [character(kind=c_char) ::], &
       & len(fname) + 1)
-    c_dset = transfer(dset // c_null_char, [character(kind=c_char) ::], &
+    c_dset = transfer(TRIM(dset) // c_null_char, [character(kind=c_char) ::], &
       & len(dset) + 1)
 
     call gauxc_molecule_write_hdf5_record_c(status, mol, c_fname, c_dset)
@@ -98,9 +98,9 @@ contains
     character(kind=c_char), allocatable :: c_fname(:)
     character(kind=c_char), allocatable :: c_dset(:)
 
-    c_fname = transfer(fname // c_null_char, [character(kind=c_char) ::], &
+    c_fname = transfer(TRIM(fname) // c_null_char, [character(kind=c_char) ::], &
       & len(fname) + 1)
-    c_dset = transfer(dset // c_null_char, [character(kind=c_char) ::], &
+    c_dset = transfer(TRIM(dset) // c_null_char, [character(kind=c_char) ::], &
       & len(dset) + 1)
 
     call gauxc_basisset_write_hdf5_record_c(status, basis, c_fname, c_dset)
