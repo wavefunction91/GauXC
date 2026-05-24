@@ -71,6 +71,7 @@ int main(int argc, char** argv) {
     bool integrate_vxc      = true;
     bool integrate_exx      = false;
     bool integrate_exc_grad = false;
+    bool rks_density_matrix_is_spin_summed = false;
     bool integrate_dd_psi   = false;
     bool integrate_dd_psi_potential  = false;
     bool integrate_fxc_contraction   = false;
@@ -111,6 +112,7 @@ int main(int argc, char** argv) {
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_VXC",      integrate_vxc,      bool );
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_EXX",      integrate_exx,      bool );
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_EXC_GRAD", integrate_exc_grad, bool );
+    OPTIONAL_KEYWORD( "GAUXC.RKS_DENSITY_MATRIX_IS_SPIN_SUMMED", rks_density_matrix_is_spin_summed, bool );
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_DD_PSI",   integrate_dd_psi,   bool );
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_DD_PSI_POTENTIAL",   integrate_dd_psi_potential,   bool );
     OPTIONAL_KEYWORD( "GAUXC.INTEGRATE_FXC_CONTRACTION",   integrate_fxc_contraction,   bool );
@@ -469,7 +471,9 @@ int main(int argc, char** argv) {
 
     if( integrate_vxc ) {
       if( rks ) {
-        std::tie(EXC, VXC) = integrator.eval_exc_vxc( P );
+        IntegratorSettingsKS ks_settings;
+        ks_settings.rks_density_matrix_is_spin_summed = rks_density_matrix_is_spin_summed;
+        std::tie(EXC, VXC) = integrator.eval_exc_vxc( P, ks_settings );
       }
       else if ( uks ) {
         std::tie(EXC, VXC, VXCz) = integrator.eval_exc_vxc( P, Pz );
@@ -493,11 +497,13 @@ int main(int argc, char** argv) {
 
     std::vector<double> EXC_GRAD;
     if( integrate_exc_grad ) {
+      IntegratorSettingsEXC_GRAD exc_grad_settings;
+      exc_grad_settings.rks_density_matrix_is_spin_summed = rks_density_matrix_is_spin_summed;
       if( rks ) {
-        EXC_GRAD = integrator.eval_exc_grad( P );
+        EXC_GRAD = integrator.eval_exc_grad( P, exc_grad_settings );
       }
       else if( uks ) {
-        EXC_GRAD = integrator.eval_exc_grad( P, Pz );
+        EXC_GRAD = integrator.eval_exc_grad( P, Pz, exc_grad_settings );
       }
       else if( gks ) {
         std::cout << "Warning: eval_exc_grad + GKS NYI!" << std::endl;

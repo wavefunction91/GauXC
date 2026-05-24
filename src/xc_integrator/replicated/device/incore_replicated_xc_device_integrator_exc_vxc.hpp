@@ -110,8 +110,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     // If we can do reductions on the device (e.g. NCCL)
     // Don't communicate data back to the host before reduction
     this->timer_.time_op("XCIntegrator.LocalWork_EXC_VXC", [&](){
-      exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx, tasks.begin(), tasks.end(), 
-        *device_data_ptr, true);
+      exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx, tasks.begin(), tasks.end(),
+        *device_data_ptr, true, settings);
     });
 
     GAUXC_MPI_CODE(
@@ -177,7 +177,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     this->timer_.time_op("XCIntegrator.LocalWork_EXC_VXC", [&](){
       exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx,
                                 VXCs, ldvxcs, VXCz, ldvxcz, VXCy, ldvxcy, VXCx, ldvxcx, EXC, 
-                              &N_EL, tasks.begin(), tasks.end(), *device_data_ptr);
+                              &N_EL, tasks.begin(), tasks.end(), *device_data_ptr, settings);
     });
 
     GAUXC_MPI_CODE(
@@ -225,7 +225,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                             const value_type* Py, int64_t ldpy,
                             const value_type* Px, int64_t ldpx,
                             host_task_iterator task_begin, host_task_iterator task_end,
-                            XCDeviceData& device_data, bool do_vxc ) {
+                            XCDeviceData& device_data, bool do_vxc,
+                            const IntegratorSettingsXC& settings ) {
   const bool is_gks = (Pz != nullptr) and (Py != nullptr) and (Px != nullptr);
   const bool is_uks = (Pz != nullptr) and (Py == nullptr) and (Px == nullptr);
   const bool is_rks = (Ps != nullptr) and (not is_uks and not is_gks);
@@ -242,6 +243,11 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   const auto& mol   = this->load_balancer_->molecule();
 
   if( func.is_mgga() and is_gks ) GAUXC_GENERIC_EXCEPTION("GKS mGGAs NYI!");
+
+  IntegratorSettingsKS ks_settings;
+  if( auto* tmp = dynamic_cast<const IntegratorSettingsKS*>(&settings) ) {
+    ks_settings = *tmp;
+  }
 
   // Get basis map
   BasisSetMap basis_map(basis,mol);
@@ -312,7 +318,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     else if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
     else                     lwd->eval_collocation( &device_data );
       
-    const double xmat_fac = is_rks ? 2.0 : 1.0;
+    const double xmat_fac =
+      (is_rks and not ks_settings.rks_density_matrix_is_spin_summed) ? 2.0 : 1.0;
     const bool need_xmat_grad = func.is_mgga();
 
     // Evaluate X matrix and V vars
@@ -396,11 +403,12 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
                             value_type* VXCy, int64_t ldvxcy,
                             value_type* VXCx, int64_t ldvxcx, value_type* EXC, value_type *N_EL,
                             host_task_iterator task_begin, host_task_iterator task_end,
-                            XCDeviceData& device_data ) {
+                            XCDeviceData& device_data, const IntegratorSettingsXC& settings ) {
   
   // Get integrate and keep data on device
   const bool do_vxc = VXCs;
-  exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx, task_begin, task_end, device_data, do_vxc );
+  exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx,
+                       task_begin, task_end, device_data, do_vxc, settings );
   auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
   rt.device_backend()->master_queue_synchronize();
 
@@ -414,4 +422,3 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
 }
 }
-

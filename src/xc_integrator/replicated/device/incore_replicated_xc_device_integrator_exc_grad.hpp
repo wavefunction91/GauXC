@@ -168,6 +168,10 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   IntegratorSettingsEXC_GRAD exc_grad_settings;
   if( auto* tmp = dynamic_cast<const IntegratorSettingsEXC_GRAD*>(&settings) ) {
     exc_grad_settings = *tmp;
+  } else if( auto* ks_tmp = dynamic_cast<const IntegratorSettingsKS*>(&settings) ) {
+    exc_grad_settings.gks_dtol = ks_tmp->gks_dtol;
+    exc_grad_settings.rks_density_matrix_is_spin_summed =
+      ks_tmp->rks_density_matrix_is_spin_summed;
   }
 
   // Check that Partition Weights have been calculated
@@ -221,7 +225,8 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     else                         lwd->eval_collocation_gradient( &device_data );
 
     // Evaluate X matrix and V vars
-    const auto xmat_fac = is_rks ? 2.0 : 1.0;
+    const auto xmat_fac =
+      (is_rks and not exc_grad_settings.rks_density_matrix_is_spin_summed) ? 2.0 : 1.0;
     const auto need_lapl = func.needs_laplacian();
     const auto need_xmat_grad = not func.is_lda();
     auto do_xmat_vvar = [&](density_id den_id) {

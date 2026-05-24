@@ -85,7 +85,7 @@ namespace GauXC::detail {
       // Don't communicate data back to the host before reduction
       this->timer_.time_op("XCIntegrator.LocalWork_FXC", [&](){
         fxc_contraction_local_work_( basis, Ps, ldps, Pz, ldpz, tPs, ldtps, tPz, ldtpz,
-          tasks.begin(), tasks.end(), *device_data_ptr);
+          tasks.begin(), tasks.end(), *device_data_ptr, ks_settings);
       });
 
       GAUXC_MPI_CODE(
@@ -127,7 +127,8 @@ namespace GauXC::detail {
       // data from device 
       this->timer_.time_op("XCIntegrator.LocalWork_FXC", [&](){
         fxc_contraction_local_work_( basis, Ps, ldps, Pz, ldpz, tPs, ldtps, tPz, ldtpz, &N_EL, 
-                              FXCs, ldfxcs, FXCz, ldfxcz, tasks.begin(), tasks.end(), *device_data_ptr);
+                              FXCs, ldfxcs, FXCz, ldfxcz, tasks.begin(), tasks.end(), *device_data_ptr,
+                              ks_settings);
       });
 
       GAUXC_MPI_CODE(
@@ -160,7 +161,7 @@ namespace GauXC::detail {
                             const value_type* tPs, int64_t ldtps,
                             const value_type* tPz, int64_t ldtpz,
                             host_task_iterator task_begin, host_task_iterator task_end,
-                            XCDeviceData& device_data) {
+                            XCDeviceData& device_data, const IntegratorSettingsXC& settings) {
     const bool is_uks = (Pz != nullptr);
     const bool is_rks = !is_uks;
     if (not is_rks and not is_uks) {
@@ -174,6 +175,11 @@ namespace GauXC::detail {
     // Setup Aliases
     const auto& func  = *this->func_;
     const auto& mol   = this->load_balancer_->molecule();
+
+    IntegratorSettingsKS ks_settings;
+    if( auto* tmp = dynamic_cast<const IntegratorSettingsKS*>(&settings) ) {
+      ks_settings = *tmp;
+    }
 
     // Get basis map
     BasisSetMap basis_map(basis,mol);
@@ -243,7 +249,8 @@ namespace GauXC::detail {
       else if( func.is_gga() ) lwd->eval_collocation_gradient( &device_data );
       else                     lwd->eval_collocation( &device_data );
         
-      const double xmat_fac = is_rks ? 2.0 : 1.0;
+      const double xmat_fac =
+        (is_rks and not ks_settings.rks_density_matrix_is_spin_summed) ? 2.0 : 1.0;
       const bool need_xmat_grad = func.is_mgga();
 
       // Evaluate X matrix and V vars
@@ -327,11 +334,11 @@ namespace GauXC::detail {
                             value_type* FXCs, int64_t ldfxcs,
                             value_type* FXCz, int64_t ldfxcz,
                             host_task_iterator task_begin, host_task_iterator task_end,
-                            XCDeviceData& device_data ) {
+                            XCDeviceData& device_data, const IntegratorSettingsXC& settings ) {
     
     // Get integrate and keep data on device
     fxc_contraction_local_work_( basis, Ps, ldps, Pz, ldpz, tPs, ldtps, tPz, ldtpz, 
-                              task_begin, task_end, device_data);
+                              task_begin, task_end, device_data, settings);
     auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
     rt.device_backend()->master_queue_synchronize();
 

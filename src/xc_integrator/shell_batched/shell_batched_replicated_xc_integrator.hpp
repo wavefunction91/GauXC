@@ -133,7 +133,9 @@ protected:
                             value_type* VXCy, int64_t ldvxcy,
                             value_type* VXCx, int64_t ldvxcx,
                             value_type* EXC, value_type *N_EL,
-                            host_task_iterator task_begin, host_task_iterator task_end, incore_integrator_type& incore_integrator
+                            host_task_iterator task_begin, host_task_iterator task_end,
+                            incore_integrator_type& incore_integrator,
+                            const IntegratorSettingsXC& ks_settings
                              );
 
 
@@ -146,7 +148,9 @@ protected:
                            value_type* VXCz, int64_t ldvxcz,
                            value_type* VXCy, int64_t ldvxcy,
                            value_type* VXCx, int64_t ldvxcx,
-                           value_type* EXC, value_type* N_EL, incore_integrator_type& incore_integrator);
+                           value_type* EXC, value_type* N_EL,
+                           incore_integrator_type& incore_integrator,
+                           const IntegratorSettingsXC& ks_settings);
 public:
 
   template <typename... Args>
