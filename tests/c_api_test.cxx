@@ -1169,6 +1169,34 @@ TEST_CASE("C-API XCIntegrator", "[c-api]") {
     p.cleanup();
   }
 
+  SECTION("eval_exc_rks with spin-summed density (Benzene / SVWN5 / cc-pVDZ)") {
+    std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf.hdf5";
+    auto p = make_c_api_pipeline(ref_file, "SVWN5");
+
+    HighFive::File file(ref_file, HighFive::File::ReadOnly);
+    auto dset = file.getDataSet("/DENSITY");
+    auto dims = dset.getDimensions();
+    int64_t m = dims[0], n = dims[1];
+    std::vector<double> P(m * n);
+    dset.read(P.data());
+    for(auto& x : P) x *= 2.0;
+
+    double EXC_ref;
+    file.getDataSet("/EXC").read(&EXC_ref);
+
+    C::GauXCKSSettings settings{};
+    settings.gks_dtol = 1e-12;
+    settings.rks_density_matrix_is_spin_summed = true;
+
+    double exc = 0.0;
+    C::gauxc_integrator_eval_exc_rks_with_settings(
+      &p.status, p.integrator, m, n, P.data(), m, &settings, &exc);
+    CHECK(p.status.code == 0);
+    CHECK(exc == Approx(EXC_ref));
+
+    p.cleanup();
+  }
+
   SECTION("eval_exc_vxc_rks (Benzene / SVWN5 / cc-pVDZ)") {
     std::string ref_file = GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf.hdf5";
     auto p = make_c_api_pipeline(ref_file, "SVWN5");

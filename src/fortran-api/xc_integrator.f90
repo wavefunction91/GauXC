@@ -50,6 +50,12 @@ module gauxc_integrator
     type(c_ptr) :: ptr = c_null_ptr
   end type gauxc_integrator_type
 
+  !> @brief Settings for Kohn-Sham XC integrations
+  type, bind(c), public :: gauxc_ks_settings_type
+    real(c_double) :: gks_dtol
+    logical(c_bool) :: rks_density_matrix_is_spin_summed
+  end type gauxc_ks_settings_type
+
   interface gauxc_delete
     !> @brief Delete an XCIntegrator instance.
     subroutine gauxc_integrator_delete(status, integrator) bind(c)
@@ -136,6 +142,28 @@ module gauxc_integrator
       !> @param exc Pointer to store the exchange-correlation energy.
       real(c_double), intent(out) :: exc
     end subroutine gauxc_integrator_eval_exc_rks_c
+    subroutine gauxc_integrator_eval_exc_rks_with_settings_c(status, integrator, m, n, density_matrix, &
+        & ldp, settings, exc) &
+        & bind(c, name="gauxc_integrator_eval_exc_rks_with_settings")
+      import :: gauxc_status_type, gauxc_integrator_type, gauxc_ks_settings_type, c_double, c_int64_t
+      implicit none
+      !> @param status Status object to capture any errors.
+      type(gauxc_status_type), intent(inout) :: status
+      !> @param integrator Handle to the XCIntegrator.
+      type(gauxc_integrator_type), value :: integrator
+      !> @param m Number of rows in the density matrix.
+      integer(c_int64_t), value :: m
+      !> @param n Number of columns in the density matrix.
+      integer(c_int64_t), value :: n
+      !> @param density_matrix Pointer to the density matrix data.
+      real(c_double), intent(in) :: density_matrix(ldp, *)
+      !> @param ldp Leading dimension of the density matrix.
+      integer(c_int64_t), value :: ldp
+      !> @param settings Kohn-Sham integration settings.
+      type(gauxc_ks_settings_type), intent(in) :: settings
+      !> @param exc Pointer to store the exchange-correlation energy.
+      real(c_double), intent(out) :: exc
+    end subroutine gauxc_integrator_eval_exc_rks_with_settings_c
     module procedure gauxc_integrator_eval_exc_rks
 
     !> @brief Evaluate the exchange-correlation energy for UKS.
@@ -228,6 +256,32 @@ module gauxc_integrator
       !> @param ldvxc Leading dimension of the potential matrix.
       integer(c_int64_t), value :: ldvxc
     end subroutine gauxc_integrator_eval_exc_vxc_rks_c
+    subroutine gauxc_integrator_eval_exc_vxc_rks_with_settings_c(status, integrator, m, n, &
+        & density_matrix, ldp, settings, exc, vxc_matrix, ldvxc) &
+        & bind(c, name="gauxc_integrator_eval_exc_vxc_rks_with_settings")
+      import :: gauxc_status_type, gauxc_integrator_type, gauxc_ks_settings_type, c_double, c_int64_t
+      implicit none
+      !> @param status Status object to capture any errors.
+      type(gauxc_status_type), intent(inout) :: status
+      !> @param integrator Handle to the XCIntegrator.
+      type(gauxc_integrator_type), value :: integrator
+      !> @param m Number of rows in the density matrix.
+      integer(c_int64_t), value :: m
+      !> @param n Number of columns in the density matrix.
+      integer(c_int64_t), value :: n
+      !> @param density_matrix Pointer to the density matrix data.
+      real(c_double), intent(in) :: density_matrix(ldp, *)
+      !> @param ldp Leading dimension of the density matrix.
+      integer(c_int64_t), value :: ldp
+      !> @param settings Kohn-Sham integration settings.
+      type(gauxc_ks_settings_type), intent(in) :: settings
+      !> @param exc Pointer to store the exchange-correlation energy.
+      real(c_double), intent(out) :: exc
+      !> @param vxc_matrix Pointer to the potential matrix data.
+      real(c_double), intent(out) :: vxc_matrix(ldvxc, *)
+      !> @param ldvxc Leading dimension of the potential matrix.
+      integer(c_int64_t), value :: ldvxc
+    end subroutine gauxc_integrator_eval_exc_vxc_rks_with_settings_c
     module procedure gauxc_integrator_eval_exc_vxc_rks
 
     !> @brief Evaluate the exchange-correlation energy and potential for UKS.
@@ -378,6 +432,28 @@ module gauxc_integrator
       !> @param exc_grad Pointer to the gradient.
       real(c_double), intent(out) :: exc_grad(*)
     end subroutine gauxc_integrator_eval_exc_grad_rks_c
+    subroutine gauxc_integrator_eval_exc_grad_rks_with_settings_c(status, integrator, m, n, &
+        & density_matrix, ldp, settings, exc_grad) &
+        & bind(c, name="gauxc_integrator_eval_exc_grad_rks_with_settings")
+      import :: gauxc_status_type, gauxc_integrator_type, gauxc_ks_settings_type, c_double, c_int64_t
+      implicit none
+      !> @param status Status object to capture any errors.
+      type(gauxc_status_type), intent(inout) :: status
+      !> @param integrator Handle to the XCIntegrator.
+      type(gauxc_integrator_type), value :: integrator
+      !> @param m Number of rows in the density matrix.
+      integer(c_int64_t), value :: m
+      !> @param n Number of columns in the density matrix.
+      integer(c_int64_t), value :: n
+      !> @param density_matrix Pointer to the density matrix data.
+      real(c_double), intent(in) :: density_matrix(ldp, *)
+      !> @param ldp Leading dimension of the density matrix.
+      integer(c_int64_t), value :: ldp
+      !> @param settings Kohn-Sham integration settings.
+      type(gauxc_ks_settings_type), intent(in) :: settings
+      !> @param exc_grad Pointer to the gradient.
+      real(c_double), intent(out) :: exc_grad(*)
+    end subroutine gauxc_integrator_eval_exc_grad_rks_with_settings_c
     module procedure gauxc_integrator_eval_exc_grad_rks
 
     subroutine gauxc_integrator_eval_exc_grad_uks_c(status, integrator, m, n, &
@@ -487,6 +563,34 @@ module gauxc_integrator
       !> @param ldfxc Leading dimension of the fxc contraction matrix.
       integer(c_int64_t), value :: ldfxc
     end subroutine gauxc_integrator_eval_fxc_contraction_rks_c
+    subroutine gauxc_integrator_eval_fxc_contraction_rks_with_settings_c(status, integrator, m, n, &
+        & density_matrix, ldp, t_density_matrix, ldtp, settings, fxc_contraction_matrix, ldfxc) &
+        & bind(c, name="gauxc_integrator_eval_fxc_contraction_rks_with_settings")
+      import :: gauxc_status_type, gauxc_integrator_type, gauxc_ks_settings_type, c_double, c_int64_t
+      implicit none
+      !> @param status Status object to capture any errors.
+      type(gauxc_status_type), intent(inout) :: status
+      !> @param integrator Handle to the XCIntegrator.
+      type(gauxc_integrator_type), value :: integrator
+      !> @param m Number of rows in the density matrix.
+      integer(c_int64_t), value :: m
+      !> @param n Number of columns in the density matrix.
+      integer(c_int64_t), value :: n
+      !> @param density_matrix Pointer to the density matrix data.
+      real(c_double), intent(in) :: density_matrix(ldp, *)
+      !> @param ldp Leading dimension of the density matrix.
+      integer(c_int64_t), value :: ldp
+      !> @param t_density_matrix Pointer to the density matrix data.
+      real(c_double), intent(in) :: t_density_matrix(ldtp, *)
+      !> @param ldtp Leading dimension of the density matrix.
+      integer(c_int64_t), value :: ldtp
+      !> @param settings Kohn-Sham integration settings.
+      type(gauxc_ks_settings_type), intent(in) :: settings
+      !> @param fxc_contraction_matrix Pointer to the fxc contraction matrix data.
+      real(c_double), intent(out) :: fxc_contraction_matrix(ldfxc, *)
+      !> @param ldfxc Leading dimension of the fxc contraction matrix.
+      integer(c_int64_t), value :: ldfxc
+    end subroutine gauxc_integrator_eval_fxc_contraction_rks_with_settings_c
     module procedure gauxc_integrator_eval_fxc_contraction_rks
 
     subroutine gauxc_integrator_eval_fxc_contraction_uks_c(status, integrator, m, n, &
@@ -621,7 +725,7 @@ contains
   end subroutine gauxc_integrator_integrate_den
 
   !> @brief Evaluate the exchange-correlation energy for RKS.
-  subroutine gauxc_integrator_eval_exc_rks(status, integrator, density_matrix, exc)
+  subroutine gauxc_integrator_eval_exc_rks(status, integrator, density_matrix, exc, settings)
     !> @param status Status object to capture any errors.
     type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
@@ -630,13 +734,20 @@ contains
     real(c_double), contiguous, intent(in) :: density_matrix(:, :)
     !> @param exc Pointer to store the exchange-correlation energy.
     real(c_double), intent(out) :: exc
+    !> @param settings Optional Kohn-Sham integration settings.
+    type(gauxc_ks_settings_type), intent(in), optional :: settings
 
     integer(c_int64_t) :: m, n, ldp
 
     m = size(density_matrix, 1, kind=c_int64_t)
     n = size(density_matrix, 2, kind=c_int64_t)
     ldp = size(density_matrix, 1, kind=c_int64_t)
-    call gauxc_integrator_eval_exc_rks_c(status, integrator, m, n, density_matrix, ldp, exc)
+    if (present(settings)) then
+      call gauxc_integrator_eval_exc_rks_with_settings_c(status, integrator, m, n, &
+        & density_matrix, ldp, settings, exc)
+    else
+      call gauxc_integrator_eval_exc_rks_c(status, integrator, m, n, density_matrix, ldp, exc)
+    end if
   end subroutine gauxc_integrator_eval_exc_rks
 
   !> @brief Evaluate the exchange-correlation energy for UKS.
@@ -696,7 +807,7 @@ contains
 
   !> @brief Evaluate the exchange-correlation energy and potential for RKS.
   subroutine gauxc_integrator_eval_exc_vxc_rks(status, integrator, &
-      & density_matrix, exc, vxc_matrix)
+      & density_matrix, exc, vxc_matrix, settings)
     !> @param status Status object to capture any errors.
     type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
@@ -707,6 +818,8 @@ contains
     real(c_double), intent(out) :: exc
     !> @param vxc_matrix Pointer to the potential matrix data.
     real(c_double), contiguous, intent(out) :: vxc_matrix(:, :)
+    !> @param settings Optional Kohn-Sham integration settings.
+    type(gauxc_ks_settings_type), intent(in), optional :: settings
 
     integer(c_int64_t) :: m, n, ldp, ldvxc
 
@@ -715,8 +828,13 @@ contains
     ldp = size(density_matrix, 1, kind=c_int64_t)
     ldvxc = size(vxc_matrix, 1, kind=c_int64_t)
 
-    call gauxc_integrator_eval_exc_vxc_rks_c(status, integrator, m, n, &
-      & density_matrix, ldp, exc, vxc_matrix, ldvxc)
+    if (present(settings)) then
+      call gauxc_integrator_eval_exc_vxc_rks_with_settings_c(status, integrator, m, n, &
+        & density_matrix, ldp, settings, exc, vxc_matrix, ldvxc)
+    else
+      call gauxc_integrator_eval_exc_vxc_rks_c(status, integrator, m, n, &
+        & density_matrix, ldp, exc, vxc_matrix, ldvxc)
+    end if
   end subroutine gauxc_integrator_eval_exc_vxc_rks
 
   !> @brief Evaluate the exchange-correlation energy and potential for UKS.
@@ -834,7 +952,7 @@ contains
   end subroutine gauxc_integrator_eval_exc_vxc_gks
 
   subroutine gauxc_integrator_eval_exc_grad_rks(status, integrator, &
-      & density_matrix, exc_grad)
+      & density_matrix, exc_grad, settings)
     !> @param status Status object to capture any errors.
     type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
@@ -843,6 +961,8 @@ contains
     real(c_double), contiguous, intent(in) :: density_matrix(:, :)
     !> @param exc_grad Pointer to the gradient.
     real(c_double), contiguous, intent(out) :: exc_grad(:)
+    !> @param settings Optional Kohn-Sham integration settings.
+    type(gauxc_ks_settings_type), intent(in), optional :: settings
 
     integer(c_int64_t) :: m, n, ldp
 
@@ -850,8 +970,13 @@ contains
     n = size(density_matrix, 2, kind=c_int64_t)
     ldp = size(density_matrix, 1, kind=c_int64_t)
 
-    call gauxc_integrator_eval_exc_grad_rks_c(status, integrator, m, n, &
-      & density_matrix, ldp, exc_grad)
+    if (present(settings)) then
+      call gauxc_integrator_eval_exc_grad_rks_with_settings_c(status, integrator, m, n, &
+        & density_matrix, ldp, settings, exc_grad)
+    else
+      call gauxc_integrator_eval_exc_grad_rks_c(status, integrator, m, n, &
+        & density_matrix, ldp, exc_grad)
+    end if
   end subroutine gauxc_integrator_eval_exc_grad_rks
 
   subroutine gauxc_integrator_eval_exc_grad_uks(status, integrator, &
@@ -927,7 +1052,7 @@ contains
   end subroutine gauxc_integrator_eval_exx_rks
 
   subroutine gauxc_integrator_eval_fxc_contraction_rks(status, integrator, &
-      & density_matrix, t_density_matrix, fxc_contraction_matrix)
+      & density_matrix, t_density_matrix, fxc_contraction_matrix, settings)
     !> @param status Status object to capture any errors.
     type(gauxc_status_type), intent(inout) :: status
     !> @param integrator Handle to the XCIntegrator.
@@ -938,6 +1063,8 @@ contains
     real(c_double), contiguous, intent(in) :: t_density_matrix(:, :)
     !> @param fxc_contraction_matrix Pointer to the fxc contraction matrix data.
     real(c_double), contiguous, intent(out) :: fxc_contraction_matrix(:, :)
+    !> @param settings Optional Kohn-Sham integration settings.
+    type(gauxc_ks_settings_type), intent(in), optional :: settings
 
     integer(c_int64_t) :: m, n, ldp, ldtp, ldfxc
 
@@ -947,8 +1074,13 @@ contains
     ldtp = size(t_density_matrix, 1, kind=c_int64_t)
     ldfxc = size(fxc_contraction_matrix, 1, kind=c_int64_t)
 
-    call gauxc_integrator_eval_fxc_contraction_rks_c(status, integrator, m, n, &
-      & density_matrix, ldp, t_density_matrix, ldtp, fxc_contraction_matrix, ldfxc)
+    if (present(settings)) then
+      call gauxc_integrator_eval_fxc_contraction_rks_with_settings_c(status, integrator, m, n, &
+        & density_matrix, ldp, t_density_matrix, ldtp, settings, fxc_contraction_matrix, ldfxc)
+    else
+      call gauxc_integrator_eval_fxc_contraction_rks_c(status, integrator, m, n, &
+        & density_matrix, ldp, t_density_matrix, ldtp, fxc_contraction_matrix, ldfxc)
+    end if
   end subroutine gauxc_integrator_eval_fxc_contraction_rks
 
   subroutine gauxc_integrator_eval_fxc_contraction_uks(status, integrator, &
