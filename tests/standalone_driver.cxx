@@ -459,6 +459,10 @@ int main(int argc, char** argv) {
     double EXC, N_EL;
 
     std::cout << std::scientific << std::setprecision(12);
+    IntegratorSettingsKS ks_settings;
+    ks_settings.rks_density_matrix_is_spin_summed =
+      rks_density_matrix_is_spin_summed;
+
     if( integrate_den ) {
       if( (uks or gks) and !world_rank ) {
         std::cout << "Warning: integrate_den will only integrate the scalar density!" << std::endl;
@@ -471,8 +475,6 @@ int main(int argc, char** argv) {
 
     if( integrate_vxc ) {
       if( rks ) {
-        IntegratorSettingsKS ks_settings;
-        ks_settings.rks_density_matrix_is_spin_summed = rks_density_matrix_is_spin_summed;
         std::tie(EXC, VXC) = integrator.eval_exc_vxc( P, ks_settings );
       }
       else if ( uks ) {
@@ -583,7 +585,7 @@ int main(int argc, char** argv) {
       
       // Compute FXC contraction
       if( rks ) {
-        FXC = integrator.eval_fxc_contraction( P, tP, IntegratorSettingsXC{} );
+        FXC = integrator.eval_fxc_contraction( P, tP, ks_settings );
       } else if( uks ) {
         std::tie(FXC, FXCz) = integrator.eval_fxc_contraction( P, Pz, tP, tPz, IntegratorSettingsXC{} );
       } else if( gks ) {

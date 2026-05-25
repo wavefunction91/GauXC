@@ -225,7 +225,8 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       CHECK(EXC3 == Approx(EXC_ref));
       auto [ EXC4, VXC4 ] = integrator.eval_exc_vxc( P_spin_summed, spin_summed_settings );
       CHECK(EXC4 == Approx(EXC_ref));
-      (void)VXC4;
+      auto VXC4_diff_nrm = ( VXC4 - VXC_ref ).norm();
+      CHECK( VXC4_diff_nrm / basis.nbf() < 1e-10 );
     }
 
   } else if (uks) {
