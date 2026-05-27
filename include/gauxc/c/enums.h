@@ -47,9 +47,10 @@ enum GauXC_AtomicGridSizeDefault {
  */
 enum GauXC_XCWeightAlg {
   GauXC_XCWeightAlg_NOTPARTITIONED, ///< Not partitioned
-  GauXC_XCWeightAlg_Becke, ///< The original Becke weighting scheme
-  GauXC_XCWeightAlg_SSF,   ///< The Stratmann-Scuseria-Frisch weighting scheme
-  GauXC_XCWeightAlg_LKO    ///< The Lauqua-Kuessman-Ochsenfeld weighting scheme
+  GauXC_XCWeightAlg_Becke,     ///< The original Becke weighting scheme
+  GauXC_XCWeightAlg_SSF,       ///< The Stratmann-Scuseria-Frisch weighting scheme
+  GauXC_XCWeightAlg_LKO,       ///< The Lauqua-Kuessman-Ochsenfeld weighting scheme
+  GauXC_XCWeightAlg_Hirshfeld  ///< Hirshfeld pro-atom density weighting scheme
 };
 
 /**

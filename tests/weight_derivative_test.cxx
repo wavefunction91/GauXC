@@ -159,6 +159,9 @@ void test_weight_1st_deri_host_fdiff(const std::string& reference_file, XCWeight
       case XCWeightAlg::SSF:
         reference_ssf_weights_1st_derivative_host(mol, meta, task, analytical_derivatives.data());
         break;
+      case XCWeightAlg::Hirshfeld:
+        reference_hirshfeld_weights_1st_derivative_host(mol, meta, task, analytical_derivatives.data());
+        break;
       default:
         GAUXC_GENERIC_EXCEPTION("Weight Alg Not Supported");
     }
@@ -363,6 +366,9 @@ TEST_CASE("Weights First Derivative uncontracted HOST fidiff", "[weights_fdiff]"
   SECTION( "H3 SSF" ) {
   test_weight_1st_deri_host_fdiff(GAUXC_REF_DATA_PATH "/h3_blyp_cc-pvdz_ssf_gks.bin", XCWeightAlg::SSF,
                                       PruningScheme::Unpruned, 1.0e-5, 1.0e-6);}
+  SECTION( "H3 Hirshfeld" ) {
+  test_weight_1st_deri_host_fdiff(GAUXC_REF_DATA_PATH "/h3_blyp_cc-pvdz_ssf_gks.bin", XCWeightAlg::Hirshfeld,
+                                      PruningScheme::Unpruned, 1.0e-5, 1.0e-6);}
   
 }
 
@@ -385,6 +391,9 @@ TEST_CASE("Weights First Derivative contracted HOST fidiff", "[weights_fdiff]") 
 
   SECTION( "H3 SSF" ) {
   test_weight_1st_deri_host_fdiff_contracted(GAUXC_REF_DATA_PATH "/h3_blyp_cc-pvdz_ssf_gks.bin", XCWeightAlg::SSF,
+                                      PruningScheme::Unpruned, 1.0e-5, 1.0e-6);}
+  SECTION( "H3 Hirshfeld" ) {
+  test_weight_1st_deri_host_fdiff_contracted(GAUXC_REF_DATA_PATH "/h3_blyp_cc-pvdz_ssf_gks.bin", XCWeightAlg::Hirshfeld,
                                       PruningScheme::Unpruned, 1.0e-5, 1.0e-6);}
   // SECTION( "Benzene SSF" ) {
   // test_weight_1st_deri_host_fdiff_contracted(GAUXC_REF_DATA_PATH "/benzene_svwn5_cc-pvdz_ufg_ssf.hdf5", XCWeightAlg::SSF,

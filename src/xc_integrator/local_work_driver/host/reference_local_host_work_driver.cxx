@@ -51,6 +51,9 @@ namespace GauXC {
       case XCWeightAlg::LKO:
         reference_lko_weights_host( mol, meta, task_begin, task_end );
         break;
+      case XCWeightAlg::Hirshfeld:
+        reference_hirshfeld_weights_host( mol, meta, task_begin, task_end );
+        break;
       default:
         GAUXC_GENERIC_EXCEPTION("Weight Alg Not Supported");
     }
@@ -65,6 +68,9 @@ namespace GauXC {
         break;
       case XCWeightAlg::SSF:
         reference_ssf_weights_1std_contraction_host( mol, meta, task, w_times_f, exc_grad_w );
+        break;
+      case XCWeightAlg::Hirshfeld:
+        reference_hirshfeld_weights_1std_contraction_host( mol, meta, task, w_times_f, exc_grad_w );
         break;
       default:
         GAUXC_GENERIC_EXCEPTION("Weight Alg Not Supported");

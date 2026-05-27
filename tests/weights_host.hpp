@@ -26,17 +26,22 @@ void test_host_weights( const std::string& filename, XCWeightAlg weight_alg ) {
 
   switch(weight_alg) {
     case XCWeightAlg::Becke:
-      reference_becke_weights_host( 
+      reference_becke_weights_host(
         ref_data.mol, *ref_data.meta, ref_data.tasks_unm.begin(), 
         ref_data.tasks_unm.end() );
       break;
     case XCWeightAlg::SSF:
-      reference_ssf_weights_host( 
+      reference_ssf_weights_host(
         ref_data.mol, *ref_data.meta, ref_data.tasks_unm.begin(), 
         ref_data.tasks_unm.end() );
       break;
     case XCWeightAlg::LKO:
-      reference_lko_weights_host( 
+      reference_lko_weights_host(
+        ref_data.mol, *ref_data.meta, ref_data.tasks_unm.begin(), 
+        ref_data.tasks_unm.end() );
+      break;
+    case XCWeightAlg::Hirshfeld:
+      reference_hirshfeld_weights_host(
         ref_data.mol, *ref_data.meta, ref_data.tasks_unm.begin(), 
         ref_data.tasks_unm.end() );
       break;

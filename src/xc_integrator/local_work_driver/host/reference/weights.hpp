@@ -36,6 +36,13 @@ void reference_lko_weights_host(
   task_iterator          task_end
 );
 
+void reference_hirshfeld_weights_host(
+  const Molecule&        mol,
+  const MolMeta&         meta,
+  task_iterator          task_begin,
+  task_iterator          task_end
+);
+
 void reference_becke_weights_1st_derivative_host(
   const Molecule&        mol,
   const MolMeta&         meta,
@@ -44,6 +51,13 @@ void reference_becke_weights_1st_derivative_host(
 );
 
 void reference_ssf_weights_1st_derivative_host(
+  const Molecule&        mol,
+  const MolMeta&         meta,
+  const XCTask& task,
+  double* weight_deri
+);
+
+void reference_hirshfeld_weights_1st_derivative_host(
   const Molecule&        mol,
   const MolMeta&         meta,
   const XCTask& task,
@@ -61,6 +75,14 @@ void reference_becke_weights_1std_contraction_host(
 
 // SSF weights 1st derivative contracted with integrator
 void reference_ssf_weights_1std_contraction_host(
+  const Molecule&        mol,
+  const MolMeta&         meta,
+  const XCTask& task,
+  const double* w_times_f,
+  double* exc_grad_w
+);
+
+void reference_hirshfeld_weights_1std_contraction_host(
   const Molecule&        mol,
   const MolMeta&         meta,
   const XCTask& task,

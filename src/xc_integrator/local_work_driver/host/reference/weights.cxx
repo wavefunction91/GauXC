@@ -14,6 +14,8 @@
 
 #include <gauxc/molgrid/defaults.hpp>
 
+#include <cmath>
+
 namespace GauXC {
 
 // Reference Becke weights impl
@@ -385,6 +387,74 @@ void reference_lko_weights_host(
 
 }
 
+void reference_hirshfeld_weights_host(
+  const Molecule&        mol,
+  const MolMeta&         meta,
+  task_iterator          task_begin,
+  task_iterator          task_end
+) {
+
+  (void)meta;
+
+  constexpr double pi = 3.141592653589793238462643383279502884;
+
+  const size_t ntasks = std::distance(task_begin,task_end);
+  const size_t natoms = mol.natoms();
+
+  struct hirshfeld_atom_data {
+    double x;
+    double y;
+    double z;
+    double alpha;
+    double scale;
+  };
+
+  std::vector<hirshfeld_atom_data> atom_data;
+  atom_data.reserve(natoms);
+
+  for( const auto& atom : mol ) {
+    const double radius = default_atomic_radius(atom.Z);
+    const double alpha  = 0.5 / (radius * radius);
+    const double scale  = atom.Z.get() * std::pow(alpha / pi, 1.5);
+    atom_data.push_back( hirshfeld_atom_data{ atom.x, atom.y, atom.z, alpha, scale } );
+  }
+
+  #pragma omp parallel
+  {
+
+  #pragma omp for
+  for( size_t iT = 0; iT < ntasks;                  ++iT )
+  for( size_t i  = 0; i  < (task_begin+iT)->points.size(); ++i  ) {
+
+    auto&       task   = *(task_begin+iT);
+    auto&       weight = task.weights[i];
+    const auto& point  = task.points[i];
+    const auto  parent = static_cast<size_t>(task.iParent);
+
+    double sum = 0.;
+    double parent_density = 0.;
+    for(size_t iA = 0; iA < natoms; iA++) {
+      const auto& atom = atom_data[iA];
+
+      const double da_x = point[0] - atom.x;
+      const double da_y = point[1] - atom.y;
+      const double da_z = point[2] - atom.z;
+      const double r2 = da_x*da_x + da_y*da_y + da_z*da_z;
+      const double density = atom.scale * std::exp(-atom.alpha * r2);
+
+      sum += density;
+      if( iA == parent ) parent_density = density;
+
+    }
+
+    weight *= (sum > 0.) ? parent_density / sum : 0.;
+
+  } // Collapsed loop over tasks and points
+
+  } // OMP context
+
+}
+
 
 /**
  * 1st derivative which expects weight_deri to be preallocated as (ngrid*natoms*3)
@@ -679,6 +749,81 @@ void reference_ssf_weights_1st_derivative_host(
       for (size_t coord = 0; coord < 3; ++coord) 
         weight_deri_ith[3*iB + coord] *= weight;
 
+  }
+}
+
+void reference_hirshfeld_weights_1st_derivative_host(
+  const Molecule&        mol,
+  const MolMeta&         meta,
+  const XCTask& task,
+  double* weight_deri
+){
+
+  (void)meta;
+
+  constexpr double pi = 3.141592653589793238462643383279502884;
+
+  const size_t natoms = mol.natoms();
+
+  struct hirshfeld_atom_data {
+    double x;
+    double y;
+    double z;
+    double alpha;
+    double scale;
+  };
+
+  std::vector<hirshfeld_atom_data> atom_data;
+  atom_data.reserve(natoms);
+  for( const auto& atom : mol ) {
+    const double radius = default_atomic_radius(atom.Z);
+    const double alpha  = 0.5 / (radius * radius);
+    const double scale  = atom.Z.get() * std::pow(alpha / pi, 1.5);
+    atom_data.push_back( hirshfeld_atom_data{ atom.x, atom.y, atom.z, alpha, scale } );
+  }
+
+  std::vector<double> density(natoms);
+
+  for( size_t i = 0; i < task.points.size(); ++i ) {
+    auto* weight_deri_ith = weight_deri + 3*natoms*i;
+    std::fill(weight_deri_ith, weight_deri_ith + 3*natoms, 0.);
+
+    const auto& point = task.points[i];
+    const double weight = task.weights[i];
+    if( std::abs(weight) < 1.e-14 ) continue;
+
+    const size_t iParent = task.iParent;
+
+    double sum = 0.;
+    for( size_t iA = 0; iA < natoms; ++iA ) {
+      const auto& atom = atom_data[iA];
+      const double da_x = point[0] - atom.x;
+      const double da_y = point[1] - atom.y;
+      const double da_z = point[2] - atom.z;
+      const double r2 = da_x*da_x + da_y*da_y + da_z*da_z;
+      density[iA] = atom.scale * std::exp(-atom.alpha * r2);
+      sum += density[iA];
+    }
+
+    if( sum <= 0. ) continue;
+
+    auto* weight_deri_iParent = weight_deri_ith + 3*iParent;
+    for( size_t iB = 0; iB < natoms; ++iB ) {
+      if( iB == iParent ) continue;
+
+      const auto& atom = atom_data[iB];
+      const double scaled_density = density[iB] / sum;
+      const double coef = -2. * atom.alpha * scaled_density * weight;
+
+      auto* weight_deri_iB = weight_deri_ith + 3*iB;
+      weight_deri_iB[0] = coef * (point[0] - atom.x);
+      weight_deri_iB[1] = coef * (point[1] - atom.y);
+      weight_deri_iB[2] = coef * (point[2] - atom.z);
+
+      weight_deri_iParent[0] -= weight_deri_iB[0];
+      weight_deri_iParent[1] -= weight_deri_iB[1];
+      weight_deri_iParent[2] -= weight_deri_iB[2];
+    }
   }
 }
 
@@ -979,6 +1124,97 @@ void reference_ssf_weights_1std_contraction_host(
       exc_grad_w[3*iParent + 2] -= exc_grad_w_iBz;
 
     }
+  }
+
+}
+
+void reference_hirshfeld_weights_1std_contraction_host(
+  const Molecule&        mol,
+  const MolMeta&         meta,
+  const XCTask& task,
+  const double* w_times_f,
+  double* exc_grad_w
+){
+
+  (void)meta;
+
+  constexpr double pi = 3.141592653589793238462643383279502884;
+  constexpr double w_times_f_thresh = 1.e-14;
+
+  const size_t natoms = mol.natoms();
+
+  struct hirshfeld_atom_data {
+    double x;
+    double y;
+    double z;
+    double alpha;
+    double scale;
+  };
+
+  std::vector<hirshfeld_atom_data> atom_data;
+  atom_data.reserve(natoms);
+  for( const auto& atom : mol ) {
+    const double radius = default_atomic_radius(atom.Z);
+    const double alpha  = 0.5 / (radius * radius);
+    const double scale  = atom.Z.get() * std::pow(alpha / pi, 1.5);
+    atom_data.push_back( hirshfeld_atom_data{ atom.x, atom.y, atom.z, alpha, scale } );
+  }
+
+  std::vector<double> density(natoms);
+
+  for( size_t i = 0; i < task.points.size(); ++i ) {
+    const double w_times_f_i = w_times_f[i];
+    if( std::abs(w_times_f_i) < w_times_f_thresh ) continue;
+
+    const auto& point = task.points[i];
+    const size_t iParent = task.iParent;
+
+    double sum = 0.;
+    for( size_t iA = 0; iA < natoms; ++iA ) {
+      const auto& atom = atom_data[iA];
+      const double da_x = point[0] - atom.x;
+      const double da_y = point[1] - atom.y;
+      const double da_z = point[2] - atom.z;
+      const double r2 = da_x*da_x + da_y*da_y + da_z*da_z;
+      density[iA] = atom.scale * std::exp(-atom.alpha * r2);
+      sum += density[iA];
+    }
+
+    if( sum <= 0. ) continue;
+
+    double parent_x = 0.;
+    double parent_y = 0.;
+    double parent_z = 0.;
+
+    for( size_t iB = 0; iB < natoms; ++iB ) {
+      if( iB == iParent ) continue;
+
+      const auto& atom = atom_data[iB];
+      const double scaled_density = density[iB] / sum;
+      const double coef = -2. * atom.alpha * scaled_density * w_times_f_i;
+
+      const double grad_x = coef * (point[0] - atom.x);
+      const double grad_y = coef * (point[1] - atom.y);
+      const double grad_z = coef * (point[2] - atom.z);
+
+      #pragma omp atomic
+      exc_grad_w[3*iB + 0] += grad_x;
+      #pragma omp atomic
+      exc_grad_w[3*iB + 1] += grad_y;
+      #pragma omp atomic
+      exc_grad_w[3*iB + 2] += grad_z;
+
+      parent_x -= grad_x;
+      parent_y -= grad_y;
+      parent_z -= grad_z;
+    }
+
+    #pragma omp atomic
+    exc_grad_w[3*iParent + 0] += parent_x;
+    #pragma omp atomic
+    exc_grad_w[3*iParent + 1] += parent_y;
+    #pragma omp atomic
+    exc_grad_w[3*iParent + 2] += parent_z;
   }
 
 }

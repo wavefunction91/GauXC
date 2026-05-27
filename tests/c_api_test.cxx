@@ -138,6 +138,8 @@ TEST_CASE("C-API Enum Correspondence", "[c-api]") {
        == static_cast<int>(GauXC_XCWeightAlg_SSF));
     CHECK(static_cast<int>(XCWeightAlg::LKO)
        == static_cast<int>(GauXC_XCWeightAlg_LKO));
+     CHECK(static_cast<int>(XCWeightAlg::Hirshfeld)
+       == static_cast<int>(GauXC_XCWeightAlg_Hirshfeld));
   }
 
   // --- ExecutionSpace ---
@@ -700,7 +702,25 @@ TEST_CASE("C-API MolecularWeights", "[c-api]") {
     C::gauxc_molecular_weights_factory_delete(&status, &mwf);
   }
 
-  SECTION("Modify weights with LoadBalancer") {
+  SECTION("Factory creation (Hirshfeld)") {
+    C::GauXCMolecularWeightsSettings settings;
+    settings.weight_alg = GauXC_XCWeightAlg_Hirshfeld;
+    settings.becke_size_adjustment = false;
+
+    C::GauXCMolecularWeightsFactory mwf = C::gauxc_molecular_weights_factory_new(
+      &status, GauXC_ExecutionSpace_Host, "Default", settings);
+    CHECK(status.code == 0);
+    CHECK(mwf.ptr != nullptr);
+
+    C::GauXCMolecularWeights mw = C::gauxc_molecular_weights_factory_get_instance(&status, mwf);
+    CHECK(status.code == 0);
+    CHECK(mw.ptr != nullptr);
+
+    C::gauxc_molecular_weights_delete(&status, &mw);
+    C::gauxc_molecular_weights_factory_delete(&status, &mwf);
+  }
+
+  auto test_modify_weights_with_load_balancer = [&](GauXC_XCWeightAlg weight_alg) {
     // Build full pipeline
     C::GauXCAtom atoms[3];
     make_water_atoms(atoms);
@@ -743,7 +763,7 @@ TEST_CASE("C-API MolecularWeights", "[c-api]") {
     REQUIRE(status.code == 0);
 
     C::GauXCMolecularWeightsSettings settings;
-    settings.weight_alg = GauXC_XCWeightAlg_SSF;
+    settings.weight_alg = weight_alg;
     settings.becke_size_adjustment = false;
 
     C::GauXCMolecularWeightsFactory mwf = C::gauxc_molecular_weights_factory_new(
@@ -765,6 +785,14 @@ TEST_CASE("C-API MolecularWeights", "[c-api]") {
     C::gauxc_molgrid_delete(&status, &mg);
     C::gauxc_basisset_delete(&status, &basis);
     C::gauxc_molecule_delete(&status, &mol);
+  };
+
+  SECTION("Modify weights with LoadBalancer (SSF)") {
+    test_modify_weights_with_load_balancer(GauXC_XCWeightAlg_SSF);
+  }
+
+  SECTION("Modify weights with LoadBalancer (Hirshfeld)") {
+    test_modify_weights_with_load_balancer(GauXC_XCWeightAlg_Hirshfeld);
   }
 }
 

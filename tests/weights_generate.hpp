@@ -66,15 +66,19 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
 
   switch( weight_alg ) {
     case XCWeightAlg::Becke:
-      reference_becke_weights_host( 
+      reference_becke_weights_host(
         mol, lb.molmeta(), tasks.begin(), tasks.end() );
       break;
     case XCWeightAlg::SSF:
-      reference_ssf_weights_host( 
+      reference_ssf_weights_host(
         mol, lb.molmeta(), tasks.begin(), tasks.end() );
       break;
     case XCWeightAlg::LKO:
-      reference_lko_weights_host( 
+      reference_lko_weights_host(
+        mol, lb.molmeta(), tasks.begin(), tasks.end() );
+      break;
+    case XCWeightAlg::Hirshfeld:
+      reference_hirshfeld_weights_host(
         mol, lb.molmeta(), tasks.begin(), tasks.end() );
       break;
   }
