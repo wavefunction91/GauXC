@@ -129,6 +129,21 @@ protected:
                             host_task_iterator task_begin, host_task_iterator task_end,
                             XCDeviceData& device_data );
 
+  void nlc_exc_vxc_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
+                            double xmat_fac,
+                            value_type* VXC, int64_t ldvxc, value_type* EXC, value_type *N_EL,
+                            const IntegratorSettingsNLC& settings,
+                            host_task_iterator task_begin, host_task_iterator task_end,
+                            XCDeviceData& device_data );
+
+  void nlc_fxc_contraction_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
+                            const value_type* tPs, int64_t ldtps,
+                            value_type *N_EL,
+                            value_type* FXC, int64_t ldfxc,
+                            const IntegratorSettingsNLC& settings,
+                            host_task_iterator task_begin, host_task_iterator task_end,
+                            XCDeviceData& device_data );
+
   void fxc_contraction_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
                             const value_type* Pz, int64_t ldpz,
                             const value_type* tPs, int64_t ldtps,
@@ -150,6 +165,12 @@ protected:
                                   const value_type* Pz, int64_t ldpz,
                                   host_task_iterator task_begin, host_task_iterator task_end,
                                   XCDeviceData& device_data, const IntegratorSettingsXC& settings );
+
+  void nlc_exc_grad_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
+                                  value_type* EXC_GRAD,
+                                  const IntegratorSettingsNLC& settings,
+                                  host_task_iterator task_begin, host_task_iterator task_end,
+                                  XCDeviceData& device_data );
 
   void eval_exc_grad_local_work_( const basis_type& basis, const value_type* P, int64_t ldp, 
                                   const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD, 

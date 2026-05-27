@@ -151,6 +151,53 @@ public:
     return eval_exx_(P,settings);
   }
 
+  value_type eval_nlc( const MatrixType& P, const IntegratorSettingsNLC& settings ) {
+    detail::IntegratorSettingsNLCInternal nlc_settings(settings);
+    return eval_exc_(P, nlc_settings);
+  }
+
+  value_type eval_nlc( const MatrixType& Ps, const MatrixType& Pz,
+                           const IntegratorSettingsNLC& settings ) {
+    detail::IntegratorSettingsNLCInternal nlc_settings(settings);
+    return eval_exc_(Ps, Pz, nlc_settings);
+  }
+
+  exc_vxc_type_rks eval_nlc_vnlc( const MatrixType& P,
+                                     const IntegratorSettingsNLC& settings ) {
+    detail::IntegratorSettingsNLCInternal nlc_settings(settings);
+    return eval_exc_vxc_(P, nlc_settings);
+  }
+
+  exc_vxc_type_uks eval_nlc_vnlc( const MatrixType& Ps, const MatrixType& Pz,
+                                     const IntegratorSettingsNLC& settings ) {
+    detail::IntegratorSettingsNLCInternal nlc_settings(settings);
+    return eval_exc_vxc_(Ps, Pz, nlc_settings);
+  }
+
+  exc_grad_type eval_nlc_grad( const MatrixType& P,
+                                   const IntegratorSettingsNLC& settings ) {
+    detail::IntegratorSettingsNLCInternal nlc_settings(settings);
+    return eval_exc_grad_(P, nlc_settings);
+  }
+
+  exc_grad_type eval_nlc_grad( const MatrixType& Ps, const MatrixType& Pz,
+                                   const IntegratorSettingsNLC& settings ) {
+    detail::IntegratorSettingsNLCInternal nlc_settings(settings);
+    return eval_exc_grad_(Ps, Pz, nlc_settings);
+  }
+
+  fxc_contraction_type_rks eval_nlc_fnlc_contraction( const MatrixType& P,
+    const MatrixType& tP, const IntegratorSettingsNLC& settings ) {
+    detail::IntegratorSettingsNLCInternal nlc_settings(settings);
+    return eval_fxc_contraction_(P, tP, nlc_settings);
+  }
+
+  fxc_contraction_type_uks eval_nlc_fnlc_contraction( const MatrixType& Ps, const MatrixType& Pz,
+    const MatrixType& tPs, const MatrixType& tPz, const IntegratorSettingsNLC& settings ) {
+    detail::IntegratorSettingsNLCInternal nlc_settings(settings);
+    return eval_fxc_contraction_(Ps, Pz, tPs, tPz, nlc_settings);
+  }
+
   
   /** Integrate FXC contraction for RKS
    * 

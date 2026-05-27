@@ -15,6 +15,7 @@
 #include "integrator_util/integrator_common.hpp"
 #include "host/local_host_work_driver.hpp"
 #include "host/blas.hpp"
+#include "vv10_nlc.hpp"
 #include <stdexcept>
 
 namespace GauXC::detail {
@@ -162,11 +163,142 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   auto& tasks = this->load_balancer_->get_tasks();
   std::sort( task_begin, task_end, task_comparator );
 
+  const auto vv10_settings = vv10::get_settings(settings);
+  const bool use_vv10 = vv10::enabled(settings);
+  if( use_vv10 ) {
+    if( is_gks ) {
+      GAUXC_GENERIC_EXCEPTION("VV10 non-local correlation is not yet implemented for GKS");
+    }
+    if( not (func.is_gga() or func.is_mgga()) ) {
+      GAUXC_GENERIC_EXCEPTION("VV10 non-local correlation requires a GGA/MGGA density path");
+    }
+  }
+
+  std::vector<size_t> vv10_task_offsets;
+  std::vector<double> vv10_coords;
+  std::vector<double> vv10_weights;
+  std::vector<double> vv10_rho;
+  std::vector<double> vv10_gamma;
+  std::vector<double> vv10_eps;
+  std::vector<double> vv10_vrho;
+  std::vector<double> vv10_vgamma;
+  size_t vv10_local_point_offset = 0;
+
 
   // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
   if( not lb_state.modified_weights_are_stored ) {
     GAUXC_GENERIC_EXCEPTION("Weights Have Not Been Modified");
+  }
+
+  if( use_vv10 ) {
+    const size_t ntasks = std::distance(task_begin, task_end);
+    size_t vv10_npts = 0;
+    vv10_task_offsets.resize(ntasks);
+    for( size_t iT = 0; iT < ntasks; ++iT ) {
+      vv10_task_offsets[iT] = vv10_npts;
+      vv10_npts += (task_begin + iT)->points.size();
+    }
+
+    vv10_coords .resize( 3 * vv10_npts );
+    vv10_weights.resize( vv10_npts );
+    vv10_rho    .resize( vv10_npts );
+    vv10_gamma  .resize( vv10_npts );
+    vv10_eps    .resize( vv10_npts, 0.0 );
+    vv10_vrho   .resize( vv10_npts, 0.0 );
+    vv10_vgamma .resize( vv10_npts, 0.0 );
+
+    XCHostData<value_type> vv10_host_data;
+    for( size_t iT = 0; iT < ntasks; ++iT ) {
+      const auto& task = *(task_begin + iT);
+      const int32_t npts = task.points.size();
+      const int32_t nbe = task.bfn_screening.nbe;
+      const int32_t nshells = task.bfn_screening.shell_list.size();
+      const auto* points = task.points.data()->data();
+      const auto* weights = task.weights.data();
+      const int32_t* shell_list = task.bfn_screening.shell_list.data();
+
+      vv10_host_data.basis_eval.resize( 4 * npts * nbe );
+      vv10_host_data.den_scr.resize( 4 * npts );
+      vv10_host_data.gamma.resize( npts );
+      vv10_host_data.zmat.resize( npts * nbe );
+      vv10_host_data.nbe_scr.resize( nbe * nbe );
+
+      auto* basis_eval = vv10_host_data.basis_eval.data();
+      auto* dbasis_x_eval = basis_eval + npts * nbe;
+      auto* dbasis_y_eval = dbasis_x_eval + npts * nbe;
+      auto* dbasis_z_eval = dbasis_y_eval + npts * nbe;
+      auto* den_eval = vv10_host_data.den_scr.data();
+      auto* dden_x_eval = den_eval + npts;
+      auto* dden_y_eval = dden_x_eval + npts;
+      auto* dden_z_eval = dden_y_eval + npts;
+      auto* gamma_eval = vv10_host_data.gamma.data();
+      auto* zmat = vv10_host_data.zmat.data();
+      auto* nbe_scr = vv10_host_data.nbe_scr.data();
+
+      std::vector< std::array<int32_t, 3> > submat_map;
+      std::tie(submat_map, std::ignore) =
+            gen_compressed_submat_map(basis_map, task.bfn_screening.shell_list, nbf, nbf);
+
+      lwd->eval_collocation_gradient( npts, nshells, nbe, points, basis, shell_list,
+        basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval );
+      lwd->eval_xmat( npts, nbf, nbe, submat_map, is_rks ? 2.0 : 1.0, Ps, ldps, basis_eval, nbe,
+        zmat, nbe, nbe_scr );
+      lwd->eval_uvvar_gga_rks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
+        dbasis_z_eval, zmat, nbe, den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
+        gamma_eval );
+
+      const size_t offset = vv10_task_offsets[iT];
+      for( int32_t i = 0; i < npts; ++i ) {
+        vv10_coords[3*(offset + i) + 0] = points[3*i + 0];
+        vv10_coords[3*(offset + i) + 1] = points[3*i + 1];
+        vv10_coords[3*(offset + i) + 2] = points[3*i + 2];
+        vv10_weights[offset + i] = weights[i];
+        vv10_rho[offset + i] = den_eval[i];
+        vv10_gamma[offset + i] = gamma_eval[i];
+      }
+    }
+
+    std::vector<double> vv10_local_packed( 6 * vv10_npts );
+    for( size_t i = 0; i < vv10_npts; ++i ) {
+      vv10_local_packed[6*i+0] = vv10_coords[3*i+0];
+      vv10_local_packed[6*i+1] = vv10_coords[3*i+1];
+      vv10_local_packed[6*i+2] = vv10_coords[3*i+2];
+      vv10_local_packed[6*i+3] = vv10_weights[i];
+      vv10_local_packed[6*i+4] = vv10_rho[i];
+      vv10_local_packed[6*i+5] = vv10_gamma[i];
+    }
+
+    const auto vv10_global_packed = vv10::allgather_packed_grid(
+      *this->reduction_driver_, vv10_local_packed, 6, vv10_local_point_offset );
+    if( vv10_global_packed.size() % 6 != 0 ) {
+      GAUXC_GENERIC_EXCEPTION("Invalid VV10 EXC/VXC packed grid size after allgather");
+    }
+    const size_t vv10_global_npts = vv10_global_packed.size() / 6;
+    if( vv10_local_point_offset + vv10_npts > vv10_global_npts ) {
+      GAUXC_GENERIC_EXCEPTION("Invalid VV10 EXC/VXC local grid offset after allgather");
+    }
+
+    vv10_coords .resize( 3 * vv10_global_npts );
+    vv10_weights.resize( vv10_global_npts );
+    vv10_rho    .resize( vv10_global_npts );
+    vv10_gamma  .resize( vv10_global_npts );
+    vv10_eps    .assign( vv10_global_npts, 0.0 );
+    vv10_vrho   .assign( vv10_global_npts, 0.0 );
+    vv10_vgamma .assign( vv10_global_npts, 0.0 );
+
+    for( size_t i = 0; i < vv10_global_npts; ++i ) {
+      vv10_coords[3*i+0] = vv10_global_packed[6*i+0];
+      vv10_coords[3*i+1] = vv10_global_packed[6*i+1];
+      vv10_coords[3*i+2] = vv10_global_packed[6*i+2];
+      vv10_weights[i] = vv10_global_packed[6*i+3];
+      vv10_rho[i] = vv10_global_packed[6*i+4];
+      vv10_gamma[i] = vv10_global_packed[6*i+5];
+    }
+
+    vv10::eval_exc_vxc( vv10_settings,
+      vv10::GridView{ vv10_global_npts, vv10_coords.data(), vv10_weights.data(), vv10_rho.data(), vv10_gamma.data() },
+      vv10::CorrectionsView{ vv10_eps.data(), vv10_vrho.data(), vv10_vgamma.data() } );
   }
 
   // Zero out integrands
@@ -443,12 +575,34 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
      }
     
     // Evaluate XC functional
-    if( func.is_mgga() )
+    if( use_vv10 ) {
+      std::fill_n( eps, npts, 0.0 );
+      std::fill_n( vrho, npts * spin_dim_scal, 0.0 );
+      if( func.is_gga() or func.is_mgga() ) std::fill_n( vgamma, npts * gga_dim_scal, 0.0 );
+      if( func.is_mgga() ) {
+        std::fill_n( vtau, npts * spin_dim_scal, 0.0 );
+        if( needs_laplacian ) std::fill_n( vlapl, npts * spin_dim_scal, 0.0 );
+      }
+    } else if( func.is_mgga() )
       func.eval_exc_vxc( npts, den_eval, gamma, lapl, tau, eps, vrho, vgamma, vlapl, vtau);
     else if( func.is_gga() )
       func.eval_exc_vxc( npts, den_eval, gamma, eps, vrho, vgamma );
     else
       func.eval_exc_vxc( npts, den_eval, eps, vrho );
+
+    if( use_vv10 ) {
+      const size_t vv10_offset = vv10_task_offsets[iT];
+      for( int32_t i = 0; i < npts; ++i ) {
+        const size_t vv10_global_i = vv10_local_point_offset + vv10_offset + i;
+        if( is_rks ) {
+          vv10::add_rks_correction( i, vv10_eps[vv10_global_i], vv10_vrho[vv10_global_i],
+            vv10_vgamma[vv10_global_i], eps, vrho, vgamma );
+        } else {
+          vv10::add_uks_correction( i, vv10_eps[vv10_global_i], vv10_vrho[vv10_global_i],
+            vv10_vgamma[vv10_global_i], eps, vrho, vgamma );
+        }
+      }
+    }
 
     // Factor weights into XC results
     for( int32_t i = 0; i < npts; ++i ) {

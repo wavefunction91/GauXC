@@ -176,7 +176,6 @@ public:
                       value_type* FXCs, int64_t ldfxcs,
                       value_type* FXCz, int64_t ldfxcz,
                       const IntegratorSettingsXC& ks_settings );
-
   void eval_dd_psi( int64_t m, int64_t n, const value_type* P,
                      int64_t ldp, unsigned max_Ylm, 
                      value_type* ddPsi, int64_t ldPsi );
