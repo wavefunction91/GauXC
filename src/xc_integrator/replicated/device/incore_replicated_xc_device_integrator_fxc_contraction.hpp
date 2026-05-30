@@ -334,28 +334,19 @@ namespace GauXC::detail {
       lwd->eval_xmat( 2.0, &device_data, false, DEN_S );
       lwd->eval_vvars_gga( &device_data, DEN_S );
       lwd->eval_uvars_gga( &device_data, RKS );
-      lwd->eval_kern_vxc_fxc_gga( func, &device_data );
       lwd->inc_nel( &device_data );
-      lwd->eval_xmat_trial( 2.0, &device_data, false, DEN_S );
-      lwd->eval_vvars_gga_trial( &device_data, DEN_S );
-      lwd->eval_tmat_gga( &device_data, RKS );
 
       const size_t batch_npts = stack_data->total_npts_task_batch;
       const size_t global_offset = local_point_offset + local_batch_offset;
       auto base_stack = stack_data->base_stack;
       std::vector<double> batch_A(batch_npts), batch_Bx(batch_npts), batch_By(batch_npts), batch_Bz(batch_npts);
-      backend->copy_async( batch_npts, base_stack.FXC_A_s_eval_device, batch_A.data(), "NLC FXC A D2H" );
-      backend->copy_async( batch_npts, base_stack.FXC_Bx_s_eval_device, batch_Bx.data(), "NLC FXC Bx D2H" );
-      backend->copy_async( batch_npts, base_stack.FXC_By_s_eval_device, batch_By.data(), "NLC FXC By D2H" );
-      backend->copy_async( batch_npts, base_stack.FXC_Bz_s_eval_device, batch_Bz.data(), "NLC FXC Bz D2H" );
-      backend->master_queue_synchronize();
 
       for( size_t i = 0; i < batch_npts; ++i ) {
         const auto global_i = global_offset + i;
-        batch_A[i]  += weights[global_i] * fxc_A[global_i];
-        batch_Bx[i] += weights[global_i] * fxc_B[3*global_i+0];
-        batch_By[i] += weights[global_i] * fxc_B[3*global_i+1];
-        batch_Bz[i] += weights[global_i] * fxc_B[3*global_i+2];
+        batch_A[i]  = weights[global_i] * fxc_A[global_i];
+        batch_Bx[i] = weights[global_i] * fxc_B[3*global_i+0];
+        batch_By[i] = weights[global_i] * fxc_B[3*global_i+1];
+        batch_Bz[i] = weights[global_i] * fxc_B[3*global_i+2];
       }
 
       backend->copy_async( batch_npts, batch_A.data(), base_stack.FXC_A_s_eval_device, "NLC FXC A H2D" );

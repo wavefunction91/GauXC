@@ -546,6 +546,14 @@ TEST_CASE( "VV10 integrated host paths are finite and repeatable", "[vv10][integ
   CHECK( (nlc_fxc - nlc_fxc.transpose()).norm() / nbf < 1e-10 );
   CHECK( nlc_fxc.norm() > 1e-12 );
 
+  auto pbe0_functional = GauXC::functional_type(
+    ExchCXX::Backend::builtin, ExchCXX::Functional::PBE0, ExchCXX::Spin::Unpolarized );
+  auto pbe0_integrator = integrator_factory.get_instance( pbe0_functional, load_balancer );
+  auto pbe0_base_fxc = pbe0_integrator.eval_fxc_contraction( P, tP );
+  auto pbe0_nlc_fxc = pbe0_integrator.eval_nlc_fnlc_contraction( P, tP, settings );
+  CHECK( (base_fxc - pbe0_base_fxc).norm() > 1e-8 );
+  CHECK( (nlc_fxc - pbe0_nlc_fxc).norm() / nbf < 1e-10 );
+
   matrix_type Pz = matrix_type::Zero( nbf, nbf );
   matrix_type tPz = matrix_type::Zero( nbf, nbf );
   auto polarized_functional = GauXC::functional_type(
@@ -589,6 +597,16 @@ TEST_CASE( "VV10 integrated host paths are finite and repeatable", "[vv10][integ
   CHECK( uks_nlc_fxc.allFinite() );
   CHECK( uks_nlc_fxc.norm() > 1e-12 );
   CHECK( uks_nlc_fxcz.norm() / nbf < 1e-8 );
+
+  auto pbe0_polarized_functional = GauXC::functional_type(
+    ExchCXX::Backend::builtin, ExchCXX::Functional::PBE0, ExchCXX::Spin::Polarized );
+  auto pbe0_uks_integrator = integrator_factory.get_instance( pbe0_polarized_functional, load_balancer );
+  auto [pbe0_uks_base_fxc, pbe0_uks_base_fxcz] = pbe0_uks_integrator.eval_fxc_contraction( P, Pz, tP, tPz );
+  auto [pbe0_uks_nlc_fxc, pbe0_uks_nlc_fxcz] = pbe0_uks_integrator.eval_nlc_fnlc_contraction( P, Pz, tP, tPz, settings );
+  CHECK( (uks_base_fxc - pbe0_uks_base_fxc).norm() > 1e-8 );
+  CHECK( (uks_base_fxcz - pbe0_uks_base_fxcz).norm() < 1e-10 );
+  CHECK( (uks_nlc_fxc - pbe0_uks_nlc_fxc).norm() / nbf < 1e-10 );
+  CHECK( (uks_nlc_fxcz - pbe0_uks_nlc_fxcz).norm() / nbf < 1e-10 );
 }
 
 #ifdef GAUXC_HAS_DEVICE
