@@ -22,6 +22,7 @@ struct BasicMPIReductionDriver : public HostReductionDriver {
 
   void allreduce_typeerased( const void*, void*, size_t, ReductionOp, std::type_index, std::any ) override;
   void allreduce_inplace_typeerased( void*, size_t, ReductionOp, std::type_index, std::any ) override;
+  void allgather_v_typeerased( const void*, size_t, std::vector<std::byte>&, std::type_index, std::any ) override;
   
   std::unique_ptr<detail::ReductionDriverImpl> clone() override;
 

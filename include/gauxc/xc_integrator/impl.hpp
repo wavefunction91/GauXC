@@ -101,6 +101,63 @@ typename XCIntegrator<MatrixType>::exx_type
 };
 
 template <typename MatrixType>
+typename XCIntegrator<MatrixType>::value_type
+  XCIntegrator<MatrixType>::eval_nlc( const MatrixType& P, const IntegratorSettingsNLC& settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_nlc(P, settings);
+};
+
+template <typename MatrixType>
+typename XCIntegrator<MatrixType>::value_type
+  XCIntegrator<MatrixType>::eval_nlc( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsNLC& settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_nlc(Ps, Pz, settings);
+};
+
+template <typename MatrixType>
+typename XCIntegrator<MatrixType>::exc_vxc_type_rks
+  XCIntegrator<MatrixType>::eval_nlc_vnlc( const MatrixType& P, const IntegratorSettingsNLC& settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_nlc_vnlc(P, settings);
+};
+
+template <typename MatrixType>
+typename XCIntegrator<MatrixType>::exc_vxc_type_uks
+  XCIntegrator<MatrixType>::eval_nlc_vnlc( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsNLC& settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_nlc_vnlc(Ps, Pz, settings);
+};
+
+template <typename MatrixType>
+typename XCIntegrator<MatrixType>::exc_grad_type
+  XCIntegrator<MatrixType>::eval_nlc_grad( const MatrixType& P, const IntegratorSettingsNLC& settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_nlc_grad(P, settings);
+};
+
+template <typename MatrixType>
+typename XCIntegrator<MatrixType>::exc_grad_type
+  XCIntegrator<MatrixType>::eval_nlc_grad( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsNLC& settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_nlc_grad(Ps, Pz, settings);
+};
+
+template <typename MatrixType>
+typename XCIntegrator<MatrixType>::fxc_contraction_type_rks
+  XCIntegrator<MatrixType>::eval_nlc_fnlc_contraction( const MatrixType& P, const MatrixType& tP, const IntegratorSettingsNLC& settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_nlc_fnlc_contraction(P, tP, settings);
+};
+
+template <typename MatrixType>
+typename XCIntegrator<MatrixType>::fxc_contraction_type_uks
+  XCIntegrator<MatrixType>::eval_nlc_fnlc_contraction( const MatrixType& Ps, const MatrixType& Pz,
+                           const MatrixType& tPs, const MatrixType& tPz, const IntegratorSettingsNLC& settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_nlc_fnlc_contraction(Ps, Pz, tPs, tPz, settings);
+};
+
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::fxc_contraction_type_rks
   XCIntegrator<MatrixType>::eval_fxc_contraction( const MatrixType& P, const MatrixType& tP, 
                                                const IntegratorSettingsXC& ks_settings ) { 

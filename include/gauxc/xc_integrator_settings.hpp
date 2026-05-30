@@ -29,4 +29,25 @@ struct IntegratorSettingsEXC_GRAD : public IntegratorSettingsKS {
   bool include_weight_derivatives= true; // whether to include grid weight contribution and employ translational invariance, or just use Hellmann-Feynman gradient
 };
 
+enum class NLCMathMode {
+  NativeFP64,
+  FloatPair
+};
+
+struct IntegratorSettingsNLC : public IntegratorSettingsEXC_GRAD {
+  double vv10_b      = 6.3;
+  double vv10_c      = 0.0093;
+  double vv10_tol    = 1e-8;
+  NLCMathMode math_mode = NLCMathMode::NativeFP64;
+};
+
+namespace detail {
+
+struct IntegratorSettingsNLCInternal : public IntegratorSettingsNLC {
+  IntegratorSettingsNLCInternal() = default;
+  explicit IntegratorSettingsNLCInternal( const IntegratorSettingsNLC& settings ) :
+    IntegratorSettingsNLC(settings) { }
+};
+
+}
 }

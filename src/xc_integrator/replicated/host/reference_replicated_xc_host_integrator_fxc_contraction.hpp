@@ -15,6 +15,7 @@
 #include "integrator_util/integrator_common.hpp"
 #include "host/local_host_work_driver.hpp"
 #include "host/blas.hpp"
+#include "vv10_nlc.hpp"
 #include <stdexcept>
 
 namespace GauXC::detail {
@@ -135,10 +136,192 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   auto& tasks = this->load_balancer_->get_tasks();
   std::sort( task_begin, task_end, task_comparator );
 
+  const auto vv10_settings = vv10::get_settings(settings);
+  const bool use_vv10 = vv10::enabled(settings);
+  if( use_vv10 ) {
+    if( not (func.is_gga() or func.is_mgga()) ) {
+      GAUXC_GENERIC_EXCEPTION("VV10 FXC contraction requires a GGA/MGGA density path");
+    }
+  }
+
+  std::vector<size_t> vv10_task_offsets;
+  std::vector<double> vv10_coords;
+  std::vector<double> vv10_weights;
+  std::vector<double> vv10_rho;
+  std::vector<double> vv10_gamma;
+  std::vector<double> vv10_grad_x;
+  std::vector<double> vv10_grad_y;
+  std::vector<double> vv10_grad_z;
+  std::vector<double> vv10_trho;
+  std::vector<double> vv10_tgrad_x;
+  std::vector<double> vv10_tgrad_y;
+  std::vector<double> vv10_tgrad_z;
+  std::vector<double> vv10_A;
+  std::vector<double> vv10_B;
+  size_t vv10_local_point_offset = 0;
+
   // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
   if( not lb_state.modified_weights_are_stored ) {
     GAUXC_GENERIC_EXCEPTION("Weights Have Not Been Modified");
+  }
+
+  if( use_vv10 ) {
+    const size_t ntasks = std::distance(task_begin, task_end);
+    size_t vv10_npts = 0;
+    vv10_task_offsets.resize(ntasks);
+    for( size_t iT = 0; iT < ntasks; ++iT ) {
+      vv10_task_offsets[iT] = vv10_npts;
+      vv10_npts += (task_begin + iT)->points.size();
+    }
+
+    vv10_coords .resize( 3 * vv10_npts );
+    vv10_weights.resize( vv10_npts );
+    vv10_rho    .resize( vv10_npts );
+    vv10_gamma  .resize( vv10_npts );
+    vv10_grad_x .resize( vv10_npts );
+    vv10_grad_y .resize( vv10_npts );
+    vv10_grad_z .resize( vv10_npts );
+    vv10_trho   .resize( vv10_npts );
+    vv10_tgrad_x.resize( vv10_npts );
+    vv10_tgrad_y.resize( vv10_npts );
+    vv10_tgrad_z.resize( vv10_npts );
+    vv10_A      .resize( vv10_npts, 0.0 );
+    vv10_B      .resize( 3 * vv10_npts, 0.0 );
+
+    XCHostData<value_type> vv10_host_data;
+    for( size_t iT = 0; iT < ntasks; ++iT ) {
+      const auto& task = *(task_begin + iT);
+      const int32_t npts = task.points.size();
+      const int32_t nbe = task.bfn_screening.nbe;
+      const int32_t nshells = task.bfn_screening.shell_list.size();
+      const auto* points = task.points.data()->data();
+      const auto* weights = task.weights.data();
+      const int32_t* shell_list = task.bfn_screening.shell_list.data();
+
+      vv10_host_data.basis_eval.resize( 4 * npts * nbe );
+      vv10_host_data.den_scr.resize( 4 * npts );
+      vv10_host_data.tden_scr.resize( 4 * npts );
+      vv10_host_data.gamma.resize( npts );
+      vv10_host_data.zmat.resize( npts * nbe );
+      vv10_host_data.nbe_scr.resize( nbe * nbe );
+
+      auto* basis_eval = vv10_host_data.basis_eval.data();
+      auto* dbasis_x_eval = basis_eval + npts * nbe;
+      auto* dbasis_y_eval = dbasis_x_eval + npts * nbe;
+      auto* dbasis_z_eval = dbasis_y_eval + npts * nbe;
+      auto* den_eval = vv10_host_data.den_scr.data();
+      auto* dden_x_eval = den_eval + npts;
+      auto* dden_y_eval = dden_x_eval + npts;
+      auto* dden_z_eval = dden_y_eval + npts;
+      auto* tden_eval = vv10_host_data.tden_scr.data();
+      auto* tdden_x_eval = tden_eval + npts;
+      auto* tdden_y_eval = tdden_x_eval + npts;
+      auto* tdden_z_eval = tdden_y_eval + npts;
+      auto* gamma_eval = vv10_host_data.gamma.data();
+      auto* zmat = vv10_host_data.zmat.data();
+      auto* nbe_scr = vv10_host_data.nbe_scr.data();
+
+      std::vector< std::array<int32_t, 3> > submat_map;
+      std::tie(submat_map, std::ignore) =
+            gen_compressed_submat_map(basis_map, task.bfn_screening.shell_list, nbf, nbf);
+
+      lwd->eval_collocation_gradient( npts, nshells, nbe, points, basis, shell_list,
+        basis_eval, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval );
+      lwd->eval_xmat( npts, nbf, nbe, submat_map, is_rks ? 2.0 : 1.0, Ps, ldps, basis_eval, nbe,
+        zmat, nbe, nbe_scr );
+      lwd->eval_uvvar_gga_rks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
+        dbasis_z_eval, zmat, nbe, den_eval, dden_x_eval, dden_y_eval, dden_z_eval,
+        gamma_eval );
+
+      const size_t offset = vv10_task_offsets[iT];
+      for( int32_t i = 0; i < npts; ++i ) {
+        vv10_coords[3*(offset + i) + 0] = points[3*i + 0];
+        vv10_coords[3*(offset + i) + 1] = points[3*i + 1];
+        vv10_coords[3*(offset + i) + 2] = points[3*i + 2];
+        vv10_weights[offset + i] = weights[i];
+        vv10_rho[offset + i] = den_eval[i];
+        vv10_gamma[offset + i] = gamma_eval[i];
+        vv10_grad_x[offset + i] = dden_x_eval[i];
+        vv10_grad_y[offset + i] = dden_y_eval[i];
+        vv10_grad_z[offset + i] = dden_z_eval[i];
+      }
+
+      lwd->eval_xmat( npts, nbf, nbe, submat_map, is_rks ? 2.0 : 1.0, tPs, ldtps, basis_eval, nbe,
+        zmat, nbe, nbe_scr );
+      lwd->eval_uvvar_gga_rks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
+        dbasis_z_eval, zmat, nbe, tden_eval, tdden_x_eval, tdden_y_eval, tdden_z_eval,
+        gamma_eval );
+      for( int32_t i = 0; i < npts; ++i ) {
+        vv10_trho[offset + i] = tden_eval[i];
+        vv10_tgrad_x[offset + i] = tdden_x_eval[i];
+        vv10_tgrad_y[offset + i] = tdden_y_eval[i];
+        vv10_tgrad_z[offset + i] = tdden_z_eval[i];
+      }
+    }
+
+    std::vector<double> vv10_local_packed( 13 * vv10_npts );
+    for( size_t i = 0; i < vv10_npts; ++i ) {
+      vv10_local_packed[13*i+0] = vv10_coords[3*i+0];
+      vv10_local_packed[13*i+1] = vv10_coords[3*i+1];
+      vv10_local_packed[13*i+2] = vv10_coords[3*i+2];
+      vv10_local_packed[13*i+3] = vv10_weights[i];
+      vv10_local_packed[13*i+4] = vv10_rho[i];
+      vv10_local_packed[13*i+5] = vv10_gamma[i];
+      vv10_local_packed[13*i+6] = vv10_grad_x[i];
+      vv10_local_packed[13*i+7] = vv10_grad_y[i];
+      vv10_local_packed[13*i+8] = vv10_grad_z[i];
+      vv10_local_packed[13*i+9] = vv10_trho[i];
+      vv10_local_packed[13*i+10] = vv10_tgrad_x[i];
+      vv10_local_packed[13*i+11] = vv10_tgrad_y[i];
+      vv10_local_packed[13*i+12] = vv10_tgrad_z[i];
+    }
+
+    const auto vv10_global_packed = vv10::allgather_packed_grid(
+      *this->reduction_driver_, vv10_local_packed, 13, vv10_local_point_offset );
+    if( vv10_global_packed.size() % 13 != 0 ) {
+      GAUXC_GENERIC_EXCEPTION("Invalid VV10 FXC packed grid size after allgather");
+    }
+    const size_t vv10_global_npts = vv10_global_packed.size() / 13;
+    if( vv10_local_point_offset + vv10_npts > vv10_global_npts ) {
+      GAUXC_GENERIC_EXCEPTION("Invalid VV10 FXC local grid offset after allgather");
+    }
+
+    vv10_coords .resize( 3 * vv10_global_npts );
+    vv10_weights.resize( vv10_global_npts );
+    vv10_rho    .resize( vv10_global_npts );
+    vv10_gamma  .resize( vv10_global_npts );
+    vv10_grad_x .resize( vv10_global_npts );
+    vv10_grad_y .resize( vv10_global_npts );
+    vv10_grad_z .resize( vv10_global_npts );
+    vv10_trho   .resize( vv10_global_npts );
+    vv10_tgrad_x.resize( vv10_global_npts );
+    vv10_tgrad_y.resize( vv10_global_npts );
+    vv10_tgrad_z.resize( vv10_global_npts );
+    vv10_A      .assign( vv10_global_npts, 0.0 );
+    vv10_B      .assign( 3 * vv10_global_npts, 0.0 );
+
+    for( size_t i = 0; i < vv10_global_npts; ++i ) {
+      vv10_coords[3*i+0] = vv10_global_packed[13*i+0];
+      vv10_coords[3*i+1] = vv10_global_packed[13*i+1];
+      vv10_coords[3*i+2] = vv10_global_packed[13*i+2];
+      vv10_weights[i] = vv10_global_packed[13*i+3];
+      vv10_rho[i] = vv10_global_packed[13*i+4];
+      vv10_gamma[i] = vv10_global_packed[13*i+5];
+      vv10_grad_x[i] = vv10_global_packed[13*i+6];
+      vv10_grad_y[i] = vv10_global_packed[13*i+7];
+      vv10_grad_z[i] = vv10_global_packed[13*i+8];
+      vv10_trho[i] = vv10_global_packed[13*i+9];
+      vv10_tgrad_x[i] = vv10_global_packed[13*i+10];
+      vv10_tgrad_y[i] = vv10_global_packed[13*i+11];
+      vv10_tgrad_z[i] = vv10_global_packed[13*i+12];
+    }
+
+    vv10::eval_fxc_rks( vv10_settings,
+      vv10::ResponseGridView{ vv10_global_npts, vv10_coords.data(), vv10_weights.data(), vv10_rho.data(),
+        vv10_gamma.data(), vv10_grad_x.data(), vv10_grad_y.data(), vv10_grad_z.data() },
+      vv10::TrialView{ vv10_trho.data(), vv10_tgrad_x.data(), vv10_tgrad_y.data(), vv10_tgrad_z.data() },
+      vv10::ResponseCorrectionsView{ vv10_A.data(), vv10_B.data() } );
   }
 
 
@@ -428,69 +611,95 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       }
      }
 
-    // Evaluate XC functional
-    if( func.is_mgga() )
-      func.eval_vxc_fxc( npts, den_eval, gamma, lapl, tau, vrho, vgamma, vlapl, vtau,
-        v2rho2, v2rhogamma, v2rholapl, v2rhotau, v2gamma2, 
-        v2gammalapl, v2gammatau, v2lapl2, v2lapltau, v2tau2);
-    else if( func.is_gga() )
-      func.eval_vxc_fxc( npts, den_eval, gamma, vrho, vgamma, v2rho2, v2rhogamma, v2gamma2 );
-    else
-      func.eval_vxc_fxc( npts, den_eval, vrho, v2rho2 );
+    if( not use_vv10 ) {
+      // Evaluate XC functional
+      if( func.is_mgga() )
+        func.eval_vxc_fxc( npts, den_eval, gamma, lapl, tau, vrho, vgamma, vlapl, vtau,
+          v2rho2, v2rhogamma, v2rholapl, v2rhotau, v2gamma2, 
+          v2gammalapl, v2gammatau, v2lapl2, v2lapltau, v2tau2);
+      else if( func.is_gga() )
+        func.eval_vxc_fxc( npts, den_eval, gamma, vrho, vgamma, v2rho2, v2rhogamma, v2gamma2 );
+      else
+        func.eval_vxc_fxc( npts, den_eval, vrho, v2rho2 );
 
-    //calculate the trial density variables
-    // Evaluate X matrix (fac * tP * B) -> store in Z
-    lwd->eval_xmat( mgga_dim_scal * npts, nbf, nbe, submat_map, xmat_fac, tPs, ldps, basis_eval, nbe,
-      zmat, nbe, nbe_scr );
-    // X matrix for tPz
-    if(not is_rks) {
-      lwd->eval_xmat( mgga_dim_scal * npts, nbf, nbe, submat_map, 1.0, tPz, ldpz, basis_eval, nbe,
-        zmat_z, nbe, nbe_scr);
-    }
-    // Evaluate U and V trial variables
-    if( func.is_mgga() ) {
-      if (is_rks) {
-        lwd->eval_uvvar_mgga_rks(  npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
-          dbasis_z_eval, lbasis_eval, zmat, nbe, mmat_x, mmat_y, mmat_z, 
-          nbe, tden_eval, tdden_x_eval, tdden_y_eval, tdden_z_eval, gamma, ttau, tlapl);
-      lwd->eval_tmat_mgga_vxc_rks( npts, vgamma, v2rho2, v2rhogamma, v2rholapl, v2rhotau, v2gamma2, 
-        v2gammalapl, v2gammatau, v2lapl2, v2lapltau, v2tau2, tden_eval, tdden_x_eval, 
-        tdden_y_eval, tdden_z_eval, ttau, dden_x_eval, dden_y_eval, dden_z_eval, FXC_A, FXC_B, FXC_C );
-      } else if (is_uks) {
-      // tgamma is not needed since it has different definitions than gamma
-      // gamma  = nabla rho * nabla rho, but tgamma = nabla trho * nabla rho, not both trho
-      lwd->eval_uvvar_mgga_uks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
-        dbasis_z_eval, lbasis_eval, zmat, nbe, zmat_z, nbe, 
-        mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe, 
-        tden_eval, tdden_x_eval, tdden_y_eval, tdden_z_eval, gamma, ttau, tlapl);
-      lwd->eval_tmat_mgga_vxc_uks( npts, vgamma, v2rho2, v2rhogamma, v2rholapl, v2rhotau, v2gamma2, 
-        v2gammalapl, v2gammatau, v2lapl2, v2lapltau, v2tau2, tden_eval, tdden_x_eval, 
-        tdden_y_eval, tdden_z_eval, ttau, dden_x_eval, dden_y_eval, dden_z_eval, FXC_A, FXC_B, FXC_C );
+      //calculate the trial density variables
+      // Evaluate X matrix (fac * tP * B) -> store in Z
+      lwd->eval_xmat( mgga_dim_scal * npts, nbf, nbe, submat_map, xmat_fac, tPs, ldps, basis_eval, nbe,
+        zmat, nbe, nbe_scr );
+      // X matrix for tPz
+      if(not is_rks) {
+        lwd->eval_xmat( mgga_dim_scal * npts, nbf, nbe, submat_map, 1.0, tPz, ldpz, basis_eval, nbe,
+          zmat_z, nbe, nbe_scr);
       }
-    } else if ( func.is_gga() ) {
-      if(is_rks) {
-        lwd->eval_uvvar_gga_rks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
-          dbasis_z_eval, zmat, nbe, tden_eval, tdden_x_eval, tdden_y_eval, tdden_z_eval,
-          gamma );
-        lwd->eval_tmat_gga_vxc_rks( npts, vgamma, v2rho2, v2rhogamma, v2gamma2, tden_eval, tdden_x_eval, 
+      // Evaluate U and V trial variables
+      if( func.is_mgga() ) {
+        if (is_rks) {
+          lwd->eval_uvvar_mgga_rks(  npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
+            dbasis_z_eval, lbasis_eval, zmat, nbe, mmat_x, mmat_y, mmat_z, 
+            nbe, tden_eval, tdden_x_eval, tdden_y_eval, tdden_z_eval, gamma, ttau, tlapl);
+        lwd->eval_tmat_mgga_vxc_rks( npts, vgamma, v2rho2, v2rhogamma, v2rholapl, v2rhotau, v2gamma2, 
+          v2gammalapl, v2gammatau, v2lapl2, v2lapltau, v2tau2, tden_eval, tdden_x_eval, 
+          tdden_y_eval, tdden_z_eval, ttau, dden_x_eval, dden_y_eval, dden_z_eval, FXC_A, FXC_B, FXC_C );
+        } else if (is_uks) {
+        // tgamma is not needed since it has different definitions than gamma
+        // gamma  = nabla rho * nabla rho, but tgamma = nabla trho * nabla rho, not both trho
+        lwd->eval_uvvar_mgga_uks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
+          dbasis_z_eval, lbasis_eval, zmat, nbe, zmat_z, nbe, 
+          mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe, 
+          tden_eval, tdden_x_eval, tdden_y_eval, tdden_z_eval, gamma, ttau, tlapl);
+        lwd->eval_tmat_mgga_vxc_uks( npts, vgamma, v2rho2, v2rhogamma, v2rholapl, v2rhotau, v2gamma2, 
+          v2gammalapl, v2gammatau, v2lapl2, v2lapltau, v2tau2, tden_eval, tdden_x_eval, 
+          tdden_y_eval, tdden_z_eval, ttau, dden_x_eval, dden_y_eval, dden_z_eval, FXC_A, FXC_B, FXC_C );
+        }
+      } else if ( func.is_gga() ) {
+        if(is_rks) {
+          lwd->eval_uvvar_gga_rks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
+            dbasis_z_eval, zmat, nbe, tden_eval, tdden_x_eval, tdden_y_eval, tdden_z_eval,
+            gamma );
+          lwd->eval_tmat_gga_vxc_rks( npts, vgamma, v2rho2, v2rhogamma, v2gamma2, tden_eval, tdden_x_eval, 
+            tdden_y_eval, tdden_z_eval, dden_x_eval, dden_y_eval, dden_z_eval, FXC_A, FXC_B );
+        } else if(is_uks) {
+        // tgamma is not needed since it has quite different definitions than gamma
+        lwd->eval_uvvar_gga_uks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
+          dbasis_z_eval, zmat, nbe, zmat_z, nbe, tden_eval, tdden_x_eval, 
+          tdden_y_eval, tdden_z_eval, gamma ); 
+        lwd->eval_tmat_gga_vxc_uks( npts, vgamma, v2rho2, v2rhogamma, v2gamma2, tden_eval, tdden_x_eval, 
           tdden_y_eval, tdden_z_eval, dden_x_eval, dden_y_eval, dden_z_eval, FXC_A, FXC_B );
-      } else if(is_uks) {
-      // tgamma is not needed since it has quite different definitions than gamma
-      lwd->eval_uvvar_gga_uks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
-        dbasis_z_eval, zmat, nbe, zmat_z, nbe, tden_eval, tdden_x_eval, 
-        tdden_y_eval, tdden_z_eval, gamma ); 
-      lwd->eval_tmat_gga_vxc_uks( npts, vgamma, v2rho2, v2rhogamma, v2gamma2, tden_eval, tdden_x_eval, 
-        tdden_y_eval, tdden_z_eval, dden_x_eval, dden_y_eval, dden_z_eval, FXC_A, FXC_B );
+        }
+      } else {
+        // LDA
+        if(is_rks) {
+          lwd->eval_uvvar_lda_rks( npts, nbe, basis_eval, zmat, nbe, tden_eval );
+          lwd->eval_tmat_lda_vxc_rks( npts, v2rho2, tden_eval, FXC_A);
+        } else if(is_uks) {
+          lwd->eval_uvvar_lda_uks( npts, nbe, basis_eval, zmat, nbe, zmat_z, nbe,
+            tden_eval );
+          lwd->eval_tmat_lda_vxc_uks( npts, v2rho2, tden_eval, FXC_A);
+        }
       }
-    } else {
-      // LDA
-      if(is_rks) {
-        lwd->eval_uvvar_lda_rks( npts, nbe, basis_eval, zmat, nbe, tden_eval );
-        lwd->eval_tmat_lda_vxc_rks( npts, v2rho2, tden_eval, FXC_A);
-      } else if(is_uks) {
-        lwd->eval_uvvar_lda_uks( npts, nbe, basis_eval, zmat, nbe, zmat_z, nbe,
-          tden_eval );
-        lwd->eval_tmat_lda_vxc_uks( npts, v2rho2, tden_eval, FXC_A);
+    }
+
+    if( use_vv10 ) {
+      if( func.is_mgga() ) std::fill_n( FXC_C, npts * spin_dim_scal, 0.0 );
+
+      const size_t vv10_offset = vv10_task_offsets[iT];
+      for( int32_t i = 0; i < npts; ++i ) {
+        const size_t vv10_global_i = vv10_local_point_offset + vv10_offset + i;
+        if( is_rks ) {
+          FXC_A[i] = vv10_A[vv10_global_i];
+          FXC_B[3*i]   = vv10_B[3*vv10_global_i];
+          FXC_B[3*i+1] = vv10_B[3*vv10_global_i+1];
+          FXC_B[3*i+2] = vv10_B[3*vv10_global_i+2];
+        } else {
+          FXC_A[2*i]   = vv10_A[vv10_global_i];
+          FXC_A[2*i+1] = vv10_A[vv10_global_i];
+          FXC_B[6*i]   = vv10_B[3*vv10_global_i];
+          FXC_B[6*i+1] = vv10_B[3*vv10_global_i+1];
+          FXC_B[6*i+2] = vv10_B[3*vv10_global_i+2];
+          FXC_B[6*i+3] = vv10_B[3*vv10_global_i];
+          FXC_B[6*i+4] = vv10_B[3*vv10_global_i+1];
+          FXC_B[6*i+5] = vv10_B[3*vv10_global_i+2];
+        }
       }
     }
 
@@ -535,14 +744,16 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         // Because we do not support Laplacian, so mgga will do the same operation as GGA
         lwd->eval_zmat_gga_vxc_rks_ts( npts, nbe, FXC_A, FXC_B, basis_eval, dbasis_x_eval,
                                 dbasis_y_eval, dbasis_z_eval, zmat, nbe);
-        lwd->eval_mmat_mgga_vxc_rks( npts, nbe, FXC_C, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
-                                     mmat_x, mmat_y, mmat_z, nbe);
+        if( not use_vv10 )
+          lwd->eval_mmat_mgga_vxc_rks( npts, nbe, FXC_C, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
+                                       mmat_x, mmat_y, mmat_z, nbe);
       } else if (is_uks) {
         // Because we do not support Laplacian, so mgga will do the same operation as GGA
         lwd->eval_zmat_gga_vxc_uks_ts( npts, nbe, FXC_A, FXC_B, basis_eval, dbasis_x_eval,
                                 dbasis_y_eval, dbasis_z_eval, zmat, nbe, zmat_z, nbe);
-        lwd->eval_mmat_mgga_vxc_uks_ts( npts, nbe, FXC_C, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
-                                     mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe);
+        if( not use_vv10 )
+          lwd->eval_mmat_mgga_vxc_uks_ts( npts, nbe, FXC_C, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
+                                       mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe);
       }
     }
     else if( func.is_gga() ) {
@@ -566,9 +777,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     {
 
       // Increment VXC
-      lwd->inc_vxc( mgga_dim_scal * npts, nbf, nbe, basis_eval, submat_map, zmat, nbe, FXCa, ldfxca, nbe_scr );
+      const auto npts_to_increment = use_vv10 ? npts : mgga_dim_scal * npts;
+      lwd->inc_vxc( npts_to_increment, nbf, nbe, basis_eval, submat_map, zmat, nbe, FXCa, ldfxca, nbe_scr );
       if( not is_rks )
-        lwd->inc_vxc( mgga_dim_scal * npts, nbf, nbe, basis_eval, submat_map, zmat_z, nbe, FXCb, ldfxcb, nbe_scr);
+        lwd->inc_vxc( npts_to_increment, nbf, nbe, basis_eval, submat_map, zmat_z, nbe, FXCb, ldfxcb, nbe_scr);
     }
 
   } // Loop over tasks

@@ -10,6 +10,7 @@
  * See LICENSE.txt for details
  */
 #include "incore_replicated_xc_device_integrator.hpp"
+#include "vv10_nlc_device.hpp"
 #include "device/local_device_work_driver.hpp"
 #include <stdexcept>
 #include "device/xc_device_aos_data.hpp"
@@ -33,6 +34,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     GAUXC_GENERIC_EXCEPTION("P Must Have Same Dimension as Basis");
   if( ldp < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDP");
+  auto* nlc_settings = dynamic_cast<const IntegratorSettingsNLCInternal*>(&settings);
 
   // Get Tasks
   auto& tasks = this->load_balancer_->get_tasks();
@@ -46,6 +48,28 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   const auto& mol = this->load_balancer_->molecule();
   const auto natoms = mol.size();
+  if( nlc_settings ) {
+    if( this->reduction_driver_->takes_device_memory() ) {
+      GAUXC_GENERIC_EXCEPTION("NLC device EXC_GRAD requires host reductions");
+    }
+
+    this->timer_.time_op("XCIntegrator.LocalWork", [&](){
+      nlc_exc_grad_local_work_( basis, P, ldp, EXC_GRAD, *nlc_settings,
+        tasks.begin(), tasks.end(), *device_data_ptr );
+    });
+
+    GAUXC_MPI_CODE(
+    this->timer_.time_op("XCIntegrator.ImbalanceWait",[&](){
+      MPI_Barrier(this->load_balancer_->runtime().comm());
+    });
+    )
+
+    this->timer_.time_op("XCIntegrator.Allreduce", [&](){
+      this->reduction_driver_->allreduce_inplace( EXC_GRAD, 3*natoms, ReductionOp::Sum );
+    });
+    return;
+  }
+
   if( this->reduction_driver_->takes_device_memory() ) {
     GAUXC_GENERIC_EXCEPTION("Device Reduction + EXC Grad NYI");
   } else {
@@ -90,6 +114,9 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     GAUXC_GENERIC_EXCEPTION("Invalid LDPS");
   if( ldpz < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDPZ");
+  if( dynamic_cast<const IntegratorSettingsNLCInternal*>(&settings) ) {
+    GAUXC_GENERIC_EXCEPTION("NLC device EXC_GRAD currently supports only RKS");
+  }
 
   // Get Tasks
   auto& tasks = this->load_balancer_->get_tasks();
@@ -127,6 +154,192 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
 
   }
 
+}
+
+template <typename ValueType>
+void IncoreReplicatedXCDeviceIntegrator<ValueType>::
+  nlc_exc_grad_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
+                                  value_type* EXC_GRAD,
+                                  const IntegratorSettingsNLC& settings,
+                                  host_task_iterator task_begin, host_task_iterator task_end,
+                                  XCDeviceData& device_data ) {
+
+#ifdef GAUXC_HAS_CUDA
+  auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
+  auto* stack_data = dynamic_cast<XCDeviceStackData*>(&device_data);
+  auto* aos_data = dynamic_cast<XCDeviceAoSData*>(&device_data);
+  if( not stack_data or not aos_data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  const auto& func = *this->func_;
+  if( not func.is_gga() ) {
+    GAUXC_GENERIC_EXCEPTION("NLC device EXC_GRAD currently requires a GGA functional");
+  }
+
+  IntegratorSettingsEXC_GRAD exc_grad_settings;
+  exc_grad_settings.include_weight_derivatives = settings.include_weight_derivatives;
+
+  const auto& mol = this->load_balancer_->molecule();
+  const auto& meta = this->load_balancer_->molmeta();
+  const auto natoms = mol.size();
+  BasisSetMap basis_map(basis,mol);
+  device_data.populate_submat_maps( basis.nbf(), task_begin, task_end, basis_map );
+
+  auto task_comparator = []( const XCTask& a, const XCTask& b ) {
+    return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
+  };
+  std::sort( task_begin, task_end, task_comparator );
+
+  auto& lb_state = this->load_balancer_->state();
+  if( not lb_state.modified_weights_are_stored ) {
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Been Modified");
+  }
+  XCWeightAlg& weight_alg = lb_state.weight_alg;
+
+  integrator_term_tracker enabled_terms;
+  enabled_terms.exc_grad = true;
+  enabled_terms.weights = true;
+  enabled_terms.ks_scheme = RKS;
+  enabled_terms.xc_approx = integrator_xc_approx::GGA;
+
+  const auto nbf = basis.nbf();
+  const auto nshells = basis.nshells();
+  device_data.reset_allocations();
+  device_data.allocate_static_data_exc_grad( nbf, nshells, natoms, enabled_terms );
+  device_data.send_static_data_density_basis( Ps, ldps, nullptr, 0, nullptr, 0, nullptr, 0, basis );
+  device_data.allocate_static_data_weights( natoms );
+  device_data.send_static_data_weights( mol, meta );
+
+  auto rt = detail::as_device_runtime(this->load_balancer_->runtime());
+  auto* backend = rt.device_backend();
+
+  std::vector<double> local_packed;
+  std::vector<unsigned long long> local_parent;
+  auto task_it = task_begin;
+  while( task_it != task_end ) {
+    task_it = device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
+
+    lwd->eval_collocation_gradient( &device_data );
+    lwd->eval_xmat( 2.0, &device_data, false, DEN_S );
+    lwd->eval_vvars_gga( &device_data, DEN_S );
+    lwd->eval_uvars_gga( &device_data, RKS );
+
+    const size_t batch_npts = stack_data->total_npts_task_batch;
+    std::vector<double> points_x(batch_npts), points_y(batch_npts), points_z(batch_npts);
+    std::vector<double> weights(batch_npts), rho(batch_npts), gamma(batch_npts);
+    auto base_stack = stack_data->base_stack;
+    backend->copy_async( batch_npts, base_stack.points_x_device, points_x.data(), "NLC grad points_x D2H" );
+    backend->copy_async( batch_npts, base_stack.points_y_device, points_y.data(), "NLC grad points_y D2H" );
+    backend->copy_async( batch_npts, base_stack.points_z_device, points_z.data(), "NLC grad points_z D2H" );
+    backend->copy_async( batch_npts, base_stack.weights_device, weights.data(), "NLC grad weights D2H" );
+    backend->copy_async( batch_npts, base_stack.den_s_eval_device, rho.data(), "NLC grad rho D2H" );
+    backend->copy_async( batch_npts, base_stack.gamma_eval_device, gamma.data(), "NLC grad gamma D2H" );
+    backend->master_queue_synchronize();
+
+    local_packed.reserve(local_packed.size() + 6 * batch_npts);
+    for( size_t i = 0; i < batch_npts; ++i ) {
+      local_packed.push_back(points_x[i]);
+      local_packed.push_back(points_y[i]);
+      local_packed.push_back(points_z[i]);
+      local_packed.push_back(weights[i]);
+      local_packed.push_back(rho[i]);
+      local_packed.push_back(gamma[i]);
+    }
+    for( const auto& task : aos_data->host_device_tasks ) {
+      for( size_t i = 0; i < task.npts; ++i ) {
+        local_parent.push_back( static_cast<unsigned long long>( task.iParent ) );
+      }
+    }
+  }
+
+  size_t local_point_offset = 0;
+  const auto global_packed = vv10::allgather_packed_grid(
+    *this->reduction_driver_, local_packed, 6, local_point_offset );
+  if( global_packed.size() % 6 != 0 ) {
+    GAUXC_GENERIC_EXCEPTION("Invalid VV10 device EXC_GRAD packed grid size after allgather");
+  }
+  auto parent = this->reduction_driver_->allgather_v( local_parent.data(), local_parent.size() );
+
+  const size_t global_npts = global_packed.size() / 6;
+  if( parent.size() != global_npts ) {
+    GAUXC_GENERIC_EXCEPTION("Invalid VV10 device EXC_GRAD parent grid size after allgather");
+  }
+  std::vector<double> coords(3 * global_npts), weights(global_npts), rho(global_npts), gamma(global_npts);
+  std::vector<double> eps(global_npts, 0.0), vrho(global_npts, 0.0), vgamma(global_npts, 0.0);
+  std::vector<double> grid_grad_x(global_npts, 0.0), grid_grad_y(global_npts, 0.0), grid_grad_z(global_npts, 0.0);
+  for( size_t i = 0; i < global_npts; ++i ) {
+    coords[3*i+0] = global_packed[6*i+0];
+    coords[3*i+1] = global_packed[6*i+1];
+    coords[3*i+2] = global_packed[6*i+2];
+    weights[i] = global_packed[6*i+3];
+    rho[i] = global_packed[6*i+4];
+    gamma[i] = global_packed[6*i+5];
+  }
+
+  vv10::eval_exc_vxc_cuda( 0, settings,
+    vv10::GridView{ global_npts, coords.data(), weights.data(), rho.data(), gamma.data() },
+    vv10::CorrectionsView{ eps.data(), vrho.data(), vgamma.data() } );
+  if( exc_grad_settings.include_weight_derivatives ) {
+    vv10::eval_grid_gradient_excluding_same_parent_cuda( 0, settings,
+      vv10::GridView{ global_npts, coords.data(), weights.data(), rho.data(), gamma.data() },
+      parent,
+      vv10::GridGradientView{ grid_grad_x.data(), grid_grad_y.data(), grid_grad_z.data() } );
+  }
+
+  device_data.zero_exc_grad_integrands();
+  std::vector<double> grid_gradient_contribution(3 * natoms, 0.0);
+  task_it = task_begin;
+  size_t local_batch_offset = 0;
+  while( task_it != task_end ) {
+    task_it = device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
+
+    lwd->eval_collocation_hessian( &device_data );
+    lwd->eval_xmat( 2.0, &device_data, true, DEN_S );
+    lwd->eval_vvars_gga( &device_data, DEN_S );
+    lwd->eval_uvars_gga( &device_data, RKS );
+
+    const size_t batch_npts = stack_data->total_npts_task_batch;
+    const size_t global_offset = local_point_offset + local_batch_offset;
+    std::vector<double> batch_eps(batch_npts), batch_vrho(batch_npts), batch_vgamma(batch_npts);
+    for( size_t i = 0; i < batch_npts; ++i ) {
+      const auto global_i = global_offset + i;
+      batch_eps[i] = (2.0 * eps[global_i] - vv10::beta(settings)) * weights[global_i];
+      batch_vrho[i] = vrho[global_i] * weights[global_i];
+      batch_vgamma[i] = vgamma[global_i] * weights[global_i];
+    }
+
+    auto base_stack = stack_data->base_stack;
+    backend->copy_async( batch_npts, batch_eps.data(), base_stack.eps_eval_device, "NLC grad eps H2D" );
+    backend->copy_async( batch_npts, batch_vrho.data(), base_stack.vrho_eval_device, "NLC grad vrho H2D" );
+    backend->copy_async( batch_npts, batch_vgamma.data(), base_stack.vgamma_eval_device, "NLC grad vgamma H2D" );
+    backend->master_queue_synchronize();
+
+    lwd->inc_nel( &device_data );
+    lwd->inc_exc_grad_gga( &device_data, RKS, exc_grad_settings.include_weight_derivatives );
+    if( exc_grad_settings.include_weight_derivatives ) {
+      lwd->eval_weight_1st_deriv_contracted( &device_data, weight_alg );
+      size_t batch_point_offset = 0;
+      for( const auto& task : aos_data->host_device_tasks ) {
+        for( size_t i = 0; i < task.npts; ++i ) {
+          const auto global_i = global_offset + batch_point_offset + i;
+          const auto pref = rho[global_i] * weights[global_i];
+          grid_gradient_contribution[3*task.iParent + 0] += pref * grid_grad_x[global_i];
+          grid_gradient_contribution[3*task.iParent + 1] += pref * grid_grad_y[global_i];
+          grid_gradient_contribution[3*task.iParent + 2] += pref * grid_grad_z[global_i];
+        }
+        batch_point_offset += task.npts;
+      }
+    }
+    local_batch_offset += batch_npts;
+  }
+
+  double N_EL;
+  device_data.retrieve_exc_grad_integrands( EXC_GRAD, &N_EL );
+  for( size_t i = 0; i < 3 * natoms; ++i ) {
+    EXC_GRAD[i] += grid_gradient_contribution[i];
+  }
+#else
+  GAUXC_GENERIC_EXCEPTION("NLC device EXC_GRAD requires CUDA");
+#endif
 }
 
 template <typename ValueType>

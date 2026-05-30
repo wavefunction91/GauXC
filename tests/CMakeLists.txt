@@ -66,6 +66,8 @@ add_executable( gauxc_test
   weight_derivative_test.cxx
   standards.cxx 
   runtime.cxx
+  vv10_nlc_test.cxx
+  vv10_test.cxx
   basis/parse_basis.cxx
   dd_psi_potential_test.cxx
   2nd_derivative_test.cxx
@@ -88,6 +90,11 @@ add_executable( standalone_driver standalone_driver.cxx standards.cxx basis/pars
 target_link_libraries( standalone_driver PUBLIC gauxc gauxc_catch2 Eigen3::Eigen )
 target_include_directories( standalone_driver PRIVATE ${PROJECT_BINARY_DIR}/tests )
 target_include_directories( standalone_driver PRIVATE ${PROJECT_SOURCE_DIR}/tests )
+
+add_executable( vv10_benchmark vv10_benchmark.cxx )
+target_link_libraries( vv10_benchmark PUBLIC gauxc Eigen3::Eigen )
+target_include_directories( vv10_benchmark PRIVATE ${PROJECT_BINARY_DIR}/tests )
+target_include_directories( vv10_benchmark PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
 #add_executable( grid_opt grid_opt.cxx standards.cxx basis/parse_basis.cxx ini_input.cxx )
 #target_link_libraries( grid_opt PUBLIC gauxc gauxc_catch2 Eigen3::Eigen )

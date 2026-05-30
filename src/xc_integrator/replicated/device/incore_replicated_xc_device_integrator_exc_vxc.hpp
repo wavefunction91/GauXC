@@ -12,9 +12,12 @@
 #include "incore_replicated_xc_device_integrator.hpp"
 #include "device/local_device_work_driver.hpp"
 #include "device/xc_device_aos_data.hpp"
+#include "device/xc_device_stack_data.hpp"
+#include "vv10_nlc_device.hpp"
 #include <fstream>
 #include <gauxc/exceptions.hpp>
 #include <gauxc/util/unused.hpp>
+#include <numeric>
 
 namespace GauXC  {
 namespace detail {
@@ -60,6 +63,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   const bool is_gks = (Pz != nullptr) and (Py != nullptr) and (Px != nullptr);
   const bool is_uks = (Pz != nullptr) and (Py == nullptr) and (Px == nullptr);
   const bool is_rks = (Ps != nullptr) and (not is_uks and not is_gks);
+  const auto* nlc_settings = dynamic_cast<const IntegratorSettingsNLCInternal*>(&settings);
 
   const auto& basis = this->load_balancer_->basis();
 
@@ -89,6 +93,42 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       if( ldvxcx < nbf )
         GAUXC_GENERIC_EXCEPTION("Invalid LDVXCx");
     }
+  }
+
+  if( nlc_settings ) {
+    if( is_gks ) {
+      GAUXC_GENERIC_EXCEPTION("NLC device EXC/VXC is not implemented for GKS");
+    }
+    if( this->reduction_driver_->takes_device_memory() ) {
+      GAUXC_GENERIC_EXCEPTION("NLC device EXC/VXC currently requires host reductions");
+    }
+
+    auto& tasks = this->load_balancer_->get_tasks();
+    auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
+    auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
+    auto device_data_ptr = lwd->create_device_data(rt);
+    value_type N_EL;
+    if( VXCz ) std::fill_n( VXCz, nbf*nbf, 0.0 );
+
+    this->timer_.time_op("XCIntegrator.LocalWork_NLC_EXC_VXC", [&](){
+      nlc_exc_vxc_local_work_( basis, Ps, ldps, is_rks ? 2.0 : 1.0,
+        VXCs, ldvxcs, EXC, &N_EL,
+        *nlc_settings, tasks.begin(), tasks.end(), *device_data_ptr );
+    });
+
+    GAUXC_MPI_CODE(
+    this->timer_.time_op("XCIntegrator.ImbalanceWait_NLC_EXC_VXC",[&](){
+      MPI_Barrier(this->load_balancer_->runtime().comm());
+    });
+    )
+
+    this->timer_.time_op("XCIntegrator.Allreduce_NLC_EXC_VXC", [&](){
+      if( VXCs ) this->reduction_driver_->allreduce_inplace( VXCs, nbf*nbf, ReductionOp::Sum );
+      if( VXCz ) this->reduction_driver_->allreduce_inplace( VXCz, nbf*nbf, ReductionOp::Sum );
+      this->reduction_driver_->allreduce_inplace( EXC, 1, ReductionOp::Sum );
+      this->reduction_driver_->allreduce_inplace( &N_EL, 1, ReductionOp::Sum );
+    });
+    return;
   }
 
 
@@ -215,6 +255,161 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
       }
     }
   }
+}
+
+template <typename ValueType>
+void IncoreReplicatedXCDeviceIntegrator<ValueType>::
+  nlc_exc_vxc_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
+                            double xmat_fac,
+                            value_type* VXC, int64_t ldvxc, value_type* EXC, value_type *N_EL,
+                            const IntegratorSettingsNLC& settings,
+                            host_task_iterator task_begin, host_task_iterator task_end,
+                            XCDeviceData& device_data ) {
+
+  auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
+  auto* stack_data = dynamic_cast<XCDeviceStackData*>(&device_data);
+  if( not stack_data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  const auto& func = *this->func_;
+  const auto& mol = this->load_balancer_->molecule();
+  if( not func.is_gga() ) {
+    GAUXC_GENERIC_EXCEPTION("NLC device EXC/VXC currently requires a GGA functional");
+  }
+
+  BasisSetMap basis_map(basis,mol);
+  device_data.populate_submat_maps( basis.nbf(), task_begin, task_end, basis_map );
+  auto task_comparator = []( const XCTask& a, const XCTask& b ) {
+    return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
+  };
+  std::sort( task_begin, task_end, task_comparator );
+
+  auto& lb_state = this->load_balancer_->state();
+  if( not lb_state.modified_weights_are_stored ) {
+    GAUXC_GENERIC_EXCEPTION("Weights Have Not Been Modified");
+  }
+
+  integrator_term_tracker enabled_terms;
+  enabled_terms.exc_vxc = true;
+  enabled_terms.ks_scheme = RKS;
+  enabled_terms.xc_approx = integrator_xc_approx::GGA;
+
+  const auto nbf = basis.nbf();
+  const auto nshells = basis.nshells();
+  device_data.reset_allocations();
+  device_data.allocate_static_data_exc_vxc( nbf, nshells, enabled_terms, true );
+  device_data.send_static_data_density_basis( Ps, ldps, nullptr, 0, nullptr, 0, nullptr, 0, basis );
+
+  size_t local_npts = 0;
+  const size_t ntasks = std::distance(task_begin, task_end);
+  for( size_t iT = 0; iT < ntasks; ++iT ) {
+    local_npts += (task_begin + iT)->points.size();
+  }
+
+  std::vector<double> local_packed;
+  local_packed.reserve(6 * local_npts);
+
+  auto rt = detail::as_device_runtime(this->load_balancer_->runtime());
+  auto* backend = rt.device_backend();
+
+  auto task_it = task_begin;
+  while( task_it != task_end ) {
+    const auto batch_begin = task_it;
+    task_it = device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
+
+    lwd->eval_collocation_gradient( &device_data );
+    lwd->eval_xmat( xmat_fac, &device_data, false, DEN_S );
+    lwd->eval_vvars_gga( &device_data, DEN_S );
+    lwd->eval_uvars_gga( &device_data, RKS );
+
+    const size_t batch_npts = stack_data->total_npts_task_batch;
+    std::vector<double> rho(batch_npts), gamma(batch_npts);
+    auto base_stack = stack_data->base_stack;
+    backend->copy_async( batch_npts, base_stack.den_s_eval_device, rho.data(), "NLC rho D2H" );
+    backend->copy_async( batch_npts, base_stack.gamma_eval_device, gamma.data(), "NLC gamma D2H" );
+    backend->master_queue_synchronize();
+
+    size_t batch_offset = 0;
+    for( auto batch_task = batch_begin; batch_task != task_it; ++batch_task ) {
+      const auto npts = batch_task->points.size();
+      const auto* points = batch_task->points.data()->data();
+      const auto* weights = batch_task->weights.data();
+      for( size_t i = 0; i < npts; ++i, ++batch_offset ) {
+        local_packed.push_back(points[3*i + 0]);
+        local_packed.push_back(points[3*i + 1]);
+        local_packed.push_back(points[3*i + 2]);
+        local_packed.push_back(weights[i]);
+        local_packed.push_back(rho[batch_offset]);
+        local_packed.push_back(gamma[batch_offset]);
+      }
+    }
+    if( batch_offset != batch_npts ) {
+      GAUXC_GENERIC_EXCEPTION("Invalid NLC device EXC/VXC host/device batch point count");
+    }
+  }
+
+  size_t local_point_offset = 0;
+  const auto global_packed = vv10::allgather_packed_grid(
+    *this->reduction_driver_, local_packed, 6, local_point_offset );
+  if( global_packed.size() % 6 != 0 ) {
+    GAUXC_GENERIC_EXCEPTION("Invalid VV10 device EXC/VXC packed grid size after allgather");
+  }
+
+  const size_t global_npts = global_packed.size() / 6;
+  std::vector<double> coords(3 * global_npts), weights(global_npts), rho(global_npts), gamma(global_npts);
+  std::vector<double> eps(global_npts, 0.0), vrho(global_npts, 0.0), vgamma(global_npts, 0.0);
+  for( size_t i = 0; i < global_npts; ++i ) {
+    coords[3*i+0] = global_packed[6*i+0];
+    coords[3*i+1] = global_packed[6*i+1];
+    coords[3*i+2] = global_packed[6*i+2];
+    weights[i] = global_packed[6*i+3];
+    rho[i] = global_packed[6*i+4];
+    gamma[i] = global_packed[6*i+5];
+  }
+
+  vv10::eval_exc_vxc_cuda( 0, settings,
+    vv10::GridView{ global_npts, coords.data(), weights.data(), rho.data(), gamma.data() },
+    vv10::CorrectionsView{ eps.data(), vrho.data(), vgamma.data() } );
+
+  device_data.zero_exc_vxc_integrands(enabled_terms);
+
+  task_it = task_begin;
+  size_t local_batch_offset = 0;
+  while( task_it != task_end ) {
+    task_it = device_data.generate_buffers( enabled_terms, basis_map, task_it, task_end );
+
+    lwd->eval_collocation_gradient( &device_data );
+    lwd->eval_xmat( xmat_fac, &device_data, false, DEN_S );
+    lwd->eval_vvars_gga( &device_data, DEN_S );
+    lwd->eval_uvars_gga( &device_data, RKS );
+
+    const size_t batch_npts = stack_data->total_npts_task_batch;
+  const size_t global_offset = local_point_offset + local_batch_offset;
+
+    auto base_stack = stack_data->base_stack;
+    std::vector<double> batch_eps(batch_npts), batch_vrho(batch_npts), batch_vgamma(batch_npts);
+    for( size_t i = 0; i < batch_npts; ++i ) {
+      const auto global_i = global_offset + i;
+      batch_eps[i] = eps[global_i] * weights[global_i];
+      batch_vrho[i] = vrho[global_i] * weights[global_i];
+      batch_vgamma[i] = vgamma[global_i] * weights[global_i];
+    }
+    backend->copy_async( batch_npts, batch_eps.data(), base_stack.eps_eval_device, "NLC eps H2D" );
+    backend->copy_async( batch_npts, batch_vrho.data(), base_stack.vrho_eval_device, "NLC vrho H2D" );
+    backend->copy_async( batch_npts, batch_vgamma.data(), base_stack.vgamma_eval_device, "NLC vgamma H2D" );
+    backend->master_queue_synchronize();
+
+    lwd->inc_exc( &device_data );
+    lwd->inc_nel( &device_data );
+    if( VXC ) {
+      lwd->eval_zmat_gga_vxc( &device_data, RKS, DEN_S );
+      lwd->inc_vxc( &device_data, DEN_S, false );
+    }
+    local_batch_offset += batch_npts;
+  }
+
+  if( VXC ) lwd->symmetrize_vxc( &device_data, DEN_S );
+  backend->master_queue_synchronize();
+  device_data.retrieve_exc_vxc_integrands( EXC, N_EL, VXC, ldvxc, nullptr, 0, nullptr, 0, nullptr, 0 );
 }
 
 

@@ -80,6 +80,18 @@ public:
   exx_type      eval_exx     ( const MatrixType&, 
                                const IntegratorSettingsEXX& = IntegratorSettingsEXX{} );
 
+  value_type eval_nlc( const MatrixType&, const IntegratorSettingsNLC& = IntegratorSettingsNLC{} );
+  value_type eval_nlc( const MatrixType&, const MatrixType&, const IntegratorSettingsNLC& = IntegratorSettingsNLC{} );
+
+  exc_vxc_type_rks eval_nlc_vnlc( const MatrixType&, const IntegratorSettingsNLC& = IntegratorSettingsNLC{} );
+  exc_vxc_type_uks eval_nlc_vnlc( const MatrixType&, const MatrixType&, const IntegratorSettingsNLC& = IntegratorSettingsNLC{} );
+
+  exc_grad_type eval_nlc_grad( const MatrixType&, const IntegratorSettingsNLC& = IntegratorSettingsNLC{} );
+  exc_grad_type eval_nlc_grad( const MatrixType&, const MatrixType&, const IntegratorSettingsNLC& = IntegratorSettingsNLC{} );
+
+  fxc_contraction_type_rks eval_nlc_fnlc_contraction( const MatrixType&, const MatrixType&, const IntegratorSettingsNLC& = IntegratorSettingsNLC{} );
+  fxc_contraction_type_uks eval_nlc_fnlc_contraction( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsNLC& = IntegratorSettingsNLC{} );
+
   fxc_contraction_type_rks  eval_fxc_contraction ( const MatrixType&, const MatrixType&,
                                   const IntegratorSettingsXC& = IntegratorSettingsXC{} );
   fxc_contraction_type_uks  eval_fxc_contraction ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,

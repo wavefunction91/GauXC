@@ -38,6 +38,11 @@ void ReductionDriver::allreduce_inplace_typeerased( void* data, size_t size, Red
   pimpl_->allreduce_inplace_typeerased(data, size, op, idx, optional_args);
 }
 
+void ReductionDriver::allgather_v_typeerased( const void* src, size_t size, std::vector<std::byte>& dest, std::type_index idx, std::any optional_args ) const {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  pimpl_->allgather_v_typeerased(src, size, dest, idx, optional_args);
+}
+
 bool ReductionDriver::takes_host_memory() const {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->takes_host_memory();
@@ -45,6 +50,16 @@ bool ReductionDriver::takes_host_memory() const {
 bool ReductionDriver::takes_device_memory() const {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
   return pimpl_->takes_device_memory();
+}
+
+int ReductionDriver::comm_rank() const {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->comm_rank();
+}
+
+int ReductionDriver::comm_size() const {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->comm_size();
 }
 
 

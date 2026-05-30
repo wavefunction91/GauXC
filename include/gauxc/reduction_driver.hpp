@@ -13,8 +13,11 @@
 #include <memory>
 #include <gauxc/gauxc_config.hpp>
 #include <gauxc/runtime_environment.hpp>
+#include <cstring>
 #include <typeindex>
 #include <any>
+#include <cstddef>
+#include <vector>
 
 namespace GauXC {
 
@@ -52,11 +55,23 @@ public:
     allreduce_inplace_typeerased( data, size, op, std::type_index(typeid(T)), optional_args );
   }
 
+  template <typename T>
+  inline std::vector<T> allgather_v( const T* src, size_t size, std::any optional_args = std::any() ) const {
+    std::vector<std::byte> bytes;
+    allgather_v_typeerased( src, size, bytes, std::type_index(typeid(T)), optional_args );
+    std::vector<T> dest( bytes.size() / sizeof(T) );
+    std::memcpy( dest.data(), bytes.data(), bytes.size() );
+    return dest;
+  }
+
   void allreduce_typeerased( const void*, void*, size_t, ReductionOp, std::type_index, std::any );
   void allreduce_inplace_typeerased( void*, size_t, ReductionOp, std::type_index, std::any );
+  void allgather_v_typeerased( const void*, size_t, std::vector<std::byte>&, std::type_index, std::any ) const;
 
   bool takes_host_memory() const;
   bool takes_device_memory() const;
+  int comm_rank() const;
+  int comm_size() const;
 
 };
 

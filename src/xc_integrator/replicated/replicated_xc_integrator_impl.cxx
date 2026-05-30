@@ -10,6 +10,7 @@
  * See LICENSE.txt for details
  */
 #include <gauxc/xc_integrator/replicated/replicated_xc_integrator_impl.hpp>
+#include <gauxc/exceptions.hpp>
 
 namespace GauXC  {
 namespace detail {

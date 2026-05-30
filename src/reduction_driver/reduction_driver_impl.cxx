@@ -10,6 +10,7 @@
  * See LICENSE.txt for details
  */
 #include "reduction_driver_impl.hpp"
+#include <gauxc/exceptions.hpp>
 
 namespace GauXC::detail {
 
@@ -19,5 +20,13 @@ ReductionDriverImpl::ReductionDriverImpl( const RuntimeEnvironment& rt )
 
 ReductionDriverImpl::~ReductionDriverImpl() noexcept = default;
 ReductionDriverImpl::ReductionDriverImpl(const ReductionDriverImpl& ) = default;
+
+void ReductionDriverImpl::allgather_v_typeerased( const void*, size_t,
+  std::vector<std::byte>&, std::type_index, std::any ) {
+  GAUXC_GENERIC_EXCEPTION("Variable-size allgather is not supported by this ReductionDriver");
+}
+
+int ReductionDriverImpl::comm_rank() const { return runtime_.comm_rank(); }
+int ReductionDriverImpl::comm_size() const { return runtime_.comm_size(); }
 
 }

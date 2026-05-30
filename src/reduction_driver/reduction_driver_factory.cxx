@@ -23,6 +23,13 @@
 
 namespace GauXC {
 
+ReductionDriver ReductionDriverFactory::get_instance(
+  const RuntimeEnvironment& rt, std::string kernel_name ) {
+
+  auto driver = get_shared_instance(rt, std::move(kernel_name));
+  return *driver;
+}
+
 std::shared_ptr<ReductionDriver> ReductionDriverFactory::get_shared_instance(
   const RuntimeEnvironment& rt, std::string kernel_name ) {
 

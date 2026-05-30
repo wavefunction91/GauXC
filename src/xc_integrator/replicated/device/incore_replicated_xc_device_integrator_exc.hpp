@@ -12,6 +12,8 @@
 #include "incore_replicated_xc_device_integrator.hpp"
 #include "device/local_device_work_driver.hpp"
 #include "device/xc_device_aos_data.hpp"
+#include "device/xc_device_stack_data.hpp"
+#include "vv10_nlc_device.hpp"
 #include <fstream>
 #include <gauxc/exceptions.hpp>
 #include <gauxc/util/unused.hpp>
@@ -38,6 +40,42 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
     GAUXC_GENERIC_EXCEPTION("P/VXC Must Have Same Dimension as Basis");
   if( ldps < nbf )
     GAUXC_GENERIC_EXCEPTION("Invalid LDP");
+
+  if( auto* nlc_settings = dynamic_cast<const IntegratorSettingsNLCInternal*>(&settings) ) {
+    const bool is_gks = (Pz != nullptr) and (Py != nullptr) and (Px != nullptr);
+    const bool is_uks = (Pz != nullptr) and (Py == nullptr) and (Px == nullptr);
+    const bool is_rks = (Ps != nullptr) and (not is_uks and not is_gks);
+    if( is_gks ) {
+      GAUXC_GENERIC_EXCEPTION("NLC device EXC is not implemented for GKS");
+    }
+    if( this->reduction_driver_->takes_device_memory() ) {
+      GAUXC_GENERIC_EXCEPTION("NLC device EXC currently requires host reductions");
+    }
+
+    auto& tasks = this->load_balancer_->get_tasks();
+    auto* lwd = dynamic_cast<LocalDeviceWorkDriver*>(this->local_work_driver_.get() );
+    auto rt  = detail::as_device_runtime(this->load_balancer_->runtime());
+    auto device_data_ptr = lwd->create_device_data(rt);
+    value_type N_EL;
+
+    this->timer_.time_op("XCIntegrator.LocalWork_NLC_EXC", [&](){
+      nlc_exc_vxc_local_work_( basis, Ps, ldps, is_rks ? 2.0 : 1.0,
+        nullptr, 0, EXC, &N_EL,
+        *nlc_settings, tasks.begin(), tasks.end(), *device_data_ptr );
+    });
+
+    GAUXC_MPI_CODE(
+    this->timer_.time_op("XCIntegrator.ImbalanceWait_NLC_EXC",[&](){
+      MPI_Barrier(this->load_balancer_->runtime().comm());
+    });
+    )
+
+    this->timer_.time_op("XCIntegrator.Allreduce_NLC_EXC", [&](){
+      this->reduction_driver_->allreduce_inplace( EXC, 1, ReductionOp::Sum );
+      this->reduction_driver_->allreduce_inplace( &N_EL, 1, ReductionOp::Sum );
+    });
+    return;
+  }
 
 
   // Get Tasks

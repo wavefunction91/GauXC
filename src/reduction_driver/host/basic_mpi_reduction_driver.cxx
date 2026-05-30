@@ -10,11 +10,14 @@
  * See LICENSE.txt for details
  */
 #include "basic_mpi_reduction_driver.hpp"
+#include <gauxc/exceptions.hpp>
 #include <cstring>
 #include <memory>
 #include <map>
 #include <iostream>
 #include <cstddef>
+#include <limits>
+#include <vector>
 
 namespace GauXC {
 
@@ -23,7 +26,8 @@ MPI_Datatype get_mpi_datatype( std::type_index idx ) {
 
   static std::map<std::type_index, MPI_Datatype> map {
     {std::type_index(typeid(double)), MPI_DOUBLE},
-    {std::type_index(typeid(float)),  MPI_FLOAT}
+    {std::type_index(typeid(float)),  MPI_FLOAT},
+    {std::type_index(typeid(unsigned long long)), MPI_UNSIGNED_LONG_LONG}
   };
 
   return map.at(idx);
@@ -45,7 +49,8 @@ size_t get_dtype_size( std::type_index idx ) {
 
   static std::map<std::type_index, size_t> map {
     {std::type_index(typeid(double)), sizeof(double)}, 
-    {std::type_index(typeid(float)),  sizeof(float)}
+    {std::type_index(typeid(float)),  sizeof(float)},
+    {std::type_index(typeid(unsigned long long)), sizeof(unsigned long long)}
   };
 
   return map.at(idx);
@@ -106,6 +111,42 @@ void BasicMPIReductionDriver::allreduce_inplace_typeerased( void* data, size_t s
     }
     #endif
   }
+}
+
+void BasicMPIReductionDriver::allgather_v_typeerased( const void* src, size_t size,
+  std::vector<std::byte>& dest, std::type_index idx, std::any optional_args ) {
+
+  if( optional_args.has_value() )
+    std::cout << "** Warning: Optional Args Are Not Used in BasiMPIReductionDriver::allgather_v" << std::endl;
+
+  const auto dtype_size = get_dtype_size(idx);
+  const int world_size = runtime_.comm_size();
+  if( world_size == 1 ) {
+    dest.resize( size * dtype_size );
+    std::memcpy( dest.data(), src, dest.size() );
+    return;
+  }
+
+#ifdef GAUXC_HAS_MPI
+  std::vector<unsigned long long> sizes(world_size);
+  const auto local_size = static_cast<unsigned long long>(size);
+  MPI_Allgather( &local_size, 1, MPI_UNSIGNED_LONG_LONG, sizes.data(), 1,
+                 MPI_UNSIGNED_LONG_LONG, runtime_.comm() );
+
+  std::vector<int> counts(world_size), displs(world_size);
+  size_t total_size = 0;
+  for( int i = 0; i < world_size; ++i ) {
+    if( sizes[i] > static_cast<unsigned long long>(std::numeric_limits<int>::max()) )
+      GAUXC_GENERIC_EXCEPTION("allgather_v message count exceeds MPI int range");
+    counts[i] = static_cast<int>( sizes[i] );
+    displs[i] = static_cast<int>( total_size );
+    total_size += static_cast<size_t>( sizes[i] );
+  }
+
+  dest.resize( total_size * dtype_size );
+  MPI_Allgatherv( src, static_cast<int>(size), get_mpi_datatype(idx), dest.data(),
+                  counts.data(), displs.data(), get_mpi_datatype(idx), runtime_.comm() );
+#endif
 }
 
 std::unique_ptr<detail::ReductionDriverImpl> BasicMPIReductionDriver::clone() {
