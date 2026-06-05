@@ -52,7 +52,9 @@ target_include_directories( gauxc
 )
 
 include( CheckCXXCompilerFlag )
-check_cxx_compiler_flag( -Wall              GAUXC_CXX_HAS_WALL              )
+if(NOT MSVC)  # under clang-cl, -Wall maps to /Wall (= -Weverything)
+  check_cxx_compiler_flag( -Wall              GAUXC_CXX_HAS_WALL            )
+endif()
 check_cxx_compiler_flag( -Wextra            GAUXC_CXX_HAS_WEXTRA            )
 check_cxx_compiler_flag( -Wpedantic         GAUXC_CXX_HAS_WPEDANTIC         )
 check_cxx_compiler_flag( -Wnon-virtual-dtor GAUXC_CXX_HAS_WNON_VIRTUAL_DTOR )
@@ -78,27 +80,27 @@ if( GAUXC_CXX_HAS_WSHADOW )
   target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wshadow> )
 endif()
 
-if(MSVC)
-  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-    target_compile_options( gauxc PRIVATE
-      -Wno-covered-switch-default
-      -Wno-documentation
-      -Wno-documentation-unknown-command
-      -Wno-implicit-int-float-conversion
-      -Wno-language-extension-token
-      -Wno-reserved-identifier
-      -Wno-shorten-64-to-32
-      -Wno-sign-compare
-      -Wno-undef
-    )
-  else()
-    target_compile_options( gauxc PUBLIC /EHsc )
-    target_compile_options( gauxc PRIVATE
-      /wd4101  # unreferenced local variable
-      /wd5219  # implicit conversion from int-type to float-type
-    )
-  endif()
-endif()
+# if(MSVC)
+#   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+#     target_compile_options( gauxc PRIVATE
+#       -Wno-covered-switch-default
+#       -Wno-documentation
+#       -Wno-documentation-unknown-command
+#       -Wno-implicit-int-float-conversion
+#       -Wno-language-extension-token
+#       -Wno-reserved-identifier
+#       -Wno-shorten-64-to-32
+#       -Wno-sign-compare
+#       -Wno-undef
+#     )
+#   else()
+#     target_compile_options( gauxc PUBLIC /EHsc )
+#     target_compile_options( gauxc PRIVATE
+#       /wd4101  # unreferenced local variable
+#       /wd5219  # implicit conversion from int-type to float-type
+#     )
+#   endif()
+# endif()
 
 target_link_libraries( gauxc PUBLIC 
   ExchCXX::ExchCXX 
