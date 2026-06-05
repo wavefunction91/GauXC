@@ -31,6 +31,7 @@ class cutlass_exception : public std::exception {
   int         line_;       ///< Line number of file_ that threw exception
   std::string msg_prefix_; ///< General descriptor of task which threw exception
   cutlass::Status status_; ///< CUTLASS status pertaining to the thrown exception
+  std::string what_msg_;
 
   /**
    *  @brief Get a descriptive message pertaining to the thrown CUTLASS error
@@ -39,16 +40,7 @@ class cutlass_exception : public std::exception {
    *  the internal state of the exception object.
    */
   const char* what() const noexcept override {
-     std::stringstream ss;
-     ss << "CUTLASS Exception (" << msg_prefix_ << ")" << std::endl
-        << "  Error Code " << int(status_) << ": \"" 
-                           << cutlassGetStatusString( status_ ) << "\"" << std::endl
-        << "  File       " << file_ << std::endl
-        << "  Line       " << line_ << std::endl;
-
-     auto msg = ss.str();
-
-     return _strdup( msg.c_str() );
+     return what_msg_.c_str();
   }
 
 public:
@@ -62,7 +54,15 @@ public:
    *  @param[in] err  CUTLASS status pertaining to the thrown exception
    */
   cutlass_exception( std::string file, int line, std::string msg, cutlass::Status status ) :
-    file_(file), line_(line), msg_prefix_(msg), status_(status) { }
+    file_(file), line_(line), msg_prefix_(msg), status_(status) {
+    std::stringstream ss;
+    ss << "CUTLASS Exception (" << msg_prefix_ << ")" << std::endl
+       << "  Error Code " << int(status_) << ": \""
+                          << cutlassGetStatusString( status_ ) << "\"" << std::endl
+       << "  File       " << file_ << std::endl
+       << "  Line       " << line_ << std::endl;
+    what_msg_ = ss.str();
+  }
 
 }; // class cutlass_exception
 
