@@ -92,12 +92,10 @@ if(MSVC)
       -Wno-undef
     )
   else()
+    target_compile_options( gauxc PUBLIC /EHsc )
     target_compile_options( gauxc PRIVATE
-      /W2
-      /wd4100  # unreferenced parameter
       /wd4101  # unreferenced local variable
-      /wd4242  # 'identifier': conversion from 'type1' to 'type2', possible loss of data
-      /wd5219  # implicit conversion from 'type-1' to 'type-2', possible loss of data
+      /wd5219  # implicit conversion from int-type to float-type
     )
   endif()
 endif()
