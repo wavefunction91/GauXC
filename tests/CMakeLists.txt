@@ -33,9 +33,6 @@ if( NOT Catch2_FOUND )
   set(CATCH_INSTALL_HELPERS OFF CACHE BOOL "Install contrib alongside library" FORCE)
 
   FetchContent_MakeAvailable( catch2 )
-  if(MSVC)
-    target_compile_options(Catch2WithMain PRIVATE /EHsc)
-  endif()
   target_link_libraries( gauxc_catch2 INTERFACE Catch2::Catch2 )
 
 else()
