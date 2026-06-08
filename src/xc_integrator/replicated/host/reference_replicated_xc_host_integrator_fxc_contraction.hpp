@@ -93,8 +93,8 @@ template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
   fxc_contraction_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
                             const value_type* Pz, int64_t ldpz,
-                            const value_type* tPs, int64_t ldtps,
-                            const value_type* tPz, int64_t ldtpz,
+                            const value_type* tPs, [[maybe_unused]] int64_t ldtps,
+                            const value_type* tPz, [[maybe_unused]] int64_t ldtpz,
                             value_type* FXCs, int64_t ldfxcs,
                             value_type* FXCz, int64_t ldfxcz,
                             value_type *N_EL, const IntegratorSettingsXC& settings,
@@ -178,9 +178,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const auto& task = *(task_begin + iT);
 
     // Get tasks constants
-    const int32_t  npts    = task.points.size();
+    const int32_t  npts    = static_cast<int32_t>(task.points.size());
     const int32_t  nbe     = task.bfn_screening.nbe;
-    const int32_t  nshells = task.bfn_screening.shell_list.size();
+    const int32_t  nshells = static_cast<int32_t>(task.bfn_screening.shell_list.size());
 
     const auto* points      = task.points.data()->data();
     const auto* weights     = task.weights.data();

@@ -80,27 +80,27 @@ if( GAUXC_CXX_HAS_WSHADOW )
   target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wshadow> )
 endif()
 
-# if(MSVC)
-#   if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-#     target_compile_options( gauxc PRIVATE
-#       -Wno-covered-switch-default
-#       -Wno-documentation
-#       -Wno-documentation-unknown-command
-#       -Wno-implicit-int-float-conversion
-#       -Wno-language-extension-token
-#       -Wno-reserved-identifier
-#       -Wno-shorten-64-to-32
-#       -Wno-sign-compare
-#       -Wno-undef
-#     )
-#   else()
-#     target_compile_options( gauxc PUBLIC /EHsc )
-#     target_compile_options( gauxc PRIVATE
-#       /wd4101  # unreferenced local variable
-#       /wd5219  # implicit conversion from int-type to float-type
-#     )
-#   endif()
-# endif()
+if(MSVC)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # target_compile_options( gauxc PRIVATE
+    #   -Wno-covered-switch-default
+    #   -Wno-documentation
+    #   -Wno-documentation-unknown-command
+    #   -Wno-implicit-int-float-conversion
+    #   -Wno-language-extension-token
+    #   -Wno-reserved-identifier
+    #   -Wno-shorten-64-to-32
+    #   -Wno-sign-compare
+    #   -Wno-undef
+    # )
+  else()
+    target_compile_options( gauxc PUBLIC /EHsc )
+    target_compile_options( gauxc PRIVATE
+      /wd4101  # unreferenced local variable
+      /wd5219  # implicit conversion from int-type to float-type
+    )
+  endif()
+endif()
 
 target_link_libraries( gauxc PUBLIC 
   ExchCXX::ExchCXX 
