@@ -11,18 +11,31 @@
  */
 #include <gauxc/xc_integrator/local_work_driver.hpp>
 #include "host/reference_local_host_work_driver.hpp"
+#include <algorithm>
+#include <cctype>
 #ifdef GAUXC_HAS_DEVICE
 #include "device/cuda/cuda_aos_scheme1.hpp"
 #include "device/hip/hip_aos_scheme1.hpp"
 #endif
 
 namespace GauXC {
+namespace {
+
+void trim_and_uppercase(std::string& name) {
+  auto not_space = [](unsigned char c) { return !std::isspace(c); };
+  name.erase(name.begin(), std::find_if(name.begin(), name.end(), not_space));
+  name.erase(std::find_if(name.rbegin(), name.rend(), not_space).base(), name.end());
+  std::transform(name.begin(), name.end(), name.begin(),
+                 [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
+}
+
+}
 
 LocalWorkDriverFactory::ptr_return_t
   LocalWorkDriverFactory::make_local_work_driver( ExecutionSpace ex, 
     std::string name, LocalWorkSettings settings ) {
 
-  std::transform( name.begin(), name.end(), name.begin(), ::toupper );
+  trim_and_uppercase(name);
   (void)(settings);
 
   switch(ex) {

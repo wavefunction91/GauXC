@@ -1,5 +1,5 @@
 find_package( ExchCXX QUIET )
-if( NOT ${ExchCXX_FOUND} )
+if( NOT ExchCXX_FOUND )
 
   include( gauxc-dep-versions )
 
@@ -19,6 +19,10 @@ if( NOT ${ExchCXX_FOUND} )
 
   FetchContent_MakeAvailable( exchcxx )
 
+  if( CMAKE_POSITION_INDEPENDENT_CODE AND TARGET exchcxx )
+    set_target_properties( exchcxx PROPERTIES POSITION_INDEPENDENT_CODE ON )
+  endif()
+
 
 else()
 
@@ -31,5 +35,3 @@ else()
   endif()
 
 endif()
-
-
