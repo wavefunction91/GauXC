@@ -1,5 +1,5 @@
 find_package( IntegratorXX QUIET )
-if( NOT ${IntegratorXX_FOUND} )
+if( NOT IntegratorXX_FOUND )
 
   include( gauxc-dep-versions )
 
@@ -16,6 +16,8 @@ if( NOT ${IntegratorXX_FOUND} )
 
   FetchContent_MakeAvailable( integratorxx )
 
+  if( CMAKE_POSITION_INDEPENDENT_CODE AND TARGET integratorxx )
+    set_target_properties( integratorxx PROPERTIES POSITION_INDEPENDENT_CODE ON )
+  endif()
+
 endif()
-
-
