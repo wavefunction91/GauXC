@@ -78,8 +78,8 @@ void BasicMPIReductionDriver::allreduce_typeerased( const void* src, void* dest,
 
 
 }
-void BasicMPIReductionDriver::allreduce_inplace_typeerased( void* data, size_t size,
-  [[maybe_unused]] ReductionOp op, std::type_index idx, std::any optional_args ) {
+void BasicMPIReductionDriver::allreduce_inplace_typeerased( [[maybe_unused]] void* data, [[maybe_unused]] size_t size,
+  [[maybe_unused]] ReductionOp op, [[maybe_unused]] std::type_index idx, std::any optional_args ) {
 
   if( optional_args.has_value() )
     std::cout << "** Warning: Optional Args Are Not Used in BasiMPIReductionDriver::allreduce" << std::endl;
