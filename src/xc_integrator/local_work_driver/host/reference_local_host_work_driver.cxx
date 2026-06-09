@@ -124,6 +124,7 @@ namespace GauXC {
 						const submat_map_t& submat_map, double fac, const double* P, size_t ldp, 
 						const double* basis_eval, size_t ldb, double* X, size_t ldx, double* scr ) {
     const auto inbe  = static_cast<int32_t>(nbe);
+    const auto inbf  = static_cast<int32_t>(nbf);
     const auto inpts = static_cast<int32_t>(npts);
     const auto ildb  = static_cast<int32_t>(ldb);
     const auto ildx  = static_cast<int32_t>(ldx);
@@ -131,7 +132,7 @@ namespace GauXC {
     size_t ldp_use = ldp;
 
     if( submat_map.size() > 1 ) {
-      detail::submat_set( nbf, nbf, nbe, nbe, P, ldp, scr, nbe, submat_map );
+      detail::submat_set( inbf, inbf, inbe, inbe, P, static_cast<int32_t>(ldp), scr, inbe, submat_map );
       P_use = scr;
       ldp_use = nbe;
     } else if( nbe != nbf ) {
@@ -687,7 +688,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nb
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
-      const int32_t ioff = i * nbf;
+      const int32_t ioff = i * inbf;
 
       auto* z_col    = Z + ioff;
       auto* bf_x_col = dbasis_x_eval + ioff;
@@ -729,7 +730,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nb
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
-      const int32_t ioff = i * nbf;
+      const int32_t ioff = i * inbf;
 
       auto* zs_col = Zs + ioff;
       auto* zz_col = Zz + ioff;
@@ -787,7 +788,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nb
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
-      const int32_t ioff = i * nbf;
+      const int32_t ioff = i * inbf;
 
       auto* z_col    = Z + ioff;
       auto* bf_x_col = dbasis_x_eval + ioff;
@@ -837,7 +838,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_mgga_vxc_uks( size_t npts, size_t n
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
-      const int32_t ioff = i * nbf;
+      const int32_t ioff = i * inbf;
 
       auto* zs_col = Zs + ioff;
       auto* zz_col = Zz + ioff;
@@ -905,7 +906,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_mgga_vxc_uks( size_t npts, size_t n
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
-      const int32_t ioff = i * nbf;
+      const int32_t ioff = i * inbf;
       auto* mmat_x_col = mmat_x + ioff;
       auto* mmat_y_col = mmat_y + ioff;
       auto* mmat_z_col = mmat_z + ioff;
@@ -952,7 +953,7 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks(size_t npts, size_t nb
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
-      const int32_t ioff = i * nbf;
+      const int32_t ioff = i * inbf;
       auto* xs_col = mmat_xs + ioff;
       auto* ys_col = mmat_ys + ioff;
       auto* zs_col = mmat_zs + ioff;
@@ -1026,7 +1027,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
-      const int32_t ioff = i * nbf;
+      const int32_t ioff = i * inbf;
 
       auto* zs_col = Zs + ioff;
       auto* zz_col = Zz + ioff;
@@ -1392,7 +1393,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_rks_ts( size_t npts, size_t
 
   for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
-    const int32_t ioff = i * nbf;
+    const int32_t ioff = i * inbf;
 
     auto* z_col = Z + ioff;
     auto* bf_x_col = dbasis_x_eval + ioff;
@@ -1454,7 +1455,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_uks_ts( size_t npts, size_t
 
   for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
-    const int32_t ioff = i * nbf;
+    const int32_t ioff = i * inbf;
 
     auto* za_col = Za + ioff;
     auto* zb_col = Zb + ioff;
@@ -1496,7 +1497,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_uks_ts( size_t npts, size_t
 
   for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
-    const int32_t ioff = i * nbf;
+    const int32_t ioff = i * inbf;
 
     auto* za_col = Za + ioff;
     auto* zb_col = Zb + ioff;
@@ -1560,7 +1561,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_mgga_vxc_uks_ts( size_t npts, size_
 
   for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
-    const int32_t ioff = i * nbf;
+    const int32_t ioff = i * inbf;
 
     auto* za_col = Za + ioff;
     auto* zb_col = Zb + ioff;
@@ -1632,7 +1633,7 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
 
   for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
-    const int32_t ioff = i * nbf;
+    const int32_t ioff = i * inbf;
     auto* xa_col = mmat_xa + ioff;
     auto* ya_col = mmat_ya + ioff;
     auto* za_col = mmat_za + ioff;
@@ -1678,12 +1679,13 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
 					      size_t ldz, double* VXC, size_t ldvxc, double* scr ) {
 
       const auto inbe  = static_cast<int32_t>(nbe);
+      const auto inbf  = static_cast<int32_t>(nbf);
       const auto inpts = static_cast<int32_t>(npts);
       const auto ildz  = static_cast<int32_t>(ldz);
 
       blas::syr2k('L', 'N', inbe, inpts, 1., basis_eval, inbe, Z, ildz, 0., scr, inbe );
 
-      detail::inc_by_submat_atomic( nbf, nbf, nbe, nbe, VXC, ldvxc, scr, nbe, submat_map );
+      detail::inc_by_submat_atomic( inbf, inbf, inbe, inbe, VXC, static_cast<int32_t>(ldvxc), scr, inbe, submat_map );
 
   }
 
@@ -1695,13 +1697,14 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
 
       const auto inbe_bra = static_cast<int32_t>(nbe_bra);
       const auto inbe_ket = static_cast<int32_t>(nbe_ket);
+      const auto inbf     = static_cast<int32_t>(nbf);
       const auto inpts    = static_cast<int32_t>(npts);
       const auto ildg     = static_cast<int32_t>(ldg);
 
       blas::gemm( 'N', 'T', inbe_bra, inbe_ket, inpts, 1., basis_eval, inbe_bra,
 		  G, ildg, 0., scr, inbe_bra );
 
-      detail::inc_by_submat_atomic( nbf, nbf, nbe_bra, nbe_ket, K, ldk, scr, nbe_bra, 
+      detail::inc_by_submat_atomic( inbf, inbf, inbe_bra, inbe_ket, K, static_cast<int32_t>(ldk), scr, inbe_bra,
 			     submat_map_bra, submat_map_ket );
 
   }
@@ -1716,6 +1719,7 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
 
     const auto inbe_bra = static_cast<int32_t>(nbe_bra);
     const auto inbe_ket = static_cast<int32_t>(nbe_ket);
+    const auto inbf     = static_cast<int32_t>(nbf);
     const auto inpts    = static_cast<int32_t>(npts);
     const auto ildb     = static_cast<int32_t>(ldb);
     const auto ildf     = static_cast<int32_t>(ldf);
@@ -1723,8 +1727,8 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
     size_t ldp_use = ldp;
 
     if( submat_map_bra.size() > 1 or submat_map_ket.size() > 1 ) {
-      detail::submat_set( nbf, nbf, nbe_bra, nbe_ket, P, ldp,
-			  scr, nbe_bra, submat_map_bra, submat_map_ket );
+      detail::submat_set( inbf, inbf, inbe_bra, inbe_ket, P, static_cast<int32_t>(ldp),
+			  scr, inbe_bra, submat_map_bra, submat_map_ket );
       P_use = scr;
       ldp_use = nbe_bra;
     } else {
@@ -1793,8 +1797,8 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
         const int shell_cart_sz = shell.cart_size();
         
         if( shell.pure() and shell_l > 0 ) {
-          sph_trans.itform_bra_cm( shell_l, npts, X + ioff, ldx,
-        			   X_cart.data() + ioff_cart, nbe_cart );
+          sph_trans.itform_bra_cm( shell_l, inpts, X + ioff, ildx,
+        			   X_cart.data() + ioff_cart, inbe_cart );
         } else {
           blas::lacpy( 'A', shell_sz, inpts, X + ioff, ildx,
         	       X_cart.data() + ioff_cart, inbe_cart );
@@ -1887,9 +1891,9 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
       XCPU::compute_integral_shell_pair( ish == jsh,
       				   npts, _points_transposed.data(),
       				   bra.l(), ket.l(), bra_origin, ket_origin,
-      				   nprim_pair, prim_pair_data,
-      				   X_cart_rm.data()+ioff_cart, X_cart_rm.data()+joff_cart, npts,
-      				   G_cart_rm.data()+ioff_cart, G_cart_rm.data()+joff_cart, npts,
+      				   static_cast<int>(nprim_pair), prim_pair_data,
+      				   X_cart_rm.data()+ioff_cart, X_cart_rm.data()+joff_cart, inpts,
+      				   G_cart_rm.data()+ioff_cart, G_cart_rm.data()+joff_cart, inpts,
       				   const_cast<double*>(weights), this->boys_table );
     }
 #endif
@@ -1912,8 +1916,8 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
         const int shell_cart_sz = shell.cart_size();
         
         if( shell.pure() and shell_l > 0 ) {
-          sph_trans.tform_bra_cm( shell_l, npts, G_cart.data() + ioff_cart, nbe_cart,
-        			  G + ioff, ldg );
+          sph_trans.tform_bra_cm( shell_l, inpts, G_cart.data() + ioff_cart, inbe_cart,
+        			  G + ioff, ildg );
         } else {
           blas::lacpy( 'A', shell_sz, inpts, G_cart.data() + ioff_cart, inbe_cart,
         	       G + ioff, ildg );
