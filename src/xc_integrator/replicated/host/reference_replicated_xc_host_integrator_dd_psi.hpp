@@ -167,10 +167,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       den_eval[i] *= -weights[i];
     }
     std::vector<double> offset_local_dd_psi(ldPsi, 0.0);
-    blas::gemm('N', 'N', ldPsi, 1, npts,  
-            1.0, ylm_matrix.data(), ldPsi,   
-            den_eval, npts,     
-            0.0, offset_local_dd_psi.data(), ldPsi); 
+    blas::gemm('N', 'N', static_cast<int>(ldPsi), 1, npts,
+            1.0, ylm_matrix.data(), static_cast<int>(ldPsi),
+            den_eval, npts,
+            0.0, offset_local_dd_psi.data(), static_cast<int>(ldPsi));
     for (int j = 0; j < ldPsi; ++j) {
       dd_Psi[atom_offset + j] += offset_local_dd_psi[j];
     }

@@ -72,7 +72,7 @@ public:
       auto at_pos = std::find_if( mol.begin(), mol.end(), [&](const Atom& at) { 
         return at.x == shell.O()[0] and at.y == shell.O()[1] and at.z == shell.O()[2];
       });
-      if( at_pos != mol.end() ) shell_to_center_[sh_idx] = std::distance( mol.begin(), at_pos );
+      if( at_pos != mol.end() ) shell_to_center_[sh_idx] = static_cast<int32_t>(std::distance( mol.begin(), at_pos ));
       else shell_to_center_[sh_idx] = -1;
       ++sh_idx;
     }
