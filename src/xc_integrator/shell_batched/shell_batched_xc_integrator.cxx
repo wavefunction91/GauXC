@@ -57,8 +57,8 @@ ShellBatchedXCIntegratorBase::incore_task_data
                                    overlap_pthresh_idx.rend(), 
   [&](int idx) {
 
-    uint32_t overlap_threshold = 
-      std::max(1., max_shell_list.size() * overlap_pthresh[idx] );
+    uint32_t overlap_threshold =
+      static_cast<uint32_t>(std::max(1., max_shell_list.size() * overlap_pthresh[idx] ));
 
 
     host_task_iterator search_st = task_begin;

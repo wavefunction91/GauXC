@@ -464,7 +464,7 @@ int main(int argc, char** argv) {
       N_EL = integrator.integrate_den( P );
       if(!world_rank) std::cout << "N_EL = " << N_EL << std::endl;
     } else {
-      N_EL = N_EL_ref;
+      N_EL = static_cast<double>(N_EL_ref);
     }
 
     if( integrate_vxc ) {

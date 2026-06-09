@@ -87,7 +87,7 @@ namespace XCPU {
 	  constexpr double deltaT = double(DEFAULT_MAX_T) / DEFAULT_NSEGMENT;
 	  constexpr double one_over_deltaT = 1 / deltaT;
 
-	  int iseg = std::floor(T[i] * one_over_deltaT);
+	  int iseg = static_cast<int>(std::floor(T[i] * one_over_deltaT));
 	  const double* boys_seg = boys_m + iseg * DEFAULT_LD_TABLE;
 	  
 	  const double ratio = (2 * iseg + 1);
