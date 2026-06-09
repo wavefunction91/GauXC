@@ -96,8 +96,8 @@ if(MSVC)
   else()
     target_compile_options( gauxc PUBLIC /EHsc )
     target_compile_options( gauxc PRIVATE
-      /wd4101  # unreferenced local variable
-      /wd5219  # implicit conversion from int-type to float-type
+      /wd4242  # 'conversion': possible loss of data (int->char in STL algorithm)
+      /wd4389  # '==': signed/unsigned mismatch (in MSVC xutility)
     )
   endif()
 endif()
