@@ -46,7 +46,7 @@ TEST_CASE("Grid", "[grid]") {
   SECTION("Full Construction") {
 
     Grid grid( mk_sphere, BatchSize(batch_sz) );
-    CHECK( grid.batcher().max_batch_size() == batch_sz );
+    CHECK( grid.batcher().max_batch_size() == static_cast<size_t>(batch_sz) );
 
     for( auto i = 0; i < mk_batch.nbatches(); ++i ) {
 

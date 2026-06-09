@@ -28,7 +28,7 @@ double default_atomic_radius(AtomicNumber Z) {
   
 }
 
-long double pm_to_bohr( long double x ) {
+double pm_to_bohr( double x ) {
   return x * 0.0188973000000929 / 1.00000205057;
 }
 
@@ -344,7 +344,7 @@ double uff_radius_103(AtomicNumber _Z) {
     const double RADIUS_UFF_SCALING = 1.1;
     const double DDX_BOHR_TO_ANGSTROM = 0.52917721092;
     auto Z = _Z.get();
-    if (Z < 0 || Z >= radius_uff_list.size()) {
+    if (Z < 0 || static_cast<size_t>(Z) >= radius_uff_list.size()) {
         return -1.;
     }
     return radius_uff_list[Z-1] * RADIUS_UFF_SCALING / DDX_BOHR_TO_ANGSTROM;
