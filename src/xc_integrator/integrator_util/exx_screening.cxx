@@ -128,8 +128,8 @@ void exx_ek_screening(
   // Compute approx F_i^(k) = |P_ij| * B_j^(k) 
   //auto gemm_st = hrt_t::now();
   std::vector<double> task_approx_f( nbf * ntasks );
-  blas::gemm( 'N', 'N', nbf, ntasks, nbf, 1., P_abs, ldp,
-    task_max_bfn.data(), nbf, 0., task_approx_f.data(), nbf );
+  blas::gemm( 'N', 'N', static_cast<int>(nbf), static_cast<int>(ntasks), static_cast<int>(nbf), 1., P_abs, static_cast<int>(ldp),
+    task_max_bfn.data(), static_cast<int>(nbf), 0., task_approx_f.data(), static_cast<int>(nbf) );
   //auto gemm_en = hrt_t::now();
   //std::cout << "... done " << dur_t(gemm_en-gemm_st).count() << std::endl;
 

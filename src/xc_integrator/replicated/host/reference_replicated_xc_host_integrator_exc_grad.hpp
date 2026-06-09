@@ -52,7 +52,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     if( not this->reduction_driver_->takes_host_memory() )
       GAUXC_GENERIC_EXCEPTION("This Module Only Works With Host Reductions");
 
-    const int natoms = this->load_balancer_->molecule().natoms();
+    const int natoms = static_cast<int>(this->load_balancer_->molecule().natoms());
     this->reduction_driver_->allreduce_inplace( EXC_GRAD, 3*natoms, ReductionOp::Sum );
   });
 
@@ -61,7 +61,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
 template <typename ValueType>
 void ReferenceReplicatedXCHostIntegrator<ValueType>::
-  eval_exc_grad_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
+  eval_exc_grad_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
                   const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings ) { 
                  
                  
@@ -94,7 +94,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     if( not this->reduction_driver_->takes_host_memory() )
       GAUXC_GENERIC_EXCEPTION("This Module Only Works With Host Reductions");
 
-    const int natoms = this->load_balancer_->molecule().natoms();
+    const int natoms = static_cast<int>(this->load_balancer_->molecule().natoms());
     this->reduction_driver_->allreduce_inplace( EXC_GRAD, 3*natoms, ReductionOp::Sum );
   });
 
@@ -132,7 +132,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   BasisSetMap basis_map(basis,mol);
 
   const int32_t nbf = basis.nbf();
-  const int32_t natoms = mol.natoms();
+  const int32_t natoms = static_cast<int32_t>(mol.natoms());
 
   // Sort tasks on size (XXX: maybe doesnt matter?)
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
@@ -169,9 +169,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     auto& task = tasks[iT];
 
     // Get tasks constants
-    const int32_t  npts    = task.points.size();
+    const int32_t  npts    = static_cast<int32_t>(task.points.size());
     const int32_t  nbe     = task.bfn_screening.nbe;
-    const int32_t  nshells = task.bfn_screening.shell_list.size();
+    const int32_t  nshells = static_cast<int32_t>(task.bfn_screening.shell_list.size());
     const size_t spin_dim_scal = is_rks ? 1 : 2; // last case is_uks
     const size_t gga_dim_scal = is_rks ? 1 : 3;
 
@@ -414,7 +414,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       }
 
       double g_acc_x(0), g_acc_y(0), g_acc_z(0);
-      for( int ibf = 0, mu = bf_off; ibf < sh_sz; ++ibf, ++mu )
+      for( int ibf = 0, mu = static_cast<int>(bf_off); ibf < sh_sz; ++ibf, ++mu )
       for( int ipt = 0; ipt < npts; ++ipt ) {
 
         const int32_t mu_i = mu + ipt*nbe;

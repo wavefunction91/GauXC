@@ -215,9 +215,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const auto& task = *(task_begin + iT);
 
     // Get tasks constants
-    const int32_t  npts    = task.points.size();
+    const int32_t  npts    = static_cast<int32_t>(task.points.size());
     const int32_t  nbe     = task.bfn_screening.nbe;
-    const int32_t  nshells = task.bfn_screening.shell_list.size();
+    const int32_t  nshells = static_cast<int32_t>(task.bfn_screening.shell_list.size());
 
     const auto* points      = task.points.data()->data();
     const auto* weights     = task.weights.data();

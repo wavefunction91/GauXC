@@ -71,7 +71,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   const auto& mol   = this->load_balancer_->molecule();
 
   // Atom-specific data
-  int natom = mol.size();
+  int natom = static_cast<int>(mol.size());
   std::vector<double> radii(natom);
   for (int i = 0; i < natom; ++i) {
     radii[i] = uff_radius_103(mol[i].Z);
@@ -114,9 +114,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const auto& task = tasks[iT];
 
     // Get tasks constants
-    const int32_t  npts    = task.points.size();
+    const int32_t  npts    = static_cast<int32_t>(task.points.size());
     const int32_t  nbe     = task.bfn_screening.nbe;
-    const int32_t  nshells = task.bfn_screening.shell_list.size();
+    const int32_t  nshells = static_cast<int32_t>(task.bfn_screening.shell_list.size());
 
     const auto* points      = task.points.data()->data();
     const auto* weights     = task.weights.data();

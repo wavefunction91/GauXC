@@ -375,19 +375,19 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
       basis.nbf(), basis.nbf() );
 
   this->timer_.time_op_accumulate("XCIntegrator.ExtractSubDensity",[&]() {
-    detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Ps, ldps, 
-                        Ps_submat, nbe, union_submat_cut );
+    detail::submat_set( static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(nbe), static_cast<int32_t>(nbe), Ps, static_cast<int32_t>(ldps),
+                        Ps_submat, static_cast<int32_t>(nbe), union_submat_cut );
     if(Pz)
-    detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Pz, ldpz, 
-                        Pz_submat, nbe, union_submat_cut );
+    detail::submat_set( static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(nbe), static_cast<int32_t>(nbe), Pz, static_cast<int32_t>(ldpz),
+                        Pz_submat, static_cast<int32_t>(nbe), union_submat_cut );
 
     if(Py)
-    detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Py, ldpy, 
-                        Py_submat, nbe, union_submat_cut );
+    detail::submat_set( static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(nbe), static_cast<int32_t>(nbe), Py, static_cast<int32_t>(ldpy),
+                        Py_submat, static_cast<int32_t>(nbe), union_submat_cut );
 
     if(Px)
-    detail::submat_set( basis.nbf(), basis.nbf(), nbe, nbe, Px, ldpx, 
-                        Px_submat, nbe, union_submat_cut );
+    detail::submat_set( static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(nbe), static_cast<int32_t>(nbe), Px, static_cast<int32_t>(ldpx),
+                        Px_submat, static_cast<int32_t>(nbe), union_submat_cut );
   } );
 
 
@@ -415,20 +415,20 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
   *N_EL += NEL_tmp;
   this->timer_.time_op_accumulate("XCIntegrator.IncrementSubPotential",[&]() {
     if(VXCs)
-    detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCs, ldvxcs, 
-                           VXCs_submat, nbe, union_submat_cut );
+    detail::inc_by_submat( static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(nbe), static_cast<int32_t>(nbe), VXCs, static_cast<int32_t>(ldvxcs),
+                           VXCs_submat, static_cast<int32_t>(nbe), union_submat_cut );
 
     if(VXCz)
-    detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCz, ldvxcz, 
-                           VXCz_submat, nbe, union_submat_cut );
+    detail::inc_by_submat( static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(nbe), static_cast<int32_t>(nbe), VXCz, static_cast<int32_t>(ldvxcz),
+                           VXCz_submat, static_cast<int32_t>(nbe), union_submat_cut );
 
     if(VXCy)
-    detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCy, ldvxcy, 
-                           VXCy_submat, nbe, union_submat_cut );
+    detail::inc_by_submat( static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(nbe), static_cast<int32_t>(nbe), VXCy, static_cast<int32_t>(ldvxcy),
+                           VXCy_submat, static_cast<int32_t>(nbe), union_submat_cut );
 
     if(VXCx)
-    detail::inc_by_submat( basis.nbf(), basis.nbf(), nbe, nbe, VXCx, ldvxcx, 
-                           VXCx_submat, nbe, union_submat_cut );
+    detail::inc_by_submat( static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(basis.nbf()), static_cast<int32_t>(nbe), static_cast<int32_t>(nbe), VXCx, static_cast<int32_t>(ldvxcx),
+                           VXCx_submat, static_cast<int32_t>(nbe), union_submat_cut );
   });
 
 

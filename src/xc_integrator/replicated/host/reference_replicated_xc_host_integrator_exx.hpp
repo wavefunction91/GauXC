@@ -460,7 +460,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       gen_compressed_submat_map( basis_map, ek_shell_list, nbf, nbf );
 
     // Get tasks constants
-    const int32_t  npts    = task.points.size();
+    const int32_t  npts    = static_cast<int32_t>(task.points.size());
 
     const auto* points      = task.points.data()->data();
     const auto* weights     = task.weights.data();

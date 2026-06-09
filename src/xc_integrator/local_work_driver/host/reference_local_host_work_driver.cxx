@@ -123,9 +123,13 @@ namespace GauXC {
   void ReferenceLocalHostWorkDriver::eval_xmat( size_t npts, size_t nbf, size_t nbe, 
 						const submat_map_t& submat_map, double fac, const double* P, size_t ldp, 
 						const double* basis_eval, size_t ldb, double* X, size_t ldx, double* scr ) {
+    const auto inbe  = static_cast<int32_t>(nbe);
+    const auto inpts = static_cast<int32_t>(npts);
+    const auto ildb  = static_cast<int32_t>(ldb);
+    const auto ildx  = static_cast<int32_t>(ldx);
     const auto* P_use = P;
     size_t ldp_use = ldp;
-     
+
     if( submat_map.size() > 1 ) {
       detail::submat_set( nbf, nbf, nbe, nbe, P, ldp, scr, nbe, submat_map );
       P_use = scr;
@@ -134,22 +138,23 @@ namespace GauXC {
       P_use = P + submat_map[0][0]*(ldp+1);
     }
 
-    blas::gemm( 'N', 'N', nbe, npts, nbe, fac, P_use, ldp_use, basis_eval, ldb, 
-		0., X, ldx );
+    blas::gemm( 'N', 'N', inbe, inpts, inbe, fac, P_use, static_cast<int32_t>(ldp_use), basis_eval, ildb,
+		0., X, ildx );
 
   }
 
 
   // U/VVar LDA (density)
-  void ReferenceLocalHostWorkDriver::eval_uvvar_lda_rks( size_t npts, size_t nbe, 
+  void ReferenceLocalHostWorkDriver::eval_uvvar_lda_rks( size_t npts, size_t nbe,
 						     const double* basis_eval, const double* X, size_t ldx, double* den_eval) {
 
+    const auto inbe = static_cast<int32_t>(nbe);
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
       const size_t ioff = size_t(i) * ldx;
       const auto*   X_i = X + ioff;
-      den_eval[i] = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 );
+      den_eval[i] = blas::dot( inbe, basis_eval + ioff, 1, X_i, 1 );
 
     }    
 
@@ -157,9 +162,11 @@ namespace GauXC {
 
   
   void ReferenceLocalHostWorkDriver::eval_uvvar_lda_uks( size_t npts, size_t nbe,
-   const double* basis_eval, const double* Xs, size_t ldxs, 
+   const double* basis_eval, const double* Xs, size_t ldxs,
    const double* Xz, size_t ldxz, double* den_eval) {
-  
+
+    const auto inbe = static_cast<int32_t>(nbe);
+
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
       const size_t ioffs = size_t(i) * ldxs;
@@ -168,8 +175,8 @@ namespace GauXC {
       const auto*   Xs_i = Xs + ioffs;
       const auto*   Xz_i = Xz + ioffz;
 
-      const double rhos = blas::dot( nbe, basis_eval + ioffs, 1, Xs_i, 1 );
-      const double rhoz = blas::dot( nbe, basis_eval + ioffz, 1, Xz_i, 1 );
+      const double rhos = blas::dot( inbe, basis_eval + ioffs, 1, Xs_i, 1 );
+      const double rhoz = blas::dot( inbe, basis_eval + ioffz, 1, Xz_i, 1 );
       
       den_eval[2*i]   = 0.5*(rhos + rhoz); // rho_+
       den_eval[2*i+1] = 0.5*(rhos - rhoz); // rho_-
@@ -182,13 +189,14 @@ namespace GauXC {
     const double* Xs, size_t ldxs, const double* Xz, size_t ldxz,
     const double* Xx, size_t ldxx, const double* Xy, size_t ldxy, double* den_eval, double* K, const double dtol) {
 
+    const auto inbe = static_cast<int32_t>(nbe);
 
     auto *KZ = K; // KZ // store K in the Z matrix
     auto *KY = KZ + npts;
     auto *KX = KY + npts;
 
     double dtolsq = dtol*dtol;
- 
+
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
       const size_t ioffs = size_t(i) * ldxs;
@@ -201,10 +209,10 @@ namespace GauXC {
       const auto*   Xx_i = Xx + ioffx;
       const auto*   Xy_i = Xy + ioffy;
 
-      const double rhos = blas::dot( nbe, basis_eval + ioffs, 1, Xs_i, 1 );
-      const double rhoz = blas::dot( nbe, basis_eval + ioffz, 1, Xz_i, 1 );
-      const double rhox = blas::dot( nbe, basis_eval + ioffx, 1, Xx_i, 1 );
-      const double rhoy = blas::dot( nbe, basis_eval + ioffy, 1, Xy_i, 1 );
+      const double rhos = blas::dot( inbe, basis_eval + ioffs, 1, Xs_i, 1 );
+      const double rhoz = blas::dot( inbe, basis_eval + ioffz, 1, Xz_i, 1 );
+      const double rhox = blas::dot( inbe, basis_eval + ioffx, 1, Xx_i, 1 );
+      const double rhoy = blas::dot( inbe, basis_eval + ioffy, 1, Xy_i, 1 );
  
       double mtemp = rhoz * rhoz + rhox * rhox + rhoy * rhoy;
       double mnorm = 0;
@@ -229,22 +237,24 @@ namespace GauXC {
   }
 
 
-  void ReferenceLocalHostWorkDriver::eval_uvvar_gga_rks( size_t npts, size_t nbe, 
-						     const double* basis_eval, const double* dbasis_x_eval, 
-						     const double *dbasis_y_eval, const double* dbasis_z_eval, const double* X, 
-						     size_t ldx, double* den_eval, double* dden_x_eval, double* dden_y_eval, 
+  void ReferenceLocalHostWorkDriver::eval_uvvar_gga_rks( size_t npts, size_t nbe,
+						     const double* basis_eval, const double* dbasis_x_eval,
+						     const double *dbasis_y_eval, const double* dbasis_z_eval, const double* X,
+						     size_t ldx, double* den_eval, double* dden_x_eval, double* dden_y_eval,
 						     double* dden_z_eval, double* gamma ) {
+
+    const auto inbe = static_cast<int32_t>(nbe);
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
       const size_t ioff = size_t(i) * ldx;
       const auto*   X_i = X + ioff;
 
-      den_eval[i] = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 );
+      den_eval[i] = blas::dot( inbe, basis_eval + ioff, 1, X_i, 1 );
 
-      const auto dx = 2. * blas::dot( nbe, dbasis_x_eval + ioff, 1, X_i, 1 );
-      const auto dy = 2. * blas::dot( nbe, dbasis_y_eval + ioff, 1, X_i, 1 );
-      const auto dz = 2. * blas::dot( nbe, dbasis_z_eval + ioff, 1, X_i, 1 );
+      const auto dx = 2. * blas::dot( inbe, dbasis_x_eval + ioff, 1, X_i, 1 );
+      const auto dy = 2. * blas::dot( inbe, dbasis_y_eval + ioff, 1, X_i, 1 );
+      const auto dz = 2. * blas::dot( inbe, dbasis_z_eval + ioff, 1, X_i, 1 );
 
       dden_x_eval[i] = dx;
       dden_y_eval[i] = dy;
@@ -258,9 +268,11 @@ namespace GauXC {
 void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
   const double* basis_eval, const double* dbasis_x_eval,
   const double *dbasis_y_eval, const double* dbasis_z_eval, const double* Xs,
-  size_t ldxs, const double* Xz, size_t ldxz, 
+  size_t ldxs, const double* Xz, size_t ldxz,
   double* den_eval, double* dden_x_eval, double* dden_y_eval,
   double* dden_z_eval, double* gamma ) {
+
+   const auto inbe = static_cast<int32_t>(nbe);
 
    for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -270,26 +282,26 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
       const auto*   Xs_i = Xs + ioffs;
       const auto*   Xz_i = Xz + ioffz;
 
-      double rhos = blas::dot( nbe, basis_eval + ioffs, 1, Xs_i, 1 ); // S density
-      double rhoz = blas::dot( nbe, basis_eval + ioffz, 1, Xz_i, 1 ); // Z density
+      double rhos = blas::dot( inbe, basis_eval + ioffs, 1, Xs_i, 1 ); // S density
+      double rhoz = blas::dot( inbe, basis_eval + ioffz, 1, Xz_i, 1 ); // Z density
 
 
       den_eval[2*i]   = 0.5*(rhos + rhoz); // rho_+
       den_eval[2*i+1] = 0.5*(rhos - rhoz); // rho_-
 
       const auto dndx =
-        2. * blas::dot( nbe, dbasis_x_eval + ioffs, 1, Xs_i, 1 );
+        2. * blas::dot( inbe, dbasis_x_eval + ioffs, 1, Xs_i, 1 );
       const auto dndy =
-        2. * blas::dot( nbe, dbasis_y_eval + ioffs, 1, Xs_i, 1 );
+        2. * blas::dot( inbe, dbasis_y_eval + ioffs, 1, Xs_i, 1 );
       const auto dndz =
-        2. * blas::dot( nbe, dbasis_z_eval + ioffs, 1, Xs_i, 1 );
+        2. * blas::dot( inbe, dbasis_z_eval + ioffs, 1, Xs_i, 1 );
 
       const auto dMzdx =
-        2. * blas::dot( nbe, dbasis_x_eval + ioffz, 1, Xz_i, 1 );
+        2. * blas::dot( inbe, dbasis_x_eval + ioffz, 1, Xz_i, 1 );
       const auto dMzdy =
-        2. * blas::dot( nbe, dbasis_y_eval + ioffz, 1, Xz_i, 1 );
+        2. * blas::dot( inbe, dbasis_y_eval + ioffz, 1, Xz_i, 1 );
       const auto dMzdz =
-        2. * blas::dot( nbe, dbasis_z_eval + ioffz, 1, Xz_i, 1 );
+        2. * blas::dot( inbe, dbasis_z_eval + ioffz, 1, Xz_i, 1 );
 
       dden_x_eval[2*i] = dndx; // dn / dx
       dden_y_eval[2*i] = dndy; // dn / dy
@@ -317,21 +329,23 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_uks( size_t npts, size_t nbe,
 void ReferenceLocalHostWorkDriver::eval_uvvar_mgga_rks( size_t npts, size_t nbe,
   const double* basis_eval, const double* dbasis_x_eval,
   const double *dbasis_y_eval, const double* dbasis_z_eval, const double* lbasis_eval,
-  const double* X, size_t ldx, const double* mmat_x, const double* mmat_y, 
-  const double* mmat_z, size_t ldm,
+  const double* X, size_t ldx, const double* mmat_x, const double* mmat_y,
+  const double* mmat_z, [[maybe_unused]] size_t ldm,
   double* den_eval, double* dden_x_eval, double* dden_y_eval,
   double* dden_z_eval, double* gamma, double* tau, double* lapl ) {
+
+   const auto inbe = static_cast<int32_t>(nbe);
 
    for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
       const size_t ioff = size_t(i) * ldx;
       const auto*   X_i = X + ioff;
 
-      den_eval[i] = blas::dot( nbe, basis_eval + ioff, 1, X_i, 1 );
+      den_eval[i] = blas::dot( inbe, basis_eval + ioff, 1, X_i, 1 );
 
-      const auto dx = 2. * blas::dot( nbe, dbasis_x_eval + ioff, 1, X_i, 1 );
-      const auto dy = 2. * blas::dot( nbe, dbasis_y_eval + ioff, 1, X_i, 1 );
-      const auto dz = 2. * blas::dot( nbe, dbasis_z_eval + ioff, 1, X_i, 1 );
+      const auto dx = 2. * blas::dot( inbe, dbasis_x_eval + ioff, 1, X_i, 1 );
+      const auto dy = 2. * blas::dot( inbe, dbasis_y_eval + ioff, 1, X_i, 1 );
+      const auto dz = 2. * blas::dot( inbe, dbasis_z_eval + ioff, 1, X_i, 1 );
 
       dden_x_eval[i] = dx;
       dden_y_eval[i] = dy;
@@ -339,12 +353,12 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_mgga_rks( size_t npts, size_t nbe,
 
       gamma[i] = dx*dx + dy*dy + dz*dz;
 
-      tau[i]  = 0.5*blas::dot( nbe, dbasis_x_eval + ioff, 1, mmat_x + ioff, 1);
-      tau[i] += 0.5*blas::dot( nbe, dbasis_y_eval + ioff, 1, mmat_y + ioff, 1);
-      tau[i] += 0.5*blas::dot( nbe, dbasis_z_eval + ioff, 1, mmat_z + ioff, 1);
+      tau[i]  = 0.5*blas::dot( inbe, dbasis_x_eval + ioff, 1, mmat_x + ioff, 1);
+      tau[i] += 0.5*blas::dot( inbe, dbasis_y_eval + ioff, 1, mmat_y + ioff, 1);
+      tau[i] += 0.5*blas::dot( inbe, dbasis_z_eval + ioff, 1, mmat_z + ioff, 1);
 
       if (lapl != nullptr)
-        lapl[i]  = 2. * blas::dot( nbe, lbasis_eval + ioff, 1, X_i, 1) + 4. * tau[i];
+        lapl[i]  = 2. * blas::dot( inbe, lbasis_eval + ioff, 1, X_i, 1) + 4. * tau[i];
 
    }
 }
@@ -352,11 +366,13 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_mgga_rks( size_t npts, size_t nbe,
 void ReferenceLocalHostWorkDriver::eval_uvvar_mgga_uks( size_t npts, size_t nbe,
   const double* basis_eval, const double* dbasis_x_eval,
   const double *dbasis_y_eval, const double* dbasis_z_eval, const double* lbasis_eval,
-  const double* Xs, size_t ldxs, const double* Xz, size_t ldxz, 
-  const double* mmat_xs, const double* mmat_ys, const double* mmat_zs, size_t ldms,
-  const double* mmat_xz, const double* mmat_yz, const double* mmat_zz, size_t ldmz,
+  const double* Xs, size_t ldxs, const double* Xz, size_t ldxz,
+  const double* mmat_xs, const double* mmat_ys, const double* mmat_zs, [[maybe_unused]] size_t ldms,
+  const double* mmat_xz, const double* mmat_yz, const double* mmat_zz, [[maybe_unused]] size_t ldmz,
   double* den_eval, double* dden_x_eval, double* dden_y_eval,
   double* dden_z_eval, double* gamma, double* tau, double* lapl ) {
+
+   const auto inbe = static_cast<int32_t>(nbe);
 
    for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -366,26 +382,26 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_mgga_uks( size_t npts, size_t nbe,
       const auto*   Xs_i = Xs + ioffs;
       const auto*   Xz_i = Xz + ioffz;
 
-      double rhos = blas::dot( nbe, basis_eval + ioffs, 1, Xs_i, 1 ); // S density
-      double rhoz = blas::dot( nbe, basis_eval + ioffz, 1, Xz_i, 1 ); // Z density
+      double rhos = blas::dot( inbe, basis_eval + ioffs, 1, Xs_i, 1 ); // S density
+      double rhoz = blas::dot( inbe, basis_eval + ioffz, 1, Xz_i, 1 ); // Z density
 
 
       den_eval[2*i]   = 0.5*(rhos + rhoz); // rho_+
       den_eval[2*i+1] = 0.5*(rhos - rhoz); // rho_-
 
       const auto dndx =
-        2. * blas::dot( nbe, dbasis_x_eval + ioffs, 1, Xs_i, 1 );
+        2. * blas::dot( inbe, dbasis_x_eval + ioffs, 1, Xs_i, 1 );
       const auto dndy =
-        2. * blas::dot( nbe, dbasis_y_eval + ioffs, 1, Xs_i, 1 );
+        2. * blas::dot( inbe, dbasis_y_eval + ioffs, 1, Xs_i, 1 );
       const auto dndz =
-        2. * blas::dot( nbe, dbasis_z_eval + ioffs, 1, Xs_i, 1 );
+        2. * blas::dot( inbe, dbasis_z_eval + ioffs, 1, Xs_i, 1 );
 
       const auto dMzdx =
-        2. * blas::dot( nbe, dbasis_x_eval + ioffz, 1, Xz_i, 1 );
+        2. * blas::dot( inbe, dbasis_x_eval + ioffz, 1, Xz_i, 1 );
       const auto dMzdy =
-        2. * blas::dot( nbe, dbasis_y_eval + ioffz, 1, Xz_i, 1 );
+        2. * blas::dot( inbe, dbasis_y_eval + ioffz, 1, Xz_i, 1 );
       const auto dMzdz =
-        2. * blas::dot( nbe, dbasis_z_eval + ioffz, 1, Xz_i, 1 );
+        2. * blas::dot( inbe, dbasis_z_eval + ioffz, 1, Xz_i, 1 );
 
       dden_x_eval[2*i] = dndx; // dn / dx
       dden_y_eval[2*i] = dndy; // dn / dy
@@ -406,19 +422,19 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_mgga_uks( size_t npts, size_t nbe,
       gamma[3*i+1] = 0.25*(dn_sq - dMz_sq);
       gamma[3*i+2] = 0.25*(dn_sq + dMz_sq) - 0.5*dn_dMz;
 
-      auto taus  = 0.5*blas::dot( nbe, dbasis_x_eval + ioffs, 1, mmat_xs + ioffs, 1);
-           taus += 0.5*blas::dot( nbe, dbasis_y_eval + ioffs, 1, mmat_ys + ioffs, 1);
-           taus += 0.5*blas::dot( nbe, dbasis_z_eval + ioffs, 1, mmat_zs + ioffs, 1);
-      auto tauz  = 0.5*blas::dot( nbe, dbasis_x_eval + ioffz, 1, mmat_xz + ioffz, 1);
-           tauz += 0.5*blas::dot( nbe, dbasis_y_eval + ioffz, 1, mmat_yz + ioffz, 1);
-           tauz += 0.5*blas::dot( nbe, dbasis_z_eval + ioffz, 1, mmat_zz + ioffz, 1);
+      auto taus  = 0.5*blas::dot( inbe, dbasis_x_eval + ioffs, 1, mmat_xs + ioffs, 1);
+           taus += 0.5*blas::dot( inbe, dbasis_y_eval + ioffs, 1, mmat_ys + ioffs, 1);
+           taus += 0.5*blas::dot( inbe, dbasis_z_eval + ioffs, 1, mmat_zs + ioffs, 1);
+      auto tauz  = 0.5*blas::dot( inbe, dbasis_x_eval + ioffz, 1, mmat_xz + ioffz, 1);
+           tauz += 0.5*blas::dot( inbe, dbasis_y_eval + ioffz, 1, mmat_yz + ioffz, 1);
+           tauz += 0.5*blas::dot( inbe, dbasis_z_eval + ioffz, 1, mmat_zz + ioffz, 1);
 
       tau[2*i]   = 0.5*(taus + tauz);
       tau[2*i+1] = 0.5*(taus - tauz);
 
       if (lapl != nullptr) {
-        auto lapls = 2. * blas::dot( nbe, lbasis_eval + ioffs, 1, Xs_i, 1) + 4. * taus;
-        auto laplz = 2. * blas::dot( nbe, lbasis_eval + ioffz, 1, Xz_i, 1) + 4. * tauz;
+        auto lapls = 2. * blas::dot( inbe, lbasis_eval + ioffs, 1, Xs_i, 1) + 4. * taus;
+        auto laplz = 2. * blas::dot( inbe, lbasis_eval + ioffz, 1, Xz_i, 1) + 4. * tauz;
 
         lapl[2*i]   = 0.5*(lapls + laplz);
         lapl[2*i+1] = 0.5*(lapls - laplz);
@@ -435,6 +451,8 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe, 
     const double* Xz, size_t ldxz, const double* Xx, size_t ldxx,
     const double* Xy, size_t ldxy, double* den_eval,
     double* dden_x_eval, double* dden_y_eval, double* dden_z_eval, double* gamma, double* K, double* H, const double dtol) {
+
+   const auto inbe = static_cast<int32_t>(nbe);
 
    auto *KZ = K; // KZ // store K in the Z matrix
    auto *KY = KZ + npts;
@@ -458,38 +476,38 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe, 
       const auto*   Xx_i = Xx + ioffx;
       const auto*   Xy_i = Xy + ioffy;
 
-      const double rhos = blas::dot( nbe, basis_eval + ioffs, 1, Xs_i, 1 );
-      const double rhoz = blas::dot( nbe, basis_eval + ioffz, 1, Xz_i, 1 );
-      const double rhox = blas::dot( nbe, basis_eval + ioffx, 1, Xx_i, 1 );
-      const double rhoy = blas::dot( nbe, basis_eval + ioffy, 1, Xy_i, 1 );
+      const double rhos = blas::dot( inbe, basis_eval + ioffs, 1, Xs_i, 1 );
+      const double rhoz = blas::dot( inbe, basis_eval + ioffz, 1, Xz_i, 1 );
+      const double rhox = blas::dot( inbe, basis_eval + ioffx, 1, Xx_i, 1 );
+      const double rhoy = blas::dot( inbe, basis_eval + ioffy, 1, Xy_i, 1 );
 
       const auto dndx =
-        2. * blas::dot( nbe, dbasis_x_eval + ioffs, 1, Xs_i, 1 );
+        2. * blas::dot( inbe, dbasis_x_eval + ioffs, 1, Xs_i, 1 );
       const auto dndy =
-        2. * blas::dot( nbe, dbasis_y_eval + ioffs, 1, Xs_i, 1 );
+        2. * blas::dot( inbe, dbasis_y_eval + ioffs, 1, Xs_i, 1 );
       const auto dndz =
-        2. * blas::dot( nbe, dbasis_z_eval + ioffs, 1, Xs_i, 1 );
+        2. * blas::dot( inbe, dbasis_z_eval + ioffs, 1, Xs_i, 1 );
 
       const auto dMzdx =
-        2. * blas::dot( nbe, dbasis_x_eval + ioffz, 1, Xz_i, 1 );
+        2. * blas::dot( inbe, dbasis_x_eval + ioffz, 1, Xz_i, 1 );
       const auto dMzdy =
-        2. * blas::dot( nbe, dbasis_y_eval + ioffz, 1, Xz_i, 1 );
+        2. * blas::dot( inbe, dbasis_y_eval + ioffz, 1, Xz_i, 1 );
       const auto dMzdz =
-        2. * blas::dot( nbe, dbasis_z_eval + ioffz, 1, Xz_i, 1 );
+        2. * blas::dot( inbe, dbasis_z_eval + ioffz, 1, Xz_i, 1 );
 
       const auto dMxdx =
-        2. * blas::dot( nbe, dbasis_x_eval + ioffx, 1, Xx_i, 1 );
+        2. * blas::dot( inbe, dbasis_x_eval + ioffx, 1, Xx_i, 1 );
       const auto dMxdy =
-        2. * blas::dot( nbe, dbasis_y_eval + ioffx, 1, Xx_i, 1 );
+        2. * blas::dot( inbe, dbasis_y_eval + ioffx, 1, Xx_i, 1 );
       const auto dMxdz =
-        2. * blas::dot( nbe, dbasis_z_eval + ioffx, 1, Xx_i, 1 );
+        2. * blas::dot( inbe, dbasis_z_eval + ioffx, 1, Xx_i, 1 );
 
       const auto dMydx =
-        2. * blas::dot( nbe, dbasis_x_eval + ioffy, 1, Xy_i, 1 );
+        2. * blas::dot( inbe, dbasis_x_eval + ioffy, 1, Xy_i, 1 );
       const auto dMydy =
-        2. * blas::dot( nbe, dbasis_y_eval + ioffy, 1, Xy_i, 1 );
+        2. * blas::dot( inbe, dbasis_y_eval + ioffy, 1, Xy_i, 1 );
       const auto dMydz =
-        2. * blas::dot( nbe, dbasis_z_eval + ioffy, 1, Xy_i, 1 );
+        2. * blas::dot( inbe, dbasis_z_eval + ioffy, 1, Xy_i, 1 );
 
 
       dden_x_eval[4 * i] = dndx;
@@ -563,18 +581,21 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe, 
 
 }
   // Eval Z Matrix LDA VXC
-  void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_rks( size_t npts, size_t nbf, 
+  void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_rks( size_t npts, size_t nbf,
 							const double* vrho, const double* basis_eval, double* Z, size_t ldz ) {
 
+    const auto inbf  = static_cast<int32_t>(nbf);
+    const auto inpts = static_cast<int32_t>(npts);
+    const auto ildz  = static_cast<int32_t>(ldz);
 
-    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z, ldz );
+    blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Z, ildz );
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
       auto* z_col = Z + i*ldz;
 
       const double fact = 0.5 * vrho[i];
-      GauXC::blas::scal( nbf, fact, z_col, 1 );
+      GauXC::blas::scal( inbf, fact, z_col, 1 );
 
     }
 
@@ -585,9 +606,13 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe, 
               const double* vrho, const double* basis_eval, double* Zs, size_t ldzs,
               double* Zz, size_t ldzz ) {
 
+    const auto inbf  = static_cast<int32_t>(nbf);
+    const auto inpts = static_cast<int32_t>(npts);
+    const auto ildzs = static_cast<int32_t>(ldzs);
+    const auto ildzz = static_cast<int32_t>(ldzz);
 
-    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zs, ldzs);
-    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zz, ldzz);
+    blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Zs, ildzs);
+    blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Zz, ildzz);
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -598,11 +623,11 @@ void ReferenceLocalHostWorkDriver::eval_uvvar_gga_gks( size_t npts, size_t nbe, 
       const double factm = 0.5 * vrho[2*i+1];
 
       //eq. 56 https://doi.org/10.1140/epjb/e2018-90170-1
-      GauXC::blas::scal( nbf, 0.5*(factp + factm), zs_col, 1 );
-      GauXC::blas::scal( nbf, 0.5*(factp - factm), zz_col, 1 );
+      GauXC::blas::scal( inbf, 0.5*(factp + factm), zs_col, 1 );
+      GauXC::blas::scal( inbf, 0.5*(factp - factm), zz_col, 1 );
 
     }
- 
+
 
   }
 
@@ -610,14 +635,21 @@ void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nb
     const double* basis_eval, double* Zs, size_t ldzs, double* Zz, size_t ldzz,
     double* Zx, size_t ldzx,double* Zy, size_t ldzy, double *K ) {
 
+  const auto inbe  = static_cast<int32_t>(nbe);
+  const auto inpts = static_cast<int32_t>(npts);
+  const auto ildzs = static_cast<int32_t>(ldzs);
+  const auto ildzz = static_cast<int32_t>(ldzz);
+  const auto ildzx = static_cast<int32_t>(ldzx);
+  const auto ildzy = static_cast<int32_t>(ldzy);
+
   auto *KZ = K; // KZ // store K in the Z matrix
   auto *KY = KZ + npts;
   auto *KX = KY + npts;
 
-    blas::lacpy( 'A', nbe, npts, basis_eval, nbe, Zs, ldzs);
-    blas::lacpy( 'A', nbe, npts, basis_eval, nbe, Zz, ldzz);
-    blas::lacpy( 'A', nbe, npts, basis_eval, nbe, Zx, ldzx);
-    blas::lacpy( 'A', nbe, npts, basis_eval, nbe, Zy, ldzy);
+    blas::lacpy( 'A', inbe, inpts, basis_eval, inbe, Zs, ildzs);
+    blas::lacpy( 'A', inbe, inpts, basis_eval, inbe, Zz, ildzz);
+    blas::lacpy( 'A', inbe, inpts, basis_eval, inbe, Zx, ildzx);
+    blas::lacpy( 'A', inbe, inpts, basis_eval, inbe, Zy, ildzy);
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -631,45 +663,48 @@ void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nb
       const double factor = 0.5 * (factp - factm);
 
       //eq. 56 https://doi.org/10.1140/epjb/e2018-90170-1
-      GauXC::blas::scal( nbe, 0.5*(factp + factm), zs_col, 1 );
-      GauXC::blas::scal( nbe, KZ[i] * factor, zz_col, 1 );
-      GauXC::blas::scal( nbe, KX[i] * factor, zx_col, 1 );
-      GauXC::blas::scal( nbe, KY[i] * factor, zy_col, 1 );
-   
+      GauXC::blas::scal( inbe, 0.5*(factp + factm), zs_col, 1 );
+      GauXC::blas::scal( inbe, KZ[i] * factor, zz_col, 1 );
+      GauXC::blas::scal( inbe, KX[i] * factor, zx_col, 1 );
+      GauXC::blas::scal( inbe, KY[i] * factor, zy_col, 1 );
+
     }
 
 }
 
   // Eval Z Matrix GGA VXC
-  void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_rks( size_t npts, size_t nbf, 
-							const double* vrho, const double* vgamma, const double* basis_eval, 
-							const double* dbasis_x_eval, const double* dbasis_y_eval, 
-							const double* dbasis_z_eval, const double* dden_x_eval, 
+  void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_rks( size_t npts, size_t nbf,
+							const double* vrho, const double* vgamma, const double* basis_eval,
+							const double* dbasis_x_eval, const double* dbasis_y_eval,
+							const double* dbasis_z_eval, const double* dden_x_eval,
 							const double* dden_y_eval, const double* dden_z_eval, double* Z, size_t ldz ) {
 
+    const auto inbf  = static_cast<int32_t>(nbf);
+    const auto inpts = static_cast<int32_t>(npts);
+
     if( ldz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
-    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z, nbf );
+    blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Z, inbf );
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
       const int32_t ioff = i * nbf;
 
       auto* z_col    = Z + ioff;
-      auto* bf_x_col = dbasis_x_eval + ioff; 
-      auto* bf_y_col = dbasis_y_eval + ioff; 
-      auto* bf_z_col = dbasis_z_eval + ioff; 
+      auto* bf_x_col = dbasis_x_eval + ioff;
+      auto* bf_y_col = dbasis_y_eval + ioff;
+      auto* bf_z_col = dbasis_z_eval + ioff;
 
       const auto lda_fact = 0.5 * vrho[i];
-      blas::scal( nbf, lda_fact, z_col, 1 );
+      blas::scal( inbf, lda_fact, z_col, 1 );
 
-      const auto gga_fact = 2. * vgamma[i]; 
+      const auto gga_fact = 2. * vgamma[i];
       const auto x_fact = gga_fact * dden_x_eval[i];
       const auto y_fact = gga_fact * dden_y_eval[i];
       const auto z_fact = gga_fact * dden_z_eval[i];
 
-      blas::axpy( nbf, x_fact, bf_x_col, 1, z_col, 1 );
-      blas::axpy( nbf, y_fact, bf_y_col, 1, z_col, 1 );
-      blas::axpy( nbf, z_fact, bf_z_col, 1, z_col, 1 );
+      blas::axpy( inbf, x_fact, bf_x_col, 1, z_col, 1 );
+      blas::axpy( inbf, y_fact, bf_y_col, 1, z_col, 1 );
+      blas::axpy( inbf, z_fact, bf_z_col, 1, z_col, 1 );
 
     }
 
@@ -679,14 +714,18 @@ void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nb
               const double* vrho, const double* vgamma, const double* basis_eval,
               const double* dbasis_x_eval, const double* dbasis_y_eval,
               const double* dbasis_z_eval, const double* dden_x_eval,
-              const double* dden_y_eval, const double* dden_z_eval, double* Zs, 
+              const double* dden_y_eval, const double* dden_z_eval, double* Zs,
               size_t ldzs, double* Zz, size_t ldzz ) {
 
+    const auto inbf  = static_cast<int32_t>(nbf);
+    const auto inpts = static_cast<int32_t>(npts);
+    const auto ildzs = static_cast<int32_t>(ldzs);
+    const auto ildzz = static_cast<int32_t>(ldzz);
 
     if( ldzs != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
     if( ldzz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
-    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zs, ldzs);
-    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zz, ldzz);
+    blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Zs, ildzs);
+    blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Zz, ildzz);
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -701,8 +740,8 @@ void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nb
       const double factp = 0.5 * vrho[2*i];
       const double factm = 0.5 * vrho[2*i+1];
 
-      GauXC::blas::scal( nbf, 0.5*(factp + factm), zs_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
-      GauXC::blas::scal( nbf, 0.5*(factp - factm), zz_col, 1 );
+      GauXC::blas::scal( inbf, 0.5*(factp + factm), zs_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
+      GauXC::blas::scal( inbf, 0.5*(factp - factm), zz_col, 1 );
 
       const auto gga_fact_pp = vgamma[3*i];
       const auto gga_fact_pm = vgamma[3*i+1];
@@ -719,14 +758,14 @@ void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nb
       const auto x_fact_z = gga_fact_3 * dden_x_eval[2*i+1] + gga_fact_2 * dden_x_eval[2*i];
       const auto y_fact_z = gga_fact_3 * dden_y_eval[2*i+1] + gga_fact_2 * dden_y_eval[2*i];
       const auto z_fact_z = gga_fact_3 * dden_z_eval[2*i+1] + gga_fact_2 * dden_z_eval[2*i];
-      
-      blas::axpy( nbf, x_fact_s, bf_x_col, 1, zs_col, 1 );
-      blas::axpy( nbf, y_fact_s, bf_y_col, 1, zs_col, 1 );
-      blas::axpy( nbf, z_fact_s, bf_z_col, 1, zs_col, 1 );
 
-      blas::axpy( nbf, x_fact_z, bf_x_col, 1, zz_col, 1 );
-      blas::axpy( nbf, y_fact_z, bf_y_col, 1, zz_col, 1 );
-      blas::axpy( nbf, z_fact_z, bf_z_col, 1, zz_col, 1 );
+      blas::axpy( inbf, x_fact_s, bf_x_col, 1, zs_col, 1 );
+      blas::axpy( inbf, y_fact_s, bf_y_col, 1, zs_col, 1 );
+      blas::axpy( inbf, z_fact_s, bf_z_col, 1, zs_col, 1 );
+
+      blas::axpy( inbf, x_fact_z, bf_x_col, 1, zz_col, 1 );
+      blas::axpy( inbf, y_fact_z, bf_y_col, 1, zz_col, 1 );
+      blas::axpy( inbf, z_fact_z, bf_z_col, 1, zz_col, 1 );
 
     }
   }
@@ -740,8 +779,11 @@ void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nb
               const double* dden_x_eval,
               const double* dden_y_eval, const double* dden_z_eval, double* Z, size_t ldz ) {
 
+    const auto inbf  = static_cast<int32_t>(nbf);
+    const auto inpts = static_cast<int32_t>(npts);
+
     if( ldz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
-    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z, nbf );
+    blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Z, inbf );
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -753,21 +795,21 @@ void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nb
       auto* bf_z_col = dbasis_z_eval + ioff;
 
       const auto lda_fact = 0.5 * vrho[i];
-      blas::scal( nbf, lda_fact, z_col, 1 );
+      blas::scal( inbf, lda_fact, z_col, 1 );
 
       const auto gga_fact = 2. * vgamma[i];
       const auto x_fact = gga_fact * dden_x_eval[i];
       const auto y_fact = gga_fact * dden_y_eval[i];
       const auto z_fact = gga_fact * dden_z_eval[i];
 
-      blas::axpy( nbf, x_fact, bf_x_col, 1, z_col, 1 );
-      blas::axpy( nbf, y_fact, bf_y_col, 1, z_col, 1 );
-      blas::axpy( nbf, z_fact, bf_z_col, 1, z_col, 1 );
+      blas::axpy( inbf, x_fact, bf_x_col, 1, z_col, 1 );
+      blas::axpy( inbf, y_fact, bf_y_col, 1, z_col, 1 );
+      blas::axpy( inbf, z_fact, bf_z_col, 1, z_col, 1 );
 
       if ( vlapl != nullptr ) {
   auto* lbf_col = lbasis_eval + ioff;
         const auto lapl_fact = vlapl[i];
-        blas::axpy( nbf, lapl_fact, lbf_col, 1, z_col, 1 );
+        blas::axpy( inbf, lapl_fact, lbf_col, 1, z_col, 1 );
       }
 
     }
@@ -775,19 +817,23 @@ void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_gks( size_t npts, size_t nb
   }
 
 void ReferenceLocalHostWorkDriver::eval_zmat_mgga_vxc_uks( size_t npts, size_t nbf,
-              const double* vrho, const double* vgamma, const double* vlapl, 
+              const double* vrho, const double* vgamma, const double* vlapl,
         const double* basis_eval,
               const double* dbasis_x_eval, const double* dbasis_y_eval,
               const double* dbasis_z_eval, const double* lbasis_eval,
         const double* dden_x_eval,
-              const double* dden_y_eval, const double* dden_z_eval, double* Zs, 
+              const double* dden_y_eval, const double* dden_z_eval, double* Zs,
               size_t ldzs, double* Zz, size_t ldzz ) {
 
+    const auto inbf  = static_cast<int32_t>(nbf);
+    const auto inpts = static_cast<int32_t>(npts);
+    const auto ildzs = static_cast<int32_t>(ldzs);
+    const auto ildzz = static_cast<int32_t>(ldzz);
 
     if( ldzs != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
     if( ldzz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
-    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zs, ldzs);
-    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zz, ldzz);
+    blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Zs, ildzs);
+    blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Zz, ildzz);
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -803,8 +849,8 @@ void ReferenceLocalHostWorkDriver::eval_zmat_mgga_vxc_uks( size_t npts, size_t n
       const double factp = 0.5 * vrho[2*i];
       const double factm = 0.5 * vrho[2*i+1];
 
-      GauXC::blas::scal( nbf, 0.5*(factp + factm), zs_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
-      GauXC::blas::scal( nbf, 0.5*(factp - factm), zz_col, 1 );
+      GauXC::blas::scal( inbf, 0.5*(factp + factm), zs_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
+      GauXC::blas::scal( inbf, 0.5*(factp - factm), zz_col, 1 );
 
       const auto gga_fact_pp = vgamma[3*i];
       const auto gga_fact_pm = vgamma[3*i+1];
@@ -822,36 +868,40 @@ void ReferenceLocalHostWorkDriver::eval_zmat_mgga_vxc_uks( size_t npts, size_t n
       const auto y_fact_z = gga_fact_3 * dden_y_eval[2*i+1] + gga_fact_2 * dden_y_eval[2*i];
       const auto z_fact_z = gga_fact_3 * dden_z_eval[2*i+1] + gga_fact_2 * dden_z_eval[2*i];
 
-      
-      blas::axpy( nbf, x_fact_s, bf_x_col, 1, zs_col, 1 );
-      blas::axpy( nbf, y_fact_s, bf_y_col, 1, zs_col, 1 );
-      blas::axpy( nbf, z_fact_s, bf_z_col, 1, zs_col, 1 );
 
-      blas::axpy( nbf, x_fact_z, bf_x_col, 1, zz_col, 1 );
-      blas::axpy( nbf, y_fact_z, bf_y_col, 1, zz_col, 1 );
-      blas::axpy( nbf, z_fact_z, bf_z_col, 1, zz_col, 1 );
+      blas::axpy( inbf, x_fact_s, bf_x_col, 1, zs_col, 1 );
+      blas::axpy( inbf, y_fact_s, bf_y_col, 1, zs_col, 1 );
+      blas::axpy( inbf, z_fact_s, bf_z_col, 1, zs_col, 1 );
+
+      blas::axpy( inbf, x_fact_z, bf_x_col, 1, zz_col, 1 );
+      blas::axpy( inbf, y_fact_z, bf_y_col, 1, zz_col, 1 );
+      blas::axpy( inbf, z_fact_z, bf_z_col, 1, zz_col, 1 );
 
       if (vlapl != nullptr) {
         const auto lfactp = vlapl[2*i];
         const auto lfactm = vlapl[2*i+1];
-        blas::axpy( nbf, 0.5*(lfactp + lfactm), lbf_col, 1, zs_col, 1);
-        blas::axpy( nbf, 0.5*(lfactp - lfactm), lbf_col, 1, zz_col, 1);
+        blas::axpy( inbf, 0.5*(lfactp + lfactm), lbf_col, 1, zs_col, 1);
+        blas::axpy( inbf, 0.5*(lfactp - lfactm), lbf_col, 1, zz_col, 1);
       }
 
     }
   }
 
-  void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_rks(size_t npts, size_t nbf, 
-              const double* vtau, const double* vlapl, 
-              const double* dbasis_x_eval, const double* dbasis_y_eval, 
+  void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_rks(size_t npts, size_t nbf,
+              const double* vtau, const double* vlapl,
+              const double* dbasis_x_eval, const double* dbasis_y_eval,
               const double* dbasis_z_eval,
               double* mmat_x, double* mmat_y, double* mmat_z, size_t ldm ) {
 
+    const auto inbf  = static_cast<int32_t>(nbf);
+    const auto inpts = static_cast<int32_t>(npts);
+    const auto ildm  = static_cast<int32_t>(ldm);
+
     if( ldm != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
-    
-    blas::lacpy( 'A', nbf, npts, dbasis_x_eval, nbf, mmat_x, ldm);
-    blas::lacpy( 'A', nbf, npts, dbasis_y_eval, nbf, mmat_y, ldm);
-    blas::lacpy( 'A', nbf, npts, dbasis_z_eval, nbf, mmat_z, ldm);
+
+    blas::lacpy( 'A', inbf, inpts, dbasis_x_eval, inbf, mmat_x, ildm);
+    blas::lacpy( 'A', inbf, inpts, dbasis_y_eval, inbf, mmat_y, ildm);
+    blas::lacpy( 'A', inbf, inpts, dbasis_z_eval, inbf, mmat_z, ildm);
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -865,35 +915,40 @@ void ReferenceLocalHostWorkDriver::eval_zmat_mgga_vxc_uks( size_t npts, size_t n
 
       const auto tfact = 0.25 * vtau[i];
 
-      blas::scal( nbf, tfact, mmat_x_col, 1);
-      blas::scal( nbf, tfact, mmat_y_col, 1);
-      blas::scal( nbf, tfact, mmat_z_col, 1);
+      blas::scal( inbf, tfact, mmat_x_col, 1);
+      blas::scal( inbf, tfact, mmat_y_col, 1);
+      blas::scal( inbf, tfact, mmat_z_col, 1);
 
       if ( vlapl != nullptr ) {
         const auto lfact = vlapl[i];
-        blas::axpy( nbf, lfact, bf_x_col, 1, mmat_x_col, 1);
-        blas::axpy( nbf, lfact, bf_y_col, 1, mmat_y_col, 1);
-        blas::axpy( nbf, lfact, bf_z_col, 1, mmat_z_col, 1);
+        blas::axpy( inbf, lfact, bf_x_col, 1, mmat_x_col, 1);
+        blas::axpy( inbf, lfact, bf_y_col, 1, mmat_y_col, 1);
+        blas::axpy( inbf, lfact, bf_z_col, 1, mmat_z_col, 1);
       }
     }
   }
 
-void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks(size_t npts, size_t nbf, 
-              const double* vtau, const double* vlapl, 
-              const double* dbasis_x_eval, const double* dbasis_y_eval, 
+void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks(size_t npts, size_t nbf,
+              const double* vtau, const double* vlapl,
+              const double* dbasis_x_eval, const double* dbasis_y_eval,
               const double* dbasis_z_eval,
               double* mmat_xs, double* mmat_ys, double* mmat_zs, size_t ldms,
               double* mmat_xz, double* mmat_yz, double* mmat_zz, size_t ldmz) {
 
+    const auto inbf  = static_cast<int32_t>(nbf);
+    const auto inpts = static_cast<int32_t>(npts);
+    const auto ildms = static_cast<int32_t>(ldms);
+    const auto ildmz = static_cast<int32_t>(ldmz);
+
     if( ldms != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
     if( ldmz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
-    
-    blas::lacpy( 'A', nbf, npts, dbasis_x_eval, nbf, mmat_xs, ldms);
-    blas::lacpy( 'A', nbf, npts, dbasis_y_eval, nbf, mmat_ys, ldms);
-    blas::lacpy( 'A', nbf, npts, dbasis_z_eval, nbf, mmat_zs, ldms);
-    blas::lacpy( 'A', nbf, npts, dbasis_x_eval, nbf, mmat_xz, ldmz);
-    blas::lacpy( 'A', nbf, npts, dbasis_y_eval, nbf, mmat_yz, ldmz);
-    blas::lacpy( 'A', nbf, npts, dbasis_z_eval, nbf, mmat_zz, ldmz);
+
+    blas::lacpy( 'A', inbf, inpts, dbasis_x_eval, inbf, mmat_xs, ildms);
+    blas::lacpy( 'A', inbf, inpts, dbasis_y_eval, inbf, mmat_ys, ildms);
+    blas::lacpy( 'A', inbf, inpts, dbasis_z_eval, inbf, mmat_zs, ildms);
+    blas::lacpy( 'A', inbf, inpts, dbasis_x_eval, inbf, mmat_xz, ildmz);
+    blas::lacpy( 'A', inbf, inpts, dbasis_y_eval, inbf, mmat_yz, ildmz);
+    blas::lacpy( 'A', inbf, inpts, dbasis_z_eval, inbf, mmat_zz, ildmz);
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -913,24 +968,24 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks(size_t npts, size_t nb
       const auto tfacts = 0.5*(tfactp + tfactm);
       const auto tfactz = 0.5*(tfactp - tfactm);
 
-      blas::scal( nbf, tfacts, xs_col, 1);
-      blas::scal( nbf, tfacts, ys_col, 1);
-      blas::scal( nbf, tfacts, zs_col, 1);
-      blas::scal( nbf, tfactz, xz_col, 1);
-      blas::scal( nbf, tfactz, yz_col, 1);
-      blas::scal( nbf, tfactz, zz_col, 1);
+      blas::scal( inbf, tfacts, xs_col, 1);
+      blas::scal( inbf, tfacts, ys_col, 1);
+      blas::scal( inbf, tfacts, zs_col, 1);
+      blas::scal( inbf, tfactz, xz_col, 1);
+      blas::scal( inbf, tfactz, yz_col, 1);
+      blas::scal( inbf, tfactz, zz_col, 1);
 
       if ( vlapl != nullptr ) {
         const auto lfactp = vlapl[2*i];
         const auto lfactm = vlapl[2*i+1];
   const auto lfacts = 0.5*(lfactp + lfactm);
   const auto lfactz = 0.5*(lfactp - lfactm);
-        blas::axpy( nbf, lfacts, bf_x_col, 1, xs_col, 1);
-        blas::axpy( nbf, lfacts, bf_y_col, 1, ys_col, 1);
-        blas::axpy( nbf, lfacts, bf_z_col, 1, zs_col, 1);
-        blas::axpy( nbf, lfactz, bf_x_col, 1, xz_col, 1);
-        blas::axpy( nbf, lfactz, bf_y_col, 1, yz_col, 1);
-        blas::axpy( nbf, lfactz, bf_z_col, 1, zz_col, 1);
+        blas::axpy( inbf, lfacts, bf_x_col, 1, xs_col, 1);
+        blas::axpy( inbf, lfacts, bf_y_col, 1, ys_col, 1);
+        blas::axpy( inbf, lfacts, bf_z_col, 1, zs_col, 1);
+        blas::axpy( inbf, lfactz, bf_x_col, 1, xz_col, 1);
+        blas::axpy( inbf, lfactz, bf_y_col, 1, yz_col, 1);
+        blas::axpy( inbf, lfactz, bf_z_col, 1, zz_col, 1);
       }
 
     }
@@ -943,6 +998,13 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
     const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval,
     double* Zs, size_t ldzs, double* Zz, size_t ldzz, double* Zx, size_t ldzx,
     double* Zy, size_t ldzy, double* K, double* H ) {
+
+    const auto inbf  = static_cast<int32_t>(nbf);
+    const auto inpts = static_cast<int32_t>(npts);
+    const auto ildzs = static_cast<int32_t>(ldzs);
+    const auto ildzz = static_cast<int32_t>(ldzz);
+    const auto ildzx = static_cast<int32_t>(ldzx);
+    const auto ildzy = static_cast<int32_t>(ldzy);
 
     auto *KZ = K; // KZ // store K in the Z matrix
     auto *KY = KZ + npts;
@@ -957,10 +1019,10 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
     if( ldzx != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
     if( ldzy != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
 
-    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zs, ldzs);
-    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zz, ldzz);
-    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zx, ldzx);
-    blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zy, ldzy);   
+    blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Zs, ildzs);
+    blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Zz, ildzz);
+    blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Zx, ildzx);
+    blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Zy, ildzy);
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -979,10 +1041,10 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
       const double factm = 0.5 * vrho[2*i+1];
       const double factor = 0.5 * (factp - factm);
 
-      GauXC::blas::scal( nbf, 0.5*(factp + factm), zs_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
-      GauXC::blas::scal( nbf, KZ[i]*factor, zz_col, 1 );
-      GauXC::blas::scal( nbf, KX[i]*factor, zx_col, 1 );
-      GauXC::blas::scal( nbf, KY[i]*factor, zy_col, 1 );
+      GauXC::blas::scal( inbf, 0.5*(factp + factm), zs_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
+      GauXC::blas::scal( inbf, KZ[i]*factor, zz_col, 1 );
+      GauXC::blas::scal( inbf, KX[i]*factor, zx_col, 1 );
+      GauXC::blas::scal( inbf, KY[i]*factor, zy_col, 1 );
 
       const auto gga_fact_pp = vgamma[3 * i];
       const auto gga_fact_pm = vgamma[3 * i + 1];
@@ -1027,21 +1089,21 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_gks( size_t npts, size_t nb
                             gga_fact_2 * HY[i] * dden_z_eval[4 * i];
 
 
-      blas::axpy(nbf, x_fact_s, bf_x_col, 1, zs_col, 1);
-      blas::axpy(nbf, y_fact_s, bf_y_col, 1, zs_col, 1);
-      blas::axpy(nbf, z_fact_s, bf_z_col, 1, zs_col, 1);
+      blas::axpy(inbf, x_fact_s, bf_x_col, 1, zs_col, 1);
+      blas::axpy(inbf, y_fact_s, bf_y_col, 1, zs_col, 1);
+      blas::axpy(inbf, z_fact_s, bf_z_col, 1, zs_col, 1);
 
-      blas::axpy(nbf, x_fact_z, bf_x_col, 1, zz_col, 1);
-      blas::axpy(nbf, y_fact_z, bf_y_col, 1, zz_col, 1);
-      blas::axpy(nbf, z_fact_z, bf_z_col, 1, zz_col, 1);
+      blas::axpy(inbf, x_fact_z, bf_x_col, 1, zz_col, 1);
+      blas::axpy(inbf, y_fact_z, bf_y_col, 1, zz_col, 1);
+      blas::axpy(inbf, z_fact_z, bf_z_col, 1, zz_col, 1);
 
-      blas::axpy(nbf, x_fact_x, bf_x_col, 1, zx_col, 1);
-      blas::axpy(nbf, y_fact_x, bf_y_col, 1, zx_col, 1);
-      blas::axpy(nbf, z_fact_x, bf_z_col, 1, zx_col, 1);
+      blas::axpy(inbf, x_fact_x, bf_x_col, 1, zx_col, 1);
+      blas::axpy(inbf, y_fact_x, bf_y_col, 1, zx_col, 1);
+      blas::axpy(inbf, z_fact_x, bf_z_col, 1, zx_col, 1);
 
-      blas::axpy(nbf, x_fact_y, bf_x_col, 1, zy_col, 1);
-      blas::axpy(nbf, y_fact_y, bf_y_col, 1, zy_col, 1);
-      blas::axpy(nbf, z_fact_y, bf_z_col, 1, zy_col, 1);
+      blas::axpy(inbf, x_fact_y, bf_x_col, 1, zy_col, 1);
+      blas::axpy(inbf, y_fact_y, bf_y_col, 1, zy_col, 1);
+      blas::axpy(inbf, z_fact_y, bf_z_col, 1, zy_col, 1);
 
     }
 
@@ -1157,10 +1219,10 @@ void ReferenceLocalHostWorkDriver::eval_tmat_gga_vxc_uks( size_t npts, const dou
 }
 
 
-void ReferenceLocalHostWorkDriver::eval_tmat_mgga_vxc_rks( size_t npts, const double* vgamma, 
-  const double* v2rho2, const double* v2rhogamma, const double* v2rholapl, const double* v2rhotau, 
-  const double* v2gamma2, const double* v2gammalapl, const double* v2gammatau,
-  const double* v2lapl2, const double* v2lapltau, const double* v2tau2, 
+void ReferenceLocalHostWorkDriver::eval_tmat_mgga_vxc_rks( size_t npts, const double* vgamma,
+  const double* v2rho2, const double* v2rhogamma, [[maybe_unused]] const double* v2rholapl, const double* v2rhotau,
+  const double* v2gamma2, [[maybe_unused]] const double* v2gammalapl, const double* v2gammatau,
+  [[maybe_unused]] const double* v2lapl2, [[maybe_unused]] const double* v2lapltau, const double* v2tau2, 
   const double* trho, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, 
   const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C){
 
@@ -1290,12 +1352,18 @@ void ReferenceLocalHostWorkDriver::eval_tmat_mgga_vxc_uks( size_t npts, const do
 void ReferenceLocalHostWorkDriver::eval_zmat_lda_vxc_uks_ts( size_t npts, size_t nbf,
   const double* vrho, const double* basis_eval, double* Za, size_t ldza,
   double* Zb, size_t ldzb ) {
-  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Za, ldza);
-  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zb, ldzb);
+
+  const auto inbf  = static_cast<int32_t>(nbf);
+  const auto inpts = static_cast<int32_t>(npts);
+  const auto ildza = static_cast<int32_t>(ldza);
+  const auto ildzb = static_cast<int32_t>(ldzb);
+
+  blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Za, ildza);
+  blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Zb, ildzb);
   for( int32_t i = 0; i < (int32_t)npts; ++i ) {
   //eq. 56 https://doi.org/10.1140/epjb/e2018-90170-1
-  GauXC::blas::scal( nbf, 0.5 * vrho[2*i], Za + i*ldza, 1 );
-  GauXC::blas::scal( nbf, 0.5 * vrho[2*i+1], Zb + i*ldzb, 1 );
+  GauXC::blas::scal( inbf, 0.5 * vrho[2*i], Za + i*ldza, 1 );
+  GauXC::blas::scal( inbf, 0.5 * vrho[2*i+1], Zb + i*ldzb, 1 );
   }
 }
 
@@ -1312,11 +1380,15 @@ void ReferenceLocalHostWorkDriver::eval_Bvec_gga_vxc_rks_ts( size_t npts, const 
 void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_rks_ts( size_t npts, size_t nbf,
   const double* A, const double* B, const double* basis_eval,
   const double* dbasis_x_eval, const double* dbasis_y_eval,
-  const double* dbasis_z_eval, double* Z, 
+  const double* dbasis_z_eval, double* Z,
   size_t ldz) {
 
+  const auto inbf  = static_cast<int32_t>(nbf);
+  const auto inpts = static_cast<int32_t>(npts);
+  const auto ildz  = static_cast<int32_t>(ldz);
+
   if( ldz != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
-  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Z, ldz);
+  blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Z, ildz);
 
   for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -1327,11 +1399,11 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_rks_ts( size_t npts, size_t
     auto* bf_y_col = dbasis_y_eval + ioff;
     auto* bf_z_col = dbasis_z_eval + ioff;
 
-    GauXC::blas::scal( nbf, 0.5*A[i], z_col, 1 ); 
+    GauXC::blas::scal( inbf, 0.5*A[i], z_col, 1 );
 
-    blas::axpy( nbf, B[i*3],   bf_x_col, 1, z_col, 1 );
-    blas::axpy( nbf, B[i*3+1], bf_y_col, 1, z_col, 1 );
-    blas::axpy( nbf, B[i*3+2], bf_z_col, 1, z_col, 1 );
+    blas::axpy( inbf, B[i*3],   bf_x_col, 1, z_col, 1 );
+    blas::axpy( inbf, B[i*3+1], bf_y_col, 1, z_col, 1 );
+    blas::axpy( inbf, B[i*3+2], bf_z_col, 1, z_col, 1 );
 
   }
 }
@@ -1367,14 +1439,18 @@ void ReferenceLocalHostWorkDriver::eval_Bvec_gga_vxc_uks_ts( size_t npts, const 
 void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_uks_ts( size_t npts, size_t nbf,
   const double* A, const double* B, const double* basis_eval,
   const double* dbasis_x_eval, const double* dbasis_y_eval,
-  const double* dbasis_z_eval, double* Za, 
+  const double* dbasis_z_eval, double* Za,
   size_t ldza, double* Zb, size_t ldzb ) {
 
+  const auto inbf  = static_cast<int32_t>(nbf);
+  const auto inpts = static_cast<int32_t>(npts);
+  const auto ildza = static_cast<int32_t>(ldza);
+  const auto ildzb = static_cast<int32_t>(ldzb);
 
   if( ldza != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
   if( ldzb != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
-  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Za, ldza);
-  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zb, ldzb);
+  blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Za, ildza);
+  blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Zb, ildzb);
 
   for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -1386,16 +1462,16 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_uks_ts( size_t npts, size_t
     auto* bf_y_col = dbasis_y_eval + ioff;
     auto* bf_z_col = dbasis_z_eval + ioff;
 
-    GauXC::blas::scal( nbf, 0.5*A[2*i], za_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
-    GauXC::blas::scal( nbf, 0.5*A[2*i+1], zb_col, 1 );
+    GauXC::blas::scal( inbf, 0.5*A[2*i], za_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
+    GauXC::blas::scal( inbf, 0.5*A[2*i+1], zb_col, 1 );
 
-    blas::axpy( nbf, B[i*6],   bf_x_col, 1, za_col, 1 );
-    blas::axpy( nbf, B[i*6+1], bf_y_col, 1, za_col, 1 );
-    blas::axpy( nbf, B[i*6+2], bf_z_col, 1, za_col, 1 );
+    blas::axpy( inbf, B[i*6],   bf_x_col, 1, za_col, 1 );
+    blas::axpy( inbf, B[i*6+1], bf_y_col, 1, za_col, 1 );
+    blas::axpy( inbf, B[i*6+2], bf_z_col, 1, za_col, 1 );
 
-    blas::axpy( nbf, B[i*6+3], bf_x_col, 1, zb_col, 1 );
-    blas::axpy( nbf, B[i*6+4], bf_y_col, 1, zb_col, 1 );
-    blas::axpy( nbf, B[i*6+5], bf_z_col, 1, zb_col, 1 );
+    blas::axpy( inbf, B[i*6+3], bf_x_col, 1, zb_col, 1 );
+    blas::axpy( inbf, B[i*6+4], bf_y_col, 1, zb_col, 1 );
+    blas::axpy( inbf, B[i*6+5], bf_z_col, 1, zb_col, 1 );
 
   }
 }
@@ -1405,14 +1481,18 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_uks_ts( size_t npts, size_t
   const double* vrho, const double* vgamma, const double* basis_eval,
   const double* dbasis_x_eval, const double* dbasis_y_eval,
   const double* dbasis_z_eval, const double* dden_x_eval,
-  const double* dden_y_eval, const double* dden_z_eval, double* Za, 
+  const double* dden_y_eval, const double* dden_z_eval, double* Za,
   size_t ldza, double* Zb, size_t ldzb ) {
 
+  const auto inbf  = static_cast<int32_t>(nbf);
+  const auto inpts = static_cast<int32_t>(npts);
+  const auto ildza = static_cast<int32_t>(ldza);
+  const auto ildzb = static_cast<int32_t>(ldzb);
 
   if( ldza != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
   if( ldzb != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
-  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Za, ldza);
-  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zb, ldzb);
+  blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Za, ildza);
+  blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Zb, ildzb);
 
   for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -1424,8 +1504,8 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_uks_ts( size_t npts, size_t
     auto* bf_y_col = dbasis_y_eval + ioff;
     auto* bf_z_col = dbasis_z_eval + ioff;
 
-    GauXC::blas::scal( nbf, 0.5*vrho[2*i], za_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
-    GauXC::blas::scal( nbf, 0.5*vrho[2*i+1], zb_col, 1 );
+    GauXC::blas::scal( inbf, 0.5*vrho[2*i], za_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
+    GauXC::blas::scal( inbf, 0.5*vrho[2*i+1], zb_col, 1 );
 
     const auto gga_fact_aa = vgamma[3*i];
     const auto gga_fact_ab = vgamma[3*i+1];
@@ -1448,30 +1528,35 @@ void ReferenceLocalHostWorkDriver::eval_zmat_gga_vxc_uks_ts( size_t npts, size_t
     const auto y_fact_b = 2 * gga_fact_bb * dden_y_eval_b + gga_fact_ab * dden_y_eval_a;
     const auto z_fact_b = 2 * gga_fact_bb * dden_z_eval_b + gga_fact_ab * dden_z_eval_a;
 
-    blas::axpy( nbf, x_fact_a, bf_x_col, 1, za_col, 1 );
-    blas::axpy( nbf, y_fact_a, bf_y_col, 1, za_col, 1 );
-    blas::axpy( nbf, z_fact_a, bf_z_col, 1, za_col, 1 );
+    blas::axpy( inbf, x_fact_a, bf_x_col, 1, za_col, 1 );
+    blas::axpy( inbf, y_fact_a, bf_y_col, 1, za_col, 1 );
+    blas::axpy( inbf, z_fact_a, bf_z_col, 1, za_col, 1 );
 
-    blas::axpy( nbf, x_fact_b, bf_x_col, 1, zb_col, 1 );
-    blas::axpy( nbf, y_fact_b, bf_y_col, 1, zb_col, 1 );
-    blas::axpy( nbf, z_fact_b, bf_z_col, 1, zb_col, 1 );
+    blas::axpy( inbf, x_fact_b, bf_x_col, 1, zb_col, 1 );
+    blas::axpy( inbf, y_fact_b, bf_y_col, 1, zb_col, 1 );
+    blas::axpy( inbf, z_fact_b, bf_z_col, 1, zb_col, 1 );
 
   }
 }
 
 void ReferenceLocalHostWorkDriver::eval_zmat_mgga_vxc_uks_ts( size_t npts, size_t nbf,
-              const double* vrho, const double* vgamma, const double* vlapl, 
+              const double* vrho, const double* vgamma, const double* vlapl,
         const double* basis_eval,
               const double* dbasis_x_eval, const double* dbasis_y_eval,
               const double* dbasis_z_eval, const double* lbasis_eval,
         const double* dden_x_eval,
-              const double* dden_y_eval, const double* dden_z_eval, double* Za, 
+              const double* dden_y_eval, const double* dden_z_eval, double* Za,
               size_t ldza, double* Zb, size_t ldzb ) {
+
+  const auto inbf  = static_cast<int32_t>(nbf);
+  const auto inpts = static_cast<int32_t>(npts);
+  const auto ildza = static_cast<int32_t>(ldza);
+  const auto ildzb = static_cast<int32_t>(ldzb);
 
   if( ldza != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
   if( ldzb != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
-  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Za, ldza);
-  blas::lacpy( 'A', nbf, npts, basis_eval, nbf, Zb, ldzb);
+  blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Za, ildza);
+  blas::lacpy( 'A', inbf, inpts, basis_eval, inbf, Zb, ildzb);
 
   for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -1484,9 +1569,9 @@ void ReferenceLocalHostWorkDriver::eval_zmat_mgga_vxc_uks_ts( size_t npts, size_
     auto* bf_z_col = dbasis_z_eval + ioff;
     auto* lbf_col = lbasis_eval + ioff;
 
-    GauXC::blas::scal( nbf, 0.5*vrho[2*i], za_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
-    GauXC::blas::scal( nbf, 0.5*vrho[2*i+1], zb_col, 1 );
-    
+    GauXC::blas::scal( inbf, 0.5*vrho[2*i], za_col, 1 ); //additional 0.5 is from eq 56 in petrone 2018 eur phys journal b "an efficent implementation of .. "
+    GauXC::blas::scal( inbf, 0.5*vrho[2*i+1], zb_col, 1 );
+
     // dden_x_eval, dden_y_eval, dden_z_eval are all still in Pauli representation
     // so we need to convert them to the two spinor representation
     const auto dden_x_eval_a = 0.5 * (dden_x_eval[2*i] + dden_x_eval[2*i+1]);
@@ -1495,7 +1580,7 @@ void ReferenceLocalHostWorkDriver::eval_zmat_mgga_vxc_uks_ts( size_t npts, size_
     const auto dden_y_eval_b = 0.5 * (dden_y_eval[2*i] - dden_y_eval[2*i+1]);
     const auto dden_z_eval_a = 0.5 * (dden_z_eval[2*i] + dden_z_eval[2*i+1]);
     const auto dden_z_eval_b = 0.5 * (dden_z_eval[2*i] - dden_z_eval[2*i+1]);
-    
+
     const auto gga_fact_aa = vgamma[3*i];
     const auto gga_fact_ab = vgamma[3*i+1];
     const auto gga_fact_bb = vgamma[3*i+2];
@@ -1508,37 +1593,42 @@ void ReferenceLocalHostWorkDriver::eval_zmat_mgga_vxc_uks_ts( size_t npts, size_
     const auto y_fact_b = 2 * gga_fact_bb * dden_y_eval_b + gga_fact_ab * dden_y_eval_a;
     const auto z_fact_b = 2 * gga_fact_bb * dden_z_eval_b + gga_fact_ab * dden_z_eval_a;
 
-    blas::axpy( nbf, x_fact_a, bf_x_col, 1, za_col, 1 );
-    blas::axpy( nbf, y_fact_a, bf_y_col, 1, za_col, 1 );
-    blas::axpy( nbf, z_fact_a, bf_z_col, 1, za_col, 1 );
+    blas::axpy( inbf, x_fact_a, bf_x_col, 1, za_col, 1 );
+    blas::axpy( inbf, y_fact_a, bf_y_col, 1, za_col, 1 );
+    blas::axpy( inbf, z_fact_a, bf_z_col, 1, za_col, 1 );
 
-    blas::axpy( nbf, x_fact_b, bf_x_col, 1, zb_col, 1 );
-    blas::axpy( nbf, y_fact_b, bf_y_col, 1, zb_col, 1 );
-    blas::axpy( nbf, z_fact_b, bf_z_col, 1, zb_col, 1 );
+    blas::axpy( inbf, x_fact_b, bf_x_col, 1, zb_col, 1 );
+    blas::axpy( inbf, y_fact_b, bf_y_col, 1, zb_col, 1 );
+    blas::axpy( inbf, z_fact_b, bf_z_col, 1, zb_col, 1 );
 
     if (vlapl != nullptr) {
-      blas::axpy( nbf, vlapl[2*i],     lbf_col, 1, za_col, 1);
-      blas::axpy( nbf, vlapl[2*i + 1], lbf_col, 1, zb_col, 1);
+      blas::axpy( inbf, vlapl[2*i],     lbf_col, 1, za_col, 1);
+      blas::axpy( inbf, vlapl[2*i + 1], lbf_col, 1, zb_col, 1);
     }
 
   }
 }
-void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t nbf, 
-        const double* vtau, const double* vlapl, 
-        const double* dbasis_x_eval, const double* dbasis_y_eval, 
+void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t nbf,
+        const double* vtau, const double* vlapl,
+        const double* dbasis_x_eval, const double* dbasis_y_eval,
         const double* dbasis_z_eval,
         double* mmat_xa, double* mmat_ya, double* mmat_za, size_t ldma,
         double* mmat_xb, double* mmat_yb, double* mmat_zb, size_t ldmb) {
 
+  const auto inbf  = static_cast<int32_t>(nbf);
+  const auto inpts = static_cast<int32_t>(npts);
+  const auto ildma = static_cast<int32_t>(ldma);
+  const auto ildmb = static_cast<int32_t>(ldmb);
+
   if( ldma != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
   if( ldmb != nbf ) GAUXC_GENERIC_EXCEPTION(std::string("Invalid Dims"));
-  
-  blas::lacpy( 'A', nbf, npts, dbasis_x_eval, nbf, mmat_xa, ldma);
-  blas::lacpy( 'A', nbf, npts, dbasis_y_eval, nbf, mmat_ya, ldma);
-  blas::lacpy( 'A', nbf, npts, dbasis_z_eval, nbf, mmat_za, ldma);
-  blas::lacpy( 'A', nbf, npts, dbasis_x_eval, nbf, mmat_xb, ldmb);
-  blas::lacpy( 'A', nbf, npts, dbasis_y_eval, nbf, mmat_yb, ldmb);
-  blas::lacpy( 'A', nbf, npts, dbasis_z_eval, nbf, mmat_zb, ldmb);
+
+  blas::lacpy( 'A', inbf, inpts, dbasis_x_eval, inbf, mmat_xa, ildma);
+  blas::lacpy( 'A', inbf, inpts, dbasis_y_eval, inbf, mmat_ya, ildma);
+  blas::lacpy( 'A', inbf, inpts, dbasis_z_eval, inbf, mmat_za, ildma);
+  blas::lacpy( 'A', inbf, inpts, dbasis_x_eval, inbf, mmat_xb, ildmb);
+  blas::lacpy( 'A', inbf, inpts, dbasis_y_eval, inbf, mmat_yb, ildmb);
+  blas::lacpy( 'A', inbf, inpts, dbasis_z_eval, inbf, mmat_zb, ildmb);
 
   for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -1556,22 +1646,22 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
     const auto tfacta = 0.25 * vtau[2*i];
     const auto tfactb = 0.25 * vtau[2*i+1];
 
-    blas::scal( nbf, tfacta, xa_col, 1);
-    blas::scal( nbf, tfacta, ya_col, 1);
-    blas::scal( nbf, tfacta, za_col, 1);
-    blas::scal( nbf, tfactb, xb_col, 1);
-    blas::scal( nbf, tfactb, yb_col, 1);
-    blas::scal( nbf, tfactb, zb_col, 1);
+    blas::scal( inbf, tfacta, xa_col, 1);
+    blas::scal( inbf, tfacta, ya_col, 1);
+    blas::scal( inbf, tfacta, za_col, 1);
+    blas::scal( inbf, tfactb, xb_col, 1);
+    blas::scal( inbf, tfactb, yb_col, 1);
+    blas::scal( inbf, tfactb, zb_col, 1);
 
     if ( vlapl != nullptr ) {
       const auto lfacta = vlapl[2*i];
       const auto lfactb = vlapl[2*i+1];
-      blas::axpy( nbf, lfacta, bf_x_col, 1, xa_col, 1);
-      blas::axpy( nbf, lfacta, bf_y_col, 1, ya_col, 1);
-      blas::axpy( nbf, lfacta, bf_z_col, 1, za_col, 1);
-      blas::axpy( nbf, lfactb, bf_x_col, 1, xb_col, 1);
-      blas::axpy( nbf, lfactb, bf_y_col, 1, yb_col, 1);
-      blas::axpy( nbf, lfactb, bf_z_col, 1, zb_col, 1);
+      blas::axpy( inbf, lfacta, bf_x_col, 1, xa_col, 1);
+      blas::axpy( inbf, lfacta, bf_y_col, 1, ya_col, 1);
+      blas::axpy( inbf, lfacta, bf_z_col, 1, za_col, 1);
+      blas::axpy( inbf, lfactb, bf_x_col, 1, xb_col, 1);
+      blas::axpy( inbf, lfactb, bf_y_col, 1, yb_col, 1);
+      blas::axpy( inbf, lfactb, bf_z_col, 1, zb_col, 1);
     }
 
   }
@@ -1587,7 +1677,11 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
 					      const double* basis_eval, const submat_map_t& submat_map, const double* Z,
 					      size_t ldz, double* VXC, size_t ldvxc, double* scr ) {
 
-      blas::syr2k('L', 'N', nbe, npts, 1., basis_eval, nbe, Z, ldz, 0., scr, nbe );
+      const auto inbe  = static_cast<int32_t>(nbe);
+      const auto inpts = static_cast<int32_t>(npts);
+      const auto ildz  = static_cast<int32_t>(ldz);
+
+      blas::syr2k('L', 'N', inbe, inpts, 1., basis_eval, inbe, Z, ildz, 0., scr, inbe );
 
       detail::inc_by_submat_atomic( nbf, nbf, nbe, nbe, VXC, ldvxc, scr, nbe, submat_map );
 
@@ -1599,8 +1693,13 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
 						const submat_map_t& submat_map_bra, const submat_map_t& submat_map_ket, 
 						const double* G, size_t ldg, double* K, size_t ldk, double* scr ) {
 
-      blas::gemm( 'N', 'T', nbe_bra, nbe_ket, npts, 1., basis_eval, nbe_bra,
-		  G, ldg, 0., scr, nbe_bra );
+      const auto inbe_bra = static_cast<int32_t>(nbe_bra);
+      const auto inbe_ket = static_cast<int32_t>(nbe_ket);
+      const auto inpts    = static_cast<int32_t>(npts);
+      const auto ildg     = static_cast<int32_t>(ldg);
+
+      blas::gemm( 'N', 'T', inbe_bra, inbe_ket, inpts, 1., basis_eval, inbe_bra,
+		  G, ildg, 0., scr, inbe_bra );
 
       detail::inc_by_submat_atomic( nbf, nbf, nbe_bra, nbe_ket, K, ldk, scr, nbe_bra, 
 			     submat_map_bra, submat_map_ket );
@@ -1615,6 +1714,11 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
 						    const double* basis_eval, size_t ldb, double* F, size_t ldf,
 						    double* scr ) {
 
+    const auto inbe_bra = static_cast<int32_t>(nbe_bra);
+    const auto inbe_ket = static_cast<int32_t>(nbe_ket);
+    const auto inpts    = static_cast<int32_t>(npts);
+    const auto ildb     = static_cast<int32_t>(ldb);
+    const auto ildf     = static_cast<int32_t>(ldf);
     const auto* P_use = P;
     size_t ldp_use = ldp;
 
@@ -1627,8 +1731,8 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
       P_use = P + submat_map_ket[0][0]*ldp + submat_map_bra[0][0];
     }
 
-    blas::gemm( 'N', 'N', nbe_bra, npts, nbe_ket, 1., P_use, ldp_use, basis_eval,
-		ldb, 0., F, ldf );
+    blas::gemm( 'N', 'N', inbe_bra, inpts, inbe_ket, 1., P_use, static_cast<int32_t>(ldp_use), basis_eval,
+		ildb, 0., F, ildf );
 
   }
 
@@ -1642,7 +1746,9 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
 
     util::unused(basis_map);
 
-    // Cast points to Rys format (binary compatable)
+    const auto inpts = static_cast<int32_t>(npts);
+    const auto ildx  = static_cast<int32_t>(ldx);
+    const auto ildg  = static_cast<int32_t>(ldg);
     XCPU::point* _points = 
       reinterpret_cast<XCPU::point*>(const_cast<double*>(points));
     std::vector<double> _points_transposed(3 * npts);
@@ -1667,8 +1773,9 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
     const bool any_pure = std::any_of( shell_list, shell_list + nshells,
 				       [&](const auto& i){ return basis.at(i).pure(); } );
     
-    const size_t nbe_cart = 
+    const size_t nbe_cart =
       basis.nbf_cart_subset( shell_list, shell_list + nshells );
+    const auto inbe_cart = static_cast<int32_t>(nbe_cart);
 
     std::vector<double> X_cart, G_cart;
     if( any_pure ){
@@ -1689,8 +1796,8 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
           sph_trans.itform_bra_cm( shell_l, npts, X + ioff, ldx,
         			   X_cart.data() + ioff_cart, nbe_cart );
         } else {
-          blas::lacpy( 'A', shell_sz, npts, X + ioff, ldx,
-        	       X_cart.data() + ioff_cart, nbe_cart );
+          blas::lacpy( 'A', shell_sz, inpts, X + ioff, ildx,
+        	       X_cart.data() + ioff_cart, inbe_cart );
         }
         ioff += shell_sz;
         ioff_cart += shell_cart_sz;
@@ -1808,8 +1915,8 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
           sph_trans.tform_bra_cm( shell_l, npts, G_cart.data() + ioff_cart, nbe_cart,
         			  G + ioff, ldg );
         } else {
-          blas::lacpy( 'A', shell_sz, npts, G_cart.data() + ioff_cart, nbe_cart,
-        	       G + ioff, ldg );
+          blas::lacpy( 'A', shell_sz, inpts, G_cart.data() + ioff_cart, inbe_cart,
+        	       G + ioff, ildg );
         }
         ioff += shell_sz;
         ioff_cart += shell_cart_sz;
