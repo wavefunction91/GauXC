@@ -1682,11 +1682,12 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
       const auto inbe  = static_cast<int32_t>(nbe);
       const auto inbf  = static_cast<int32_t>(nbf);
       const auto inpts = static_cast<int32_t>(npts);
-      const auto ildz  = static_cast<int32_t>(ldz);
+      const auto ildz    = static_cast<int32_t>(ldz);
+      const auto ildvxc  = static_cast<int32_t>(ldvxc);
 
       blas::syr2k('L', 'N', inbe, inpts, 1., basis_eval, inbe, Z, ildz, 0., scr, inbe );
 
-      detail::inc_by_submat_atomic( inbf, inbf, inbe, inbe, VXC, static_cast<int32_t>(ldvxc), scr, inbe, submat_map );
+      detail::inc_by_submat_atomic( inbf, inbf, inbe, inbe, VXC, ildvxc, scr, inbe, submat_map );
 
   }
 
@@ -1701,11 +1702,12 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
       const auto inbf     = static_cast<int32_t>(nbf);
       const auto inpts    = static_cast<int32_t>(npts);
       const auto ildg     = static_cast<int32_t>(ldg);
+      const auto ildk     = static_cast<int32_t>(ldk);
 
       blas::gemm( 'N', 'T', inbe_bra, inbe_ket, inpts, 1., basis_eval, inbe_bra,
 		  G, ildg, 0., scr, inbe_bra );
 
-      detail::inc_by_submat_atomic( inbf, inbf, inbe_bra, inbe_ket, K, static_cast<int32_t>(ldk), scr, inbe_bra,
+      detail::inc_by_submat_atomic( inbf, inbf, inbe_bra, inbe_ket, K, ildk, scr, inbe_bra,
 			     submat_map_bra, submat_map_ket );
 
   }
@@ -1724,11 +1726,12 @@ void ReferenceLocalHostWorkDriver::eval_mmat_mgga_vxc_uks_ts(size_t npts, size_t
     const auto inpts    = static_cast<int32_t>(npts);
     const auto ildb     = static_cast<int32_t>(ldb);
     const auto ildf     = static_cast<int32_t>(ldf);
+    const auto ildp     = static_cast<int32_t>(ldp);
     const auto* P_use = P;
     size_t ldp_use = ldp;
 
     if( submat_map_bra.size() > 1 or submat_map_ket.size() > 1 ) {
-      detail::submat_set( inbf, inbf, inbe_bra, inbe_ket, P, static_cast<int32_t>(ldp),
+      detail::submat_set( inbf, inbf, inbe_bra, inbe_ket, P, ildp,
 			  scr, inbe_bra, submat_map_bra, submat_map_ket );
       P_use = scr;
       ldp_use = nbe_bra;
