@@ -170,13 +170,13 @@ public:
 
   /// Count the number of shells with angular momentum `l`
   inline size_t nshells_with_l(uint32_t l) const {
-    return std::count( shell_ls_.begin(), shell_ls_.end(), l );
+    return std::count( shell_ls_.begin(), shell_ls_.end(), static_cast<int32_t>(l) );
   }
 
   /// Check whether shells of angular momentum `l` are spherical (pure)
   inline bool l_purity(uint32_t l) const {
     // Find first shell with L
-    auto first_shell_w_l = std::find( shell_ls_.begin(), shell_ls_.end(), l );
+    auto first_shell_w_l = std::find( shell_ls_.begin(), shell_ls_.end(), static_cast<int32_t>(l) );
     return shell_pure( std::distance( shell_ls_.begin(), first_shell_w_l ) );
   }
 
