@@ -70,7 +70,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Atom-specific data
   std::vector<double> radii(mol.size());
-  for (int i = 0; i < mol.size(); ++i) {
+  for (size_t i = 0; i < mol.size(); ++i) {
     radii[i] = uff_radius_103(mol[i].Z);
   }
 
