@@ -40,6 +40,7 @@ void test_host_weights( const std::string& filename, XCWeightAlg weight_alg ) {
         ref_data.mol, *ref_data.meta, ref_data.tasks_unm.begin(), 
         ref_data.tasks_unm.end() );
       break;
+    default: break;
   }
 
 

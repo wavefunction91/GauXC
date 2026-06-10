@@ -77,6 +77,7 @@ void generate_weights_data( const Molecule& mol, const BasisSet<double>& basis,
       reference_lko_weights_host( 
         mol, lb.molmeta(), tasks.begin(), tasks.end() );
       break;
+    default: break;
   }
 
   // Clear out unneeded data
