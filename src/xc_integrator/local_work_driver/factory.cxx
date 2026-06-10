@@ -22,7 +22,8 @@ LocalWorkDriverFactory::ptr_return_t
   LocalWorkDriverFactory::make_local_work_driver( ExecutionSpace ex, 
     std::string name, LocalWorkSettings settings ) {
 
-  std::transform( name.begin(), name.end(), name.begin(), ::toupper );
+  std::transform( name.begin(), name.end(), name.begin(),
+    [](unsigned char c){ return static_cast<char>(std::toupper(c)); } );
   (void)(settings);
 
   switch(ex) {
