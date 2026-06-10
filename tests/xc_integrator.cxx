@@ -188,7 +188,7 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
 
   // Integrate Density
   if( check_integrate_den and rks) {
-    auto N_EL_ref = std::accumulate( mol.begin(), mol.end(), 0ul,
+    auto N_EL_ref = std::accumulate( mol.begin(), mol.end(), size_t{0},
       [](const auto& a, const auto &b) { return a + b.Z.get(); });
     auto N_EL = integrator.integrate_den( P );
     // Factor of 2 b/c P is the alpha density for RKS
