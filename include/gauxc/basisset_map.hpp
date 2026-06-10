@@ -61,8 +61,8 @@ public:
     size_t st_idx = 0;
     for( const auto& shell : basis ) {
       size_t range_end = st_idx + shell.size();
-      shell_to_first_ao_.emplace_back( st_idx );
-      shell_to_ao_range_.push_back({ st_idx, range_end });
+      shell_to_first_ao_.emplace_back( static_cast<int32_t>(st_idx) );
+      shell_to_ao_range_.push_back({ static_cast<int32_t>(st_idx), static_cast<int32_t>(range_end) });
       st_idx = range_end;
     }
 

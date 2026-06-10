@@ -16,7 +16,7 @@ namespace GauXC {
 MolMeta::MolMeta( const Molecule& mol ) : natoms_(mol.natoms()){
   compute_rab(mol);
   compute_dist_nearest();
-  sum_atomic_charges_ = std::accumulate( mol.begin(), mol.end(), 0ul,
+  sum_atomic_charges_ = std::accumulate( mol.begin(), mol.end(), size_t{0},
     [](auto a, const auto& b){ return a + b.Z.get(); });
 }
 

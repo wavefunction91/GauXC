@@ -189,8 +189,8 @@ void exx_ek_screening(
 
         task_ek_shells[i_block] |= (1u << i_local); 
         task_ek_shells[j_block] |= (1u << j_local); 
-        task_it->cou_screening.shell_pair_list.emplace_back(i,j);
-        task_it->cou_screening.shell_pair_idx_list.emplace_back(_j);
+        task_it->cou_screening.shell_pair_list.emplace_back(static_cast<int32_t>(i), static_cast<int32_t>(j));
+        task_it->cou_screening.shell_pair_idx_list.emplace_back(static_cast<int32_t>(_j));
       }
     }
     }

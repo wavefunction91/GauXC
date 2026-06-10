@@ -73,7 +73,7 @@ struct XCTask {
   void merge_with( TaskIt begin, TaskIt end ) {
 
     size_t old_sz = points.size();
-    size_t pts_add = std::accumulate( begin, end, 0ul,
+    size_t pts_add = std::accumulate( begin, end, size_t{0},
       []( const auto &a, const auto &t ) {
         return a + t.points.size();
       });
