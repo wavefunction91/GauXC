@@ -208,7 +208,6 @@ BasisSet<double> parse_basis( const Molecule& mol,
       }
       
       using prim_array = Shell<double>::prim_array;
-      using cart_array = Shell<double>::cart_array;
 
       prim_array alpha_arr, coeff_primary_arr, coeff_secondary_arr{};
       std::copy( alpha.begin(), alpha.end(), alpha_arr.begin() );
