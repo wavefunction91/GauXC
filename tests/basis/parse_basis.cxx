@@ -179,7 +179,7 @@ BasisSet<double> parse_basis( const Molecule& mol,
     std::string atom_symb = atom_line.substr(0,2);
     if( atom_symb[1] == ' ' ) atom_symb = atom_symb[0];
     std::transform( atom_symb.begin(), atom_symb.end(), atom_symb.begin(),
-                    [](auto a){ return std::toupper(a); } );
+                    [](unsigned char a){ return static_cast<char>(std::toupper(a)); } );
     
     //std::cout << atom_symb << std::endl;
     int Z = atomic_number_map.at(atom_symb);

@@ -21,8 +21,8 @@ std::shared_ptr<LoadBalancer> LoadBalancerHostFactory::get_shared_instance(
   const Molecule& mol, const MolGrid& mg, const BasisSet<double>& basis
 ) {
 
-  std::transform(kernel_name.begin(), kernel_name.end(), 
-    kernel_name.begin(), ::toupper );
+  std::transform(kernel_name.begin(), kernel_name.end(),
+    kernel_name.begin(), [](unsigned char c){ return static_cast<char>(std::toupper(c)); } );
 
 
   if( kernel_name == "DEFAULT" or kernel_name == "REPLICATED" ) 

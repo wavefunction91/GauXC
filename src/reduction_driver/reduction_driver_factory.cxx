@@ -26,8 +26,8 @@ namespace GauXC {
 std::shared_ptr<ReductionDriver> ReductionDriverFactory::get_shared_instance(
   const RuntimeEnvironment& rt, std::string kernel_name ) {
 
-  std::transform(kernel_name.begin(), kernel_name.end(), 
-    kernel_name.begin(), ::toupper );
+  std::transform(kernel_name.begin(), kernel_name.end(),
+    kernel_name.begin(), [](unsigned char c){ return static_cast<char>(std::toupper(c)); } );
 
   std::unique_ptr<detail::ReductionDriverImpl> ptr = nullptr;
 

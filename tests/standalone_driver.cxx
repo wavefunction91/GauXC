@@ -77,7 +77,8 @@ int main(int argc, char** argv) {
     int lmax = 2;
 
     auto string_to_upper = []( auto& str ) {
-      std::transform( str.begin(), str.end(), str.begin(), ::toupper );
+      std::transform( str.begin(), str.end(), str.begin(),
+        [](unsigned char c){ return static_cast<char>(std::toupper(c)); } );
     };
 
     #define OPTIONAL_KEYWORD(NAME,VAR,TYPE) \
