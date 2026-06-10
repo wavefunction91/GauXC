@@ -128,11 +128,12 @@ namespace GauXC {
     const auto inpts = static_cast<int32_t>(npts);
     const auto ildb  = static_cast<int32_t>(ldb);
     const auto ildx  = static_cast<int32_t>(ldx);
+    const auto ildp  = static_cast<int32_t>(ldp);
     const auto* P_use = P;
     size_t ldp_use = ldp;
 
     if( submat_map.size() > 1 ) {
-      detail::submat_set( inbf, inbf, inbe, inbe, P, static_cast<int32_t>(ldp), scr, inbe, submat_map );
+      detail::submat_set( inbf, inbf, inbe, inbe, P, ildp, scr, inbe, submat_map );
       P_use = scr;
       ldp_use = nbe;
     } else if( nbe != nbf ) {
