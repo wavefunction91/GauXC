@@ -75,7 +75,7 @@ public:
 
 }
 
-#ifdef _MSC_VER
+#if defined(_MSC_VER) && !defined(__clang__)
 #define GAUXC_GENERIC_EXCEPTION( MSG ) \
   throw generic_gauxc_exception( __FILE__, __FUNCSIG__, __LINE__, MSG )
 #else
