@@ -162,7 +162,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   auto& tasks = this->load_balancer_->get_tasks();
   std::sort( task_begin, task_end, task_comparator );
 
-
   // Check that Partition Weights have been calculated
   auto& lb_state = this->load_balancer_->state();
   if( not lb_state.modified_weights_are_stored ) {
