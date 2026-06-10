@@ -95,12 +95,6 @@ if(MSVC)
     # )
   else()
     target_compile_options( gauxc PUBLIC /EHsc )
-    target_compile_options( gauxc PRIVATE
-      /wd4242  # 'conversion': possible loss of data (int->char in STL algorithm)
-      /wd4244  # 'conversion': possible loss of data (in MSVC numeric/algorithm)
-      /wd4267  # 'conversion': size_t to smaller type (in MSVC xutility/utility)
-      /wd4389  # '==': signed/unsigned mismatch (in MSVC xutility)
-    )
   endif()
 endif()
 
