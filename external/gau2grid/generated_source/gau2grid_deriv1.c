@@ -72,8 +72,6 @@ void gg_collocation_L0_deriv1(const unsigned long npoints, const double* PRAGMA_
     const double center_x = center[0];
     const double center_y = center[1];
     const double center_z = center[2];
-    double A;
-    double AX, AY, AZ;
 
     // Build negative exponents
     for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
@@ -225,8 +223,6 @@ void gg_collocation_L1_deriv1(const unsigned long npoints, const double* PRAGMA_
     const double center_x = center[0];
     const double center_y = center[1];
     const double center_z = center[2];
-    double A;
-    double AX, AY, AZ;
 
     // Build negative exponents
     for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
