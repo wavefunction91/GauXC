@@ -127,6 +127,7 @@ FORCE_INLINE void compute_11(double xAB, double yAB, double zAB, double xPX, dou
 
 // nr roots > 2
 FORCE_INLINE void compute_vrr3(int nr_roots, int l, int lA, int llA, int lB, int llB, double xPX, double yPX, double zPX, double xPC, double yPC, double zPC, double aP_inv, double * rts, double *vrr_array, double *hrr_array) {
+  (void)llA;
   double *roots = (rts + 0);
   double *vrr = (vrr_array + 0);
   for(int r = 0; r < nr_roots; ++r) {

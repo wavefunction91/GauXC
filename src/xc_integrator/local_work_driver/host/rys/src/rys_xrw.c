@@ -15,6 +15,7 @@ void rys_xrw(int nt,
 	      const double *__restrict ryszero,
 	      double *__restrict rts,
 	      double *__restrict wts) {
+  (void)ntgqp;
 #ifdef _MSC_VER
   double *a    = (double *)_malloca(nmom     * sizeof(double));
   double *b    = (double *)_malloca((nmom-1) * sizeof(double));

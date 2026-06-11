@@ -21,6 +21,8 @@
 #include "gau2grid/gau2grid_pragma.h"
 
 void gg_cca_cart_to_spherical_L0(const unsigned long size, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT spherical, const unsigned long nspherical) {
+    (void)ncart;
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // R_00 Transform
     for (unsigned long i = 0; i < size; i++) {
@@ -30,6 +32,8 @@ void gg_cca_cart_to_spherical_L0(const unsigned long size, const double* PRAGMA_
 
 }
 void gg_cca_cart_to_spherical_sum_L0(const unsigned long size, const double* vector, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT output, const unsigned long nspherical) {
+    (void)ncart;
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // temps
     double tmp;
@@ -62,6 +66,7 @@ void gg_cca_cart_to_spherical_L1(const unsigned long size, const double* PRAGMA_
 
 }
 void gg_cca_cart_to_spherical_sum_L1(const unsigned long size, const double* vector, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT output, const unsigned long nspherical) {
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // temps
     double tmp;
@@ -121,6 +126,7 @@ void gg_cca_cart_to_spherical_L2(const unsigned long size, const double* PRAGMA_
 
 }
 void gg_cca_cart_to_spherical_sum_L2(const unsigned long size, const double* vector, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT output, const unsigned long nspherical) {
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // temps
     double tmp;
@@ -213,6 +219,7 @@ void gg_cca_cart_to_spherical_L3(const unsigned long size, const double* PRAGMA_
 
 }
 void gg_cca_cart_to_spherical_sum_L3(const unsigned long size, const double* vector, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT output, const unsigned long nspherical) {
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // temps
     double tmp;
@@ -345,6 +352,7 @@ void gg_cca_cart_to_spherical_L4(const unsigned long size, const double* PRAGMA_
 
 }
 void gg_cca_cart_to_spherical_sum_L4(const unsigned long size, const double* vector, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT output, const unsigned long nspherical) {
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // temps
     double tmp;
@@ -527,6 +535,7 @@ void gg_cca_cart_to_spherical_L5(const unsigned long size, const double* PRAGMA_
 
 }
 void gg_cca_cart_to_spherical_sum_L5(const unsigned long size, const double* vector, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT output, const unsigned long nspherical) {
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // temps
     double tmp;
@@ -771,6 +780,7 @@ void gg_cca_cart_to_spherical_L6(const unsigned long size, const double* PRAGMA_
 
 }
 void gg_cca_cart_to_spherical_sum_L6(const unsigned long size, const double* vector, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT output, const unsigned long nspherical) {
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // temps
     double tmp;
@@ -918,6 +928,8 @@ void gg_cca_cart_to_spherical_sum_L6(const unsigned long size, const double* vec
 
 }
 void gg_gaussian_cart_to_spherical_L0(const unsigned long size, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT spherical, const unsigned long nspherical) {
+    (void)ncart;
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // R_00 Transform
     for (unsigned long i = 0; i < size; i++) {
@@ -927,6 +939,8 @@ void gg_gaussian_cart_to_spherical_L0(const unsigned long size, const double* PR
 
 }
 void gg_gaussian_cart_to_spherical_sum_L0(const unsigned long size, const double* vector, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT output, const unsigned long nspherical) {
+    (void)ncart;
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // temps
     double tmp;
@@ -959,6 +973,7 @@ void gg_gaussian_cart_to_spherical_L1(const unsigned long size, const double* PR
 
 }
 void gg_gaussian_cart_to_spherical_sum_L1(const unsigned long size, const double* vector, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT output, const unsigned long nspherical) {
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // temps
     double tmp;
@@ -1018,6 +1033,7 @@ void gg_gaussian_cart_to_spherical_L2(const unsigned long size, const double* PR
 
 }
 void gg_gaussian_cart_to_spherical_sum_L2(const unsigned long size, const double* vector, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT output, const unsigned long nspherical) {
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // temps
     double tmp;
@@ -1110,6 +1126,7 @@ void gg_gaussian_cart_to_spherical_L3(const unsigned long size, const double* PR
 
 }
 void gg_gaussian_cart_to_spherical_sum_L3(const unsigned long size, const double* vector, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT output, const unsigned long nspherical) {
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // temps
     double tmp;
@@ -1242,6 +1259,7 @@ void gg_gaussian_cart_to_spherical_L4(const unsigned long size, const double* PR
 
 }
 void gg_gaussian_cart_to_spherical_sum_L4(const unsigned long size, const double* vector, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT output, const unsigned long nspherical) {
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // temps
     double tmp;
@@ -1424,6 +1442,7 @@ void gg_gaussian_cart_to_spherical_L5(const unsigned long size, const double* PR
 
 }
 void gg_gaussian_cart_to_spherical_sum_L5(const unsigned long size, const double* vector, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT output, const unsigned long nspherical) {
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // temps
     double tmp;
@@ -1668,6 +1687,7 @@ void gg_gaussian_cart_to_spherical_L6(const unsigned long size, const double* PR
 
 }
 void gg_gaussian_cart_to_spherical_sum_L6(const unsigned long size, const double* vector, const double* PRAGMA_RESTRICT cart, const unsigned long ncart, double* PRAGMA_RESTRICT output, const unsigned long nspherical) {
+    (void)nspherical;
     ASSUME_ALIGNED(cart, 64);
     // temps
     double tmp;
@@ -1828,6 +1848,7 @@ void gg_cca_cart_copy_L0(const unsigned long size, const double* PRAGMA_RESTRICT
     }
 }
 void gg_cca_cart_sum_L0(const unsigned long size, const double* PRAGMA_RESTRICT vector, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)ncart_out;
 
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
@@ -1869,6 +1890,7 @@ void gg_cca_cart_copy_L1(const unsigned long size, const double* PRAGMA_RESTRICT
     }
 }
 void gg_cca_cart_sum_L1(const unsigned long size, const double* PRAGMA_RESTRICT vector, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)ncart_out;
 
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
@@ -1945,6 +1967,7 @@ void gg_cca_cart_copy_L2(const unsigned long size, const double* PRAGMA_RESTRICT
     }
 }
 void gg_cca_cart_sum_L2(const unsigned long size, const double* PRAGMA_RESTRICT vector, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)ncart_out;
 
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
@@ -2070,6 +2093,7 @@ void gg_cca_cart_copy_L3(const unsigned long size, const double* PRAGMA_RESTRICT
     }
 }
 void gg_cca_cart_sum_L3(const unsigned long size, const double* PRAGMA_RESTRICT vector, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)ncart_out;
 
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
@@ -2258,6 +2282,7 @@ void gg_cca_cart_copy_L4(const unsigned long size, const double* PRAGMA_RESTRICT
     }
 }
 void gg_cca_cart_sum_L4(const unsigned long size, const double* PRAGMA_RESTRICT vector, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)ncart_out;
 
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
@@ -2523,6 +2548,7 @@ void gg_cca_cart_copy_L5(const unsigned long size, const double* PRAGMA_RESTRICT
     }
 }
 void gg_cca_cart_sum_L5(const unsigned long size, const double* PRAGMA_RESTRICT vector, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)ncart_out;
 
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
@@ -2879,6 +2905,7 @@ void gg_cca_cart_copy_L6(const unsigned long size, const double* PRAGMA_RESTRICT
     }
 }
 void gg_cca_cart_sum_L6(const unsigned long size, const double* PRAGMA_RESTRICT vector, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)ncart_out;
 
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
@@ -3095,6 +3122,7 @@ void gg_molden_cart_copy_L0(const unsigned long size, const double* PRAGMA_RESTR
     }
 }
 void gg_molden_cart_sum_L0(const unsigned long size, const double* PRAGMA_RESTRICT vector, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)ncart_out;
 
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
@@ -3136,6 +3164,7 @@ void gg_molden_cart_copy_L1(const unsigned long size, const double* PRAGMA_RESTR
     }
 }
 void gg_molden_cart_sum_L1(const unsigned long size, const double* PRAGMA_RESTRICT vector, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)ncart_out;
 
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
@@ -3212,6 +3241,7 @@ void gg_molden_cart_copy_L2(const unsigned long size, const double* PRAGMA_RESTR
     }
 }
 void gg_molden_cart_sum_L2(const unsigned long size, const double* PRAGMA_RESTRICT vector, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)ncart_out;
 
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
@@ -3337,6 +3367,7 @@ void gg_molden_cart_copy_L3(const unsigned long size, const double* PRAGMA_RESTR
     }
 }
 void gg_molden_cart_sum_L3(const unsigned long size, const double* PRAGMA_RESTRICT vector, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)ncart_out;
 
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
@@ -3525,6 +3556,7 @@ void gg_molden_cart_copy_L4(const unsigned long size, const double* PRAGMA_RESTR
     }
 }
 void gg_molden_cart_sum_L4(const unsigned long size, const double* PRAGMA_RESTRICT vector, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)ncart_out;
 
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
@@ -3637,12 +3669,34 @@ void gg_molden_cart_sum_L4(const unsigned long size, const double* PRAGMA_RESTRI
     }
 }
 void gg_molden_cart_copy_L5(const unsigned long size, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)size;
+    (void)cart_input;
+    (void)ncart_input;
+    (void)cart_out;
+    (void)ncart_out;
 }
 void gg_molden_cart_sum_L5(const unsigned long size, const double* PRAGMA_RESTRICT vector, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)size;
+    (void)vector;
+    (void)cart_input;
+    (void)ncart_input;
+    (void)cart_out;
+    (void)ncart_out;
 }
 void gg_molden_cart_copy_L6(const unsigned long size, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)size;
+    (void)cart_input;
+    (void)ncart_input;
+    (void)cart_out;
+    (void)ncart_out;
 }
 void gg_molden_cart_sum_L6(const unsigned long size, const double* PRAGMA_RESTRICT vector, const double* PRAGMA_RESTRICT cart_input, const unsigned long ncart_input, double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
+    (void)size;
+    (void)vector;
+    (void)cart_input;
+    (void)ncart_input;
+    (void)cart_out;
+    (void)ncart_out;
 }
 void gg_naive_transpose(unsigned long n, unsigned long m, const double* PRAGMA_RESTRICT input, double* PRAGMA_RESTRICT output) {
     ASSUME_ALIGNED(input, 64);
