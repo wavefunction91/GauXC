@@ -31,7 +31,7 @@ _pragma_data = """
     #define PRAGMA_RESTRICT                                  __restrict__
 
 #elif defined(__clang__) && defined(_MSC_VER)
-    // pragmas for MSVC
+    // pragmas for clang-cl
 
     #define ALIGNED_MALLOC(alignment, size)                  _aligned_malloc(size, alignment)
     #define ALIGNED_FREE(ptr)                                _aligned_free(ptr)
