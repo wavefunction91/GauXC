@@ -114,7 +114,7 @@ void gg_collocation_L0_deriv3(const unsigned long npoints, const double* PRAGMA_
     double AXXX, XXY, XXZ, XYY, XYZ, XZZ, YYY, YYZ, YZZ, ZZZ;
 
     // Build negative exponents
-    for (unsigned long i = 0; i < nprim; i++) {
+    for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
         expn1[i] = -1.0 * exponents[i];
         expn2[i] = -2.0 * exponents[i];
     }
@@ -150,7 +150,7 @@ void gg_collocation_L0_deriv3(const unsigned long npoints, const double* PRAGMA_
                 S3[i] = 0.0;
             }
             } else {
-            unsigned int start_shift = start * xyz_stride;
+            unsigned long start_shift = start * xyz_stride;
 
             PRAGMA_VECTORIZE
             for (unsigned long i = 0; i < remain; i++) {
@@ -172,7 +172,7 @@ void gg_collocation_L0_deriv3(const unsigned long npoints, const double* PRAGMA_
         }
 
         // Start exponential block loop
-        for (unsigned long n = 0; n < nprim; n++) {
+        for (unsigned long n = 0; n < (unsigned long)nprim; n++) {
             const double coef = coeffs[n];
             const double alpha_n1 = expn1[n];
             const double alpha_n2 = expn2[n];
@@ -369,7 +369,7 @@ void gg_collocation_L1_deriv3(const unsigned long npoints, const double* PRAGMA_
     double AXXX, XXY, XXZ, XYY, XYZ, XZZ, YYY, YYZ, YZZ, ZZZ;
 
     // Build negative exponents
-    for (unsigned long i = 0; i < nprim; i++) {
+    for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
         expn1[i] = -1.0 * exponents[i];
         expn2[i] = -2.0 * exponents[i];
     }
@@ -405,7 +405,7 @@ void gg_collocation_L1_deriv3(const unsigned long npoints, const double* PRAGMA_
                 S3[i] = 0.0;
             }
             } else {
-            unsigned int start_shift = start * xyz_stride;
+            unsigned long start_shift = start * xyz_stride;
 
             PRAGMA_VECTORIZE
             for (unsigned long i = 0; i < remain; i++) {
@@ -427,7 +427,7 @@ void gg_collocation_L1_deriv3(const unsigned long npoints, const double* PRAGMA_
         }
 
         // Start exponential block loop
-        for (unsigned long n = 0; n < nprim; n++) {
+        for (unsigned long n = 0; n < (unsigned long)nprim; n++) {
             const double coef = coeffs[n];
             const double alpha_n1 = expn1[n];
             const double alpha_n2 = expn2[n];
@@ -791,7 +791,7 @@ void gg_collocation_L2_deriv3(const unsigned long npoints, const double* PRAGMA_
     double AXXX, XXY, XXZ, XYY, XYZ, XZZ, YYY, YYZ, YZZ, ZZZ;
 
     // Build negative exponents
-    for (unsigned long i = 0; i < nprim; i++) {
+    for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
         expn1[i] = -1.0 * exponents[i];
         expn2[i] = -2.0 * exponents[i];
     }
@@ -827,7 +827,7 @@ void gg_collocation_L2_deriv3(const unsigned long npoints, const double* PRAGMA_
                 S3[i] = 0.0;
             }
             } else {
-            unsigned int start_shift = start * xyz_stride;
+            unsigned long start_shift = start * xyz_stride;
 
             PRAGMA_VECTORIZE
             for (unsigned long i = 0; i < remain; i++) {
@@ -849,7 +849,7 @@ void gg_collocation_L2_deriv3(const unsigned long npoints, const double* PRAGMA_
         }
 
         // Start exponential block loop
-        for (unsigned long n = 0; n < nprim; n++) {
+        for (unsigned long n = 0; n < (unsigned long)nprim; n++) {
             const double coef = coeffs[n];
             const double alpha_n1 = expn1[n];
             const double alpha_n2 = expn2[n];
@@ -1690,7 +1690,7 @@ void gg_collocation_L3_deriv3(const unsigned long npoints, const double* PRAGMA_
     double AXXX, XXY, XXZ, XYY, XYZ, XZZ, YYY, YYZ, YZZ, ZZZ;
 
     // Build negative exponents
-    for (unsigned long i = 0; i < nprim; i++) {
+    for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
         expn1[i] = -1.0 * exponents[i];
         expn2[i] = -2.0 * exponents[i];
     }
@@ -1726,7 +1726,7 @@ void gg_collocation_L3_deriv3(const unsigned long npoints, const double* PRAGMA_
                 S3[i] = 0.0;
             }
             } else {
-            unsigned int start_shift = start * xyz_stride;
+            unsigned long start_shift = start * xyz_stride;
 
             PRAGMA_VECTORIZE
             for (unsigned long i = 0; i < remain; i++) {
@@ -1748,7 +1748,7 @@ void gg_collocation_L3_deriv3(const unsigned long npoints, const double* PRAGMA_
         }
 
         // Start exponential block loop
-        for (unsigned long n = 0; n < nprim; n++) {
+        for (unsigned long n = 0; n < (unsigned long)nprim; n++) {
             const double coef = coeffs[n];
             const double alpha_n1 = expn1[n];
             const double alpha_n2 = expn2[n];
@@ -2895,7 +2895,7 @@ void gg_collocation_L4_deriv3(const unsigned long npoints, const double* PRAGMA_
     double AXXX, XXY, XXZ, XYY, XYZ, XZZ, YYY, YYZ, YZZ, ZZZ;
 
     // Build negative exponents
-    for (unsigned long i = 0; i < nprim; i++) {
+    for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
         expn1[i] = -1.0 * exponents[i];
         expn2[i] = -2.0 * exponents[i];
     }
@@ -2931,7 +2931,7 @@ void gg_collocation_L4_deriv3(const unsigned long npoints, const double* PRAGMA_
                 S3[i] = 0.0;
             }
             } else {
-            unsigned int start_shift = start * xyz_stride;
+            unsigned long start_shift = start * xyz_stride;
 
             PRAGMA_VECTORIZE
             for (unsigned long i = 0; i < remain; i++) {
@@ -2953,7 +2953,7 @@ void gg_collocation_L4_deriv3(const unsigned long npoints, const double* PRAGMA_
         }
 
         // Start exponential block loop
-        for (unsigned long n = 0; n < nprim; n++) {
+        for (unsigned long n = 0; n < (unsigned long)nprim; n++) {
             const double coef = coeffs[n];
             const double alpha_n1 = expn1[n];
             const double alpha_n2 = expn2[n];
@@ -4510,7 +4510,7 @@ void gg_collocation_L5_deriv3(const unsigned long npoints, const double* PRAGMA_
     double AXXX, XXY, XXZ, XYY, XYZ, XZZ, YYY, YYZ, YZZ, ZZZ;
 
     // Build negative exponents
-    for (unsigned long i = 0; i < nprim; i++) {
+    for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
         expn1[i] = -1.0 * exponents[i];
         expn2[i] = -2.0 * exponents[i];
     }
@@ -4546,7 +4546,7 @@ void gg_collocation_L5_deriv3(const unsigned long npoints, const double* PRAGMA_
                 S3[i] = 0.0;
             }
             } else {
-            unsigned int start_shift = start * xyz_stride;
+            unsigned long start_shift = start * xyz_stride;
 
             PRAGMA_VECTORIZE
             for (unsigned long i = 0; i < remain; i++) {
@@ -4568,7 +4568,7 @@ void gg_collocation_L5_deriv3(const unsigned long npoints, const double* PRAGMA_
         }
 
         // Start exponential block loop
-        for (unsigned long n = 0; n < nprim; n++) {
+        for (unsigned long n = 0; n < (unsigned long)nprim; n++) {
             const double coef = coeffs[n];
             const double alpha_n1 = expn1[n];
             const double alpha_n2 = expn2[n];
@@ -6638,7 +6638,7 @@ void gg_collocation_L6_deriv3(const unsigned long npoints, const double* PRAGMA_
     double AXXX, XXY, XXZ, XYY, XYZ, XZZ, YYY, YYZ, YZZ, ZZZ;
 
     // Build negative exponents
-    for (unsigned long i = 0; i < nprim; i++) {
+    for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
         expn1[i] = -1.0 * exponents[i];
         expn2[i] = -2.0 * exponents[i];
     }
@@ -6674,7 +6674,7 @@ void gg_collocation_L6_deriv3(const unsigned long npoints, const double* PRAGMA_
                 S3[i] = 0.0;
             }
             } else {
-            unsigned int start_shift = start * xyz_stride;
+            unsigned long start_shift = start * xyz_stride;
 
             PRAGMA_VECTORIZE
             for (unsigned long i = 0; i < remain; i++) {
@@ -6696,7 +6696,7 @@ void gg_collocation_L6_deriv3(const unsigned long npoints, const double* PRAGMA_
         }
 
         // Start exponential block loop
-        for (unsigned long n = 0; n < nprim; n++) {
+        for (unsigned long n = 0; n < (unsigned long)nprim; n++) {
             const double coef = coeffs[n];
             const double alpha_n1 = expn1[n];
             const double alpha_n2 = expn2[n];
