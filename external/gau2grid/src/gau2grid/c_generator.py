@@ -91,11 +91,14 @@ def generate_c_gau2grid(max_L,
         # cgs.write("#include <stdio.h>")
         cgs.write("#if defined(__clang__) && defined(_MSC_VER)")
         cgs.write("#include <malloc.h>")
+        if cgs is gg_helper:
+            cgs.write("#include <stdlib.h>")
         cgs.write("#elif defined __clang__")
         cgs.write("#include <mm_malloc.h>")
         cgs.write("#elif defined _MSC_VER")
         cgs.write("#include <malloc.h>")
-        cgs.write("#include <stdlib.h>")
+        if cgs is gg_helper:
+            cgs.write("#include <stdlib.h>")
         cgs.write("#else")
         cgs.write("#include <stdlib.h>")
         cgs.write("#endif")
@@ -809,7 +812,8 @@ def _remove_unused_decls(cg, start):
             for vname in var_names:
                 pattern = re.compile(r'\b' + re.escape(vname) + r'\b')
                 for j in range(pos + 1, end):
-                    if pattern.search(cg.data[j]):
+                    code_line = cg.data[j].split('//')[0]
+                    if pattern.search(code_line):
                         all_unused = False
                         break
                 if not all_unused:
