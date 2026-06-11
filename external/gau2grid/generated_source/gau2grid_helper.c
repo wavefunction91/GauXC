@@ -13,6 +13,7 @@
 #include <mm_malloc.h>
 #elif defined _MSC_VER
 #include <malloc.h>
+#include <stdlib.h>
 #else
 #include <stdlib.h>
 #endif
