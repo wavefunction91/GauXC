@@ -419,7 +419,6 @@ def cartesian_sum_c_generator(cg, L, cartesian_order_inner, cartesian_order_oute
     cg.write("ASSUME_ALIGNED(%s, %d)" % ("cart_input", align));
 
     cg.write("unsigned long in_shift")
-    cg.write("unsigned long out_shift")
     cg.write("double coef")
 
     for label, order in cartesian_input.items():
@@ -449,6 +448,7 @@ def block_copy(cg, align=32):
     # nout, nremain
 
     cg.start_c_block(sig)
+    cg.write("(void)trans")
     cg.blankline()
     cg.write("ASSUME_ALIGNED(%s, %d)" % ("input", align));
     cg.start_c_block("for (unsigned long i = 0; i < n; i++)")
