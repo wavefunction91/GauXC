@@ -66,10 +66,10 @@ inline constexpr double real_solid_harmonic_coeff( int l, int m, int lx, int ly,
   auto i    = abs_m - lx;
   if( comp != parity( std::abs(i) ) ) return 0.;
 
-  double pfac = integral_falling_factorial( 2*lx, lx+1 ) *
-                integral_falling_factorial( 2*ly, ly+1 ) *
-                integral_falling_factorial( 2*lz, lz+1 );
-  const double factorial_l = integral_factorial(l);
+  double pfac = static_cast<double>(integral_falling_factorial( 2*lx, lx+1 )) *
+                static_cast<double>(integral_falling_factorial( 2*ly, ly+1 )) *
+                static_cast<double>(integral_falling_factorial( 2*lz, lz+1 ));
+  const double factorial_l = static_cast<double>(integral_factorial(l));
   pfac = pfac / ( factorial_l * factorial_l * integral_falling_factorial(2*l,l+1) *
                   integral_falling_factorial(l+abs_m,l-abs_m+1) );
   pfac = std::sqrt(pfac);
@@ -84,7 +84,7 @@ inline constexpr double real_solid_harmonic_coeff( int l, int m, int lx, int ly,
   auto i_max = (l-abs_m)/2;
   double sum = 0;
   for(i=i_min;i<=i_max;i++) {
-    double pfac1 = parity(i) * binomial_coefficient(l,i) * binomial_coefficient(i,j);
+    double pfac1 = static_cast<double>(parity(i) * binomial_coefficient(l,i) * binomial_coefficient(i,j));
     pfac1 *= integral_factorial(2*(l-i));
     pfac1 /= integral_factorial(l-abs_m-2*i);
     double sum1 = 0.0;
@@ -99,7 +99,7 @@ inline constexpr double real_solid_harmonic_coeff( int l, int m, int lx, int ly,
     sum += pfac1*sum1;
   }
 
-  double pfac2 =  integral_double_factorial( 2*l  - 1 );
+  double pfac2 = static_cast<double>(integral_double_factorial( 2*l  - 1 ));
   pfac2 = pfac2 / integral_double_factorial( 2*lx - 1 );
   pfac2 = pfac2 / integral_double_factorial( 2*ly - 1 );
   pfac2 = pfac2 / integral_double_factorial( 2*lz - 1 );

@@ -69,11 +69,11 @@ std::vector< XCTask > HostReplicatedLoadBalancer::create_local_tasks_() const  {
       XCTask task;
       task.iParent    = iCurrent;
       // This enables lazy assignment of points vector (see CUDA impl)
-      task.npts       = points.size(); 
+      task.npts       = static_cast<int32_t>(points.size());
       task.points     = std::move( points );
       task.weights    = std::move( weights );
       task.bfn_screening.shell_list = std::move(shell_list);
-      task.bfn_screening.nbe        = nbe;
+      task.bfn_screening.nbe        = static_cast<int32_t>(nbe);
       task.dist_nearest = molmeta_->dist_nearest()[iCurrent];
 
       #pragma omp critical

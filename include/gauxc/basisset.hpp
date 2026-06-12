@@ -68,7 +68,7 @@ public:
    *
    *  @returns the number of GTO shells which comprise the BasisSet object
    */
-  inline int32_t nshells() const { return this->size(); }; 
+  inline int32_t nshells() const { return static_cast<int32_t>(this->size()); }; 
 
   /**
    *  @brief Return the number of GTO basis functions which comprise the 

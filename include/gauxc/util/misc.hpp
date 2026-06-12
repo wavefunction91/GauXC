@@ -114,7 +114,7 @@ inline auto integral_list_intersect( const std::vector<Integral>& A,
                                      const std::vector<Integral>& B,
                                      const uint32_t overlap_threshold_spec ) {
 
-  const uint32_t max_intersect_sz  = std::min(A.size(), B.size());
+  const uint32_t max_intersect_sz  = static_cast<uint32_t>(std::min(A.size(), B.size()));
   const uint32_t overlap_threshold = std::min( max_intersect_sz, 
                                                overlap_threshold_spec );
 

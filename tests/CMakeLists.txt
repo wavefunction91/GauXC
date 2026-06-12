@@ -76,6 +76,9 @@ if(GAUXC_ENABLE_CUTLASS)
   include(gauxc-cutlass)
   target_link_libraries(gauxc_test PUBLIC gauxc_cutlass)
 endif()
+if(MSVC AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  target_compile_options( gauxc_test PRIVATE -Wno-unused-variable )
+endif()
 
 
 set( GAUXC_REF_DATA_PATH "${PROJECT_SOURCE_DIR}/tests/ref_data" )
@@ -88,6 +91,9 @@ add_executable( standalone_driver standalone_driver.cxx standards.cxx basis/pars
 target_link_libraries( standalone_driver PUBLIC gauxc gauxc_catch2 Eigen3::Eigen )
 target_include_directories( standalone_driver PRIVATE ${PROJECT_BINARY_DIR}/tests )
 target_include_directories( standalone_driver PRIVATE ${PROJECT_SOURCE_DIR}/tests )
+if(MSVC AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  target_compile_options( standalone_driver PRIVATE -Wno-unused-variable )
+endif()
 
 #add_executable( grid_opt grid_opt.cxx standards.cxx basis/parse_basis.cxx ini_input.cxx )
 #target_link_libraries( grid_opt PUBLIC gauxc gauxc_catch2 Eigen3::Eigen )

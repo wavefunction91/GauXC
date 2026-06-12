@@ -32,7 +32,7 @@ void integral_4_2(size_t npts,
                   int ldG, 
                   double *weights,
                   double *boys_table) {
-   __attribute__((__aligned__(64))) double buffer[64 * NPTS_LOCAL + 3 * NPTS_LOCAL];
+   alignas(64) double buffer[64 * NPTS_LOCAL + 3 * NPTS_LOCAL];
 
    double *temp       = (buffer + 0);
    double *Tval       = (buffer + 64 * NPTS_LOCAL + 0 * NPTS_LOCAL);

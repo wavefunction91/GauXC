@@ -61,8 +61,8 @@ public:
     size_t st_idx = 0;
     for( const auto& shell : basis ) {
       size_t range_end = st_idx + shell.size();
-      shell_to_first_ao_.emplace_back( st_idx );
-      shell_to_ao_range_.push_back({ st_idx, range_end });
+      shell_to_first_ao_.emplace_back( static_cast<int32_t>(st_idx) );
+      shell_to_ao_range_.push_back({ static_cast<int32_t>(st_idx), static_cast<int32_t>(range_end) });
       st_idx = range_end;
     }
 
@@ -72,7 +72,7 @@ public:
       auto at_pos = std::find_if( mol.begin(), mol.end(), [&](const Atom& at) { 
         return at.x == shell.O()[0] and at.y == shell.O()[1] and at.z == shell.O()[2];
       });
-      if( at_pos != mol.end() ) shell_to_center_[sh_idx] = std::distance( mol.begin(), at_pos );
+      if( at_pos != mol.end() ) shell_to_center_[sh_idx] = static_cast<int32_t>(std::distance( mol.begin(), at_pos ));
       else shell_to_center_[sh_idx] = -1;
       ++sh_idx;
     }
@@ -170,13 +170,13 @@ public:
 
   /// Count the number of shells with angular momentum `l`
   inline size_t nshells_with_l(uint32_t l) const {
-    return std::count( shell_ls_.begin(), shell_ls_.end(), l );
+    return std::count( shell_ls_.begin(), shell_ls_.end(), static_cast<int32_t>(l) );
   }
 
   /// Check whether shells of angular momentum `l` are spherical (pure)
   inline bool l_purity(uint32_t l) const {
     // Find first shell with L
-    auto first_shell_w_l = std::find( shell_ls_.begin(), shell_ls_.end(), l );
+    auto first_shell_w_l = std::find( shell_ls_.begin(), shell_ls_.end(), static_cast<int32_t>(l) );
     return shell_pure( std::distance( shell_ls_.begin(), first_shell_w_l ) );
   }
 

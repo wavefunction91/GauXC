@@ -32,12 +32,12 @@ void integral_1_0(size_t npts,
                   int ldG, 
                   double *weights,
                   double *boys_table) {
-   __attribute__((__aligned__(64))) double buffer[3 * NPTS_LOCAL + 3 * NPTS_LOCAL];
+   alignas(64) double buffer[3 * NPTS_LOCAL + 3 * NPTS_LOCAL];
 
-   double * __restrict__ temp       = (buffer + 0);
-   double * __restrict__ Tval       = (buffer + 3 * NPTS_LOCAL + 0 * NPTS_LOCAL);
-   double * __restrict__ Tval_inv_e = (buffer + 3 * NPTS_LOCAL + 1 * NPTS_LOCAL);
-   double * __restrict__ FmT        = (buffer + 3 * NPTS_LOCAL + 2 * NPTS_LOCAL);
+   double * __restrict temp       = (buffer + 0);
+   double * __restrict Tval       = (buffer + 3 * NPTS_LOCAL + 0 * NPTS_LOCAL);
+   double * __restrict Tval_inv_e = (buffer + 3 * NPTS_LOCAL + 1 * NPTS_LOCAL);
+   double * __restrict FmT        = (buffer + 3 * NPTS_LOCAL + 2 * NPTS_LOCAL);
 
    size_t npts_upper = NPTS_LOCAL * (npts / NPTS_LOCAL);
    size_t p_outer = 0;

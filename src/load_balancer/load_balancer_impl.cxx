@@ -65,7 +65,7 @@ const util::Timer& LoadBalancerImpl::get_timings() const {
 
 size_t LoadBalancerImpl::total_npts() const {
 
-  return std::accumulate( local_tasks_.cbegin(), local_tasks_.cend(), 0ul,
+  return std::accumulate( local_tasks_.cbegin(), local_tasks_.cend(), size_t{0},
     []( const auto& a, const auto& b ) {
       return a + b.points.size();
     });

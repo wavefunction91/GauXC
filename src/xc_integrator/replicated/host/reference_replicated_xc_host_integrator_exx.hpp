@@ -315,7 +315,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Loop over sparse shell pairs
   const auto sp_row_ptr = shpairs.row_ptr();
   const auto sp_col_ind = shpairs.col_ind();
-  for( auto i = 0; i < nshells_bf; ++i ) {
+  for( size_t i = 0; i < nshells_bf; ++i ) {
     const auto j_st = sp_row_ptr[i];
     const auto j_en = sp_row_ptr[i+1];
     for( auto _j = j_st; _j < j_en; ++_j ) {
@@ -460,7 +460,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       gen_compressed_submat_map( basis_map, ek_shell_list, nbf, nbf );
 
     // Get tasks constants
-    const int32_t  npts    = task.points.size();
+    const int32_t  npts    = static_cast<int32_t>(task.points.size());
 
     const auto* points      = task.points.data()->data();
     const auto* weights     = task.weights.data();

@@ -71,7 +71,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   const auto& mol   = this->load_balancer_->molecule();
 
   // Atom-specific data
-  int natom = mol.size();
+  int natom = static_cast<int>(mol.size());
   std::vector<double> radii(natom);
   for (int i = 0; i < natom; ++i) {
     radii[i] = uff_radius_103(mol[i].Z);
@@ -114,9 +114,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const auto& task = tasks[iT];
 
     // Get tasks constants
-    const int32_t  npts    = task.points.size();
+    const int32_t  npts    = static_cast<int32_t>(task.points.size());
     const int32_t  nbe     = task.bfn_screening.nbe;
-    const int32_t  nshells = task.bfn_screening.shell_list.size();
+    const int32_t  nshells = static_cast<int32_t>(task.bfn_screening.shell_list.size());
 
     const auto* points      = task.points.data()->data();
     const auto* weights     = task.weights.data();
@@ -167,10 +167,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       den_eval[i] *= -weights[i];
     }
     std::vector<double> offset_local_dd_psi(ldPsi, 0.0);
-    blas::gemm('N', 'N', ldPsi, 1, npts,  
-            1.0, ylm_matrix.data(), ldPsi,   
-            den_eval, npts,     
-            0.0, offset_local_dd_psi.data(), ldPsi); 
+    blas::gemm('N', 'N', static_cast<int>(ldPsi), 1, npts,
+            1.0, ylm_matrix.data(), static_cast<int>(ldPsi),
+            den_eval, npts,
+            0.0, offset_local_dd_psi.data(), static_cast<int>(ldPsi));
     for (int j = 0; j < ldPsi; ++j) {
       dd_Psi[atom_offset + j] += offset_local_dd_psi[j];
     }

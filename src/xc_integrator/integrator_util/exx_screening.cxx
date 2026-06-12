@@ -13,6 +13,12 @@
 #include "host/blas.hpp"
 #include <gauxc/util/div_ceil.hpp>
 #include <chrono>
+#ifdef _MSC_VER
+#include <intrin.h>  // __popcnt
+#define GAUXC_POPCOUNT(x) __popcnt(x)
+#else
+#define GAUXC_POPCOUNT(x) __builtin_popcount(x)
+#endif
 //#include <mpi.h>
 //#include <fstream>
 #ifdef GAUXC_HAS_CUDA
@@ -127,8 +133,8 @@ void exx_ek_screening(
   // Compute approx F_i^(k) = |P_ij| * B_j^(k) 
   //auto gemm_st = hrt_t::now();
   std::vector<double> task_approx_f( nbf * ntasks );
-  blas::gemm( 'N', 'N', nbf, ntasks, nbf, 1., P_abs, ldp,
-    task_max_bfn.data(), nbf, 0., task_approx_f.data(), nbf );
+  blas::gemm( 'N', 'N', static_cast<int>(nbf), static_cast<int>(ntasks), static_cast<int>(nbf), 1., P_abs, static_cast<int>(ldp),
+    task_max_bfn.data(), static_cast<int>(nbf), 0., task_approx_f.data(), static_cast<int>(nbf) );
   //auto gemm_en = hrt_t::now();
   //std::cout << "... done " << dur_t(gemm_en-gemm_st).count() << std::endl;
 
@@ -188,14 +194,14 @@ void exx_ek_screening(
 
         task_ek_shells[i_block] |= (1u << i_local); 
         task_ek_shells[j_block] |= (1u << j_local); 
-        task_it->cou_screening.shell_pair_list.emplace_back(i,j);
-        task_it->cou_screening.shell_pair_idx_list.emplace_back(_j);
+        task_it->cou_screening.shell_pair_list.emplace_back(static_cast<int32_t>(i), static_cast<int32_t>(j));
+        task_it->cou_screening.shell_pair_idx_list.emplace_back(static_cast<int32_t>(_j));
       }
     }
     }
 
     uint32_t total_shells = 0;
-    for( auto x : task_ek_shells ) total_shells += __builtin_popcount(x);
+    for( auto x : task_ek_shells ) total_shells += static_cast<uint32_t>(GAUXC_POPCOUNT(x));
 
     std::vector<uint32_t> ek_shells; ek_shells.reserve(total_shells);
     for( auto i_block = 0u; i_block < util::div_ceil(nshells,32); ++i_block ) {

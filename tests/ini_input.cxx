@@ -106,7 +106,7 @@ void INIFile::parse() {
       // Obtain the section header name
       sectionHeader = line.substr(1,line.length()-2);
       std::transform(sectionHeader.begin(),sectionHeader.end(),sectionHeader.begin(),
-        [](unsigned char c){ return std::toupper(c);} );
+        [](unsigned char c){ return static_cast<char>(std::toupper(c));} );
 
       // Create a dictionary entry for the section header
       dict_[sectionHeader] = 
@@ -134,7 +134,7 @@ void INIFile::parse() {
 
       dataHeader = tokens[0];
       std::transform(dataHeader.begin(),dataHeader.end(),dataHeader.begin(),
-        [](unsigned char c){ return std::toupper(c);} );
+        [](unsigned char c){ return static_cast<char>(std::toupper(c));} );
 
       // Create a dictionary entry for the data field in the current
       // section header
@@ -191,7 +191,7 @@ std::pair<std::string,std::string> INIFile::splitQuery(
   for(auto &X : tokens) {
     trim(X);
     std::transform(X.begin(),X.end(),X.begin(),
-      [](unsigned char c){ return std::toupper(c);} );
+      [](unsigned char c){ return static_cast<char>(std::toupper(c));} );
   }
 
   return 

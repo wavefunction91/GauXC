@@ -66,14 +66,14 @@ struct XCTask {
       GAUXC_GENERIC_EXCEPTION("Cannot Perform Requested Merge: Incompatible Tasks");
     points.insert( points.end(), other.points.begin(), other.points.end() );
     weights.insert( weights.end(), other.weights.begin(), other.weights.end() );
-    npts = points.size();
+    npts = static_cast<int32_t>(points.size());
   }
 
   template <typename TaskIt>
   void merge_with( TaskIt begin, TaskIt end ) {
 
     size_t old_sz = points.size();
-    size_t pts_add = std::accumulate( begin, end, 0ul,
+    size_t pts_add = std::accumulate( begin, end, size_t{0},
       []( const auto &a, const auto &t ) {
         return a + t.points.size();
       });
@@ -91,9 +91,8 @@ struct XCTask {
       weights_it = std::copy( it->weights.begin(), it->weights.end(), weights_it );
     }
 
-    npts = points.size();
+    npts = static_cast<int32_t>(points.size());
   }
-
 
   inline bool equiv_with( const XCTask& other ) const {
     return iParent == other.iParent and 

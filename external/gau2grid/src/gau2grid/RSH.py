@@ -213,6 +213,9 @@ def transformation_c_generator(cg, L, cartesian_order, spherical_order, function
 
     # Start function
     cg.start_c_block(signature)
+    if L == 0:
+        cg.write("(void)ncart")
+        cg.write("(void)nspherical")
     cg.write("ASSUME_ALIGNED(cart, %d)" % align)
 
     cg.write("// R_%d0 Transform" % L)
@@ -287,6 +290,9 @@ def transformation_c_generator_sum(cg, L, cartesian_order, spherical_order, func
 
     # Start function
     cg.start_c_block(signature)
+    if L == 0:
+        cg.write("(void)ncart")
+    cg.write("(void)nspherical")
     cg.write("ASSUME_ALIGNED(cart, %d)" % align)
 
     cg.write("// temps")

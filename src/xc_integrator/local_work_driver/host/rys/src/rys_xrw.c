@@ -2,16 +2,29 @@
 #include <stddef.h>
 #include <math.h>
 #include <assert.h>
+#ifdef _MSC_VER
+#include <malloc.h>
+#endif
 #include "jacobi.h"
 
 void rys_xrw(int nt,
 	      int ntgqp,
 	      int ngqp,
 	      int nmom,
-	      const double tval[restrict],
-	      const double ryszero[restrict],
-	      double rts[restrict],
-	      double wts[restrict]) {
+	      const double *__restrict tval,
+	      const double *__restrict ryszero,
+	      double *__restrict rts,
+	      double *__restrict wts) {
+  (void)ntgqp;
+#ifdef _MSC_VER
+  double *a    = (double *)_malloca(nmom     * sizeof(double));
+  double *b    = (double *)_malloca((nmom-1) * sizeof(double));
+  double *mom  = (double *)_malloca(nmom     * sizeof(double));
+  double *dia  = (double *)_malloca(ngqp     * sizeof(double));
+  double *off  = (double *)_malloca(ngqp     * sizeof(double));
+  double *row1 = (double *)_malloca(nmom     * sizeof(double));
+  double *row2 = (double *)_malloca(nmom     * sizeof(double));
+#else
   double a[nmom];
   double b[nmom-1];
   double mom[nmom];
@@ -19,6 +32,7 @@ void rys_xrw(int nt,
   double off[ngqp];
   double row1[nmom];
   double row2[nmom];
+#endif
 
   int nrts = 0;
   for (int n = 0; n < nt; n += 1) {
@@ -261,4 +275,14 @@ void rys_xrw(int nt,
       nrts += ngqp;
     }
   }
+
+#ifdef _MSC_VER
+  _freea(row2);
+  _freea(row1);
+  _freea(off);
+  _freea(dia);
+  _freea(mom);
+  _freea(b);
+  _freea(a);
+#endif
 }

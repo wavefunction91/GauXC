@@ -14,8 +14,6 @@
 #include <stdexcept>
 #include <string>
 #include <sstream>
-#include <string.h>
-
 namespace GauXC {
 
 // FWD decl all exception types for optional handling
@@ -45,16 +43,10 @@ class generic_gauxc_exception : public std::exception {
   std::string function_;
   int         line_;
   std::string msg_prefix_;
+  std::string what_msg_;
 
   const char* what() const noexcept override {
-     std::stringstream ss;
-     ss << "Generic GauXC Exception (" << msg_prefix_ << ")" << std::endl
-        << "  File     " << file_ << std::endl
-        << "  Function " << function_ << std::endl
-        << "  Line     " << line_  << std::endl;
-     auto msg = ss.str();
-
-     return strdup( msg.c_str() );
+     return what_msg_.c_str();
   };
 
 public:
@@ -67,17 +59,29 @@ public:
    *  @param[in] line Line number of file that threw exception
    *  @param[in] msg  General descriptor of task which threw exception
    */
-  generic_gauxc_exception( std::string file, std::string function, int line, 
+  generic_gauxc_exception( std::string file, std::string function, int line,
     std::string msg ) :
-    file_(file), function_(function), line_(line), msg_prefix_(msg) {} 
+    file_(file), function_(function), line_(line), msg_prefix_(msg) {
+    std::stringstream ss;
+    ss << "Generic GauXC Exception (" << msg_prefix_ << ")" << std::endl
+       << "  File     " << file_ << std::endl
+       << "  Function " << function_ << std::endl
+       << "  Line     " << line_  << std::endl;
+    what_msg_ = ss.str();
+  }
 
 };
 
 
 }
 
+#if defined(_MSC_VER) && !defined(__clang__)
+#define GAUXC_GENERIC_EXCEPTION( MSG ) \
+  throw generic_gauxc_exception( __FILE__, __FUNCSIG__, __LINE__, MSG )
+#else
 #define GAUXC_GENERIC_EXCEPTION( MSG ) \
   throw generic_gauxc_exception( __FILE__, __PRETTY_FUNCTION__, __LINE__, MSG )
+#endif
 
 #define GAUXC_PIMPL_NOT_INITIALIZED() \
   GAUXC_GENERIC_EXCEPTION("PIMPL NOT INITIALIZED")

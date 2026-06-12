@@ -41,7 +41,7 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
                         const IntegratorSettingsXC& ks_settings ) {
   GAUXC_GENERIC_EXCEPTION("ShellBatched FXC contraction NYI");            
   util::unused(m,n,Ps,ldps,Pz,ldpz,tPs,ldtps,tPz,ldtpz,
-                 FXCs,ldfxcs,FXCz,ldfxcz);
+                 FXCs,ldfxcs,FXCz,ldfxcz,ks_settings);
 
 }
 

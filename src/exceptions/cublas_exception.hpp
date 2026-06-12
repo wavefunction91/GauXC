@@ -78,6 +78,7 @@ class cublas_exception : public std::exception {
   int         line_;         ///< Line number of file_ that threw exception
   std::string msg_prefix_;   ///< General descriptor of task which threw exception
   cublasStatus_t err_code_;  ///< cuBLAS error code pertaining to the thrown exception
+  std::string what_msg_;
 
   /**
    *  @brief Get a descriptive message pertaining to the thrown cuBLAS error
@@ -86,17 +87,7 @@ class cublas_exception : public std::exception {
    *  the internal state of the exception object.
    */
   const char* what() const noexcept override {
-     std::stringstream ss;
-     ss << "CUBLAS Exception (" << msg_prefix_ << ")" << std::endl
-        << "  Error Code " << int(err_code_) << ": \"" 
-                           << detail::cublasGetErrorString( err_code_ ) 
-                           << "\"" << std::endl
-        << "  File       " << file_ << std::endl
-        << "  Line       " << line_ << std::endl;
-
-     auto msg = ss.str();
-
-     return strdup( msg.c_str() );
+     return what_msg_.c_str();
   }
 
 public:
@@ -109,9 +100,18 @@ public:
    *  @param[in] msg  General descriptor of task which threw exception
    *  @param[in] err  cuBLAS error code pertaining to the thrown exception
    */
-  cublas_exception( std::string file, int line, std::string msg, 
+  cublas_exception( std::string file, int line, std::string msg,
                     cublasStatus_t err ) :
-    file_(file), line_(line), msg_prefix_(msg), err_code_(err) { }
+    file_(file), line_(line), msg_prefix_(msg), err_code_(err) {
+    std::stringstream ss;
+    ss << "CUBLAS Exception (" << msg_prefix_ << ")" << std::endl
+       << "  Error Code " << int(err_code_) << ": \""
+                          << detail::cublasGetErrorString( err_code_ )
+                          << "\"" << std::endl
+       << "  File       " << file_ << std::endl
+       << "  Line       " << line_ << std::endl;
+    what_msg_ = ss.str();
+  }
 
 }; // class cublas_exception
 

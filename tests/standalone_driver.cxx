@@ -77,7 +77,8 @@ int main(int argc, char** argv) {
     int lmax = 2;
 
     auto string_to_upper = []( auto& str ) {
-      std::transform( str.begin(), str.end(), str.begin(), ::toupper );
+      std::transform( str.begin(), str.end(), str.begin(),
+        [](unsigned char c){ return static_cast<char>(std::toupper(c)); } );
     };
 
     #define OPTIONAL_KEYWORD(NAME,VAR,TYPE) \
@@ -229,7 +230,7 @@ int main(int argc, char** argv) {
     matrix_type P, Pz, Py, Px, VXC_ref, VXCz_ref, VXCy_ref, VXCx_ref, K_ref;
     matrix_type ddX, ddPsi_ref, ddPsi_potential_ref;
     matrix_type FXC_ref, FXCz_ref;
-    double EXC_ref;
+    double EXC_ref = 0.0;
     std::vector<double> EXC_GRAD_ref(3*mol.size());
     bool rks = true, uks = false, gks = false;
     size_t N_EL_ref = MolMeta(mol).sum_atomic_charges();
@@ -454,7 +455,7 @@ int main(int argc, char** argv) {
 
     matrix_type VXC, VXCz, VXCy, VXCx, K, FXC, FXCz;
     matrix_type ddPsi, ddPsiPotential;
-    double EXC, N_EL;
+    double EXC = 0.0, N_EL = 0.0;
 
     std::cout << std::scientific << std::setprecision(12);
     if( integrate_den ) {
@@ -464,7 +465,7 @@ int main(int argc, char** argv) {
       N_EL = integrator.integrate_den( P );
       if(!world_rank) std::cout << "N_EL = " << N_EL << std::endl;
     } else {
-      N_EL = N_EL_ref;
+      N_EL = static_cast<double>(N_EL_ref);
     }
 
     if( integrate_vxc ) {

@@ -47,7 +47,7 @@ public:
       })->Z;
   }
 
-  bool operator==(const Molecule& other) {
+  bool operator==(const Molecule& other) const {
     if(other.size() != this->size()) return false;
     for( auto i = 0ul; i < this->size(); ++i )
       if( other[i] != operator[](i) ) return false;

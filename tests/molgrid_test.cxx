@@ -249,7 +249,7 @@ TEST_CASE("Grid Specification", "[molgrid]") {
 
     atomic_grid_variant gs;
     std::vector<PruningRegion> ref_pruning_regions;
-    UnprunedAtomicGridSpecification unp_gs = 
+    UnprunedAtomicGridSpecification unp_gs =
       MolGridFactory::create_default_unpruned_grid_spec(Z,rq,gsz);
     SECTION("Unpruned") {
       gs = MolGridFactory::create_default_pruned_grid_spec(

@@ -36,7 +36,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   const auto& mol = this->load_balancer_->molecule();
   const size_t natom = mol.size();
   const size_t nharmonics = (max_Ylm + 1) * (max_Ylm + 1);
-  if (m != nharmonics || n != natom) {
+  if (m != static_cast<int64_t>(nharmonics) || n != static_cast<int64_t>(natom)) {
     GAUXC_GENERIC_EXCEPTION("m must be nharmonics and n must be natom");
   }
   // Get Tasks
@@ -70,7 +70,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // Atom-specific data
   std::vector<double> radii(mol.size());
-  for (int i = 0; i < mol.size(); ++i) {
+  for (size_t i = 0; i < mol.size(); ++i) {
     radii[i] = uff_radius_103(mol[i].Z);
   }
 
@@ -111,9 +111,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     const auto& task = tasks[iT];
 
     // Get tasks constants
-    const int32_t  npts    = task.points.size();
+    const int32_t  npts    = static_cast<int32_t>(task.points.size());
     const int32_t  nbe     = task.bfn_screening.nbe;
-    const int32_t  nshells = task.bfn_screening.shell_list.size();
+    const int32_t  nshells = static_cast<int32_t>(task.bfn_screening.shell_list.size());
 
     const auto* points      = task.points.data()->data();
     const auto* weights     = task.weights.data();

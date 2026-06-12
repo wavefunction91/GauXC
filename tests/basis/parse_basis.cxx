@@ -131,7 +131,7 @@ std::map<std::string,int> am_map = {
 
 namespace detail {
   inline static auto tokenize( std::string str,
-                               std::string delim = " " ) {
+                               [[maybe_unused]] std::string delim = " " ) {
     std::istringstream iss(str);
     std::vector<std::string> tokens;
 
@@ -179,7 +179,7 @@ BasisSet<double> parse_basis( const Molecule& mol,
     std::string atom_symb = atom_line.substr(0,2);
     if( atom_symb[1] == ' ' ) atom_symb = atom_symb[0];
     std::transform( atom_symb.begin(), atom_symb.end(), atom_symb.begin(),
-                    [](auto a){ return std::toupper(a); } );
+                    [](unsigned char a){ return static_cast<char>(std::toupper(a)); } );
     
     //std::cout << atom_symb << std::endl;
     int Z = atomic_number_map.at(atom_symb);
@@ -208,9 +208,8 @@ BasisSet<double> parse_basis( const Molecule& mol,
       }
       
       using prim_array = Shell<double>::prim_array;
-      using cart_array = Shell<double>::cart_array;
 
-      prim_array alpha_arr, coeff_primary_arr, coeff_secondary_arr;
+      prim_array alpha_arr, coeff_primary_arr, coeff_secondary_arr{};
       std::copy( alpha.begin(), alpha.end(), alpha_arr.begin() );
       std::copy( coeff_primary.begin(), coeff_primary.end(), 
                  coeff_primary_arr.begin() );
@@ -254,7 +253,7 @@ BasisSet<double> parse_basis( const Molecule& mol,
   BasisSet<double> basis;
   for( auto iAt = 0; iAt < mol.size(); ++iAt ) {
     const auto& atom = mol.at(iAt);
-    BasisSet<double> atom_basis = basis_shells.at(atom.Z.get());
+    BasisSet<double> atom_basis = basis_shells.at(static_cast<int>(atom.Z.get()));
     for( auto& sh : atom_basis ) sh.O() = {atom.x, atom.y, atom.z};
     
     basis.insert(basis.end(), atom_basis.begin(), atom_basis.end() );

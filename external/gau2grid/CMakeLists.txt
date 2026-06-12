@@ -12,7 +12,12 @@ target_sources( gauxc PRIVATE
 
 
 target_compile_definitions( gauxc PRIVATE $<BUILD_INTERFACE:__GG_NO_PRAGMA> )
-target_include_directories( gauxc 
+if( CMAKE_C_COMPILER_ID MATCHES "Clang" )
+  # gau2grid uses __pragma(loop(ivdep)) for MSVC vectorization hints.
+  # clang-cl does not recognize this pragma and emits -Wunknown-pragmas.
+  target_compile_options( gauxc PRIVATE -Wno-unknown-pragmas )
+endif()
+target_include_directories( gauxc
   PRIVATE
     $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/generated_source>
 )

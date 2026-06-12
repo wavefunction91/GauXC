@@ -37,8 +37,9 @@ typename ReplicatedXCHostIntegratorFactory<ValueType>::ptr_return_t
     GAUXC_GENERIC_EXCEPTION("Passed LWD Not valid for Host ExSpace");
   }
 
-  std::transform(integrator_kernel.begin(), integrator_kernel.end(), 
-    integrator_kernel.begin(), ::toupper );
+  std::transform(integrator_kernel.begin(), integrator_kernel.end(),
+    integrator_kernel.begin(),
+    [](unsigned char c){ return static_cast<char>(std::toupper(c)); } );
 
   if( integrator_kernel == "DEFAULT" ) integrator_kernel = "REFERENCE";
 

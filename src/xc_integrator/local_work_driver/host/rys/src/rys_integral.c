@@ -21,17 +21,23 @@
 
 #define PI 3.14159265358979323846
 
+#ifdef _MSC_VER
+#define FORCE_INLINE __forceinline
+#define MIN(a,b) ((a) < (b) ? (a) : (b))
+#else
+#define FORCE_INLINE inline __attribute__((always_inline))
 #define MIN(a,b)                                \
   ({ __typeof__ (a) _a = (a);                   \
     __typeof__ (b) _b = (b);                    \
     _a < _b ? _a : _b; })
+#endif
 
 // codelets
-inline void __attribute__((always_inline)) compute_00(double beta, double *int_array, double *wgh) {
+FORCE_INLINE void compute_00(double beta, double *int_array, double *wgh) {
   *(int_array + 0) = (*(int_array + 0)) * beta + *(wgh + 0);
 }
 
-inline void __attribute__((always_inline)) compute_10_01(double xPX, double yPX, double zPX, double xPC, double yPC, double zPC, double beta, double *int_array, double *rts, double *wgh) {
+FORCE_INLINE void compute_10_01(double xPX, double yPX, double zPX, double xPC, double yPC, double zPC, double beta, double *int_array, double *rts, double *wgh) {
   double rt, Cx0, Cy0, Cz0, Cx1, Cy1, Cz1;
   
   rt = *(rts + 0);
@@ -49,7 +55,7 @@ inline void __attribute__((always_inline)) compute_10_01(double xPX, double yPX,
   *(int_array + 2) = (*(int_array + 2)) * beta + (*(wgh + 0)) * Cz0 + (*(wgh + 1)) * Cz1;
 }
 
-inline void __attribute__((always_inline)) compute_20_02(double xPX, double yPX, double zPX, double xPC, double yPC, double zPC, double aP_inv, double beta, double *int_array, double *rts, double *wgh) {
+FORCE_INLINE void compute_20_02(double xPX, double yPX, double zPX, double xPC, double yPC, double zPC, double aP_inv, double beta, double *int_array, double *rts, double *wgh) {
   double B0, B1, rt0, rt1, Cx0, Cy0, Cz0, Cx1, Cy1, Cz1, Cx2, Cy2, Cz2, Cx3, Cy3, Cz3;
   
   rt0 = *(rts + 0);
@@ -82,7 +88,7 @@ inline void __attribute__((always_inline)) compute_20_02(double xPX, double yPX,
   *(int_array + 5) = (*(int_array + 5)) * beta + Cz2 * (*(wgh + 0)) + Cz3 * (*(wgh + 1));
 }
 
-inline void __attribute__((always_inline)) compute_11(double xAB, double yAB, double zAB, double xPX, double yPX, double zPX, double xPC, double yPC, double zPC, double aP_inv, double beta, double *int_array, double *rts, double *wgh) {
+FORCE_INLINE void compute_11(double xAB, double yAB, double zAB, double xPX, double yPX, double zPX, double xPC, double yPC, double zPC, double aP_inv, double beta, double *int_array, double *rts, double *wgh) {
   double B0, B1, rt0, rt1, Cx0, Cy0, Cz0, Cx1, Cy1, Cz1, Cx2, Cy2, Cz2, Cx3, Cy3, Cz3;
   
   rt0 = *(rts + 0);
@@ -120,7 +126,8 @@ inline void __attribute__((always_inline)) compute_11(double xAB, double yAB, do
 }
 
 // nr roots > 2
-inline void __attribute__((always_inline)) compute_vrr3(int nr_roots, int l, int lA, int llA, int lB, int llB, double xPX, double yPX, double zPX, double xPC, double yPC, double zPC, double aP_inv, double * rts, double *vrr_array, double *hrr_array) {
+FORCE_INLINE void compute_vrr3(int nr_roots, int l, int lA, int llA, int lB, int llB, double xPX, double yPX, double zPX, double xPC, double yPC, double zPC, double aP_inv, double * rts, double *vrr_array, double *hrr_array) {
+  (void)llA;
   double *roots = (rts + 0);
   double *vrr = (vrr_array + 0);
   for(int r = 0; r < nr_roots; ++r) {
@@ -210,7 +217,7 @@ inline void __attribute__((always_inline)) compute_vrr3(int nr_roots, int l, int
   }
 }
 
-inline void __attribute__((always_inline)) compute_hrr3(int nr_roots, int l, int lA, int llA, int lB, int llB, double xAB, double yAB, double zAB, double *vrr_array, double *hrr_array) {
+FORCE_INLINE void compute_hrr3(int nr_roots, int l, int lA, int llA, int lB, int llB, double xAB, double yAB, double zAB, double *vrr_array, double *hrr_array) {
   for(int j = 1; j <= lA; ++j) {
     double *hrrj = (hrr_array + llA * j);
     
@@ -271,11 +278,11 @@ inline void __attribute__((always_inline)) compute_hrr3(int nr_roots, int l, int
   }
 }
 
-inline int __attribute__((always_inline)) index_calculation(int i, int j, int L) {
+FORCE_INLINE int index_calculation(int i, int j, int L) {
   return (L - i) * (L - i + 1) / 2 + j;
 }
 
-inline void __attribute__((always_inline)) compute_reduction(int nr_roots, int lA, int lB, double *weights, double *hrr_array, double *result, double beta) {
+FORCE_INLINE void compute_reduction(int nr_roots, int lA, int lB, double *weights, double *hrr_array, double *result, double beta) {
   int offsetB = (lB + 1) * (lB + 2) / 2;
 
   for(int ia = 0; ia <= lA; ++ia) {
