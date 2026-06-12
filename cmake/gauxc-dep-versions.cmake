@@ -8,13 +8,13 @@ set( GAUXC_CUTLASS_REPOSITORY https://github.com/NVIDIA/cutlass.git )
 set( GAUXC_CUTLASS_REVISION v2.10.0 )
 
 set( GAUXC_EXCHCXX_REPOSITORY https://github.com/lorisercole/ExchCXX.git )
-set( GAUXC_EXCHCXX_REVISION   97338065120ca32d04ba77f45d615a9e92cc0d20 )
+set( GAUXC_EXCHCXX_REVISION   c46965a1d365d24f1b3968791a12adc949ed767c )
 
 set( GAUXC_GAU2GRID_REPOSITORY https://github.com/dgasmith/gau2grid.git )
 set( GAUXC_GAU2GRID_REVISION   v2.0.6 )
 
-set( GAUXC_INTEGRATORXX_REPOSITORY https://github.com/lorisercole/IntegratorXX.git )
-set( GAUXC_INTEGRATORXX_REVISION   923125236ea5971ee9accdea39da552b8e322ff6 )
+set( GAUXC_INTEGRATORXX_REPOSITORY https://github.com/wavefunction91/IntegratorXX.git )
+set( GAUXC_INTEGRATORXX_REVISION   619d26ae4ea421ed9b7a6f80eb0783f9da1ecf7a )
 
 set( GAUXC_HIGHFIVE_REPOSITORY https://github.com/highfive-devs/HighFive.git )
 set( GAUXC_HIGHFIVE_REVISION 805f0e13d09b47c4b01d40682621904aa3b31bb8 )
