@@ -34,8 +34,9 @@ static inline void gauxc_status_handle(C::GauXCStatus* status, int code, const c
      if (status->message != nullptr) {
        std::free(status->message);
      }
-     status->message = (char*)std::malloc(std::strlen(message) + 1);
-     std::strcpy(status->message, message);
+     const std::size_t len = std::strlen(message) + 1;
+     status->message = (char*)std::malloc(len);
+     std::memcpy(status->message, message, len);
    } else {
      GAUXC_GENERIC_EXCEPTION(message);
    }
