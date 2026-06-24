@@ -19,6 +19,7 @@
 #include "c_functional.hpp"
 #include "c_status.hpp"
 
+#ifdef EXCHCXX_ENABLE_LIBXC
 namespace GauXC::detail {
 /**
  *  Splits a string into tokens  based on a delimiter
@@ -28,7 +29,7 @@ namespace GauXC::detail {
  *  \param [in]  str        std::string to split
  *  \param [in]  delimiters Delimiters on which to split str
  */
-static inline void split(std::vector<std::string>& tokens, 
+static inline void split(std::vector<std::string>& tokens,
   const std::string& str, const std::string& delimiters = " ") {
 
     tokens.clear();
@@ -47,6 +48,7 @@ static inline void split(std::vector<std::string>& tokens,
     }
 }; // split
 } // namespace GauXC::detail
+#endif
 
 namespace GauXC::C {
 extern "C" {
