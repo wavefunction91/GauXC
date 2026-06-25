@@ -133,7 +133,8 @@ GauXCIntegrator gauxc_integrator_new(
 
     // Create Integrator instance
     auto input_type_ = std::string(integrator_input_type);
-    std::transform( input_type_.begin(), input_type_.end(), input_type_.begin(), ::toupper );
+    std::transform( input_type_.begin(), input_type_.end(), input_type_.begin(),
+                    [](unsigned char c) { return static_cast<char>(std::toupper(c)); } );
 
     if( input_type_ != "REPLICATED" ) GAUXC_GENERIC_EXCEPTION("INTEGRATOR TYPE NOT RECOGNIZED");
 
