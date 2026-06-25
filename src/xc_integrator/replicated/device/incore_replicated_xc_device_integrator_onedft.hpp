@@ -1013,11 +1013,13 @@ eval_exc_grad_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
     }
   }
 
-  // Now sort by workload
-  std::sort( tasks.begin(), tasks.end(), task_comparator );
+  // Normally task_comparator is used for sorting tasks, but for OneDFT
+  // we want to keep the tasks in their ordering by iParent (atom) to make sure model derivatives 
+  // match up well with feature derivatives.
+  (void)task_comparator;  // Unused
 
-  // Build concatenated eps_w array (eps_on_grid * weights) in task order after sorting
-  // This will be used for the weight derivative
+  // Build concatenated eps_w array (per-gridpoint exc energy density, eps_on_grid * weights) in 
+  // task order. This will be used for the weight derivative
   std::vector<double> eps_w_all;
   eps_w_all.reserve(total_npts);
   for (const auto& task : tasks) {
