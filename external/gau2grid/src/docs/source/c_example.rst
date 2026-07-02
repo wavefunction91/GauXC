@@ -17,7 +17,7 @@ starting at the origin along the ``z`` axis and a ``S`` shell at the origin:
       // Generate grid
       long int npoints = 5;
       double xyz[15] = {0, 0, 0, 0, 0, // x components
-                        0, 0, 0, 0, 0}; // y components
+                        0, 0, 0, 0, 0, // y components
                         0, 1, 2, 3, 4}; // z components
       long int xyz_stride = 1; // This is a contiguous format
 
@@ -89,7 +89,7 @@ The below is an example of usage:
       // Generate grid
       long int npoints = 5;
       double xyz[15] = {0, 0, 0, 0, 0, // x components
-                        0, 0, 0, 0, 0}; // y components
+                        0, 0, 0, 0, 0, // y components
                         0, 1, 2, 3, 4}; // z components
       long int xyz_stride = 1;
 
@@ -98,14 +98,15 @@ The below is an example of usage:
       double coef[1] = {1};
       double exp[1] = {1};
       double center[3] = {0, 0, 0};
-      int order = GG_SPHERICAL_CCA; // Use cartesian components
+      int order = GG_SPHERICAL_GAUSSIAN; // Use spherical components
+      int spherical = 1; // True because spherical
 
       // Size ncomponents * npoints, (1 + 3 + 5) * 5
       double output[45] = {0};
       int row = 0;
       for (int L = 0; L < 3; L++) {
           gg_collocation(L,                                 // The angular momentum
-                         npoints, xyz, xyz_stride            // Grid data
+                         npoints, xyz, xyz_stride,          // Grid data
                          nprim, coef, exp, center, order,   // Gaussian data
                          output + (row * npoints));         // Output, shift pointer
 

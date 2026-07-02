@@ -20,10 +20,14 @@
 #include "gau2grid/gau2grid_utility.h"
 #include "gau2grid/gau2grid_pragma.h"
 
-
-
-void gg_collocation_L0_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz, const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs, const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center, const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out, double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out, double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out, double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out, double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
-
+void gg_collocation_L0_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz,
+                              const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs,
+                              const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center,
+                              const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out,
+                              double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out,
+                              double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out,
+                              double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out,
+                              double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
     // Sizing
     unsigned long nblocks = npoints / 32;
     nblocks += (npoints % 32) ? 1 : 0;
@@ -33,12 +37,12 @@ void gg_collocation_L0_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     if ((order == GG_SPHERICAL_CCA) || (order == GG_SPHERICAL_GAUSSIAN)) {
         nout = nspherical;
-        } else {
+    } else {
         nout = ncart;
     }
 
     // Allocate S temporaries, single block to stay on cache
-    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, 256 * sizeof(double));
+    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, ((((256 * sizeof(double)) + 64 - 1) / 64) * 64));
     double* PRAGMA_RESTRICT xc = cache_data + 0;
     ASSUME_ALIGNED(xc, 64);
     double* PRAGMA_RESTRICT yc = cache_data + 32;
@@ -57,29 +61,29 @@ void gg_collocation_L0_deriv2(const unsigned long npoints, const double* PRAGMA_
     ASSUME_ALIGNED(S2, 64);
 
     // Allocate exponential temporaries
-    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, nprim * sizeof(double));
-    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, nprim * sizeof(double));
+    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
+    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
 
     // Allocate output temporaries
-    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, 32 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, ((((32 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_tmp, 64);
-    double* PRAGMA_RESTRICT phi_x_tmp = (double*)ALIGNED_MALLOC(64, 32 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_x_tmp = (double*)ALIGNED_MALLOC(64, ((((32 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_x_tmp, 64);
-    double* PRAGMA_RESTRICT phi_y_tmp = (double*)ALIGNED_MALLOC(64, 32 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_y_tmp = (double*)ALIGNED_MALLOC(64, ((((32 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_y_tmp, 64);
-    double* PRAGMA_RESTRICT phi_z_tmp = (double*)ALIGNED_MALLOC(64, 32 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_z_tmp = (double*)ALIGNED_MALLOC(64, ((((32 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_z_tmp, 64);
-    double* PRAGMA_RESTRICT phi_xx_tmp = (double*)ALIGNED_MALLOC(64, 32 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_xx_tmp = (double*)ALIGNED_MALLOC(64, ((((32 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_xx_tmp, 64);
-    double* PRAGMA_RESTRICT phi_xy_tmp = (double*)ALIGNED_MALLOC(64, 32 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_xy_tmp = (double*)ALIGNED_MALLOC(64, ((((32 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_xy_tmp, 64);
-    double* PRAGMA_RESTRICT phi_xz_tmp = (double*)ALIGNED_MALLOC(64, 32 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_xz_tmp = (double*)ALIGNED_MALLOC(64, ((((32 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_xz_tmp, 64);
-    double* PRAGMA_RESTRICT phi_yy_tmp = (double*)ALIGNED_MALLOC(64, 32 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_yy_tmp = (double*)ALIGNED_MALLOC(64, ((((32 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_yy_tmp, 64);
-    double* PRAGMA_RESTRICT phi_yz_tmp = (double*)ALIGNED_MALLOC(64, 32 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_yz_tmp = (double*)ALIGNED_MALLOC(64, ((((32 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_yz_tmp, 64);
-    double* PRAGMA_RESTRICT phi_zz_tmp = (double*)ALIGNED_MALLOC(64, 32 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_zz_tmp = (double*)ALIGNED_MALLOC(64, ((((32 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_zz_tmp, 64);
 
     // Declare doubles
@@ -95,8 +99,6 @@ void gg_collocation_L0_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     // Start outer block loop
     for (unsigned long block = 0; block < nblocks; block++) {
-
-
         // Copy data into inner temps
         const unsigned long start = block * 32;
         const unsigned long remain = ((start + 32) > npoints) ? (npoints - start) : 32;
@@ -122,8 +124,8 @@ void gg_collocation_L0_deriv2(const unsigned long npoints, const double* PRAGMA_
                 S1[i] = 0.0;
                 S2[i] = 0.0;
             }
-            } else {
-            unsigned long start_shift = start * xyz_stride;
+        } else {
+            unsigned int start_shift = start * xyz_stride;
 
             PRAGMA_VECTORIZE
             for (unsigned long i = 0; i < remain; i++) {
@@ -159,7 +161,6 @@ void gg_collocation_L0_deriv2(const unsigned long npoints, const double* PRAGMA_
                 const double T3 = alpha_n2 * T2;
                 S2[i] += T3;
             }
-
         }
 
         // Combine blocks
@@ -210,11 +211,16 @@ void gg_collocation_L0_deriv2(const unsigned long npoints, const double* PRAGMA_
     ALIGNED_FREE(phi_yy_tmp);
     ALIGNED_FREE(phi_yz_tmp);
     ALIGNED_FREE(phi_zz_tmp);
-
 }
 
-void gg_collocation_L1_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz, const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs, const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center, const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out, double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out, double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out, double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out, double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
-
+void gg_collocation_L1_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz,
+                              const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs,
+                              const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center,
+                              const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out,
+                              double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out,
+                              double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out,
+                              double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out,
+                              double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
     // Sizing
     unsigned long nblocks = npoints / 32;
     nblocks += (npoints % 32) ? 1 : 0;
@@ -224,12 +230,12 @@ void gg_collocation_L1_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     if ((order == GG_SPHERICAL_CCA) || (order == GG_SPHERICAL_GAUSSIAN)) {
         nout = nspherical;
-        } else {
+    } else {
         nout = ncart;
     }
 
     // Allocate S temporaries, single block to stay on cache
-    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, 256 * sizeof(double));
+    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, ((((256 * sizeof(double)) + 64 - 1) / 64) * 64));
     double* PRAGMA_RESTRICT xc = cache_data + 0;
     ASSUME_ALIGNED(xc, 64);
     double* PRAGMA_RESTRICT yc = cache_data + 32;
@@ -248,29 +254,29 @@ void gg_collocation_L1_deriv2(const unsigned long npoints, const double* PRAGMA_
     ASSUME_ALIGNED(S2, 64);
 
     // Allocate exponential temporaries
-    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, nprim * sizeof(double));
-    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, nprim * sizeof(double));
+    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
+    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
 
     // Allocate output temporaries
-    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, 96 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, ((((96 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_tmp, 64);
-    double* PRAGMA_RESTRICT phi_x_tmp = (double*)ALIGNED_MALLOC(64, 96 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_x_tmp = (double*)ALIGNED_MALLOC(64, ((((96 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_x_tmp, 64);
-    double* PRAGMA_RESTRICT phi_y_tmp = (double*)ALIGNED_MALLOC(64, 96 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_y_tmp = (double*)ALIGNED_MALLOC(64, ((((96 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_y_tmp, 64);
-    double* PRAGMA_RESTRICT phi_z_tmp = (double*)ALIGNED_MALLOC(64, 96 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_z_tmp = (double*)ALIGNED_MALLOC(64, ((((96 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_z_tmp, 64);
-    double* PRAGMA_RESTRICT phi_xx_tmp = (double*)ALIGNED_MALLOC(64, 96 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_xx_tmp = (double*)ALIGNED_MALLOC(64, ((((96 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_xx_tmp, 64);
-    double* PRAGMA_RESTRICT phi_xy_tmp = (double*)ALIGNED_MALLOC(64, 96 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_xy_tmp = (double*)ALIGNED_MALLOC(64, ((((96 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_xy_tmp, 64);
-    double* PRAGMA_RESTRICT phi_xz_tmp = (double*)ALIGNED_MALLOC(64, 96 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_xz_tmp = (double*)ALIGNED_MALLOC(64, ((((96 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_xz_tmp, 64);
-    double* PRAGMA_RESTRICT phi_yy_tmp = (double*)ALIGNED_MALLOC(64, 96 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_yy_tmp = (double*)ALIGNED_MALLOC(64, ((((96 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_yy_tmp, 64);
-    double* PRAGMA_RESTRICT phi_yz_tmp = (double*)ALIGNED_MALLOC(64, 96 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_yz_tmp = (double*)ALIGNED_MALLOC(64, ((((96 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_yz_tmp, 64);
-    double* PRAGMA_RESTRICT phi_zz_tmp = (double*)ALIGNED_MALLOC(64, 96 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_zz_tmp = (double*)ALIGNED_MALLOC(64, ((((96 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_zz_tmp, 64);
 
     // Declare doubles
@@ -286,8 +292,6 @@ void gg_collocation_L1_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     // Start outer block loop
     for (unsigned long block = 0; block < nblocks; block++) {
-
-
         // Copy data into inner temps
         const unsigned long start = block * 32;
         const unsigned long remain = ((start + 32) > npoints) ? (npoints - start) : 32;
@@ -313,8 +317,8 @@ void gg_collocation_L1_deriv2(const unsigned long npoints, const double* PRAGMA_
                 S1[i] = 0.0;
                 S2[i] = 0.0;
             }
-            } else {
-            unsigned long start_shift = start * xyz_stride;
+        } else {
+            unsigned int start_shift = start * xyz_stride;
 
             PRAGMA_VECTORIZE
             for (unsigned long i = 0; i < remain; i++) {
@@ -350,7 +354,6 @@ void gg_collocation_L1_deriv2(const unsigned long npoints, const double* PRAGMA_
                 const double T3 = alpha_n2 * T2;
                 S2[i] += T3;
             }
-
         }
 
         // Combine blocks
@@ -431,7 +434,6 @@ void gg_collocation_L1_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_xz_tmp[64 + i] += SX;
             phi_yz_tmp[64 + i] = SYZ * zc[i];
             phi_yz_tmp[64 + i] += SY;
-
         }
 
         // Copy data back into outer temps
@@ -451,7 +453,7 @@ void gg_collocation_L1_deriv2(const unsigned long npoints, const double* PRAGMA_
             gg_cca_cart_to_spherical_L1(remain, phi_yy_tmp, 32, (phi_yy_out + start), npoints);
             gg_cca_cart_to_spherical_L1(remain, phi_yz_tmp, 32, (phi_yz_out + start), npoints);
             gg_cca_cart_to_spherical_L1(remain, phi_zz_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             // Phi, transform data to outer temps
             gg_gaussian_cart_to_spherical_L1(remain, phi_tmp, 32, (phi_out + start), npoints);
 
@@ -467,7 +469,7 @@ void gg_collocation_L1_deriv2(const unsigned long npoints, const double* PRAGMA_
             gg_gaussian_cart_to_spherical_L1(remain, phi_yy_tmp, 32, (phi_yy_out + start), npoints);
             gg_gaussian_cart_to_spherical_L1(remain, phi_yz_tmp, 32, (phi_yz_out + start), npoints);
             gg_gaussian_cart_to_spherical_L1(remain, phi_zz_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             // Phi, transform data to outer temps
             gg_cca_cart_copy_L1(remain, phi_tmp, 32, (phi_out + start), npoints);
 
@@ -483,7 +485,7 @@ void gg_collocation_L1_deriv2(const unsigned long npoints, const double* PRAGMA_
             gg_cca_cart_copy_L1(remain, phi_yy_tmp, 32, (phi_yy_out + start), npoints);
             gg_cca_cart_copy_L1(remain, phi_yz_tmp, 32, (phi_yz_out + start), npoints);
             gg_cca_cart_copy_L1(remain, phi_zz_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             // Phi, transform data to outer temps
             gg_molden_cart_copy_L1(remain, phi_tmp, 32, (phi_out + start), npoints);
 
@@ -500,7 +502,6 @@ void gg_collocation_L1_deriv2(const unsigned long npoints, const double* PRAGMA_
             gg_molden_cart_copy_L1(remain, phi_yz_tmp, 32, (phi_yz_out + start), npoints);
             gg_molden_cart_copy_L1(remain, phi_zz_tmp, 32, (phi_zz_out + start), npoints);
         }
-
     }
 
     // Free S temporaries
@@ -519,11 +520,16 @@ void gg_collocation_L1_deriv2(const unsigned long npoints, const double* PRAGMA_
     ALIGNED_FREE(phi_yy_tmp);
     ALIGNED_FREE(phi_yz_tmp);
     ALIGNED_FREE(phi_zz_tmp);
-
 }
 
-void gg_collocation_L2_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz, const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs, const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center, const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out, double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out, double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out, double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out, double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
-
+void gg_collocation_L2_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz,
+                              const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs,
+                              const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center,
+                              const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out,
+                              double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out,
+                              double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out,
+                              double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out,
+                              double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
     // Sizing
     unsigned long nblocks = npoints / 32;
     nblocks += (npoints % 32) ? 1 : 0;
@@ -533,12 +539,12 @@ void gg_collocation_L2_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     if ((order == GG_SPHERICAL_CCA) || (order == GG_SPHERICAL_GAUSSIAN)) {
         nout = nspherical;
-        } else {
+    } else {
         nout = ncart;
     }
 
     // Allocate S temporaries, single block to stay on cache
-    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, 256 * sizeof(double));
+    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, ((((256 * sizeof(double)) + 64 - 1) / 64) * 64));
     double* PRAGMA_RESTRICT xc = cache_data + 0;
     ASSUME_ALIGNED(xc, 64);
     double* PRAGMA_RESTRICT yc = cache_data + 32;
@@ -557,29 +563,29 @@ void gg_collocation_L2_deriv2(const unsigned long npoints, const double* PRAGMA_
     ASSUME_ALIGNED(S2, 64);
 
     // Allocate exponential temporaries
-    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, nprim * sizeof(double));
-    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, nprim * sizeof(double));
+    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
+    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
 
     // Allocate output temporaries
-    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, 192 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, ((((192 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_tmp, 64);
-    double* PRAGMA_RESTRICT phi_x_tmp = (double*)ALIGNED_MALLOC(64, 192 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_x_tmp = (double*)ALIGNED_MALLOC(64, ((((192 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_x_tmp, 64);
-    double* PRAGMA_RESTRICT phi_y_tmp = (double*)ALIGNED_MALLOC(64, 192 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_y_tmp = (double*)ALIGNED_MALLOC(64, ((((192 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_y_tmp, 64);
-    double* PRAGMA_RESTRICT phi_z_tmp = (double*)ALIGNED_MALLOC(64, 192 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_z_tmp = (double*)ALIGNED_MALLOC(64, ((((192 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_z_tmp, 64);
-    double* PRAGMA_RESTRICT phi_xx_tmp = (double*)ALIGNED_MALLOC(64, 192 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_xx_tmp = (double*)ALIGNED_MALLOC(64, ((((192 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_xx_tmp, 64);
-    double* PRAGMA_RESTRICT phi_xy_tmp = (double*)ALIGNED_MALLOC(64, 192 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_xy_tmp = (double*)ALIGNED_MALLOC(64, ((((192 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_xy_tmp, 64);
-    double* PRAGMA_RESTRICT phi_xz_tmp = (double*)ALIGNED_MALLOC(64, 192 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_xz_tmp = (double*)ALIGNED_MALLOC(64, ((((192 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_xz_tmp, 64);
-    double* PRAGMA_RESTRICT phi_yy_tmp = (double*)ALIGNED_MALLOC(64, 192 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_yy_tmp = (double*)ALIGNED_MALLOC(64, ((((192 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_yy_tmp, 64);
-    double* PRAGMA_RESTRICT phi_yz_tmp = (double*)ALIGNED_MALLOC(64, 192 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_yz_tmp = (double*)ALIGNED_MALLOC(64, ((((192 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_yz_tmp, 64);
-    double* PRAGMA_RESTRICT phi_zz_tmp = (double*)ALIGNED_MALLOC(64, 192 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_zz_tmp = (double*)ALIGNED_MALLOC(64, ((((192 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_zz_tmp, 64);
 
     // Declare doubles
@@ -597,8 +603,6 @@ void gg_collocation_L2_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     // Start outer block loop
     for (unsigned long block = 0; block < nblocks; block++) {
-
-
         // Copy data into inner temps
         const unsigned long start = block * 32;
         const unsigned long remain = ((start + 32) > npoints) ? (npoints - start) : 32;
@@ -624,8 +628,8 @@ void gg_collocation_L2_deriv2(const unsigned long npoints, const double* PRAGMA_
                 S1[i] = 0.0;
                 S2[i] = 0.0;
             }
-            } else {
-            unsigned long start_shift = start * xyz_stride;
+        } else {
+            unsigned int start_shift = start * xyz_stride;
 
             PRAGMA_VECTORIZE
             for (unsigned long i = 0; i < remain; i++) {
@@ -661,7 +665,6 @@ void gg_collocation_L2_deriv2(const unsigned long npoints, const double* PRAGMA_
                 const double T3 = alpha_n2 * T2;
                 S2[i] += T3;
             }
-
         }
 
         // Combine blocks
@@ -684,7 +687,6 @@ void gg_collocation_L2_deriv2(const unsigned long npoints, const double* PRAGMA_
             const double xc_pow2 = xc[i] * xc[i];
             const double yc_pow2 = yc[i] * yc[i];
             const double zc_pow2 = zc[i] * zc[i];
-
 
             // Density AM=2 Component=XX
             phi_tmp[i] = S0[i] * xc_pow2;
@@ -838,7 +840,6 @@ void gg_collocation_L2_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_xz_tmp[160 + i] += SX * AZ;
             phi_yz_tmp[160 + i] = SYZ * zc_pow2;
             phi_yz_tmp[160 + i] += SY * AZ;
-
         }
 
         // Copy data back into outer temps
@@ -858,7 +859,7 @@ void gg_collocation_L2_deriv2(const unsigned long npoints, const double* PRAGMA_
             gg_cca_cart_to_spherical_L2(remain, phi_yy_tmp, 32, (phi_yy_out + start), npoints);
             gg_cca_cart_to_spherical_L2(remain, phi_yz_tmp, 32, (phi_yz_out + start), npoints);
             gg_cca_cart_to_spherical_L2(remain, phi_zz_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             // Phi, transform data to outer temps
             gg_gaussian_cart_to_spherical_L2(remain, phi_tmp, 32, (phi_out + start), npoints);
 
@@ -874,7 +875,7 @@ void gg_collocation_L2_deriv2(const unsigned long npoints, const double* PRAGMA_
             gg_gaussian_cart_to_spherical_L2(remain, phi_yy_tmp, 32, (phi_yy_out + start), npoints);
             gg_gaussian_cart_to_spherical_L2(remain, phi_yz_tmp, 32, (phi_yz_out + start), npoints);
             gg_gaussian_cart_to_spherical_L2(remain, phi_zz_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             // Phi, transform data to outer temps
             gg_cca_cart_copy_L2(remain, phi_tmp, 32, (phi_out + start), npoints);
 
@@ -890,7 +891,7 @@ void gg_collocation_L2_deriv2(const unsigned long npoints, const double* PRAGMA_
             gg_cca_cart_copy_L2(remain, phi_yy_tmp, 32, (phi_yy_out + start), npoints);
             gg_cca_cart_copy_L2(remain, phi_yz_tmp, 32, (phi_yz_out + start), npoints);
             gg_cca_cart_copy_L2(remain, phi_zz_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             // Phi, transform data to outer temps
             gg_molden_cart_copy_L2(remain, phi_tmp, 32, (phi_out + start), npoints);
 
@@ -907,7 +908,6 @@ void gg_collocation_L2_deriv2(const unsigned long npoints, const double* PRAGMA_
             gg_molden_cart_copy_L2(remain, phi_yz_tmp, 32, (phi_yz_out + start), npoints);
             gg_molden_cart_copy_L2(remain, phi_zz_tmp, 32, (phi_zz_out + start), npoints);
         }
-
     }
 
     // Free S temporaries
@@ -926,11 +926,16 @@ void gg_collocation_L2_deriv2(const unsigned long npoints, const double* PRAGMA_
     ALIGNED_FREE(phi_yy_tmp);
     ALIGNED_FREE(phi_yz_tmp);
     ALIGNED_FREE(phi_zz_tmp);
-
 }
 
-void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz, const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs, const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center, const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out, double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out, double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out, double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out, double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
-
+void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz,
+                              const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs,
+                              const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center,
+                              const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out,
+                              double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out,
+                              double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out,
+                              double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out,
+                              double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
     // Sizing
     unsigned long nblocks = npoints / 32;
     nblocks += (npoints % 32) ? 1 : 0;
@@ -940,12 +945,12 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     if ((order == GG_SPHERICAL_CCA) || (order == GG_SPHERICAL_GAUSSIAN)) {
         nout = nspherical;
-        } else {
+    } else {
         nout = ncart;
     }
 
     // Allocate S temporaries, single block to stay on cache
-    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, 256 * sizeof(double));
+    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, ((((256 * sizeof(double)) + 64 - 1) / 64) * 64));
     double* PRAGMA_RESTRICT xc = cache_data + 0;
     ASSUME_ALIGNED(xc, 64);
     double* PRAGMA_RESTRICT yc = cache_data + 32;
@@ -964,19 +969,19 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
     ASSUME_ALIGNED(S2, 64);
 
     // Allocate exponential temporaries
-    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, nprim * sizeof(double));
-    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, nprim * sizeof(double));
+    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
+    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
 
     // Allocate power temporaries
-    double* PRAGMA_RESTRICT xc_pow = (double*)ALIGNED_MALLOC(64, 64 * sizeof(double));
+    double* PRAGMA_RESTRICT xc_pow = (double*)ALIGNED_MALLOC(64, ((((64 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(xc_pow, 64);
-    double* PRAGMA_RESTRICT yc_pow = (double*)ALIGNED_MALLOC(64, 64 * sizeof(double));
+    double* PRAGMA_RESTRICT yc_pow = (double*)ALIGNED_MALLOC(64, ((((64 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(yc_pow, 64);
-    double* PRAGMA_RESTRICT zc_pow = (double*)ALIGNED_MALLOC(64, 64 * sizeof(double));
+    double* PRAGMA_RESTRICT zc_pow = (double*)ALIGNED_MALLOC(64, ((((64 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(zc_pow, 64);
 
     // Allocate output temporaries
-    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, 320 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, ((((320 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_tmp, 64);
 
     // Declare doubles
@@ -992,8 +997,6 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     // Start outer block loop
     for (unsigned long block = 0; block < nblocks; block++) {
-
-
         // Copy data into inner temps
         const unsigned long start = block * 32;
         const unsigned long remain = ((start + 32) > npoints) ? (npoints - start) : 32;
@@ -1019,8 +1022,8 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
                 S1[i] = 0.0;
                 S2[i] = 0.0;
             }
-            } else {
-            unsigned long start_shift = start * xyz_stride;
+        } else {
+            unsigned int start_shift = start * xyz_stride;
 
             PRAGMA_VECTORIZE
             for (unsigned long i = 0; i < remain; i++) {
@@ -1056,13 +1059,11 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
                 const double T3 = alpha_n2 * T2;
                 S2[i] += T3;
             }
-
         }
 
         // Build powers
         PRAGMA_VECTORIZE
         for (unsigned long i = 0; i < remain; i++) {
-
             // Cartesian derivs
             xc_pow[i] = xc[i] * xc[i];
             yc_pow[i] = yc[i] * yc[i];
@@ -1074,7 +1075,6 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
         // Combine A blocks
         PRAGMA_VECTORIZE
         for (unsigned long i = 0; i < remain; i++) {
-
             phi_tmp[i] = xc_pow[32 + i] * S0[i];
             phi_tmp[32 + i] = xc_pow[i] * yc[i] * S0[i];
             phi_tmp[64 + i] = xc_pow[i] * zc[i] * S0[i];
@@ -1089,11 +1089,11 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L3(remain, phi_tmp, 32, (phi_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L3(remain, phi_tmp, 32, (phi_out + start), npoints);
         }
 
@@ -1127,16 +1127,15 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[256 + i] = yc[i] * zc_pow[i] * SX;
 
             phi_tmp[288 + i] = zc_pow[32 + i] * SX;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_x_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_x_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L3(remain, phi_tmp, 32, (phi_x_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L3(remain, phi_tmp, 32, (phi_x_out + start), npoints);
         }
 
@@ -1170,16 +1169,15 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[256 + i] += zc_pow[i] * S0[i];
 
             phi_tmp[288 + i] = zc_pow[32 + i] * SY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_y_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_y_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L3(remain, phi_tmp, 32, (phi_y_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L3(remain, phi_tmp, 32, (phi_y_out + start), npoints);
         }
 
@@ -1213,16 +1211,15 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
 
             phi_tmp[288 + i] = zc_pow[32 + i] * SZ;
             phi_tmp[288 + i] += 3.0 * zc_pow[i] * S0[i];
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_z_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_z_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L3(remain, phi_tmp, 32, (phi_z_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L3(remain, phi_tmp, 32, (phi_z_out + start), npoints);
         }
 
@@ -1260,16 +1257,15 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[256 + i] = yc[i] * zc_pow[i] * SXX;
 
             phi_tmp[288 + i] = zc_pow[32 + i] * SXX;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L3(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L3(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
         }
 
@@ -1314,16 +1310,15 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[256 + i] += zc_pow[i] * SX;
 
             phi_tmp[288 + i] = zc_pow[32 + i] * SXY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L3(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L3(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
         }
 
@@ -1368,16 +1363,15 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
 
             phi_tmp[288 + i] = zc_pow[32 + i] * SXZ;
             phi_tmp[288 + i] += 3.0 * zc_pow[i] * SX;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L3(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L3(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
         }
 
@@ -1415,16 +1409,15 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[256 + i] += 2.0 * zc_pow[i] * SY;
 
             phi_tmp[288 + i] = zc_pow[32 + i] * SYY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L3(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L3(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
         }
 
@@ -1469,16 +1462,15 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
 
             phi_tmp[288 + i] = zc_pow[32 + i] * SYZ;
             phi_tmp[288 + i] += 3.0 * zc_pow[i] * SY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L3(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L3(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
         }
 
@@ -1516,19 +1508,17 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[288 + i] = zc_pow[32 + i] * SZZ;
             phi_tmp[288 + i] += 6.0 * zc_pow[i] * SZ;
             phi_tmp[288 + i] += 6.0 * zc[i] * S0[i];
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L3(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L3(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L3(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
         }
-
     }
 
     // Free S temporaries
@@ -1543,11 +1533,16 @@ void gg_collocation_L3_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     // Free inner temporaries
     ALIGNED_FREE(phi_tmp);
-
 }
 
-void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz, const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs, const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center, const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out, double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out, double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out, double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out, double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
-
+void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz,
+                              const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs,
+                              const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center,
+                              const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out,
+                              double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out,
+                              double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out,
+                              double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out,
+                              double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
     // Sizing
     unsigned long nblocks = npoints / 32;
     nblocks += (npoints % 32) ? 1 : 0;
@@ -1557,12 +1552,12 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     if ((order == GG_SPHERICAL_CCA) || (order == GG_SPHERICAL_GAUSSIAN)) {
         nout = nspherical;
-        } else {
+    } else {
         nout = ncart;
     }
 
     // Allocate S temporaries, single block to stay on cache
-    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, 256 * sizeof(double));
+    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, ((((256 * sizeof(double)) + 64 - 1) / 64) * 64));
     double* PRAGMA_RESTRICT xc = cache_data + 0;
     ASSUME_ALIGNED(xc, 64);
     double* PRAGMA_RESTRICT yc = cache_data + 32;
@@ -1581,19 +1576,19 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
     ASSUME_ALIGNED(S2, 64);
 
     // Allocate exponential temporaries
-    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, nprim * sizeof(double));
-    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, nprim * sizeof(double));
+    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
+    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
 
     // Allocate power temporaries
-    double* PRAGMA_RESTRICT xc_pow = (double*)ALIGNED_MALLOC(64, 96 * sizeof(double));
+    double* PRAGMA_RESTRICT xc_pow = (double*)ALIGNED_MALLOC(64, ((((96 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(xc_pow, 64);
-    double* PRAGMA_RESTRICT yc_pow = (double*)ALIGNED_MALLOC(64, 96 * sizeof(double));
+    double* PRAGMA_RESTRICT yc_pow = (double*)ALIGNED_MALLOC(64, ((((96 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(yc_pow, 64);
-    double* PRAGMA_RESTRICT zc_pow = (double*)ALIGNED_MALLOC(64, 96 * sizeof(double));
+    double* PRAGMA_RESTRICT zc_pow = (double*)ALIGNED_MALLOC(64, ((((96 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(zc_pow, 64);
 
     // Allocate output temporaries
-    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, 480 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, ((((480 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_tmp, 64);
 
     // Declare doubles
@@ -1609,8 +1604,6 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     // Start outer block loop
     for (unsigned long block = 0; block < nblocks; block++) {
-
-
         // Copy data into inner temps
         const unsigned long start = block * 32;
         const unsigned long remain = ((start + 32) > npoints) ? (npoints - start) : 32;
@@ -1636,8 +1629,8 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
                 S1[i] = 0.0;
                 S2[i] = 0.0;
             }
-            } else {
-            unsigned long start_shift = start * xyz_stride;
+        } else {
+            unsigned int start_shift = start * xyz_stride;
 
             PRAGMA_VECTORIZE
             for (unsigned long i = 0; i < remain; i++) {
@@ -1673,13 +1666,11 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
                 const double T3 = alpha_n2 * T2;
                 S2[i] += T3;
             }
-
         }
 
         // Build powers
         PRAGMA_VECTORIZE
         for (unsigned long i = 0; i < remain; i++) {
-
             // Cartesian derivs
             xc_pow[i] = xc[i] * xc[i];
             yc_pow[i] = yc[i] * yc[i];
@@ -1694,7 +1685,6 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
         // Combine A blocks
         PRAGMA_VECTORIZE
         for (unsigned long i = 0; i < remain; i++) {
-
             phi_tmp[i] = xc_pow[64 + i] * S0[i];
             phi_tmp[32 + i] = xc_pow[32 + i] * yc[i] * S0[i];
             phi_tmp[64 + i] = xc_pow[32 + i] * zc[i] * S0[i];
@@ -1714,11 +1704,11 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L4(remain, phi_tmp, 32, (phi_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L4(remain, phi_tmp, 32, (phi_out + start), npoints);
         }
 
@@ -1766,16 +1756,15 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[416 + i] = yc[i] * zc_pow[32 + i] * SX;
 
             phi_tmp[448 + i] = zc_pow[64 + i] * SX;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_x_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_x_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L4(remain, phi_tmp, 32, (phi_x_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L4(remain, phi_tmp, 32, (phi_x_out + start), npoints);
         }
 
@@ -1823,16 +1812,15 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[416 + i] += zc_pow[32 + i] * S0[i];
 
             phi_tmp[448 + i] = zc_pow[64 + i] * SY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_y_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_y_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L4(remain, phi_tmp, 32, (phi_y_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L4(remain, phi_tmp, 32, (phi_y_out + start), npoints);
         }
 
@@ -1880,16 +1868,15 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
 
             phi_tmp[448 + i] = zc_pow[64 + i] * SZ;
             phi_tmp[448 + i] += 4.0 * zc_pow[32 + i] * S0[i];
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_z_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_z_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L4(remain, phi_tmp, 32, (phi_z_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L4(remain, phi_tmp, 32, (phi_z_out + start), npoints);
         }
 
@@ -1944,16 +1931,15 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[416 + i] = yc[i] * zc_pow[32 + i] * SXX;
 
             phi_tmp[448 + i] = zc_pow[64 + i] * SXX;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L4(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L4(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
         }
 
@@ -2019,16 +2005,15 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[416 + i] += zc_pow[32 + i] * SX;
 
             phi_tmp[448 + i] = zc_pow[64 + i] * SXY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L4(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L4(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
         }
 
@@ -2094,16 +2079,15 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
 
             phi_tmp[448 + i] = zc_pow[64 + i] * SXZ;
             phi_tmp[448 + i] += 4.0 * zc_pow[32 + i] * SX;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L4(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L4(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
         }
 
@@ -2158,16 +2142,15 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[416 + i] += 2.0 * zc_pow[32 + i] * SY;
 
             phi_tmp[448 + i] = zc_pow[64 + i] * SYY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L4(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L4(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
         }
 
@@ -2233,16 +2216,15 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
 
             phi_tmp[448 + i] = zc_pow[64 + i] * SYZ;
             phi_tmp[448 + i] += 4.0 * zc_pow[32 + i] * SY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L4(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L4(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
         }
 
@@ -2297,19 +2279,17 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[448 + i] = zc_pow[64 + i] * SZZ;
             phi_tmp[448 + i] += 8.0 * zc_pow[32 + i] * SZ;
             phi_tmp[448 + i] += 12.0 * zc_pow[i] * S0[i];
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L4(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L4(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L4(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
         }
-
     }
 
     // Free S temporaries
@@ -2324,11 +2304,16 @@ void gg_collocation_L4_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     // Free inner temporaries
     ALIGNED_FREE(phi_tmp);
-
 }
 
-void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz, const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs, const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center, const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out, double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out, double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out, double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out, double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
-
+void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz,
+                              const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs,
+                              const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center,
+                              const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out,
+                              double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out,
+                              double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out,
+                              double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out,
+                              double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
     // Sizing
     unsigned long nblocks = npoints / 32;
     nblocks += (npoints % 32) ? 1 : 0;
@@ -2338,12 +2323,12 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     if ((order == GG_SPHERICAL_CCA) || (order == GG_SPHERICAL_GAUSSIAN)) {
         nout = nspherical;
-        } else {
+    } else {
         nout = ncart;
     }
 
     // Allocate S temporaries, single block to stay on cache
-    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, 256 * sizeof(double));
+    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, ((((256 * sizeof(double)) + 64 - 1) / 64) * 64));
     double* PRAGMA_RESTRICT xc = cache_data + 0;
     ASSUME_ALIGNED(xc, 64);
     double* PRAGMA_RESTRICT yc = cache_data + 32;
@@ -2362,19 +2347,19 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
     ASSUME_ALIGNED(S2, 64);
 
     // Allocate exponential temporaries
-    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, nprim * sizeof(double));
-    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, nprim * sizeof(double));
+    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
+    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
 
     // Allocate power temporaries
-    double* PRAGMA_RESTRICT xc_pow = (double*)ALIGNED_MALLOC(64, 128 * sizeof(double));
+    double* PRAGMA_RESTRICT xc_pow = (double*)ALIGNED_MALLOC(64, ((((128 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(xc_pow, 64);
-    double* PRAGMA_RESTRICT yc_pow = (double*)ALIGNED_MALLOC(64, 128 * sizeof(double));
+    double* PRAGMA_RESTRICT yc_pow = (double*)ALIGNED_MALLOC(64, ((((128 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(yc_pow, 64);
-    double* PRAGMA_RESTRICT zc_pow = (double*)ALIGNED_MALLOC(64, 128 * sizeof(double));
+    double* PRAGMA_RESTRICT zc_pow = (double*)ALIGNED_MALLOC(64, ((((128 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(zc_pow, 64);
 
     // Allocate output temporaries
-    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, 672 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, ((((672 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_tmp, 64);
 
     // Declare doubles
@@ -2390,8 +2375,6 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     // Start outer block loop
     for (unsigned long block = 0; block < nblocks; block++) {
-
-
         // Copy data into inner temps
         const unsigned long start = block * 32;
         const unsigned long remain = ((start + 32) > npoints) ? (npoints - start) : 32;
@@ -2417,8 +2400,8 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
                 S1[i] = 0.0;
                 S2[i] = 0.0;
             }
-            } else {
-            unsigned long start_shift = start * xyz_stride;
+        } else {
+            unsigned int start_shift = start * xyz_stride;
 
             PRAGMA_VECTORIZE
             for (unsigned long i = 0; i < remain; i++) {
@@ -2454,13 +2437,11 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
                 const double T3 = alpha_n2 * T2;
                 S2[i] += T3;
             }
-
         }
 
         // Build powers
         PRAGMA_VECTORIZE
         for (unsigned long i = 0; i < remain; i++) {
-
             // Cartesian derivs
             xc_pow[i] = xc[i] * xc[i];
             yc_pow[i] = yc[i] * yc[i];
@@ -2478,7 +2459,6 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
         // Combine A blocks
         PRAGMA_VECTORIZE
         for (unsigned long i = 0; i < remain; i++) {
-
             phi_tmp[i] = xc_pow[96 + i] * S0[i];
             phi_tmp[32 + i] = xc_pow[64 + i] * yc[i] * S0[i];
             phi_tmp[64 + i] = xc_pow[64 + i] * zc[i] * S0[i];
@@ -2504,11 +2484,11 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L5(remain, phi_tmp, 32, (phi_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L5(remain, phi_tmp, 32, (phi_out + start), npoints);
         }
 
@@ -2573,16 +2553,15 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[608 + i] = yc[i] * zc_pow[64 + i] * SX;
 
             phi_tmp[640 + i] = zc_pow[96 + i] * SX;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_x_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_x_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L5(remain, phi_tmp, 32, (phi_x_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L5(remain, phi_tmp, 32, (phi_x_out + start), npoints);
         }
 
@@ -2647,16 +2626,15 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[608 + i] += zc_pow[64 + i] * S0[i];
 
             phi_tmp[640 + i] = zc_pow[96 + i] * SY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_y_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_y_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L5(remain, phi_tmp, 32, (phi_y_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L5(remain, phi_tmp, 32, (phi_y_out + start), npoints);
         }
 
@@ -2721,16 +2699,15 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
 
             phi_tmp[640 + i] = zc_pow[96 + i] * SZ;
             phi_tmp[640 + i] += 5.0 * zc_pow[64 + i] * S0[i];
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_z_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_z_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L5(remain, phi_tmp, 32, (phi_z_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L5(remain, phi_tmp, 32, (phi_z_out + start), npoints);
         }
 
@@ -2806,16 +2783,15 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[608 + i] = yc[i] * zc_pow[64 + i] * SXX;
 
             phi_tmp[640 + i] = zc_pow[96 + i] * SXX;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L5(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L5(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
         }
 
@@ -2907,16 +2883,15 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[608 + i] += zc_pow[64 + i] * SX;
 
             phi_tmp[640 + i] = zc_pow[96 + i] * SXY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L5(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L5(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
         }
 
@@ -3008,16 +2983,15 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
 
             phi_tmp[640 + i] = zc_pow[96 + i] * SXZ;
             phi_tmp[640 + i] += 5.0 * zc_pow[64 + i] * SX;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L5(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L5(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
         }
 
@@ -3093,16 +3067,15 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[608 + i] += 2.0 * zc_pow[64 + i] * SY;
 
             phi_tmp[640 + i] = zc_pow[96 + i] * SYY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L5(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L5(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
         }
 
@@ -3194,16 +3167,15 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
 
             phi_tmp[640 + i] = zc_pow[96 + i] * SYZ;
             phi_tmp[640 + i] += 5.0 * zc_pow[64 + i] * SY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L5(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L5(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
         }
 
@@ -3279,19 +3251,17 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[640 + i] = zc_pow[96 + i] * SZZ;
             phi_tmp[640 + i] += 10.0 * zc_pow[64 + i] * SZ;
             phi_tmp[640 + i] += 20.0 * zc_pow[32 + i] * S0[i];
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L5(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L5(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L5(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
         }
-
     }
 
     // Free S temporaries
@@ -3306,11 +3276,16 @@ void gg_collocation_L5_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     // Free inner temporaries
     ALIGNED_FREE(phi_tmp);
-
 }
 
-void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz, const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs, const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center, const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out, double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out, double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out, double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out, double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
-
+void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz,
+                              const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs,
+                              const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center,
+                              const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out,
+                              double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out,
+                              double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out,
+                              double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out,
+                              double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
     // Sizing
     unsigned long nblocks = npoints / 32;
     nblocks += (npoints % 32) ? 1 : 0;
@@ -3320,12 +3295,12 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     if ((order == GG_SPHERICAL_CCA) || (order == GG_SPHERICAL_GAUSSIAN)) {
         nout = nspherical;
-        } else {
+    } else {
         nout = ncart;
     }
 
     // Allocate S temporaries, single block to stay on cache
-    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, 256 * sizeof(double));
+    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, ((((256 * sizeof(double)) + 64 - 1) / 64) * 64));
     double* PRAGMA_RESTRICT xc = cache_data + 0;
     ASSUME_ALIGNED(xc, 64);
     double* PRAGMA_RESTRICT yc = cache_data + 32;
@@ -3344,19 +3319,19 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
     ASSUME_ALIGNED(S2, 64);
 
     // Allocate exponential temporaries
-    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, nprim * sizeof(double));
-    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, nprim * sizeof(double));
+    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
+    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
 
     // Allocate power temporaries
-    double* PRAGMA_RESTRICT xc_pow = (double*)ALIGNED_MALLOC(64, 160 * sizeof(double));
+    double* PRAGMA_RESTRICT xc_pow = (double*)ALIGNED_MALLOC(64, ((((160 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(xc_pow, 64);
-    double* PRAGMA_RESTRICT yc_pow = (double*)ALIGNED_MALLOC(64, 160 * sizeof(double));
+    double* PRAGMA_RESTRICT yc_pow = (double*)ALIGNED_MALLOC(64, ((((160 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(yc_pow, 64);
-    double* PRAGMA_RESTRICT zc_pow = (double*)ALIGNED_MALLOC(64, 160 * sizeof(double));
+    double* PRAGMA_RESTRICT zc_pow = (double*)ALIGNED_MALLOC(64, ((((160 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(zc_pow, 64);
 
     // Allocate output temporaries
-    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, 896 * sizeof(double));
+    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, ((((896 * sizeof(double)) + 64 - 1) / 64) * 64));
     ASSUME_ALIGNED(phi_tmp, 64);
 
     // Declare doubles
@@ -3372,8 +3347,6 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     // Start outer block loop
     for (unsigned long block = 0; block < nblocks; block++) {
-
-
         // Copy data into inner temps
         const unsigned long start = block * 32;
         const unsigned long remain = ((start + 32) > npoints) ? (npoints - start) : 32;
@@ -3399,8 +3372,8 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
                 S1[i] = 0.0;
                 S2[i] = 0.0;
             }
-            } else {
-            unsigned long start_shift = start * xyz_stride;
+        } else {
+            unsigned int start_shift = start * xyz_stride;
 
             PRAGMA_VECTORIZE
             for (unsigned long i = 0; i < remain; i++) {
@@ -3436,13 +3409,11 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
                 const double T3 = alpha_n2 * T2;
                 S2[i] += T3;
             }
-
         }
 
         // Build powers
         PRAGMA_VECTORIZE
         for (unsigned long i = 0; i < remain; i++) {
-
             // Cartesian derivs
             xc_pow[i] = xc[i] * xc[i];
             yc_pow[i] = yc[i] * yc[i];
@@ -3463,7 +3434,6 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
         // Combine A blocks
         PRAGMA_VECTORIZE
         for (unsigned long i = 0; i < remain; i++) {
-
             phi_tmp[i] = xc_pow[128 + i] * S0[i];
             phi_tmp[32 + i] = xc_pow[96 + i] * yc[i] * S0[i];
             phi_tmp[64 + i] = xc_pow[96 + i] * zc[i] * S0[i];
@@ -3496,11 +3466,11 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L6(remain, phi_tmp, 32, (phi_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L6(remain, phi_tmp, 32, (phi_out + start), npoints);
         }
 
@@ -3585,16 +3555,15 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[832 + i] = yc[i] * zc_pow[96 + i] * SX;
 
             phi_tmp[864 + i] = zc_pow[128 + i] * SX;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_x_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_x_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L6(remain, phi_tmp, 32, (phi_x_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L6(remain, phi_tmp, 32, (phi_x_out + start), npoints);
         }
 
@@ -3679,16 +3648,15 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[832 + i] += zc_pow[96 + i] * S0[i];
 
             phi_tmp[864 + i] = zc_pow[128 + i] * SY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_y_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_y_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L6(remain, phi_tmp, 32, (phi_y_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L6(remain, phi_tmp, 32, (phi_y_out + start), npoints);
         }
 
@@ -3773,16 +3741,15 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
 
             phi_tmp[864 + i] = zc_pow[128 + i] * SZ;
             phi_tmp[864 + i] += 6.0 * zc_pow[96 + i] * S0[i];
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_z_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_z_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L6(remain, phi_tmp, 32, (phi_z_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L6(remain, phi_tmp, 32, (phi_z_out + start), npoints);
         }
 
@@ -3883,16 +3850,15 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[832 + i] = yc[i] * zc_pow[96 + i] * SXX;
 
             phi_tmp[864 + i] = zc_pow[128 + i] * SXX;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L6(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L6(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
         }
 
@@ -4015,16 +3981,15 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[832 + i] += zc_pow[96 + i] * SX;
 
             phi_tmp[864 + i] = zc_pow[128 + i] * SXY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L6(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L6(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
         }
 
@@ -4147,16 +4112,15 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
 
             phi_tmp[864 + i] = zc_pow[128 + i] * SXZ;
             phi_tmp[864 + i] += 6.0 * zc_pow[96 + i] * SX;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L6(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L6(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
         }
 
@@ -4257,16 +4221,15 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[832 + i] += 2.0 * zc_pow[96 + i] * SY;
 
             phi_tmp[864 + i] = zc_pow[128 + i] * SYY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L6(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L6(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
         }
 
@@ -4389,16 +4352,15 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
 
             phi_tmp[864 + i] = zc_pow[128 + i] * SYZ;
             phi_tmp[864 + i] += 6.0 * zc_pow[96 + i] * SY;
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L6(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L6(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
         }
 
@@ -4499,19 +4461,17 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
             phi_tmp[864 + i] = zc_pow[128 + i] * SZZ;
             phi_tmp[864 + i] += 12.0 * zc_pow[96 + i] * SZ;
             phi_tmp[864 + i] += 30.0 * zc_pow[64 + i] * S0[i];
-
         }
 
         if (order == GG_SPHERICAL_CCA) {
             gg_cca_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_SPHERICAL_GAUSSIAN) {
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
             gg_gaussian_cart_to_spherical_L6(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_CCA) {
+        } else if (order == GG_CARTESIAN_CCA) {
             gg_cca_cart_copy_L6(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
-            } else if (order == GG_CARTESIAN_MOLDEN) {
+        } else if (order == GG_CARTESIAN_MOLDEN) {
             gg_molden_cart_copy_L6(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
         }
-
     }
 
     // Free S temporaries
@@ -4526,5 +4486,3292 @@ void gg_collocation_L6_deriv2(const unsigned long npoints, const double* PRAGMA_
 
     // Free inner temporaries
     ALIGNED_FREE(phi_tmp);
+}
 
+void gg_collocation_L7_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz,
+                              const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs,
+                              const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center,
+                              const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out,
+                              double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out,
+                              double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out,
+                              double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out,
+                              double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
+    // Sizing
+    unsigned long nblocks = npoints / 32;
+    nblocks += (npoints % 32) ? 1 : 0;
+    const unsigned long ncart = 36;
+    const unsigned long nspherical = 15;
+    unsigned long nout;
+
+    if ((order == GG_SPHERICAL_CCA) || (order == GG_SPHERICAL_GAUSSIAN)) {
+        nout = nspherical;
+    } else {
+        nout = ncart;
+    }
+
+    // Allocate S temporaries, single block to stay on cache
+    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, ((((256 * sizeof(double)) + 64 - 1) / 64) * 64));
+    double* PRAGMA_RESTRICT xc = cache_data + 0;
+    ASSUME_ALIGNED(xc, 64);
+    double* PRAGMA_RESTRICT yc = cache_data + 32;
+    ASSUME_ALIGNED(yc, 64);
+    double* PRAGMA_RESTRICT zc = cache_data + 64;
+    ASSUME_ALIGNED(zc, 64);
+    double* PRAGMA_RESTRICT R2 = cache_data + 96;
+    ASSUME_ALIGNED(R2, 64);
+    double* PRAGMA_RESTRICT S0 = cache_data + 128;
+    ASSUME_ALIGNED(S0, 64);
+    double* PRAGMA_RESTRICT tmp1 = cache_data + 160;
+    ASSUME_ALIGNED(tmp1, 64);
+    double* PRAGMA_RESTRICT S1 = cache_data + 192;
+    ASSUME_ALIGNED(S1, 64);
+    double* PRAGMA_RESTRICT S2 = cache_data + 224;
+    ASSUME_ALIGNED(S2, 64);
+
+    // Allocate exponential temporaries
+    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
+    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
+
+    // Allocate power temporaries
+    double* PRAGMA_RESTRICT xc_pow = (double*)ALIGNED_MALLOC(64, ((((192 * sizeof(double)) + 64 - 1) / 64) * 64));
+    ASSUME_ALIGNED(xc_pow, 64);
+    double* PRAGMA_RESTRICT yc_pow = (double*)ALIGNED_MALLOC(64, ((((192 * sizeof(double)) + 64 - 1) / 64) * 64));
+    ASSUME_ALIGNED(yc_pow, 64);
+    double* PRAGMA_RESTRICT zc_pow = (double*)ALIGNED_MALLOC(64, ((((192 * sizeof(double)) + 64 - 1) / 64) * 64));
+    ASSUME_ALIGNED(zc_pow, 64);
+
+    // Allocate output temporaries
+    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, ((((1152 * sizeof(double)) + 64 - 1) / 64) * 64));
+    ASSUME_ALIGNED(phi_tmp, 64);
+
+    // Declare doubles
+    const double center_x = center[0];
+    const double center_y = center[1];
+    const double center_z = center[2];
+    double A;
+    double AX, AY, AZ;
+    double AXX, AXY, AXZ, AYY, AYZ, AZZ;
+
+    // Build negative exponents
+    for (unsigned long i = 0; i < nprim; i++) {
+        expn1[i] = -1.0 * exponents[i];
+        expn2[i] = -2.0 * exponents[i];
+    }
+
+    // Start outer block loop
+    for (unsigned long block = 0; block < nblocks; block++) {
+        // Copy data into inner temps
+        const unsigned long start = block * 32;
+        const unsigned long remain = ((start + 32) > npoints) ? (npoints - start) : 32;
+
+        // Handle non-AM dependant temps
+        if (xyz_stride == 1) {
+            const double* PRAGMA_RESTRICT x = xyz + start;
+            const double* PRAGMA_RESTRICT y = xyz + npoints + start;
+            const double* PRAGMA_RESTRICT z = xyz + 2 * npoints + start;
+            PRAGMA_VECTORIZE
+            for (unsigned long i = 0; i < remain; i++) {
+                xc[i] = x[i] - center_x;
+                yc[i] = y[i] - center_y;
+                zc[i] = z[i] - center_z;
+
+                // Distance
+                R2[i] = xc[i] * xc[i];
+                R2[i] += yc[i] * yc[i];
+                R2[i] += zc[i] * zc[i];
+
+                // Zero out S tmps
+                S0[i] = 0.0;
+                S1[i] = 0.0;
+                S2[i] = 0.0;
+            }
+        } else {
+            unsigned int start_shift = start * xyz_stride;
+
+            PRAGMA_VECTORIZE
+            for (unsigned long i = 0; i < remain; i++) {
+                xc[i] = xyz[start_shift + i * xyz_stride] - center_x;
+                yc[i] = xyz[start_shift + i * xyz_stride + 1] - center_y;
+                zc[i] = xyz[start_shift + i * xyz_stride + 2] - center_z;
+
+                // Distance
+                R2[i] = xc[i] * xc[i];
+                R2[i] += yc[i] * yc[i];
+                R2[i] += zc[i] * zc[i];
+
+                // Zero out S tmps
+                S0[i] = 0.0;
+                S1[i] = 0.0;
+                S2[i] = 0.0;
+            }
+        }
+
+        // Start exponential block loop
+        for (unsigned long n = 0; n < nprim; n++) {
+            const double coef = coeffs[n];
+            const double alpha_n1 = expn1[n];
+            const double alpha_n2 = expn2[n];
+
+            PRAGMA_VECTORIZE
+            for (unsigned long i = 0; i < remain; i++) {
+                const double width = alpha_n1 * R2[i];
+                const double T1 = coef * exp(width);
+                S0[i] += T1;
+                const double T2 = alpha_n2 * T1;
+                S1[i] += T2;
+                const double T3 = alpha_n2 * T2;
+                S2[i] += T3;
+            }
+        }
+
+        // Build powers
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            // Cartesian derivs
+            xc_pow[i] = xc[i] * xc[i];
+            yc_pow[i] = yc[i] * yc[i];
+            zc_pow[i] = zc[i] * zc[i];
+            xc_pow[32 + i] = xc_pow[i] * xc[i];
+            yc_pow[32 + i] = yc_pow[i] * yc[i];
+            zc_pow[32 + i] = zc_pow[i] * zc[i];
+            xc_pow[64 + i] = xc_pow[32 + i] * xc[i];
+            yc_pow[64 + i] = yc_pow[32 + i] * yc[i];
+            zc_pow[64 + i] = zc_pow[32 + i] * zc[i];
+            xc_pow[96 + i] = xc_pow[64 + i] * xc[i];
+            yc_pow[96 + i] = yc_pow[64 + i] * yc[i];
+            zc_pow[96 + i] = zc_pow[64 + i] * zc[i];
+            xc_pow[128 + i] = xc_pow[96 + i] * xc[i];
+            yc_pow[128 + i] = yc_pow[96 + i] * yc[i];
+            zc_pow[128 + i] = zc_pow[96 + i] * zc[i];
+            xc_pow[160 + i] = xc_pow[128 + i] * xc[i];
+            yc_pow[160 + i] = yc_pow[128 + i] * yc[i];
+            zc_pow[160 + i] = zc_pow[128 + i] * zc[i];
+        }
+        // Combine A blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            phi_tmp[i] = xc_pow[160 + i] * S0[i];
+            phi_tmp[32 + i] = xc_pow[128 + i] * yc[i] * S0[i];
+            phi_tmp[64 + i] = xc_pow[128 + i] * zc[i] * S0[i];
+            phi_tmp[96 + i] = xc_pow[96 + i] * yc_pow[i] * S0[i];
+            phi_tmp[128 + i] = xc_pow[96 + i] * yc[i] * zc[i] * S0[i];
+            phi_tmp[160 + i] = xc_pow[96 + i] * zc_pow[i] * S0[i];
+            phi_tmp[192 + i] = xc_pow[64 + i] * yc_pow[32 + i] * S0[i];
+            phi_tmp[224 + i] = xc_pow[64 + i] * yc_pow[i] * zc[i] * S0[i];
+            phi_tmp[256 + i] = xc_pow[64 + i] * yc[i] * zc_pow[i] * S0[i];
+            phi_tmp[288 + i] = xc_pow[64 + i] * zc_pow[32 + i] * S0[i];
+            phi_tmp[320 + i] = xc_pow[32 + i] * yc_pow[64 + i] * S0[i];
+            phi_tmp[352 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * S0[i];
+            phi_tmp[384 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * S0[i];
+            phi_tmp[416 + i] = xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * S0[i];
+            phi_tmp[448 + i] = xc_pow[32 + i] * zc_pow[64 + i] * S0[i];
+            phi_tmp[480 + i] = xc_pow[i] * yc_pow[96 + i] * S0[i];
+            phi_tmp[512 + i] = xc_pow[i] * yc_pow[64 + i] * zc[i] * S0[i];
+            phi_tmp[544 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * S0[i];
+            phi_tmp[576 + i] = xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * S0[i];
+            phi_tmp[608 + i] = xc_pow[i] * yc[i] * zc_pow[64 + i] * S0[i];
+            phi_tmp[640 + i] = xc_pow[i] * zc_pow[96 + i] * S0[i];
+            phi_tmp[672 + i] = xc[i] * yc_pow[128 + i] * S0[i];
+            phi_tmp[704 + i] = xc[i] * yc_pow[96 + i] * zc[i] * S0[i];
+            phi_tmp[736 + i] = xc[i] * yc_pow[64 + i] * zc_pow[i] * S0[i];
+            phi_tmp[768 + i] = xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+            phi_tmp[800 + i] = xc[i] * yc_pow[i] * zc_pow[64 + i] * S0[i];
+            phi_tmp[832 + i] = xc[i] * yc[i] * zc_pow[96 + i] * S0[i];
+            phi_tmp[864 + i] = xc[i] * zc_pow[128 + i] * S0[i];
+            phi_tmp[896 + i] = yc_pow[160 + i] * S0[i];
+            phi_tmp[928 + i] = yc_pow[128 + i] * zc[i] * S0[i];
+            phi_tmp[960 + i] = yc_pow[96 + i] * zc_pow[i] * S0[i];
+            phi_tmp[992 + i] = yc_pow[64 + i] * zc_pow[32 + i] * S0[i];
+            phi_tmp[1024 + i] = yc_pow[32 + i] * zc_pow[64 + i] * S0[i];
+            phi_tmp[1056 + i] = yc_pow[i] * zc_pow[96 + i] * S0[i];
+            phi_tmp[1088 + i] = yc[i] * zc_pow[128 + i] * S0[i];
+            phi_tmp[1120 + i] = zc_pow[160 + i] * S0[i];
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L7(remain, phi_tmp, 32, (phi_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L7(remain, phi_tmp, 32, (phi_out + start), npoints);
+        }
+
+        // Combine X blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SX = S1[i] * xc[i];
+
+            phi_tmp[i] = xc_pow[160 + i] * SX;
+            phi_tmp[i] += 7.0 * xc_pow[128 + i] * S0[i];
+
+            phi_tmp[32 + i] = xc_pow[128 + i] * yc[i] * SX;
+            phi_tmp[32 + i] += 6.0 * xc_pow[96 + i] * yc[i] * S0[i];
+
+            phi_tmp[64 + i] = xc_pow[128 + i] * zc[i] * SX;
+            phi_tmp[64 + i] += 6.0 * xc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[96 + i] = xc_pow[96 + i] * yc_pow[i] * SX;
+            phi_tmp[96 + i] += 5.0 * xc_pow[64 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[128 + i] = xc_pow[96 + i] * yc[i] * zc[i] * SX;
+            phi_tmp[128 + i] += 5.0 * xc_pow[64 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[160 + i] = xc_pow[96 + i] * zc_pow[i] * SX;
+            phi_tmp[160 + i] += 5.0 * xc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[192 + i] = xc_pow[64 + i] * yc_pow[32 + i] * SX;
+            phi_tmp[192 + i] += 4.0 * xc_pow[32 + i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[224 + i] = xc_pow[64 + i] * yc_pow[i] * zc[i] * SX;
+            phi_tmp[224 + i] += 4.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[64 + i] * yc[i] * zc_pow[i] * SX;
+            phi_tmp[256 + i] += 4.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[64 + i] * zc_pow[32 + i] * SX;
+            phi_tmp[288 + i] += 4.0 * xc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[320 + i] = xc_pow[32 + i] * yc_pow[64 + i] * SX;
+            phi_tmp[320 + i] += 3.0 * xc_pow[i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[352 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SX;
+            phi_tmp[352 + i] += 3.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SX;
+            phi_tmp[384 + i] += 3.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SX;
+            phi_tmp[416 + i] += 3.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[32 + i] * zc_pow[64 + i] * SX;
+            phi_tmp[448 + i] += 3.0 * xc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[480 + i] = xc_pow[i] * yc_pow[96 + i] * SX;
+            phi_tmp[480 + i] += 2.0 * xc[i] * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[512 + i] = xc_pow[i] * yc_pow[64 + i] * zc[i] * SX;
+            phi_tmp[512 + i] += 2.0 * xc[i] * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SX;
+            phi_tmp[544 + i] += 2.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SX;
+            phi_tmp[576 + i] += 2.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[i] * yc[i] * zc_pow[64 + i] * SX;
+            phi_tmp[608 + i] += 2.0 * xc[i] * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[i] * zc_pow[96 + i] * SX;
+            phi_tmp[640 + i] += 2.0 * xc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[672 + i] = xc[i] * yc_pow[128 + i] * SX;
+            phi_tmp[672 + i] += yc_pow[128 + i] * S0[i];
+
+            phi_tmp[704 + i] = xc[i] * yc_pow[96 + i] * zc[i] * SX;
+            phi_tmp[704 + i] += yc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[736 + i] = xc[i] * yc_pow[64 + i] * zc_pow[i] * SX;
+            phi_tmp[736 + i] += yc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[768 + i] = xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SX;
+            phi_tmp[768 + i] += yc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[800 + i] = xc[i] * yc_pow[i] * zc_pow[64 + i] * SX;
+            phi_tmp[800 + i] += yc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[832 + i] = xc[i] * yc[i] * zc_pow[96 + i] * SX;
+            phi_tmp[832 + i] += yc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[864 + i] = xc[i] * zc_pow[128 + i] * SX;
+            phi_tmp[864 + i] += zc_pow[128 + i] * S0[i];
+
+            phi_tmp[896 + i] = yc_pow[160 + i] * SX;
+
+            phi_tmp[928 + i] = yc_pow[128 + i] * zc[i] * SX;
+
+            phi_tmp[960 + i] = yc_pow[96 + i] * zc_pow[i] * SX;
+
+            phi_tmp[992 + i] = yc_pow[64 + i] * zc_pow[32 + i] * SX;
+
+            phi_tmp[1024 + i] = yc_pow[32 + i] * zc_pow[64 + i] * SX;
+
+            phi_tmp[1056 + i] = yc_pow[i] * zc_pow[96 + i] * SX;
+
+            phi_tmp[1088 + i] = yc[i] * zc_pow[128 + i] * SX;
+
+            phi_tmp[1120 + i] = zc_pow[160 + i] * SX;
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_x_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_x_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L7(remain, phi_tmp, 32, (phi_x_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L7(remain, phi_tmp, 32, (phi_x_out + start), npoints);
+        }
+
+        // Combine Y blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SY = S1[i] * yc[i];
+
+            phi_tmp[i] = xc_pow[160 + i] * SY;
+
+            phi_tmp[32 + i] = xc_pow[128 + i] * yc[i] * SY;
+            phi_tmp[32 + i] += xc_pow[128 + i] * S0[i];
+
+            phi_tmp[64 + i] = xc_pow[128 + i] * zc[i] * SY;
+
+            phi_tmp[96 + i] = xc_pow[96 + i] * yc_pow[i] * SY;
+            phi_tmp[96 + i] += 2.0 * xc_pow[96 + i] * yc[i] * S0[i];
+
+            phi_tmp[128 + i] = xc_pow[96 + i] * yc[i] * zc[i] * SY;
+            phi_tmp[128 + i] += xc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[160 + i] = xc_pow[96 + i] * zc_pow[i] * SY;
+
+            phi_tmp[192 + i] = xc_pow[64 + i] * yc_pow[32 + i] * SY;
+            phi_tmp[192 + i] += 3.0 * xc_pow[64 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[224 + i] = xc_pow[64 + i] * yc_pow[i] * zc[i] * SY;
+            phi_tmp[224 + i] += 2.0 * xc_pow[64 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[64 + i] * yc[i] * zc_pow[i] * SY;
+            phi_tmp[256 + i] += xc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[64 + i] * zc_pow[32 + i] * SY;
+
+            phi_tmp[320 + i] = xc_pow[32 + i] * yc_pow[64 + i] * SY;
+            phi_tmp[320 + i] += 4.0 * xc_pow[32 + i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[352 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SY;
+            phi_tmp[352 + i] += 3.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SY;
+            phi_tmp[384 + i] += 2.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SY;
+            phi_tmp[416 + i] += xc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[32 + i] * zc_pow[64 + i] * SY;
+
+            phi_tmp[480 + i] = xc_pow[i] * yc_pow[96 + i] * SY;
+            phi_tmp[480 + i] += 5.0 * xc_pow[i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[512 + i] = xc_pow[i] * yc_pow[64 + i] * zc[i] * SY;
+            phi_tmp[512 + i] += 4.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SY;
+            phi_tmp[544 + i] += 3.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SY;
+            phi_tmp[576 + i] += 2.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[i] * yc[i] * zc_pow[64 + i] * SY;
+            phi_tmp[608 + i] += xc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[i] * zc_pow[96 + i] * SY;
+
+            phi_tmp[672 + i] = xc[i] * yc_pow[128 + i] * SY;
+            phi_tmp[672 + i] += 6.0 * xc[i] * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[704 + i] = xc[i] * yc_pow[96 + i] * zc[i] * SY;
+            phi_tmp[704 + i] += 5.0 * xc[i] * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[736 + i] = xc[i] * yc_pow[64 + i] * zc_pow[i] * SY;
+            phi_tmp[736 + i] += 4.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[768 + i] = xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SY;
+            phi_tmp[768 + i] += 3.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[800 + i] = xc[i] * yc_pow[i] * zc_pow[64 + i] * SY;
+            phi_tmp[800 + i] += 2.0 * xc[i] * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[832 + i] = xc[i] * yc[i] * zc_pow[96 + i] * SY;
+            phi_tmp[832 + i] += xc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[864 + i] = xc[i] * zc_pow[128 + i] * SY;
+
+            phi_tmp[896 + i] = yc_pow[160 + i] * SY;
+            phi_tmp[896 + i] += 7.0 * yc_pow[128 + i] * S0[i];
+
+            phi_tmp[928 + i] = yc_pow[128 + i] * zc[i] * SY;
+            phi_tmp[928 + i] += 6.0 * yc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[960 + i] = yc_pow[96 + i] * zc_pow[i] * SY;
+            phi_tmp[960 + i] += 5.0 * yc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[992 + i] = yc_pow[64 + i] * zc_pow[32 + i] * SY;
+            phi_tmp[992 + i] += 4.0 * yc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1024 + i] = yc_pow[32 + i] * zc_pow[64 + i] * SY;
+            phi_tmp[1024 + i] += 3.0 * yc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1056 + i] = yc_pow[i] * zc_pow[96 + i] * SY;
+            phi_tmp[1056 + i] += 2.0 * yc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1088 + i] = yc[i] * zc_pow[128 + i] * SY;
+            phi_tmp[1088 + i] += zc_pow[128 + i] * S0[i];
+
+            phi_tmp[1120 + i] = zc_pow[160 + i] * SY;
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_y_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_y_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L7(remain, phi_tmp, 32, (phi_y_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L7(remain, phi_tmp, 32, (phi_y_out + start), npoints);
+        }
+
+        // Combine Z blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SZ = S1[i] * zc[i];
+
+            phi_tmp[i] = xc_pow[160 + i] * SZ;
+
+            phi_tmp[32 + i] = xc_pow[128 + i] * yc[i] * SZ;
+
+            phi_tmp[64 + i] = xc_pow[128 + i] * zc[i] * SZ;
+            phi_tmp[64 + i] += xc_pow[128 + i] * S0[i];
+
+            phi_tmp[96 + i] = xc_pow[96 + i] * yc_pow[i] * SZ;
+
+            phi_tmp[128 + i] = xc_pow[96 + i] * yc[i] * zc[i] * SZ;
+            phi_tmp[128 + i] += xc_pow[96 + i] * yc[i] * S0[i];
+
+            phi_tmp[160 + i] = xc_pow[96 + i] * zc_pow[i] * SZ;
+            phi_tmp[160 + i] += 2.0 * xc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[192 + i] = xc_pow[64 + i] * yc_pow[32 + i] * SZ;
+
+            phi_tmp[224 + i] = xc_pow[64 + i] * yc_pow[i] * zc[i] * SZ;
+            phi_tmp[224 + i] += xc_pow[64 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[64 + i] * yc[i] * zc_pow[i] * SZ;
+            phi_tmp[256 + i] += 2.0 * xc_pow[64 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[64 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[288 + i] += 3.0 * xc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[320 + i] = xc_pow[32 + i] * yc_pow[64 + i] * SZ;
+
+            phi_tmp[352 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SZ;
+            phi_tmp[352 + i] += xc_pow[32 + i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SZ;
+            phi_tmp[384 + i] += 2.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[416 + i] += 3.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[32 + i] * zc_pow[64 + i] * SZ;
+            phi_tmp[448 + i] += 4.0 * xc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[480 + i] = xc_pow[i] * yc_pow[96 + i] * SZ;
+
+            phi_tmp[512 + i] = xc_pow[i] * yc_pow[64 + i] * zc[i] * SZ;
+            phi_tmp[512 + i] += xc_pow[i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SZ;
+            phi_tmp[544 + i] += 2.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[576 + i] += 3.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[i] * yc[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[608 + i] += 4.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[640 + i] += 5.0 * xc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[672 + i] = xc[i] * yc_pow[128 + i] * SZ;
+
+            phi_tmp[704 + i] = xc[i] * yc_pow[96 + i] * zc[i] * SZ;
+            phi_tmp[704 + i] += xc[i] * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[736 + i] = xc[i] * yc_pow[64 + i] * zc_pow[i] * SZ;
+            phi_tmp[736 + i] += 2.0 * xc[i] * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[768 + i] = xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[768 + i] += 3.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[800 + i] = xc[i] * yc_pow[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[800 + i] += 4.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[832 + i] = xc[i] * yc[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[832 + i] += 5.0 * xc[i] * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[864 + i] = xc[i] * zc_pow[128 + i] * SZ;
+            phi_tmp[864 + i] += 6.0 * xc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[896 + i] = yc_pow[160 + i] * SZ;
+
+            phi_tmp[928 + i] = yc_pow[128 + i] * zc[i] * SZ;
+            phi_tmp[928 + i] += yc_pow[128 + i] * S0[i];
+
+            phi_tmp[960 + i] = yc_pow[96 + i] * zc_pow[i] * SZ;
+            phi_tmp[960 + i] += 2.0 * yc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[992 + i] = yc_pow[64 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[992 + i] += 3.0 * yc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[1024 + i] = yc_pow[32 + i] * zc_pow[64 + i] * SZ;
+            phi_tmp[1024 + i] += 4.0 * yc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1056 + i] = yc_pow[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[1056 + i] += 5.0 * yc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1088 + i] = yc[i] * zc_pow[128 + i] * SZ;
+            phi_tmp[1088 + i] += 6.0 * yc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1120 + i] = zc_pow[160 + i] * SZ;
+            phi_tmp[1120 + i] += 7.0 * zc_pow[128 + i] * S0[i];
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_z_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_z_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L7(remain, phi_tmp, 32, (phi_z_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L7(remain, phi_tmp, 32, (phi_z_out + start), npoints);
+        }
+
+        // Combine XX blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SX = S1[i] * xc[i];
+            const double SXX = S2[i] * xc[i] * xc[i] + S1[i];
+
+            phi_tmp[i] = xc_pow[160 + i] * SXX;
+            phi_tmp[i] += 14.0 * xc_pow[128 + i] * SX;
+            phi_tmp[i] += 42.0 * xc_pow[96 + i] * S0[i];
+
+            phi_tmp[32 + i] = xc_pow[128 + i] * yc[i] * SXX;
+            phi_tmp[32 + i] += 12.0 * xc_pow[96 + i] * yc[i] * SX;
+            phi_tmp[32 + i] += 30.0 * xc_pow[64 + i] * yc[i] * S0[i];
+
+            phi_tmp[64 + i] = xc_pow[128 + i] * zc[i] * SXX;
+            phi_tmp[64 + i] += 12.0 * xc_pow[96 + i] * zc[i] * SX;
+            phi_tmp[64 + i] += 30.0 * xc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[96 + i] = xc_pow[96 + i] * yc_pow[i] * SXX;
+            phi_tmp[96 + i] += 10.0 * xc_pow[64 + i] * yc_pow[i] * SX;
+            phi_tmp[96 + i] += 20.0 * xc_pow[32 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[128 + i] = xc_pow[96 + i] * yc[i] * zc[i] * SXX;
+            phi_tmp[128 + i] += 10.0 * xc_pow[64 + i] * yc[i] * zc[i] * SX;
+            phi_tmp[128 + i] += 20.0 * xc_pow[32 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[160 + i] = xc_pow[96 + i] * zc_pow[i] * SXX;
+            phi_tmp[160 + i] += 10.0 * xc_pow[64 + i] * zc_pow[i] * SX;
+            phi_tmp[160 + i] += 20.0 * xc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[192 + i] = xc_pow[64 + i] * yc_pow[32 + i] * SXX;
+            phi_tmp[192 + i] += 8.0 * xc_pow[32 + i] * yc_pow[32 + i] * SX;
+            phi_tmp[192 + i] += 12.0 * xc_pow[i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[224 + i] = xc_pow[64 + i] * yc_pow[i] * zc[i] * SXX;
+            phi_tmp[224 + i] += 8.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * SX;
+            phi_tmp[224 + i] += 12.0 * xc_pow[i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[64 + i] * yc[i] * zc_pow[i] * SXX;
+            phi_tmp[256 + i] += 8.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * SX;
+            phi_tmp[256 + i] += 12.0 * xc_pow[i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[64 + i] * zc_pow[32 + i] * SXX;
+            phi_tmp[288 + i] += 8.0 * xc_pow[32 + i] * zc_pow[32 + i] * SX;
+            phi_tmp[288 + i] += 12.0 * xc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[320 + i] = xc_pow[32 + i] * yc_pow[64 + i] * SXX;
+            phi_tmp[320 + i] += 6.0 * xc_pow[i] * yc_pow[64 + i] * SX;
+            phi_tmp[320 + i] += 6.0 * xc[i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[352 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SXX;
+            phi_tmp[352 + i] += 6.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * SX;
+            phi_tmp[352 + i] += 6.0 * xc[i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SXX;
+            phi_tmp[384 + i] += 6.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * SX;
+            phi_tmp[384 + i] += 6.0 * xc[i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SXX;
+            phi_tmp[416 + i] += 6.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * SX;
+            phi_tmp[416 + i] += 6.0 * xc[i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[32 + i] * zc_pow[64 + i] * SXX;
+            phi_tmp[448 + i] += 6.0 * xc_pow[i] * zc_pow[64 + i] * SX;
+            phi_tmp[448 + i] += 6.0 * xc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[480 + i] = xc_pow[i] * yc_pow[96 + i] * SXX;
+            phi_tmp[480 + i] += 4.0 * xc[i] * yc_pow[96 + i] * SX;
+            phi_tmp[480 + i] += 2.0 * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[512 + i] = xc_pow[i] * yc_pow[64 + i] * zc[i] * SXX;
+            phi_tmp[512 + i] += 4.0 * xc[i] * yc_pow[64 + i] * zc[i] * SX;
+            phi_tmp[512 + i] += 2.0 * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SXX;
+            phi_tmp[544 + i] += 4.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * SX;
+            phi_tmp[544 + i] += 2.0 * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SXX;
+            phi_tmp[576 + i] += 4.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * SX;
+            phi_tmp[576 + i] += 2.0 * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[i] * yc[i] * zc_pow[64 + i] * SXX;
+            phi_tmp[608 + i] += 4.0 * xc[i] * yc[i] * zc_pow[64 + i] * SX;
+            phi_tmp[608 + i] += 2.0 * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[i] * zc_pow[96 + i] * SXX;
+            phi_tmp[640 + i] += 4.0 * xc[i] * zc_pow[96 + i] * SX;
+            phi_tmp[640 + i] += 2.0 * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[672 + i] = xc[i] * yc_pow[128 + i] * SXX;
+            phi_tmp[672 + i] += 2.0 * yc_pow[128 + i] * SX;
+
+            phi_tmp[704 + i] = xc[i] * yc_pow[96 + i] * zc[i] * SXX;
+            phi_tmp[704 + i] += 2.0 * yc_pow[96 + i] * zc[i] * SX;
+
+            phi_tmp[736 + i] = xc[i] * yc_pow[64 + i] * zc_pow[i] * SXX;
+            phi_tmp[736 + i] += 2.0 * yc_pow[64 + i] * zc_pow[i] * SX;
+
+            phi_tmp[768 + i] = xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SXX;
+            phi_tmp[768 + i] += 2.0 * yc_pow[32 + i] * zc_pow[32 + i] * SX;
+
+            phi_tmp[800 + i] = xc[i] * yc_pow[i] * zc_pow[64 + i] * SXX;
+            phi_tmp[800 + i] += 2.0 * yc_pow[i] * zc_pow[64 + i] * SX;
+
+            phi_tmp[832 + i] = xc[i] * yc[i] * zc_pow[96 + i] * SXX;
+            phi_tmp[832 + i] += 2.0 * yc[i] * zc_pow[96 + i] * SX;
+
+            phi_tmp[864 + i] = xc[i] * zc_pow[128 + i] * SXX;
+            phi_tmp[864 + i] += 2.0 * zc_pow[128 + i] * SX;
+
+            phi_tmp[896 + i] = yc_pow[160 + i] * SXX;
+
+            phi_tmp[928 + i] = yc_pow[128 + i] * zc[i] * SXX;
+
+            phi_tmp[960 + i] = yc_pow[96 + i] * zc_pow[i] * SXX;
+
+            phi_tmp[992 + i] = yc_pow[64 + i] * zc_pow[32 + i] * SXX;
+
+            phi_tmp[1024 + i] = yc_pow[32 + i] * zc_pow[64 + i] * SXX;
+
+            phi_tmp[1056 + i] = yc_pow[i] * zc_pow[96 + i] * SXX;
+
+            phi_tmp[1088 + i] = yc[i] * zc_pow[128 + i] * SXX;
+
+            phi_tmp[1120 + i] = zc_pow[160 + i] * SXX;
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L7(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L7(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
+        }
+
+        // Combine XY blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SX = S1[i] * xc[i];
+            const double SY = S1[i] * yc[i];
+            const double SXY = S2[i] * xc[i] * yc[i];
+
+            phi_tmp[i] = xc_pow[160 + i] * SXY;
+            phi_tmp[i] += 7.0 * xc_pow[128 + i] * SY;
+
+            phi_tmp[32 + i] = xc_pow[128 + i] * yc[i] * SXY;
+            phi_tmp[32 + i] += xc_pow[128 + i] * SX;
+            phi_tmp[32 + i] += 6.0 * xc_pow[96 + i] * yc[i] * SY;
+            phi_tmp[32 + i] += 6.0 * xc_pow[96 + i] * S0[i];
+
+            phi_tmp[64 + i] = xc_pow[128 + i] * zc[i] * SXY;
+            phi_tmp[64 + i] += 6.0 * xc_pow[96 + i] * zc[i] * SY;
+
+            phi_tmp[96 + i] = xc_pow[96 + i] * yc_pow[i] * SXY;
+            phi_tmp[96 + i] += 2.0 * xc_pow[96 + i] * yc[i] * SX;
+            phi_tmp[96 + i] += 5.0 * xc_pow[64 + i] * yc_pow[i] * SY;
+            phi_tmp[96 + i] += 10.0 * xc_pow[64 + i] * yc[i] * S0[i];
+
+            phi_tmp[128 + i] = xc_pow[96 + i] * yc[i] * zc[i] * SXY;
+            phi_tmp[128 + i] += xc_pow[96 + i] * zc[i] * SX;
+            phi_tmp[128 + i] += 5.0 * xc_pow[64 + i] * yc[i] * zc[i] * SY;
+            phi_tmp[128 + i] += 5.0 * xc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[160 + i] = xc_pow[96 + i] * zc_pow[i] * SXY;
+            phi_tmp[160 + i] += 5.0 * xc_pow[64 + i] * zc_pow[i] * SY;
+
+            phi_tmp[192 + i] = xc_pow[64 + i] * yc_pow[32 + i] * SXY;
+            phi_tmp[192 + i] += 3.0 * xc_pow[64 + i] * yc_pow[i] * SX;
+            phi_tmp[192 + i] += 4.0 * xc_pow[32 + i] * yc_pow[32 + i] * SY;
+            phi_tmp[192 + i] += 12.0 * xc_pow[32 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[224 + i] = xc_pow[64 + i] * yc_pow[i] * zc[i] * SXY;
+            phi_tmp[224 + i] += 2.0 * xc_pow[64 + i] * yc[i] * zc[i] * SX;
+            phi_tmp[224 + i] += 4.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * SY;
+            phi_tmp[224 + i] += 8.0 * xc_pow[32 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[64 + i] * yc[i] * zc_pow[i] * SXY;
+            phi_tmp[256 + i] += xc_pow[64 + i] * zc_pow[i] * SX;
+            phi_tmp[256 + i] += 4.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * SY;
+            phi_tmp[256 + i] += 4.0 * xc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[64 + i] * zc_pow[32 + i] * SXY;
+            phi_tmp[288 + i] += 4.0 * xc_pow[32 + i] * zc_pow[32 + i] * SY;
+
+            phi_tmp[320 + i] = xc_pow[32 + i] * yc_pow[64 + i] * SXY;
+            phi_tmp[320 + i] += 4.0 * xc_pow[32 + i] * yc_pow[32 + i] * SX;
+            phi_tmp[320 + i] += 3.0 * xc_pow[i] * yc_pow[64 + i] * SY;
+            phi_tmp[320 + i] += 12.0 * xc_pow[i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[352 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SXY;
+            phi_tmp[352 + i] += 3.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * SX;
+            phi_tmp[352 + i] += 3.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * SY;
+            phi_tmp[352 + i] += 9.0 * xc_pow[i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SXY;
+            phi_tmp[384 + i] += 2.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * SX;
+            phi_tmp[384 + i] += 3.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * SY;
+            phi_tmp[384 + i] += 6.0 * xc_pow[i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SXY;
+            phi_tmp[416 + i] += xc_pow[32 + i] * zc_pow[32 + i] * SX;
+            phi_tmp[416 + i] += 3.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * SY;
+            phi_tmp[416 + i] += 3.0 * xc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[32 + i] * zc_pow[64 + i] * SXY;
+            phi_tmp[448 + i] += 3.0 * xc_pow[i] * zc_pow[64 + i] * SY;
+
+            phi_tmp[480 + i] = xc_pow[i] * yc_pow[96 + i] * SXY;
+            phi_tmp[480 + i] += 5.0 * xc_pow[i] * yc_pow[64 + i] * SX;
+            phi_tmp[480 + i] += 2.0 * xc[i] * yc_pow[96 + i] * SY;
+            phi_tmp[480 + i] += 10.0 * xc[i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[512 + i] = xc_pow[i] * yc_pow[64 + i] * zc[i] * SXY;
+            phi_tmp[512 + i] += 4.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * SX;
+            phi_tmp[512 + i] += 2.0 * xc[i] * yc_pow[64 + i] * zc[i] * SY;
+            phi_tmp[512 + i] += 8.0 * xc[i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SXY;
+            phi_tmp[544 + i] += 3.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * SX;
+            phi_tmp[544 + i] += 2.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * SY;
+            phi_tmp[544 + i] += 6.0 * xc[i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SXY;
+            phi_tmp[576 + i] += 2.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * SX;
+            phi_tmp[576 + i] += 2.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * SY;
+            phi_tmp[576 + i] += 4.0 * xc[i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[i] * yc[i] * zc_pow[64 + i] * SXY;
+            phi_tmp[608 + i] += xc_pow[i] * zc_pow[64 + i] * SX;
+            phi_tmp[608 + i] += 2.0 * xc[i] * yc[i] * zc_pow[64 + i] * SY;
+            phi_tmp[608 + i] += 2.0 * xc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[i] * zc_pow[96 + i] * SXY;
+            phi_tmp[640 + i] += 2.0 * xc[i] * zc_pow[96 + i] * SY;
+
+            phi_tmp[672 + i] = xc[i] * yc_pow[128 + i] * SXY;
+            phi_tmp[672 + i] += 6.0 * xc[i] * yc_pow[96 + i] * SX;
+            phi_tmp[672 + i] += yc_pow[128 + i] * SY;
+            phi_tmp[672 + i] += 6.0 * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[704 + i] = xc[i] * yc_pow[96 + i] * zc[i] * SXY;
+            phi_tmp[704 + i] += 5.0 * xc[i] * yc_pow[64 + i] * zc[i] * SX;
+            phi_tmp[704 + i] += yc_pow[96 + i] * zc[i] * SY;
+            phi_tmp[704 + i] += 5.0 * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[736 + i] = xc[i] * yc_pow[64 + i] * zc_pow[i] * SXY;
+            phi_tmp[736 + i] += 4.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * SX;
+            phi_tmp[736 + i] += yc_pow[64 + i] * zc_pow[i] * SY;
+            phi_tmp[736 + i] += 4.0 * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[768 + i] = xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SXY;
+            phi_tmp[768 + i] += 3.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * SX;
+            phi_tmp[768 + i] += yc_pow[32 + i] * zc_pow[32 + i] * SY;
+            phi_tmp[768 + i] += 3.0 * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[800 + i] = xc[i] * yc_pow[i] * zc_pow[64 + i] * SXY;
+            phi_tmp[800 + i] += 2.0 * xc[i] * yc[i] * zc_pow[64 + i] * SX;
+            phi_tmp[800 + i] += yc_pow[i] * zc_pow[64 + i] * SY;
+            phi_tmp[800 + i] += 2.0 * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[832 + i] = xc[i] * yc[i] * zc_pow[96 + i] * SXY;
+            phi_tmp[832 + i] += xc[i] * zc_pow[96 + i] * SX;
+            phi_tmp[832 + i] += yc[i] * zc_pow[96 + i] * SY;
+            phi_tmp[832 + i] += zc_pow[96 + i] * S0[i];
+
+            phi_tmp[864 + i] = xc[i] * zc_pow[128 + i] * SXY;
+            phi_tmp[864 + i] += zc_pow[128 + i] * SY;
+
+            phi_tmp[896 + i] = yc_pow[160 + i] * SXY;
+            phi_tmp[896 + i] += 7.0 * yc_pow[128 + i] * SX;
+
+            phi_tmp[928 + i] = yc_pow[128 + i] * zc[i] * SXY;
+            phi_tmp[928 + i] += 6.0 * yc_pow[96 + i] * zc[i] * SX;
+
+            phi_tmp[960 + i] = yc_pow[96 + i] * zc_pow[i] * SXY;
+            phi_tmp[960 + i] += 5.0 * yc_pow[64 + i] * zc_pow[i] * SX;
+
+            phi_tmp[992 + i] = yc_pow[64 + i] * zc_pow[32 + i] * SXY;
+            phi_tmp[992 + i] += 4.0 * yc_pow[32 + i] * zc_pow[32 + i] * SX;
+
+            phi_tmp[1024 + i] = yc_pow[32 + i] * zc_pow[64 + i] * SXY;
+            phi_tmp[1024 + i] += 3.0 * yc_pow[i] * zc_pow[64 + i] * SX;
+
+            phi_tmp[1056 + i] = yc_pow[i] * zc_pow[96 + i] * SXY;
+            phi_tmp[1056 + i] += 2.0 * yc[i] * zc_pow[96 + i] * SX;
+
+            phi_tmp[1088 + i] = yc[i] * zc_pow[128 + i] * SXY;
+            phi_tmp[1088 + i] += zc_pow[128 + i] * SX;
+
+            phi_tmp[1120 + i] = zc_pow[160 + i] * SXY;
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L7(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L7(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
+        }
+
+        // Combine XZ blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SX = S1[i] * xc[i];
+            const double SZ = S1[i] * zc[i];
+            const double SXZ = S2[i] * xc[i] * zc[i];
+
+            phi_tmp[i] = xc_pow[160 + i] * SXZ;
+            phi_tmp[i] += 7.0 * xc_pow[128 + i] * SZ;
+
+            phi_tmp[32 + i] = xc_pow[128 + i] * yc[i] * SXZ;
+            phi_tmp[32 + i] += 6.0 * xc_pow[96 + i] * yc[i] * SZ;
+
+            phi_tmp[64 + i] = xc_pow[128 + i] * zc[i] * SXZ;
+            phi_tmp[64 + i] += xc_pow[128 + i] * SX;
+            phi_tmp[64 + i] += 6.0 * xc_pow[96 + i] * zc[i] * SZ;
+            phi_tmp[64 + i] += 6.0 * xc_pow[96 + i] * S0[i];
+
+            phi_tmp[96 + i] = xc_pow[96 + i] * yc_pow[i] * SXZ;
+            phi_tmp[96 + i] += 5.0 * xc_pow[64 + i] * yc_pow[i] * SZ;
+
+            phi_tmp[128 + i] = xc_pow[96 + i] * yc[i] * zc[i] * SXZ;
+            phi_tmp[128 + i] += xc_pow[96 + i] * yc[i] * SX;
+            phi_tmp[128 + i] += 5.0 * xc_pow[64 + i] * yc[i] * zc[i] * SZ;
+            phi_tmp[128 + i] += 5.0 * xc_pow[64 + i] * yc[i] * S0[i];
+
+            phi_tmp[160 + i] = xc_pow[96 + i] * zc_pow[i] * SXZ;
+            phi_tmp[160 + i] += 2.0 * xc_pow[96 + i] * zc[i] * SX;
+            phi_tmp[160 + i] += 5.0 * xc_pow[64 + i] * zc_pow[i] * SZ;
+            phi_tmp[160 + i] += 10.0 * xc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[192 + i] = xc_pow[64 + i] * yc_pow[32 + i] * SXZ;
+            phi_tmp[192 + i] += 4.0 * xc_pow[32 + i] * yc_pow[32 + i] * SZ;
+
+            phi_tmp[224 + i] = xc_pow[64 + i] * yc_pow[i] * zc[i] * SXZ;
+            phi_tmp[224 + i] += xc_pow[64 + i] * yc_pow[i] * SX;
+            phi_tmp[224 + i] += 4.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * SZ;
+            phi_tmp[224 + i] += 4.0 * xc_pow[32 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[64 + i] * yc[i] * zc_pow[i] * SXZ;
+            phi_tmp[256 + i] += 2.0 * xc_pow[64 + i] * yc[i] * zc[i] * SX;
+            phi_tmp[256 + i] += 4.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * SZ;
+            phi_tmp[256 + i] += 8.0 * xc_pow[32 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[64 + i] * zc_pow[32 + i] * SXZ;
+            phi_tmp[288 + i] += 3.0 * xc_pow[64 + i] * zc_pow[i] * SX;
+            phi_tmp[288 + i] += 4.0 * xc_pow[32 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[288 + i] += 12.0 * xc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[320 + i] = xc_pow[32 + i] * yc_pow[64 + i] * SXZ;
+            phi_tmp[320 + i] += 3.0 * xc_pow[i] * yc_pow[64 + i] * SZ;
+
+            phi_tmp[352 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SXZ;
+            phi_tmp[352 + i] += xc_pow[32 + i] * yc_pow[32 + i] * SX;
+            phi_tmp[352 + i] += 3.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * SZ;
+            phi_tmp[352 + i] += 3.0 * xc_pow[i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SXZ;
+            phi_tmp[384 + i] += 2.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * SX;
+            phi_tmp[384 + i] += 3.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * SZ;
+            phi_tmp[384 + i] += 6.0 * xc_pow[i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SXZ;
+            phi_tmp[416 + i] += 3.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * SX;
+            phi_tmp[416 + i] += 3.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[416 + i] += 9.0 * xc_pow[i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[32 + i] * zc_pow[64 + i] * SXZ;
+            phi_tmp[448 + i] += 4.0 * xc_pow[32 + i] * zc_pow[32 + i] * SX;
+            phi_tmp[448 + i] += 3.0 * xc_pow[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[448 + i] += 12.0 * xc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[480 + i] = xc_pow[i] * yc_pow[96 + i] * SXZ;
+            phi_tmp[480 + i] += 2.0 * xc[i] * yc_pow[96 + i] * SZ;
+
+            phi_tmp[512 + i] = xc_pow[i] * yc_pow[64 + i] * zc[i] * SXZ;
+            phi_tmp[512 + i] += xc_pow[i] * yc_pow[64 + i] * SX;
+            phi_tmp[512 + i] += 2.0 * xc[i] * yc_pow[64 + i] * zc[i] * SZ;
+            phi_tmp[512 + i] += 2.0 * xc[i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SXZ;
+            phi_tmp[544 + i] += 2.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * SX;
+            phi_tmp[544 + i] += 2.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * SZ;
+            phi_tmp[544 + i] += 4.0 * xc[i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SXZ;
+            phi_tmp[576 + i] += 3.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * SX;
+            phi_tmp[576 + i] += 2.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[576 + i] += 6.0 * xc[i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[i] * yc[i] * zc_pow[64 + i] * SXZ;
+            phi_tmp[608 + i] += 4.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * SX;
+            phi_tmp[608 + i] += 2.0 * xc[i] * yc[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[608 + i] += 8.0 * xc[i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[i] * zc_pow[96 + i] * SXZ;
+            phi_tmp[640 + i] += 5.0 * xc_pow[i] * zc_pow[64 + i] * SX;
+            phi_tmp[640 + i] += 2.0 * xc[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[640 + i] += 10.0 * xc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[672 + i] = xc[i] * yc_pow[128 + i] * SXZ;
+            phi_tmp[672 + i] += yc_pow[128 + i] * SZ;
+
+            phi_tmp[704 + i] = xc[i] * yc_pow[96 + i] * zc[i] * SXZ;
+            phi_tmp[704 + i] += xc[i] * yc_pow[96 + i] * SX;
+            phi_tmp[704 + i] += yc_pow[96 + i] * zc[i] * SZ;
+            phi_tmp[704 + i] += yc_pow[96 + i] * S0[i];
+
+            phi_tmp[736 + i] = xc[i] * yc_pow[64 + i] * zc_pow[i] * SXZ;
+            phi_tmp[736 + i] += 2.0 * xc[i] * yc_pow[64 + i] * zc[i] * SX;
+            phi_tmp[736 + i] += yc_pow[64 + i] * zc_pow[i] * SZ;
+            phi_tmp[736 + i] += 2.0 * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[768 + i] = xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SXZ;
+            phi_tmp[768 + i] += 3.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * SX;
+            phi_tmp[768 + i] += yc_pow[32 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[768 + i] += 3.0 * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[800 + i] = xc[i] * yc_pow[i] * zc_pow[64 + i] * SXZ;
+            phi_tmp[800 + i] += 4.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * SX;
+            phi_tmp[800 + i] += yc_pow[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[800 + i] += 4.0 * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[832 + i] = xc[i] * yc[i] * zc_pow[96 + i] * SXZ;
+            phi_tmp[832 + i] += 5.0 * xc[i] * yc[i] * zc_pow[64 + i] * SX;
+            phi_tmp[832 + i] += yc[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[832 + i] += 5.0 * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[864 + i] = xc[i] * zc_pow[128 + i] * SXZ;
+            phi_tmp[864 + i] += 6.0 * xc[i] * zc_pow[96 + i] * SX;
+            phi_tmp[864 + i] += zc_pow[128 + i] * SZ;
+            phi_tmp[864 + i] += 6.0 * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[896 + i] = yc_pow[160 + i] * SXZ;
+
+            phi_tmp[928 + i] = yc_pow[128 + i] * zc[i] * SXZ;
+            phi_tmp[928 + i] += yc_pow[128 + i] * SX;
+
+            phi_tmp[960 + i] = yc_pow[96 + i] * zc_pow[i] * SXZ;
+            phi_tmp[960 + i] += 2.0 * yc_pow[96 + i] * zc[i] * SX;
+
+            phi_tmp[992 + i] = yc_pow[64 + i] * zc_pow[32 + i] * SXZ;
+            phi_tmp[992 + i] += 3.0 * yc_pow[64 + i] * zc_pow[i] * SX;
+
+            phi_tmp[1024 + i] = yc_pow[32 + i] * zc_pow[64 + i] * SXZ;
+            phi_tmp[1024 + i] += 4.0 * yc_pow[32 + i] * zc_pow[32 + i] * SX;
+
+            phi_tmp[1056 + i] = yc_pow[i] * zc_pow[96 + i] * SXZ;
+            phi_tmp[1056 + i] += 5.0 * yc_pow[i] * zc_pow[64 + i] * SX;
+
+            phi_tmp[1088 + i] = yc[i] * zc_pow[128 + i] * SXZ;
+            phi_tmp[1088 + i] += 6.0 * yc[i] * zc_pow[96 + i] * SX;
+
+            phi_tmp[1120 + i] = zc_pow[160 + i] * SXZ;
+            phi_tmp[1120 + i] += 7.0 * zc_pow[128 + i] * SX;
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L7(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L7(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
+        }
+
+        // Combine YY blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SY = S1[i] * yc[i];
+            const double SYY = S2[i] * yc[i] * yc[i] + S1[i];
+
+            phi_tmp[i] = xc_pow[160 + i] * SYY;
+
+            phi_tmp[32 + i] = xc_pow[128 + i] * yc[i] * SYY;
+            phi_tmp[32 + i] += 2.0 * xc_pow[128 + i] * SY;
+
+            phi_tmp[64 + i] = xc_pow[128 + i] * zc[i] * SYY;
+
+            phi_tmp[96 + i] = xc_pow[96 + i] * yc_pow[i] * SYY;
+            phi_tmp[96 + i] += 4.0 * xc_pow[96 + i] * yc[i] * SY;
+            phi_tmp[96 + i] += 2.0 * xc_pow[96 + i] * S0[i];
+
+            phi_tmp[128 + i] = xc_pow[96 + i] * yc[i] * zc[i] * SYY;
+            phi_tmp[128 + i] += 2.0 * xc_pow[96 + i] * zc[i] * SY;
+
+            phi_tmp[160 + i] = xc_pow[96 + i] * zc_pow[i] * SYY;
+
+            phi_tmp[192 + i] = xc_pow[64 + i] * yc_pow[32 + i] * SYY;
+            phi_tmp[192 + i] += 6.0 * xc_pow[64 + i] * yc_pow[i] * SY;
+            phi_tmp[192 + i] += 6.0 * xc_pow[64 + i] * yc[i] * S0[i];
+
+            phi_tmp[224 + i] = xc_pow[64 + i] * yc_pow[i] * zc[i] * SYY;
+            phi_tmp[224 + i] += 4.0 * xc_pow[64 + i] * yc[i] * zc[i] * SY;
+            phi_tmp[224 + i] += 2.0 * xc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[64 + i] * yc[i] * zc_pow[i] * SYY;
+            phi_tmp[256 + i] += 2.0 * xc_pow[64 + i] * zc_pow[i] * SY;
+
+            phi_tmp[288 + i] = xc_pow[64 + i] * zc_pow[32 + i] * SYY;
+
+            phi_tmp[320 + i] = xc_pow[32 + i] * yc_pow[64 + i] * SYY;
+            phi_tmp[320 + i] += 8.0 * xc_pow[32 + i] * yc_pow[32 + i] * SY;
+            phi_tmp[320 + i] += 12.0 * xc_pow[32 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[352 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SYY;
+            phi_tmp[352 + i] += 6.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * SY;
+            phi_tmp[352 + i] += 6.0 * xc_pow[32 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SYY;
+            phi_tmp[384 + i] += 4.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * SY;
+            phi_tmp[384 + i] += 2.0 * xc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SYY;
+            phi_tmp[416 + i] += 2.0 * xc_pow[32 + i] * zc_pow[32 + i] * SY;
+
+            phi_tmp[448 + i] = xc_pow[32 + i] * zc_pow[64 + i] * SYY;
+
+            phi_tmp[480 + i] = xc_pow[i] * yc_pow[96 + i] * SYY;
+            phi_tmp[480 + i] += 10.0 * xc_pow[i] * yc_pow[64 + i] * SY;
+            phi_tmp[480 + i] += 20.0 * xc_pow[i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[512 + i] = xc_pow[i] * yc_pow[64 + i] * zc[i] * SYY;
+            phi_tmp[512 + i] += 8.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * SY;
+            phi_tmp[512 + i] += 12.0 * xc_pow[i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SYY;
+            phi_tmp[544 + i] += 6.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * SY;
+            phi_tmp[544 + i] += 6.0 * xc_pow[i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SYY;
+            phi_tmp[576 + i] += 4.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * SY;
+            phi_tmp[576 + i] += 2.0 * xc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[i] * yc[i] * zc_pow[64 + i] * SYY;
+            phi_tmp[608 + i] += 2.0 * xc_pow[i] * zc_pow[64 + i] * SY;
+
+            phi_tmp[640 + i] = xc_pow[i] * zc_pow[96 + i] * SYY;
+
+            phi_tmp[672 + i] = xc[i] * yc_pow[128 + i] * SYY;
+            phi_tmp[672 + i] += 12.0 * xc[i] * yc_pow[96 + i] * SY;
+            phi_tmp[672 + i] += 30.0 * xc[i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[704 + i] = xc[i] * yc_pow[96 + i] * zc[i] * SYY;
+            phi_tmp[704 + i] += 10.0 * xc[i] * yc_pow[64 + i] * zc[i] * SY;
+            phi_tmp[704 + i] += 20.0 * xc[i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[736 + i] = xc[i] * yc_pow[64 + i] * zc_pow[i] * SYY;
+            phi_tmp[736 + i] += 8.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * SY;
+            phi_tmp[736 + i] += 12.0 * xc[i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[768 + i] = xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SYY;
+            phi_tmp[768 + i] += 6.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * SY;
+            phi_tmp[768 + i] += 6.0 * xc[i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[800 + i] = xc[i] * yc_pow[i] * zc_pow[64 + i] * SYY;
+            phi_tmp[800 + i] += 4.0 * xc[i] * yc[i] * zc_pow[64 + i] * SY;
+            phi_tmp[800 + i] += 2.0 * xc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[832 + i] = xc[i] * yc[i] * zc_pow[96 + i] * SYY;
+            phi_tmp[832 + i] += 2.0 * xc[i] * zc_pow[96 + i] * SY;
+
+            phi_tmp[864 + i] = xc[i] * zc_pow[128 + i] * SYY;
+
+            phi_tmp[896 + i] = yc_pow[160 + i] * SYY;
+            phi_tmp[896 + i] += 14.0 * yc_pow[128 + i] * SY;
+            phi_tmp[896 + i] += 42.0 * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[928 + i] = yc_pow[128 + i] * zc[i] * SYY;
+            phi_tmp[928 + i] += 12.0 * yc_pow[96 + i] * zc[i] * SY;
+            phi_tmp[928 + i] += 30.0 * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[960 + i] = yc_pow[96 + i] * zc_pow[i] * SYY;
+            phi_tmp[960 + i] += 10.0 * yc_pow[64 + i] * zc_pow[i] * SY;
+            phi_tmp[960 + i] += 20.0 * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[992 + i] = yc_pow[64 + i] * zc_pow[32 + i] * SYY;
+            phi_tmp[992 + i] += 8.0 * yc_pow[32 + i] * zc_pow[32 + i] * SY;
+            phi_tmp[992 + i] += 12.0 * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1024 + i] = yc_pow[32 + i] * zc_pow[64 + i] * SYY;
+            phi_tmp[1024 + i] += 6.0 * yc_pow[i] * zc_pow[64 + i] * SY;
+            phi_tmp[1024 + i] += 6.0 * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1056 + i] = yc_pow[i] * zc_pow[96 + i] * SYY;
+            phi_tmp[1056 + i] += 4.0 * yc[i] * zc_pow[96 + i] * SY;
+            phi_tmp[1056 + i] += 2.0 * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1088 + i] = yc[i] * zc_pow[128 + i] * SYY;
+            phi_tmp[1088 + i] += 2.0 * zc_pow[128 + i] * SY;
+
+            phi_tmp[1120 + i] = zc_pow[160 + i] * SYY;
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L7(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L7(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
+        }
+
+        // Combine YZ blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SY = S1[i] * yc[i];
+            const double SZ = S1[i] * zc[i];
+            const double SYZ = S2[i] * yc[i] * zc[i];
+
+            phi_tmp[i] = xc_pow[160 + i] * SYZ;
+
+            phi_tmp[32 + i] = xc_pow[128 + i] * yc[i] * SYZ;
+            phi_tmp[32 + i] += xc_pow[128 + i] * SZ;
+
+            phi_tmp[64 + i] = xc_pow[128 + i] * zc[i] * SYZ;
+            phi_tmp[64 + i] += xc_pow[128 + i] * SY;
+
+            phi_tmp[96 + i] = xc_pow[96 + i] * yc_pow[i] * SYZ;
+            phi_tmp[96 + i] += 2.0 * xc_pow[96 + i] * yc[i] * SZ;
+
+            phi_tmp[128 + i] = xc_pow[96 + i] * yc[i] * zc[i] * SYZ;
+            phi_tmp[128 + i] += xc_pow[96 + i] * yc[i] * SY;
+            phi_tmp[128 + i] += xc_pow[96 + i] * zc[i] * SZ;
+            phi_tmp[128 + i] += xc_pow[96 + i] * S0[i];
+
+            phi_tmp[160 + i] = xc_pow[96 + i] * zc_pow[i] * SYZ;
+            phi_tmp[160 + i] += 2.0 * xc_pow[96 + i] * zc[i] * SY;
+
+            phi_tmp[192 + i] = xc_pow[64 + i] * yc_pow[32 + i] * SYZ;
+            phi_tmp[192 + i] += 3.0 * xc_pow[64 + i] * yc_pow[i] * SZ;
+
+            phi_tmp[224 + i] = xc_pow[64 + i] * yc_pow[i] * zc[i] * SYZ;
+            phi_tmp[224 + i] += xc_pow[64 + i] * yc_pow[i] * SY;
+            phi_tmp[224 + i] += 2.0 * xc_pow[64 + i] * yc[i] * zc[i] * SZ;
+            phi_tmp[224 + i] += 2.0 * xc_pow[64 + i] * yc[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[64 + i] * yc[i] * zc_pow[i] * SYZ;
+            phi_tmp[256 + i] += 2.0 * xc_pow[64 + i] * yc[i] * zc[i] * SY;
+            phi_tmp[256 + i] += xc_pow[64 + i] * zc_pow[i] * SZ;
+            phi_tmp[256 + i] += 2.0 * xc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[64 + i] * zc_pow[32 + i] * SYZ;
+            phi_tmp[288 + i] += 3.0 * xc_pow[64 + i] * zc_pow[i] * SY;
+
+            phi_tmp[320 + i] = xc_pow[32 + i] * yc_pow[64 + i] * SYZ;
+            phi_tmp[320 + i] += 4.0 * xc_pow[32 + i] * yc_pow[32 + i] * SZ;
+
+            phi_tmp[352 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SYZ;
+            phi_tmp[352 + i] += xc_pow[32 + i] * yc_pow[32 + i] * SY;
+            phi_tmp[352 + i] += 3.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * SZ;
+            phi_tmp[352 + i] += 3.0 * xc_pow[32 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SYZ;
+            phi_tmp[384 + i] += 2.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * SY;
+            phi_tmp[384 + i] += 2.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * SZ;
+            phi_tmp[384 + i] += 4.0 * xc_pow[32 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SYZ;
+            phi_tmp[416 + i] += 3.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * SY;
+            phi_tmp[416 + i] += xc_pow[32 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[416 + i] += 3.0 * xc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[32 + i] * zc_pow[64 + i] * SYZ;
+            phi_tmp[448 + i] += 4.0 * xc_pow[32 + i] * zc_pow[32 + i] * SY;
+
+            phi_tmp[480 + i] = xc_pow[i] * yc_pow[96 + i] * SYZ;
+            phi_tmp[480 + i] += 5.0 * xc_pow[i] * yc_pow[64 + i] * SZ;
+
+            phi_tmp[512 + i] = xc_pow[i] * yc_pow[64 + i] * zc[i] * SYZ;
+            phi_tmp[512 + i] += xc_pow[i] * yc_pow[64 + i] * SY;
+            phi_tmp[512 + i] += 4.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * SZ;
+            phi_tmp[512 + i] += 4.0 * xc_pow[i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SYZ;
+            phi_tmp[544 + i] += 2.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * SY;
+            phi_tmp[544 + i] += 3.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * SZ;
+            phi_tmp[544 + i] += 6.0 * xc_pow[i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SYZ;
+            phi_tmp[576 + i] += 3.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * SY;
+            phi_tmp[576 + i] += 2.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[576 + i] += 6.0 * xc_pow[i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[i] * yc[i] * zc_pow[64 + i] * SYZ;
+            phi_tmp[608 + i] += 4.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * SY;
+            phi_tmp[608 + i] += xc_pow[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[608 + i] += 4.0 * xc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[i] * zc_pow[96 + i] * SYZ;
+            phi_tmp[640 + i] += 5.0 * xc_pow[i] * zc_pow[64 + i] * SY;
+
+            phi_tmp[672 + i] = xc[i] * yc_pow[128 + i] * SYZ;
+            phi_tmp[672 + i] += 6.0 * xc[i] * yc_pow[96 + i] * SZ;
+
+            phi_tmp[704 + i] = xc[i] * yc_pow[96 + i] * zc[i] * SYZ;
+            phi_tmp[704 + i] += xc[i] * yc_pow[96 + i] * SY;
+            phi_tmp[704 + i] += 5.0 * xc[i] * yc_pow[64 + i] * zc[i] * SZ;
+            phi_tmp[704 + i] += 5.0 * xc[i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[736 + i] = xc[i] * yc_pow[64 + i] * zc_pow[i] * SYZ;
+            phi_tmp[736 + i] += 2.0 * xc[i] * yc_pow[64 + i] * zc[i] * SY;
+            phi_tmp[736 + i] += 4.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * SZ;
+            phi_tmp[736 + i] += 8.0 * xc[i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[768 + i] = xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SYZ;
+            phi_tmp[768 + i] += 3.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * SY;
+            phi_tmp[768 + i] += 3.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[768 + i] += 9.0 * xc[i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[800 + i] = xc[i] * yc_pow[i] * zc_pow[64 + i] * SYZ;
+            phi_tmp[800 + i] += 4.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * SY;
+            phi_tmp[800 + i] += 2.0 * xc[i] * yc[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[800 + i] += 8.0 * xc[i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[832 + i] = xc[i] * yc[i] * zc_pow[96 + i] * SYZ;
+            phi_tmp[832 + i] += 5.0 * xc[i] * yc[i] * zc_pow[64 + i] * SY;
+            phi_tmp[832 + i] += xc[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[832 + i] += 5.0 * xc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[864 + i] = xc[i] * zc_pow[128 + i] * SYZ;
+            phi_tmp[864 + i] += 6.0 * xc[i] * zc_pow[96 + i] * SY;
+
+            phi_tmp[896 + i] = yc_pow[160 + i] * SYZ;
+            phi_tmp[896 + i] += 7.0 * yc_pow[128 + i] * SZ;
+
+            phi_tmp[928 + i] = yc_pow[128 + i] * zc[i] * SYZ;
+            phi_tmp[928 + i] += yc_pow[128 + i] * SY;
+            phi_tmp[928 + i] += 6.0 * yc_pow[96 + i] * zc[i] * SZ;
+            phi_tmp[928 + i] += 6.0 * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[960 + i] = yc_pow[96 + i] * zc_pow[i] * SYZ;
+            phi_tmp[960 + i] += 2.0 * yc_pow[96 + i] * zc[i] * SY;
+            phi_tmp[960 + i] += 5.0 * yc_pow[64 + i] * zc_pow[i] * SZ;
+            phi_tmp[960 + i] += 10.0 * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[992 + i] = yc_pow[64 + i] * zc_pow[32 + i] * SYZ;
+            phi_tmp[992 + i] += 3.0 * yc_pow[64 + i] * zc_pow[i] * SY;
+            phi_tmp[992 + i] += 4.0 * yc_pow[32 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[992 + i] += 12.0 * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[1024 + i] = yc_pow[32 + i] * zc_pow[64 + i] * SYZ;
+            phi_tmp[1024 + i] += 4.0 * yc_pow[32 + i] * zc_pow[32 + i] * SY;
+            phi_tmp[1024 + i] += 3.0 * yc_pow[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[1024 + i] += 12.0 * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1056 + i] = yc_pow[i] * zc_pow[96 + i] * SYZ;
+            phi_tmp[1056 + i] += 5.0 * yc_pow[i] * zc_pow[64 + i] * SY;
+            phi_tmp[1056 + i] += 2.0 * yc[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[1056 + i] += 10.0 * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1088 + i] = yc[i] * zc_pow[128 + i] * SYZ;
+            phi_tmp[1088 + i] += 6.0 * yc[i] * zc_pow[96 + i] * SY;
+            phi_tmp[1088 + i] += zc_pow[128 + i] * SZ;
+            phi_tmp[1088 + i] += 6.0 * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1120 + i] = zc_pow[160 + i] * SYZ;
+            phi_tmp[1120 + i] += 7.0 * zc_pow[128 + i] * SY;
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L7(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L7(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
+        }
+
+        // Combine ZZ blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SZ = S1[i] * zc[i];
+            const double SZZ = S2[i] * zc[i] * zc[i] + S1[i];
+
+            phi_tmp[i] = xc_pow[160 + i] * SZZ;
+
+            phi_tmp[32 + i] = xc_pow[128 + i] * yc[i] * SZZ;
+
+            phi_tmp[64 + i] = xc_pow[128 + i] * zc[i] * SZZ;
+            phi_tmp[64 + i] += 2.0 * xc_pow[128 + i] * SZ;
+
+            phi_tmp[96 + i] = xc_pow[96 + i] * yc_pow[i] * SZZ;
+
+            phi_tmp[128 + i] = xc_pow[96 + i] * yc[i] * zc[i] * SZZ;
+            phi_tmp[128 + i] += 2.0 * xc_pow[96 + i] * yc[i] * SZ;
+
+            phi_tmp[160 + i] = xc_pow[96 + i] * zc_pow[i] * SZZ;
+            phi_tmp[160 + i] += 4.0 * xc_pow[96 + i] * zc[i] * SZ;
+            phi_tmp[160 + i] += 2.0 * xc_pow[96 + i] * S0[i];
+
+            phi_tmp[192 + i] = xc_pow[64 + i] * yc_pow[32 + i] * SZZ;
+
+            phi_tmp[224 + i] = xc_pow[64 + i] * yc_pow[i] * zc[i] * SZZ;
+            phi_tmp[224 + i] += 2.0 * xc_pow[64 + i] * yc_pow[i] * SZ;
+
+            phi_tmp[256 + i] = xc_pow[64 + i] * yc[i] * zc_pow[i] * SZZ;
+            phi_tmp[256 + i] += 4.0 * xc_pow[64 + i] * yc[i] * zc[i] * SZ;
+            phi_tmp[256 + i] += 2.0 * xc_pow[64 + i] * yc[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[64 + i] * zc_pow[32 + i] * SZZ;
+            phi_tmp[288 + i] += 6.0 * xc_pow[64 + i] * zc_pow[i] * SZ;
+            phi_tmp[288 + i] += 6.0 * xc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[320 + i] = xc_pow[32 + i] * yc_pow[64 + i] * SZZ;
+
+            phi_tmp[352 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SZZ;
+            phi_tmp[352 + i] += 2.0 * xc_pow[32 + i] * yc_pow[32 + i] * SZ;
+
+            phi_tmp[384 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SZZ;
+            phi_tmp[384 + i] += 4.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * SZ;
+            phi_tmp[384 + i] += 2.0 * xc_pow[32 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SZZ;
+            phi_tmp[416 + i] += 6.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * SZ;
+            phi_tmp[416 + i] += 6.0 * xc_pow[32 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[32 + i] * zc_pow[64 + i] * SZZ;
+            phi_tmp[448 + i] += 8.0 * xc_pow[32 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[448 + i] += 12.0 * xc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[480 + i] = xc_pow[i] * yc_pow[96 + i] * SZZ;
+
+            phi_tmp[512 + i] = xc_pow[i] * yc_pow[64 + i] * zc[i] * SZZ;
+            phi_tmp[512 + i] += 2.0 * xc_pow[i] * yc_pow[64 + i] * SZ;
+
+            phi_tmp[544 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SZZ;
+            phi_tmp[544 + i] += 4.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * SZ;
+            phi_tmp[544 + i] += 2.0 * xc_pow[i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SZZ;
+            phi_tmp[576 + i] += 6.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * SZ;
+            phi_tmp[576 + i] += 6.0 * xc_pow[i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[i] * yc[i] * zc_pow[64 + i] * SZZ;
+            phi_tmp[608 + i] += 8.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[608 + i] += 12.0 * xc_pow[i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[i] * zc_pow[96 + i] * SZZ;
+            phi_tmp[640 + i] += 10.0 * xc_pow[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[640 + i] += 20.0 * xc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[672 + i] = xc[i] * yc_pow[128 + i] * SZZ;
+
+            phi_tmp[704 + i] = xc[i] * yc_pow[96 + i] * zc[i] * SZZ;
+            phi_tmp[704 + i] += 2.0 * xc[i] * yc_pow[96 + i] * SZ;
+
+            phi_tmp[736 + i] = xc[i] * yc_pow[64 + i] * zc_pow[i] * SZZ;
+            phi_tmp[736 + i] += 4.0 * xc[i] * yc_pow[64 + i] * zc[i] * SZ;
+            phi_tmp[736 + i] += 2.0 * xc[i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[768 + i] = xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SZZ;
+            phi_tmp[768 + i] += 6.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * SZ;
+            phi_tmp[768 + i] += 6.0 * xc[i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[800 + i] = xc[i] * yc_pow[i] * zc_pow[64 + i] * SZZ;
+            phi_tmp[800 + i] += 8.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[800 + i] += 12.0 * xc[i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[832 + i] = xc[i] * yc[i] * zc_pow[96 + i] * SZZ;
+            phi_tmp[832 + i] += 10.0 * xc[i] * yc[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[832 + i] += 20.0 * xc[i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[864 + i] = xc[i] * zc_pow[128 + i] * SZZ;
+            phi_tmp[864 + i] += 12.0 * xc[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[864 + i] += 30.0 * xc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[896 + i] = yc_pow[160 + i] * SZZ;
+
+            phi_tmp[928 + i] = yc_pow[128 + i] * zc[i] * SZZ;
+            phi_tmp[928 + i] += 2.0 * yc_pow[128 + i] * SZ;
+
+            phi_tmp[960 + i] = yc_pow[96 + i] * zc_pow[i] * SZZ;
+            phi_tmp[960 + i] += 4.0 * yc_pow[96 + i] * zc[i] * SZ;
+            phi_tmp[960 + i] += 2.0 * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[992 + i] = yc_pow[64 + i] * zc_pow[32 + i] * SZZ;
+            phi_tmp[992 + i] += 6.0 * yc_pow[64 + i] * zc_pow[i] * SZ;
+            phi_tmp[992 + i] += 6.0 * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[1024 + i] = yc_pow[32 + i] * zc_pow[64 + i] * SZZ;
+            phi_tmp[1024 + i] += 8.0 * yc_pow[32 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[1024 + i] += 12.0 * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[1056 + i] = yc_pow[i] * zc_pow[96 + i] * SZZ;
+            phi_tmp[1056 + i] += 10.0 * yc_pow[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[1056 + i] += 20.0 * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1088 + i] = yc[i] * zc_pow[128 + i] * SZZ;
+            phi_tmp[1088 + i] += 12.0 * yc[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[1088 + i] += 30.0 * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1120 + i] = zc_pow[160 + i] * SZZ;
+            phi_tmp[1120 + i] += 14.0 * zc_pow[128 + i] * SZ;
+            phi_tmp[1120 + i] += 42.0 * zc_pow[96 + i] * S0[i];
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L7(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L7(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L7(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
+        }
+    }
+
+    // Free S temporaries
+    ALIGNED_FREE(cache_data);
+    ALIGNED_FREE(expn1);
+    ALIGNED_FREE(expn2);
+
+    // Free Power temporaries
+    ALIGNED_FREE(xc_pow);
+    ALIGNED_FREE(yc_pow);
+    ALIGNED_FREE(zc_pow);
+
+    // Free inner temporaries
+    ALIGNED_FREE(phi_tmp);
+}
+
+void gg_collocation_L8_deriv2(const unsigned long npoints, const double* PRAGMA_RESTRICT xyz,
+                              const unsigned long xyz_stride, const int nprim, const double* PRAGMA_RESTRICT coeffs,
+                              const double* PRAGMA_RESTRICT exponents, const double* PRAGMA_RESTRICT center,
+                              const int order, double* PRAGMA_RESTRICT phi_out, double* PRAGMA_RESTRICT phi_x_out,
+                              double* PRAGMA_RESTRICT phi_y_out, double* PRAGMA_RESTRICT phi_z_out,
+                              double* PRAGMA_RESTRICT phi_xx_out, double* PRAGMA_RESTRICT phi_xy_out,
+                              double* PRAGMA_RESTRICT phi_xz_out, double* PRAGMA_RESTRICT phi_yy_out,
+                              double* PRAGMA_RESTRICT phi_yz_out, double* PRAGMA_RESTRICT phi_zz_out) {
+    // Sizing
+    unsigned long nblocks = npoints / 32;
+    nblocks += (npoints % 32) ? 1 : 0;
+    const unsigned long ncart = 45;
+    const unsigned long nspherical = 17;
+    unsigned long nout;
+
+    if ((order == GG_SPHERICAL_CCA) || (order == GG_SPHERICAL_GAUSSIAN)) {
+        nout = nspherical;
+    } else {
+        nout = ncart;
+    }
+
+    // Allocate S temporaries, single block to stay on cache
+    double* PRAGMA_RESTRICT cache_data = (double*)ALIGNED_MALLOC(64, ((((256 * sizeof(double)) + 64 - 1) / 64) * 64));
+    double* PRAGMA_RESTRICT xc = cache_data + 0;
+    ASSUME_ALIGNED(xc, 64);
+    double* PRAGMA_RESTRICT yc = cache_data + 32;
+    ASSUME_ALIGNED(yc, 64);
+    double* PRAGMA_RESTRICT zc = cache_data + 64;
+    ASSUME_ALIGNED(zc, 64);
+    double* PRAGMA_RESTRICT R2 = cache_data + 96;
+    ASSUME_ALIGNED(R2, 64);
+    double* PRAGMA_RESTRICT S0 = cache_data + 128;
+    ASSUME_ALIGNED(S0, 64);
+    double* PRAGMA_RESTRICT tmp1 = cache_data + 160;
+    ASSUME_ALIGNED(tmp1, 64);
+    double* PRAGMA_RESTRICT S1 = cache_data + 192;
+    ASSUME_ALIGNED(S1, 64);
+    double* PRAGMA_RESTRICT S2 = cache_data + 224;
+    ASSUME_ALIGNED(S2, 64);
+
+    // Allocate exponential temporaries
+    double* PRAGMA_RESTRICT expn1 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
+    double* PRAGMA_RESTRICT expn2 = (double*)ALIGNED_MALLOC(64, ((((nprim * sizeof(double)) + 64 - 1) / 64) * 64));
+
+    // Allocate power temporaries
+    double* PRAGMA_RESTRICT xc_pow = (double*)ALIGNED_MALLOC(64, ((((224 * sizeof(double)) + 64 - 1) / 64) * 64));
+    ASSUME_ALIGNED(xc_pow, 64);
+    double* PRAGMA_RESTRICT yc_pow = (double*)ALIGNED_MALLOC(64, ((((224 * sizeof(double)) + 64 - 1) / 64) * 64));
+    ASSUME_ALIGNED(yc_pow, 64);
+    double* PRAGMA_RESTRICT zc_pow = (double*)ALIGNED_MALLOC(64, ((((224 * sizeof(double)) + 64 - 1) / 64) * 64));
+    ASSUME_ALIGNED(zc_pow, 64);
+
+    // Allocate output temporaries
+    double* PRAGMA_RESTRICT phi_tmp = (double*)ALIGNED_MALLOC(64, ((((1440 * sizeof(double)) + 64 - 1) / 64) * 64));
+    ASSUME_ALIGNED(phi_tmp, 64);
+
+    // Declare doubles
+    const double center_x = center[0];
+    const double center_y = center[1];
+    const double center_z = center[2];
+    double A;
+    double AX, AY, AZ;
+    double AXX, AXY, AXZ, AYY, AYZ, AZZ;
+
+    // Build negative exponents
+    for (unsigned long i = 0; i < nprim; i++) {
+        expn1[i] = -1.0 * exponents[i];
+        expn2[i] = -2.0 * exponents[i];
+    }
+
+    // Start outer block loop
+    for (unsigned long block = 0; block < nblocks; block++) {
+        // Copy data into inner temps
+        const unsigned long start = block * 32;
+        const unsigned long remain = ((start + 32) > npoints) ? (npoints - start) : 32;
+
+        // Handle non-AM dependant temps
+        if (xyz_stride == 1) {
+            const double* PRAGMA_RESTRICT x = xyz + start;
+            const double* PRAGMA_RESTRICT y = xyz + npoints + start;
+            const double* PRAGMA_RESTRICT z = xyz + 2 * npoints + start;
+            PRAGMA_VECTORIZE
+            for (unsigned long i = 0; i < remain; i++) {
+                xc[i] = x[i] - center_x;
+                yc[i] = y[i] - center_y;
+                zc[i] = z[i] - center_z;
+
+                // Distance
+                R2[i] = xc[i] * xc[i];
+                R2[i] += yc[i] * yc[i];
+                R2[i] += zc[i] * zc[i];
+
+                // Zero out S tmps
+                S0[i] = 0.0;
+                S1[i] = 0.0;
+                S2[i] = 0.0;
+            }
+        } else {
+            unsigned int start_shift = start * xyz_stride;
+
+            PRAGMA_VECTORIZE
+            for (unsigned long i = 0; i < remain; i++) {
+                xc[i] = xyz[start_shift + i * xyz_stride] - center_x;
+                yc[i] = xyz[start_shift + i * xyz_stride + 1] - center_y;
+                zc[i] = xyz[start_shift + i * xyz_stride + 2] - center_z;
+
+                // Distance
+                R2[i] = xc[i] * xc[i];
+                R2[i] += yc[i] * yc[i];
+                R2[i] += zc[i] * zc[i];
+
+                // Zero out S tmps
+                S0[i] = 0.0;
+                S1[i] = 0.0;
+                S2[i] = 0.0;
+            }
+        }
+
+        // Start exponential block loop
+        for (unsigned long n = 0; n < nprim; n++) {
+            const double coef = coeffs[n];
+            const double alpha_n1 = expn1[n];
+            const double alpha_n2 = expn2[n];
+
+            PRAGMA_VECTORIZE
+            for (unsigned long i = 0; i < remain; i++) {
+                const double width = alpha_n1 * R2[i];
+                const double T1 = coef * exp(width);
+                S0[i] += T1;
+                const double T2 = alpha_n2 * T1;
+                S1[i] += T2;
+                const double T3 = alpha_n2 * T2;
+                S2[i] += T3;
+            }
+        }
+
+        // Build powers
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            // Cartesian derivs
+            xc_pow[i] = xc[i] * xc[i];
+            yc_pow[i] = yc[i] * yc[i];
+            zc_pow[i] = zc[i] * zc[i];
+            xc_pow[32 + i] = xc_pow[i] * xc[i];
+            yc_pow[32 + i] = yc_pow[i] * yc[i];
+            zc_pow[32 + i] = zc_pow[i] * zc[i];
+            xc_pow[64 + i] = xc_pow[32 + i] * xc[i];
+            yc_pow[64 + i] = yc_pow[32 + i] * yc[i];
+            zc_pow[64 + i] = zc_pow[32 + i] * zc[i];
+            xc_pow[96 + i] = xc_pow[64 + i] * xc[i];
+            yc_pow[96 + i] = yc_pow[64 + i] * yc[i];
+            zc_pow[96 + i] = zc_pow[64 + i] * zc[i];
+            xc_pow[128 + i] = xc_pow[96 + i] * xc[i];
+            yc_pow[128 + i] = yc_pow[96 + i] * yc[i];
+            zc_pow[128 + i] = zc_pow[96 + i] * zc[i];
+            xc_pow[160 + i] = xc_pow[128 + i] * xc[i];
+            yc_pow[160 + i] = yc_pow[128 + i] * yc[i];
+            zc_pow[160 + i] = zc_pow[128 + i] * zc[i];
+            xc_pow[192 + i] = xc_pow[160 + i] * xc[i];
+            yc_pow[192 + i] = yc_pow[160 + i] * yc[i];
+            zc_pow[192 + i] = zc_pow[160 + i] * zc[i];
+        }
+        // Combine A blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            phi_tmp[i] = xc_pow[192 + i] * S0[i];
+            phi_tmp[32 + i] = xc_pow[160 + i] * yc[i] * S0[i];
+            phi_tmp[64 + i] = xc_pow[160 + i] * zc[i] * S0[i];
+            phi_tmp[96 + i] = xc_pow[128 + i] * yc_pow[i] * S0[i];
+            phi_tmp[128 + i] = xc_pow[128 + i] * yc[i] * zc[i] * S0[i];
+            phi_tmp[160 + i] = xc_pow[128 + i] * zc_pow[i] * S0[i];
+            phi_tmp[192 + i] = xc_pow[96 + i] * yc_pow[32 + i] * S0[i];
+            phi_tmp[224 + i] = xc_pow[96 + i] * yc_pow[i] * zc[i] * S0[i];
+            phi_tmp[256 + i] = xc_pow[96 + i] * yc[i] * zc_pow[i] * S0[i];
+            phi_tmp[288 + i] = xc_pow[96 + i] * zc_pow[32 + i] * S0[i];
+            phi_tmp[320 + i] = xc_pow[64 + i] * yc_pow[64 + i] * S0[i];
+            phi_tmp[352 + i] = xc_pow[64 + i] * yc_pow[32 + i] * zc[i] * S0[i];
+            phi_tmp[384 + i] = xc_pow[64 + i] * yc_pow[i] * zc_pow[i] * S0[i];
+            phi_tmp[416 + i] = xc_pow[64 + i] * yc[i] * zc_pow[32 + i] * S0[i];
+            phi_tmp[448 + i] = xc_pow[64 + i] * zc_pow[64 + i] * S0[i];
+            phi_tmp[480 + i] = xc_pow[32 + i] * yc_pow[96 + i] * S0[i];
+            phi_tmp[512 + i] = xc_pow[32 + i] * yc_pow[64 + i] * zc[i] * S0[i];
+            phi_tmp[544 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc_pow[i] * S0[i];
+            phi_tmp[576 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[32 + i] * S0[i];
+            phi_tmp[608 + i] = xc_pow[32 + i] * yc[i] * zc_pow[64 + i] * S0[i];
+            phi_tmp[640 + i] = xc_pow[32 + i] * zc_pow[96 + i] * S0[i];
+            phi_tmp[672 + i] = xc_pow[i] * yc_pow[128 + i] * S0[i];
+            phi_tmp[704 + i] = xc_pow[i] * yc_pow[96 + i] * zc[i] * S0[i];
+            phi_tmp[736 + i] = xc_pow[i] * yc_pow[64 + i] * zc_pow[i] * S0[i];
+            phi_tmp[768 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+            phi_tmp[800 + i] = xc_pow[i] * yc_pow[i] * zc_pow[64 + i] * S0[i];
+            phi_tmp[832 + i] = xc_pow[i] * yc[i] * zc_pow[96 + i] * S0[i];
+            phi_tmp[864 + i] = xc_pow[i] * zc_pow[128 + i] * S0[i];
+            phi_tmp[896 + i] = xc[i] * yc_pow[160 + i] * S0[i];
+            phi_tmp[928 + i] = xc[i] * yc_pow[128 + i] * zc[i] * S0[i];
+            phi_tmp[960 + i] = xc[i] * yc_pow[96 + i] * zc_pow[i] * S0[i];
+            phi_tmp[992 + i] = xc[i] * yc_pow[64 + i] * zc_pow[32 + i] * S0[i];
+            phi_tmp[1024 + i] = xc[i] * yc_pow[32 + i] * zc_pow[64 + i] * S0[i];
+            phi_tmp[1056 + i] = xc[i] * yc_pow[i] * zc_pow[96 + i] * S0[i];
+            phi_tmp[1088 + i] = xc[i] * yc[i] * zc_pow[128 + i] * S0[i];
+            phi_tmp[1120 + i] = xc[i] * zc_pow[160 + i] * S0[i];
+            phi_tmp[1152 + i] = yc_pow[192 + i] * S0[i];
+            phi_tmp[1184 + i] = yc_pow[160 + i] * zc[i] * S0[i];
+            phi_tmp[1216 + i] = yc_pow[128 + i] * zc_pow[i] * S0[i];
+            phi_tmp[1248 + i] = yc_pow[96 + i] * zc_pow[32 + i] * S0[i];
+            phi_tmp[1280 + i] = yc_pow[64 + i] * zc_pow[64 + i] * S0[i];
+            phi_tmp[1312 + i] = yc_pow[32 + i] * zc_pow[96 + i] * S0[i];
+            phi_tmp[1344 + i] = yc_pow[i] * zc_pow[128 + i] * S0[i];
+            phi_tmp[1376 + i] = yc[i] * zc_pow[160 + i] * S0[i];
+            phi_tmp[1408 + i] = zc_pow[192 + i] * S0[i];
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L8(remain, phi_tmp, 32, (phi_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L8(remain, phi_tmp, 32, (phi_out + start), npoints);
+        }
+
+        // Combine X blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SX = S1[i] * xc[i];
+
+            phi_tmp[i] = xc_pow[192 + i] * SX;
+            phi_tmp[i] += 8.0 * xc_pow[160 + i] * S0[i];
+
+            phi_tmp[32 + i] = xc_pow[160 + i] * yc[i] * SX;
+            phi_tmp[32 + i] += 7.0 * xc_pow[128 + i] * yc[i] * S0[i];
+
+            phi_tmp[64 + i] = xc_pow[160 + i] * zc[i] * SX;
+            phi_tmp[64 + i] += 7.0 * xc_pow[128 + i] * zc[i] * S0[i];
+
+            phi_tmp[96 + i] = xc_pow[128 + i] * yc_pow[i] * SX;
+            phi_tmp[96 + i] += 6.0 * xc_pow[96 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[128 + i] = xc_pow[128 + i] * yc[i] * zc[i] * SX;
+            phi_tmp[128 + i] += 6.0 * xc_pow[96 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[160 + i] = xc_pow[128 + i] * zc_pow[i] * SX;
+            phi_tmp[160 + i] += 6.0 * xc_pow[96 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[192 + i] = xc_pow[96 + i] * yc_pow[32 + i] * SX;
+            phi_tmp[192 + i] += 5.0 * xc_pow[64 + i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[224 + i] = xc_pow[96 + i] * yc_pow[i] * zc[i] * SX;
+            phi_tmp[224 + i] += 5.0 * xc_pow[64 + i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[96 + i] * yc[i] * zc_pow[i] * SX;
+            phi_tmp[256 + i] += 5.0 * xc_pow[64 + i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[96 + i] * zc_pow[32 + i] * SX;
+            phi_tmp[288 + i] += 5.0 * xc_pow[64 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[320 + i] = xc_pow[64 + i] * yc_pow[64 + i] * SX;
+            phi_tmp[320 + i] += 4.0 * xc_pow[32 + i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[352 + i] = xc_pow[64 + i] * yc_pow[32 + i] * zc[i] * SX;
+            phi_tmp[352 + i] += 4.0 * xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[64 + i] * yc_pow[i] * zc_pow[i] * SX;
+            phi_tmp[384 + i] += 4.0 * xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[64 + i] * yc[i] * zc_pow[32 + i] * SX;
+            phi_tmp[416 + i] += 4.0 * xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[64 + i] * zc_pow[64 + i] * SX;
+            phi_tmp[448 + i] += 4.0 * xc_pow[32 + i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[480 + i] = xc_pow[32 + i] * yc_pow[96 + i] * SX;
+            phi_tmp[480 + i] += 3.0 * xc_pow[i] * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[512 + i] = xc_pow[32 + i] * yc_pow[64 + i] * zc[i] * SX;
+            phi_tmp[512 + i] += 3.0 * xc_pow[i] * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc_pow[i] * SX;
+            phi_tmp[544 + i] += 3.0 * xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[32 + i] * SX;
+            phi_tmp[576 + i] += 3.0 * xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[32 + i] * yc[i] * zc_pow[64 + i] * SX;
+            phi_tmp[608 + i] += 3.0 * xc_pow[i] * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[32 + i] * zc_pow[96 + i] * SX;
+            phi_tmp[640 + i] += 3.0 * xc_pow[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[672 + i] = xc_pow[i] * yc_pow[128 + i] * SX;
+            phi_tmp[672 + i] += 2.0 * xc[i] * yc_pow[128 + i] * S0[i];
+
+            phi_tmp[704 + i] = xc_pow[i] * yc_pow[96 + i] * zc[i] * SX;
+            phi_tmp[704 + i] += 2.0 * xc[i] * yc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[736 + i] = xc_pow[i] * yc_pow[64 + i] * zc_pow[i] * SX;
+            phi_tmp[736 + i] += 2.0 * xc[i] * yc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[768 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[32 + i] * SX;
+            phi_tmp[768 + i] += 2.0 * xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[800 + i] = xc_pow[i] * yc_pow[i] * zc_pow[64 + i] * SX;
+            phi_tmp[800 + i] += 2.0 * xc[i] * yc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[832 + i] = xc_pow[i] * yc[i] * zc_pow[96 + i] * SX;
+            phi_tmp[832 + i] += 2.0 * xc[i] * yc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[864 + i] = xc_pow[i] * zc_pow[128 + i] * SX;
+            phi_tmp[864 + i] += 2.0 * xc[i] * zc_pow[128 + i] * S0[i];
+
+            phi_tmp[896 + i] = xc[i] * yc_pow[160 + i] * SX;
+            phi_tmp[896 + i] += yc_pow[160 + i] * S0[i];
+
+            phi_tmp[928 + i] = xc[i] * yc_pow[128 + i] * zc[i] * SX;
+            phi_tmp[928 + i] += yc_pow[128 + i] * zc[i] * S0[i];
+
+            phi_tmp[960 + i] = xc[i] * yc_pow[96 + i] * zc_pow[i] * SX;
+            phi_tmp[960 + i] += yc_pow[96 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[992 + i] = xc[i] * yc_pow[64 + i] * zc_pow[32 + i] * SX;
+            phi_tmp[992 + i] += yc_pow[64 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1024 + i] = xc[i] * yc_pow[32 + i] * zc_pow[64 + i] * SX;
+            phi_tmp[1024 + i] += yc_pow[32 + i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1056 + i] = xc[i] * yc_pow[i] * zc_pow[96 + i] * SX;
+            phi_tmp[1056 + i] += yc_pow[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1088 + i] = xc[i] * yc[i] * zc_pow[128 + i] * SX;
+            phi_tmp[1088 + i] += yc[i] * zc_pow[128 + i] * S0[i];
+
+            phi_tmp[1120 + i] = xc[i] * zc_pow[160 + i] * SX;
+            phi_tmp[1120 + i] += zc_pow[160 + i] * S0[i];
+
+            phi_tmp[1152 + i] = yc_pow[192 + i] * SX;
+
+            phi_tmp[1184 + i] = yc_pow[160 + i] * zc[i] * SX;
+
+            phi_tmp[1216 + i] = yc_pow[128 + i] * zc_pow[i] * SX;
+
+            phi_tmp[1248 + i] = yc_pow[96 + i] * zc_pow[32 + i] * SX;
+
+            phi_tmp[1280 + i] = yc_pow[64 + i] * zc_pow[64 + i] * SX;
+
+            phi_tmp[1312 + i] = yc_pow[32 + i] * zc_pow[96 + i] * SX;
+
+            phi_tmp[1344 + i] = yc_pow[i] * zc_pow[128 + i] * SX;
+
+            phi_tmp[1376 + i] = yc[i] * zc_pow[160 + i] * SX;
+
+            phi_tmp[1408 + i] = zc_pow[192 + i] * SX;
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_x_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_x_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L8(remain, phi_tmp, 32, (phi_x_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L8(remain, phi_tmp, 32, (phi_x_out + start), npoints);
+        }
+
+        // Combine Y blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SY = S1[i] * yc[i];
+
+            phi_tmp[i] = xc_pow[192 + i] * SY;
+
+            phi_tmp[32 + i] = xc_pow[160 + i] * yc[i] * SY;
+            phi_tmp[32 + i] += xc_pow[160 + i] * S0[i];
+
+            phi_tmp[64 + i] = xc_pow[160 + i] * zc[i] * SY;
+
+            phi_tmp[96 + i] = xc_pow[128 + i] * yc_pow[i] * SY;
+            phi_tmp[96 + i] += 2.0 * xc_pow[128 + i] * yc[i] * S0[i];
+
+            phi_tmp[128 + i] = xc_pow[128 + i] * yc[i] * zc[i] * SY;
+            phi_tmp[128 + i] += xc_pow[128 + i] * zc[i] * S0[i];
+
+            phi_tmp[160 + i] = xc_pow[128 + i] * zc_pow[i] * SY;
+
+            phi_tmp[192 + i] = xc_pow[96 + i] * yc_pow[32 + i] * SY;
+            phi_tmp[192 + i] += 3.0 * xc_pow[96 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[224 + i] = xc_pow[96 + i] * yc_pow[i] * zc[i] * SY;
+            phi_tmp[224 + i] += 2.0 * xc_pow[96 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[96 + i] * yc[i] * zc_pow[i] * SY;
+            phi_tmp[256 + i] += xc_pow[96 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[96 + i] * zc_pow[32 + i] * SY;
+
+            phi_tmp[320 + i] = xc_pow[64 + i] * yc_pow[64 + i] * SY;
+            phi_tmp[320 + i] += 4.0 * xc_pow[64 + i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[352 + i] = xc_pow[64 + i] * yc_pow[32 + i] * zc[i] * SY;
+            phi_tmp[352 + i] += 3.0 * xc_pow[64 + i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[64 + i] * yc_pow[i] * zc_pow[i] * SY;
+            phi_tmp[384 + i] += 2.0 * xc_pow[64 + i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[64 + i] * yc[i] * zc_pow[32 + i] * SY;
+            phi_tmp[416 + i] += xc_pow[64 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[64 + i] * zc_pow[64 + i] * SY;
+
+            phi_tmp[480 + i] = xc_pow[32 + i] * yc_pow[96 + i] * SY;
+            phi_tmp[480 + i] += 5.0 * xc_pow[32 + i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[512 + i] = xc_pow[32 + i] * yc_pow[64 + i] * zc[i] * SY;
+            phi_tmp[512 + i] += 4.0 * xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc_pow[i] * SY;
+            phi_tmp[544 + i] += 3.0 * xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[32 + i] * SY;
+            phi_tmp[576 + i] += 2.0 * xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[32 + i] * yc[i] * zc_pow[64 + i] * SY;
+            phi_tmp[608 + i] += xc_pow[32 + i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[32 + i] * zc_pow[96 + i] * SY;
+
+            phi_tmp[672 + i] = xc_pow[i] * yc_pow[128 + i] * SY;
+            phi_tmp[672 + i] += 6.0 * xc_pow[i] * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[704 + i] = xc_pow[i] * yc_pow[96 + i] * zc[i] * SY;
+            phi_tmp[704 + i] += 5.0 * xc_pow[i] * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[736 + i] = xc_pow[i] * yc_pow[64 + i] * zc_pow[i] * SY;
+            phi_tmp[736 + i] += 4.0 * xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[768 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[32 + i] * SY;
+            phi_tmp[768 + i] += 3.0 * xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[800 + i] = xc_pow[i] * yc_pow[i] * zc_pow[64 + i] * SY;
+            phi_tmp[800 + i] += 2.0 * xc_pow[i] * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[832 + i] = xc_pow[i] * yc[i] * zc_pow[96 + i] * SY;
+            phi_tmp[832 + i] += xc_pow[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[864 + i] = xc_pow[i] * zc_pow[128 + i] * SY;
+
+            phi_tmp[896 + i] = xc[i] * yc_pow[160 + i] * SY;
+            phi_tmp[896 + i] += 7.0 * xc[i] * yc_pow[128 + i] * S0[i];
+
+            phi_tmp[928 + i] = xc[i] * yc_pow[128 + i] * zc[i] * SY;
+            phi_tmp[928 + i] += 6.0 * xc[i] * yc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[960 + i] = xc[i] * yc_pow[96 + i] * zc_pow[i] * SY;
+            phi_tmp[960 + i] += 5.0 * xc[i] * yc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[992 + i] = xc[i] * yc_pow[64 + i] * zc_pow[32 + i] * SY;
+            phi_tmp[992 + i] += 4.0 * xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1024 + i] = xc[i] * yc_pow[32 + i] * zc_pow[64 + i] * SY;
+            phi_tmp[1024 + i] += 3.0 * xc[i] * yc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1056 + i] = xc[i] * yc_pow[i] * zc_pow[96 + i] * SY;
+            phi_tmp[1056 + i] += 2.0 * xc[i] * yc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1088 + i] = xc[i] * yc[i] * zc_pow[128 + i] * SY;
+            phi_tmp[1088 + i] += xc[i] * zc_pow[128 + i] * S0[i];
+
+            phi_tmp[1120 + i] = xc[i] * zc_pow[160 + i] * SY;
+
+            phi_tmp[1152 + i] = yc_pow[192 + i] * SY;
+            phi_tmp[1152 + i] += 8.0 * yc_pow[160 + i] * S0[i];
+
+            phi_tmp[1184 + i] = yc_pow[160 + i] * zc[i] * SY;
+            phi_tmp[1184 + i] += 7.0 * yc_pow[128 + i] * zc[i] * S0[i];
+
+            phi_tmp[1216 + i] = yc_pow[128 + i] * zc_pow[i] * SY;
+            phi_tmp[1216 + i] += 6.0 * yc_pow[96 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[1248 + i] = yc_pow[96 + i] * zc_pow[32 + i] * SY;
+            phi_tmp[1248 + i] += 5.0 * yc_pow[64 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1280 + i] = yc_pow[64 + i] * zc_pow[64 + i] * SY;
+            phi_tmp[1280 + i] += 4.0 * yc_pow[32 + i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1312 + i] = yc_pow[32 + i] * zc_pow[96 + i] * SY;
+            phi_tmp[1312 + i] += 3.0 * yc_pow[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1344 + i] = yc_pow[i] * zc_pow[128 + i] * SY;
+            phi_tmp[1344 + i] += 2.0 * yc[i] * zc_pow[128 + i] * S0[i];
+
+            phi_tmp[1376 + i] = yc[i] * zc_pow[160 + i] * SY;
+            phi_tmp[1376 + i] += zc_pow[160 + i] * S0[i];
+
+            phi_tmp[1408 + i] = zc_pow[192 + i] * SY;
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_y_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_y_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L8(remain, phi_tmp, 32, (phi_y_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L8(remain, phi_tmp, 32, (phi_y_out + start), npoints);
+        }
+
+        // Combine Z blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SZ = S1[i] * zc[i];
+
+            phi_tmp[i] = xc_pow[192 + i] * SZ;
+
+            phi_tmp[32 + i] = xc_pow[160 + i] * yc[i] * SZ;
+
+            phi_tmp[64 + i] = xc_pow[160 + i] * zc[i] * SZ;
+            phi_tmp[64 + i] += xc_pow[160 + i] * S0[i];
+
+            phi_tmp[96 + i] = xc_pow[128 + i] * yc_pow[i] * SZ;
+
+            phi_tmp[128 + i] = xc_pow[128 + i] * yc[i] * zc[i] * SZ;
+            phi_tmp[128 + i] += xc_pow[128 + i] * yc[i] * S0[i];
+
+            phi_tmp[160 + i] = xc_pow[128 + i] * zc_pow[i] * SZ;
+            phi_tmp[160 + i] += 2.0 * xc_pow[128 + i] * zc[i] * S0[i];
+
+            phi_tmp[192 + i] = xc_pow[96 + i] * yc_pow[32 + i] * SZ;
+
+            phi_tmp[224 + i] = xc_pow[96 + i] * yc_pow[i] * zc[i] * SZ;
+            phi_tmp[224 + i] += xc_pow[96 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[96 + i] * yc[i] * zc_pow[i] * SZ;
+            phi_tmp[256 + i] += 2.0 * xc_pow[96 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[96 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[288 + i] += 3.0 * xc_pow[96 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[320 + i] = xc_pow[64 + i] * yc_pow[64 + i] * SZ;
+
+            phi_tmp[352 + i] = xc_pow[64 + i] * yc_pow[32 + i] * zc[i] * SZ;
+            phi_tmp[352 + i] += xc_pow[64 + i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[64 + i] * yc_pow[i] * zc_pow[i] * SZ;
+            phi_tmp[384 + i] += 2.0 * xc_pow[64 + i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[64 + i] * yc[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[416 + i] += 3.0 * xc_pow[64 + i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[64 + i] * zc_pow[64 + i] * SZ;
+            phi_tmp[448 + i] += 4.0 * xc_pow[64 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[480 + i] = xc_pow[32 + i] * yc_pow[96 + i] * SZ;
+
+            phi_tmp[512 + i] = xc_pow[32 + i] * yc_pow[64 + i] * zc[i] * SZ;
+            phi_tmp[512 + i] += xc_pow[32 + i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc_pow[i] * SZ;
+            phi_tmp[544 + i] += 2.0 * xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[576 + i] += 3.0 * xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[32 + i] * yc[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[608 + i] += 4.0 * xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[32 + i] * zc_pow[96 + i] * SZ;
+            phi_tmp[640 + i] += 5.0 * xc_pow[32 + i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[672 + i] = xc_pow[i] * yc_pow[128 + i] * SZ;
+
+            phi_tmp[704 + i] = xc_pow[i] * yc_pow[96 + i] * zc[i] * SZ;
+            phi_tmp[704 + i] += xc_pow[i] * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[736 + i] = xc_pow[i] * yc_pow[64 + i] * zc_pow[i] * SZ;
+            phi_tmp[736 + i] += 2.0 * xc_pow[i] * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[768 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[768 + i] += 3.0 * xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[800 + i] = xc_pow[i] * yc_pow[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[800 + i] += 4.0 * xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[832 + i] = xc_pow[i] * yc[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[832 + i] += 5.0 * xc_pow[i] * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[864 + i] = xc_pow[i] * zc_pow[128 + i] * SZ;
+            phi_tmp[864 + i] += 6.0 * xc_pow[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[896 + i] = xc[i] * yc_pow[160 + i] * SZ;
+
+            phi_tmp[928 + i] = xc[i] * yc_pow[128 + i] * zc[i] * SZ;
+            phi_tmp[928 + i] += xc[i] * yc_pow[128 + i] * S0[i];
+
+            phi_tmp[960 + i] = xc[i] * yc_pow[96 + i] * zc_pow[i] * SZ;
+            phi_tmp[960 + i] += 2.0 * xc[i] * yc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[992 + i] = xc[i] * yc_pow[64 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[992 + i] += 3.0 * xc[i] * yc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[1024 + i] = xc[i] * yc_pow[32 + i] * zc_pow[64 + i] * SZ;
+            phi_tmp[1024 + i] += 4.0 * xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1056 + i] = xc[i] * yc_pow[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[1056 + i] += 5.0 * xc[i] * yc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1088 + i] = xc[i] * yc[i] * zc_pow[128 + i] * SZ;
+            phi_tmp[1088 + i] += 6.0 * xc[i] * yc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1120 + i] = xc[i] * zc_pow[160 + i] * SZ;
+            phi_tmp[1120 + i] += 7.0 * xc[i] * zc_pow[128 + i] * S0[i];
+
+            phi_tmp[1152 + i] = yc_pow[192 + i] * SZ;
+
+            phi_tmp[1184 + i] = yc_pow[160 + i] * zc[i] * SZ;
+            phi_tmp[1184 + i] += yc_pow[160 + i] * S0[i];
+
+            phi_tmp[1216 + i] = yc_pow[128 + i] * zc_pow[i] * SZ;
+            phi_tmp[1216 + i] += 2.0 * yc_pow[128 + i] * zc[i] * S0[i];
+
+            phi_tmp[1248 + i] = yc_pow[96 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[1248 + i] += 3.0 * yc_pow[96 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[1280 + i] = yc_pow[64 + i] * zc_pow[64 + i] * SZ;
+            phi_tmp[1280 + i] += 4.0 * yc_pow[64 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1312 + i] = yc_pow[32 + i] * zc_pow[96 + i] * SZ;
+            phi_tmp[1312 + i] += 5.0 * yc_pow[32 + i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1344 + i] = yc_pow[i] * zc_pow[128 + i] * SZ;
+            phi_tmp[1344 + i] += 6.0 * yc_pow[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1376 + i] = yc[i] * zc_pow[160 + i] * SZ;
+            phi_tmp[1376 + i] += 7.0 * yc[i] * zc_pow[128 + i] * S0[i];
+
+            phi_tmp[1408 + i] = zc_pow[192 + i] * SZ;
+            phi_tmp[1408 + i] += 8.0 * zc_pow[160 + i] * S0[i];
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_z_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_z_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L8(remain, phi_tmp, 32, (phi_z_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L8(remain, phi_tmp, 32, (phi_z_out + start), npoints);
+        }
+
+        // Combine XX blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SX = S1[i] * xc[i];
+            const double SXX = S2[i] * xc[i] * xc[i] + S1[i];
+
+            phi_tmp[i] = xc_pow[192 + i] * SXX;
+            phi_tmp[i] += 16.0 * xc_pow[160 + i] * SX;
+            phi_tmp[i] += 56.0 * xc_pow[128 + i] * S0[i];
+
+            phi_tmp[32 + i] = xc_pow[160 + i] * yc[i] * SXX;
+            phi_tmp[32 + i] += 14.0 * xc_pow[128 + i] * yc[i] * SX;
+            phi_tmp[32 + i] += 42.0 * xc_pow[96 + i] * yc[i] * S0[i];
+
+            phi_tmp[64 + i] = xc_pow[160 + i] * zc[i] * SXX;
+            phi_tmp[64 + i] += 14.0 * xc_pow[128 + i] * zc[i] * SX;
+            phi_tmp[64 + i] += 42.0 * xc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[96 + i] = xc_pow[128 + i] * yc_pow[i] * SXX;
+            phi_tmp[96 + i] += 12.0 * xc_pow[96 + i] * yc_pow[i] * SX;
+            phi_tmp[96 + i] += 30.0 * xc_pow[64 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[128 + i] = xc_pow[128 + i] * yc[i] * zc[i] * SXX;
+            phi_tmp[128 + i] += 12.0 * xc_pow[96 + i] * yc[i] * zc[i] * SX;
+            phi_tmp[128 + i] += 30.0 * xc_pow[64 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[160 + i] = xc_pow[128 + i] * zc_pow[i] * SXX;
+            phi_tmp[160 + i] += 12.0 * xc_pow[96 + i] * zc_pow[i] * SX;
+            phi_tmp[160 + i] += 30.0 * xc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[192 + i] = xc_pow[96 + i] * yc_pow[32 + i] * SXX;
+            phi_tmp[192 + i] += 10.0 * xc_pow[64 + i] * yc_pow[32 + i] * SX;
+            phi_tmp[192 + i] += 20.0 * xc_pow[32 + i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[224 + i] = xc_pow[96 + i] * yc_pow[i] * zc[i] * SXX;
+            phi_tmp[224 + i] += 10.0 * xc_pow[64 + i] * yc_pow[i] * zc[i] * SX;
+            phi_tmp[224 + i] += 20.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[96 + i] * yc[i] * zc_pow[i] * SXX;
+            phi_tmp[256 + i] += 10.0 * xc_pow[64 + i] * yc[i] * zc_pow[i] * SX;
+            phi_tmp[256 + i] += 20.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[96 + i] * zc_pow[32 + i] * SXX;
+            phi_tmp[288 + i] += 10.0 * xc_pow[64 + i] * zc_pow[32 + i] * SX;
+            phi_tmp[288 + i] += 20.0 * xc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[320 + i] = xc_pow[64 + i] * yc_pow[64 + i] * SXX;
+            phi_tmp[320 + i] += 8.0 * xc_pow[32 + i] * yc_pow[64 + i] * SX;
+            phi_tmp[320 + i] += 12.0 * xc_pow[i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[352 + i] = xc_pow[64 + i] * yc_pow[32 + i] * zc[i] * SXX;
+            phi_tmp[352 + i] += 8.0 * xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SX;
+            phi_tmp[352 + i] += 12.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[64 + i] * yc_pow[i] * zc_pow[i] * SXX;
+            phi_tmp[384 + i] += 8.0 * xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SX;
+            phi_tmp[384 + i] += 12.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[64 + i] * yc[i] * zc_pow[32 + i] * SXX;
+            phi_tmp[416 + i] += 8.0 * xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SX;
+            phi_tmp[416 + i] += 12.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[64 + i] * zc_pow[64 + i] * SXX;
+            phi_tmp[448 + i] += 8.0 * xc_pow[32 + i] * zc_pow[64 + i] * SX;
+            phi_tmp[448 + i] += 12.0 * xc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[480 + i] = xc_pow[32 + i] * yc_pow[96 + i] * SXX;
+            phi_tmp[480 + i] += 6.0 * xc_pow[i] * yc_pow[96 + i] * SX;
+            phi_tmp[480 + i] += 6.0 * xc[i] * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[512 + i] = xc_pow[32 + i] * yc_pow[64 + i] * zc[i] * SXX;
+            phi_tmp[512 + i] += 6.0 * xc_pow[i] * yc_pow[64 + i] * zc[i] * SX;
+            phi_tmp[512 + i] += 6.0 * xc[i] * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc_pow[i] * SXX;
+            phi_tmp[544 + i] += 6.0 * xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SX;
+            phi_tmp[544 + i] += 6.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[32 + i] * SXX;
+            phi_tmp[576 + i] += 6.0 * xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SX;
+            phi_tmp[576 + i] += 6.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[32 + i] * yc[i] * zc_pow[64 + i] * SXX;
+            phi_tmp[608 + i] += 6.0 * xc_pow[i] * yc[i] * zc_pow[64 + i] * SX;
+            phi_tmp[608 + i] += 6.0 * xc[i] * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[32 + i] * zc_pow[96 + i] * SXX;
+            phi_tmp[640 + i] += 6.0 * xc_pow[i] * zc_pow[96 + i] * SX;
+            phi_tmp[640 + i] += 6.0 * xc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[672 + i] = xc_pow[i] * yc_pow[128 + i] * SXX;
+            phi_tmp[672 + i] += 4.0 * xc[i] * yc_pow[128 + i] * SX;
+            phi_tmp[672 + i] += 2.0 * yc_pow[128 + i] * S0[i];
+
+            phi_tmp[704 + i] = xc_pow[i] * yc_pow[96 + i] * zc[i] * SXX;
+            phi_tmp[704 + i] += 4.0 * xc[i] * yc_pow[96 + i] * zc[i] * SX;
+            phi_tmp[704 + i] += 2.0 * yc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[736 + i] = xc_pow[i] * yc_pow[64 + i] * zc_pow[i] * SXX;
+            phi_tmp[736 + i] += 4.0 * xc[i] * yc_pow[64 + i] * zc_pow[i] * SX;
+            phi_tmp[736 + i] += 2.0 * yc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[768 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[32 + i] * SXX;
+            phi_tmp[768 + i] += 4.0 * xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SX;
+            phi_tmp[768 + i] += 2.0 * yc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[800 + i] = xc_pow[i] * yc_pow[i] * zc_pow[64 + i] * SXX;
+            phi_tmp[800 + i] += 4.0 * xc[i] * yc_pow[i] * zc_pow[64 + i] * SX;
+            phi_tmp[800 + i] += 2.0 * yc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[832 + i] = xc_pow[i] * yc[i] * zc_pow[96 + i] * SXX;
+            phi_tmp[832 + i] += 4.0 * xc[i] * yc[i] * zc_pow[96 + i] * SX;
+            phi_tmp[832 + i] += 2.0 * yc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[864 + i] = xc_pow[i] * zc_pow[128 + i] * SXX;
+            phi_tmp[864 + i] += 4.0 * xc[i] * zc_pow[128 + i] * SX;
+            phi_tmp[864 + i] += 2.0 * zc_pow[128 + i] * S0[i];
+
+            phi_tmp[896 + i] = xc[i] * yc_pow[160 + i] * SXX;
+            phi_tmp[896 + i] += 2.0 * yc_pow[160 + i] * SX;
+
+            phi_tmp[928 + i] = xc[i] * yc_pow[128 + i] * zc[i] * SXX;
+            phi_tmp[928 + i] += 2.0 * yc_pow[128 + i] * zc[i] * SX;
+
+            phi_tmp[960 + i] = xc[i] * yc_pow[96 + i] * zc_pow[i] * SXX;
+            phi_tmp[960 + i] += 2.0 * yc_pow[96 + i] * zc_pow[i] * SX;
+
+            phi_tmp[992 + i] = xc[i] * yc_pow[64 + i] * zc_pow[32 + i] * SXX;
+            phi_tmp[992 + i] += 2.0 * yc_pow[64 + i] * zc_pow[32 + i] * SX;
+
+            phi_tmp[1024 + i] = xc[i] * yc_pow[32 + i] * zc_pow[64 + i] * SXX;
+            phi_tmp[1024 + i] += 2.0 * yc_pow[32 + i] * zc_pow[64 + i] * SX;
+
+            phi_tmp[1056 + i] = xc[i] * yc_pow[i] * zc_pow[96 + i] * SXX;
+            phi_tmp[1056 + i] += 2.0 * yc_pow[i] * zc_pow[96 + i] * SX;
+
+            phi_tmp[1088 + i] = xc[i] * yc[i] * zc_pow[128 + i] * SXX;
+            phi_tmp[1088 + i] += 2.0 * yc[i] * zc_pow[128 + i] * SX;
+
+            phi_tmp[1120 + i] = xc[i] * zc_pow[160 + i] * SXX;
+            phi_tmp[1120 + i] += 2.0 * zc_pow[160 + i] * SX;
+
+            phi_tmp[1152 + i] = yc_pow[192 + i] * SXX;
+
+            phi_tmp[1184 + i] = yc_pow[160 + i] * zc[i] * SXX;
+
+            phi_tmp[1216 + i] = yc_pow[128 + i] * zc_pow[i] * SXX;
+
+            phi_tmp[1248 + i] = yc_pow[96 + i] * zc_pow[32 + i] * SXX;
+
+            phi_tmp[1280 + i] = yc_pow[64 + i] * zc_pow[64 + i] * SXX;
+
+            phi_tmp[1312 + i] = yc_pow[32 + i] * zc_pow[96 + i] * SXX;
+
+            phi_tmp[1344 + i] = yc_pow[i] * zc_pow[128 + i] * SXX;
+
+            phi_tmp[1376 + i] = yc[i] * zc_pow[160 + i] * SXX;
+
+            phi_tmp[1408 + i] = zc_pow[192 + i] * SXX;
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L8(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L8(remain, phi_tmp, 32, (phi_xx_out + start), npoints);
+        }
+
+        // Combine XY blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SX = S1[i] * xc[i];
+            const double SY = S1[i] * yc[i];
+            const double SXY = S2[i] * xc[i] * yc[i];
+
+            phi_tmp[i] = xc_pow[192 + i] * SXY;
+            phi_tmp[i] += 8.0 * xc_pow[160 + i] * SY;
+
+            phi_tmp[32 + i] = xc_pow[160 + i] * yc[i] * SXY;
+            phi_tmp[32 + i] += xc_pow[160 + i] * SX;
+            phi_tmp[32 + i] += 7.0 * xc_pow[128 + i] * yc[i] * SY;
+            phi_tmp[32 + i] += 7.0 * xc_pow[128 + i] * S0[i];
+
+            phi_tmp[64 + i] = xc_pow[160 + i] * zc[i] * SXY;
+            phi_tmp[64 + i] += 7.0 * xc_pow[128 + i] * zc[i] * SY;
+
+            phi_tmp[96 + i] = xc_pow[128 + i] * yc_pow[i] * SXY;
+            phi_tmp[96 + i] += 2.0 * xc_pow[128 + i] * yc[i] * SX;
+            phi_tmp[96 + i] += 6.0 * xc_pow[96 + i] * yc_pow[i] * SY;
+            phi_tmp[96 + i] += 12.0 * xc_pow[96 + i] * yc[i] * S0[i];
+
+            phi_tmp[128 + i] = xc_pow[128 + i] * yc[i] * zc[i] * SXY;
+            phi_tmp[128 + i] += xc_pow[128 + i] * zc[i] * SX;
+            phi_tmp[128 + i] += 6.0 * xc_pow[96 + i] * yc[i] * zc[i] * SY;
+            phi_tmp[128 + i] += 6.0 * xc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[160 + i] = xc_pow[128 + i] * zc_pow[i] * SXY;
+            phi_tmp[160 + i] += 6.0 * xc_pow[96 + i] * zc_pow[i] * SY;
+
+            phi_tmp[192 + i] = xc_pow[96 + i] * yc_pow[32 + i] * SXY;
+            phi_tmp[192 + i] += 3.0 * xc_pow[96 + i] * yc_pow[i] * SX;
+            phi_tmp[192 + i] += 5.0 * xc_pow[64 + i] * yc_pow[32 + i] * SY;
+            phi_tmp[192 + i] += 15.0 * xc_pow[64 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[224 + i] = xc_pow[96 + i] * yc_pow[i] * zc[i] * SXY;
+            phi_tmp[224 + i] += 2.0 * xc_pow[96 + i] * yc[i] * zc[i] * SX;
+            phi_tmp[224 + i] += 5.0 * xc_pow[64 + i] * yc_pow[i] * zc[i] * SY;
+            phi_tmp[224 + i] += 10.0 * xc_pow[64 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[96 + i] * yc[i] * zc_pow[i] * SXY;
+            phi_tmp[256 + i] += xc_pow[96 + i] * zc_pow[i] * SX;
+            phi_tmp[256 + i] += 5.0 * xc_pow[64 + i] * yc[i] * zc_pow[i] * SY;
+            phi_tmp[256 + i] += 5.0 * xc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[96 + i] * zc_pow[32 + i] * SXY;
+            phi_tmp[288 + i] += 5.0 * xc_pow[64 + i] * zc_pow[32 + i] * SY;
+
+            phi_tmp[320 + i] = xc_pow[64 + i] * yc_pow[64 + i] * SXY;
+            phi_tmp[320 + i] += 4.0 * xc_pow[64 + i] * yc_pow[32 + i] * SX;
+            phi_tmp[320 + i] += 4.0 * xc_pow[32 + i] * yc_pow[64 + i] * SY;
+            phi_tmp[320 + i] += 16.0 * xc_pow[32 + i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[352 + i] = xc_pow[64 + i] * yc_pow[32 + i] * zc[i] * SXY;
+            phi_tmp[352 + i] += 3.0 * xc_pow[64 + i] * yc_pow[i] * zc[i] * SX;
+            phi_tmp[352 + i] += 4.0 * xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SY;
+            phi_tmp[352 + i] += 12.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[64 + i] * yc_pow[i] * zc_pow[i] * SXY;
+            phi_tmp[384 + i] += 2.0 * xc_pow[64 + i] * yc[i] * zc_pow[i] * SX;
+            phi_tmp[384 + i] += 4.0 * xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SY;
+            phi_tmp[384 + i] += 8.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[64 + i] * yc[i] * zc_pow[32 + i] * SXY;
+            phi_tmp[416 + i] += xc_pow[64 + i] * zc_pow[32 + i] * SX;
+            phi_tmp[416 + i] += 4.0 * xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SY;
+            phi_tmp[416 + i] += 4.0 * xc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[64 + i] * zc_pow[64 + i] * SXY;
+            phi_tmp[448 + i] += 4.0 * xc_pow[32 + i] * zc_pow[64 + i] * SY;
+
+            phi_tmp[480 + i] = xc_pow[32 + i] * yc_pow[96 + i] * SXY;
+            phi_tmp[480 + i] += 5.0 * xc_pow[32 + i] * yc_pow[64 + i] * SX;
+            phi_tmp[480 + i] += 3.0 * xc_pow[i] * yc_pow[96 + i] * SY;
+            phi_tmp[480 + i] += 15.0 * xc_pow[i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[512 + i] = xc_pow[32 + i] * yc_pow[64 + i] * zc[i] * SXY;
+            phi_tmp[512 + i] += 4.0 * xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SX;
+            phi_tmp[512 + i] += 3.0 * xc_pow[i] * yc_pow[64 + i] * zc[i] * SY;
+            phi_tmp[512 + i] += 12.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc_pow[i] * SXY;
+            phi_tmp[544 + i] += 3.0 * xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SX;
+            phi_tmp[544 + i] += 3.0 * xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SY;
+            phi_tmp[544 + i] += 9.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[32 + i] * SXY;
+            phi_tmp[576 + i] += 2.0 * xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SX;
+            phi_tmp[576 + i] += 3.0 * xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SY;
+            phi_tmp[576 + i] += 6.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[32 + i] * yc[i] * zc_pow[64 + i] * SXY;
+            phi_tmp[608 + i] += xc_pow[32 + i] * zc_pow[64 + i] * SX;
+            phi_tmp[608 + i] += 3.0 * xc_pow[i] * yc[i] * zc_pow[64 + i] * SY;
+            phi_tmp[608 + i] += 3.0 * xc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[32 + i] * zc_pow[96 + i] * SXY;
+            phi_tmp[640 + i] += 3.0 * xc_pow[i] * zc_pow[96 + i] * SY;
+
+            phi_tmp[672 + i] = xc_pow[i] * yc_pow[128 + i] * SXY;
+            phi_tmp[672 + i] += 6.0 * xc_pow[i] * yc_pow[96 + i] * SX;
+            phi_tmp[672 + i] += 2.0 * xc[i] * yc_pow[128 + i] * SY;
+            phi_tmp[672 + i] += 12.0 * xc[i] * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[704 + i] = xc_pow[i] * yc_pow[96 + i] * zc[i] * SXY;
+            phi_tmp[704 + i] += 5.0 * xc_pow[i] * yc_pow[64 + i] * zc[i] * SX;
+            phi_tmp[704 + i] += 2.0 * xc[i] * yc_pow[96 + i] * zc[i] * SY;
+            phi_tmp[704 + i] += 10.0 * xc[i] * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[736 + i] = xc_pow[i] * yc_pow[64 + i] * zc_pow[i] * SXY;
+            phi_tmp[736 + i] += 4.0 * xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SX;
+            phi_tmp[736 + i] += 2.0 * xc[i] * yc_pow[64 + i] * zc_pow[i] * SY;
+            phi_tmp[736 + i] += 8.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[768 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[32 + i] * SXY;
+            phi_tmp[768 + i] += 3.0 * xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SX;
+            phi_tmp[768 + i] += 2.0 * xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SY;
+            phi_tmp[768 + i] += 6.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[800 + i] = xc_pow[i] * yc_pow[i] * zc_pow[64 + i] * SXY;
+            phi_tmp[800 + i] += 2.0 * xc_pow[i] * yc[i] * zc_pow[64 + i] * SX;
+            phi_tmp[800 + i] += 2.0 * xc[i] * yc_pow[i] * zc_pow[64 + i] * SY;
+            phi_tmp[800 + i] += 4.0 * xc[i] * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[832 + i] = xc_pow[i] * yc[i] * zc_pow[96 + i] * SXY;
+            phi_tmp[832 + i] += xc_pow[i] * zc_pow[96 + i] * SX;
+            phi_tmp[832 + i] += 2.0 * xc[i] * yc[i] * zc_pow[96 + i] * SY;
+            phi_tmp[832 + i] += 2.0 * xc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[864 + i] = xc_pow[i] * zc_pow[128 + i] * SXY;
+            phi_tmp[864 + i] += 2.0 * xc[i] * zc_pow[128 + i] * SY;
+
+            phi_tmp[896 + i] = xc[i] * yc_pow[160 + i] * SXY;
+            phi_tmp[896 + i] += 7.0 * xc[i] * yc_pow[128 + i] * SX;
+            phi_tmp[896 + i] += yc_pow[160 + i] * SY;
+            phi_tmp[896 + i] += 7.0 * yc_pow[128 + i] * S0[i];
+
+            phi_tmp[928 + i] = xc[i] * yc_pow[128 + i] * zc[i] * SXY;
+            phi_tmp[928 + i] += 6.0 * xc[i] * yc_pow[96 + i] * zc[i] * SX;
+            phi_tmp[928 + i] += yc_pow[128 + i] * zc[i] * SY;
+            phi_tmp[928 + i] += 6.0 * yc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[960 + i] = xc[i] * yc_pow[96 + i] * zc_pow[i] * SXY;
+            phi_tmp[960 + i] += 5.0 * xc[i] * yc_pow[64 + i] * zc_pow[i] * SX;
+            phi_tmp[960 + i] += yc_pow[96 + i] * zc_pow[i] * SY;
+            phi_tmp[960 + i] += 5.0 * yc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[992 + i] = xc[i] * yc_pow[64 + i] * zc_pow[32 + i] * SXY;
+            phi_tmp[992 + i] += 4.0 * xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SX;
+            phi_tmp[992 + i] += yc_pow[64 + i] * zc_pow[32 + i] * SY;
+            phi_tmp[992 + i] += 4.0 * yc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1024 + i] = xc[i] * yc_pow[32 + i] * zc_pow[64 + i] * SXY;
+            phi_tmp[1024 + i] += 3.0 * xc[i] * yc_pow[i] * zc_pow[64 + i] * SX;
+            phi_tmp[1024 + i] += yc_pow[32 + i] * zc_pow[64 + i] * SY;
+            phi_tmp[1024 + i] += 3.0 * yc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1056 + i] = xc[i] * yc_pow[i] * zc_pow[96 + i] * SXY;
+            phi_tmp[1056 + i] += 2.0 * xc[i] * yc[i] * zc_pow[96 + i] * SX;
+            phi_tmp[1056 + i] += yc_pow[i] * zc_pow[96 + i] * SY;
+            phi_tmp[1056 + i] += 2.0 * yc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1088 + i] = xc[i] * yc[i] * zc_pow[128 + i] * SXY;
+            phi_tmp[1088 + i] += xc[i] * zc_pow[128 + i] * SX;
+            phi_tmp[1088 + i] += yc[i] * zc_pow[128 + i] * SY;
+            phi_tmp[1088 + i] += zc_pow[128 + i] * S0[i];
+
+            phi_tmp[1120 + i] = xc[i] * zc_pow[160 + i] * SXY;
+            phi_tmp[1120 + i] += zc_pow[160 + i] * SY;
+
+            phi_tmp[1152 + i] = yc_pow[192 + i] * SXY;
+            phi_tmp[1152 + i] += 8.0 * yc_pow[160 + i] * SX;
+
+            phi_tmp[1184 + i] = yc_pow[160 + i] * zc[i] * SXY;
+            phi_tmp[1184 + i] += 7.0 * yc_pow[128 + i] * zc[i] * SX;
+
+            phi_tmp[1216 + i] = yc_pow[128 + i] * zc_pow[i] * SXY;
+            phi_tmp[1216 + i] += 6.0 * yc_pow[96 + i] * zc_pow[i] * SX;
+
+            phi_tmp[1248 + i] = yc_pow[96 + i] * zc_pow[32 + i] * SXY;
+            phi_tmp[1248 + i] += 5.0 * yc_pow[64 + i] * zc_pow[32 + i] * SX;
+
+            phi_tmp[1280 + i] = yc_pow[64 + i] * zc_pow[64 + i] * SXY;
+            phi_tmp[1280 + i] += 4.0 * yc_pow[32 + i] * zc_pow[64 + i] * SX;
+
+            phi_tmp[1312 + i] = yc_pow[32 + i] * zc_pow[96 + i] * SXY;
+            phi_tmp[1312 + i] += 3.0 * yc_pow[i] * zc_pow[96 + i] * SX;
+
+            phi_tmp[1344 + i] = yc_pow[i] * zc_pow[128 + i] * SXY;
+            phi_tmp[1344 + i] += 2.0 * yc[i] * zc_pow[128 + i] * SX;
+
+            phi_tmp[1376 + i] = yc[i] * zc_pow[160 + i] * SXY;
+            phi_tmp[1376 + i] += zc_pow[160 + i] * SX;
+
+            phi_tmp[1408 + i] = zc_pow[192 + i] * SXY;
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L8(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L8(remain, phi_tmp, 32, (phi_xy_out + start), npoints);
+        }
+
+        // Combine XZ blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SX = S1[i] * xc[i];
+            const double SZ = S1[i] * zc[i];
+            const double SXZ = S2[i] * xc[i] * zc[i];
+
+            phi_tmp[i] = xc_pow[192 + i] * SXZ;
+            phi_tmp[i] += 8.0 * xc_pow[160 + i] * SZ;
+
+            phi_tmp[32 + i] = xc_pow[160 + i] * yc[i] * SXZ;
+            phi_tmp[32 + i] += 7.0 * xc_pow[128 + i] * yc[i] * SZ;
+
+            phi_tmp[64 + i] = xc_pow[160 + i] * zc[i] * SXZ;
+            phi_tmp[64 + i] += xc_pow[160 + i] * SX;
+            phi_tmp[64 + i] += 7.0 * xc_pow[128 + i] * zc[i] * SZ;
+            phi_tmp[64 + i] += 7.0 * xc_pow[128 + i] * S0[i];
+
+            phi_tmp[96 + i] = xc_pow[128 + i] * yc_pow[i] * SXZ;
+            phi_tmp[96 + i] += 6.0 * xc_pow[96 + i] * yc_pow[i] * SZ;
+
+            phi_tmp[128 + i] = xc_pow[128 + i] * yc[i] * zc[i] * SXZ;
+            phi_tmp[128 + i] += xc_pow[128 + i] * yc[i] * SX;
+            phi_tmp[128 + i] += 6.0 * xc_pow[96 + i] * yc[i] * zc[i] * SZ;
+            phi_tmp[128 + i] += 6.0 * xc_pow[96 + i] * yc[i] * S0[i];
+
+            phi_tmp[160 + i] = xc_pow[128 + i] * zc_pow[i] * SXZ;
+            phi_tmp[160 + i] += 2.0 * xc_pow[128 + i] * zc[i] * SX;
+            phi_tmp[160 + i] += 6.0 * xc_pow[96 + i] * zc_pow[i] * SZ;
+            phi_tmp[160 + i] += 12.0 * xc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[192 + i] = xc_pow[96 + i] * yc_pow[32 + i] * SXZ;
+            phi_tmp[192 + i] += 5.0 * xc_pow[64 + i] * yc_pow[32 + i] * SZ;
+
+            phi_tmp[224 + i] = xc_pow[96 + i] * yc_pow[i] * zc[i] * SXZ;
+            phi_tmp[224 + i] += xc_pow[96 + i] * yc_pow[i] * SX;
+            phi_tmp[224 + i] += 5.0 * xc_pow[64 + i] * yc_pow[i] * zc[i] * SZ;
+            phi_tmp[224 + i] += 5.0 * xc_pow[64 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[96 + i] * yc[i] * zc_pow[i] * SXZ;
+            phi_tmp[256 + i] += 2.0 * xc_pow[96 + i] * yc[i] * zc[i] * SX;
+            phi_tmp[256 + i] += 5.0 * xc_pow[64 + i] * yc[i] * zc_pow[i] * SZ;
+            phi_tmp[256 + i] += 10.0 * xc_pow[64 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[96 + i] * zc_pow[32 + i] * SXZ;
+            phi_tmp[288 + i] += 3.0 * xc_pow[96 + i] * zc_pow[i] * SX;
+            phi_tmp[288 + i] += 5.0 * xc_pow[64 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[288 + i] += 15.0 * xc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[320 + i] = xc_pow[64 + i] * yc_pow[64 + i] * SXZ;
+            phi_tmp[320 + i] += 4.0 * xc_pow[32 + i] * yc_pow[64 + i] * SZ;
+
+            phi_tmp[352 + i] = xc_pow[64 + i] * yc_pow[32 + i] * zc[i] * SXZ;
+            phi_tmp[352 + i] += xc_pow[64 + i] * yc_pow[32 + i] * SX;
+            phi_tmp[352 + i] += 4.0 * xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SZ;
+            phi_tmp[352 + i] += 4.0 * xc_pow[32 + i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[64 + i] * yc_pow[i] * zc_pow[i] * SXZ;
+            phi_tmp[384 + i] += 2.0 * xc_pow[64 + i] * yc_pow[i] * zc[i] * SX;
+            phi_tmp[384 + i] += 4.0 * xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SZ;
+            phi_tmp[384 + i] += 8.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[64 + i] * yc[i] * zc_pow[32 + i] * SXZ;
+            phi_tmp[416 + i] += 3.0 * xc_pow[64 + i] * yc[i] * zc_pow[i] * SX;
+            phi_tmp[416 + i] += 4.0 * xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[416 + i] += 12.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[64 + i] * zc_pow[64 + i] * SXZ;
+            phi_tmp[448 + i] += 4.0 * xc_pow[64 + i] * zc_pow[32 + i] * SX;
+            phi_tmp[448 + i] += 4.0 * xc_pow[32 + i] * zc_pow[64 + i] * SZ;
+            phi_tmp[448 + i] += 16.0 * xc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[480 + i] = xc_pow[32 + i] * yc_pow[96 + i] * SXZ;
+            phi_tmp[480 + i] += 3.0 * xc_pow[i] * yc_pow[96 + i] * SZ;
+
+            phi_tmp[512 + i] = xc_pow[32 + i] * yc_pow[64 + i] * zc[i] * SXZ;
+            phi_tmp[512 + i] += xc_pow[32 + i] * yc_pow[64 + i] * SX;
+            phi_tmp[512 + i] += 3.0 * xc_pow[i] * yc_pow[64 + i] * zc[i] * SZ;
+            phi_tmp[512 + i] += 3.0 * xc_pow[i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc_pow[i] * SXZ;
+            phi_tmp[544 + i] += 2.0 * xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SX;
+            phi_tmp[544 + i] += 3.0 * xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SZ;
+            phi_tmp[544 + i] += 6.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[32 + i] * SXZ;
+            phi_tmp[576 + i] += 3.0 * xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SX;
+            phi_tmp[576 + i] += 3.0 * xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[576 + i] += 9.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[32 + i] * yc[i] * zc_pow[64 + i] * SXZ;
+            phi_tmp[608 + i] += 4.0 * xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SX;
+            phi_tmp[608 + i] += 3.0 * xc_pow[i] * yc[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[608 + i] += 12.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[32 + i] * zc_pow[96 + i] * SXZ;
+            phi_tmp[640 + i] += 5.0 * xc_pow[32 + i] * zc_pow[64 + i] * SX;
+            phi_tmp[640 + i] += 3.0 * xc_pow[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[640 + i] += 15.0 * xc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[672 + i] = xc_pow[i] * yc_pow[128 + i] * SXZ;
+            phi_tmp[672 + i] += 2.0 * xc[i] * yc_pow[128 + i] * SZ;
+
+            phi_tmp[704 + i] = xc_pow[i] * yc_pow[96 + i] * zc[i] * SXZ;
+            phi_tmp[704 + i] += xc_pow[i] * yc_pow[96 + i] * SX;
+            phi_tmp[704 + i] += 2.0 * xc[i] * yc_pow[96 + i] * zc[i] * SZ;
+            phi_tmp[704 + i] += 2.0 * xc[i] * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[736 + i] = xc_pow[i] * yc_pow[64 + i] * zc_pow[i] * SXZ;
+            phi_tmp[736 + i] += 2.0 * xc_pow[i] * yc_pow[64 + i] * zc[i] * SX;
+            phi_tmp[736 + i] += 2.0 * xc[i] * yc_pow[64 + i] * zc_pow[i] * SZ;
+            phi_tmp[736 + i] += 4.0 * xc[i] * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[768 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[32 + i] * SXZ;
+            phi_tmp[768 + i] += 3.0 * xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SX;
+            phi_tmp[768 + i] += 2.0 * xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[768 + i] += 6.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[800 + i] = xc_pow[i] * yc_pow[i] * zc_pow[64 + i] * SXZ;
+            phi_tmp[800 + i] += 4.0 * xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SX;
+            phi_tmp[800 + i] += 2.0 * xc[i] * yc_pow[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[800 + i] += 8.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[832 + i] = xc_pow[i] * yc[i] * zc_pow[96 + i] * SXZ;
+            phi_tmp[832 + i] += 5.0 * xc_pow[i] * yc[i] * zc_pow[64 + i] * SX;
+            phi_tmp[832 + i] += 2.0 * xc[i] * yc[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[832 + i] += 10.0 * xc[i] * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[864 + i] = xc_pow[i] * zc_pow[128 + i] * SXZ;
+            phi_tmp[864 + i] += 6.0 * xc_pow[i] * zc_pow[96 + i] * SX;
+            phi_tmp[864 + i] += 2.0 * xc[i] * zc_pow[128 + i] * SZ;
+            phi_tmp[864 + i] += 12.0 * xc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[896 + i] = xc[i] * yc_pow[160 + i] * SXZ;
+            phi_tmp[896 + i] += yc_pow[160 + i] * SZ;
+
+            phi_tmp[928 + i] = xc[i] * yc_pow[128 + i] * zc[i] * SXZ;
+            phi_tmp[928 + i] += xc[i] * yc_pow[128 + i] * SX;
+            phi_tmp[928 + i] += yc_pow[128 + i] * zc[i] * SZ;
+            phi_tmp[928 + i] += yc_pow[128 + i] * S0[i];
+
+            phi_tmp[960 + i] = xc[i] * yc_pow[96 + i] * zc_pow[i] * SXZ;
+            phi_tmp[960 + i] += 2.0 * xc[i] * yc_pow[96 + i] * zc[i] * SX;
+            phi_tmp[960 + i] += yc_pow[96 + i] * zc_pow[i] * SZ;
+            phi_tmp[960 + i] += 2.0 * yc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[992 + i] = xc[i] * yc_pow[64 + i] * zc_pow[32 + i] * SXZ;
+            phi_tmp[992 + i] += 3.0 * xc[i] * yc_pow[64 + i] * zc_pow[i] * SX;
+            phi_tmp[992 + i] += yc_pow[64 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[992 + i] += 3.0 * yc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[1024 + i] = xc[i] * yc_pow[32 + i] * zc_pow[64 + i] * SXZ;
+            phi_tmp[1024 + i] += 4.0 * xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SX;
+            phi_tmp[1024 + i] += yc_pow[32 + i] * zc_pow[64 + i] * SZ;
+            phi_tmp[1024 + i] += 4.0 * yc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1056 + i] = xc[i] * yc_pow[i] * zc_pow[96 + i] * SXZ;
+            phi_tmp[1056 + i] += 5.0 * xc[i] * yc_pow[i] * zc_pow[64 + i] * SX;
+            phi_tmp[1056 + i] += yc_pow[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[1056 + i] += 5.0 * yc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1088 + i] = xc[i] * yc[i] * zc_pow[128 + i] * SXZ;
+            phi_tmp[1088 + i] += 6.0 * xc[i] * yc[i] * zc_pow[96 + i] * SX;
+            phi_tmp[1088 + i] += yc[i] * zc_pow[128 + i] * SZ;
+            phi_tmp[1088 + i] += 6.0 * yc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1120 + i] = xc[i] * zc_pow[160 + i] * SXZ;
+            phi_tmp[1120 + i] += 7.0 * xc[i] * zc_pow[128 + i] * SX;
+            phi_tmp[1120 + i] += zc_pow[160 + i] * SZ;
+            phi_tmp[1120 + i] += 7.0 * zc_pow[128 + i] * S0[i];
+
+            phi_tmp[1152 + i] = yc_pow[192 + i] * SXZ;
+
+            phi_tmp[1184 + i] = yc_pow[160 + i] * zc[i] * SXZ;
+            phi_tmp[1184 + i] += yc_pow[160 + i] * SX;
+
+            phi_tmp[1216 + i] = yc_pow[128 + i] * zc_pow[i] * SXZ;
+            phi_tmp[1216 + i] += 2.0 * yc_pow[128 + i] * zc[i] * SX;
+
+            phi_tmp[1248 + i] = yc_pow[96 + i] * zc_pow[32 + i] * SXZ;
+            phi_tmp[1248 + i] += 3.0 * yc_pow[96 + i] * zc_pow[i] * SX;
+
+            phi_tmp[1280 + i] = yc_pow[64 + i] * zc_pow[64 + i] * SXZ;
+            phi_tmp[1280 + i] += 4.0 * yc_pow[64 + i] * zc_pow[32 + i] * SX;
+
+            phi_tmp[1312 + i] = yc_pow[32 + i] * zc_pow[96 + i] * SXZ;
+            phi_tmp[1312 + i] += 5.0 * yc_pow[32 + i] * zc_pow[64 + i] * SX;
+
+            phi_tmp[1344 + i] = yc_pow[i] * zc_pow[128 + i] * SXZ;
+            phi_tmp[1344 + i] += 6.0 * yc_pow[i] * zc_pow[96 + i] * SX;
+
+            phi_tmp[1376 + i] = yc[i] * zc_pow[160 + i] * SXZ;
+            phi_tmp[1376 + i] += 7.0 * yc[i] * zc_pow[128 + i] * SX;
+
+            phi_tmp[1408 + i] = zc_pow[192 + i] * SXZ;
+            phi_tmp[1408 + i] += 8.0 * zc_pow[160 + i] * SX;
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L8(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L8(remain, phi_tmp, 32, (phi_xz_out + start), npoints);
+        }
+
+        // Combine YY blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SY = S1[i] * yc[i];
+            const double SYY = S2[i] * yc[i] * yc[i] + S1[i];
+
+            phi_tmp[i] = xc_pow[192 + i] * SYY;
+
+            phi_tmp[32 + i] = xc_pow[160 + i] * yc[i] * SYY;
+            phi_tmp[32 + i] += 2.0 * xc_pow[160 + i] * SY;
+
+            phi_tmp[64 + i] = xc_pow[160 + i] * zc[i] * SYY;
+
+            phi_tmp[96 + i] = xc_pow[128 + i] * yc_pow[i] * SYY;
+            phi_tmp[96 + i] += 4.0 * xc_pow[128 + i] * yc[i] * SY;
+            phi_tmp[96 + i] += 2.0 * xc_pow[128 + i] * S0[i];
+
+            phi_tmp[128 + i] = xc_pow[128 + i] * yc[i] * zc[i] * SYY;
+            phi_tmp[128 + i] += 2.0 * xc_pow[128 + i] * zc[i] * SY;
+
+            phi_tmp[160 + i] = xc_pow[128 + i] * zc_pow[i] * SYY;
+
+            phi_tmp[192 + i] = xc_pow[96 + i] * yc_pow[32 + i] * SYY;
+            phi_tmp[192 + i] += 6.0 * xc_pow[96 + i] * yc_pow[i] * SY;
+            phi_tmp[192 + i] += 6.0 * xc_pow[96 + i] * yc[i] * S0[i];
+
+            phi_tmp[224 + i] = xc_pow[96 + i] * yc_pow[i] * zc[i] * SYY;
+            phi_tmp[224 + i] += 4.0 * xc_pow[96 + i] * yc[i] * zc[i] * SY;
+            phi_tmp[224 + i] += 2.0 * xc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[96 + i] * yc[i] * zc_pow[i] * SYY;
+            phi_tmp[256 + i] += 2.0 * xc_pow[96 + i] * zc_pow[i] * SY;
+
+            phi_tmp[288 + i] = xc_pow[96 + i] * zc_pow[32 + i] * SYY;
+
+            phi_tmp[320 + i] = xc_pow[64 + i] * yc_pow[64 + i] * SYY;
+            phi_tmp[320 + i] += 8.0 * xc_pow[64 + i] * yc_pow[32 + i] * SY;
+            phi_tmp[320 + i] += 12.0 * xc_pow[64 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[352 + i] = xc_pow[64 + i] * yc_pow[32 + i] * zc[i] * SYY;
+            phi_tmp[352 + i] += 6.0 * xc_pow[64 + i] * yc_pow[i] * zc[i] * SY;
+            phi_tmp[352 + i] += 6.0 * xc_pow[64 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[64 + i] * yc_pow[i] * zc_pow[i] * SYY;
+            phi_tmp[384 + i] += 4.0 * xc_pow[64 + i] * yc[i] * zc_pow[i] * SY;
+            phi_tmp[384 + i] += 2.0 * xc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[64 + i] * yc[i] * zc_pow[32 + i] * SYY;
+            phi_tmp[416 + i] += 2.0 * xc_pow[64 + i] * zc_pow[32 + i] * SY;
+
+            phi_tmp[448 + i] = xc_pow[64 + i] * zc_pow[64 + i] * SYY;
+
+            phi_tmp[480 + i] = xc_pow[32 + i] * yc_pow[96 + i] * SYY;
+            phi_tmp[480 + i] += 10.0 * xc_pow[32 + i] * yc_pow[64 + i] * SY;
+            phi_tmp[480 + i] += 20.0 * xc_pow[32 + i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[512 + i] = xc_pow[32 + i] * yc_pow[64 + i] * zc[i] * SYY;
+            phi_tmp[512 + i] += 8.0 * xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SY;
+            phi_tmp[512 + i] += 12.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc_pow[i] * SYY;
+            phi_tmp[544 + i] += 6.0 * xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SY;
+            phi_tmp[544 + i] += 6.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[32 + i] * SYY;
+            phi_tmp[576 + i] += 4.0 * xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SY;
+            phi_tmp[576 + i] += 2.0 * xc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[32 + i] * yc[i] * zc_pow[64 + i] * SYY;
+            phi_tmp[608 + i] += 2.0 * xc_pow[32 + i] * zc_pow[64 + i] * SY;
+
+            phi_tmp[640 + i] = xc_pow[32 + i] * zc_pow[96 + i] * SYY;
+
+            phi_tmp[672 + i] = xc_pow[i] * yc_pow[128 + i] * SYY;
+            phi_tmp[672 + i] += 12.0 * xc_pow[i] * yc_pow[96 + i] * SY;
+            phi_tmp[672 + i] += 30.0 * xc_pow[i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[704 + i] = xc_pow[i] * yc_pow[96 + i] * zc[i] * SYY;
+            phi_tmp[704 + i] += 10.0 * xc_pow[i] * yc_pow[64 + i] * zc[i] * SY;
+            phi_tmp[704 + i] += 20.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[736 + i] = xc_pow[i] * yc_pow[64 + i] * zc_pow[i] * SYY;
+            phi_tmp[736 + i] += 8.0 * xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SY;
+            phi_tmp[736 + i] += 12.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[768 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[32 + i] * SYY;
+            phi_tmp[768 + i] += 6.0 * xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SY;
+            phi_tmp[768 + i] += 6.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[800 + i] = xc_pow[i] * yc_pow[i] * zc_pow[64 + i] * SYY;
+            phi_tmp[800 + i] += 4.0 * xc_pow[i] * yc[i] * zc_pow[64 + i] * SY;
+            phi_tmp[800 + i] += 2.0 * xc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[832 + i] = xc_pow[i] * yc[i] * zc_pow[96 + i] * SYY;
+            phi_tmp[832 + i] += 2.0 * xc_pow[i] * zc_pow[96 + i] * SY;
+
+            phi_tmp[864 + i] = xc_pow[i] * zc_pow[128 + i] * SYY;
+
+            phi_tmp[896 + i] = xc[i] * yc_pow[160 + i] * SYY;
+            phi_tmp[896 + i] += 14.0 * xc[i] * yc_pow[128 + i] * SY;
+            phi_tmp[896 + i] += 42.0 * xc[i] * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[928 + i] = xc[i] * yc_pow[128 + i] * zc[i] * SYY;
+            phi_tmp[928 + i] += 12.0 * xc[i] * yc_pow[96 + i] * zc[i] * SY;
+            phi_tmp[928 + i] += 30.0 * xc[i] * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[960 + i] = xc[i] * yc_pow[96 + i] * zc_pow[i] * SYY;
+            phi_tmp[960 + i] += 10.0 * xc[i] * yc_pow[64 + i] * zc_pow[i] * SY;
+            phi_tmp[960 + i] += 20.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[992 + i] = xc[i] * yc_pow[64 + i] * zc_pow[32 + i] * SYY;
+            phi_tmp[992 + i] += 8.0 * xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SY;
+            phi_tmp[992 + i] += 12.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1024 + i] = xc[i] * yc_pow[32 + i] * zc_pow[64 + i] * SYY;
+            phi_tmp[1024 + i] += 6.0 * xc[i] * yc_pow[i] * zc_pow[64 + i] * SY;
+            phi_tmp[1024 + i] += 6.0 * xc[i] * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1056 + i] = xc[i] * yc_pow[i] * zc_pow[96 + i] * SYY;
+            phi_tmp[1056 + i] += 4.0 * xc[i] * yc[i] * zc_pow[96 + i] * SY;
+            phi_tmp[1056 + i] += 2.0 * xc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1088 + i] = xc[i] * yc[i] * zc_pow[128 + i] * SYY;
+            phi_tmp[1088 + i] += 2.0 * xc[i] * zc_pow[128 + i] * SY;
+
+            phi_tmp[1120 + i] = xc[i] * zc_pow[160 + i] * SYY;
+
+            phi_tmp[1152 + i] = yc_pow[192 + i] * SYY;
+            phi_tmp[1152 + i] += 16.0 * yc_pow[160 + i] * SY;
+            phi_tmp[1152 + i] += 56.0 * yc_pow[128 + i] * S0[i];
+
+            phi_tmp[1184 + i] = yc_pow[160 + i] * zc[i] * SYY;
+            phi_tmp[1184 + i] += 14.0 * yc_pow[128 + i] * zc[i] * SY;
+            phi_tmp[1184 + i] += 42.0 * yc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[1216 + i] = yc_pow[128 + i] * zc_pow[i] * SYY;
+            phi_tmp[1216 + i] += 12.0 * yc_pow[96 + i] * zc_pow[i] * SY;
+            phi_tmp[1216 + i] += 30.0 * yc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[1248 + i] = yc_pow[96 + i] * zc_pow[32 + i] * SYY;
+            phi_tmp[1248 + i] += 10.0 * yc_pow[64 + i] * zc_pow[32 + i] * SY;
+            phi_tmp[1248 + i] += 20.0 * yc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1280 + i] = yc_pow[64 + i] * zc_pow[64 + i] * SYY;
+            phi_tmp[1280 + i] += 8.0 * yc_pow[32 + i] * zc_pow[64 + i] * SY;
+            phi_tmp[1280 + i] += 12.0 * yc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1312 + i] = yc_pow[32 + i] * zc_pow[96 + i] * SYY;
+            phi_tmp[1312 + i] += 6.0 * yc_pow[i] * zc_pow[96 + i] * SY;
+            phi_tmp[1312 + i] += 6.0 * yc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1344 + i] = yc_pow[i] * zc_pow[128 + i] * SYY;
+            phi_tmp[1344 + i] += 4.0 * yc[i] * zc_pow[128 + i] * SY;
+            phi_tmp[1344 + i] += 2.0 * zc_pow[128 + i] * S0[i];
+
+            phi_tmp[1376 + i] = yc[i] * zc_pow[160 + i] * SYY;
+            phi_tmp[1376 + i] += 2.0 * zc_pow[160 + i] * SY;
+
+            phi_tmp[1408 + i] = zc_pow[192 + i] * SYY;
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L8(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L8(remain, phi_tmp, 32, (phi_yy_out + start), npoints);
+        }
+
+        // Combine YZ blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SY = S1[i] * yc[i];
+            const double SZ = S1[i] * zc[i];
+            const double SYZ = S2[i] * yc[i] * zc[i];
+
+            phi_tmp[i] = xc_pow[192 + i] * SYZ;
+
+            phi_tmp[32 + i] = xc_pow[160 + i] * yc[i] * SYZ;
+            phi_tmp[32 + i] += xc_pow[160 + i] * SZ;
+
+            phi_tmp[64 + i] = xc_pow[160 + i] * zc[i] * SYZ;
+            phi_tmp[64 + i] += xc_pow[160 + i] * SY;
+
+            phi_tmp[96 + i] = xc_pow[128 + i] * yc_pow[i] * SYZ;
+            phi_tmp[96 + i] += 2.0 * xc_pow[128 + i] * yc[i] * SZ;
+
+            phi_tmp[128 + i] = xc_pow[128 + i] * yc[i] * zc[i] * SYZ;
+            phi_tmp[128 + i] += xc_pow[128 + i] * yc[i] * SY;
+            phi_tmp[128 + i] += xc_pow[128 + i] * zc[i] * SZ;
+            phi_tmp[128 + i] += xc_pow[128 + i] * S0[i];
+
+            phi_tmp[160 + i] = xc_pow[128 + i] * zc_pow[i] * SYZ;
+            phi_tmp[160 + i] += 2.0 * xc_pow[128 + i] * zc[i] * SY;
+
+            phi_tmp[192 + i] = xc_pow[96 + i] * yc_pow[32 + i] * SYZ;
+            phi_tmp[192 + i] += 3.0 * xc_pow[96 + i] * yc_pow[i] * SZ;
+
+            phi_tmp[224 + i] = xc_pow[96 + i] * yc_pow[i] * zc[i] * SYZ;
+            phi_tmp[224 + i] += xc_pow[96 + i] * yc_pow[i] * SY;
+            phi_tmp[224 + i] += 2.0 * xc_pow[96 + i] * yc[i] * zc[i] * SZ;
+            phi_tmp[224 + i] += 2.0 * xc_pow[96 + i] * yc[i] * S0[i];
+
+            phi_tmp[256 + i] = xc_pow[96 + i] * yc[i] * zc_pow[i] * SYZ;
+            phi_tmp[256 + i] += 2.0 * xc_pow[96 + i] * yc[i] * zc[i] * SY;
+            phi_tmp[256 + i] += xc_pow[96 + i] * zc_pow[i] * SZ;
+            phi_tmp[256 + i] += 2.0 * xc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[96 + i] * zc_pow[32 + i] * SYZ;
+            phi_tmp[288 + i] += 3.0 * xc_pow[96 + i] * zc_pow[i] * SY;
+
+            phi_tmp[320 + i] = xc_pow[64 + i] * yc_pow[64 + i] * SYZ;
+            phi_tmp[320 + i] += 4.0 * xc_pow[64 + i] * yc_pow[32 + i] * SZ;
+
+            phi_tmp[352 + i] = xc_pow[64 + i] * yc_pow[32 + i] * zc[i] * SYZ;
+            phi_tmp[352 + i] += xc_pow[64 + i] * yc_pow[32 + i] * SY;
+            phi_tmp[352 + i] += 3.0 * xc_pow[64 + i] * yc_pow[i] * zc[i] * SZ;
+            phi_tmp[352 + i] += 3.0 * xc_pow[64 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[384 + i] = xc_pow[64 + i] * yc_pow[i] * zc_pow[i] * SYZ;
+            phi_tmp[384 + i] += 2.0 * xc_pow[64 + i] * yc_pow[i] * zc[i] * SY;
+            phi_tmp[384 + i] += 2.0 * xc_pow[64 + i] * yc[i] * zc_pow[i] * SZ;
+            phi_tmp[384 + i] += 4.0 * xc_pow[64 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[64 + i] * yc[i] * zc_pow[32 + i] * SYZ;
+            phi_tmp[416 + i] += 3.0 * xc_pow[64 + i] * yc[i] * zc_pow[i] * SY;
+            phi_tmp[416 + i] += xc_pow[64 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[416 + i] += 3.0 * xc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[64 + i] * zc_pow[64 + i] * SYZ;
+            phi_tmp[448 + i] += 4.0 * xc_pow[64 + i] * zc_pow[32 + i] * SY;
+
+            phi_tmp[480 + i] = xc_pow[32 + i] * yc_pow[96 + i] * SYZ;
+            phi_tmp[480 + i] += 5.0 * xc_pow[32 + i] * yc_pow[64 + i] * SZ;
+
+            phi_tmp[512 + i] = xc_pow[32 + i] * yc_pow[64 + i] * zc[i] * SYZ;
+            phi_tmp[512 + i] += xc_pow[32 + i] * yc_pow[64 + i] * SY;
+            phi_tmp[512 + i] += 4.0 * xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SZ;
+            phi_tmp[512 + i] += 4.0 * xc_pow[32 + i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[544 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc_pow[i] * SYZ;
+            phi_tmp[544 + i] += 2.0 * xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SY;
+            phi_tmp[544 + i] += 3.0 * xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SZ;
+            phi_tmp[544 + i] += 6.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[32 + i] * SYZ;
+            phi_tmp[576 + i] += 3.0 * xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SY;
+            phi_tmp[576 + i] += 2.0 * xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[576 + i] += 6.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[32 + i] * yc[i] * zc_pow[64 + i] * SYZ;
+            phi_tmp[608 + i] += 4.0 * xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SY;
+            phi_tmp[608 + i] += xc_pow[32 + i] * zc_pow[64 + i] * SZ;
+            phi_tmp[608 + i] += 4.0 * xc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[32 + i] * zc_pow[96 + i] * SYZ;
+            phi_tmp[640 + i] += 5.0 * xc_pow[32 + i] * zc_pow[64 + i] * SY;
+
+            phi_tmp[672 + i] = xc_pow[i] * yc_pow[128 + i] * SYZ;
+            phi_tmp[672 + i] += 6.0 * xc_pow[i] * yc_pow[96 + i] * SZ;
+
+            phi_tmp[704 + i] = xc_pow[i] * yc_pow[96 + i] * zc[i] * SYZ;
+            phi_tmp[704 + i] += xc_pow[i] * yc_pow[96 + i] * SY;
+            phi_tmp[704 + i] += 5.0 * xc_pow[i] * yc_pow[64 + i] * zc[i] * SZ;
+            phi_tmp[704 + i] += 5.0 * xc_pow[i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[736 + i] = xc_pow[i] * yc_pow[64 + i] * zc_pow[i] * SYZ;
+            phi_tmp[736 + i] += 2.0 * xc_pow[i] * yc_pow[64 + i] * zc[i] * SY;
+            phi_tmp[736 + i] += 4.0 * xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SZ;
+            phi_tmp[736 + i] += 8.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[768 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[32 + i] * SYZ;
+            phi_tmp[768 + i] += 3.0 * xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SY;
+            phi_tmp[768 + i] += 3.0 * xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[768 + i] += 9.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[800 + i] = xc_pow[i] * yc_pow[i] * zc_pow[64 + i] * SYZ;
+            phi_tmp[800 + i] += 4.0 * xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SY;
+            phi_tmp[800 + i] += 2.0 * xc_pow[i] * yc[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[800 + i] += 8.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[832 + i] = xc_pow[i] * yc[i] * zc_pow[96 + i] * SYZ;
+            phi_tmp[832 + i] += 5.0 * xc_pow[i] * yc[i] * zc_pow[64 + i] * SY;
+            phi_tmp[832 + i] += xc_pow[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[832 + i] += 5.0 * xc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[864 + i] = xc_pow[i] * zc_pow[128 + i] * SYZ;
+            phi_tmp[864 + i] += 6.0 * xc_pow[i] * zc_pow[96 + i] * SY;
+
+            phi_tmp[896 + i] = xc[i] * yc_pow[160 + i] * SYZ;
+            phi_tmp[896 + i] += 7.0 * xc[i] * yc_pow[128 + i] * SZ;
+
+            phi_tmp[928 + i] = xc[i] * yc_pow[128 + i] * zc[i] * SYZ;
+            phi_tmp[928 + i] += xc[i] * yc_pow[128 + i] * SY;
+            phi_tmp[928 + i] += 6.0 * xc[i] * yc_pow[96 + i] * zc[i] * SZ;
+            phi_tmp[928 + i] += 6.0 * xc[i] * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[960 + i] = xc[i] * yc_pow[96 + i] * zc_pow[i] * SYZ;
+            phi_tmp[960 + i] += 2.0 * xc[i] * yc_pow[96 + i] * zc[i] * SY;
+            phi_tmp[960 + i] += 5.0 * xc[i] * yc_pow[64 + i] * zc_pow[i] * SZ;
+            phi_tmp[960 + i] += 10.0 * xc[i] * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[992 + i] = xc[i] * yc_pow[64 + i] * zc_pow[32 + i] * SYZ;
+            phi_tmp[992 + i] += 3.0 * xc[i] * yc_pow[64 + i] * zc_pow[i] * SY;
+            phi_tmp[992 + i] += 4.0 * xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[992 + i] += 12.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[1024 + i] = xc[i] * yc_pow[32 + i] * zc_pow[64 + i] * SYZ;
+            phi_tmp[1024 + i] += 4.0 * xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SY;
+            phi_tmp[1024 + i] += 3.0 * xc[i] * yc_pow[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[1024 + i] += 12.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1056 + i] = xc[i] * yc_pow[i] * zc_pow[96 + i] * SYZ;
+            phi_tmp[1056 + i] += 5.0 * xc[i] * yc_pow[i] * zc_pow[64 + i] * SY;
+            phi_tmp[1056 + i] += 2.0 * xc[i] * yc[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[1056 + i] += 10.0 * xc[i] * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1088 + i] = xc[i] * yc[i] * zc_pow[128 + i] * SYZ;
+            phi_tmp[1088 + i] += 6.0 * xc[i] * yc[i] * zc_pow[96 + i] * SY;
+            phi_tmp[1088 + i] += xc[i] * zc_pow[128 + i] * SZ;
+            phi_tmp[1088 + i] += 6.0 * xc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1120 + i] = xc[i] * zc_pow[160 + i] * SYZ;
+            phi_tmp[1120 + i] += 7.0 * xc[i] * zc_pow[128 + i] * SY;
+
+            phi_tmp[1152 + i] = yc_pow[192 + i] * SYZ;
+            phi_tmp[1152 + i] += 8.0 * yc_pow[160 + i] * SZ;
+
+            phi_tmp[1184 + i] = yc_pow[160 + i] * zc[i] * SYZ;
+            phi_tmp[1184 + i] += yc_pow[160 + i] * SY;
+            phi_tmp[1184 + i] += 7.0 * yc_pow[128 + i] * zc[i] * SZ;
+            phi_tmp[1184 + i] += 7.0 * yc_pow[128 + i] * S0[i];
+
+            phi_tmp[1216 + i] = yc_pow[128 + i] * zc_pow[i] * SYZ;
+            phi_tmp[1216 + i] += 2.0 * yc_pow[128 + i] * zc[i] * SY;
+            phi_tmp[1216 + i] += 6.0 * yc_pow[96 + i] * zc_pow[i] * SZ;
+            phi_tmp[1216 + i] += 12.0 * yc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[1248 + i] = yc_pow[96 + i] * zc_pow[32 + i] * SYZ;
+            phi_tmp[1248 + i] += 3.0 * yc_pow[96 + i] * zc_pow[i] * SY;
+            phi_tmp[1248 + i] += 5.0 * yc_pow[64 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[1248 + i] += 15.0 * yc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[1280 + i] = yc_pow[64 + i] * zc_pow[64 + i] * SYZ;
+            phi_tmp[1280 + i] += 4.0 * yc_pow[64 + i] * zc_pow[32 + i] * SY;
+            phi_tmp[1280 + i] += 4.0 * yc_pow[32 + i] * zc_pow[64 + i] * SZ;
+            phi_tmp[1280 + i] += 16.0 * yc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1312 + i] = yc_pow[32 + i] * zc_pow[96 + i] * SYZ;
+            phi_tmp[1312 + i] += 5.0 * yc_pow[32 + i] * zc_pow[64 + i] * SY;
+            phi_tmp[1312 + i] += 3.0 * yc_pow[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[1312 + i] += 15.0 * yc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1344 + i] = yc_pow[i] * zc_pow[128 + i] * SYZ;
+            phi_tmp[1344 + i] += 6.0 * yc_pow[i] * zc_pow[96 + i] * SY;
+            phi_tmp[1344 + i] += 2.0 * yc[i] * zc_pow[128 + i] * SZ;
+            phi_tmp[1344 + i] += 12.0 * yc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1376 + i] = yc[i] * zc_pow[160 + i] * SYZ;
+            phi_tmp[1376 + i] += 7.0 * yc[i] * zc_pow[128 + i] * SY;
+            phi_tmp[1376 + i] += zc_pow[160 + i] * SZ;
+            phi_tmp[1376 + i] += 7.0 * zc_pow[128 + i] * S0[i];
+
+            phi_tmp[1408 + i] = zc_pow[192 + i] * SYZ;
+            phi_tmp[1408 + i] += 8.0 * zc_pow[160 + i] * SY;
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L8(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L8(remain, phi_tmp, 32, (phi_yz_out + start), npoints);
+        }
+
+        // Combine ZZ blocks
+        PRAGMA_VECTORIZE
+        for (unsigned long i = 0; i < remain; i++) {
+            const double SZ = S1[i] * zc[i];
+            const double SZZ = S2[i] * zc[i] * zc[i] + S1[i];
+
+            phi_tmp[i] = xc_pow[192 + i] * SZZ;
+
+            phi_tmp[32 + i] = xc_pow[160 + i] * yc[i] * SZZ;
+
+            phi_tmp[64 + i] = xc_pow[160 + i] * zc[i] * SZZ;
+            phi_tmp[64 + i] += 2.0 * xc_pow[160 + i] * SZ;
+
+            phi_tmp[96 + i] = xc_pow[128 + i] * yc_pow[i] * SZZ;
+
+            phi_tmp[128 + i] = xc_pow[128 + i] * yc[i] * zc[i] * SZZ;
+            phi_tmp[128 + i] += 2.0 * xc_pow[128 + i] * yc[i] * SZ;
+
+            phi_tmp[160 + i] = xc_pow[128 + i] * zc_pow[i] * SZZ;
+            phi_tmp[160 + i] += 4.0 * xc_pow[128 + i] * zc[i] * SZ;
+            phi_tmp[160 + i] += 2.0 * xc_pow[128 + i] * S0[i];
+
+            phi_tmp[192 + i] = xc_pow[96 + i] * yc_pow[32 + i] * SZZ;
+
+            phi_tmp[224 + i] = xc_pow[96 + i] * yc_pow[i] * zc[i] * SZZ;
+            phi_tmp[224 + i] += 2.0 * xc_pow[96 + i] * yc_pow[i] * SZ;
+
+            phi_tmp[256 + i] = xc_pow[96 + i] * yc[i] * zc_pow[i] * SZZ;
+            phi_tmp[256 + i] += 4.0 * xc_pow[96 + i] * yc[i] * zc[i] * SZ;
+            phi_tmp[256 + i] += 2.0 * xc_pow[96 + i] * yc[i] * S0[i];
+
+            phi_tmp[288 + i] = xc_pow[96 + i] * zc_pow[32 + i] * SZZ;
+            phi_tmp[288 + i] += 6.0 * xc_pow[96 + i] * zc_pow[i] * SZ;
+            phi_tmp[288 + i] += 6.0 * xc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[320 + i] = xc_pow[64 + i] * yc_pow[64 + i] * SZZ;
+
+            phi_tmp[352 + i] = xc_pow[64 + i] * yc_pow[32 + i] * zc[i] * SZZ;
+            phi_tmp[352 + i] += 2.0 * xc_pow[64 + i] * yc_pow[32 + i] * SZ;
+
+            phi_tmp[384 + i] = xc_pow[64 + i] * yc_pow[i] * zc_pow[i] * SZZ;
+            phi_tmp[384 + i] += 4.0 * xc_pow[64 + i] * yc_pow[i] * zc[i] * SZ;
+            phi_tmp[384 + i] += 2.0 * xc_pow[64 + i] * yc_pow[i] * S0[i];
+
+            phi_tmp[416 + i] = xc_pow[64 + i] * yc[i] * zc_pow[32 + i] * SZZ;
+            phi_tmp[416 + i] += 6.0 * xc_pow[64 + i] * yc[i] * zc_pow[i] * SZ;
+            phi_tmp[416 + i] += 6.0 * xc_pow[64 + i] * yc[i] * zc[i] * S0[i];
+
+            phi_tmp[448 + i] = xc_pow[64 + i] * zc_pow[64 + i] * SZZ;
+            phi_tmp[448 + i] += 8.0 * xc_pow[64 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[448 + i] += 12.0 * xc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[480 + i] = xc_pow[32 + i] * yc_pow[96 + i] * SZZ;
+
+            phi_tmp[512 + i] = xc_pow[32 + i] * yc_pow[64 + i] * zc[i] * SZZ;
+            phi_tmp[512 + i] += 2.0 * xc_pow[32 + i] * yc_pow[64 + i] * SZ;
+
+            phi_tmp[544 + i] = xc_pow[32 + i] * yc_pow[32 + i] * zc_pow[i] * SZZ;
+            phi_tmp[544 + i] += 4.0 * xc_pow[32 + i] * yc_pow[32 + i] * zc[i] * SZ;
+            phi_tmp[544 + i] += 2.0 * xc_pow[32 + i] * yc_pow[32 + i] * S0[i];
+
+            phi_tmp[576 + i] = xc_pow[32 + i] * yc_pow[i] * zc_pow[32 + i] * SZZ;
+            phi_tmp[576 + i] += 6.0 * xc_pow[32 + i] * yc_pow[i] * zc_pow[i] * SZ;
+            phi_tmp[576 + i] += 6.0 * xc_pow[32 + i] * yc_pow[i] * zc[i] * S0[i];
+
+            phi_tmp[608 + i] = xc_pow[32 + i] * yc[i] * zc_pow[64 + i] * SZZ;
+            phi_tmp[608 + i] += 8.0 * xc_pow[32 + i] * yc[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[608 + i] += 12.0 * xc_pow[32 + i] * yc[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[640 + i] = xc_pow[32 + i] * zc_pow[96 + i] * SZZ;
+            phi_tmp[640 + i] += 10.0 * xc_pow[32 + i] * zc_pow[64 + i] * SZ;
+            phi_tmp[640 + i] += 20.0 * xc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[672 + i] = xc_pow[i] * yc_pow[128 + i] * SZZ;
+
+            phi_tmp[704 + i] = xc_pow[i] * yc_pow[96 + i] * zc[i] * SZZ;
+            phi_tmp[704 + i] += 2.0 * xc_pow[i] * yc_pow[96 + i] * SZ;
+
+            phi_tmp[736 + i] = xc_pow[i] * yc_pow[64 + i] * zc_pow[i] * SZZ;
+            phi_tmp[736 + i] += 4.0 * xc_pow[i] * yc_pow[64 + i] * zc[i] * SZ;
+            phi_tmp[736 + i] += 2.0 * xc_pow[i] * yc_pow[64 + i] * S0[i];
+
+            phi_tmp[768 + i] = xc_pow[i] * yc_pow[32 + i] * zc_pow[32 + i] * SZZ;
+            phi_tmp[768 + i] += 6.0 * xc_pow[i] * yc_pow[32 + i] * zc_pow[i] * SZ;
+            phi_tmp[768 + i] += 6.0 * xc_pow[i] * yc_pow[32 + i] * zc[i] * S0[i];
+
+            phi_tmp[800 + i] = xc_pow[i] * yc_pow[i] * zc_pow[64 + i] * SZZ;
+            phi_tmp[800 + i] += 8.0 * xc_pow[i] * yc_pow[i] * zc_pow[32 + i] * SZ;
+            phi_tmp[800 + i] += 12.0 * xc_pow[i] * yc_pow[i] * zc_pow[i] * S0[i];
+
+            phi_tmp[832 + i] = xc_pow[i] * yc[i] * zc_pow[96 + i] * SZZ;
+            phi_tmp[832 + i] += 10.0 * xc_pow[i] * yc[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[832 + i] += 20.0 * xc_pow[i] * yc[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[864 + i] = xc_pow[i] * zc_pow[128 + i] * SZZ;
+            phi_tmp[864 + i] += 12.0 * xc_pow[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[864 + i] += 30.0 * xc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[896 + i] = xc[i] * yc_pow[160 + i] * SZZ;
+
+            phi_tmp[928 + i] = xc[i] * yc_pow[128 + i] * zc[i] * SZZ;
+            phi_tmp[928 + i] += 2.0 * xc[i] * yc_pow[128 + i] * SZ;
+
+            phi_tmp[960 + i] = xc[i] * yc_pow[96 + i] * zc_pow[i] * SZZ;
+            phi_tmp[960 + i] += 4.0 * xc[i] * yc_pow[96 + i] * zc[i] * SZ;
+            phi_tmp[960 + i] += 2.0 * xc[i] * yc_pow[96 + i] * S0[i];
+
+            phi_tmp[992 + i] = xc[i] * yc_pow[64 + i] * zc_pow[32 + i] * SZZ;
+            phi_tmp[992 + i] += 6.0 * xc[i] * yc_pow[64 + i] * zc_pow[i] * SZ;
+            phi_tmp[992 + i] += 6.0 * xc[i] * yc_pow[64 + i] * zc[i] * S0[i];
+
+            phi_tmp[1024 + i] = xc[i] * yc_pow[32 + i] * zc_pow[64 + i] * SZZ;
+            phi_tmp[1024 + i] += 8.0 * xc[i] * yc_pow[32 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[1024 + i] += 12.0 * xc[i] * yc_pow[32 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[1056 + i] = xc[i] * yc_pow[i] * zc_pow[96 + i] * SZZ;
+            phi_tmp[1056 + i] += 10.0 * xc[i] * yc_pow[i] * zc_pow[64 + i] * SZ;
+            phi_tmp[1056 + i] += 20.0 * xc[i] * yc_pow[i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1088 + i] = xc[i] * yc[i] * zc_pow[128 + i] * SZZ;
+            phi_tmp[1088 + i] += 12.0 * xc[i] * yc[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[1088 + i] += 30.0 * xc[i] * yc[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1120 + i] = xc[i] * zc_pow[160 + i] * SZZ;
+            phi_tmp[1120 + i] += 14.0 * xc[i] * zc_pow[128 + i] * SZ;
+            phi_tmp[1120 + i] += 42.0 * xc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1152 + i] = yc_pow[192 + i] * SZZ;
+
+            phi_tmp[1184 + i] = yc_pow[160 + i] * zc[i] * SZZ;
+            phi_tmp[1184 + i] += 2.0 * yc_pow[160 + i] * SZ;
+
+            phi_tmp[1216 + i] = yc_pow[128 + i] * zc_pow[i] * SZZ;
+            phi_tmp[1216 + i] += 4.0 * yc_pow[128 + i] * zc[i] * SZ;
+            phi_tmp[1216 + i] += 2.0 * yc_pow[128 + i] * S0[i];
+
+            phi_tmp[1248 + i] = yc_pow[96 + i] * zc_pow[32 + i] * SZZ;
+            phi_tmp[1248 + i] += 6.0 * yc_pow[96 + i] * zc_pow[i] * SZ;
+            phi_tmp[1248 + i] += 6.0 * yc_pow[96 + i] * zc[i] * S0[i];
+
+            phi_tmp[1280 + i] = yc_pow[64 + i] * zc_pow[64 + i] * SZZ;
+            phi_tmp[1280 + i] += 8.0 * yc_pow[64 + i] * zc_pow[32 + i] * SZ;
+            phi_tmp[1280 + i] += 12.0 * yc_pow[64 + i] * zc_pow[i] * S0[i];
+
+            phi_tmp[1312 + i] = yc_pow[32 + i] * zc_pow[96 + i] * SZZ;
+            phi_tmp[1312 + i] += 10.0 * yc_pow[32 + i] * zc_pow[64 + i] * SZ;
+            phi_tmp[1312 + i] += 20.0 * yc_pow[32 + i] * zc_pow[32 + i] * S0[i];
+
+            phi_tmp[1344 + i] = yc_pow[i] * zc_pow[128 + i] * SZZ;
+            phi_tmp[1344 + i] += 12.0 * yc_pow[i] * zc_pow[96 + i] * SZ;
+            phi_tmp[1344 + i] += 30.0 * yc_pow[i] * zc_pow[64 + i] * S0[i];
+
+            phi_tmp[1376 + i] = yc[i] * zc_pow[160 + i] * SZZ;
+            phi_tmp[1376 + i] += 14.0 * yc[i] * zc_pow[128 + i] * SZ;
+            phi_tmp[1376 + i] += 42.0 * yc[i] * zc_pow[96 + i] * S0[i];
+
+            phi_tmp[1408 + i] = zc_pow[192 + i] * SZZ;
+            phi_tmp[1408 + i] += 16.0 * zc_pow[160 + i] * SZ;
+            phi_tmp[1408 + i] += 56.0 * zc_pow[128 + i] * S0[i];
+        }
+
+        if (order == GG_SPHERICAL_CCA) {
+            gg_cca_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
+        } else if (order == GG_SPHERICAL_GAUSSIAN) {
+            gg_gaussian_cart_to_spherical_L8(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
+        } else if (order == GG_CARTESIAN_CCA) {
+            gg_cca_cart_copy_L8(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
+        } else if (order == GG_CARTESIAN_MOLDEN) {
+            gg_molden_cart_copy_L8(remain, phi_tmp, 32, (phi_zz_out + start), npoints);
+        }
+    }
+
+    // Free S temporaries
+    ALIGNED_FREE(cache_data);
+    ALIGNED_FREE(expn1);
+    ALIGNED_FREE(expn2);
+
+    // Free Power temporaries
+    ALIGNED_FREE(xc_pow);
+    ALIGNED_FREE(yc_pow);
+    ALIGNED_FREE(zc_pow);
+
+    // Free inner temporaries
+    ALIGNED_FREE(phi_tmp);
 }

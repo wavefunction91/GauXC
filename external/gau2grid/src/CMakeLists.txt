@@ -1,17 +1,18 @@
-cmake_minimum_required(VERSION 3.1 FATAL_ERROR)
+cmake_minimum_required(VERSION 3.12...4.0)
 
 project(gau2grid
-        VERSION 2.0.5
+        VERSION 2.0.9
         LANGUAGES C)
 set(gau2grid_AUTHORS      "Daniel G. A. Smith")
 set(gau2grid_DESCRIPTION  "Fast computation of a gaussian and its derivative on a grid")
-set(gau2grid_URL          "https://github.com/dgasmith/gau2grid")
+set(gau2grid_URL          "https://github.com/psi4/gau2grid")
 set(gau2grid_LICENSE      "BSD 3-clause")
 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake)
 
 
 #############################  Options: Build How?  #############################
+include(GNUInstallDirs)
 include(psi4OptionsTools)
 option_with_default(MAX_AM "The maximum gaussian angular momentum to compile" 8)
 option_with_default(CMAKE_BUILD_TYPE "Build type (Release or Debug)" Release)
@@ -33,7 +34,6 @@ if((${BUILD_SHARED_LIBS}) AND NOT ${BUILD_FPIC})
 endif()
 
 # Install
-option_with_default(CMAKE_INSTALL_LIBDIR "Directory to which libraries installed" lib)
 option_with_default(PYMOD_INSTALL_LIBDIR "Location within CMAKE_INSTALL_LIBDIR to which python modules are installed
                                           Must start with: / . Used to imitate python install: /python3.6/site-packages ." /)
 option_with_print(INSTALL_PYMOD "Additionally installs as independent python module in PYMOD_INSTALL_LIBDIR" OFF)
@@ -51,15 +51,14 @@ endif()
 message(STATUS "gau2grid install: ${CMAKE_INSTALL_PREFIX}")
 
 #  <<  Python  >>
-set(Python_ADDITIONAL_VERSIONS 3.9 3.8 3.7 3.6 3.5)  # adjust with CMake minimum FindPythonInterp
-find_package(PythonLibsNew 3.6 REQUIRED)
-message(STATUS "${Cyan}Found Python ${PYTHON_VERSION_MAJOR}.${PYTHON_VERSION_MINOR}${ColourReset}: ${PYTHON_EXECUTABLE} (found version ${PYTHON_VERSION_STRING})")
+find_package(Python 3.6 REQUIRED COMPONENTS Interpreter)
+message(STATUS "${Cyan}Found Python ${Python_VERSION_MAJOR}.${Python_VERSION_MINOR}${ColourReset}: ${Python_EXECUTABLE} (found version ${Python_VERSION})")
 
 
 ################################  Main Project  ################################
 add_custom_command(
     OUTPUT  gau2grid/gau2grid.h gau2grid_orbital.c gau2grid_phi.c gau2grid_deriv1.c gau2grid_deriv2.c gau2grid_deriv3.c gau2grid_transform.c gau2grid_helper.c
-    COMMAND ${PYTHON_EXECUTABLE} -c "import sys; \
+    COMMAND Python::Interpreter -c "import sys; \
                                      sys.path.append('${PROJECT_SOURCE_DIR}'); \
                                      import gau2grid as gg; \
                                      gg.c_gen.generate_c_gau2grid(${MAX_AM}, path='${CMAKE_CURRENT_BINARY_DIR}')"
@@ -106,7 +105,6 @@ endif()
 
 
 ###################################  Install  ##################################
-include(GNUInstallDirs)
 include(CMakePackageConfigHelpers)
 
 set(PN ${PROJECT_NAME})
@@ -136,7 +134,9 @@ if(${NATIVE_PYTHON_INSTALL_WITH_LIB} OR (NOT(${INSTALL_PYMOD} AND ${NATIVE_PYTHO
     install(TARGETS gg
             EXPORT "${PN}Targets"
             ARCHIVE DESTINATION ${CMAKE_INSTALL_LIBDIR}
-            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR})
+            LIBRARY DESTINATION ${CMAKE_INSTALL_LIBDIR}
+            RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR}
+            PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR})
 
     install(FILES ${CMAKE_CURRENT_BINARY_DIR}/${PN}Config.cmake
                   ${CMAKE_CURRENT_BINARY_DIR}/${PN}ConfigVersion.cmake
@@ -151,21 +151,21 @@ endif()
 
 if(${INSTALL_PYMOD})
     if(${NATIVE_PYTHON_INSTALL})
-        execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+        execute_process(COMMAND ${Python_EXECUTABLE} -c
                         "import sys; print(sys.prefix);"
                         OUTPUT_VARIABLE CMAKE_INSTALL_PREFIX
                         OUTPUT_STRIP_TRAILING_WHITESPACE)
-        execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+        execute_process(COMMAND ${Python_EXECUTABLE} -c
                         "from distutils import sysconfig as s; import os; import sys; cmake_install_prefix = sys.prefix; prefix_lib = s.get_config_var('LIBDIR'); print(prefix_lib.replace(os.path.commonpath([prefix_lib, cmake_install_prefix]), '').strip('/'));"
                         OUTPUT_VARIABLE CMAKE_INSTALL_LIBDIR
                         OUTPUT_STRIP_TRAILING_WHITESPACE)
-        execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+        execute_process(COMMAND ${Python_EXECUTABLE} -c
                         "from distutils import sysconfig as s; import os; prefix_lib = s.get_config_var('LIBDIR'); spdir = s.get_python_lib(plat_specific=True); print(spdir.replace(os.path.commonpath([prefix_lib, spdir]), ''));"
                         OUTPUT_VARIABLE PYMOD_INSTALL_LIBDIR
                         OUTPUT_STRIP_TRAILING_WHITESPACE)
     endif()
 
-    execute_process(COMMAND ${PYTHON_EXECUTABLE} -c
+    execute_process(COMMAND ${Python_EXECUTABLE} -c
                     "from numpy import distutils; print(distutils.misc_util.get_shared_lib_extension(is_python_ext=False))"
                     OUTPUT_VARIABLE PYLIB_EXTENSION
                     OUTPUT_STRIP_TRAILING_WHITESPACE)
