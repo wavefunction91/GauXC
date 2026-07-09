@@ -3193,6 +3193,7 @@ void gg_cca_cart_sum_L0(const unsigned long size, const double* PRAGMA_RESTRICT 
                         double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
+    unsigned long out_shift;
     double coef;
 
     // Copy (0, 0, 0)
@@ -3235,6 +3236,7 @@ void gg_cca_cart_sum_L1(const unsigned long size, const double* PRAGMA_RESTRICT 
                         double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
+    unsigned long out_shift;
     double coef;
 
     // Copy (1, 0, 0)
@@ -3312,6 +3314,7 @@ void gg_cca_cart_sum_L2(const unsigned long size, const double* PRAGMA_RESTRICT 
                         double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
+    unsigned long out_shift;
     double coef;
 
     // Copy (2, 0, 0)
@@ -3438,6 +3441,7 @@ void gg_cca_cart_sum_L3(const unsigned long size, const double* PRAGMA_RESTRICT 
                         double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
+    unsigned long out_shift;
     double coef;
 
     // Copy (3, 0, 0)
@@ -3627,6 +3631,7 @@ void gg_cca_cart_sum_L4(const unsigned long size, const double* PRAGMA_RESTRICT 
                         double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
+    unsigned long out_shift;
     double coef;
 
     // Copy (4, 0, 0)
@@ -3893,6 +3898,7 @@ void gg_cca_cart_sum_L5(const unsigned long size, const double* PRAGMA_RESTRICT 
                         double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
+    unsigned long out_shift;
     double coef;
 
     // Copy (5, 0, 0)
@@ -4250,6 +4256,7 @@ void gg_cca_cart_sum_L6(const unsigned long size, const double* PRAGMA_RESTRICT 
                         double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
+    unsigned long out_shift;
     double coef;
 
     // Copy (6, 0, 0)
@@ -5631,6 +5638,7 @@ void gg_molden_cart_sum_L0(const unsigned long size, const double* PRAGMA_RESTRI
                            double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
+    unsigned long out_shift;
     double coef;
 
     // Copy (0, 0, 0)
@@ -5673,6 +5681,7 @@ void gg_molden_cart_sum_L1(const unsigned long size, const double* PRAGMA_RESTRI
                            double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
+    unsigned long out_shift;
     double coef;
 
     // Copy (1, 0, 0)
@@ -5750,6 +5759,7 @@ void gg_molden_cart_sum_L2(const unsigned long size, const double* PRAGMA_RESTRI
                            double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
+    unsigned long out_shift;
     double coef;
 
     // Copy (2, 0, 0)
@@ -5876,6 +5886,7 @@ void gg_molden_cart_sum_L3(const unsigned long size, const double* PRAGMA_RESTRI
                            double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
+    unsigned long out_shift;
     double coef;
 
     // Copy (3, 0, 0)
@@ -6065,6 +6076,7 @@ void gg_molden_cart_sum_L4(const unsigned long size, const double* PRAGMA_RESTRI
                            double* PRAGMA_RESTRICT cart_out, const unsigned long ncart_out) {
     ASSUME_ALIGNED(cart_input, 64);
     unsigned long in_shift;
+    unsigned long out_shift;
     double coef;
 
     // Copy (4, 0, 0)

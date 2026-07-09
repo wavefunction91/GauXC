@@ -8,12 +8,10 @@
 #include <math.h>
 #if defined(__clang__) && defined(_MSC_VER)
 #include <malloc.h>
-#include <stdlib.h>
 #elif defined __clang__
 #include <mm_malloc.h>
 #elif defined _MSC_VER
 #include <malloc.h>
-#include <stdlib.h>
 #else
 #include <stdlib.h>
 #endif

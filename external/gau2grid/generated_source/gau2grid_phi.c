@@ -62,9 +62,10 @@ void gg_collocation_L0(const unsigned long npoints, const double* PRAGMA_RESTRIC
     const double center_x = center[0];
     const double center_y = center[1];
     const double center_z = center[2];
+    double A;
 
     // Build negative exponents
-    for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
+    for (unsigned long i = 0; i < nprim; i++) {
         expn1[i] = -1.0 * exponents[i];
     }
 
@@ -113,7 +114,7 @@ void gg_collocation_L0(const unsigned long npoints, const double* PRAGMA_RESTRIC
         }
 
         // Start exponential block loop
-        for (unsigned long n = 0; n < (unsigned long)nprim; n++) {
+        for (unsigned long n = 0; n < nprim; n++) {
             const double coef = coeffs[n];
             const double alpha_n1 = expn1[n];
 
@@ -182,9 +183,10 @@ void gg_collocation_L1(const unsigned long npoints, const double* PRAGMA_RESTRIC
     const double center_x = center[0];
     const double center_y = center[1];
     const double center_z = center[2];
+    double A;
 
     // Build negative exponents
-    for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
+    for (unsigned long i = 0; i < nprim; i++) {
         expn1[i] = -1.0 * exponents[i];
     }
 
@@ -233,7 +235,7 @@ void gg_collocation_L1(const unsigned long npoints, const double* PRAGMA_RESTRIC
         }
 
         // Start exponential block loop
-        for (unsigned long n = 0; n < (unsigned long)nprim; n++) {
+        for (unsigned long n = 0; n < nprim; n++) {
             const double coef = coeffs[n];
             const double alpha_n1 = expn1[n];
 
@@ -327,7 +329,7 @@ void gg_collocation_L2(const unsigned long npoints, const double* PRAGMA_RESTRIC
     double A;
 
     // Build negative exponents
-    for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
+    for (unsigned long i = 0; i < nprim; i++) {
         expn1[i] = -1.0 * exponents[i];
     }
 
@@ -376,7 +378,7 @@ void gg_collocation_L2(const unsigned long npoints, const double* PRAGMA_RESTRIC
         }
 
         // Start exponential block loop
-        for (unsigned long n = 0; n < (unsigned long)nprim; n++) {
+        for (unsigned long n = 0; n < nprim; n++) {
             const double coef = coeffs[n];
             const double alpha_n1 = expn1[n];
 
@@ -487,7 +489,7 @@ void gg_collocation_L3(const unsigned long npoints, const double* PRAGMA_RESTRIC
     double A;
 
     // Build negative exponents
-    for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
+    for (unsigned long i = 0; i < nprim; i++) {
         expn1[i] = -1.0 * exponents[i];
     }
 
@@ -536,7 +538,7 @@ void gg_collocation_L3(const unsigned long npoints, const double* PRAGMA_RESTRIC
         }
 
         // Start exponential block loop
-        for (unsigned long n = 0; n < (unsigned long)nprim; n++) {
+        for (unsigned long n = 0; n < nprim; n++) {
             const double coef = coeffs[n];
             const double alpha_n1 = expn1[n];
 
@@ -667,7 +669,7 @@ void gg_collocation_L4(const unsigned long npoints, const double* PRAGMA_RESTRIC
     double A;
 
     // Build negative exponents
-    for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
+    for (unsigned long i = 0; i < nprim; i++) {
         expn1[i] = -1.0 * exponents[i];
     }
 
@@ -716,7 +718,7 @@ void gg_collocation_L4(const unsigned long npoints, const double* PRAGMA_RESTRIC
         }
 
         // Start exponential block loop
-        for (unsigned long n = 0; n < (unsigned long)nprim; n++) {
+        for (unsigned long n = 0; n < nprim; n++) {
             const double coef = coeffs[n];
             const double alpha_n1 = expn1[n];
 
@@ -871,7 +873,7 @@ void gg_collocation_L5(const unsigned long npoints, const double* PRAGMA_RESTRIC
     double A;
 
     // Build negative exponents
-    for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
+    for (unsigned long i = 0; i < nprim; i++) {
         expn1[i] = -1.0 * exponents[i];
     }
 
@@ -920,7 +922,7 @@ void gg_collocation_L5(const unsigned long npoints, const double* PRAGMA_RESTRIC
         }
 
         // Start exponential block loop
-        for (unsigned long n = 0; n < (unsigned long)nprim; n++) {
+        for (unsigned long n = 0; n < nprim; n++) {
             const double coef = coeffs[n];
             const double alpha_n1 = expn1[n];
 
@@ -1103,7 +1105,7 @@ void gg_collocation_L6(const unsigned long npoints, const double* PRAGMA_RESTRIC
     double A;
 
     // Build negative exponents
-    for (unsigned long i = 0; i < (unsigned long)nprim; i++) {
+    for (unsigned long i = 0; i < nprim; i++) {
         expn1[i] = -1.0 * exponents[i];
     }
 
@@ -1152,7 +1154,7 @@ void gg_collocation_L6(const unsigned long npoints, const double* PRAGMA_RESTRIC
         }
 
         // Start exponential block loop
-        for (unsigned long n = 0; n < (unsigned long)nprim; n++) {
+        for (unsigned long n = 0; n < nprim; n++) {
             const double coef = coeffs[n];
             const double alpha_n1 = expn1[n];
 
