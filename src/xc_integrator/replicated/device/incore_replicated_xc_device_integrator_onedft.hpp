@@ -295,7 +295,7 @@ eval_exc_vxc_onedft_( int64_t m, int64_t n,
     device_data_ptr->send_static_data_onedft_results( total_npts, ndm, EXC,
       den_grad, dden_grad, tau_grad );
   } else { 
-    total_npts = mpi_scatter_onedft_outputs(features_dict, rt.comm_rank(), rt.comm_size(),
+    total_npts = mpi_scatter_onedft_outputs(features_dict, rt,
                                               recvcounts, displs, atom_reorder_inv_perm,
                                               den_eval, dden_eval, tau);
     device_data_ptr->send_static_data_onedft_results( total_npts, ndm, EXC,
@@ -961,7 +961,7 @@ eval_exc_grad_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
     device_data_ptr->send_static_data_onedft_results( total_npts, ndm, &exc_val,
       den_grad, dden_grad, tau_grad );
   } else {
-    total_npts = mpi_scatter_onedft_outputs(features_dict, rt.comm_rank(), rt.comm_size(),
+    total_npts = mpi_scatter_onedft_outputs(features_dict, rt,
                                               recvcounts, displs, atom_reorder_inv_perm,
                                               den_eval, dden_eval, tau);
     double exc_val = 0.0;

@@ -45,7 +45,7 @@ namespace GauXC {
   };
   
 int mpi_scatter_onedft_outputs(const FeatureDict features_dict,
-                          const int world_rank, const int world_size,
+                          const RuntimeEnvironment& rt,
                           std::vector<int> recvcounts, std::vector<int> displs,
                           const std::vector<int64_t>& atom_reorder_inv_perm,
                           std::vector<double>& den_eval, std::vector<double>& dden_eval, 
@@ -54,7 +54,7 @@ int mpi_scatter_onedft_outputs(const FeatureDict features_dict,
 int mpi_gather_onedft_inputs(std::vector<double>& den_eval, std::vector<double>& dden_eval,
                           std::vector<double>& tau, std::vector<double>& grid_coords,
                           std::vector<double>& grid_weights, const int total_npts,
-                          const int world_rank, const int world_size,
+                          const RuntimeEnvironment& rt,
                           std::vector<int>& sendcounts, std::vector<int>& displs);
 
   // Result of MPI gather + atom-reorder pipeline
@@ -82,7 +82,7 @@ int mpi_gather_onedft_inputs(std::vector<double>& den_eval, std::vector<double>&
 int mpi_gather_onedft_inputs_gpu(std::vector<double>& den_eval, std::vector<double>& dden_eval,
                           std::vector<double>& tau, std::vector<double>& grid_coords,
                           std::vector<double>& grid_weights, const int total_npts,
-                          const int world_rank, const int world_size,
+                          const RuntimeEnvironment& rt,
                           std::vector<int>& recvcounts, std::vector<int>& displs) ;
   bool valueExists(const std::string& value);
 

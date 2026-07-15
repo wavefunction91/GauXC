@@ -830,7 +830,7 @@ void send_buffer_onedft_outputs(const int ndm, const FeatureDict features_dict, 
                                 const std::vector<int64_t>& atom_reorder_inv_perm) {
 
   std::vector<double> den_eval, dden_eval, tau;
-  auto total_npts = mpi_scatter_onedft_outputs(features_dict, rt.comm_rank(), rt.comm_size(),
+  auto total_npts = mpi_scatter_onedft_outputs(features_dict, rt,
                                                 sendcounts, displs, atom_reorder_inv_perm,
                                                 den_eval, dden_eval, tau);
 
