@@ -14,6 +14,7 @@
 #include <gauxc/molgrid/defaults.hpp>
 
 #include <gauxc/external/hdf5.hpp>
+#include <gauxc/util/mpi.hpp>
 #include <highfive/H5File.hpp>
 #include <Eigen/Core>
 
@@ -149,6 +150,62 @@ TEST_CASE( "OneDFT", "[onedft]" ) {
     SECTION( " HE / def2-qzvp / lda.fun" ) {
         test_integrator( GAUXC_REF_DATA_PATH "/onedft_he_def2qzvp_lda_uks.hdf5", GAUXC_ONEDFT_MODEL_PATH "/lda.fun" );
         }
+}
+
+  // Regression guard for communicator-consistency bugs in OneDFT MPI paths.
+  // Why this exists:
+  // 1) The default MPI test runs with 2 ranks and RuntimeEnvironment(MPI_COMM_WORLD),
+  //    which can mask bugs where collectives accidentally use MPI_COMM_WORLD.
+  // 2) The real failure mode appears when RuntimeEnvironment is built from a
+  //    subgroup communicator (comm_size < world_size), e.g. NGROUPS-style splits.
+  // 3) This test forces that topology and exercises OneDFT so gather/scatter and
+  //    metadata sizing must all agree on rt.comm().
+TEST_CASE( "OneDFT MPI Subgroup", "[onedft][mpi][subcomm]" ) {
+#ifdef GAUXC_HAS_MPI
+  int world_rank = 0;
+  int world_size = 1;
+  MPI_Comm_rank( MPI_COMM_WORLD, &world_rank );
+  MPI_Comm_size( MPI_COMM_WORLD, &world_size );
+
+  if( world_size < 3 ) {
+    SUCCEED( "Requires at least 3 MPI ranks" );
+    return;
+  }
+
+  MPI_Comm subcomm = MPI_COMM_NULL;
+  const int color = world_rank % 2;
+  MPI_Comm_split( MPI_COMM_WORLD, color, world_rank, &subcomm );
+
+  int sub_size = 0;
+  MPI_Comm_size( subcomm, &sub_size );
+  CHECK( sub_size < world_size );
+
+#ifdef GAUXC_HAS_DEVICE
+  auto rt = DeviceRuntimeEnvironment( GAUXC_MPI_CODE(subcomm,) 0.9 );
+#else
+  auto rt = RuntimeEnvironment( GAUXC_MPI_CODE(subcomm) );
+#endif
+
+#ifdef GAUXC_HAS_HOST
+  SECTION( "Host / HE / def2-qzvp / tpss.fun" ) {
+    test_onedft_integrator( ExecutionSpace::Host, rt,
+      GAUXC_REF_DATA_PATH "/onedft_he_def2qzvp_tpss_uks.hdf5",
+      GAUXC_ONEDFT_MODEL_PATH "/tpss.fun" );
+  }
+#endif
+
+#ifdef GAUXC_HAS_DEVICE
+  SECTION( "Device / HE / def2-qzvp / tpss.fun" ) {
+    test_onedft_integrator( ExecutionSpace::Device, rt,
+      GAUXC_REF_DATA_PATH "/onedft_he_def2qzvp_tpss_uks.hdf5",
+      GAUXC_ONEDFT_MODEL_PATH "/tpss.fun" );
+  }
+#endif
+
+  MPI_Comm_free( &subcomm );
+#else
+  SUCCEED( "MPI disabled" );
+#endif
 }
 
 #if defined(GAUXC_HAS_HOST) && defined(GAUXC_HAS_DEVICE)
