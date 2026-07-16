@@ -344,11 +344,11 @@ int mpi_gather_onedft_inputs_gpu(std::vector<double>& den_eval, std::vector<doub
 int mpi_gather_onedft_inputs(std::vector<double>& den_eval, std::vector<double>& dden_eval,
                           std::vector<double>& tau, std::vector<double>& grid_coords,
                           std::vector<double>& grid_weights, const int total_npts,
-              const RuntimeEnvironment& rt,
+                          const RuntimeEnvironment& rt,
                           std::vector<int>& sendcounts, std::vector<int>& displs) {
 #ifdef GAUXC_HAS_MPI
-  const int world_rank = rt.comm_rank();
-  const int world_size = rt.comm_size();
+    const int world_rank = rt.comm_rank();
+    const int world_size = rt.comm_size();
     const bool is_gga = (dden_eval.size() > 0);
     const bool is_mgga = (tau.size() > 0);
     // store gathered data temporarily
@@ -417,7 +417,7 @@ int mpi_gather_onedft_inputs(std::vector<double>& den_eval, std::vector<double>&
         grid_coords     = std::move(recv_grid_coords);
         grid_weights    = std::move(recv_grid_weights);
     }
-  return total_npts_sum;
+    return total_npts_sum;
 #endif
     return 0;
 }
