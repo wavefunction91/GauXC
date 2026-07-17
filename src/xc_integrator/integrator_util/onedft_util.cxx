@@ -114,10 +114,12 @@ get_exc(torch::jit::Method exc_func, FeatureDict features) {
 }
 
 int mpi_scatter_onedft_outputs(const FeatureDict features_dict, // only exist in rank 0
-                          const int world_rank, const int world_size,
+                          const RuntimeEnvironment& rt,
                           std::vector<int> recvcounts, std::vector<int> displs,
                           const std::vector<int64_t>& atom_reorder_inv_perm,
                           std::vector<double>& den_eval, std::vector<double>& dden_eval, std::vector<double>& tau) {
+  const int world_rank = rt.comm_rank();
+  const int world_size = rt.comm_size();
   // store data
   std::vector<double> recv_den_eval, recv_dden_eval, recv_tau;
 
@@ -137,9 +139,9 @@ int mpi_scatter_onedft_outputs(const FeatureDict features_dict, // only exist in
     }
   }
   #ifdef GAUXC_HAS_MPI
-  MPI_Bcast(&is_gga, 1, MPI_C_BOOL, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&is_mgga, 1, MPI_C_BOOL, 0, MPI_COMM_WORLD);
-  MPI_Bcast(&total_npts, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Bcast(&is_gga, 1, MPI_C_BOOL, 0, rt.comm());
+  MPI_Bcast(&is_mgga, 1, MPI_C_BOOL, 0, rt.comm());
+  MPI_Bcast(&total_npts, 1, MPI_INT, 0, rt.comm());
   #endif
 
   double* recv_den_eval_a = recv_den_eval.data();
@@ -190,38 +192,38 @@ int mpi_scatter_onedft_outputs(const FeatureDict features_dict, // only exist in
   }
   // Prepare for scattering
 #ifdef GAUXC_HAS_MPI
-  MPI_Scatter(recvcounts.data(), 1, MPI_INT, &total_npts, 1, MPI_INT, 0, MPI_COMM_WORLD);
+  MPI_Scatter(recvcounts.data(), 1, MPI_INT, &total_npts, 1, MPI_INT, 0, rt.comm());
   den_eval.resize(total_npts * 2);
   dden_eval.resize(total_npts * 6);
   tau.resize(total_npts * 2);
 
   MPI_Scatterv(recv_den_eval_a, recvcounts.data(), displs.data(), MPI_DOUBLE,
-    den_eval.data(), total_npts, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    den_eval.data(), total_npts, MPI_DOUBLE, 0, rt.comm());
   MPI_Scatterv(recv_den_eval_b, recvcounts.data(), displs.data(), MPI_DOUBLE,
-    den_eval.data() + total_npts, total_npts, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    den_eval.data() + total_npts, total_npts, MPI_DOUBLE, 0, rt.comm());
 
   if (is_gga | is_mgga) {
     MPI_Scatterv(recv_dden_x_eval_a, recvcounts.data(), displs.data(), MPI_DOUBLE,
-    dden_eval.data(), total_npts, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    dden_eval.data(), total_npts, MPI_DOUBLE, 0, rt.comm());
     MPI_Scatterv(recv_dden_y_eval_a, recvcounts.data(), displs.data(), MPI_DOUBLE,
-    dden_eval.data() + total_npts, total_npts, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    dden_eval.data() + total_npts, total_npts, MPI_DOUBLE, 0, rt.comm());
     MPI_Scatterv(recv_dden_z_eval_a, recvcounts.data(), displs.data(), MPI_DOUBLE,
-    dden_eval.data() + total_npts * 2, total_npts, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    dden_eval.data() + total_npts * 2, total_npts, MPI_DOUBLE, 0, rt.comm());
     MPI_Scatterv(recv_dden_x_eval_b, recvcounts.data(), displs.data(), MPI_DOUBLE,
-    dden_eval.data() + total_npts * 3, total_npts, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    dden_eval.data() + total_npts * 3, total_npts, MPI_DOUBLE, 0, rt.comm());
     MPI_Scatterv(recv_dden_y_eval_b, recvcounts.data(), displs.data(), MPI_DOUBLE,
-    dden_eval.data() + total_npts * 4, total_npts, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    dden_eval.data() + total_npts * 4, total_npts, MPI_DOUBLE, 0, rt.comm());
     MPI_Scatterv(recv_dden_z_eval_b, recvcounts.data(), displs.data(), MPI_DOUBLE,
-    dden_eval.data() + total_npts * 5, total_npts, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    dden_eval.data() + total_npts * 5, total_npts, MPI_DOUBLE, 0, rt.comm());
   }
 
   if (is_mgga) {
     MPI_Scatterv(recv_tau_a, recvcounts.data(), displs.data(), MPI_DOUBLE,
-    tau.data(), total_npts, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    tau.data(), total_npts, MPI_DOUBLE, 0, rt.comm());
     MPI_Scatterv(recv_tau_b, recvcounts.data(), displs.data(), MPI_DOUBLE,
-    tau.data() + total_npts, total_npts, MPI_DOUBLE, 0, MPI_COMM_WORLD);
+    tau.data() + total_npts, total_npts, MPI_DOUBLE, 0, rt.comm());
   }
-  MPI_Barrier(MPI_COMM_WORLD);
+  MPI_Barrier(rt.comm());
 #endif
   return total_npts;
 }
@@ -229,9 +231,12 @@ int mpi_scatter_onedft_outputs(const FeatureDict features_dict, // only exist in
 int mpi_gather_onedft_inputs_gpu(std::vector<double>& den_eval, std::vector<double>& dden_eval,
                           std::vector<double>& tau, std::vector<double>& grid_coords,
                           std::vector<double>& grid_weights, const int total_npts,
-                          const int world_rank, const int world_size,
+                          const RuntimeEnvironment& rt,
                           std::vector<int>& recvcounts, std::vector<int>& displs) {
 #ifdef GAUXC_HAS_MPI
+
+    const int world_rank = rt.comm_rank();
+    const int world_size = rt.comm_size();
 
     const bool is_gga = (dden_eval.size() > 0);
     const bool is_mgga = (tau.size() > 0);
@@ -239,7 +244,7 @@ int mpi_gather_onedft_inputs_gpu(std::vector<double>& den_eval, std::vector<doub
         recv_tau;
     std::vector<int> recvcounts_coords, displs_coords;
     int total_npts_sum = 0;
-    MPI_Allreduce(&total_npts, &total_npts_sum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&total_npts, &total_npts_sum, 1, MPI_INT, MPI_SUM, rt.comm());
     if (world_rank == 0) {
       recv_grid_weights.resize(total_npts_sum);
       recv_grid_coords.resize(total_npts_sum * 3);
@@ -255,10 +260,10 @@ int mpi_gather_onedft_inputs_gpu(std::vector<double>& den_eval, std::vector<doub
     }
 
     int displ = 0;
-    MPI_Scan(&total_npts, &displ, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Scan(&total_npts, &displ, 1, MPI_INT, MPI_SUM, rt.comm());
     displ -= total_npts;
-    MPI_Gather(&total_npts, 1, MPI_INT, recvcounts.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
-    MPI_Gather(&displ, 1, MPI_INT, displs.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gather(&total_npts, 1, MPI_INT, recvcounts.data(), 1, MPI_INT, 0, rt.comm());
+    MPI_Gather(&displ, 1, MPI_INT, displs.data(), 1, MPI_INT, 0, rt.comm());
     if (world_rank == 0) {
       for (int i = 0; i < world_size; ++i) {
         displs_coords[i] = displs[i] * 3;
@@ -273,9 +278,9 @@ int mpi_gather_onedft_inputs_gpu(std::vector<double>& den_eval, std::vector<doub
     double* recv_den_eval_b = recv_den_eval_a + total_npts_sum;
 
     MPI_Gatherv(den_eval_a, total_npts, MPI_DOUBLE,
-      recv_den_eval_a, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+      recv_den_eval_a, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, rt.comm());
     MPI_Gatherv(den_eval_b, total_npts, MPI_DOUBLE,
-      recv_den_eval_b, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+      recv_den_eval_b, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, rt.comm());
 
     double* dden_x_eval_a = dden_eval.data();
     double* dden_y_eval_a = dden_x_eval_a + total_npts;
@@ -293,17 +298,17 @@ int mpi_gather_onedft_inputs_gpu(std::vector<double>& den_eval, std::vector<doub
 
     if (is_gga || is_mgga) {
       MPI_Gatherv(dden_x_eval_a, total_npts, MPI_DOUBLE,
-        recv_dden_x_eval_a, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        recv_dden_x_eval_a, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, rt.comm());
       MPI_Gatherv(dden_y_eval_a, total_npts, MPI_DOUBLE,
-        recv_dden_y_eval_a, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        recv_dden_y_eval_a, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, rt.comm());
       MPI_Gatherv(dden_z_eval_a, total_npts, MPI_DOUBLE,
-        recv_dden_z_eval_a, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        recv_dden_z_eval_a, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, rt.comm());
       MPI_Gatherv(dden_x_eval_b, total_npts, MPI_DOUBLE,
-        recv_dden_x_eval_b, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        recv_dden_x_eval_b, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, rt.comm());
       MPI_Gatherv(dden_y_eval_b, total_npts, MPI_DOUBLE,
-        recv_dden_y_eval_b, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        recv_dden_y_eval_b, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, rt.comm());
       MPI_Gatherv(dden_z_eval_b, total_npts, MPI_DOUBLE,
-        recv_dden_z_eval_b, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        recv_dden_z_eval_b, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, rt.comm());
     }
 
     double* tau_a        = tau.data();
@@ -313,16 +318,16 @@ int mpi_gather_onedft_inputs_gpu(std::vector<double>& den_eval, std::vector<doub
     double* recv_tau_b   = recv_tau_a + total_npts_sum;
     if (is_mgga) {
       MPI_Gatherv(tau_a, total_npts, MPI_DOUBLE,
-        recv_tau_a, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        recv_tau_a, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, rt.comm());
       MPI_Gatherv(tau_b, total_npts, MPI_DOUBLE,
-        recv_tau_b, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+        recv_tau_b, recvcounts.data(), displs.data(), MPI_DOUBLE, 0, rt.comm());
     }
     
     MPI_Gatherv(grid_weights.data(), total_npts, MPI_DOUBLE,
-     recv_grid_weights.data(), recvcounts.data(), displs.data(), MPI_DOUBLE, 0, MPI_COMM_WORLD);
+     recv_grid_weights.data(), recvcounts.data(), displs.data(), MPI_DOUBLE, 0, rt.comm());
     MPI_Gatherv(grid_coords.data(), total_npts * 3, MPI_DOUBLE,
       recv_grid_coords.data(), recvcounts_coords.data(), displs_coords.data(), 
-      MPI_DOUBLE, 0, MPI_COMM_WORLD);
+      MPI_DOUBLE, 0, rt.comm());
 
     if (world_rank == 0) {
         den_eval        = std::move(recv_den_eval);
@@ -339,18 +344,20 @@ int mpi_gather_onedft_inputs_gpu(std::vector<double>& den_eval, std::vector<doub
 int mpi_gather_onedft_inputs(std::vector<double>& den_eval, std::vector<double>& dden_eval,
                           std::vector<double>& tau, std::vector<double>& grid_coords,
                           std::vector<double>& grid_weights, const int total_npts,
-                          const int world_rank, const int world_size,
+                          const RuntimeEnvironment& rt,
                           std::vector<int>& sendcounts, std::vector<int>& displs) {
 #ifdef GAUXC_HAS_MPI
+    const int world_rank = rt.comm_rank();
+    const int world_size = rt.comm_size();
     const bool is_gga = (dden_eval.size() > 0);
     const bool is_mgga = (tau.size() > 0);
     // store gathered data temporarily
     std::vector<double> recv_grid_weights, recv_grid_coords, recv_den_eval, recv_dden_eval, recv_tau;
     int total_npts_sum = 0;
-    MPI_Allreduce(&total_npts, &total_npts_sum, 1, MPI_INT, MPI_SUM, MPI_COMM_WORLD);
+    MPI_Allreduce(&total_npts, &total_npts_sum, 1, MPI_INT, MPI_SUM, rt.comm());
     std::vector<int> sendcounts2(world_size), displs2(world_size), sendcounts3(world_size), displs3(world_size);
     std::vector<int> sendcounts_coords(world_size), displs_coords(world_size);
-    MPI_Gather(&total_npts, 1, MPI_INT, sendcounts.data(), 1, MPI_INT, 0, MPI_COMM_WORLD);
+    MPI_Gather(&total_npts, 1, MPI_INT, sendcounts.data(), 1, MPI_INT, 0, rt.comm());
     if (world_rank == 0) {
         displs[0] = 0;
         displs2[0] = 0;
@@ -378,30 +385,30 @@ int mpi_gather_onedft_inputs(std::vector<double>& den_eval, std::vector<double>&
     // grid_weights (1 per point)
     MPI_Gatherv(grid_weights.data(), total_npts, MPI_DOUBLE,
                 recv_grid_weights.data(), sendcounts.data(), displs.data(),
-                MPI_DOUBLE, 0, MPI_COMM_WORLD);
+                MPI_DOUBLE, 0, rt.comm());
 
     // den_eval (2 per point)
     MPI_Gatherv(den_eval.data(), total_npts * 2, MPI_DOUBLE,
                 recv_den_eval.data(), sendcounts2.data(), displs2.data(),
-                MPI_DOUBLE, 0, MPI_COMM_WORLD);
+                MPI_DOUBLE, 0, rt.comm());
 
     // tau (2 per point)
     if (is_mgga) {
     MPI_Gatherv(tau.data(), total_npts * 2, MPI_DOUBLE,
                 recv_tau.data(), sendcounts2.data(), displs2.data(),
-                MPI_DOUBLE, 0, MPI_COMM_WORLD);
+                MPI_DOUBLE, 0, rt.comm());
     }
 
     // dden_eval (6 per point)
     if (is_gga || is_mgga) {
     MPI_Gatherv(dden_eval.data(), total_npts * 6, MPI_DOUBLE,
                 recv_dden_eval.data(), sendcounts3.data(), displs3.data(),
-                MPI_DOUBLE, 0, MPI_COMM_WORLD);
+                MPI_DOUBLE, 0, rt.comm());
     }
 
     MPI_Gatherv(grid_coords.data(), total_npts * 3, MPI_DOUBLE,
                 recv_grid_coords.data(), sendcounts_coords.data(), displs_coords.data(),
-                MPI_DOUBLE, 0, MPI_COMM_WORLD);
+                MPI_DOUBLE, 0, rt.comm());
   
     if (world_rank == 0) {
         den_eval        = std::move(recv_den_eval);
@@ -410,7 +417,7 @@ int mpi_gather_onedft_inputs(std::vector<double>& den_eval, std::vector<double>&
         grid_coords     = std::move(recv_grid_coords);
         grid_weights    = std::move(recv_grid_weights);
     }
-  return total_npts_sum;
+    return total_npts_sum;
 #endif
     return 0;
 }
@@ -434,7 +441,7 @@ AtomReorderResult mpi_gather_and_reorder(
   GAUXC_MPI_CODE(
     if (rt.comm_size() > 1) {
       total_npts = mpi_gather_onedft_inputs(den_eval, dden_eval, tau, grid_coords,
-        grid_weights, total_npts, world_rank, rt.comm_size(), sendcounts, displs);
+        grid_weights, total_npts, rt, sendcounts, displs);
       int world_size = rt.comm_size();
 
       // Gather per-rank per-atom sizes to rank 0
@@ -635,7 +642,7 @@ AtomReorderResult mpi_gather_and_reorder_gpu(
   GAUXC_MPI_CODE(
     if (rt.comm_size() > 1) {
       total_npts = mpi_gather_onedft_inputs_gpu(den_eval, dden_eval, tau, grid_coords,
-        grid_weights, total_npts, world_rank, rt.comm_size(), sendcounts, displs);
+        grid_weights, total_npts, rt, sendcounts, displs);
       int world_size = rt.comm_size();
 
       std::vector<int64_t> all_rank_atom_sizes(world_rank == 0 ? world_size * natoms : 0);

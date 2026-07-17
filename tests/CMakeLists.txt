@@ -102,6 +102,15 @@ if( GAUXC_ENABLE_MPI )
   add_test( NAME GAUXC_MPI_TEST
             COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 2 ${MPIEXEC_PREFLAGS} $<TARGET_FILE:gauxc_test> ${MPIEXEC_POSTFLAGS}
   )
+  add_test( NAME GAUXC_MPI_ONEDFT_SUBCOMM_TEST
+            COMMAND ${MPIEXEC_EXECUTABLE} ${MPIEXEC_NUMPROC_FLAG} 4 ${MPIEXEC_PREFLAGS} $<TARGET_FILE:gauxc_test> "[onedft][mpi][subcomm]" ${MPIEXEC_POSTFLAGS}
+  )
+  # This regression test intentionally exercises subgroup communicators where
+  # communicator mismatches can deadlock collectives. Keep a timeout so hangs
+  # are reported as failures instead of stalling the full test suite.
+  set_tests_properties( GAUXC_MPI_ONEDFT_SUBCOMM_TEST PROPERTIES
+    TIMEOUT 120
+  )
 endif()
 
 if( GAUXC_ENABLE_FORTRAN )
