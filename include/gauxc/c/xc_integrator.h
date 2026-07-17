@@ -37,6 +37,14 @@ typedef struct GauXCIntegrator {
 } GauXCIntegrator;
 
 /**
+ * @brief Settings for Kohn-Sham XC integrations.
+ */
+typedef struct GauXCKSSettings {
+  double gks_dtol; ///< Density tolerance used by GKS integrations.
+  bool rks_density_matrix_is_spin_summed; ///< True if an RKS matrix contains the spin-summed density.
+} GauXCKSSettings;
+
+/**
  * @brief Delete an XCIntegrator instance.
  * @param status Status object to capture any errors.
  * @param integrator Handle to the XCIntegrator to delete.
@@ -106,6 +114,20 @@ extern void gauxc_integrator_eval_exc_rks(
   const int64_t n,
   const double* density_matrix,
   const int64_t ldp,
+  double* exc
+);
+
+/**
+ * @brief Evaluate the exchange-correlation energy for RKS with explicit settings.
+ */
+extern void gauxc_integrator_eval_exc_rks_with_settings(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  const int64_t m,
+  const int64_t n,
+  const double* density_matrix,
+  const int64_t ldp,
+  const GauXCKSSettings* settings,
   double* exc
 );
 
@@ -184,6 +206,22 @@ extern void gauxc_integrator_eval_exc_vxc_rks(
   const int64_t n,
   const double* density_matrix,
   const int64_t ldp,
+  double* exc,
+  double* vxc_matrix,
+  const int64_t vxc_ld
+);
+
+/**
+ * @brief Evaluate the exchange-correlation energy and potential for RKS with explicit settings.
+ */
+extern void gauxc_integrator_eval_exc_vxc_rks_with_settings(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  const int64_t m,
+  const int64_t n,
+  const double* density_matrix,
+  const int64_t ldp,
+  const GauXCKSSettings* settings,
   double* exc,
   double* vxc_matrix,
   const int64_t vxc_ld
@@ -324,6 +362,20 @@ extern void gauxc_integrator_eval_exc_grad_rks(
 );
 
 /**
+ * @brief Evaluate the exchange-correlation nuclear gradient for RKS with explicit settings.
+ */
+extern void gauxc_integrator_eval_exc_grad_rks_with_settings(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  const int64_t m,
+  const int64_t n,
+  const double* density_matrix,
+  const int64_t ldp,
+  const GauXCKSSettings* settings,
+  double* exc_grad
+);
+
+/**
  * @brief Evaluate the exchange-correlation energy gradient for UKS.
  * @param status Status object to capture any errors.
  * @param integrator Handle to the XCIntegrator.
@@ -417,6 +469,23 @@ extern void gauxc_integrator_eval_fxc_contraction_rks(
   const int64_t ldp,
   const double* t_density_matrix,
   const int64_t ltdp,
+  double* fxc,
+  const int64_t ldfxc
+);
+
+/**
+ * @brief Evaluate the FXC contraction for RKS with explicit settings.
+ */
+extern void gauxc_integrator_eval_fxc_contraction_rks_with_settings(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  const int64_t m,
+  const int64_t n,
+  const double* density_matrix,
+  const int64_t ldp,
+  const double* t_density_matrix,
+  const int64_t ltdp,
+  const GauXCKSSettings* settings,
   double* fxc,
   const int64_t ldfxc
 );

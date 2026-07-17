@@ -69,6 +69,31 @@ get_replicated_integrator( const char* integrator_kernel_name,
 
 
 namespace GauXC::C {
+
+namespace {
+
+IntegratorSettingsKS convert_ks_settings( const GauXCKSSettings* c_settings ) {
+  IntegratorSettingsKS settings;
+  if( c_settings != nullptr ) {
+    settings.gks_dtol = c_settings->gks_dtol;
+    settings.rks_density_matrix_is_spin_summed =
+      c_settings->rks_density_matrix_is_spin_summed;
+  }
+  return settings;
+}
+
+IntegratorSettingsEXC_GRAD convert_exc_grad_settings( const GauXCKSSettings* c_settings ) {
+  IntegratorSettingsEXC_GRAD settings;
+  if( c_settings != nullptr ) {
+    settings.gks_dtol = c_settings->gks_dtol;
+    settings.rks_density_matrix_is_spin_summed =
+      c_settings->rks_density_matrix_is_spin_summed;
+  }
+  return settings;
+}
+
+} // namespace
+
 extern "C" {
 
 void gauxc_integrator_delete(
@@ -211,6 +236,44 @@ void gauxc_integrator_eval_exc_rks(
   }
 }
 
+void gauxc_integrator_eval_exc_rks_with_settings(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  int64_t m,
+  int64_t n,
+  const double* density_matrix,
+  int64_t ldp,
+  const GauXCKSSettings* settings,
+  double* exc
+) {
+  detail::gauxc_status_init(status);
+  if (integrator.ptr == nullptr || integrator.hdr.type != GauXC_Type_Integrator) {
+    detail::gauxc_status_handle(status, 1, "Invalid Integrator handle");
+    return;
+  }
+  if (density_matrix == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Density matrix pointer cannot be null");
+    return;
+  }
+  if (settings == nullptr) {
+    detail::gauxc_status_handle(status, 1, "KS settings pointer cannot be null");
+    return;
+  }
+  if (exc == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Exc output pointer cannot be null");
+    return;
+  }
+  try {
+    detail::get_xc_integrator_ptr(integrator)->eval_exc(
+      m, n,
+      density_matrix, ldp,
+      exc,
+      convert_ks_settings(settings) );
+  } catch (std::exception& e) {
+    detail::gauxc_status_handle(status, 1, e.what());
+  }
+}
+
 void gauxc_integrator_eval_exc_uks(
   GauXCStatus* status,
   const GauXCIntegrator integrator,
@@ -340,6 +403,51 @@ void gauxc_integrator_eval_exc_vxc_rks(
       vxc_matrix, vxc_ld,
       exc,
       IntegratorSettingsXC{} );
+  } catch (std::exception& e) {
+    detail::gauxc_status_handle(status, 1, e.what());
+  }
+}
+
+void gauxc_integrator_eval_exc_vxc_rks_with_settings(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  int64_t m,
+  int64_t n,
+  const double* density_matrix,
+  int64_t ldp,
+  const GauXCKSSettings* settings,
+  double* exc,
+  double* vxc_matrix,
+  int64_t vxc_ld
+) {
+  detail::gauxc_status_init(status);
+  if (integrator.ptr == nullptr || integrator.hdr.type != GauXC_Type_Integrator) {
+    detail::gauxc_status_handle(status, 1, "Invalid Integrator handle");
+    return;
+  }
+  if (density_matrix == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Density matrix pointer cannot be null");
+    return;
+  }
+  if (settings == nullptr) {
+    detail::gauxc_status_handle(status, 1, "KS settings pointer cannot be null");
+    return;
+  }
+  if (exc == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Exc output pointer cannot be null");
+    return;
+  }
+  if (vxc_matrix == nullptr) {
+    detail::gauxc_status_handle(status, 1, "VXC matrix pointer cannot be null");
+    return;
+  }
+  try {
+    detail::get_xc_integrator_ptr(integrator)->eval_exc_vxc(
+      m, n,
+      density_matrix, ldp,
+      vxc_matrix, vxc_ld,
+      exc,
+      convert_ks_settings(settings) );
   } catch (std::exception& e) {
     detail::gauxc_status_handle(status, 1, e.what());
   }
@@ -576,6 +684,44 @@ void gauxc_integrator_eval_exc_grad_rks(
   }
 }
 
+void gauxc_integrator_eval_exc_grad_rks_with_settings(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  int64_t m,
+  int64_t n,
+  const double* density_matrix,
+  int64_t ldp,
+  const GauXCKSSettings* settings,
+  double* exc_grad
+) {
+  detail::gauxc_status_init(status);
+  if (integrator.ptr == nullptr || integrator.hdr.type != GauXC_Type_Integrator) {
+    detail::gauxc_status_handle(status, 1, "Invalid Integrator handle");
+    return;
+  }
+  if (density_matrix == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Density matrix pointer cannot be null");
+    return;
+  }
+  if (settings == nullptr) {
+    detail::gauxc_status_handle(status, 1, "KS settings pointer cannot be null");
+    return;
+  }
+  if (exc_grad == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Exc gradient output pointer cannot be null");
+    return;
+  }
+  try {
+    detail::get_xc_integrator_ptr(integrator)->eval_exc_grad(
+      m, n,
+      density_matrix, ldp,
+      exc_grad,
+      convert_exc_grad_settings(settings) );
+  } catch (std::exception& e) {
+    detail::gauxc_status_handle(status, 1, e.what());
+  }
+}
+
 void gauxc_integrator_eval_exc_grad_uks(
   GauXCStatus* status,
   const GauXCIntegrator integrator,
@@ -733,6 +879,52 @@ void gauxc_integrator_eval_fxc_contraction_rks(
       t_density_matrix, ldtp,
       fxc, ldfxc,
       IntegratorSettingsXC{} );
+  } catch (std::exception& e) {
+    detail::gauxc_status_handle(status, 1, e.what());
+  }
+}
+
+void gauxc_integrator_eval_fxc_contraction_rks_with_settings(
+  GauXCStatus* status,
+  const GauXCIntegrator integrator,
+  int64_t m,
+  int64_t n,
+  const double* density_matrix,
+  int64_t ldp,
+  const double* t_density_matrix,
+  int64_t ldtp,
+  const GauXCKSSettings* settings,
+  double* fxc,
+  int64_t ldfxc
+) {
+  detail::gauxc_status_init(status);
+  if (integrator.ptr == nullptr || integrator.hdr.type != GauXC_Type_Integrator) {
+    detail::gauxc_status_handle(status, 1, "Invalid Integrator handle");
+    return;
+  }
+  if (density_matrix == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Density matrix pointer cannot be null");
+    return;
+  }
+  if (t_density_matrix == nullptr) {
+    detail::gauxc_status_handle(status, 1, "Density matrix pointer cannot be null");
+    return;
+  }
+  if (settings == nullptr) {
+    detail::gauxc_status_handle(status, 1, "KS settings pointer cannot be null");
+    return;
+  }
+  if (fxc == nullptr) {
+    detail::gauxc_status_handle(status, 1, "FXC output pointer cannot be null");
+    return;
+  }
+  try {
+    detail::get_xc_integrator_ptr(integrator)->eval_fxc_contraction(
+      m, n,
+      density_matrix, ldp,
+      t_density_matrix, ldtp,
+      fxc, ldfxc,
+      convert_ks_settings(settings) );
   } catch (std::exception& e) {
     detail::gauxc_status_handle(status, 1, e.what());
   }
