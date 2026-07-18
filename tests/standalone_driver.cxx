@@ -232,6 +232,7 @@ int main(int argc, char** argv) {
     matrix_type FXC_ref, FXCz_ref;
     double EXC_ref = 0.0;
     std::vector<double> EXC_GRAD_ref(3*mol.size());
+    std::vector<double> EXX_GRAD_ref(3*mol.size());
     bool rks = true, uks = false, gks = false;
     size_t N_EL_ref = MolMeta(mol).sum_atomic_charges();
     {
@@ -346,6 +347,19 @@ int main(int argc, char** argv) {
                       << std::endl;
           }
           std::fill( EXC_GRAD_ref.begin(), EXC_GRAD_ref.end(), 0. );
+        }
+        try {
+          dset = file.getDataSet("EXX_GRAD");
+          auto xc_grad_dims = dset.getDimensions();
+          if( xc_grad_dims[0] != mol.size() or xc_grad_dims[1] != 3 )
+            GAUXC_GENERIC_EXCEPTION("Incorrect dims for EXX_GRAD");
+          dset.read( EXX_GRAD_ref.data() );
+        } catch(...) {
+          if(world_rank == 0) {
+            std::cout << "** Warning: Could Not Find Reference EXX_GRAD"
+                      << std::endl;
+          }
+          std::fill( EXX_GRAD_ref.begin(), EXX_GRAD_ref.end(), 0. );
         }
       }
 
@@ -493,6 +507,7 @@ int main(int argc, char** argv) {
     }
 
     std::vector<double> EXC_GRAD;
+    std::vector<double> EXX_GRAD;
     if( integrate_exc_grad ) {
       if( rks ) {
         EXC_GRAD = integrator.eval_exc_grad( P );
@@ -591,6 +606,28 @@ int main(int argc, char** argv) {
       K = integrator.eval_exx(P, sn_link_settings);
       //matrix_type K_tmp = 0.5 * (K + K.transpose());
       //K = -K_tmp;
+      if( integrate_exc_grad ) {
+        if( rks ) {
+          EXX_GRAD = integrator.eval_exx_grad( P, sn_link_settings );
+        }
+        else if( uks ) {
+          std::cout << "Warning: eval_exx_grad + UKS NYI!" << std::endl;
+        }
+        else if( gks ) {
+          std::cout << "Warning: eval_exx_grad + GKS NYI!" << std::endl;
+        }
+        if(!world_rank && !EXX_GRAD.empty()) {
+          std::cout << "EXX Gradient:" << std::endl;
+          std::cout << std::scientific << std::setprecision(6);
+          for( auto iAt = 0; iAt < mol.size(); ++iAt ) {
+            std::cout << "  "
+                      << std::setw(16) << EXX_GRAD[3*iAt + 0]
+                      << std::setw(16) << EXX_GRAD[3*iAt + 1]
+                      << std::setw(16) << EXX_GRAD[3*iAt + 2]
+                      << std::endl;
+          }
+        }
+      }
     } else { K = K_ref; }
 
 
@@ -741,6 +778,24 @@ int main(int argc, char** argv) {
       std::cout << "| K (calc) |_F = " << K.norm() << std::endl;
       std::cout << "RMS K Diff     = " << (K_ref - K).norm() / basis.nbf()
                                          << std::endl;
+        if(integrate_exc_grad && !EXX_GRAD.empty()) {
+        double exx_grad_ref_nrm(0.), exx_grad_calc_nrm(0.), exx_grad_diff_nrm(0.);
+        for( auto i = 0; i < 3*mol.size(); ++i ) {
+          const auto ref_val = EXX_GRAD_ref[i];
+          const auto clc_val = EXX_GRAD[i];
+          const auto dif_val = std::abs(ref_val - clc_val);
+          exx_grad_ref_nrm  += ref_val*ref_val;
+          exx_grad_calc_nrm += clc_val*clc_val;
+          exx_grad_diff_nrm += dif_val*dif_val;
+        }
+
+        exx_grad_ref_nrm  = std::sqrt(exx_grad_ref_nrm);
+        exx_grad_calc_nrm = std::sqrt(exx_grad_calc_nrm);
+        exx_grad_diff_nrm = std::sqrt(exx_grad_diff_nrm);
+        std::cout << "| EXX_GRAD (ref)  | = " << exx_grad_ref_nrm << std::endl;
+        std::cout << "| EXX_GRAD (calc) | = " << exx_grad_calc_nrm << std::endl;
+        std::cout << "| EXX_GRAD (diff) | = " << exx_grad_diff_nrm << std::endl;
+        }
       }
       if (integrate_dd_psi) {
         std::cout << "| DD_PSI (ref)  |_F = " << ddPsi_ref.norm() << std::endl;
@@ -820,6 +875,11 @@ int main(int argc, char** argv) {
       if( integrate_exx ) {
         dset = file.createDataSet<double>( "/K", mat_space );
         dset.write_raw( K.data() );
+        if( integrate_exc_grad && !EXX_GRAD.empty() ) {
+          HighFive::DataSpace grad_space( mol.size(), 3 );
+          dset = file.createDataSet<double>( "/EXX_GRAD", grad_space );
+          dset.write_raw( EXX_GRAD.data() );
+        }
       }
 
       if( integrate_exc_grad ) {

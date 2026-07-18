@@ -83,6 +83,9 @@ protected:
                   int64_t ldp, value_type* K, int64_t ldk,
                   const IntegratorSettingsEXX& settings ) override;
 
+  void eval_exx_grad_( int64_t m, int64_t n, const value_type* P,
+                  int64_t ldp, value_type* EXX_GRAD,
+                  const IntegratorSettingsEXX& settings ) override;
   void eval_fxc_contraction_( int64_t m, int64_t n, 
                               const value_type* P, int64_t ldp,   
                               const value_type* tP, int64_t ldtp,
@@ -168,6 +171,17 @@ protected:
                         host_task_iterator task_begin, host_task_iterator task_end,
                         XCDeviceData& device_data, 
                         const IntegratorSettingsEXX& settings);
+
+  void exx_grad_local_work_( const basis_type& basis, const value_type* P, int64_t ldp,
+          host_task_iterator task_begin, host_task_iterator task_end,
+          XCDeviceData& device_data,
+          const IntegratorSettingsEXX& settings);
+
+  void exx_grad_local_work_( const basis_type& basis, const value_type* P, int64_t ldp,
+          value_type* EXX_GRAD, int64_t nbf,
+          host_task_iterator task_begin, host_task_iterator task_end,
+          XCDeviceData& device_data,
+          const IntegratorSettingsEXX& settings);
 
   void exx_ek_screening_local_work_( const basis_type& basis, 
                         const value_type* P, int64_t ldp, 
