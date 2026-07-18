@@ -58,7 +58,7 @@ size_t Scheme1DataBase::get_static_mem_requirement() {
     nsp * sizeof(int32_t) +      // nprim_pairs
     nsp * sizeof(shell_pair*) +  // shell_pair pointer
     nsp * 3 * sizeof(double) +   // X_AB, Y_AB, Z_AB
-    1024 * 1024;                 // additional memory for alignment padding
+    4 * 1024 * 1024;             // additional memory for alignment padding
 
   return size;
 }
