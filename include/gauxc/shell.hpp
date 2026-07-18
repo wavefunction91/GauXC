@@ -14,6 +14,8 @@
 #include <array>
 #include <cmath>
 #include <iostream>
+#include <sstream>
+#include <stdexcept>
 #include <cassert>
 #include <algorithm>
 #include <tuple>
@@ -137,6 +139,12 @@ public:
     prim_array alpha, prim_array coeff, cart_array O, bool _normalize = true ) :
     alpha_( alpha ), coeff_( coeff ), O_( O ),
     nprim_( nprim.get() ), l_( l.get() ), pure_( pure.get() ) {
+
+    if(nprim_ > static_cast<int32_t>(detail::shell_nprim_max)) {
+      std::ostringstream oss;
+      oss << "Shell has too many primitives! expected <= " << detail::shell_nprim_max << " actual value " << nprim_ << "!\n";
+      throw std::out_of_range(oss.str());
+    }
 
     if( _normalize ) normalize();
     compute_shell_cutoff();
