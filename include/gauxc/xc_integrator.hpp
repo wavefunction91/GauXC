@@ -38,6 +38,8 @@ public:
   using exc_vxc_type_rks  = std::tuple< value_type, matrix_type >;
   using exc_vxc_type_uks  = std::tuple< value_type, matrix_type, matrix_type >;  
   using exc_vxc_type_gks  = std::tuple< value_type, matrix_type, matrix_type, matrix_type, matrix_type >;
+  using exc_vxc_type_neo_rks = std::tuple< value_type, value_type, matrix_type, matrix_type, matrix_type >;  
+  using exc_vxc_type_neo_uks = std::tuple< value_type, value_type, matrix_type, matrix_type, matrix_type, matrix_type >;  
   using exc_grad_type = std::vector< value_type >;
   using exx_type      = matrix_type;
   using fxc_contraction_type_rks = matrix_type;
@@ -72,7 +74,12 @@ public:
   exc_vxc_type_uks  eval_exc_vxc ( const MatrixType&, const MatrixType&,
                                    const IntegratorSettingsXC& = IntegratorSettingsXC{} );
   exc_vxc_type_gks  eval_exc_vxc ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,
-                                   const IntegratorSettingsXC& = IntegratorSettingsXC{});
+                                   const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+
+  exc_vxc_type_neo_rks neo_eval_exc_vxc( const MatrixType&, const MatrixType&, const MatrixType&,
+                                         const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+  exc_vxc_type_neo_uks neo_eval_exc_vxc( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,
+                                         const IntegratorSettingsXC& = IntegratorSettingsXC{} );
 
   exc_grad_type eval_exc_grad( const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
   exc_grad_type eval_exc_grad( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& = IntegratorSettingsXC{} );
