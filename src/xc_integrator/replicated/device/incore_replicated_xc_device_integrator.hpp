@@ -116,7 +116,8 @@ protected:
                             const value_type* Py, int64_t ldpy,
                             const value_type* Px, int64_t ldpx,
                             host_task_iterator task_begin, host_task_iterator task_end,
-                            XCDeviceData& device_data, bool do_vxc );
+                            XCDeviceData& device_data, bool do_vxc,
+                            const IntegratorSettingsXC& settings );
 
   void exc_vxc_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
                             const value_type* Pz, int64_t ldpz,
@@ -127,14 +128,14 @@ protected:
                             value_type* VXCy, int64_t ldvxcy,
                             value_type* VXCx, int64_t ldvxcx, value_type* EXC, value_type *N_EL,
                             host_task_iterator task_begin, host_task_iterator task_end,
-                            XCDeviceData& device_data );
+                            XCDeviceData& device_data, const IntegratorSettingsXC& settings );
 
   void fxc_contraction_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
                             const value_type* Pz, int64_t ldpz,
                             const value_type* tPs, int64_t ldtps,
                             const value_type* tPz, int64_t ldtpz,
                             host_task_iterator task_begin, host_task_iterator task_end,
-                            XCDeviceData& device_data);
+                            XCDeviceData& device_data, const IntegratorSettingsXC& settings);
 
   void fxc_contraction_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps,
                             const value_type* Pz, int64_t ldpz,
@@ -144,7 +145,7 @@ protected:
                             value_type* FXCs, int64_t ldfxcs,
                             value_type* FXCz, int64_t ldfxcz,
                             host_task_iterator task_begin, host_task_iterator task_end,
-                            XCDeviceData& device_data );
+                            XCDeviceData& device_data, const IntegratorSettingsXC& settings );
 
   void eval_exc_grad_local_work_( const basis_type& basis, const value_type* Ps, int64_t ldps, 
                                   const value_type* Pz, int64_t ldpz,

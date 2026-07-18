@@ -126,6 +126,10 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   IntegratorSettingsEXC_GRAD exc_grad_settings;
   if( auto* tmp = dynamic_cast<const IntegratorSettingsEXC_GRAD*>(&settings) ) {
     exc_grad_settings = *tmp;
+  } else if( auto* ks_tmp = dynamic_cast<const IntegratorSettingsKS*>(&settings) ) {
+    exc_grad_settings.gks_dtol = ks_tmp->gks_dtol;
+    exc_grad_settings.rks_density_matrix_is_spin_summed =
+      ks_tmp->rks_density_matrix_is_spin_summed;
   }
 
   // Get basis map
@@ -330,7 +334,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
     // Evaluate X matrix (2 * P * B/Bx/By/Bz) -> store in Z
     // XXX: This assumes that bfn + gradients are contiguous in memory
-    const auto xmat_fac = is_rks ? 2.0 : 1.0;
+    const auto xmat_fac =
+      (is_rks and not exc_grad_settings.rks_density_matrix_is_spin_summed) ? 2.0 : 1.0;
     const int  xmat_len = func.is_lda() ? 1 : 4;
     lwd->eval_xmat( xmat_len*npts, nbf, nbe, submat_map, xmat_fac, Ps, ldps, basis_eval, nbe,
                     xNmat, nbe, nbe_scr );

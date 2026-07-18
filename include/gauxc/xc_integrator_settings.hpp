@@ -23,6 +23,9 @@ struct IntegratorSettingsSNLinK : public IntegratorSettingsEXX {
 struct IntegratorSettingsXC { virtual ~IntegratorSettingsXC() noexcept = default; };
 struct IntegratorSettingsKS : public IntegratorSettingsXC {
   double gks_dtol = 1e-12;
+  // RKS density matrices are interpreted as one-spin densities by default.
+  // Set this when the caller provides the spin-summed closed-shell density.
+  bool rks_density_matrix_is_spin_summed = false;
 };
 
 struct IntegratorSettingsEXC_GRAD : public IntegratorSettingsKS {

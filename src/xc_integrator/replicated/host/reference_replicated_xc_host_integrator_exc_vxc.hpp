@@ -384,7 +384,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
      
     // Evaluate X matrix (fac * P * B) -> store in Z
-    const auto xmat_fac = is_rks ? 2.0 : 1.0; // TODO Fix for spinor RKS input
+    const auto xmat_fac =
+      (is_rks and not ks_settings.rks_density_matrix_is_spin_summed) ? 2.0 : 1.0;
     lwd->eval_xmat( mgga_dim_scal * npts, nbf, nbe, submat_map, xmat_fac, Ps, ldps, basis_eval, nbe,
       zmat, nbe, nbe_scr );
 		

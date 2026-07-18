@@ -38,7 +38,7 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
              const value_type* Pz, int64_t ldpz,
              const value_type* Py, int64_t ldpy,
              const value_type* Px, int64_t ldpx,
-             value_type* EXC, const IntegratorSettingsXC& /*ks_settings*/) {
+             value_type* EXC, const IntegratorSettingsXC& ks_settings) {
 
 
   const auto& basis = this->load_balancer_->basis();
@@ -84,7 +84,7 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
     exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx,
       nullptr, 0, nullptr, 0, nullptr, 0, nullptr, 0, EXC, 
-      &N_EL, tasks.begin(), tasks.end(), incore_integrator );
+      &N_EL, tasks.begin(), tasks.end(), incore_integrator, ks_settings );
   });
 
   // Release ownership of LWD back to this integrator instance
@@ -134,4 +134,3 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
 
 }
 }
-

@@ -42,7 +42,7 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
                  value_type* VXCz, int64_t ldvxcz,
                  value_type* VXCy, int64_t ldvxcy,
                  value_type* VXCx, int64_t ldvxcx,
-                 value_type* EXC, const IntegratorSettingsXC& /*ks_settings*/) {
+                 value_type* EXC, const IntegratorSettingsXC& ks_settings) {
 
 
   const auto& basis = this->load_balancer_->basis();
@@ -98,7 +98,7 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
     exc_vxc_local_work_( basis, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx,
       VXCs, ldvxcs, VXCz, ldvxcz, VXCy, ldvxcy, VXCx, ldvxcx, EXC, 
-      &N_EL, tasks.begin(), tasks.end(), incore_integrator );
+      &N_EL, tasks.begin(), tasks.end(), incore_integrator, ks_settings );
   });
 
   // Release ownership of LWD back to this integrator instance
@@ -166,7 +166,8 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
                        value_type* VXCx, int64_t ldvxcx,
                        value_type* EXC, value_type *N_EL, 
                        host_task_iterator task_begin, host_task_iterator task_end,
-                       incore_integrator_type& incore_integrator ) {
+                       incore_integrator_type& incore_integrator,
+                       const IntegratorSettingsXC& ks_settings ) {
 
   //incore_integrator.exc_vxc_local_work( basis, P, ldp, VXC, ldvxc, EXC, N_EL, task_begin, task_end, device_data );
   //return;
@@ -227,7 +228,7 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
     // Execute task
     execute_task_batch( next_task, basis, mol, Ps, ldps, Pz, ldpz,
       Py, ldpy, Px, ldpx, VXCs, ldvxcs, VXCz, ldvxcz, VXCy, ldvxcy,
-      VXCx, ldvxcx, EXC, N_EL, incore_integrator );
+      VXCx, ldvxcx, EXC, N_EL, incore_integrator, ks_settings );
   };
 
 
@@ -287,7 +288,8 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
                       value_type* VXCy, int64_t ldvxcy,
                       value_type* VXCx, int64_t ldvxcx,
                       value_type* EXC, value_type *N_EL, 
-                      incore_integrator_type& incore_integrator ) {
+                      incore_integrator_type& incore_integrator,
+                      const IntegratorSettingsXC& ks_settings ) {
 
 
   // Alias information
@@ -398,13 +400,13 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
     incore_integrator.exc_vxc_local_work( basis_subset, Ps_submat, nbe, 
       Pz_submat, nbe, Py_submat, nbe, Px_submat, nbe, VXCs_submat, nbe,
       VXCz_submat, nbe, VXCy_submat, nbe, VXCx_submat, nbe,
-      &EXC_tmp, &NEL_tmp, task_begin, task_end, *device_data_ptr_ );
+      &EXC_tmp, &NEL_tmp, task_begin, task_end, *device_data_ptr_, ks_settings );
   } else if constexpr (not IncoreIntegratorType::is_device) {
 #endif
     incore_integrator.exc_vxc_local_work( basis_subset, Ps_submat, nbe, 
       Pz_submat, nbe, Py_submat, nbe, Px_submat, nbe, VXCs_submat, nbe,
       VXCz_submat, nbe, VXCy_submat, nbe, VXCx_submat, nbe,
-      &EXC_tmp, &NEL_tmp, IntegratorSettingsKS{}, task_begin, task_end );
+      &EXC_tmp, &NEL_tmp, ks_settings, task_begin, task_end );
 #ifdef GAUXC_HAS_DEVICE
   }
 #endif
@@ -444,4 +446,3 @@ void ShellBatchedReplicatedXCIntegrator<BaseIntegratorType, IncoreIntegratorType
 
 }
 }
-

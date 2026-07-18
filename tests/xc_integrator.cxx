@@ -215,6 +215,20 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
     auto EXC2 = integrator.eval_exc( P );
     CHECK(EXC2 == Approx(EXC));
 
+    if( func.is_lda() ) {
+      // External interfaces may provide the spin-summed closed-shell density
+      // instead of the one-spin density used by GauXC's default RKS convention.
+      matrix_type P_spin_summed = 2.0 * P;
+      IntegratorSettingsKS spin_summed_settings;
+      spin_summed_settings.rks_density_matrix_is_spin_summed = true;
+      auto EXC3 = integrator.eval_exc( P_spin_summed, spin_summed_settings );
+      CHECK(EXC3 == Approx(EXC_ref));
+      auto [ EXC4, VXC4 ] = integrator.eval_exc_vxc( P_spin_summed, spin_summed_settings );
+      CHECK(EXC4 == Approx(EXC_ref));
+      auto VXC4_diff_nrm = ( VXC4 - VXC_ref ).norm();
+      CHECK( VXC4_diff_nrm / basis.nbf() < 1e-10 );
+    }
+
   } else if (uks) {
     auto [ EXC, VXC, VXCz ] = integrator.eval_exc_vxc( P, Pz );
 
