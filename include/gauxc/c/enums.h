@@ -79,9 +79,13 @@ enum GauXC_SupportedAlg {
 
 /// High-level specification of pruning schemes for atomic quadratures
 enum GauXC_PruningScheme {
-  GauXC_PruningScheme_Unpruned, ///< Unpruned atomic quadrature
-  GauXC_PruningScheme_Robust,   ///< The "Robust" scheme of Psi4
-  GauXC_PruningScheme_Treutler  ///< The Treutler-Ahlrichs scheme
+  GauXC_PruningScheme_Unpruned,       ///< Unpruned atomic quadrature
+  GauXC_PruningScheme_Robust,         ///< The "Robust" scheme of Psi4
+  GauXC_PruningScheme_Treutler,       ///< The Treutler-Ahlrichs scheme
+  GauXC_PruningScheme_PySCF_Treutler, ///< The Treutler scheme of PySCF
+  GauXC_PruningScheme_PySCF_SG1,      ///< The SG1 scheme of PySCF
+  GauXC_PruningScheme_PySCF_NWChem,   ///< The NWChem scheme of PySCF
+  GauXC_PruningScheme_PySCF_SGX       ///< The SGX scheme of PySCF
 };
 
 

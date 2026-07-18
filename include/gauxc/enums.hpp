@@ -76,9 +76,13 @@ enum class SupportedAlg {
 
 /// High-level specification of pruning schemes for atomic quadratures
 enum class PruningScheme {
-  Unpruned,  ///< Unpruned atomic quadrature
-  Robust,    ///< The "Robust" scheme of Psi4
-  Treutler   ///< The Treutler-Ahlrichs scheme
+  Unpruned,       ///< Unpruned atomic quadrature
+  Robust,         ///< The "Robust" scheme of Psi4
+  Treutler,       ///< The Treutler-Ahlrichs scheme
+  PySCF_Treutler, ///< The Treutler scheme of PySCF
+  PySCF_SG1,      ///< The SG1 scheme of PySCF
+  PySCF_NWChem,   ///< The NWChem scheme of PySCF
+  PySCF_SGX       ///< The SGX scheme of PySCF
 };
 
 

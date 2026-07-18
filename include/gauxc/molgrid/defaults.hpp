@@ -18,6 +18,8 @@ namespace GauXC {
   double slater_radius_64(AtomicNumber);
   double slater_radius_30(AtomicNumber);
   double clementi_radius_67(AtomicNumber);
+  double pyscf_slater_radius_64(AtomicNumber);
+  double pyscf_gill_radius_93(AtomicNumber);
   double uff_radius_103(AtomicNumber);
   double default_atomic_radius(AtomicNumber);
 
@@ -41,9 +43,10 @@ namespace GauXC {
 
     template <typename... Args>
     inline static atomic_grid_variant 
-      create_default_pruned_grid_spec( PruningScheme scheme, Args&&... args ) {
-      return create_pruned_spec( scheme, 
-        create_default_unpruned_grid_spec(std::forward<Args>(args)...)
+      create_default_pruned_grid_spec( PruningScheme scheme, AtomicNumber Z,
+                                       Args&&... args ) {
+      return create_pruned_spec( scheme, Z,
+        create_default_unpruned_grid_spec(Z, std::forward<Args>(args)...)
       );
     }
 

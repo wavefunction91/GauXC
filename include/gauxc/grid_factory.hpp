@@ -10,6 +10,7 @@
  * See LICENSE.txt for details
  */
 #pragma once
+#include <gauxc/atom.hpp>
 #include <gauxc/grid.hpp>
 #include <gauxc/enums.hpp>
 #include <integratorxx/composite_quadratures/spherical_quadrature.hpp>
@@ -62,10 +63,21 @@ PrunedAtomicGridSpecification treutler_pruning_scheme(
   UnprunedAtomicGridSpecification
 );
 
+/// Generate a Pruning specification according to PySCF's Treutler pruning scheme
+PrunedAtomicGridSpecification pyscf_treutler_pruning_scheme(
+  UnprunedAtomicGridSpecification
+);
+
 /// Generate a pruning specification from a specificed pruning scheme and 
 /// an unpruned grid specification
 PrunedAtomicGridSpecification create_pruned_spec(
   PruningScheme, UnprunedAtomicGridSpecification
+);
+
+/// Generate an atom-aware pruning specification from a specified pruning scheme
+/// and an unpruned grid specification
+PrunedAtomicGridSpecification create_pruned_spec(
+  PruningScheme, AtomicNumber, UnprunedAtomicGridSpecification
 );
 
 using atomic_grid_variant = 

@@ -186,6 +186,14 @@ TEST_CASE("C-API Enum Correspondence", "[c-api]") {
        == static_cast<int>(GauXC_PruningScheme_Robust));
     CHECK(static_cast<int>(PruningScheme::Treutler)
        == static_cast<int>(GauXC_PruningScheme_Treutler));
+    CHECK(static_cast<int>(PruningScheme::PySCF_Treutler)
+       == static_cast<int>(GauXC_PruningScheme_PySCF_Treutler));
+    CHECK(static_cast<int>(PruningScheme::PySCF_SG1)
+       == static_cast<int>(GauXC_PruningScheme_PySCF_SG1));
+    CHECK(static_cast<int>(PruningScheme::PySCF_NWChem)
+       == static_cast<int>(GauXC_PruningScheme_PySCF_NWChem));
+    CHECK(static_cast<int>(PruningScheme::PySCF_SGX)
+       == static_cast<int>(GauXC_PruningScheme_PySCF_SGX));
   }
 }
 

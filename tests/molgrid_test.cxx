@@ -10,6 +10,7 @@
  * See LICENSE.txt for details
  */
 #include "catch2/catch.hpp"
+#include <gauxc/exceptions.hpp>
 #include <gauxc/molgrid.hpp>
 #include <gauxc/molgrid/defaults.hpp>
 
@@ -537,6 +538,19 @@ TEST_CASE("Grid Specification", "[molgrid]") {
       };
     }
 
+    SECTION("PySCF Treutler") {
+      gs = MolGridFactory::create_default_pruned_grid_spec(
+        PruningScheme::PySCF_Treutler,Z,rq,gsz);
+      size_t rs = rsz.get();
+      size_t r3 = rsz.get() / 3ul;
+      size_t r2 = rsz.get() / 2ul;
+      ref_pruning_regions = {
+        {0ul, r3, AngularSize(14)},
+        {r3,  r2, AngularSize(50)},
+        {r2,  rs, AngularSize(590)}
+      };
+    }
+
     std::visit([=](auto& g) {
       REQUIRE( g.radial_quad  == rq    );
       REQUIRE( g.radial_size  == rsz   );
@@ -548,6 +562,209 @@ TEST_CASE("Grid Specification", "[molgrid]") {
       REQUIRE( pru->pruning_regions == ref_pruning_regions );
     } 
 
+  }
+
+  SECTION("PySCF Slater-Bragg Radii") {
+
+    const std::vector<std::pair<int,double>> pyscf_slater_reference = {
+      {  1, 6.61404143597771554e-01},
+      {  2, 2.64561657439108622e+00},
+      {  6, 1.32280828719554311e+00},
+      { 10, 2.83458918684759276e+00},
+      { 18, 3.40150702421711149e+00},
+      { 36, 3.59047963667361714e+00},
+      { 54, 3.96842486158663021e+00},
+      { 86, 3.96842486158663021e+00},
+      {103, 3.30702071798885822e+00},
+      {130, 3.30702071798885822e+00},
+    };
+
+    for( const auto& [Z, radius] : pyscf_slater_reference ) {
+      CHECK( pyscf_slater_radius_64(AtomicNumber(Z)) == Approx(radius) );
+    }
+
+  }
+
+}
+
+
+TEST_CASE("PySCF Pruning Specifications", "[molgrid]") {
+
+  struct PySCFPruningCase {
+    PruningScheme scheme;
+    AtomicNumber Z;
+    AtomicGridSizeDefault grid_size;
+    std::vector<PruningRegion> reference_regions;
+  };
+
+  const std::vector<PySCFPruningCase> test_cases = {
+    {PruningScheme::PySCF_Treutler, AtomicNumber(1), AtomicGridSizeDefault::PySCF0,
+      {{0ul, 3ul, AngularSize(14)}, {3ul, 10ul, AngularSize(50)}}},
+    {PruningScheme::PySCF_Treutler, AtomicNumber(11), AtomicGridSizeDefault::PySCF3,
+      {{0ul, 26ul, AngularSize(14)}, {26ul, 40ul, AngularSize(50)},
+       {40ul, 80ul, AngularSize(434)}}},
+    {PruningScheme::PySCF_Treutler, AtomicNumber(8), AtomicGridSizeDefault::PySCF2,
+      {{0ul, 20ul, AngularSize(14)}, {20ul, 30ul, AngularSize(50)},
+       {30ul, 60ul, AngularSize(302)}}},
+    {PruningScheme::PySCF_Treutler, AtomicNumber(36), AtomicGridSizeDefault::PySCF4,
+      {{0ul, 35ul, AngularSize(14)}, {35ul, 52ul, AngularSize(50)},
+       {52ul, 105ul, AngularSize(590)}}},
+
+    {PruningScheme::PySCF_SG1, AtomicNumber(1), AtomicGridSizeDefault::PySCF0,
+      {{0ul, 3ul, AngularSize(6)}, {3ul, 4ul, AngularSize(38)},
+       {4ul, 5ul, AngularSize(86)}, {5ul, 9ul, AngularSize(194)},
+       {9ul, 10ul, AngularSize(86)}}},
+    {PruningScheme::PySCF_SG1, AtomicNumber(2), AtomicGridSizeDefault::PySCF4,
+      {{0ul, 17ul, AngularSize(6)}, {17ul, 21ul, AngularSize(38)},
+       {21ul, 26ul, AngularSize(86)}, {26ul, 42ul, AngularSize(194)},
+       {42ul, 60ul, AngularSize(86)}}},
+    {PruningScheme::PySCF_SG1, AtomicNumber(6), AtomicGridSizeDefault::PySCF3,
+      {{0ul, 22ul, AngularSize(6)}, {22ul, 31ul, AngularSize(38)},
+       {31ul, 38ul, AngularSize(86)}, {38ul, 57ul, AngularSize(194)},
+       {57ul, 75ul, AngularSize(86)}}},
+    {PruningScheme::PySCF_SG1, AtomicNumber(8), AtomicGridSizeDefault::PySCF2,
+      {{0ul, 17ul, AngularSize(6)}, {17ul, 24ul, AngularSize(38)},
+       {24ul, 29ul, AngularSize(86)}, {29ul, 44ul, AngularSize(194)},
+       {44ul, 60ul, AngularSize(86)}}},
+    {PruningScheme::PySCF_SG1, AtomicNumber(11), AtomicGridSizeDefault::PySCF1,
+      {{0ul, 17ul, AngularSize(6)}, {17ul, 26ul, AngularSize(38)},
+       {26ul, 33ul, AngularSize(86)}, {33ul, 45ul, AngularSize(194)},
+       {45ul, 50ul, AngularSize(86)}}},
+    {PruningScheme::PySCF_SG1, AtomicNumber(18), AtomicGridSizeDefault::PySCF4,
+      {{0ul, 25ul, AngularSize(6)}, {25ul, 39ul, AngularSize(38)},
+       {39ul, 48ul, AngularSize(86)}, {48ul, 69ul, AngularSize(194)},
+       {69ul, 95ul, AngularSize(86)}}},
+
+    {PruningScheme::PySCF_NWChem, AtomicNumber(1), AtomicGridSizeDefault::PySCF0,
+      {{0ul, 3ul, AngularSize(50)}, {3ul, 8ul, AngularSize(74)},
+       {8ul, 10ul, AngularSize(50)}}},
+    {PruningScheme::PySCF_NWChem, AtomicNumber(2), AtomicGridSizeDefault::PySCF4,
+      {{0ul, 27ul, AngularSize(50)}, {27ul, 34ul, AngularSize(86)},
+       {34ul, 42ul, AngularSize(350)}, {42ul, 59ul, AngularSize(434)},
+       {59ul, 60ul, AngularSize(350)}}},
+    {PruningScheme::PySCF_NWChem, AtomicNumber(6), AtomicGridSizeDefault::PySCF3,
+      {{0ul, 22ul, AngularSize(50)}, {22ul, 32ul, AngularSize(86)},
+       {32ul, 38ul, AngularSize(266)}, {38ul, 58ul, AngularSize(302)},
+       {58ul, 75ul, AngularSize(266)}}},
+    {PruningScheme::PySCF_NWChem, AtomicNumber(8), AtomicGridSizeDefault::PySCF2,
+      {{0ul, 18ul, AngularSize(50)}, {18ul, 26ul, AngularSize(86)},
+       {26ul, 31ul, AngularSize(266)}, {31ul, 47ul, AngularSize(302)},
+       {47ul, 60ul, AngularSize(266)}}},
+    {PruningScheme::PySCF_NWChem, AtomicNumber(10), AtomicGridSizeDefault::PySCF3,
+      {{0ul, 31ul, AngularSize(50)}, {31ul, 43ul, AngularSize(86)},
+       {43ul, 52ul, AngularSize(266)}, {52ul, 72ul, AngularSize(302)},
+       {72ul, 75ul, AngularSize(266)}}},
+    {PruningScheme::PySCF_NWChem, AtomicNumber(36), AtomicGridSizeDefault::PySCF4,
+      {{0ul, 39ul, AngularSize(50)}, {39ul, 61ul, AngularSize(86)},
+       {61ul, 75ul, AngularSize(434)}, {75ul, 99ul, AngularSize(590)},
+       {99ul, 105ul, AngularSize(434)}}},
+
+    {PruningScheme::PySCF_SGX, AtomicNumber(1), AtomicGridSizeDefault::PySCF5,
+      {{0ul, 21ul, AngularSize(50)}, {21ul, 26ul, AngularSize(302)},
+       {26ul, 33ul, AngularSize(434)}, {33ul, 52ul, AngularSize(590)},
+       {52ul, 70ul, AngularSize(434)}}},
+    {PruningScheme::PySCF_SGX, AtomicNumber(2), AtomicGridSizeDefault::PySCF0,
+      {{0ul, 4ul, AngularSize(14)}, {4ul, 6ul, AngularSize(26)},
+       {6ul, 10ul, AngularSize(50)}}},
+    {PruningScheme::PySCF_SGX, AtomicNumber(6), AtomicGridSizeDefault::PySCF4,
+      {{0ul, 27ul, AngularSize(50)}, {27ul, 38ul, AngularSize(302)},
+       {38ul, 46ul, AngularSize(434)}, {46ul, 70ul, AngularSize(590)},
+       {70ul, 90ul, AngularSize(434)}}},
+    {PruningScheme::PySCF_SGX, AtomicNumber(8), AtomicGridSizeDefault::PySCF2,
+      {{0ul, 18ul, AngularSize(26)}, {18ul, 26ul, AngularSize(110)},
+       {26ul, 31ul, AngularSize(194)}, {31ul, 47ul, AngularSize(302)},
+       {47ul, 60ul, AngularSize(194)}}},
+    {PruningScheme::PySCF_SGX, AtomicNumber(10), AtomicGridSizeDefault::PySCF3,
+      {{0ul, 31ul, AngularSize(26)}, {31ul, 43ul, AngularSize(110)},
+       {43ul, 52ul, AngularSize(194)}, {52ul, 72ul, AngularSize(302)},
+       {72ul, 75ul, AngularSize(194)}}},
+    {PruningScheme::PySCF_SGX, AtomicNumber(18), AtomicGridSizeDefault::PySCF4,
+      {{0ul, 34ul, AngularSize(50)}, {34ul, 52ul, AngularSize(302)},
+       {52ul, 65ul, AngularSize(434)}, {65ul, 87ul, AngularSize(590)},
+       {87ul, 95ul, AngularSize(434)}}}
+  };
+
+  for( const auto& test_case : test_cases ) {
+    auto gs = MolGridFactory::create_default_pruned_grid_spec(
+      test_case.scheme, test_case.Z, RadialQuad::TreutlerAhlrichs,
+      test_case.grid_size
+    );
+
+    const auto* pruned = std::get_if<PrunedAtomicGridSpecification>(&gs);
+    REQUIRE( pruned );
+    CHECK( pruned->pruning_regions == test_case.reference_regions );
+  }
+
+}
+
+TEST_CASE("PySCF Pruning Known Differences", "[molgrid]") {
+
+  SECTION("PySCF Treutler radial grids extend past GauXC TA defaults") {
+    REQUIRE_THROWS( MolGridFactory::create_default_pruned_grid_spec(
+      PruningScheme::PySCF_NWChem, AtomicNumber(54),
+      RadialQuad::TreutlerAhlrichs, AtomicGridSizeDefault::PySCF4
+    ) );
+  }
+
+}
+
+TEST_CASE("PySCF Pruning Exceptions", "[molgrid]") {
+
+  const UnprunedAtomicGridSpecification unp{
+    RadialQuad::TreutlerAhlrichs, RadialSize(10), RadialScale(1.0),
+    AngularSize(302)
+  };
+
+  SECTION("Atom-aware PySCF schemes require an atomic number") {
+    REQUIRE_THROWS_AS( create_pruned_spec(PruningScheme::PySCF_SG1, unp),
+                       generic_gauxc_exception );
+    REQUIRE_THROWS_AS( create_pruned_spec(PruningScheme::PySCF_NWChem, unp),
+                       generic_gauxc_exception );
+    REQUIRE_THROWS_AS( create_pruned_spec(PruningScheme::PySCF_SGX, unp),
+                       generic_gauxc_exception );
+  }
+
+  SECTION("SG1 radii are limited to H-Ar; PySCF raises IndexError for Z=19") {
+    REQUIRE_THROWS_AS(
+      create_pruned_spec(PruningScheme::PySCF_SG1, AtomicNumber(19), unp),
+      generic_gauxc_exception
+    );
+  }
+
+  SECTION("PySCF accepts Z=0 SG1 via its dummy radius; GauXC rejects it") {
+    REQUIRE_THROWS_AS(
+      create_pruned_spec(PruningScheme::PySCF_SG1, AtomicNumber(0), unp),
+      generic_gauxc_exception
+    );
+  }
+
+  SECTION("Bragg radii stop at Z=130; PySCF raises IndexError for Z=131") {
+    REQUIRE_THROWS_AS(
+      create_pruned_spec(PruningScheme::PySCF_NWChem, AtomicNumber(131), unp),
+      generic_gauxc_exception
+    );
+    REQUIRE_THROWS_AS(
+      create_pruned_spec(PruningScheme::PySCF_SGX, AtomicNumber(131), unp),
+      generic_gauxc_exception
+    );
+  }
+
+  SECTION("NWChem requires a supported Lebedev angular size; PySCF raises IndexError") {
+    auto invalid_angular = unp;
+    invalid_angular.angular_size = AngularSize(52);
+    REQUIRE_THROWS_AS(
+      create_pruned_spec(PruningScheme::PySCF_NWChem, AtomicNumber(8), invalid_angular),
+      generic_gauxc_exception
+    );
+  }
+
+  SECTION("SGX is bounded by PySCF's mapping table; PySCF raises IndexError") {
+    auto too_large_sgx = unp;
+    too_large_sgx.angular_size = AngularSize(6000);
+    REQUIRE_THROWS_AS(
+      create_pruned_spec(PruningScheme::PySCF_SGX, AtomicNumber(8), too_large_sgx),
+      generic_gauxc_exception
+    );
   }
 
 }
