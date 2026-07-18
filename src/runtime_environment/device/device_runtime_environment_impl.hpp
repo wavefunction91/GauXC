@@ -35,7 +35,7 @@ public:
    size_t sz) : parent_type(GAUXC_MPI_CODE(c)), 
      i_own_this_memory_(false), device_memory_(p), 
      device_memory_size_(sz),
-     device_backend_{make_device_backend()} {}
+     device_backend_{make_device_backend(GAUXC_MPI_CODE(c))} {}
 
 
   explicit DeviceRuntimeEnvironmentImpl(GAUXC_MPI_CODE(MPI_Comm c,)
@@ -44,6 +44,7 @@ public:
 
     // Allocate Device Memory
     auto avail = device_backend_->get_available_mem();
+    GAUXC_MPI_CODE(MPI_Barrier(c);)
     avail = std::min( avail, detail::memory_cap() );
 
     std::tie( device_memory_, device_memory_size_ ) = 

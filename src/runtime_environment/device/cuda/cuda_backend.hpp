@@ -52,6 +52,15 @@ struct CUDABackend : public DeviceBackend {
 
   std::vector<std::shared_ptr<util::cuda_stream>>   blas_streams;
   std::vector<std::shared_ptr<util::cublas_handle>> blas_handles;
+
+#ifdef GAUXC_HAS_MPI
+  MPI_Comm comm = MPI_COMM_NULL;
+  MPI_Comm local_comm = MPI_COMM_NULL;
+  int gpuid = 0;
+  int local_rank = 0;
+  int local_size = 1;
+  CUDABackend(MPI_Comm comm);
+#endif
 };
 
 }
