@@ -38,7 +38,17 @@ enum GauXC_AtomicGridSizeDefault {
   GauXC_AtomicGridSizeDefault_UltraFineGrid,  ///< Ultrafine grid (appropriate accuracy)
   GauXC_AtomicGridSizeDefault_SuperFineGrid,  ///< Superfine grid (most accurate)
   GauXC_AtomicGridSizeDefault_GM3,            ///< Treutler-Ahlrichs GM3
-  GauXC_AtomicGridSizeDefault_GM5             ///< Treutler-Ahlrichs GM5
+  GauXC_AtomicGridSizeDefault_GM5,            ///< Treutler-Ahlrichs GM5
+  GauXC_AtomicGridSizeDefault_PySCF0,         ///< PySCF default level 0
+  GauXC_AtomicGridSizeDefault_PySCF1,         ///< PySCF default level 1
+  GauXC_AtomicGridSizeDefault_PySCF2,         ///< PySCF default level 2 (angular points ~ fine grid)
+  GauXC_AtomicGridSizeDefault_PySCF3,         ///< PySCF default level 3
+  GauXC_AtomicGridSizeDefault_PySCF4,         ///< PySCF default level 4 (radial points ~ fine grid, angular points ~ ultrafine grid)
+  GauXC_AtomicGridSizeDefault_PySCF5,         ///< PySCF default level 5
+  GauXC_AtomicGridSizeDefault_PySCF6,         ///< PySCF default level 6 (radial points ~ ultrafine grid, angular points ~ superfine grid)
+  GauXC_AtomicGridSizeDefault_PySCF7,         ///< PySCF default level 7
+  GauXC_AtomicGridSizeDefault_PySCF8,         ///< PySCF default level 8
+  GauXC_AtomicGridSizeDefault_PySCF9          ///< PySCF default level 9 (radial points ~ superfine grid)
 };
 
 /**

@@ -126,6 +126,26 @@ TEST_CASE("C-API Enum Correspondence", "[c-api]") {
        == static_cast<int>(GauXC_AtomicGridSizeDefault_GM3));
     CHECK(static_cast<int>(AtomicGridSizeDefault::GM5)
        == static_cast<int>(GauXC_AtomicGridSizeDefault_GM5));
+    CHECK(static_cast<int>(AtomicGridSizeDefault::PySCF0)
+       == static_cast<int>(GauXC_AtomicGridSizeDefault_PySCF0));
+    CHECK(static_cast<int>(AtomicGridSizeDefault::PySCF1)
+       == static_cast<int>(GauXC_AtomicGridSizeDefault_PySCF1));
+    CHECK(static_cast<int>(AtomicGridSizeDefault::PySCF2)
+       == static_cast<int>(GauXC_AtomicGridSizeDefault_PySCF2));
+    CHECK(static_cast<int>(AtomicGridSizeDefault::PySCF3)
+       == static_cast<int>(GauXC_AtomicGridSizeDefault_PySCF3));
+    CHECK(static_cast<int>(AtomicGridSizeDefault::PySCF4)
+       == static_cast<int>(GauXC_AtomicGridSizeDefault_PySCF4));
+    CHECK(static_cast<int>(AtomicGridSizeDefault::PySCF5)
+       == static_cast<int>(GauXC_AtomicGridSizeDefault_PySCF5));
+    CHECK(static_cast<int>(AtomicGridSizeDefault::PySCF6)
+       == static_cast<int>(GauXC_AtomicGridSizeDefault_PySCF6));
+    CHECK(static_cast<int>(AtomicGridSizeDefault::PySCF7)
+       == static_cast<int>(GauXC_AtomicGridSizeDefault_PySCF7));
+    CHECK(static_cast<int>(AtomicGridSizeDefault::PySCF8)
+       == static_cast<int>(GauXC_AtomicGridSizeDefault_PySCF8));
+    CHECK(static_cast<int>(AtomicGridSizeDefault::PySCF9)
+       == static_cast<int>(GauXC_AtomicGridSizeDefault_PySCF9));
   }
 
   // --- XCWeightAlg ---
