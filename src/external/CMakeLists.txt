@@ -49,6 +49,9 @@ if( GAUXC_ENABLE_HDF5 )
     if( GAUXC_ENABLE_C )
       target_sources( gauxc PRIVATE c_hdf5_read.cxx c_hdf5_write.cxx )
     endif()
+    if( GAUXC_ENABLE_FORTRAN )
+      target_sources( gauxc PRIVATE hdf5_read.f90 hdf5_write.f90 )
+    endif()
     target_link_libraries( gauxc PUBLIC HighFive )
 
     # When linking HDF5 statically on Windows, HDF5's transitive

@@ -50,6 +50,13 @@ else()
   message( STATUS "GauXC Disabling C API" )
 endif()
 
+if( GAUXC_ENABLE_FORTRAN )
+  message( STATUS "GauXC Enabling Fortran API" )
+  add_subdirectory(fortran-api)
+  set(GAUXC_HAS_FORTRAN TRUE CACHE BOOL "GauXC Has Fortran API" FORCE)
+else()
+  message( STATUS "GauXC Disabling Fortran API" )
+endif()
 
 target_include_directories( gauxc
   PUBLIC
@@ -156,6 +163,7 @@ set_target_properties( gauxc PROPERTIES EXPORT_NAME gauxc )
 set(export_properties
   # currently configurable properties 
   "GAUXC_HAS_C"
+  "GAUXC_HAS_FORTRAN"
   "GAUXC_HAS_HOST"
   "GAUXC_HAS_DEVICE"
   "GAUXC_HAS_CUDA"
@@ -164,6 +172,7 @@ set(export_properties
   "GAUXC_HAS_CUTLASS"
   "GAUXC_HAS_NCCL"
   "GAUXC_HAS_MPI"
+  "GAUXC_HAS_MPI_F08"
   "GAUXC_HAS_OPENMP"
   "GAUXC_HAS_HDF5"
  
@@ -177,6 +186,7 @@ set(export_properties
 set_target_properties(gauxc
   PROPERTIES
     "GAUXC_HAS_C"          ${GAUXC_HAS_C}
+    "GAUXC_HAS_FORTRAN"    ${GAUXC_HAS_FORTRAN}
     "GAUXC_HAS_HOST"       ${GAUXC_HAS_HOST}
     "GAUXC_HAS_DEVICE"     ${GAUXC_HAS_DEVICE}
     "GAUXC_HAS_CUDA"       ${GAUXC_HAS_CUDA}
@@ -185,6 +195,7 @@ set_target_properties(gauxc
     "GAUXC_HAS_CUTLASS"    ${GAUXC_HAS_CUTLASS}
     "GAUXC_HAS_NCCL"       ${GAUXC_HAS_NCCL}
     "GAUXC_HAS_MPI"        ${GAUXC_HAS_MPI}
+    "GAUXC_HAS_MPI_F08"    ${GAUXC_HAS_MPI_F08}
     "GAUXC_HAS_OPENMP"     ${GAUXC_HAS_OPENMP}
     "GAUXC_HAS_HDF5"       ${GAUXC_HAS_HDF5}
     "GAUXC_CPU_XC_MAX_AM"     ${GAUXC_CPU_XC_MAX_AM}     
@@ -212,7 +223,6 @@ install(
   DESTINATION include/gauxc
 )
 
-   
 # Export target to script
 set( INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/gauxc )
 install( EXPORT gauxc-targets
