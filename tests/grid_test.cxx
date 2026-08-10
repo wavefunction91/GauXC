@@ -9,7 +9,7 @@
  *
  * See LICENSE.txt for details
  */
-#include "catch2/catch.hpp"
+#include <catch2/catch_all.hpp>
 #include <gauxc/grid.hpp>
 
 #include <integratorxx/quadratures/radial/muraknowles.hpp>

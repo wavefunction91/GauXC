@@ -10,7 +10,7 @@
  * See LICENSE.txt for details
  */
 #define CATCH_CONFIG_RUNNER
-#include "catch2/catch.hpp"
+#include <catch2/catch_all.hpp>
 #include <gauxc/gauxc_config.hpp>
 
 #ifdef GAUXC_HAS_MPI

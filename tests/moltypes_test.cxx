@@ -10,7 +10,7 @@
  * See LICENSE.txt for details
  */
 #include "ut_common.hpp"
-#include "catch2/catch.hpp"
+#include <catch2/catch_all.hpp>
 #include <gauxc/molecule.hpp>
 #include <gauxc/molmeta.hpp>
 #include <gauxc/external/hdf5.hpp>

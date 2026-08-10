@@ -10,7 +10,7 @@
  * See LICENSE.txt for details
  */
 #include "ut_common.hpp"
-#include "catch2/catch.hpp"
+#include <catch2/catch_all.hpp>
 #include <gauxc/basisset.hpp>
 #include <gauxc/basisset_map.hpp>
 #include <gauxc/molecule.hpp>
