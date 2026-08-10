@@ -1,0 +1,31 @@
+add_library( gauxc_test_drive INTERFACE )
+find_package(test-drive CONFIG QUIET)
+if( NOT test-drive_FOUND )
+  find_package(PkgConfig QUIET)
+  if(PkgConfig_FOUND)
+    pkg_check_modules(TEST_DRIVE test-drive)
+    set(test-drive_FOUND ${TEST_DRIVE_FOUND})
+    if(TEST_DRIVE_FOUND)
+      add_library(test-drive::test-drive INTERFACE IMPORTED)
+      target_include_directories(test-drive::test-drive INTERFACE ${TEST_DRIVE_INCLUDE_DIRS})
+      target_link_libraries(test-drive::test-drive INTERFACE ${TEST_DRIVE_LIBRARIES})
+    endif()
+  endif()
+endif()
+if( NOT test-drive_FOUND )
+  FetchContent_Declare(
+    test-drive
+    GIT_REPOSITORY https://github.com/fortran-lang/test-drive.git
+    GIT_TAG        v0.5.0
+  )
+  set(TEST_DRIVE_BUILD_TESTING OFF CACHE BOOL "Build test-drive self tests" FORCE)
+  FetchContent_MakeAvailable(test-drive)
+
+endif()
+if(TARGET test-drive::test-drive)
+  target_link_libraries(gauxc_test_drive INTERFACE test-drive::test-drive)
+elseif(TARGET test-drive)
+  target_link_libraries(gauxc_test_drive INTERFACE test-drive)
+else()
+  target_link_libraries(gauxc_test_drive INTERFACE test-drive-lib)
+endif()
