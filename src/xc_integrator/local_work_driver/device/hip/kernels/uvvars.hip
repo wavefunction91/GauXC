@@ -9,200 +9,221 @@
  *
  * See LICENSE.txt for details
  */
+#include "hip/hip_runtime.h"
 #include "device/common/uvvars.hpp"
 #include "hip_extensions.hpp"
-#include "device_specific/hip_device_constants.hpp"
 #include <gauxc/util/div_ceil.hpp>
-#include "device_specific/hip_util.hpp"
+
+#include "uvvars_lda.hpp"
+#include "uvvars_gga.hpp"
+#include "uvvars_mgga.hpp"
 
 namespace GauXC {
 
+#define EVAL_UVARS_KERNEL(xc_approx) \
+  hipStream_t stream = queue.queue_as<util::hip_stream>();  \
+  switch ( ks_scheme ) { \
+    case RKS: \
+      eval_uvars_##xc_approx##_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks ); \
+      break; \
+    case UKS: \
+      eval_uvars_##xc_approx##_uks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks ); \
+      break; \
+    case GKS: \
+      eval_uvars_##xc_approx##_gks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks ); \
+      break; \
+    default: \
+      GAUXC_GENERIC_EXCEPTION( "Unexpected KS scheme when attempting to evaluate U vars" ); \
+  } 
 
-__global__ void eval_uvars_lda_kernel( size_t           ntasks,
-                                       XCDeviceTask* tasks_device ) {
+  
+#define EVAL_TMAT_KERNEL(xc_approx) \
+  hipStream_t stream = queue.queue_as<util::hip_stream>();  \
+  switch ( ks_scheme ) { \
+    case RKS: \
+      eval_tmat_##xc_approx##_rks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks); \
+      break; \
+    case UKS: \
+      eval_tmat_##xc_approx##_uks_kernel<<< blocks, threads, 0, stream >>>( ntasks, device_tasks); \
+      break; \
+    case GKS: \
+      GAUXC_GENERIC_EXCEPTION( "GKS + evaluate trial U vars NYI" ); \
+      break; \
+    default: \
+      GAUXC_GENERIC_EXCEPTION( "Unexpected KS scheme when attempting to evaluate U vars" ); \
+  } 
 
-  const int batch_idx = blockIdx.z;
-  if( batch_idx >= ntasks ) return;
 
-  auto& task = tasks_device[ batch_idx ];
-
-  const auto npts            = task.npts;
-  const auto nbf             = task.bfn_screening.nbe;
-
-  auto* den_eval_device   = task.den;
-
-  const auto* basis_eval_device = task.bf;
-
-  const auto* den_basis_prod_device = task.zmat;
-
-  const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
-  const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
-
-  double den_reg = 0.;
-
-  if( tid_x < nbf and tid_y < npts ) {
-
-    const double* bf_col   = basis_eval_device     + tid_x*npts;
-    const double* db_col   = den_basis_prod_device + tid_x*npts;
-
-    den_reg = bf_col[ tid_y ]   * db_col[ tid_y ];
-
+#define EVAL_VVARS_KERNEL(xc_approx) \
+  hipStream_t stream = queue.queue_as<util::hip_stream>();  \
+  switch ( den_select ) { \
+    case DEN_S: \
+      eval_vvar_##xc_approx##_kern<trial,DEN_S><<< blocks, threads, 0, stream >>>( ntasks, device_tasks ); \
+      break; \
+    case DEN_Z: \
+      eval_vvar_##xc_approx##_kern<trial,DEN_Z><<< blocks, threads, 0, stream >>>( ntasks, device_tasks ); \
+      break; \
+    case DEN_Y: \
+      eval_vvar_##xc_approx##_kern<trial,DEN_Y><<< blocks, threads, 0, stream >>>( ntasks, device_tasks ); \
+      break; \
+    case DEN_X: \
+      eval_vvar_##xc_approx##_kern<trial,DEN_X><<< blocks, threads, 0, stream >>>( ntasks, device_tasks ); \
+      break; \
+    default: \
+      GAUXC_GENERIC_EXCEPTION( "Unexpected KS scheme when attempting to evaluate V vars" ); \
   }
 
-  // Warp blocks are stored col major
-  den_reg = 2 * hip::warp_reduce_sum<hip::warp_size>( den_reg );
-
-
-  if( threadIdx.x == 0 and tid_y < npts ) {
-    atomicAdd( den_eval_device   + tid_y, den_reg );
-  }
-
-
-}
-
-
-void eval_uvvars_lda( size_t ntasks, int32_t nbf_max, int32_t npts_max,
+// Internal implementation with trial parameter
+void eval_tmat_lda( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
   XCDeviceTask* device_tasks, device_queue queue ) {
+  dim3 threads( hip::max_warps_per_thread_block * hip::warp_size, 1, 1 );
+  dim3 blocks( util::div_ceil( npts_max,  threads.x ), 1, ntasks ); 
+  EVAL_TMAT_KERNEL(lda);
+}
 
-  hipStream_t stream = queue.queue_as<util::hip_stream>();
+void eval_uvars_lda( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
+  XCDeviceTask* device_tasks, device_queue queue ) {
+  dim3 threads( hip::max_warps_per_thread_block * hip::warp_size, 1, 1 );
+  dim3 blocks( util::div_ceil( npts_max,  threads.x ), 1, ntasks ); 
+  EVAL_UVARS_KERNEL(lda);
+}
 
-  dim3 threads(hip::warp_size, hip::max_warps_per_thread_block, 1);
-  dim3 blocks( util::div_ceil( nbf_max , threads.x ),
-               util::div_ceil( npts_max , threads.y ),
+// Internal implementation with trial as template parameter
+template<bool trial>
+void eval_vvars_lda_impl( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id den_select,
+  XCDeviceTask* device_tasks, device_queue queue ) {
+  dim3 threads( hip::warp_size, hip::max_warps_per_thread_block, 1 );
+  dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
+               util::div_ceil( npts_max, threads.y ),
                ntasks );
+  EVAL_VVARS_KERNEL(lda);
+}
+void eval_vvars_lda( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id den_select,
+  XCDeviceTask* device_tasks, device_queue queue ) {
+  eval_vvars_lda_impl<false>(ntasks, nbf_max, npts_max, den_select, device_tasks, queue);
+}
+void eval_vvars_lda_trial( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id den_select,
+  XCDeviceTask* device_tasks, device_queue queue ) {
+  eval_vvars_lda_impl<true>(ntasks, nbf_max, npts_max, den_select, device_tasks, queue);
+}
 
-  hipLaunchKernelGGL(eval_uvars_lda_kernel, dim3(blocks), dim3(threads), 0, 
-    stream, ntasks, device_tasks );
-
+// Internal implementation with trial parameter
+void eval_tmat_gga( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
+  XCDeviceTask* device_tasks, device_queue queue ) {
+  dim3 threads( GGA_KERNEL_SM_WARPS * hip::warp_size, 1, 1 );
+  dim3 blocks( util::div_ceil( npts_max,  threads.x ), 1, ntasks ); 
+  EVAL_TMAT_KERNEL(gga);
+}
+void eval_uvars_gga( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
+  XCDeviceTask* device_tasks, device_queue queue ) {
+  dim3 threads( GGA_KERNEL_SM_WARPS * hip::warp_size, 1, 1 );
+  dim3 blocks( util::div_ceil( npts_max,  threads.x ), 1, ntasks ); 
+  EVAL_UVARS_KERNEL(gga);
 }
 
 
+// Internal implementation with trial as template parameter
+template<bool trial>
+void eval_vvars_gga_impl( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id den_select,
+  XCDeviceTask* device_tasks, device_queue queue ) {
+  dim3 threads( hip::warp_size, hip::max_warps_per_thread_block, 1 );
+  dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
+               util::div_ceil( npts_max, threads.y ),
+               ntasks );
+  EVAL_VVARS_KERNEL(gga);
+}
+void eval_vvars_gga( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id den_select,
+  XCDeviceTask* device_tasks, device_queue queue ) {
+  eval_vvars_gga_impl<false>(ntasks, nbf_max, npts_max, den_select, device_tasks, queue);
+}
+void eval_vvars_gga_trial( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id den_select,
+  XCDeviceTask* device_tasks, device_queue queue ) {
+  eval_vvars_gga_impl<true>(ntasks, nbf_max, npts_max, den_select, device_tasks, queue);
+}
 
+// Internal implementation with trial parameter
+void eval_tmat_mgga( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
+  bool need_lapl, XCDeviceTask* device_tasks, device_queue queue ) {
+  hipStream_t stream = queue.queue_as<util::hip_stream>(); 
 
+  dim3 threads( GGA_KERNEL_SM_WARPS * hip::warp_size, 1, 1 );
+  dim3 blocks( util::div_ceil( npts_max,  threads.x ), 1, ntasks ); 
 
+  if(need_lapl) {
+    GAUXC_GENERIC_EXCEPTION("MGGA + LAPL + eval tmat NYI");
+  }
+  if(ks_scheme == RKS) {
+      eval_tmat_mgga_rks_kernel<<<blocks, threads, 0, stream>>>(ntasks, device_tasks);
+  } else if(ks_scheme == UKS) {
+      eval_tmat_mgga_uks_kernel<<<blocks, threads, 0, stream>>>(ntasks, device_tasks);
+  } else {
+    GAUXC_GENERIC_EXCEPTION("GKS + MGGA + DEVICE NYI");
+  }
+}
 
+void eval_uvars_mgga( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_scheme,
+  bool need_lapl, XCDeviceTask* device_tasks, device_queue queue ) {
 
+  hipStream_t stream = queue.queue_as<util::hip_stream>(); 
 
+  // Evaluate GAMMA
+  eval_uvars_gga(ntasks, npts_max, ks_scheme, device_tasks, queue);
 
-
-
-
-
-__global__ void eval_uvars_gga_kernel( size_t           ntasks,
-                                       XCDeviceTask* tasks_device ) {
-
-  const int batch_idx = blockIdx.z;
-  if( batch_idx >= ntasks ) return;
-
-  auto& task = tasks_device[ batch_idx ];
-
-  const auto npts            = task.npts;
-  const auto nbf             = task.bfn_screening.nbe;
-
-  auto* den_eval_device   = task.den;
-  auto* den_x_eval_device = task.ddenx;
-  auto* den_y_eval_device = task.ddeny;
-  auto* den_z_eval_device = task.ddenz;
-
-  const auto* basis_eval_device = task.bf;
-  const auto* dbasis_x_eval_device = task.dbfx;
-  const auto* dbasis_y_eval_device = task.dbfy;
-  const auto* dbasis_z_eval_device = task.dbfz;
-
-  const auto* den_basis_prod_device = task.zmat;
-
-  // We always launch enough blocks to cover npts, so blocks aren't doing multiple results
-  double den_reg = 0.;
-  double dx_reg = 0.;
-  double dy_reg = 0.;
-  double dz_reg = 0.;
-
-  // Have each thread accumulate its own reduction result into a register.
-  // There's no real _need_ for LDS because the reductions are small and
-  // therefore can be done without sharing.
-  for( int ibf = 0; ibf < nbf; ibf++ ) {
-
-    for( int  ipt = blockIdx.x * blockDim.x + threadIdx.x; ipt < npts; ipt += blockDim.x * gridDim.x ) {
-
-      const double* bf_col   = basis_eval_device     + ibf*npts;
-      const double* bf_x_col = dbasis_x_eval_device  + ibf*npts;
-      const double* bf_y_col = dbasis_y_eval_device  + ibf*npts;
-      const double* bf_z_col = dbasis_z_eval_device  + ibf*npts;
-      const double* db_col   = den_basis_prod_device + ibf*npts;
-
-      den_reg += 2 * bf_col[ ipt ]   * db_col[ ipt ];
-      dx_reg += 4 * bf_x_col[ ipt ] * db_col[ ipt ];
-      dy_reg += 4 * bf_y_col[ ipt ] * db_col[ ipt ];
-      dz_reg += 4 * bf_z_col[ ipt ] * db_col[ ipt ];
+  if(ks_scheme == RKS) {
+    return; // Nothing left to do
+  } else if(ks_scheme == UKS) {
+    dim3 threads( hip::max_warps_per_thread_block * hip::warp_size, 1, 1 );
+    dim3 blocks( util::div_ceil( npts_max,  threads.x ), 1, ntasks ); 
+    if(need_lapl) {
+      eval_uvars_mgga_uks_kernel<true><<<blocks, threads, 0, stream>>>(ntasks, device_tasks);
+    } else {
+      eval_uvars_mgga_uks_kernel<false><<<blocks, threads, 0, stream>>>(ntasks, device_tasks);
     }
-  }
-
-
-  for( int  ipt = blockIdx.x * blockDim.x + threadIdx.x; ipt < npts; ipt += blockDim.x * gridDim.x ) {
-    den_eval_device   [ipt] = den_reg;
-    den_x_eval_device [ipt] = dx_reg ;
-    den_y_eval_device [ipt] = dy_reg ;
-    den_z_eval_device [ipt] = dz_reg ;
+  } else {
+    GAUXC_GENERIC_EXCEPTION("GKS + MGGA + DEVICE NYI");
   }
 
 }
 
+// Internal implementation with trial as template parameter
+template<bool trial>
+void eval_vvars_mgga_impl( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id den_select,
+  bool need_lapl, XCDeviceTask* device_tasks, device_queue queue ) {
+  // First evaluate GGA variables
+  eval_vvars_gga_impl<trial>(ntasks, nbf_max, npts_max, den_select, device_tasks, queue);
 
-__global__ void eval_vvars_gga_kernel( 
-  size_t        npts,
-  const double* den_x_eval_device,
-  const double* den_y_eval_device,
-  const double* den_z_eval_device,
-        double* gamma_eval_device
-) {
-
-  const int tid = threadIdx.x + blockIdx.x * blockDim.x;
-  if( tid < npts ) {
-
-    const double dx = den_x_eval_device[ tid ];
-    const double dy = den_y_eval_device[ tid ];
-    const double dz = den_z_eval_device[ tid ];
-
-    gamma_eval_device[tid] = dx*dx + dy*dy + dz*dz;
-
-  }
-
-}
-
-
-
-
-void eval_uvvars_gga( size_t ntasks, size_t npts_total, int32_t nbf_max, 
-  int32_t npts_max, XCDeviceTask* device_tasks, const double* denx, 
-  const double* deny, const double* denz, double* gamma, device_queue queue ) {
-
-  hipStream_t stream = queue.queue_as<util::hip_stream>();
-
-  // U Variables
-  {
-  dim3 threads(hip::max_threads_per_thread_block, 1, 1);
-  dim3 blocks( util::div_ceil( npts_max , threads.x ),
-               1,
+  dim3 threads( hip::warp_size, hip::max_warps_per_thread_block, 1 );
+  dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
+               util::div_ceil( npts_max, threads.y ),
                ntasks );
 
-  hipLaunchKernelGGL(eval_uvars_gga_kernel, dim3(blocks), dim3(threads), 0, 
-    stream, ntasks, device_tasks );
+  hipStream_t stream = queue.queue_as<util::hip_stream>();
+  switch ( den_select ) {
+    case DEN_S:
+      if (need_lapl) {
+        eval_vvar_mgga_kern<trial,DEN_S,true><<< blocks, threads, 0, stream >>>( ntasks, device_tasks ); 
+      } else {
+        eval_vvar_mgga_kern<trial,DEN_S,false><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+      }
+      break;
+    case DEN_Z:
+      if (need_lapl) {
+        eval_vvar_mgga_kern<trial,DEN_Z,true><<< blocks, threads, 0, stream >>>( ntasks, device_tasks ); 
+      } else {
+        eval_vvar_mgga_kern<trial,DEN_Z,false><<< blocks, threads, 0, stream >>>( ntasks, device_tasks );
+      }
+      break;
+    default:
+      GAUXC_GENERIC_EXCEPTION( "Unexpected KS scheme when attempting to evaluate V vars" );
   }
-
-  // V Variables
-  dim3 threads( hip::max_threads_per_thread_block );
-  dim3 blocks( util::div_ceil( npts_total, threads.x ) );
-  hipLaunchKernelGGL(eval_vvars_gga_kernel, blocks, threads, 0, stream,
-    npts_total, denx, deny, denz, gamma);
-
 }
-
-
-
-
-
-
-
-
+void eval_vvars_mgga( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id den_select,
+  bool need_lapl, XCDeviceTask* device_tasks, device_queue queue ) {
+  eval_vvars_mgga_impl<false>(ntasks, nbf_max, npts_max, den_select, need_lapl, device_tasks, queue);
+}
+void eval_vvars_mgga_trial( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id den_select,
+  bool need_lapl, XCDeviceTask* device_tasks, device_queue queue ) {
+  eval_vvars_mgga_impl<true>(ntasks, nbf_max, npts_max, den_select, need_lapl, device_tasks, queue);
+}
 
 }

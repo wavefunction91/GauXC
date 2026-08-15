@@ -11,41 +11,36 @@
  */
 #pragma once
 #include "hip/hip_runtime.h"
-#include <hipcub/hipcub.hpp>
-#include "device_specific/hip_device_constants.hpp"
+#include <cuda.h>
 
 namespace GauXC {
-namespace hip   {
+namespace cuda  {
 
 template <size_t warp_sz, typename T>
-__device__ T warp_reduce_sum( T val ) { 
+__device__ T warp_reduce_sum(T val) {
 
-  using warp_reducer = hipcub::WarpReduce<double>;
-  static __shared__ typename warp_reducer::TempStorage 
-    temp_storage[hip::max_warps_per_thread_block];
-  int tid = 
-    threadIdx.x + threadIdx.y * blockDim.x + threadIdx.z * blockDim.x * blockDim.y;
+  for(int i=(warp_sz/2); i>=1; i/=2)
+    val += __shfl_xor(val, i, warp_sz);
 
-  int warp_lane = tid / warp_size;
-
-  return warp_reducer( temp_storage[warp_lane] ).Sum( val );
-
+  return val;
 }
 
 template <size_t warp_sz, typename T>
-__device__ T warp_reduce_prod( T val ) { 
+__device__ T warp_reduce_prod(T val) {
 
-  using warp_reducer = hipcub::WarpReduce<double>;
-  static __shared__ typename warp_reducer::TempStorage 
-    temp_storage[hip::max_warps_per_thread_block];
-  int tid = 
-    threadIdx.x + threadIdx.y * blockDim.x + threadIdx.z * blockDim.x * blockDim.y;
+  for(int i=(warp_sz/2); i>=1; i/=2)
+    val *= __shfl_xor(val, i, warp_sz);
 
-  int warp_lane = tid / warp_size;
+  return val;
+}
 
-  return warp_reducer( temp_storage[warp_lane] ).Reduce( val,
-    [](const T& a, const T& b){ return a * b; } );
+template <size_t warp_sz, typename T>
+__device__ T warp_reduce_max(T val) {
 
+  for(int i=(warp_sz/2); i>=1; i/=2)
+    val = fmax( val, __shfl_xor(val, i, warp_sz) );
+
+  return val;
 }
 
 }

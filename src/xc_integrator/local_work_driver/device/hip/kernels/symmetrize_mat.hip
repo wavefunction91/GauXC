@@ -9,58 +9,105 @@
  *
  * See LICENSE.txt for details
  */
-#include "device/common/symmetrize_mat.hpp"
 #include "hip/hip_runtime.h"
+#include "device/common/symmetrize_mat.hpp"
+#include "device_specific/hip_device_constants.hpp"
 #include "device_specific/hip_util.hpp"
 
 namespace GauXC {
 
+__global__ void symmetrize_matrix_device( size_t N, double* A, size_t LDA ) {
 
-__host__ __device__ inline constexpr int div_ceil( int i, int j ){ return (i/j) + !!(i%j); } 
+  constexpr uint32_t block_size = hip::warp_size;
 
-template <int BLOCK_SIZE>
-__global__ void symmetrize_matrix_kernel( int N, double* A, int LDA ) {
+  __shared__ double buffer[block_size][block_size+1];  // Pad shared memory to resolve shared memory
 
-  __shared__ double shmem[BLOCK_SIZE][BLOCK_SIZE+1];
+  const size_t num_blocks = ((N + block_size - 1) / block_size);
 
-  const auto n_block = div_ceil(N, BLOCK_SIZE);
-  for( int i_block = 0;       i_block < n_block; ++i_block )
-  for( int j_block = i_block; j_block < n_block; ++j_block ) { 
-  
-    const int ij_block = (i_block+1) + (j_block+1)*j_block/2 - 1;
-    if( ij_block % gridDim.x != blockIdx.x ) continue;
+  for (int i = blockIdx.x; i < num_blocks; i += gridDim.x) {
+    // TODO This could be load balanced if need be
+    const int i_coord = i * block_size;
+    for (int j = i; j < num_blocks; j++) {
+      const int j_coord = j * block_size;
 
-    const int i_coord = i_block * BLOCK_SIZE;
-    const int j_coord = j_block * BLOCK_SIZE;
+      // Read in block to buffer
+      // TODO These could be vector reads/writes if this becomes significant
+      if (i_coord + threadIdx.y < N && j_coord + threadIdx.x < N) {
+        buffer[threadIdx.y][threadIdx.x] = A[(i_coord + threadIdx.y) * LDA + j_coord + threadIdx.x];
+      }
+      __syncthreads();
 
-    const int ix = i_coord + threadIdx.x;
-    const int iy = i_coord + threadIdx.y;
-    const int jx = j_coord + threadIdx.x;
-    const int jy = j_coord + threadIdx.y;
-
-    if( iy < N and jx < N )
-      shmem[threadIdx.y][threadIdx.x] = A[iy*LDA + jx];
-    __syncthreads();
-
-    if( jy < N and ix < N )
-    if( i_coord != j_coord or threadIdx.x < threadIdx.y ) // Diagonal block
-      A[jy*LDA + ix] = shmem[threadIdx.x][threadIdx.y];
-    __syncthreads();
-
+      // Write buffer
+      if (j_coord + threadIdx.y < N && i_coord + threadIdx.x < N) {
+        if ((j_coord != i_coord || threadIdx.x < threadIdx.y)) { // handles the diagonal block
+          A[(j_coord + threadIdx.y) * LDA + i_coord + threadIdx.x] = buffer[threadIdx.x][threadIdx.y];
+        }
+      }
+      __syncthreads();
+    }
   }
-
 }
+
+__global__ void symmetrize_matrix_inc_device( size_t N, double* A, size_t LDA ) {
+
+  constexpr uint32_t block_size = hip::warp_size;
+
+  __shared__ double buffer_0[block_size][block_size+1];  // Pad shared memory to resolve shared memory
+  __shared__ double buffer_1[block_size][block_size+1];  // Pad shared memory to resolve shared memory
+
+  const size_t num_blocks = ((N + block_size - 1) / block_size);
+
+  for (int i = blockIdx.x; i < num_blocks; i += gridDim.x) {
+    // TODO This could be load balanced if need be
+    const int i_coord = i * block_size;
+    for (int j = i; j < num_blocks; j++) {
+      const int j_coord = j * block_size;
+
+      // Read in block to buffer
+      // TODO These could be vector reads/writes if this becomes significant
+      if (i_coord + threadIdx.y < N && j_coord + threadIdx.x < N) {
+        buffer_0[threadIdx.y][threadIdx.x] = A[(i_coord + threadIdx.y) * LDA + j_coord + threadIdx.x];
+      }
+      if (j_coord + threadIdx.y < N && i_coord + threadIdx.x < N) {
+        buffer_1[threadIdx.y][threadIdx.x] = A[(j_coord + threadIdx.y) * LDA + i_coord + threadIdx.x];
+      }
+      __syncthreads();
+
+      buffer_0[threadIdx.y][threadIdx.x] += buffer_1[threadIdx.x][threadIdx.y];
+      buffer_0[threadIdx.y][threadIdx.x] *= 0.5;
+      __syncthreads();
+
+      // Write buffer
+      if (j_coord + threadIdx.y < N && i_coord + threadIdx.x < N) {
+        //if ((j_coord != i_coord || threadIdx.x < threadIdx.y)) { // handles the diagonal block
+          A[(j_coord + threadIdx.y) * LDA + i_coord + threadIdx.x] = buffer_0[threadIdx.x][threadIdx.y];
+        //}
+      }
+      if (i_coord + threadIdx.y < N && j_coord + threadIdx.x < N) {
+        //if ((j_coord != i_coord || threadIdx.x > threadIdx.y)) { // handles the diagonal block
+          A[(i_coord + threadIdx.y) * LDA + j_coord + threadIdx.x] = buffer_0[threadIdx.y][threadIdx.x];
+        //}
+      }
+      __syncthreads();
+    }
+  }
+}
+
+
 
 void symmetrize_matrix( int32_t N, double* A, size_t LDA, device_queue queue ) {
-
   hipStream_t stream = queue.queue_as<util::hip_stream>();
-  constexpr int block_size = 32;
-  const int n_rc_blocks = div_ceil( N, block_size );
-  const size_t n_total_blocks = n_rc_blocks * (n_rc_blocks+1) / 2;
-  dim3 threads(block_size,block_size), blocks(std::min(100ul, n_total_blocks));
-  
-  symmetrize_matrix_kernel<32><<<blocks,threads,0,stream>>>( N, A, LDA );
-
+  const size_t num_blocks = ((N + hip::warp_size - 1) / hip::warp_size);
+  // Warp size must equal max_warps_per_thread_block must equal 32
+  dim3 threads(hip::warp_size, hip::max_warps_per_thread_block), blocks(num_blocks);
+  symmetrize_matrix_device<<<blocks, threads, 0, stream>>>(N, A, LDA);
 }
 
+void symmetrize_matrix_inc( int32_t N, double* A, size_t LDA, device_queue queue ) {
+  hipStream_t stream = queue.queue_as<util::hip_stream>();
+  const size_t num_blocks = ((N + hip::warp_size - 1) / hip::warp_size);
+  // Warp size must equal max_warps_per_thread_block must equal 32
+  dim3 threads(hip::warp_size, hip::max_warps_per_thread_block), blocks(num_blocks);
+  symmetrize_matrix_inc_device<<<blocks, threads, 0, stream>>>(N, A, LDA);
+}
 }

@@ -19,7 +19,7 @@
 
 namespace GauXC {
 
-hipblasOperation_t device_op_to_hipblas( DeviceBlasOp op ) {
+hipblasOperation_t device_op_to_cublas( DeviceBlasOp op ) {
   switch( op ) {
     case DeviceBlasOp::NoTrans: return HIPBLAS_OP_N;
     case DeviceBlasOp::Trans:   return HIPBLAS_OP_T;
@@ -29,7 +29,7 @@ hipblasOperation_t device_op_to_hipblas( DeviceBlasOp op ) {
   }
 }
 
-hipblasFillMode_t device_uplo_to_hipblas( DeviceBlasUplo uplo ) {
+hipblasFillMode_t device_uplo_to_cublas( DeviceBlasUplo uplo ) {
   switch(uplo) {
     case DeviceBlasUplo::Upper: return HIPBLAS_FILL_MODE_UPPER;
     case DeviceBlasUplo::Lower: return HIPBLAS_FILL_MODE_LOWER;
@@ -47,8 +47,26 @@ __global__ void increment_kernel( const T* X, T* Y ) {
 
 template <typename T>
 void increment( const T* X, T* Y, hipStream_t stream ) {
-  hipLaunchKernelGGL(increment_kernel, dim3(1), dim3(1), 0, stream, X,Y);
+  increment_kernel<<<1,1,0,stream>>>(X,Y);
 }
+
+template <typename T>
+__global__ void increment_vec_kernel( const T* X, T* Y, int N ) {
+  const auto tid = blockIdx.x * blockDim.x + threadIdx.x;
+  if( tid < N ) Y[tid] += X[tid];
+}
+
+template <typename T>
+void increment( device_blas_handle generic_handle, const T* X, T* Y, int N) {
+  const int threads = hip::warp_size * hip::max_warps_per_thread_block;
+  const int blocks = util::div_ceil( N, threads );
+  hipblasHandle_t handle = generic_handle.blas_handle_as<util::hipblas_handle>();
+  auto stream = util::get_stream(handle);
+  increment_vec_kernel<<<blocks, threads, 0, stream>>>(X,Y,N);
+}
+
+template
+  void increment( device_blas_handle generic_handle, const double* X, double* Y, int N );
 
 template <>
 void dot( device_blas_handle generic_handle,
@@ -62,7 +80,7 @@ void dot( device_blas_handle generic_handle,
   hipblasHandle_t handle = generic_handle.blas_handle_as<util::hipblas_handle>();
 
   auto stat = hipblasDdot( handle, N, X, INCX, Y, INCY, RES );
-  GAUXC_HIPBLAS_ERROR("HIPBLAS DDOT FAILED", stat );
+  GAUXC_CUBLAS_ERROR("CUBLAS DDOT FAILED", stat );
 
 }
 
@@ -138,7 +156,7 @@ void hadamard_product( device_blas_handle generic_handle,
   dim3 blocks( util::div_ceil( M, threads.x ),
                util::div_ceil( N, threads.y ) );
 
-  hipLaunchKernelGGL(hadamard_product_kernel, dim3(blocks), dim3(threads), 0, stream ,  M, N, A, LDA, B, LDB );
+  hadamard_product_kernel<<< blocks, threads, 0, stream >>>( M, N, A, LDA, B, LDB );
 
 }
  
@@ -163,10 +181,10 @@ void gemm( device_blas_handle generic_handle,
 
 
   hipblasHandle_t handle = generic_handle.blas_handle_as<util::hipblas_handle>();
-  auto stat = hipblasDgemm( handle, device_op_to_hipblas(TA), 
-    device_op_to_hipblas(TB), M, N, K, &ALPHA, A, LDA,
+  auto stat = hipblasDgemm( handle, device_op_to_cublas(TA), 
+    device_op_to_cublas(TB), M, N, K, &ALPHA, A, LDA,
     B, LDB, &BETA, C, LDC );
-  GAUXC_HIPBLAS_ERROR("HIPBLAS DGEMM FAILED", stat);
+  GAUXC_CUBLAS_ERROR("CUBLAS DGEMM FAILED", stat);
 
 }
 
@@ -179,12 +197,13 @@ void syr2k( device_blas_handle generic_handle,
             double BETA, double* C, int LDC ) {
 
   hipblasHandle_t handle = generic_handle.blas_handle_as<util::hipblas_handle>();
-  auto stat = hipblasDsyr2k( handle, device_uplo_to_hipblas(UPLO), 
-    device_op_to_hipblas(Trans), M, K, &ALPHA, A, LDA, B, LDB,
+  auto stat = hipblasDsyr2k( handle, device_uplo_to_cublas(UPLO), 
+    device_op_to_cublas(Trans), M, K, &ALPHA, A, LDA, B, LDB,
     &BETA, C, LDC );
-  GAUXC_HIPBLAS_ERROR("HIPBLAS DSYR2K FAILED", stat);
+  GAUXC_CUBLAS_ERROR("CUBLAS DSYR2K FAILED", stat);
 
 }
+
 
 }
 

@@ -24,8 +24,11 @@ target_sources(gauxc PRIVATE
   kernels/hipblas_extensions.hip
   kernels/uvvars.hip
   kernels/zmat_vxc.hip
+  kernels/zmat_fxc.hip
   kernels/hip_inc_potential.hip
   kernels/symmetrize_mat.hip
+  kernels/increment_exc_grad.hip
+  kernels/exx_ek_screening_bfn_stats.hip
 
 )
 
