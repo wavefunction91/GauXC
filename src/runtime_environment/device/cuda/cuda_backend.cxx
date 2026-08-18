@@ -10,6 +10,7 @@
  * See LICENSE.txt for details
  */
 #include "cuda_backend.hpp"
+#include <gauxc/exceptions.hpp>
 
 namespace GauXC {
 
@@ -28,7 +29,41 @@ CUDABackend::CUDABackend() {
 
 }
 
-CUDABackend::~CUDABackend() noexcept = default;
+#ifdef GAUXC_HAS_MPI
+CUDABackend::CUDABackend(MPI_Comm c)
+{
+  comm = c;
+  MPI_Comm_split_type(comm, MPI_COMM_TYPE_SHARED, 0,
+                      MPI_INFO_NULL, &local_comm);
+  MPI_Comm_size(local_comm, &local_size);
+  MPI_Comm_rank(local_comm, &local_rank);
+  int ndev;
+  auto stat = cudaGetDeviceCount(&ndev);
+  GAUXC_CUDA_ERROR("CUDA backend init failed", stat);
+  if(ndev <= 0) GAUXC_GENERIC_EXCEPTION("No CUDA devices found");
+  gpuid = local_rank % ndev;
+  stat = cudaSetDevice(gpuid);
+  GAUXC_CUDA_ERROR("cudaSetDevice failed", stat);
+
+  // Create CUDA Stream and CUBLAS Handles and make them talk to eachother
+  master_stream = std::make_shared< util::cuda_stream >();
+  master_handle = std::make_shared< util::cublas_handle >();
+
+  cublasSetStream( *master_handle, *master_stream );
+
+#ifdef GAUXC_HAS_MAGMA
+  // Setup MAGMA queue with CUDA stream / cuBLAS handle
+  master_magma_queue_ = std::make_shared< util::magma_queue >(0, *master_stream, *master_handle);
+#endif
+}
+#endif
+
+CUDABackend::~CUDABackend() noexcept {
+#ifdef GAUXC_HAS_MPI
+  if(local_comm != MPI_COMM_NULL)
+    MPI_Comm_free(&local_comm);
+#endif
+}
 
 CUDABackend::device_buffer_t CUDABackend::allocate_device_buffer(int64_t sz) {
   void* ptr;
@@ -41,6 +76,14 @@ size_t CUDABackend::get_available_mem() {
   size_t cuda_avail, cuda_total;
   auto stat = cudaMemGetInfo( &cuda_avail, &cuda_total );
   GAUXC_CUDA_ERROR( "MemInfo Failed", stat );
+#ifdef GAUXC_HAS_MPI
+  int ndev;
+  stat = cudaGetDeviceCount(&ndev);
+  GAUXC_CUDA_ERROR("MemInfo Failed while getting number of devices", stat);
+  double factor = 1.0 / ((local_size - 1) / ndev + 1);
+  factor = (factor > 1.0 ? 1.0 : factor);
+  cuda_avail = size_t(cuda_avail * factor);
+#endif
   return cuda_avail;
 }
 
@@ -137,8 +180,7 @@ void CUDABackend::check_error_(std::string msg) {
   GAUXC_CUDA_ERROR("CUDA Failed ["+msg+"]", stat );
 }
 
-
-std::unique_ptr<DeviceBackend> make_device_backend() {
-  return std::make_unique<CUDABackend>();
+std::unique_ptr<DeviceBackend> make_device_backend(GAUXC_MPI_CODE(MPI_Comm c)) {
+  return std::make_unique<CUDABackend>(GAUXC_MPI_CODE(c));
 }
 }

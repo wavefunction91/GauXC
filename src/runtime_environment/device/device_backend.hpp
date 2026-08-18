@@ -17,6 +17,7 @@
 #include "device_queue.hpp"
 #include "device_blas_handle.hpp"
 #include <gauxc/gauxc_config.hpp>
+#include <gauxc/util/mpi.hpp>
 
 #ifdef GAUXC_HAS_MAGMA
 #include "device_specific/magma_util.hpp"
@@ -99,6 +100,5 @@ protected:
 
 
 /// Generate the default device backend for this platform
-std::unique_ptr<DeviceBackend> make_device_backend();
-
+std::unique_ptr<DeviceBackend> make_device_backend(GAUXC_MPI_CODE(MPI_Comm c));
 }
