@@ -52,6 +52,7 @@ struct integrator_term_tracker {
   bool exc_vxc                   = false;
   bool exc_grad                  = false;
   bool exx                       = false;
+  bool exx_grad                  = false;
   bool exx_ek_screening          = false;
   bool fxc_contraction           = false;
   integrator_xc_approx xc_approx = _UNDEF_APPROX;
@@ -630,6 +631,10 @@ struct required_term_storage {
       task_to_shell_pair_cou = true;
     }
 
+    if(tracker.exx_grad) {
+      task_bfn_grad     = true;
+    }
+
     if(tracker.exx_ek_screening) {
       task_bfn              = true;
       task_indirection      = true;
@@ -657,6 +662,7 @@ std::ostream& operator<<( std::ostream& out, const integrator_term_tracker& t ) 
   out << "  FXC_CONTRACTION " << t.fxc_contraction << std::endl;
   out << "  EXC_GRAD " << t.exc_grad << std::endl;
   out << "  EXX      " << t.exx << std::endl;
+  out << "  EXX_GRAD " << t.exx_grad << std::endl;
   return out;
 }
 
@@ -680,6 +686,7 @@ struct XCDeviceData {
   virtual void allocate_static_data_den( int32_t nbf, int32_t nshells ) = 0;
   virtual void allocate_static_data_exc_grad( int32_t nbf, int32_t nshells, int32_t natoms, integrator_term_tracker enabled_terms ) = 0;
   virtual void allocate_static_data_exx( int32_t nbf, int32_t nshells, size_t nshell_pairs, size_t nprim_pair_total, int32_t max_l ) = 0;
+  virtual void allocate_static_data_exx_grad( int32_t nbf, int32_t nshells, size_t nshell_pairs, size_t nprim_pair_total, int32_t max_l ) = 0;
   virtual void allocate_static_data_exx_ek_screening( size_t ntasks, int32_t nbf, int32_t nshells, int nshell_pairs, int32_t max_l ) = 0;
   virtual void allocate_static_data_fxc_contraction( int32_t nbf, int32_t nshells, integrator_term_tracker enabled_terms) = 0;
 
@@ -705,6 +712,9 @@ struct XCDeviceData {
 
   /// Zero out the EXX integrands in device memory
   virtual void zero_exx_integrands() = 0;
+
+  /// Zero out the EXX Gradient integrands in device memory
+  virtual void zero_exx_grad_integrands() = 0;
 
   /// Zero out intermediates for EXX EK screening
   virtual void zero_exx_ek_screening_intermediates() = 0;
@@ -762,6 +772,8 @@ struct XCDeviceData {
 
   virtual void retrieve_exx_integrands( double* K, int32_t ldk ) = 0;
 
+  virtual void retrieve_exx_grad( double* grad ) = 0;
+
   virtual void retrieve_exx_ek_max_bfn_sum( double* MBS, int32_t nt) = 0;
 
 
@@ -775,6 +787,7 @@ struct XCDeviceData {
   virtual double* exc_device_data() = 0;
   virtual double* nel_device_data() = 0;
   virtual double* exx_k_device_data() = 0;
+  virtual double* exx_grad_device_data() = 0;
   virtual double* fxc_z_device_data() = 0;
   virtual double* fxc_s_device_data() = 0;
   virtual double* fxc_y_device_data() = 0;

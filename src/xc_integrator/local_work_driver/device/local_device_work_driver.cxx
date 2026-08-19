@@ -128,6 +128,8 @@ FWD_TO_PIMPL_DEN_ID_BOOL(inc_vxc)            // Increment VXC_I by Z
 FWD_TO_PIMPL_DEN_ID_BOOL(inc_fxc)            // Increment FXC_I by Z
 
 FWD_TO_PIMPL(inc_exx_k)     
+FWD_TO_PIMPL(eval_exx_kgrad)
+FWD_TO_PIMPL(inc_exx_kgrad)
 FWD_TO_PIMPL_KS_SCHEME_BOOL(inc_exc_grad_lda)
 FWD_TO_PIMPL_KS_SCHEME_BOOL(inc_exc_grad_gga)
 FWD_TO_PIMPL_KS_SCHEME_BOOL_BOOL(inc_exc_grad_mgga)
