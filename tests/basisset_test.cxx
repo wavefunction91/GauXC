@@ -20,6 +20,8 @@
 
 #include <random>
 #include <algorithm>
+#include <stdexcept>
+#include <string>
 
 #include <gauxc/gauxc_config.hpp>
 
@@ -181,6 +183,25 @@ TEST_CASE("Shell", "[basisset]") {
       alpha, coeff, center );
 
     CHECK( sh.size() == 5 );
+
+  }
+
+  SECTION("Too Many Primitives") {
+
+    const auto nprim = PrimSize(detail::shell_nprim_max + 1);
+    const prim_array alpha = {0.8};
+    const prim_array coeff = {0.5};
+
+    try {
+      Shell<double> sh( nprim, AngularMomentum(0), SphericalType(false),
+        alpha, coeff, center );
+      FAIL( "Expected Shell construction to throw" );
+    } catch( const std::out_of_range& ex ) {
+      const std::string message = ex.what();
+      CHECK( message.find( "Shell has too many primitives!" ) != std::string::npos );
+      CHECK( message.find( "expected <= 32" ) != std::string::npos );
+      CHECK( message.find( "actual value 33" ) != std::string::npos );
+    }
 
   }
 
