@@ -859,7 +859,27 @@ eval_exc_grad_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
     auto reorder_result = mpi_gather_and_reorder_gpu(
       den_eval, dden_eval, tau, grid_coords, grid_weights,
       atomic_grid_sizes_vec, total_npts, natoms, rt, recvcounts, displs);
+    const int total_npts_sum = reorder_result.total_npts;
     atom_reorder_inv_perm = std::move(reorder_result.inv_perm);
+
+    GAUXC_MPI_CODE(
+      std::vector<double> recv_raw(world_rank == 0 ? total_npts_sum : 0);
+      MPI_Gatherv(raw_grid_weights.data(), static_cast<int>(total_npts), MPI_DOUBLE,
+                  recv_raw.data(), recvcounts.data(), displs.data(),
+                  MPI_DOUBLE, 0, rt.comm());
+      if (world_rank == 0) {
+        raw_grid_weights = std::move(recv_raw);
+        std::vector<int64_t> perm(total_npts_sum);
+        for (int64_t j = 0; j < total_npts_sum; ++j) {
+          perm[atom_reorder_inv_perm[j]] = j;
+        }
+        std::vector<double> reordered_raw(total_npts_sum);
+        for (int64_t i = 0; i < total_npts_sum; ++i) {
+          reordered_raw[perm[i]] = raw_grid_weights[i];
+        }
+        raw_grid_weights = std::move(reordered_raw);
+      }
+    )
 
     if (world_rank == 0) {
       int64_t max_grid_size = *std::max_element(
@@ -867,7 +887,7 @@ eval_exc_grad_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
         reorder_result.global_atomic_grid_sizes.end());
       auto options = torch::TensorOptions().dtype(torch::kFloat64).device(torch::kCPU);
       features_dict = prepare_onedft_features(
-        natoms, reorder_result.total_npts, ndm, options, feature_keys,
+        natoms, total_npts_sum, ndm, options, feature_keys,
         den_eval.data(), dden_eval.data(), tau.data(),
         grid_coords.data(), grid_weights.data(), host_coords.data(),
         reorder_result.global_atomic_grid_sizes, max_grid_size,
@@ -969,16 +989,43 @@ eval_exc_grad_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
       den_eval.data(), dden_eval.data(), tau.data());
   }
 
-  // Scatter eps_on_grid to local tasks
+  // Scatter rank-ordered point values back to the local atom-ordered tasks.
   std::vector<double> eps_on_grid_local;
+  std::vector<double> points_grad_local;
   if (world_size == 1) {
     eps_on_grid_local = std::move(eps_on_grid_global);
+    points_grad_local = std::move(points_grad_global);
   } else {
-    GAUXC_GENERIC_EXCEPTION("OneDFT gradient with MPI not yet implemented");
+    eps_on_grid_local.resize(total_npts);
+    GAUXC_MPI_CODE(
+      MPI_Scatterv(eps_on_grid_global.data(), recvcounts.data(), displs.data(),
+                   MPI_DOUBLE, eps_on_grid_local.data(), total_npts, MPI_DOUBLE,
+                   0, rt.comm());
+
+      int has_points_grad = world_rank == 0 && !points_grad_global.empty();
+      MPI_Bcast(&has_points_grad, 1, MPI_INT, 0, rt.comm());
+      if (has_points_grad) {
+        std::vector<int> recvcounts3(recvcounts.size());
+        std::vector<int> displs3(displs.size());
+        for (size_t i = 0; i < recvcounts.size(); ++i) {
+          recvcounts3[i] = 3 * recvcounts[i];
+          displs3[i] = 3 * displs[i];
+        }
+        points_grad_local.resize(3 * total_npts);
+        MPI_Scatterv(points_grad_global.data(), recvcounts3.data(), displs3.data(),
+                     MPI_DOUBLE, points_grad_local.data(), 3 * total_npts,
+                     MPI_DOUBLE, 0, rt.comm());
+      }
+    )
   }
 
   // Zero out EXC_GRAD on host
   for (int i = 0; i < 3*natoms; ++i) EXC_GRAD[i] = 0.0;
+
+  if (!points_grad_local.empty() &&
+      points_grad_local.size() != 3 * eps_on_grid_local.size()) {
+    GAUXC_GENERIC_EXCEPTION("Inconsistent OneDFT point-gradient layout");
+  }
 
   // Phase 5: Pulay gradient + weight derivative on device
   // Use the standard gradient flow: for each batch, load OneDFT Vxc,
@@ -1005,11 +1052,17 @@ eval_exc_grad_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
     size_t offset = 0;
     for (auto& task : tasks) {
       int64_t npts = task.points.size();
+      if (offset + npts > eps_on_grid_local.size()) {
+        GAUXC_GENERIC_EXCEPTION("Inconsistent OneDFT energy-density layout");
+      }
       task.feat.eps.resize(npts);
       std::copy(eps_on_grid_local.data() + offset,
                 eps_on_grid_local.data() + offset + npts,
                 task.feat.eps.begin());
       offset += npts;
+    }
+    if (offset != eps_on_grid_local.size()) {
+      GAUXC_GENERIC_EXCEPTION("Inconsistent OneDFT energy-density layout");
     }
   }
 
@@ -1121,17 +1174,17 @@ eval_exc_grad_onedft_( int64_t m, int64_t n, const value_type* Ps, int64_t ldps,
   rt.device_backend()->master_queue_synchronize();
 
   // Phase 6: Add autograd forces (points -> parent atoms, coords -> direct)
-  if (!points_grad_global.empty() && world_rank == 0) {
+  if (!points_grad_local.empty()) {
     size_t pg_offset = 0;
-    // Iterate in iParent order — re-sort tasks
+    // Iterate in the atom order used to assemble the local point arrays.
     std::stable_sort(tasks.begin(), tasks.end(),
       [](const auto& a, const auto& b) { return a.iParent < b.iParent; });
     for (const auto& task : tasks) {
       int iParent = task.iParent;
       for (size_t ipt = 0; ipt < task.points.size(); ++ipt) {
-        EXC_GRAD[3*iParent + 0] += points_grad_global[(pg_offset + ipt)*3 + 0];
-        EXC_GRAD[3*iParent + 1] += points_grad_global[(pg_offset + ipt)*3 + 1];
-        EXC_GRAD[3*iParent + 2] += points_grad_global[(pg_offset + ipt)*3 + 2];
+        EXC_GRAD[3*iParent + 0] += points_grad_local[(pg_offset + ipt)*3 + 0];
+        EXC_GRAD[3*iParent + 1] += points_grad_local[(pg_offset + ipt)*3 + 1];
+        EXC_GRAD[3*iParent + 2] += points_grad_local[(pg_offset + ipt)*3 + 2];
       }
       pg_offset += task.points.size();
     }

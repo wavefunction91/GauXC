@@ -17,6 +17,7 @@
 #include <gauxc/util/mpi.hpp>
 #include <highfive/H5File.hpp>
 #include <Eigen/Core>
+#include <array>
 
 using namespace GauXC;
 
@@ -208,9 +209,96 @@ TEST_CASE( "OneDFT MPI Subgroup", "[onedft][mpi][subcomm]" ) {
 #endif
 }
 
+#ifdef GAUXC_HAS_HOST
+TEST_CASE( "OneDFT EXC Gradient Finite Difference", "[onedft][grad][fd]" ) {
+    using matrix_type = Eigen::MatrixXd;
+
+    auto rt = RuntimeEnvironment( GAUXC_MPI_CODE(MPI_COMM_WORLD) );
+
+    Molecule mol;
+    BasisSet<double> basis;
+    const std::string reference_file =
+        GAUXC_REF_DATA_PATH "/h2o_qzvpp_high_l.hdf5";
+    read_hdf5_record( mol, reference_file, "/MOLECULE" );
+    read_hdf5_record( basis, reference_file, "/BASIS" );
+
+    HighFive::File file( reference_file, HighFive::File::ReadOnly );
+    auto dset = file.getDataSet( "/DENSITY" );
+    auto dims = dset.getDimensions();
+    matrix_type P( dims[0], dims[1] );
+    dset.read( P.data() );
+
+    matrix_type Ps = P;
+    matrix_type Pz = matrix_type::Zero( dims[0], dims[1] );
+
+    constexpr size_t atom_index = 1;
+    constexpr size_t coordinate = 1;
+    constexpr double step = 1e-4;
+
+    auto evaluate = [&]( double displacement, bool gradient ) {
+        Molecule displaced_mol = mol;
+        BasisSet<double> displaced_basis = basis;
+        const std::array<double, 3> origin = {
+            mol[atom_index].x, mol[atom_index].y, mol[atom_index].z };
+
+        if( coordinate == 0 ) displaced_mol[atom_index].x += displacement;
+        if( coordinate == 1 ) displaced_mol[atom_index].y += displacement;
+        if( coordinate == 2 ) displaced_mol[atom_index].z += displacement;
+
+        for( auto& shell : displaced_basis ) {
+            const auto dx = shell.O()[0] - origin[0];
+            const auto dy = shell.O()[1] - origin[1];
+            const auto dz = shell.O()[2] - origin[2];
+            if( std::sqrt( dx*dx + dy*dy + dz*dz ) < 1e-8 ) {
+                shell.O()[coordinate] += displacement;
+            }
+            shell.set_shell_tolerance( 1e-10 );
+        }
+
+        auto mg = MolGridFactory::create_default_molgrid(
+            displaced_mol, PruningScheme::Robust, BatchSize(512),
+            RadialQuad::MuraKnowles, AtomicGridSizeDefault::FineGrid );
+        LoadBalancerFactory lb_factory( ExecutionSpace::Host, "Default" );
+        auto lb = lb_factory.get_instance(
+            rt, displaced_mol, mg, displaced_basis );
+        MolecularWeightsFactory mw_factory(
+            ExecutionSpace::Host, "Default", MolecularWeightsSettings{} );
+        auto mw = mw_factory.get_instance();
+        mw.modify_weights( lb );
+
+        functional_type func = functional_type(
+            ExchCXX::Backend::builtin, ExchCXX::Functional::PBE0,
+            ExchCXX::Spin::Unpolarized );
+        XCIntegratorFactory<matrix_type> integrator_factory(
+            ExecutionSpace::Host, "Replicated", "Default", "Default", "Default" );
+        auto integrator = integrator_factory.get_instance( func, lb );
+        OneDFTSettings settings;
+        settings.model = GAUXC_ONEDFT_MODEL_PATH "/pbe.fun";
+
+        if( gradient ) {
+            auto grad = integrator.eval_exc_grad_onedft( Ps, Pz, settings );
+            return std::make_pair( 0.0, std::move( grad ) );
+        }
+        auto [exc, vxc, vxcz] =
+            integrator.eval_exc_vxc_onedft( Ps, Pz, settings );
+        return std::make_pair( exc, std::vector<double>{} );
+    };
+
+    const auto analytical = evaluate( 0.0, true ).second;
+    const auto exc_plus = evaluate( step, false ).first;
+    const auto exc_minus = evaluate( -step, false ).first;
+    const auto numerical = (exc_plus - exc_minus) / (2.0 * step);
+
+    REQUIRE( analytical.size() == 3 * mol.size() );
+    CHECK( analytical[3*atom_index + coordinate] ==
+        Approx( numerical ).margin( 5e-6 ) );
+}
+#endif
+
 #if defined(GAUXC_HAS_HOST) && defined(GAUXC_HAS_DEVICE)
 void test_onedft_grad_host_device( std::string reference_file,
-    std::string onedft_model_path ) {
+    std::string onedft_model_path,
+    AtomicGridSizeDefault grid_size = AtomicGridSizeDefault::UltraFineGrid ) {
 
     using matrix_type = Eigen::MatrixXd;
     Molecule mol;
@@ -230,7 +318,7 @@ void test_onedft_grad_host_device( std::string reference_file,
     matrix_type Pz = matrix_type::Zero( dims[0], dims[1] );
 
     auto mg = MolGridFactory::create_default_molgrid( mol, PruningScheme::Unpruned,
-        BatchSize(512), RadialQuad::MuraKnowles, AtomicGridSizeDefault::UltraFineGrid );
+        BatchSize(512), RadialQuad::MuraKnowles, grid_size );
 
     functional_type func = functional_type( ExchCXX::Backend::builtin,
         ExchCXX::Functional::PBE0, ExchCXX::Spin::Unpolarized );
@@ -239,7 +327,7 @@ void test_onedft_grad_host_device( std::string reference_file,
     onedft_settings.model = onedft_model_path;
 
 #ifdef GAUXC_HAS_DEVICE
-    auto rt = DeviceRuntimeEnvironment( GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.9 );
+    auto rt = DeviceRuntimeEnvironment( GAUXC_MPI_CODE(MPI_COMM_WORLD,) 0.4 );
 #else
     auto rt = RuntimeEnvironment( GAUXC_MPI_CODE(MPI_COMM_WORLD) );
 #endif
@@ -279,6 +367,12 @@ TEST_CASE( "OneDFT EXC Gradient", "[onedft][grad]" ) {
         test_onedft_grad_host_device(
             GAUXC_REF_DATA_PATH "/h2o2_def2-tzvp.hdf5",
             GAUXC_ONEDFT_MODEL_PATH "/tpss.fun" );
+    }
+    SECTION( "H2O / QZVPP / pbe.fun (high-l)" ) {
+        test_onedft_grad_host_device(
+            GAUXC_REF_DATA_PATH "/h2o_qzvpp_high_l.hdf5",
+            GAUXC_ONEDFT_MODEL_PATH "/pbe.fun",
+            AtomicGridSizeDefault::FineGrid );
     }
 }
 #endif
