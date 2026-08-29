@@ -31,7 +31,7 @@ __global__ void eval_uvars_lda_kernel( size_t           ntasks,
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
-  register double den_reg = 0.;
+  double den_reg = 0.;
 
   if( tid_x < nbf and tid_y < npts ) {
 
@@ -115,10 +115,10 @@ __global__ void eval_uvars_gga_kernel( size_t           ntasks,
 
       for (int sm_y = threadIdx.y; sm_y < GGA_KERNEL_SM_BLOCK_Y; sm_y += blockDim.y) {
         const int tid_y = bid_y + sm_y;
-        register double den_reg = den_shared[0][sm_y][threadIdx.x];
-        register double dx_reg  = den_shared[1][sm_y][threadIdx.x];
-        register double dy_reg  = den_shared[2][sm_y][threadIdx.x];
-        register double dz_reg  = den_shared[3][sm_y][threadIdx.x];
+        double den_reg = den_shared[0][sm_y][threadIdx.x];
+        double dx_reg  = den_shared[1][sm_y][threadIdx.x];
+        double dy_reg  = den_shared[2][sm_y][threadIdx.x];
+        double dz_reg  = den_shared[3][sm_y][threadIdx.x];
 
         // Warp blocks are stored col major
         den_reg = 2 * warpReduceSum( den_reg );
