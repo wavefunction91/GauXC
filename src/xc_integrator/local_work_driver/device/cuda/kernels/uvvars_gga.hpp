@@ -131,10 +131,10 @@ __global__ void eval_vvar_gga_kern( size_t        ntasks,
 
       for (int sm_y = threadIdx.y; sm_y < VVAR_KERNEL_SM_BLOCK; sm_y += blockDim.y) {
         const int tid_y = bid_y + sm_y;
-        register double den_reg = den_shared[0][sm_y][threadIdx.x];
-        register double dx_reg  = den_shared[1][sm_y][threadIdx.x];
-        register double dy_reg  = den_shared[2][sm_y][threadIdx.x];
-        register double dz_reg  = den_shared[3][sm_y][threadIdx.x];
+        double den_reg = den_shared[0][sm_y][threadIdx.x];
+        double dx_reg  = den_shared[1][sm_y][threadIdx.x];
+        double dy_reg  = den_shared[2][sm_y][threadIdx.x];
+        double dz_reg  = den_shared[3][sm_y][threadIdx.x];
 
         // Warp blocks are stored col major
         den_reg =     cuda::warp_reduce_sum<warp_size>( den_reg );
