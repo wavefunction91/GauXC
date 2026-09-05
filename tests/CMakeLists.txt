@@ -1,13 +1,31 @@
+#
+# GauXC Copyright (c) 2020-2024, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory (subject to receipt of
+# any required approvals from the U.S. Dept. of Energy).
+#
+# (c) 2024-2025, Microsoft Corporation
+#
+# All rights reserved.
+#
+# See LICENSE.txt for details
+#
+if(NOT GAUXC_HAS_HDF5)
+  message(WARNING "GauXC Tests were ENABLED but HDF5 was not FOUND/ENABLED. Please enable and ensure discovery of HDF5. Skipping Tests")
+  return()
+endif()
 message( STATUS "Building GauXC Tests" )
 add_library( gauxc_catch2 INTERFACE )
 
 find_package( Catch2 CONFIG QUIET )
+if( Catch2_FOUND AND Catch2_VERSION VERSION_GREATER_EQUAL 3 )
+  message(FATAL_ERROR "Catch2 v${Catch2_VERSION} found, but tests require Catch2 v2 (catch2/catch.hpp). Please install v2.")
+endif()
 if( NOT Catch2_FOUND )
 
   FetchContent_Declare(
     catch2
     GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG        v2.13.2
+    GIT_TAG        v2.13.10
   )
   
   set(CATCH_BUILD_TESTING OFF CACHE BOOL "Build SelfTest project" FORCE)
@@ -23,10 +41,7 @@ else()
 
 endif()
 
-if( NOT TARGET Eigen3::Eigen )
-  include( gauxc-eigen3 )
-endif() 
-include( gauxc-cereal )
+include( gauxc-eigen3 )
 
 #add_library( catch2_main STATIC ut_main.cxx)
 #target_link_libraries( catch2_main PUBLIC gauxc_catch2 )
@@ -44,25 +59,58 @@ add_executable( gauxc_test
   molgrid_test.cxx 
   basisset_test.cxx 
   load_balancer_test.cxx 
+  xc_integrator.cxx 
+  environment.cxx
   collocation.cxx
   weights.cxx
-  xc_integrator.cxx 
+  weight_derivative_test.cxx
   standards.cxx 
+  runtime.cxx
   basis/parse_basis.cxx
+  dd_psi_potential_test.cxx
+  2nd_derivative_test.cxx
+  orbital_evaluator_test.cxx
+  c_api_test.cxx
 )
-target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
+target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen )
+
+# collocation.cxx and weights.cxx submit SYCL kernels directly, so those two
+# translation units carry device code and need the SYCL device flags. The rest
+# of the test suite is host-only and is left alone; -fsycl is not free on a
+# translation unit that produces no device image.
+if( GAUXC_HAS_SYCL )
+  gauxc_sycl_device_sources( collocation.cxx weights.cxx )
+endif()
+if(GAUXC_ENABLE_CUTLASS)
+  include(gauxc-cutlass)
+  target_link_libraries(gauxc_test PUBLIC gauxc_cutlass)
+endif()
+if(MSVC AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  target_compile_options( gauxc_test PRIVATE -Wno-unused-variable )
+endif()
 
 
 set( GAUXC_REF_DATA_PATH "${PROJECT_SOURCE_DIR}/tests/ref_data" )
+# Scratch directory for tests which write files (cube I/O)
+set( GAUXC_TEST_TMP_PATH "${PROJECT_BINARY_DIR}/tests/tmp" )
+file( MAKE_DIRECTORY "${GAUXC_TEST_TMP_PATH}" )
 configure_file( ut_common.hpp.in ${PROJECT_BINARY_DIR}/tests/ut_common.hpp )
 target_include_directories( gauxc_test PRIVATE ${PROJECT_BINARY_DIR}/tests )
 target_include_directories( gauxc_test PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
 
-add_executable( standalone_driver standalone_driver.cxx standards.cxx basis/parse_basis.cxx )
-target_link_libraries( standalone_driver PUBLIC gauxc gauxc_catch2 Eigen3::Eigen cereal )
+add_executable( standalone_driver standalone_driver.cxx standards.cxx basis/parse_basis.cxx ini_input.cxx )
+target_link_libraries( standalone_driver PUBLIC gauxc gauxc_catch2 Eigen3::Eigen )
 target_include_directories( standalone_driver PRIVATE ${PROJECT_BINARY_DIR}/tests )
 target_include_directories( standalone_driver PRIVATE ${PROJECT_SOURCE_DIR}/tests )
+if(MSVC AND CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+  target_compile_options( standalone_driver PRIVATE -Wno-unused-variable )
+endif()
+
+#add_executable( grid_opt grid_opt.cxx standards.cxx basis/parse_basis.cxx ini_input.cxx )
+#target_link_libraries( grid_opt PUBLIC gauxc gauxc_catch2 Eigen3::Eigen )
+#target_include_directories( grid_opt PRIVATE ${PROJECT_BINARY_DIR}/tests )
+#target_include_directories( grid_opt PRIVATE ${PROJECT_SOURCE_DIR}/tests )
 
 
 add_test( NAME GAUXC_SERIAL_TEST COMMAND $<TARGET_FILE:gauxc_test> )

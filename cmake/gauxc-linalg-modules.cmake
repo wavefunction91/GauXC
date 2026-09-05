@@ -7,5 +7,5 @@ FetchContent_Declare( linalg-cmake-modules
 FetchContent_GetProperties( linalg-cmake-modules )
 if( NOT linalg-cmake-modules_POPULATED )
   FetchContent_Populate( linalg-cmake-modules )
-  list( APPEND CMAKE_MODULE_PATH ${linalg-cmake-modules_SOURCE_DIR} )
+  list( PREPEND CMAKE_MODULE_PATH ${linalg-cmake-modules_SOURCE_DIR} )
 endif()

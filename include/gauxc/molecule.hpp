@@ -1,3 +1,14 @@
+/**
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #pragma once
 
 #include <gauxc/atom.hpp>
@@ -9,10 +20,16 @@
 namespace GauXC {
 
 class Molecule : public std::vector<Atom> {
+private:
+  /// Tests if the base class can be constructed from @p Args
+  template <typename... Args>
+  static constexpr auto can_construct_base_v = 
+    std::is_constructible_v<std::vector<Atom>, Args...>;
 
 public:
 
-  template <typename... Args>
+  template <typename... Args, 
+            typename = std::enable_if_t<can_construct_base_v<Args...>>>
   Molecule( Args&&... args ) :
     std::vector<Atom>( std::forward<Args>(args)... ) { }
 
@@ -30,6 +47,12 @@ public:
       })->Z;
   }
 
+  bool operator==(const Molecule& other) const {
+    if(other.size() != this->size()) return false;
+    for( auto i = 0ul; i < this->size(); ++i )
+      if( other[i] != operator[](i) ) return false;
+    return true;
+  }
 };
 
 }

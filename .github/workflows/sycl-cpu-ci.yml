@@ -1,0 +1,79 @@
+name: Build and Test - SYCL CPU
+
+on:
+  pull_request:
+    types: [opened, edited, synchronize, labeled]
+
+  workflow_dispatch:
+
+env:
+  GH_ACTIONS_TOOLCHAIN: .github/workflows/toolchains/gh-actions.cmake
+  ENV_PREFIX_PATH: "/opt/intel/oneapi/mkl/latest"
+
+jobs:
+  sycl_cpu_build:
+    name: SYCL CPU Build and Test
+    if: >
+      github.event_name == 'workflow_dispatch' ||
+      (github.event_name == 'pull_request' && github.event.action == 'labeled' && github.event.label.name == 'SYCL') ||
+      (github.event_name == 'pull_request' && github.event.action != 'labeled' && contains(github.event.pull_request.title, '[SYCL]'))
+    runs-on: ubuntu-latest
+    container:
+        image: intel/oneapi-basekit:2024.2.1-0-devel-ubuntu22.04
+    timeout-minutes: 60
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Install HDF5 development headers
+      shell: bash
+      run: |
+        apt-get update
+        apt-get install -y libhdf5-dev
+
+    - name: Setup Compiler
+      shell: bash
+      run: |
+        echo "set(CMAKE_C_COMPILER   icx   CACHE STRING \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+        echo "set(CMAKE_CXX_COMPILER icpx  CACHE STRING \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+
+    - name: Setup Build Type
+      shell: bash
+      run: echo "set(CMAKE_BUILD_TYPE Release CACHE BOOL \"\" FORCE)" >>
+             ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+
+    - name: Setup Enable SYCL
+      shell: bash
+      run: |
+        echo "set(GAUXC_ENABLE_SYCL  ON              CACHE BOOL   \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+        echo "set(GAUXC_SYCL_TARGET  spir64_x86_64   CACHE STRING \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+        echo "set(GAUXC_ENABLE_MPI   OFF             CACHE BOOL   \"\" FORCE)" >> ${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+
+    - name: Configure CMake
+      shell: bash
+      run: cmake -S $GITHUB_WORKSPACE -B ${{runner.workspace}}/build
+                 -DCMAKE_INSTALL_PREFIX=${{runner.workspace}}/install
+                 -DCMAKE_PREFIX_PATH=${ENV_PREFIX_PATH}
+                 -DCMAKE_TOOLCHAIN_FILE=${GITHUB_WORKSPACE}/${GH_ACTIONS_TOOLCHAIN}
+
+    - name: Build
+      shell: bash
+      timeout-minutes: 35
+      run: cmake --build ${{runner.workspace}}/build -j2
+
+    - name: List SYCL devices
+      shell: bash
+      run: sycl-ls || true
+
+    # The SYCL kernels run on the OpenCL CPU device here, which is orders of
+    # magnitude slower than a GPU: the XC integrator sections in particular are
+    # minutes apiece on a many-core host and far worse on a 2-core runner. Cap
+    # the step so a hang is reported against the test rather than burning the
+    # job's whole budget, and give ctest its own per-test timeout so a single
+    # wedged case cannot stall the rest.
+    - name: Test
+      shell: bash
+      timeout-minutes: 20
+      env:
+        ONEAPI_DEVICE_SELECTOR: opencl:cpu
+      run: ctest --test-dir ${{runner.workspace}}/build --output-on-failure --timeout 900

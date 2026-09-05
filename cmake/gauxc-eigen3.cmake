@@ -1,13 +1,13 @@
-find_package( Eigen3 CONFIG QUIET )
+find_package( Eigen3 CONFIG HINTS ${EIGEN3_ROOT_DIR} )
 if( NOT Eigen3_FOUND )
   
   message( STATUS "Could Not Find Eigen3... Building" )
-  message( STATUS "EIGEN3 REPO = https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.gz" )
+  message( STATUS "EIGEN3 REPO = https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz" )
   #message( STATUS "EIGEN3 REV  = "   )
 
   FetchContent_Declare(
     eigen3
-    URL https://gitlab.com/libeigen/eigen/-/archive/3.3.7/eigen-3.3.7.tar.gz
+    URL https://gitlab.com/libeigen/eigen/-/archive/3.4.0/eigen-3.4.0.tar.gz
   )
 
   FetchContent_GetProperties( eigen3 )

@@ -1,3 +1,14 @@
+/**
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include <gauxc/molmeta.hpp>
 
 namespace GauXC {
@@ -5,6 +16,8 @@ namespace GauXC {
 MolMeta::MolMeta( const Molecule& mol ) : natoms_(mol.natoms()){
   compute_rab(mol);
   compute_dist_nearest();
+  sum_atomic_charges_ = std::accumulate( mol.begin(), mol.end(), size_t{0},
+    [](auto a, const auto& b){ return a + b.Z.get(); });
 }
 
 MolMeta::MolMeta( const MolMeta& ) = default;

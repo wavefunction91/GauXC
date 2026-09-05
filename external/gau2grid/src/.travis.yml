@@ -1,0 +1,132 @@
+# After changing this file, check it on:
+#   http://lint.travis-ci.org/
+
+language: generic
+sudo: false
+dist: xenial
+
+matrix:
+
+  include:
+
+# MacOS Builds
+
+  - os: osx
+    env:
+      - MATRIX_EVAL='brew update &> /dev/null && brew install gcc@8'
+      - C_COMPILER='gcc-8'
+      - PYTHON_VER='3.6'
+      - BUILD_TYPE='release'
+
+  - os: osx
+    osx_image: xcode8
+    env:
+      - C_COMPILER='gcc'
+      - PYTHON_VER='3.6'
+      - BUILD_TYPE='release'
+
+  - os: osx
+    osx_image: xcode10.1
+    env:
+      - C_COMPILER='clang'
+      - PYTHON_VER='3.6'
+      - BUILD_TYPE='release'
+
+# Linux Builds
+
+  - os: linux
+    compiler: clang
+    addons:
+      apt:
+        packages:
+        - clang-3.6
+    env:
+      - C_COMPILER='clang-3.6'
+      - PYTHON_VER='3.7'
+      - BUILD_TYPE='release'
+
+  - os: linux
+    compiler: clang
+    addons:
+      apt:
+        packages:
+        - clang-6.0
+    env:
+      - C_COMPILER='clang-6.0'
+      - PYTHON_VER='3.6'
+      - BUILD_TYPE='release'
+
+  - os: linux
+    compiler: gcc
+    addons:
+      apt:
+        packages:
+        - gcc-4.9
+    env:
+      - C_COMPILER='gcc-4.9'
+      - PYTHON_VER='3.7'
+      - BUILD_TYPE='release'
+
+  - os: linux
+    compiler: gcc
+    addons:
+      apt:
+        sources:
+        - ubuntu-toolchain-r-test
+        packages:
+        - gcc-6
+    env:
+      - C_COMPILER='gcc-6'
+      - PYTHON_VER='3.8'
+      - BUILD_TYPE='release'
+
+  - os: linux
+    compiler: gcc
+    addons:
+      apt:
+        sources:
+        - ubuntu-toolchain-r-test
+        packages:
+        - gcc-7
+    env:
+      - C_COMPILER='gcc-7'
+      - PYTHON_VER='3.6'
+      - BUILD_TYPE='release'
+
+before_install:
+  - uname -a
+  - df -h
+  - ulimit -a
+
+
+  # Setup python environment
+  - source devtools/travis-ci/before_install.sh
+  - python -V
+
+  # Eval matrix evaluations if needed
+  - sh -c '[ -z "$MATRIX_EVAL" ] || eval "${MATRIX_EVAL}"'
+
+install:
+  - python devtools/scripts/conda_env.py -n=test -p=$PYTHON_VER devtools/conda-envs/base.yaml
+  - source activate test
+
+  - >
+    python setup.py install
+    -DCMAKE_C_COMPILER=${C_COMPILER}
+    -DCMAKE_BUILD_TYPE=${BUILD_TYPE}
+
+before_script:
+  - python -V
+  - conda list
+  - python -c 'import numpy; print(numpy.version.version)'
+
+script:
+  - export GAU2GRID_FORCE_C_TEST=1
+  - export SPDIR=`python -c 'from distutils import sysconfig as s; print(s.get_python_lib(plat_specific=True))'`
+  - pytest -rws -v --durations=5 --cov=${SPDIR}/gau2grid/ --pyargs gau2grid
+
+notifications:
+  email: false
+
+after_success:
+  - codecov

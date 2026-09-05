@@ -1,21 +1,25 @@
 if( NOT DEFINED MAGMA_ROOT_DIR )
   find_package(PkgConfig)
-  pkg_check_modules( PC_MAGMA QUIET magma )
+  pkg_check_modules( PC_MAGMA magma )
 endif()
 
+if( NOT MAGMA_INCLUDE_DIR )
 find_path( MAGMA_INCLUDE_DIR magma.h
            HINTS ${PC_MAGMA_INCLUDEDIR}
                  ${PC_MAGMA_INCLUDE_DIRS}
            PATHS ${MAGMA_ROOT_DIR}
            PATH_SUFFIXES include
 )
+endif()
 
+if(NOT MAGMA_LIBRARY) 
 find_library( MAGMA_LIBRARY NAMES magma
               HINTS ${PC_MAGMA_LIBDIR}
                     ${PC_MAGMA_LIBRARY_DIRS}
               PATHS ${MAGMA_ROOT_DIR}
               PATH_SUFFIXES lib lib64 lib32
 )
+endif()
 
 include(FindPackageHandleStandardArgs)
 find_package_handle_standard_args( 

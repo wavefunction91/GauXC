@@ -1,18 +1,30 @@
+/**
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "collocation_common.hpp"
 #include "collocation_host.hpp"
 #include "collocation_cuda.hpp"
+#include "collocation_hip.hpp"
 #include "collocation_sycl.hpp"
 
 //#define GENERATE_TESTS
 
-#if defined(GENERATE_TESTS) && !defined(GAUXC_ENABLE_HOST)
+#if defined(GENERATE_TESTS) && !defined(GAUXC_HAS_HOST)
   #error "Host Integrator Must Be Enabled to Generate Tests"
 #endif
 
 TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
 
 #ifdef GENERATE_TESTS
-#ifdef GAUXC_ENABLE_MPI
+#ifdef GAUXC_HAS_MPI
   int world_size;
   MPI_Comm_size( MPI_COMM_WORLD, &world_size );
   if( world_size > 1 ) return;
@@ -26,94 +38,100 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
 
 #ifdef GENERATE_TESTS
 
-  std::ofstream ref_data( "water_cc-pVDZ_collocation.bin", std::ios::binary );
-  generate_collocation_data( mol, basis, ref_data );
+  generate_collocation_data( mol, basis, "water_cc-pVDZ_collocation.hdf5" );
 
 #else
 
-  std::ifstream ref_data( GAUXC_REF_DATA_PATH "/water_cc-pVDZ_collocation.bin",
-                          std::ios::binary );
+  std::string ref_file = GAUXC_REF_DATA_PATH "/water_cc-pVDZ_collocation.hdf5";
 
-#ifdef GAUXC_ENABLE_HOST
+#ifdef GAUXC_HAS_HOST
   SECTION( "Host Eval" ) {
-    test_host_collocation( basis, ref_data );
+    test_host_collocation( basis, ref_file );
   }
 
   SECTION( "Host Eval Grad" ) {
-    test_host_collocation_deriv1( basis, ref_data );
+    test_host_collocation_deriv1( basis, ref_file );
+  }
+
+  SECTION( "Host Eval Hessian" ) {
+    test_host_collocation_deriv2( basis, ref_file );
+  }
+
+  SECTION( "Host Eval Laplacian Gradient" ) {
+    test_host_collocation_deriv3( basis, ref_file );
   }
 #endif
 
-#ifdef GAUXC_ENABLE_CUDA
-  SECTION( "CUDA Eval: Petite Shell List" ) {
-    test_cuda_collocation_petite( basis, ref_data );
+#ifdef GAUXC_HAS_CUDA
+  BasisSetMap basis_map( basis, mol );
+  SECTION( "CUDA Eval" ) {
+    test_cuda_collocation( basis, ref_file );
   }
-  SECTION( "CUDA Eval: Masked" ) {
-    test_cuda_collocation_masked( basis, ref_data );
-  }
-  SECTION( "CUDA Eval: Petite Combined" ) {
-    test_cuda_collocation_petite_combined( basis, ref_data );
-  }
-  SECTION( "CUDA Eval: Masked Combined" ) {
-    test_cuda_collocation_masked_combined( basis, ref_data );
+  SECTION( "CUDA Shell to Task Eval" ) {
+    test_cuda_collocation_shell_to_task( basis, basis_map, ref_file );
   }
 
-  SECTION( "CUDA Eval Grad: Petite Shell List" ) {
-    test_cuda_collocation_deriv1_petite( basis, ref_data );
+  SECTION( "CUDA Eval Grad" ) {
+    test_cuda_collocation_deriv1( basis, ref_file );
   }
-  SECTION( "CUDA Eval Grad: Masked" ) {
-    test_cuda_collocation_deriv1_masked( basis, ref_data );
+  SECTION( "CUDA Shell to Task Eval Grad" ) {
+    test_cuda_collocation_shell_to_task_gradient( basis, basis_map, ref_file );
   }
-  SECTION( "CUDA Eval Grad: Petite Combined" ) {
-    test_cuda_collocation_petite_combined_deriv1( basis, ref_data );
+
+  SECTION( "CUDA Shell to Task Eval Hessian" ) {
+    test_cuda_collocation_shell_to_task_hessian( basis, basis_map, ref_file );
   }
-  SECTION( "CUDA Eval: Masked Combined" ) {
-    test_cuda_collocation_masked_combined_deriv1( basis, ref_data );
+
+  SECTION( "CUDA Shell to Task Eval Laplacian" ) {
+    test_cuda_collocation_shell_to_task_laplacian( basis, basis_map, ref_file );
   }
-#endif // GAUXC_ENABLE_CUDA
+
+  SECTION( "CUDA Shell to Task Eval Laplacian Gradient" ) {
+    test_cuda_collocation_shell_to_task_lapgrad( basis, basis_map, ref_file );
+  }
+#endif // GAUXC_HAS_CUDA
+
+#ifdef GAUXC_HAS_HIP
+  SECTION( "HIP Eval" ) {
+    test_hip_collocation( basis, ref_file );
+  }
+
+  SECTION( "HIP Eval Grad" ) {
+    test_hip_collocation_deriv1( basis, ref_file );
+  }
+#endif // GAUXC_HAS_HIP
+
+#ifdef GAUXC_HAS_SYCL
+  BasisSetMap basis_map( basis, mol );
+  SECTION( "SYCL Eval" ) {
+    test_sycl_collocation( basis, ref_file );
+  }
+  SECTION( "SYCL Shell to Task Eval" ) {
+    test_sycl_collocation_shell_to_task( basis, basis_map, ref_file );
+  }
+
+  SECTION( "SYCL Eval Grad" ) {
+    test_sycl_collocation_deriv1( basis, ref_file );
+  }
+  SECTION( "SYCL Shell to Task Eval Grad" ) {
+    test_sycl_collocation_shell_to_task_gradient( basis, basis_map, ref_file );
+  }
+
+  SECTION( "SYCL Shell to Task Eval Hessian" ) {
+    test_sycl_collocation_shell_to_task_hessian( basis, basis_map, ref_file );
+  }
+
+  SECTION( "SYCL Shell to Task Eval Laplacian" ) {
+    test_sycl_collocation_shell_to_task_laplacian( basis, basis_map, ref_file );
+  }
+
+  SECTION( "SYCL Shell to Task Eval Laplacian Gradient" ) {
+    test_sycl_collocation_shell_to_task_lapgrad( basis, basis_map, ref_file );
+  }
+#endif // GAUXC_HAS_SYCL
 
 
 
-#ifdef GAUXC_ENABLE_SYCL
-  cl::sycl::gpu_selector device_selector;
-  cl::sycl::queue syclQueue = cl::sycl::queue(device_selector,
-                                              cl::sycl::property_list{cl::sycl::property::queue::in_order{}});
-
-  std::cout << "IN SYCL COLLOCATION TEST" << std::endl;
-  SECTION( "SYCL Eval: Petite Shell List" ) {
-    test_sycl_collocation_petite( basis, ref_data, syclQueue );
-  }
-  syclQueue.wait_and_throw();
-  SECTION( "SYCL Eval: Masked" ) {
-    test_sycl_collocation_masked( basis, ref_data, syclQueue );
-  }
-  syclQueue.wait_and_throw();
-  SECTION( "SYCL Eval: Petite Combined" ) {
-    test_sycl_collocation_petite_combined( basis, ref_data, syclQueue );
-  }
-  syclQueue.wait_and_throw();
-  SECTION( "SYCL Eval: Masked Combined" ) {
-    test_sycl_collocation_masked_combined( basis, ref_data, syclQueue );
-  }
-  syclQueue.wait_and_throw();
-
-  SECTION( "SYCL Eval Grad: Petite Shell List" ) {
-    test_sycl_collocation_deriv1_petite( basis, ref_data, syclQueue );
-  }
-  syclQueue.wait_and_throw();
-  SECTION( "SYCL Eval Grad: Masked" ) {
-    test_sycl_collocation_deriv1_masked( basis, ref_data, syclQueue );
-  }
-  syclQueue.wait_and_throw();
-  SECTION( "SYCL Eval Grad: Petite Combined" ) {
-    test_sycl_collocation_petite_combined_deriv1( basis, ref_data, syclQueue );
-  }
-  syclQueue.wait_and_throw();
-  SECTION( "SYCL Eval: Masked Combined" ) {
-    test_sycl_collocation_masked_combined_deriv1( basis, ref_data, syclQueue );
-  }
-  syclQueue.wait_and_throw();
-#endif // GAUXC_ENABLE_SYCL
 
 #endif
 

@@ -1,3 +1,14 @@
+/**
+ * GauXC Copyright (c) 2020-2024, The Regents of the University of California,
+ * through Lawrence Berkeley National Laboratory (subject to receipt of
+ * any required approvals from the U.S. Dept. of Energy).
+ *
+ * (c) 2024-2025, Microsoft Corporation
+ *
+ * All rights reserved.
+ *
+ * See LICENSE.txt for details
+ */
 #include "standards.hpp"
 #include "ut_common.hpp"
 #include "basis/parse_basis.hpp"
@@ -10,6 +21,10 @@ Molecule make_water() {
   mol.emplace_back(AtomicNumber(1), 0., 1.579252144093028,  2.174611055780858);
   mol.emplace_back(AtomicNumber(8), 0., 0.000000000000000,  0.000000000000000);
   mol.emplace_back(AtomicNumber(1), 0., 1.579252144093028, -2.174611055780858);
+
+//mol.emplace_back(AtomicNumber(8), 0.000000000000000, -0.143222342980786, 0.000000000000000);
+//mol.emplace_back(AtomicNumber(1), 1.638033502034240,  1.136556880358410, 0.000000000000000);
+//mol.emplace_back(AtomicNumber(1),-1.638033502034240,  1.136556880358410, 0.000000000000000);
 
   return mol;
 
@@ -1395,7 +1410,7 @@ Molecule make_ubiquitin() {
 
 BasisSet<double> make_631Gd( const Molecule& mol, SphericalType sph ) {
 
-  std::string basis_path = GAUXC_REF_DATA_PATH  "/../basis/old/6-31g*.g94";
+  std::string basis_path = GAUXC_REF_DATA_PATH  "/../basis/old/6-31g-star.g94";
   return parse_basis( mol, basis_path, sph );
 
 }

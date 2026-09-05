@@ -1,8 +1,28 @@
+#
+# GauXC Copyright (c) 2020-2024, The Regents of the University of California,
+# through Lawrence Berkeley National Laboratory (subject to receipt of
+# any required approvals from the U.S. Dept. of Energy).
+#
+# (c) 2024-2025, Microsoft Corporation
+#
+# All rights reserved.
+#
+# See LICENSE.txt for details
+#
+
 # Parallelism
-#find_package( OpenMP  REQUIRED )
+if( GAUXC_ENABLE_OPENMP ) 
+  message( STATUS "GauXC Enabling OpenMP" )
+  find_package( OpenMP  REQUIRED )
+  set(GAUXC_HAS_OPENMP TRUE CACHE BOOL "GauXC Has OpenMP" FORCE)
+else()
+  message( STATUS "GauXC Disabling OpenMP" )
+endif()
+
 if( GAUXC_ENABLE_MPI )
   message( STATUS "GauXC Enabling MPI" )
   find_package( MPI REQUIRED )
+  set(GAUXC_HAS_MPI TRUE CACHE BOOL "GauXC Has MPI" FORCE)
 else()
   message( STATUS "GauXC Disabling MPI" )
 endif()
@@ -11,18 +31,27 @@ endif()
 include( gauxc-integratorxx )
 include( gauxc-exchcxx      )
 
-
-add_library( gauxc 
+add_library( gauxc
   grid.cxx 
   grid_impl.cxx 
+  grid_factory.cxx
   molmeta.cxx 
   molgrid.cxx 
   molgrid_impl.cxx 
   molgrid_defaults.cxx 
-  atomic_radii.cxx 
-  load_balancer_impl.cxx 
-  load_balancer.cxx 
+  atomic_radii.cxx
+  cube_grid.cxx
+  orbital_evaluator.cxx
 )
+
+if( GAUXC_ENABLE_C )
+  message( STATUS "GauXC Enabling C API" )
+  add_subdirectory(c-api)
+  set(GAUXC_HAS_C TRUE CACHE BOOL "GauXC Has C API" FORCE)
+else()
+  message( STATUS "GauXC Disabling C API" )
+endif()
+
 
 target_include_directories( gauxc
   PUBLIC
@@ -32,37 +61,91 @@ target_include_directories( gauxc
     $<INSTALL_INTERFACE:include>
 )
 
-target_compile_options( gauxc
-  PRIVATE
-    $<$<COMPILE_LANGUAGE:CXX>: -Wall -Wextra -Wpedantic -Wnon-virtual-dtor>
-)
+include( CheckCXXCompilerFlag )
+if(NOT MSVC)  # under clang-cl, -Wall maps to /Wall (= -Weverything)
+  check_cxx_compiler_flag( -Wall              GAUXC_CXX_HAS_WALL            )
+endif()
+check_cxx_compiler_flag( -Wextra            GAUXC_CXX_HAS_WEXTRA            )
+check_cxx_compiler_flag( -Wpedantic         GAUXC_CXX_HAS_WPEDANTIC         )
+check_cxx_compiler_flag( -Wnon-virtual-dtor GAUXC_CXX_HAS_WNON_VIRTUAL_DTOR )
+check_cxx_compiler_flag( -Wshadow           GAUXC_CXX_HAS_WSHADOW           )
 
-# TODO: MAKE MORE GENERAL
-if( GAUXC_ENABLE_SYCL )
-  set( GAUXC_BLAS_ILP64 ON )
+if( GAUXC_CXX_HAS_WALL )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wall> )
 endif()
 
+if( GAUXC_CXX_HAS_WEXTRA )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wextra> )
+endif()
 
-configure_file( 
-  ${PROJECT_SOURCE_DIR}/include/gauxc/gauxc_config.hpp.in
-  ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
-)
+if( GAUXC_CXX_HAS_WPEDANTIC )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wpedantic> )
+endif()
+
+if( GAUXC_CXX_HAS_WNON_VIRTUAL_DTOR )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wnon-virtual-dtor -Werror=non-virtual-dtor> )
+endif()
+
+if( GAUXC_CXX_HAS_WSHADOW )
+  target_compile_options( gauxc PRIVATE $<$<COMPILE_LANGUAGE:CXX>: -Wshadow> )
+endif()
+
+if(MSVC)
+  if(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    target_compile_options( gauxc PRIVATE
+      -Wno-unused-variable
+    )
+  else()
+    target_compile_options( gauxc PUBLIC /EHsc )
+  endif()
+endif()
 
 target_link_libraries( gauxc PUBLIC 
   ExchCXX::ExchCXX 
   IntegratorXX::IntegratorXX 
-  #OpenMP::OpenMP_CXX
 )
 
-if( GAUXC_ENABLE_MPI )
-  target_link_libraries( gauxc PUBLIC MPI::MPI_C )
+if( GAUXC_HAS_SYCL )
+  include( gauxc-sycl )
+endif()
+if( GAUXC_HAS_OPENMP AND TARGET OpenMP::OpenMP_CXX )
+  target_link_libraries( gauxc PUBLIC OpenMP::OpenMP_CXX )
+else()
+  find_package(Threads REQUIRED)
+  target_link_libraries( gauxc PUBLIC Threads::Threads )
 endif()
 
-add_subdirectory( integrator )
+
+if( GAUXC_HAS_MPI )
+  target_link_libraries( gauxc PUBLIC MPI::MPI_C MPI::MPI_CXX )
+endif()
+
+add_subdirectory( runtime_environment )
+add_subdirectory( molecular_weights )
+add_subdirectory( xc_integrator )
 add_subdirectory( load_balancer )
+add_subdirectory( reduction_driver )
+add_subdirectory( external )
 
 
 add_library( gauxc::gauxc ALIAS gauxc )
+
+
+if(GAUXC_HAS_HOST)
+  set(GAUXC_CPU_XC_MAX_AM     6) 
+  set(GAUXC_CPU_SNLINK_MAX_AM 6)
+endif()
+
+if(GAUXC_HAS_DEVICE)
+  set(GAUXC_GPU_XC_MAX_AM     4) 
+  set(GAUXC_GPU_SNLINK_MAX_AM 2)
+endif()
+
+# Generate config file
+configure_file( 
+  ${PROJECT_SOURCE_DIR}/include/gauxc/gauxc_config.hpp.in
+  ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
+)
 
 include( GNUInstallDirs )
 
@@ -76,24 +159,69 @@ install( TARGETS gauxc ${GAUXC_EXPORT_DEPENDENCIES}
 
 set_target_properties( gauxc PROPERTIES EXPORT_NAME gauxc )
 
+set(export_properties
+  # currently configurable properties 
+  "GAUXC_HAS_C"
+  "GAUXC_HAS_HOST"
+  "GAUXC_HAS_DEVICE"
+  "GAUXC_HAS_CUDA"
+  "GAUXC_HAS_HIP"
+  "GAUXC_HAS_SYCL"
+  "GAUXC_HAS_MAGMA"
+  "GAUXC_HAS_CUTLASS"
+  "GAUXC_HAS_NCCL"
+  "GAUXC_HAS_ONECCL"
+  "GAUXC_HAS_MPI"
+  "GAUXC_HAS_OPENMP"
+  "GAUXC_HAS_HDF5"
+ 
+  # may become configurable in the future
+  "GAUXC_CPU_XC_MAX_AM"
+  "GAUXC_CPU_SNLINK_MAX_AM"
+  "GAUXC_GPU_XC_MAX_AM"
+  "GAUXC_GPU_SNLINK_MAX_AM"
+)
+
+set_target_properties(gauxc
+  PROPERTIES
+    "GAUXC_HAS_C"          ${GAUXC_HAS_C}
+    "GAUXC_HAS_HOST"       ${GAUXC_HAS_HOST}
+    "GAUXC_HAS_DEVICE"     ${GAUXC_HAS_DEVICE}
+    "GAUXC_HAS_CUDA"       ${GAUXC_HAS_CUDA}
+    "GAUXC_HAS_HIP"        ${GAUXC_HAS_HIP}
+    "GAUXC_HAS_SYCL"       ${GAUXC_HAS_SYCL}
+    "GAUXC_HAS_MAGMA"      ${GAUXC_HAS_MAGMA}
+    "GAUXC_HAS_CUTLASS"    ${GAUXC_HAS_CUTLASS}
+    "GAUXC_HAS_NCCL"       ${GAUXC_HAS_NCCL}
+    "GAUXC_HAS_ONECCL"     ${GAUXC_HAS_ONECCL}
+    "GAUXC_HAS_MPI"        ${GAUXC_HAS_MPI}
+    "GAUXC_HAS_OPENMP"     ${GAUXC_HAS_OPENMP}
+    "GAUXC_HAS_HDF5"       ${GAUXC_HAS_HDF5}
+    "GAUXC_CPU_XC_MAX_AM"     ${GAUXC_CPU_XC_MAX_AM}     
+    "GAUXC_CPU_SNLINK_MAX_AM" ${GAUXC_CPU_SNLINK_MAX_AM}
+    "GAUXC_GPU_XC_MAX_AM"     ${GAUXC_GPU_XC_MAX_AM}     
+    "GAUXC_GPU_SNLINK_MAX_AM" ${GAUXC_GPU_SNLINK_MAX_AM}
+)
+set_property(TARGET gauxc APPEND PROPERTY EXPORT_PROPERTIES "${export_properties}")
+
 # Export build tree
 export(EXPORT gauxc-targets
       NAMESPACE gauxc::
       FILE "${PROJECT_BINARY_DIR}/gauxc-targets.cmake")
 
-# Install staic headers
+# Install static C++ headers
 install( 
   DIRECTORY   ${PROJECT_SOURCE_DIR}/include
-  DESTINATION ${CMAKE_INSTALL_PREFIX}
+  DESTINATION .
   FILES_MATCHING PATTERN "*.hpp"
 )
 
 # Install generated headers
 install(
   FILES       ${PROJECT_BINARY_DIR}/include/gauxc/gauxc_config.hpp
-  DESTINATION ${CMAKE_INSTALL_PREFIX}/include/gauxc
+  DESTINATION include/gauxc
 )
-  
+
    
 # Export target to script
 set( INSTALL_CONFIGDIR ${CMAKE_INSTALL_LIBDIR}/cmake/gauxc )
@@ -122,6 +250,8 @@ configure_package_config_file(
 # Install CMake files
 install( FILES
   ${PROJECT_SOURCE_DIR}/cmake/modules/FindMAGMA.cmake
+  ${PROJECT_SOURCE_DIR}/cmake/modules/FindNCCL.cmake
+  ${PROJECT_SOURCE_DIR}/cmake/modules/FindSYCL.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/gauxc-config.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/gauxc-config-version.cmake
   DESTINATION ${INSTALL_CONFIGDIR}
