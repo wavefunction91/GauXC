@@ -13,6 +13,7 @@
 #include "collocation_host.hpp"
 #include "collocation_cuda.hpp"
 #include "collocation_hip.hpp"
+#include "collocation_sycl.hpp"
 
 //#define GENERATE_TESTS
 
@@ -99,6 +100,35 @@ TEST_CASE( "Water / cc-pVDZ", "[collocation]" ) {
     test_hip_collocation_deriv1( basis, ref_file );
   }
 #endif // GAUXC_HAS_HIP
+
+#ifdef GAUXC_HAS_SYCL
+  BasisSetMap basis_map( basis, mol );
+  SECTION( "SYCL Eval" ) {
+    test_sycl_collocation( basis, ref_file );
+  }
+  SECTION( "SYCL Shell to Task Eval" ) {
+    test_sycl_collocation_shell_to_task( basis, basis_map, ref_file );
+  }
+
+  SECTION( "SYCL Eval Grad" ) {
+    test_sycl_collocation_deriv1( basis, ref_file );
+  }
+  SECTION( "SYCL Shell to Task Eval Grad" ) {
+    test_sycl_collocation_shell_to_task_gradient( basis, basis_map, ref_file );
+  }
+
+  SECTION( "SYCL Shell to Task Eval Hessian" ) {
+    test_sycl_collocation_shell_to_task_hessian( basis, basis_map, ref_file );
+  }
+
+  SECTION( "SYCL Shell to Task Eval Laplacian" ) {
+    test_sycl_collocation_shell_to_task_laplacian( basis, basis_map, ref_file );
+  }
+
+  SECTION( "SYCL Shell to Task Eval Laplacian Gradient" ) {
+    test_sycl_collocation_shell_to_task_lapgrad( basis, basis_map, ref_file );
+  }
+#endif // GAUXC_HAS_SYCL
 
 
 

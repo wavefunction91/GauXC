@@ -28,6 +28,11 @@ class hip_exception;
 class hipblas_exception;
 #endif
 
+#ifdef GAUXC_HAS_SYCL
+class sycl_exception;
+class onemkl_exception;
+#endif
+
 #ifdef GAUXC_HAS_MAGMA
 class magma_exception;
 #endif

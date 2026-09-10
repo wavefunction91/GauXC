@@ -202,12 +202,15 @@ target_link_libraries( my_target PUBLIC gauxc::gauxc )
 | `GAUXC_ENABLE_HOST`        | Enable HOST integrators                                   | `ON`     |
 | `GAUXC_ENABLE_CUDA`        | Enable CUDA integrators                                   | `OFF`    |
 | `GAUXC_ENABLE_HIP`         | Enable HIP integrators                                    | `OFF`    |
+| `GAUXC_ENABLE_SYCL`        | Enable SYCL integrators                                   | `OFF`    |
 | `GAUXC_ENABLE_MAGMA`       | Enable MAGMA for batched BLAS (No effect if no GPU)       | `ON`     |
 | `GAUXC_ENABLE_CUTLASS`     | Enable CUTLASS for batched BLAS (No effect if no CUDA)    | `OFF`    |
 | `GAUXC_ENABLE_NCCL`        | Enable NCCL bindings for topology aware GPU reductions    | `OFF`    |
+| `GAUXC_ENABLE_ONECCL`      | Enable oneCCL bindings for GPU reductions (SYCL only)     | `OFF`    |
 | `GAUXC_ENABLE_MPI`         | Enable MPI Bindings                                       | `ON`     |
 | `GAUXC_ENABLE_OPENMP`      | Enable OpenMP Bindings                                    | `ON`     |
 | `CMAKE_CUDA_ARCHITECTURES` | CUDA architechtures (e.g. 70 for Volta, 80 for Ampere)    |  --      |
+| `GAUXC_SYCL_TARGET`        | SYCL AoT target (e.g. `intel_gpu_pvc`); JIT if unset      |  --      |
 | `BLAS_LIBRARIES`           | Full BLAS linker.                                         |  --      |
 | `MAGMA_ROOT_DIR`           | Install prefix for MAGMA.                                 |  --      |
 

@@ -11,6 +11,10 @@
  */
 #include "scheme1_data_base.hpp"
 #include "buffer_adaptor.hpp"
+#ifdef GAUXC_HAS_SYCL
+// CUDA and HIP supply double2 through their runtime headers; SYCL does not
+#include "device_specific/sycl_vector_types.hpp"
+#endif
 
 namespace GauXC {
 

@@ -21,6 +21,7 @@
 #include "weights_host.hpp"
 #include "weights_cuda.hpp"
 #include "weights_hip.hpp"
+#include "weights_sycl.hpp"
 
 //#define GENERATE_TESTS
 TEST_CASE( "Partition Weights", "[weights]" ) {
@@ -71,6 +72,8 @@ TEST_CASE( "Partition Weights", "[weights]" ) {
     test_cuda_weights( ref_file );
 #elif defined(GAUXC_HAS_HIP)
     test_hip_weights( ref_file );
+#elif defined(GAUXC_HAS_SYCL)
+    test_sycl_weights( ref_file );
 #endif
   }
 #endif

@@ -20,6 +20,10 @@
 #include "hip/replicated_hip_load_balancer.hpp"
 #endif
 
+#ifdef GAUXC_HAS_SYCL
+#include "sycl/replicated_sycl_load_balancer.hpp"
+#endif
+
 namespace GauXC {
 
 std::shared_ptr<LoadBalancer> LoadBalancerDeviceFactory::get_shared_instance(

@@ -18,3 +18,7 @@ if(GAUXC_ENABLE_HIP)
   add_subdirectory( hip )
 endif()
 
+if(GAUXC_ENABLE_SYCL)
+  add_subdirectory( sycl )
+endif()
+

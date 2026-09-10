@@ -286,7 +286,7 @@ void IncoreReplicatedXCDeviceIntegrator<ValueType>::
   device_data.reset_allocations();
   device_data.allocate_static_data_exc_vxc( nbf, nshells, enabled_terms, do_vxc );
   
-  device_data.send_static_data_density_basis( Ps, ldps, Pz, ldpz, Px, ldpx, Py, ldpy, basis );
+  device_data.send_static_data_density_basis( Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx, basis );
 
 
 

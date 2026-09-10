@@ -35,3 +35,16 @@ endif()
 if(GAUXC_HAS_HIP)
   add_subdirectory( hip )
 endif()
+
+if(GAUXC_HAS_SYCL)
+  # oneMKL's batched GEMM is the SYCL analogue of MAGMA's vbatched GEMM for
+  # the CUDA/HIP backends; unlike MAGMA it is not optional when SYCL is
+  # enabled, so these sources are added unconditionally alongside scheme1_base
+  # rather than gated behind their own GAUXC_ENABLE_* option.
+  target_sources( gauxc PRIVATE
+    scheme1_onemkl_base.cxx
+    scheme1_onemkl_data_base.cxx
+  )
+
+  add_subdirectory( sycl )
+endif()

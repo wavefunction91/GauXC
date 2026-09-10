@@ -10,6 +10,8 @@
  * See LICENSE.txt for details
  */
 #pragma once
+#include <cstddef>
+#include <cstdint>
 
 namespace GauXC {
 
