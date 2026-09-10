@@ -29,9 +29,6 @@ void sycl_aos_scheme1_weights_wrapper( int32_t npts, int32_t natoms,
   compute_grid_to_center_dist( npts, natoms, coords, points_x, points_y, points_z, 
    dist, lddist, stream );
 
-  // Modify weights. The 2D kernel is retained (and exercised below) because,
-  // unlike the CUDA backend, PVC has no XeCore-count-driven persistent-block
-  // launch to tune against; the 1D kernel is the portable default
   partition_weights_ssf_1d( npts, natoms, RAB, ldRAB, coords, dist, lddist,
     iparent, dist_nearest, weights, stream );
 

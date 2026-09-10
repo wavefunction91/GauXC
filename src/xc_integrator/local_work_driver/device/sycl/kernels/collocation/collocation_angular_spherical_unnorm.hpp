@@ -15,8 +15,6 @@
 #include <cassert>
 
 #ifndef GPGAUEVAL_INLINE
-// SYCL device functions are ordinary functions; the CUDA backend forces
-// __noinline__ here to bound register pressure, which the SYCL JIT handles
 #  define GPGAUEVAL_INLINE inline
 #endif
 

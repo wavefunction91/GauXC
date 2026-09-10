@@ -131,9 +131,7 @@ void eval_uvars_gga( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_sc
 }
 
 
-// Internal implementation with trial as template parameter. The GGA V-var
-// kernel's __shared__ den_shared[4][warp_size][VVAR_KERNEL_SM_BLOCK+1] tile
-// is obtained via local_mem() inside the kernel body itself.
+// Internal implementation with trial as template parameter
 template<bool trial>
 void eval_vvars_gga_impl( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id den_select,
   XCDeviceTask* device_tasks, device_queue queue ) {
@@ -221,12 +219,7 @@ void eval_uvars_mgga( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_s
 
 }
 
-// Internal implementation with trial as template parameter. As with the GGA
-// V-var kernel, den_shared's row count depends on need_lapl (3+!!need_lapl).
-// need_lapl is dispatched to a template parameter of eval_vvar_mgga_kern
-// right below (the if/else picks the true/false instantiation), so within
-// each instantiation the local_mem() extent is a genuine compile-time
-// constant, obtained inside the kernel body itself.
+// Internal implementation with trial as template parameter
 template<bool trial>
 void eval_vvars_mgga_impl( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id den_select,
   bool need_lapl, XCDeviceTask* device_tasks, device_queue queue ) {

@@ -18,9 +18,8 @@ SYCLBackend::SYCLBackend() {
   // Create SYCL queue. oneMKL is queue-driven, so the "BLAS handle" is a
   // binding to the same queue rather than a separate object to be tied to it
   device  = util::sycl_default_device();
-  context = ::sycl::context( device );
 
-  master_stream = std::make_shared< util::sycl_queue >( context, device );
+  master_stream = std::make_shared< util::sycl_queue >( device );
   master_handle = std::make_shared< util::onemkl_handle >( master_stream );
 
 #ifdef GAUXC_HAS_MAGMA
@@ -70,7 +69,7 @@ void SYCLBackend::create_blas_queue_pool(int32_t ns) {
   blas_streams.resize(ns);
   blas_handles.resize(ns);
   for( auto i = 0; i < ns; ++i ) {
-    blas_streams[i] = std::make_shared<util::sycl_queue>( context, device );
+    blas_streams[i] = std::make_shared<util::sycl_queue>( device );
     blas_handles[i] = std::make_shared<util::onemkl_handle>( blas_streams[i] );
   }
 }

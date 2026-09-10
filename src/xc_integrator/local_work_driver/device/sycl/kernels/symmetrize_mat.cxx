@@ -114,10 +114,6 @@ void symmetrize_matrix( int32_t N, double* A, size_t LDA, device_queue queue ) {
   // Warp size must equal max_warps_per_thread_block must equal 32
   sycl::launch_dim threads(sycl::warp_size, sycl::max_warps_per_thread_block, 1), blocks(num_blocks);
 
-  // The CUDA __shared__ double buffer[block_size][block_size+1] tile becomes
-  // a work-group local array (the +1 padding is kept to avoid the same bank
-  // conflicts it resolves on CUDA/HIP), obtained inside the kernel body via
-  // local_mem().
   sycl::launch_kernel( stream, blocks, threads, "symmetrize_matrix_device",
     [=](){
       symmetrize_matrix_device( N, A, LDA );
@@ -130,8 +126,6 @@ void symmetrize_matrix_inc( int32_t N, double* A, size_t LDA, device_queue queue
   // Warp size must equal max_warps_per_thread_block must equal 32
   sycl::launch_dim threads(sycl::warp_size, sycl::max_warps_per_thread_block, 1), blocks(num_blocks);
 
-  // Two __shared__ tiles on the CUDA side become two work-group local
-  // arrays, obtained inside the kernel body via local_mem().
   sycl::launch_kernel( stream, blocks, threads, "symmetrize_matrix_inc_device",
     [=](){
       symmetrize_matrix_inc_device( N, A, LDA );

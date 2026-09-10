@@ -16,6 +16,7 @@
 #include "device/sycl/sycl_backend.hpp"
 
 #include "sycl_collision_detection.hpp"
+#include <optional>
 
 using namespace GauXC::load_balancer::sycl;
 
@@ -90,13 +91,17 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
 
   CollisionDetectionSyclData data;
 
-  // SYCL has no analogue of a default/null stream: every USM allocation and
-  // kernel launch is bound to a specific in-order queue, taken here from the
-  // device backend behind this load balancer's runtime.
-  auto rt = detail::as_device_runtime( runtime_ );
-  auto* backend = dynamic_cast<SYCLBackend*>( rt.device_backend() );
-  if( !backend ) GAUXC_BAD_BACKEND_CAST();
-  ::sycl::queue& master_stream = backend->master_stream->queue;
+  std::optional<util::sycl_queue> fallback_stream;
+  ::sycl::queue* master_stream_ptr = nullptr;
+  if( auto* p = dynamic_cast<const DeviceRuntimeEnvironment*>(&runtime_) ) {
+    auto* backend = dynamic_cast<SYCLBackend*>( p->device_backend() );
+    if( !backend ) GAUXC_BAD_BACKEND_CAST();
+    master_stream_ptr = &backend->master_stream->queue;
+  } else {
+    fallback_stream.emplace( util::sycl_default_device() );
+    master_stream_ptr = &fallback_stream->queue;
+  }
+  ::sycl::queue& master_stream = *master_stream_ptr;
 
   std::vector< XCTask > temp_tasks;              temp_tasks.reserve( max_nbatches );
   std::vector<std::array<double,3>> low_points;  low_points.reserve( max_nbatches );
@@ -113,13 +118,6 @@ std::vector< XCTask > DeviceReplicatedLoadBalancer::create_local_tasks_() const 
   pinned_vector<int32_t> position_list;
 
   data.temp_storage_bytes = compute_scratch(max_nbatches, data.counts_device);
-  // compute_scratch() always returns 0 for SYCL (oneDPL's inclusive_scan
-  // needs no caller-managed scratch). Unlike cudaMalloc/hipMalloc,
-  // sycl::malloc_device(0, ...) is permitted to return nullptr, which
-  // util::sycl_malloc() would treat as an allocation failure -- so the
-  // zero-size case is special-cased here rather than routed through it.
-  // temp_storage_device is never dereferenced by collision_detection() below
-  // regardless, since the SYCL implementation ignores it.
   data.temp_storage_device = data.temp_storage_bytes
     ? util::sycl_malloc<char>(data.temp_storage_bytes, master_stream) // char is 1 byte
     : nullptr;

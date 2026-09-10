@@ -136,9 +136,6 @@ void hadamard_product( device_blas_handle generic_handle,
   auto& handle = generic_handle.blas_handle_as<util::onemkl_handle>();
   auto& stream = util::get_queue(handle);
 
-  // Mirrors the CUDA launch: M is carried on the fast dimension (a warp /
-  // sub-group wide) and N on the slow one. SYCL orders nd_range dimensions
-  // the other way round from CUDA, so the fast dimension is the last one.
   ::sycl::range<2> local( sycl::max_warps_per_thread_block, sycl::warp_size );
   ::sycl::range<2> global( util::div_ceil( N, local[0] ) * local[0],
                            util::div_ceil( M, local[1] ) * local[1] );

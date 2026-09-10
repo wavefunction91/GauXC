@@ -22,8 +22,6 @@
 
 namespace GauXC {
 
-// Launch geometry inherited from the CUDA backend: 256 work-items per
-// work-group, 8 sub-groups worth of shell scratch in local memory
 static constexpr uint32_t collocation_device_shell_to_task_kernel_cartesian_gradient_2_max_wg = 256;
 static constexpr uint32_t collocation_device_shell_to_task_kernel_cartesian_gradient_2_nwarp  = 8;
 
@@ -34,13 +32,10 @@ void collocation_device_shell_to_task_kernel_cartesian_gradient_2(
   XCDeviceTask*      __restrict__ device_tasks
 ) {
 
-  // Recover the work-item and shell scratch the way the CUDA kernel
-  // reads threadIdx and declares __shared__.
   auto it = GauXC::sycl::this_item();
   auto& alpha = GauXC::sycl::local_mem<double[8][detail::shell_nprim_max + 1]>();
   auto& coeff = GauXC::sycl::local_mem<double[8][detail::shell_nprim_max + 1]>();
 
-  // Shell scratch lives in work-group local memory, one row per sub-group
   const uint32_t local_warp_id = it.get_local_id(2) / sycl::warp_size;
   double* my_alpha = &alpha[local_warp_id][0];
   double* my_coeff = &coeff[local_warp_id][0];

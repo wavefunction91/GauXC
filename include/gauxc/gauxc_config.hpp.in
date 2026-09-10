@@ -19,6 +19,7 @@
 #cmakedefine GAUXC_HAS_MPI
 #cmakedefine GAUXC_HAS_MAGMA
 #cmakedefine GAUXC_HAS_NCCL
+#cmakedefine GAUXC_HAS_ONECCL
 #cmakedefine GAUXC_HAS_CUTLASS
 #cmakedefine GAUXC_HAS_GAU2GRID
 #cmakedefine GAUXC_HAS_HDF5

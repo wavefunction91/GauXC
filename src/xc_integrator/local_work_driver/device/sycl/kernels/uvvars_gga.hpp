@@ -22,9 +22,6 @@
 
 namespace GauXC {
 
-// den_shared holds 4 rows (den, dx, dy, dz), each [warp_size][VVAR_KERNEL_SM_BLOCK+1];
-// this matches the CUDA __shared__ double den_shared[4][warp_size][VVAR_KERNEL_SM_BLOCK+1]
-// tile and is obtained via local_mem() inside the kernel body.
 template <bool trial, density_id den_select>
 void eval_vvar_gga_kern( size_t        ntasks,
                           XCDeviceTask* tasks_device) {

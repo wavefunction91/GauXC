@@ -27,22 +27,17 @@ void partition_weights_ssf_2d( int32_t npts, int32_t natoms, const double* RAB,
   constexpr auto weight_thread_block_per_sm =
     alg_constants::SyclAoSScheme1::weight_thread_block_per_sm;
 
-  // The kernel is persistent: it strides over points, so the launch is sized
-  // to fill the device rather than to cover npts
   const auto num_sm =
     stream.get_device().get_info< ::sycl::info::device::max_compute_units >();
 
   constexpr auto warps_per_block = weight_thread_block / sycl::warp_size;
 
-  // dim 1 <-> CUDA x (lanes), dim 0 <-> CUDA y (sub-groups)
   ::sycl::range<2> local ( warps_per_block, sycl::warp_size );
   ::sycl::range<2> global( num_sm * weight_thread_block_per_sm * warps_per_block,
                            sycl::warp_size );
 
   GAUXC_SYCL_ERROR( "SSF 2D Weights Launch Failed",
     stream.submit([&](::sycl::handler& cgh) {
-      // jCounter_sm (one counter per sub-group) is now obtained via
-      // group_local_memory_for_overwrite() inside the kernel body.
       cgh.parallel_for( ::sycl::nd_range<2>(global, local),
         [=](::sycl::nd_item<2>)
         [[sycl::reqd_sub_group_size(GauXC::sycl::warp_size)]] {

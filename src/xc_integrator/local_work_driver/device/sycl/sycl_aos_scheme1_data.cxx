@@ -54,8 +54,6 @@ size_t SyclAoSScheme1<Base>::Data::get_submat_chunk_size(int32_t LDA,
   auto* backend = dynamic_cast<SYCLBackend*>(this->device_backend_);
   if( !backend ) GAUXC_BAD_BACKEND_CAST();
 
-  // SYCL exposes the last-level cache size rather than an explicit L2 query;
-  // on the supported targets these are the same cache
   const size_t l2_cache_size =
     backend->device.get_info< ::sycl::info::device::global_mem_cache_size >();
 

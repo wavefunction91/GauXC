@@ -199,11 +199,7 @@ void bitvector_to_position_list(
 }
 
 size_t compute_scratch( size_t ncubes, int32_t* counts_device ) {
-    // oneDPL's inclusive_scan needs no caller-managed scratch buffer (unlike
-    // cub::DeviceScan / hipcub::DeviceScan), so there is nothing to size here.
-    // The function and its (unused) parameters are kept so the CUDA/HIP/SYCL
-    // signatures stay parallel; every call site still works with a zero-sized
-    // scratch allocation.
+    // Computes amount of memory that will be required to do the inclusive sum
     return 0;
 }
 
@@ -232,9 +228,7 @@ void collision_detection( size_t        ncubes,
         );
       });
 
-    // Run inclusive prefix sum. oneDPL's device policy executes on the queue
-    // in-order with the kernel above, so no extra synchronization is needed
-    // to make counts_device visible before the scan reads it.
+    // Run inclusive prefix sum
     oneapi::dpl::inclusive_scan(
       oneapi::dpl::execution::make_device_policy(stream),
       counts_device, counts_device + ncubes, counts_device );

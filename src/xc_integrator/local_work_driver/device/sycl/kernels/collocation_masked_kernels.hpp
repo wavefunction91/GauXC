@@ -21,11 +21,6 @@
 namespace GauXC      {
 
 
-// These kernels are launched over a 2D nd_range (matching the CUDA
-// original's dim3 threads(warp_size, max_warps_per_thread_block)), so they
-// do not go through the 3D-only launch_kernel/this_item() contract in
-// sycl_launch.hpp. They still use the same free-function work-item query
-// style, just instantiated for 2 dimensions.
 template <typename T>
 void collocation_device_masked_kernel(
   size_t                       nshells,

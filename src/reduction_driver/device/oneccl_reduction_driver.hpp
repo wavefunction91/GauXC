@@ -13,6 +13,7 @@
 #include "device_reduction_driver.hpp"
 #include <oneapi/ccl.hpp>
 #include <memory>
+#include <unordered_map>
 
 namespace GauXC {
 
@@ -27,7 +28,7 @@ struct oneccl_comm {
     comm( make_comm(mpi_comm, device, context, kvs) ) { }
 
   // oneCCL communicators are move-only (they wrap a PIMPL, cf. ccl::communicator
-  // in communicator.hpp), matching the NCCL driver's move-only nccl_comm
+  // in communicator.hpp)
   oneccl_comm( const oneccl_comm& ) = delete;
   oneccl_comm( oneccl_comm&& ) noexcept = default;
 
@@ -37,11 +38,8 @@ private:
 
   // Builds the communicator in a helper so the member initializer list above
   // can construct `comm` directly (ccl::communicator has no default ctor).
-  // ccl::create_communicator's DeviceType template parameter is deduced as a
-  // non-const reference, so device/context are taken by non-const reference
-  // here to match the SYCLBackend members (device, context) passed in below.
   static inline ccl::communicator make_comm( MPI_Comm mpi_comm,
-    ::sycl::device& device, ::sycl::context& context,
+    const ::sycl::device& device, const ::sycl::context& context,
     std::shared_ptr<ccl::kvs>& kvs_out ) {
 
     int32_t world_rank, world_size;
@@ -56,8 +54,12 @@ private:
     MPI_Bcast( addr.data(), addr.size(), MPI_BYTE, 0, mpi_comm );
     if( world_rank != 0 ) kvs_out = ccl::create_kvs( addr );
 
-    return ccl::create_communicator( world_size, world_rank, device, context,
-      kvs_out );
+    // create_communicator wraps the device in ccl::pair_class<int, ccl::device>
+    // internally, so it needs oneCCL's own device/context types. DeviceType is
+    // deduced from a non-const lvalue reference, hence the named local.
+    ccl::device ccl_dev = ccl::create_device( ::sycl::device(device) );
+    return ccl::create_communicator( world_size, world_rank, ccl_dev,
+      ccl::create_context( ::sycl::context(context) ), kvs_out );
   }
 
 };
@@ -68,9 +70,16 @@ struct OneCCLReductionDriver : public DeviceReductionDriver {
 
   std::shared_ptr<util::oneccl_comm> oneccl_comm_;
 
+  // ccl::stream wrappers around the SYCL queues this driver has been handed,
+  // keyed by queue. Cached so that a collective does not rebuild one per call;
+  // shared so that copies of the driver (clone()) reuse the same wrappers.
+  std::shared_ptr<std::unordered_map<::sycl::queue, ccl::stream>> ccl_streams_;
+
   OneCCLReductionDriver(const RuntimeEnvironment& rt);
   virtual ~OneCCLReductionDriver() noexcept;
   OneCCLReductionDriver(const OneCCLReductionDriver& );
+
+  ccl::stream& ccl_stream_for( ::sycl::queue& q );
 
   void allreduce_typeerased( const void*, void*, size_t, ReductionOp, std::type_index, std::any) override;
   void allreduce_inplace_typeerased( void*, size_t, ReductionOp, std::type_index, std::any ) override;

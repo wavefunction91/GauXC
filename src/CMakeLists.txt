@@ -127,6 +127,14 @@ add_subdirectory( load_balancer )
 add_subdirectory( reduction_driver )
 add_subdirectory( external )
 
+# oneMKL serves both the host and device BLAS for the SYCL backend, so its
+# integer interface has to track the one the host BLAS resolved to. Deferred
+# to here because GAUXC_BLAS_IS_LP64 is only known once the host driver has
+# been configured above.
+if( GAUXC_HAS_SYCL )
+  gauxc_sycl_pin_mkl_interface( ${GAUXC_BLAS_IS_LP64} )
+endif()
+
 
 add_library( gauxc::gauxc ALIAS gauxc )
 

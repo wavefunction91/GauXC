@@ -22,8 +22,7 @@ namespace util  {
 
 /// oneMKL takes the SYCL queue directly rather than an opaque handle, so the
 /// GauXC BLAS "handle" is a thin non-owning binding to the queue the BLAS
-/// calls are to be issued on. This keeps the DeviceBackend API identical to
-/// the cuBLAS / hipBLAS backends.
+/// calls are to be issued on.
 struct onemkl_handle {
 
   std::shared_ptr<sycl_queue> queue_ptr;

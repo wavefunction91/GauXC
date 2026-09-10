@@ -29,10 +29,6 @@ namespace GauXC {
 #define CUT_Y 8
 
 
-// __launch_bounds__(1024,1) on the CUDA kernel pins the work-group size to
-// warp_size/2 * (max_warps_per_thread_block*2) = 1024 threads, which is the
-// launch geometry used below -- no SYCL equivalent is needed at the kernel
-// definition, the constraint is simply honored at the launch site.
 void sym_inc_by_submat_combined_kernel( size_t ntasks,
                                     XCDeviceTask* device_tasks,
                                     double*       A,
@@ -133,10 +129,6 @@ void sym_task_inc_potential( size_t        ntasks,
 
 
 
-// __launch_bounds__(1024,1) on the CUDA kernel pins the work-group size to
-// warp_size/2 * (max_warps_per_thread_block*2) = 1024 threads, which is the
-// launch geometry used below -- no SYCL equivalent is needed at the kernel
-// definition, the constraint is simply honored at the launch site.
 void asym_inc_by_submat_combined_kernel( size_t ntasks,
                                     XCDeviceTask* device_tasks,
                                     double*       A,

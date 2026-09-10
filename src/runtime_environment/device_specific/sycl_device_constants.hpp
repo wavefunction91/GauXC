@@ -17,7 +17,7 @@ namespace sycl  {
 
 /// Sub-group size requested by all GauXC SYCL kernels. Matches
 /// detail::shell_nprim_max so that a shell's primitives map 1:1 onto the
-/// lanes of a sub-group (same invariant the CUDA backend relies on).
+/// lanes of a sub-group.
 static constexpr uint32_t warp_size = 32;
 static constexpr uint32_t max_threads_per_thread_block = 1024;
 static constexpr uint32_t max_warps_per_thread_block =

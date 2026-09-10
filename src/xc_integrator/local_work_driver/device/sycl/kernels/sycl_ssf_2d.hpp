@@ -54,12 +54,6 @@ void modify_weights_ssf_kernel_2d(
 
   static_assert( weight_unroll == 4 );
 
-  // This kernel is launched over a 2D nd_range (matching the CUDA original's
-  // dim3 threads(warp_size, warps_per_block)), so it uses the free-function
-  // work-item queries directly instead of the 3D-only this_item()/local_mem()
-  // contract in sycl_launch.hpp. jCounter_sm's extent (warps_per_block) is a
-  // compile-time constant per instantiation of this template, mirroring the
-  // CUDA __shared__ int jCounter_sm[cuda::max_warps_per_thread_block].
   auto it = ::sycl::ext::oneapi::this_work_item::get_nd_item<2>();
   constexpr uint32_t warps_per_block = weight_thread_block / sycl::warp_size;
   auto& jCounter_sm = *::sycl::ext::oneapi::group_local_memory_for_overwrite<int[warps_per_block]>(
@@ -69,7 +63,6 @@ void modify_weights_ssf_kernel_2d(
 
   const auto sg = it.get_sub_group();
 
-  // dim 1 <-> CUDA x (lanes within a sub-group), dim 0 <-> CUDA y
   const auto local_x = it.get_local_id(1);
   const auto local_y = it.get_local_id(0);
   const auto range_x = it.get_local_range(1);

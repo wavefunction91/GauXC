@@ -44,14 +44,17 @@ inline ::sycl::device sycl_default_device() {
   }
 }
 
-/// RAII wrapper for an in-order SYCL queue. In-order semantics give the same
-/// serialized execution the CUDA/HIP backends get from a single stream.
+/// RAII wrapper for an in-order SYCL queue.
 struct sycl_queue {
 
   ::sycl::queue queue;
 
-  inline sycl_queue() :
-    sycl_queue( ::sycl::context(sycl_default_device()), sycl_default_device() ) { }
+  inline sycl_queue() : sycl_queue( sycl_default_device() ) { }
+
+  /// Bind to the platform's default context for `dev`.
+  inline sycl_queue( const ::sycl::device& dev ) :
+    queue( dev, sycl_async_error_handler,
+           ::sycl::property_list{ ::sycl::property::queue::in_order{} } ) { }
 
   inline sycl_queue( const ::sycl::context& ctx, const ::sycl::device& dev ) :
     queue( ctx, dev, sycl_async_error_handler,
@@ -80,8 +83,7 @@ struct sycl_queue {
 };
 
 
-/// RAII wrapper for a SYCL event. Recorded via a queue barrier which mirrors
-/// the cudaEventRecord / hipEventRecord semantics.
+/// RAII wrapper for a SYCL event.
 struct sycl_event {
 
   ::sycl::event event;
@@ -151,10 +153,9 @@ inline T* sycl_malloc_shared( size_t n, ::sycl::queue& queue ) {
 
 template <typename T>
 inline void sycl_free( ::sycl::queue& queue, T*& ptr ) {
-  // cuda_free's cudaFree implicitly synchronizes the device; sycl::free does
-  // not, and releasing a USM allocation that enqueued work still references
-  // is undefined behaviour. Drain the queue first so callers written against
-  // the CUDA helper stay correct.
+  // sycl::free does not synchronize the queue, and releasing a USM allocation
+  // that enqueued work still references is undefined behaviour. Drain the
+  // queue first.
   GAUXC_SYCL_ERROR( "SYCL Free Sync Failed", queue.wait_and_throw() );
   GAUXC_SYCL_ERROR( "SYCL Free Failed", ::sycl::free( (void*)ptr, queue ) );
   ptr = nullptr;

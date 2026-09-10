@@ -31,16 +31,6 @@ namespace GauXC {
 
 namespace detail {
 
-/// Common launcher for the shell-to-task collocation kernels. The CUDA
-/// backend encodes its launch geometry in __launch_bounds__; the shell
-/// scratch that used to live in a launch-time local_accessor is now
-/// declared inside each kernel body via local_mem(), the way __shared__ is
-/// declared in the CUDA original.
-///
-/// nthreads: work-group size the kernel was tuned for
-/// nwarp:    rows of shell scratch, i.e. nthreads / warp_size (kept only to
-///           check the launch geometry -- the kernels declare their own
-///           local_mem<> extent internally)
 template <uint32_t nthreads, uint32_t nwarp, typename KernelOp, typename... Args>
 void launch_shell_to_task( ::sycl::queue& queue, uint32_t ntask_average,
   uint32_t nshells, KernelOp op, Args&&... args ) {
@@ -53,7 +43,6 @@ void launch_shell_to_task( ::sycl::queue& queue, uint32_t ntask_average,
   const uint32_t nwarp_per_block = nthreads / sycl::warp_size;
   const uint32_t n_task_blocks   = util::div_ceil( ntask_average, nwarp_per_block );
 
-  // dim 0 -> shells (CUDA z), dim 2 -> points/tasks (CUDA x)
   ::sycl::range<3> global( nshells, 1, n_task_blocks * nthreads );
   ::sycl::range<3> local ( 1, 1, nthreads );
 
@@ -266,8 +255,6 @@ template <typename... Args>
 void dispatch_shell_to_task_collocation( ::sycl::queue& queue, int32_t l,
   bool pure, uint32_t ntask_average, uint32_t nshells, Args&&... args ) {
 
-  // Launch geometry mirrors the CUDA backend: one sub-group per task,
-  // one work-group row of shell scratch per sub-group, shells over dim 0
   switch(l) {
     case 0:
       detail::launch_shell_to_task<512,16>( queue, ntask_average, nshells,
@@ -353,8 +340,6 @@ template <typename... Args>
 void dispatch_shell_to_task_collocation_gradient( ::sycl::queue& queue, int32_t l,
   bool pure, uint32_t ntask_average, uint32_t nshells, Args&&... args ) {
 
-  // Launch geometry mirrors the CUDA backend: one sub-group per task,
-  // one work-group row of shell scratch per sub-group, shells over dim 0
   switch(l) {
     case 0:
       detail::launch_shell_to_task<512,16>( queue, ntask_average, nshells,
@@ -440,8 +425,6 @@ template <typename... Args>
 void dispatch_shell_to_task_collocation_hessian( ::sycl::queue& queue, int32_t l,
   bool pure, uint32_t ntask_average, uint32_t nshells, Args&&... args ) {
 
-  // Launch geometry mirrors the CUDA backend: one sub-group per task,
-  // one work-group row of shell scratch per sub-group, shells over dim 0
   switch(l) {
     case 0:
       detail::launch_shell_to_task<256,8>( queue, ntask_average, nshells,
@@ -527,8 +510,6 @@ template <typename... Args>
 void dispatch_shell_to_task_collocation_laplacian( ::sycl::queue& queue, int32_t l,
   bool pure, uint32_t ntask_average, uint32_t nshells, Args&&... args ) {
 
-  // Launch geometry mirrors the CUDA backend: one sub-group per task,
-  // one work-group row of shell scratch per sub-group, shells over dim 0
   switch(l) {
     case 0:
       detail::launch_shell_to_task<256,8>( queue, ntask_average, nshells,
@@ -614,8 +595,6 @@ template <typename... Args>
 void dispatch_shell_to_task_collocation_lapgrad( ::sycl::queue& queue, int32_t l,
   bool pure, uint32_t ntask_average, uint32_t nshells, Args&&... args ) {
 
-  // Launch geometry mirrors the CUDA backend: one sub-group per task,
-  // one work-group row of shell scratch per sub-group, shells over dim 0
   switch(l) {
     case 0:
       detail::launch_shell_to_task<256,8>( queue, ntask_average, nshells,

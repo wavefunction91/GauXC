@@ -25,10 +25,6 @@ namespace GauXC {
 #define CUT_X 8
 #define CUT_Y 8
 
-// __launch_bounds__(1024,1) on the CUDA kernel pins the work-group size to
-// warp_size/2 * (max_warps_per_thread_block*2) = 1024 threads, which is the
-// launch geometry used below -- no SYCL equivalent is needed at the kernel
-// definition, the constraint is simply honored at the launch site.
 template <typename T, bool skip_single_cut = true>
 void sym_submat_set_combined_kernel( size_t        ntasks,
                                  XCDeviceTask* device_tasks,
@@ -91,9 +87,6 @@ void sym_submat_set_combined_kernel( size_t        ntasks,
         }
 #pragma unroll
         for (int k = 0; k < UNROLL_FACTOR; k++) {
-          // The CUDA source hints the store as streaming (__stcs) to evict
-          // the cache line immediately after write; SYCL has no equivalent
-          // cache-hint store, so this is just a plain write.
           *address[k] = val[k];
         }
       }
@@ -124,9 +117,6 @@ void sym_pack_submat( size_t ntasks, XCDeviceTask* device_tasks, const double* A
   for (int j = 0; j < n_launch; j++) {
     sycl::launch_kernel( stream, blocks, threads, "sym_submat_set_combined_kernel",
       [=](){
-        // T deduces to "const double" here, matching the CUDA call site
-        // where A (a const double*) is forwarded straight into the
-        // templated kernel without an intervening cast.
         sym_submat_set_combined_kernel( ntasks, device_tasks, A, LDA, i, j );
       });
   }
@@ -204,9 +194,6 @@ void asym_submat_set_combined_kernel( size_t        ntasks,
         }
 #pragma unroll
         for (int k = 0; k < UNROLL_FACTOR; k++) {
-          // The CUDA source hints the store as streaming (__stcs) to evict
-          // the cache line immediately after write; SYCL has no equivalent
-          // cache-hint store, so this is just a plain write.
           *address[k] = val[k];
         }
       }
@@ -237,9 +224,6 @@ void asym_pack_submat( size_t ntasks, XCDeviceTask* device_tasks, const double* 
   for (int j = 0; j < n_launch; j++) {
     sycl::launch_kernel( stream, blocks, threads, "asym_submat_set_combined_kernel",
       [=](){
-        // T deduces to "const double" here, matching the CUDA call site
-        // where A (a const double*) is forwarded straight into the
-        // templated kernel without an intervening cast.
         asym_submat_set_combined_kernel( ntasks, device_tasks, A, LDA, i, j );
       });
   }

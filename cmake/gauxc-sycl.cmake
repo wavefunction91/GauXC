@@ -11,64 +11,29 @@
 #
 find_package( SYCL REQUIRED )
 
-# Link against the SYCL runtime, but do NOT inherit its -fsycl interface
-# compile option: that would run the SYCL frontend over every GauXC
-# translation unit, including the large generated host-only sources where it
-# costs a substantial fraction of their compile time and emits no device code.
-# The flag is applied per source by gauxc_sycl_device_sources() instead, while
-# the link still needs it so the device images are gathered. The imported
-# target itself is left untouched -- ExchCXX consumes it and does want the
-# target-wide behavior.
-# $<LINK_ONLY:> only suppresses a dependency's usage requirements for the
-# purposes of linking; INTERFACE_COMPILE_OPTIONS still propagate, and they
-# reach GauXC both directly and transitively through ExchCXX. Clear -fsycl
-# from the imported target itself, once ExchCXX has finished configuring and
-# compiling its own sources with it. Without this the SYCL frontend runs over
-# every GauXC translation unit, including the large generated host-only
-# sources, adding a substantial fraction to their compile time while emitting
-# no device code. gauxc_sycl_device_sources() applies the flag per source, and
-# the link keeps it so the device images are still gathered.
-get_target_property( _sycl_copts SYCL::SYCL INTERFACE_COMPILE_OPTIONS )
-if( _sycl_copts )
-  set( _sycl_copts_keep )
-  foreach( _opt ${_sycl_copts} )
-    if( NOT _opt MATCHES "(^|[:;])-fsycl($|[;>])" )
-      list( APPEND _sycl_copts_keep ${_opt} )
-    endif()
-  endforeach()
-  set_target_properties( SYCL::SYCL PROPERTIES
-    INTERFACE_COMPILE_OPTIONS "${_sycl_copts_keep}" )
-endif()
-
 target_link_libraries( gauxc PUBLIC SYCL::SYCL )
 target_link_options( gauxc PUBLIC -fsycl )
 
-# oneMKL supplies the device BLAS for the SYCL backend. Only the BLAS domain
-# is needed -- MKL::MKL_SYCL is an umbrella over every SYCL domain (LAPACK,
-# DFT, RNG, sparse, stats, VM, data fitting), all of which would be dragged
-# onto the link line. This mirrors how the CUDA backend takes CUDA::cublas
-# rather than the whole toolkit.
-#
-# The host-side BLAS is a separate concern: it is located by
-# gauxc-linalg-modules (BLAS::BLAS) when src/.../host is added, and must not be
-# resolved here.
-#
-# Both halves must agree on the integer interface. oneMKL defaults to ILP64,
-# and mixing the two pulls in libmkl_intel_lp64 and libmkl_intel_ilp64 at once;
-# the duplicate dgemm_ then binds to whichever copy the linker sees first, so a
-# 32-bit call site is read as 64-bit arguments. That surfaces at runtime as
-# "Intel oneMKL ERROR: Parameter 10 was incorrect on entry to DGEMM".
-# MKLConfig keeps a separate cache entry for the SYCL domains, so both the
-# CPU-side (MKL_INTERFACE_FULL) and device-side (MKL_SYCL_INTERFACE_FULL)
-# selections have to be pinned. Keyed off GAUXC_BLAS_PREFER_ILP64 rather than
-# the discovered GAUXC_BLAS_IS_LP64, which is not set until later.
+# oneMKL supplies the device BLAS; the host BLAS is BLAS::BLAS, found
+# separately. Host and device must agree on the integer interface or the
+# duplicate dgemm_ binds to the wrong copy. Re-pinned from the host driver
+# once BLAS_IS_LP64 is discovered.
+function( gauxc_sycl_pin_mkl_interface _is_lp64 )
+  if( _is_lp64 )
+    set( _iface intel_lp64 )
+  else()
+    set( _iface intel_ilp64 )
+  endif()
+  set( MKL_INTERFACE_FULL      ${_iface} CACHE STRING "" FORCE )
+  set( MKL_SYCL_INTERFACE_FULL ${_iface} CACHE STRING "" FORCE )
+endfunction()
+
+# Provisional; re-pinned from the discovered value in the host driver.
 if( GAUXC_BLAS_PREFER_ILP64 )
-  set( _gauxc_mkl_interface intel_ilp64 )
+  gauxc_sycl_pin_mkl_interface( FALSE )
 else()
-  set( _gauxc_mkl_interface intel_lp64 )
+  gauxc_sycl_pin_mkl_interface( TRUE )
 endif()
-set( MKL_INTERFACE_FULL      ${_gauxc_mkl_interface} CACHE STRING "" FORCE )
-set( MKL_SYCL_INTERFACE_FULL ${_gauxc_mkl_interface} CACHE STRING "" FORCE )
 
 if( NOT TARGET MKL::MKL_SYCL::BLAS )
   find_package( MKL CONFIG REQUIRED )
@@ -80,19 +45,9 @@ if( NOT TARGET MKL::MKL_SYCL::BLAS )
     "GauXC SYCL backend requires for its device BLAS." )
 endif()
 
-# LINK_ONLY: MKLConfig attaches -fsycl to its SYCL targets as an interface
-# compile option, which would push the SYCL frontend onto every consuming
-# translation unit, including the large generated host-only sources where it
-# adds substantial compile time and emits no device code. The flag is applied
-# per source by gauxc_sycl_device_sources() below.
-# $<LINK_ONLY:> suppresses a dependency's usage requirements for linking only;
-# INTERFACE_COMPILE_OPTIONS still propagate. MKLConfig puts -fsycl there, so
-# strip it from a private copy of the target rather than inherit it: the flag
-# would otherwise reach every GauXC translation unit, including the large
-# generated host-only sources, where it adds a substantial fraction to their
-# compile time and produces no device code. The entry is wrapped in a
-# COMPILE_LANGUAGE generator expression, hence the match rather than a string
-# compare. gauxc_sycl_device_sources() applies -fsycl per source instead.
+# MKLConfig also puts -fsycl in INTERFACE_COMPILE_OPTIONS; strip it for the
+# same reason as SYCL::SYCL above. Wrapped in a generator expression, hence
+# the regex match.
 get_target_property( _mkl_blas_copts MKL::MKL_SYCL::BLAS INTERFACE_COMPILE_OPTIONS )
 if( _mkl_blas_copts )
   set( _mkl_blas_copts_keep )
@@ -114,7 +69,7 @@ if( GAUXC_ENABLE_ONECCL )
 endif()
 
 
-# --- AoT SYCL target alias pass-through, mirrors ExchCXX's mapping ---
+# AoT target aliases, mirroring ExchCXX's mapping
 set( _GAUXC_SYCL_ALLOWED
   intel_gpu_pvc
   spir64_x86_64
@@ -136,9 +91,7 @@ if( DEFINED GAUXC_SYCL_TARGET AND NOT GAUXC_SYCL_TARGET STREQUAL "" )
   unset( _gauxc_sycl_link_opts )
 
   if( GAUXC_SYCL_TARGET STREQUAL "intel_gpu_pvc" )
-    # These land on a SOURCE COMPILE_OPTIONS property, which does not honor
-    # the SHELL: prefix -- the whole string would be passed as one argument.
-    # Keep each token separate so -Xsycl-target-backend gets its operand.
+    # SOURCE COMPILE_OPTIONS does not honor SHELL:, so keep tokens separate.
     list( APPEND _gauxc_sycl_compile_opts
       -fsycl-targets=spir64_gen
       -Xsycl-target-backend=spir64_gen
@@ -165,31 +118,19 @@ if( DEFINED GAUXC_SYCL_TARGET AND NOT GAUXC_SYCL_TARGET STREQUAL "" )
       "build that would be reported as AoT." )
   endif()
 
-  # AoT compilation is applied per-source rather than to the whole gauxc
-  # target: only the SYCL sources carry device code, and running the AoT
-  # backend over the host-only translation units (notably the generated
-  # Obara-Saika integrals) would cost a full rebuild for no device image.
-  # gauxc_sycl_aot_sources() below stamps the flags onto the SYCL sources.
-  # The link options are PUBLIC: gauxc is a static archive, so device linking
-  # happens when the consuming executable is linked, and that link needs the
-  # same target selection.
+  # Compile options are applied per source; link options are PUBLIC because
+  # gauxc is a static archive and device linking happens in the consumer.
   set( GAUXC_SYCL_AOT_COMPILE_OPTIONS ${_gauxc_sycl_compile_opts} )
   target_link_options( gauxc PUBLIC ${_gauxc_sycl_link_opts} )
 
   message( STATUS "GauXC SYCL AoT enabled for target: ${GAUXC_SYCL_TARGET}" )
 endif()
 
-# Mark the given sources (relative to the calling CMakeLists) as carrying SYCL
-# device code. Only these translation units are compiled with -fsycl and the
-# device-code flags -- running the SYCL frontend over the host-only sources
-# costs a substantial fraction of their compile time and produces no device
-# image. When GAUXC_SYCL_TARGET requests it, the ahead-of-time flags are
-# stamped here too.
+# Mark sources as carrying SYCL device code: only these get -fsycl and the
+# device-code flags.
 function( gauxc_sycl_device_sources )
-  # TARGET_DIRECTORY is required: SOURCE properties are scoped to the directory
-  # that sets them, and these sources are added from subdirectories while the
-  # gauxc target itself is defined in src/. Without it the property is set in a
-  # scope the target never reads, and the flags silently never appear.
+  # TARGET_DIRECTORY is required: SOURCE properties are directory-scoped and
+  # these sources are added from subdirectories, gauxc is defined in src/.
   foreach( _src ${ARGN} )
     get_filename_component( _abs ${_src} ABSOLUTE )
     set_property( SOURCE ${_abs} TARGET_DIRECTORY gauxc
@@ -215,8 +156,7 @@ if( GAUXC_SYCL_ID_QUERIES_FIT_IN_INT )
   list( APPEND GAUXC_SYCL_DEVICE_COMPILE_OPTIONS -fno-sycl-id-queries-fit-in-int )
 endif()
 
-# The collocation kernels alone are ~50 distinct kernels; splitting keeps JIT
-# time and device image size manageable
+# ~50 collocation kernels alone; splitting keeps device image size manageable
 if( GAUXC_SYCL_DEVICE_CODE_SPLIT_PER_KERNEL )
   list( APPEND GAUXC_SYCL_DEVICE_COMPILE_OPTIONS -fsycl-device-code-split=per_kernel )
   target_link_options( gauxc PUBLIC
@@ -224,12 +164,9 @@ if( GAUXC_SYCL_DEVICE_CODE_SPLIT_PER_KERNEL )
   )
 endif()
 
-# Device-side FP model. The matching host-side -fp-model=precise is applied
-# project-wide in the top-level CMakeLists.txt, so host and device agree.
+# Device-side FP model; host side is set project-wide in the top-level file.
 if( GAUXC_HAVE_SYCL_TARGET_FRONTEND_FP_MODEL_PRECISE )
-  # SHELL: is only honored for target-level COMPILE_OPTIONS; on a SOURCE
-  # property the whole string is passed as one argument. Pass the two tokens
-  # separately so -Xsycl-target-frontend picks up its operand.
+  # Tokens kept separate: SOURCE properties do not honor SHELL:.
   list( APPEND GAUXC_SYCL_DEVICE_COMPILE_OPTIONS
     -Xsycl-target-frontend -fp-model=precise )
 endif()

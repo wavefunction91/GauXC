@@ -23,13 +23,6 @@ namespace GauXC {
 
 
 
-// den_shared has 3+!!need_lapl rows, each [warp_size][MGGA_KERNEL_SM_BLOCK+1].
-// The row count depends on the need_lapl template parameter; since need_lapl
-// is a template (compile-time) parameter here, the extent "3+!!need_lapl" is
-// itself a compile-time constant and local_mem() can be sized from it
-// directly, exactly like the CUDA
-// __shared__ double den_shared[3+!!need_lapl][warp_size][MGGA_KERNEL_SM_BLOCK+1]
-// declaration.
 template <bool trial, density_id den_select, bool need_lapl>
 void eval_vvar_mgga_kern( size_t           ntasks,
                            XCDeviceTask* tasks_device) {

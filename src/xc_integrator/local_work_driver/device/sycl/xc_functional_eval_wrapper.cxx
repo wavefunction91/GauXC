@@ -14,9 +14,6 @@
 
 namespace GauXC {
 
-// ExchCXX's SYCL bindings take the queue by pointer (its DEVICE_PARAMS is
-// sycl::queue*), where the CUDA/HIP bindings take a stream by value
-
 void eval_kern_exc_vxc_lda( const functional_type& func, size_t npts,
   const double* rho, double* eps, double* vrho, device_queue queue ) {
 

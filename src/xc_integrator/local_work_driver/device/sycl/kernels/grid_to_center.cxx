@@ -23,19 +23,11 @@ void compute_grid_to_center_dist( int32_t npts, int32_t natoms,
 
     const uint32_t distance_thread_y = sycl::max_warps_per_thread_block / 2;
 
-    // dim 1 <-> CUDA y, dim 2 <-> CUDA x
     ::sycl::range<2> local( distance_thread_y, sycl::warp_size );
     ::sycl::range<2> global(
       util::div_ceil( npts, local[0] * distance_thread_y ) * local[0],
       util::div_ceil( natoms, local[1] ) * local[1] );
 
-    // This kernel is launched over a 2D nd_range (matching the CUDA original's
-    // dim3 threads(warp_size, distance_thread_y)), so it does not go through
-    // the 3D-only launch_kernel/this_item()/local_mem() contract in
-    // sycl_launch.hpp. It still uses the same free-function work-item query
-    // style, just instantiated for 2 dimensions, and group_local_memory_for_
-    // overwrite for the compile-time-sized point_buffer (mirrors the CUDA
-    // __shared__ double3 point_buffer[warp_size]).
     GAUXC_SYCL_ERROR( "Grid-To-Center Launch Failed",
       stream.submit([&](::sycl::handler& cgh) {
         cgh.parallel_for( ::sycl::nd_range<2>(global, local),

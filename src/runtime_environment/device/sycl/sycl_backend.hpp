@@ -47,10 +47,7 @@ struct SYCLBackend : public DeviceBackend {
   ~SYCLBackend() noexcept;
 
   // Execution management
-  // All queues share a single context/device so that USM allocations made
-  // against the master queue are valid on the BLAS pool queues
-  ::sycl::device  device;
-  ::sycl::context context;
+  ::sycl::device device;
 
   std::shared_ptr<util::sycl_queue>    master_stream = nullptr;
   std::shared_ptr<util::onemkl_handle> master_handle = nullptr;

@@ -42,10 +42,6 @@ ccl::reduction get_ccl_op( ReductionOp op ) {
 
 }
 
-// Returns the SYCLBackend bound to this runtime, or throws. oneCCL's
-// create_communicator (unlike ncclCommInitRank) must be bound to a concrete
-// sycl::device / sycl::context at construction time, so the reduction driver
-// needs backend access up front rather than only at collective-call time.
 SYCLBackend* get_sycl_backend_from_runtime( const RuntimeEnvironment& rt ) {
   auto* backend =
     dynamic_cast<SYCLBackend*>(detail::as_device_runtime(rt).device_backend());
@@ -53,13 +49,6 @@ SYCLBackend* get_sycl_backend_from_runtime( const RuntimeEnvironment& rt ) {
   return backend;
 }
 
-// SYCL equivalent of get_cuda_stream_from_optional_args: pulls a
-// util::sycl_queue out of the type-erased device_queue when the caller
-// supplied one. The CUDA driver's "stream == 0 -> cudaDeviceSynchronize()"
-// fallback has no SYCL analogue (there is no default/null queue), so when no
-// queue is supplied we fall back to the SYCLBackend's own master queue -
-// the same queue whose device/context were used to build the communicator -
-// rather than synchronizing the whole device.
 util::sycl_queue* get_sycl_queue_from_optional_args( std::any& args,
   SYCLBackend* backend ) {
 
@@ -81,14 +70,25 @@ OneCCLReductionDriver::OneCCLReductionDriver(const RuntimeEnvironment& rt) :
   DeviceReductionDriver(rt) {
 
   auto* backend = get_sycl_backend_from_runtime(rt);
+  auto  context = backend->master_stream->queue.get_context();
   oneccl_comm_ = std::make_shared<util::oneccl_comm>( rt.comm(),
-    backend->device, backend->context );
+    backend->device, context );
+  ccl_streams_ =
+    std::make_shared<std::unordered_map<::sycl::queue, ccl::stream>>();
 
 }
 
 
 OneCCLReductionDriver::~OneCCLReductionDriver() noexcept = default;
 OneCCLReductionDriver::OneCCLReductionDriver(const OneCCLReductionDriver&) = default;
+
+
+ccl::stream& OneCCLReductionDriver::ccl_stream_for( ::sycl::queue& q ) {
+  auto it = ccl_streams_->find(q);
+  if( it == ccl_streams_->end() )
+    it = ccl_streams_->emplace( q, ccl::create_stream(q) ).first;
+  return it->second;
+}
 
 
 void OneCCLReductionDriver::allreduce_typeerased( const void* src, void* dest,
@@ -101,7 +101,7 @@ void OneCCLReductionDriver::allreduce_typeerased( const void* src, void* dest,
 
   synchronize();
   try {
-    auto stream = ccl::create_stream( queue->queue );
+    auto& stream = ccl_stream_for( queue->queue );
     ccl::allreduce( src, dest, size, get_ccl_datatype(idx),
       get_ccl_op(op), *oneccl_comm_, stream ).wait();
   } catch( const ccl::exception& e ) {
@@ -120,7 +120,7 @@ void OneCCLReductionDriver::allreduce_inplace_typeerased( void* data, size_t siz
 
   synchronize();
   try {
-    auto stream = ccl::create_stream( queue->queue );
+    auto& stream = ccl_stream_for( queue->queue );
     ccl::allreduce( data, data, size, get_ccl_datatype(idx),
       get_ccl_op(op), *oneccl_comm_, stream ).wait();
   } catch( const ccl::exception& e ) {

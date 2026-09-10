@@ -14,9 +14,7 @@
 
 namespace GauXC {
 
-/// Device-scope relaxed atomic add on global memory. Matches the ordering
-/// guarantees CUDA's atomicAdd provides to the kernels ported from the CUDA
-/// backend (i.e. none beyond atomicity of the update itself).
+/// Device-scope relaxed atomic add on global memory.
 template <typename T>
 inline void atomic_add_device( T* addr, T val ) {
   ::sycl::atomic_ref< T, ::sycl::memory_order::relaxed,
