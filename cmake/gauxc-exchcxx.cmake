@@ -3,12 +3,6 @@ if( NOT ${ExchCXX_FOUND} )
 
   include( gauxc-dep-versions )
 
-  # SYCL bindings only exist on the PR branch for now
-  if( GAUXC_HAS_SYCL )
-    set( GAUXC_EXCHCXX_REPOSITORY ${GAUXC_EXCHCXX_SYCL_REPOSITORY} )
-    set( GAUXC_EXCHCXX_REVISION   ${GAUXC_EXCHCXX_SYCL_REVISION}   )
-  endif()
-
   message( STATUS "Could not find ExchCXX... Building" )
   message( STATUS "EXCHCXX REPO = ${GAUXC_EXCHCXX_REPOSITORY}" )
   message( STATUS "EXCHCXX REV  = ${GAUXC_EXCHCXX_REVISION}"   )

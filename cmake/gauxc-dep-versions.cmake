@@ -7,13 +7,8 @@ set( GAUXC_CUB_REVISION   1.10.0 )
 set( GAUXC_CUTLASS_REPOSITORY https://github.com/NVIDIA/cutlass.git )
 set( GAUXC_CUTLASS_REVISION v2.10.0 )
 
-#set( GAUXC_EXCHCXX_REPOSITORY https://github.com/wavefunction91/ExchCXX.git )
-#set( GAUXC_EXCHCXX_REVISION   67be5c6ebe1e5b1a32f2c3fd1c5bf4cbfe48f769 )
-
-# ExchCXX SYCL bindings are not yet on ExchCXX master; they live in
-# wavefunction91/ExchCXX#52 (abagusetty/ExchCXX @ cleanup-sycl)
-set( GAUXC_EXCHCXX_REPOSITORY https://github.com/abagusetty/ExchCXX.git )
-set( GAUXC_EXCHCXX_REVISION   bd157899777fe2bf887f2642a6dc9eb9a0df4790 )
+set( GAUXC_EXCHCXX_REPOSITORY https://github.com/wavefunction91/ExchCXX.git )
+set( GAUXC_EXCHCXX_REVISION   67be5c6ebe1e5b1a32f2c3fd1c5bf4cbfe48f769 )
 
 set( GAUXC_GAU2GRID_REPOSITORY https://github.com/psi4/gau2grid.git )
 set( GAUXC_GAU2GRID_REVISION   v2.0.9 )
