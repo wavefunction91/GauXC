@@ -118,9 +118,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
   // MGGA constants
   const bool needs_laplacian = func.needs_laplacian();
-  if(needs_laplacian and is_uks) {
-    GAUXC_GENERIC_EXCEPTION("UKS Gradients + Laplacian Dependent MGGAs is Not Yet Implemented");
-  }
 
   // Misc KS settings
   IntegratorSettingsEXC_GRAD exc_grad_settings;
@@ -225,7 +222,8 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     double* xZmat_x = nullptr;
     double* xZmat_y = nullptr;
     double* xZmat_z = nullptr;
-    double* xLmat   = nullptr;   // 2 P lapl(B), laplacian mGGAs only
+    double* xLmat   = nullptr;   // fac P lapl(B), laplacian mGGAs only
+    double* xZLmat  = nullptr;
 
     auto* eps        = host_data.eps.data();
     auto* gamma      = host_data.gamma.data();
@@ -369,6 +367,11 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         xLmat = host_data.zmat.data() + 4 * spin_dim_scal * npts * nbe;
         lwd->eval_xmat( npts, nbf, nbe, submat_map, xmat_fac, Ps, ldps,
                         lbasis_eval, nbe, xLmat, nbe, nbe_scr );
+        if( is_uks ) {
+          xZLmat = xLmat + npts * nbe;
+          lwd->eval_xmat( npts, nbf, nbe, submat_map, xmat_fac, Pz, ldpz,
+                          lbasis_eval, nbe, xZLmat, nbe, nbe_scr );
+        }
       }
       if(is_rks)
         lwd->eval_uvvar_mgga_rks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
@@ -567,27 +570,54 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
             }
 
             if( needs_laplacian ) {
-              const double vlapl_ipt = weights[ipt] * vlapl[ipt];
               const double dlbx = dlgradbasis_x_eval[mu_i];
               const double dlby = dlgradbasis_y_eval[mu_i];
               const double dlbz = dlgradbasis_z_eval[mu_i];
-              const double xL   = xLmat[mu_i];
 
-              // d/dA lapl(rho) = -2 [ X d_x lapl(B) + d_x B (2P lapl(B))
-              //                       + 2 sum_c (hess B)_xc X_c ].
-              // The middle term pairs the bare gradient with the
-              // density-matrix-contracted laplacian. Pairing them the
-              // other way round -- (2P d_x B) against lapl(B) -- is equal
-              // only after summing over EVERY basis function, so it left
-              // the total gradient and translational invariance intact
-              // while putting the wrong force on each individual atom.
-              d2_term_x = xN * dlbx + dbx * xL + 2.0*d2_term_x;
-              d2_term_y = xN * dlby + dby * xL + 2.0*d2_term_y;
-              d2_term_z = xN * dlbz + dbz * xL + 2.0*d2_term_z;
+              // The tau branch above leaves d2_term_* holding the Z term
+              // when polarized, so rebuild what this block needs rather
+              // than reuse it.
+              const double hN_x = d2bxx * xNx + d2bxy * xNy + d2bxz * xNz;
+              const double hN_y = d2bxy * xNx + d2byy * xNy + d2byz * xNz;
+              const double hN_z = d2bxz * xNx + d2byz * xNy + d2bzz * xNz;
 
-              g_acc_x += vlapl_ipt * d2_term_x;
-              g_acc_y += vlapl_ipt * d2_term_y;
-              g_acc_z += vlapl_ipt * d2_term_z;
+              // d/dA lapl(rho) = -2 [ X d_x lapl(B) + d_x B (fac P lapl(B))
+              //                       + 2 sum_c (hess B)_xc X_c ]
+              const double xL = xLmat[mu_i];
+              const double lN_x = xN * dlbx + dbx * xL + 2.0*hN_x;
+              const double lN_y = xN * dlby + dby * xL + 2.0*hN_y;
+              const double lN_z = xN * dlbz + dbz * xL + 2.0*hN_z;
+
+              if(is_rks) {
+                const double vlapl_ipt = weights[ipt] * vlapl[ipt];
+                g_acc_x += vlapl_ipt * lN_x;
+                g_acc_y += vlapl_ipt * lN_y;
+                g_acc_z += vlapl_ipt * lN_z;
+              } else {
+                // Same n / m_z transformation the LDA, GGA and tau blocks
+                // above use: rho_alpha = (rho_s + rho_z)/2.
+                const double vlaplp_ipt = weights[ipt] * vlapl[spin_dim_scal * ipt + 0];
+                const double vlaplm_ipt = weights[ipt] * vlapl[spin_dim_scal * ipt + 1];
+                const double vlapln_ipt = vlaplp_ipt + vlaplm_ipt;
+                const double vlaplz_ipt = vlaplp_ipt - vlaplm_ipt;
+
+                g_acc_x += 0.5 * vlapln_ipt * lN_x;
+                g_acc_y += 0.5 * vlapln_ipt * lN_y;
+                g_acc_z += 0.5 * vlapln_ipt * lN_z;
+
+                const double hZ_x = d2bxx * xZx + d2bxy * xZy + d2bxz * xZz;
+                const double hZ_y = d2bxy * xZx + d2byy * xZy + d2byz * xZz;
+                const double hZ_z = d2bxz * xZx + d2byz * xZy + d2bzz * xZz;
+
+                const double xZL = xZLmat[mu_i];
+                const double lZ_x = xZ * dlbx + dbx * xZL + 2.0*hZ_x;
+                const double lZ_y = xZ * dlby + dby * xZL + 2.0*hZ_y;
+                const double lZ_z = xZ * dlbz + dbz * xZL + 2.0*hZ_z;
+
+                g_acc_x += 0.5 * vlaplz_ipt * lZ_x;
+                g_acc_y += 0.5 * vlaplz_ipt * lZ_y;
+                g_acc_z += 0.5 * vlaplz_ipt * lZ_z;
+              }
             }
           }
         }
