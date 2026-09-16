@@ -80,6 +80,20 @@ public:
   exx_type      eval_exx     ( const MatrixType&, 
                                const IntegratorSettingsEXX& = IntegratorSettingsEXX{} );
 
+  /**
+   *  @brief Contract the XC kernel with a trial density matrix.
+   *
+   *  RKS: eval_fxc_contraction( P, tP ).
+   *  UKS: eval_fxc_contraction( Ps, Pz, tPs, tPz ), returning ( FXCs, FXCz ).
+   *
+   *  Exc depends only on the symmetric part of a density matrix, so the
+   *  kernel is contracted with the symmetric part (tP + tP^T)/2 of each
+   *  trial density; any antisymmetric part contributes exactly zero.
+   *
+   *  In particular, for linear response the trial density should be the
+   *  perturbed density P1 = T + T^T. Passing a one-sided transition density
+   *  T instead yields half of that response.
+   */
   fxc_contraction_type_rks  eval_fxc_contraction ( const MatrixType&, const MatrixType&,
                                   const IntegratorSettingsXC& = IntegratorSettingsXC{} );
   fxc_contraction_type_uks  eval_fxc_contraction ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,
