@@ -134,6 +134,53 @@ void test_fxc_contractioin(ExecutionSpace ex, const RuntimeEnvironment& rt,
     CHECK(FXCz_diff_nrm / basis.nbf() < 1e-10);
   
   }
+
+  // The stored trial densities are symmetric, so the comparison above
+  // cannot see how a non-symmetric trial density (e.g. a one-sided
+  // transition density) is handled. Exc depends only on the symmetric
+  // part of a density matrix, so the contraction must act on (M + M^T)/2
+  // and vanish identically along (M - M^T)/2, at every rung. The gradient
+  // channel of GGAs and meta-GGAs used to violate both, see
+  // https://github.com/wavefunction91/GauXC/issues/225.
+  //
+  // M is built so that (M + M^T)/2 equals the stored trial density exactly
+  // (strict upper triangle doubled, lower triangle zero), so F[M] can be
+  // checked against the same reference data.
+  auto make_nonsymmetric = []( const matrix_type& A ) -> matrix_type {
+    matrix_type M = 2.0 * A.triangularView<Eigen::StrictlyUpper>().toDenseMatrix();
+    M.diagonal() = A.diagonal();
+    return M;
+  };
+  auto antisymmetric_part = []( const matrix_type& M ) -> matrix_type {
+    return 0.5 * ( M - M.transpose() );
+  };
+
+  if (rks) {
+    matrix_type tM = make_nonsymmetric(tP);
+    matrix_type tA = antisymmetric_part(tM);
+    REQUIRE( tA.norm() > 0.1 * tP.norm() );
+
+    auto FXC_M = integrator.eval_fxc_contraction(P, tM);
+    CHECK((FXC_M - FXC_ref).norm() / basis.nbf() < 1e-10);
+
+    auto FXC_A = integrator.eval_fxc_contraction(P, tA);
+    CHECK(FXC_A.norm() / basis.nbf() < 1e-10);
+  } else if (uks) {
+    matrix_type tMs = make_nonsymmetric(tP);
+    matrix_type tMz = make_nonsymmetric(tPz);
+    matrix_type tAs = antisymmetric_part(tMs);
+    matrix_type tAz = antisymmetric_part(tMz);
+    REQUIRE( tAs.norm() > 0.1 * tP.norm()  );
+    REQUIRE( tAz.norm() > 0.1 * tPz.norm() );
+
+    auto [FXCs_M, FXCz_M] = integrator.eval_fxc_contraction(P, Pz, tMs, tMz);
+    CHECK((FXCs_M - FXC_ref ).norm() / basis.nbf() < 1e-10);
+    CHECK((FXCz_M - FXCz_ref).norm() / basis.nbf() < 1e-10);
+
+    auto [FXCs_A, FXCz_A] = integrator.eval_fxc_contraction(P, Pz, tAs, tAz);
+    CHECK(FXCs_A.norm() / basis.nbf() < 1e-10);
+    CHECK(FXCz_A.norm() / basis.nbf() < 1e-10);
+  }
 }
 
 void test_integrator_2nd(std::string reference_file, functional_type& func, PruningScheme pruning_scheme) {
