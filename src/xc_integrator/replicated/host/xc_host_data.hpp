@@ -51,6 +51,7 @@ struct XCHostData {
   std::vector<F> FXC_A;
   std::vector<F> FXC_B;
   std::vector<F> FXC_C;
+  std::vector<F> FXC_D;
   std::vector<F> tden_scr;
   std::vector<F> ttau;
   std::vector<F> tlapl;

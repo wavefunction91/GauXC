@@ -155,10 +155,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   const auto& mol   = this->load_balancer_->molecule();
 
   const bool needs_laplacian = func.needs_laplacian(); 
-  // not suppport laplacian yet
-  if( needs_laplacian ) {
-    GAUXC_GENERIC_EXCEPTION("Laplacian Not Supported Yet for FXC Contraction");
-  }
 
   // Get basis map
   BasisSetMap basis_map(basis,mol);
@@ -292,6 +288,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         host_data.v2gammalapl.resize(npts * spin_dim_rhogamma);
         host_data.v2lapltau  .resize(npts * spin_dim_rhotau);
         host_data.tlapl      .resize(npts * spin_dim_scal);
+        host_data.FXC_D      .resize(npts * spin_dim_scal);
 
       } else {
         host_data.basis_eval .resize( 4 * npts * nbe ); // basis + grad (3)
@@ -336,6 +333,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     auto* FXC_A          = host_data.FXC_A.data();
     auto* FXC_B          = host_data.FXC_B.data();
     auto* FXC_C          = host_data.FXC_C.data();
+    // delta v_lapl; null for functionals without a Laplacian, which is
+    // what switches the Laplacian terms off downstream
+    auto* FXC_D          = needs_laplacian ? host_data.FXC_D.data() : nullptr;
+    auto* v2rholapl_t    = needs_laplacian ? v2rholapl   : nullptr;
+    auto* v2gammalapl_t  = needs_laplacian ? v2gammalapl : nullptr;
+    auto* v2lapl2_t      = needs_laplacian ? v2lapl2     : nullptr;
+    auto* v2lapltau_t    = needs_laplacian ? v2lapltau   : nullptr;
 
 
     value_type* dbasis_x_eval = nullptr;
@@ -491,9 +495,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         lwd->eval_uvvar_mgga_rks(  npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
           dbasis_z_eval, lbasis_eval, zmat, nbe, mmat_x, mmat_y, mmat_z, 
           nbe, tden_eval, tdden_x_eval, tdden_y_eval, tdden_z_eval, gamma, ttau, tlapl);
-      lwd->eval_tmat_mgga_vxc_rks( npts, vgamma, v2rho2, v2rhogamma, v2rholapl, v2rhotau, v2gamma2, 
-        v2gammalapl, v2gammatau, v2lapl2, v2lapltau, v2tau2, tden_eval, tdden_x_eval, 
-        tdden_y_eval, tdden_z_eval, ttau, dden_x_eval, dden_y_eval, dden_z_eval, FXC_A, FXC_B, FXC_C );
+      lwd->eval_tmat_mgga_vxc_rks( npts, vgamma, v2rho2, v2rhogamma, v2rholapl_t, v2rhotau, v2gamma2, 
+        v2gammalapl_t, v2gammatau, v2lapl2_t, v2lapltau_t, v2tau2, tden_eval, tdden_x_eval, 
+        tdden_y_eval, tdden_z_eval, ttau, tlapl, dden_x_eval, dden_y_eval, dden_z_eval, FXC_A, FXC_B, FXC_C, FXC_D );
       } else if (is_uks) {
       // tgamma is not needed since it has different definitions than gamma
       // gamma  = nabla rho * nabla rho, but tgamma = nabla trho * nabla rho, not both trho
@@ -501,9 +505,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         dbasis_z_eval, lbasis_eval, zmat, nbe, zmat_z, nbe, 
         mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe, 
         tden_eval, tdden_x_eval, tdden_y_eval, tdden_z_eval, gamma, ttau, tlapl);
-      lwd->eval_tmat_mgga_vxc_uks( npts, vgamma, v2rho2, v2rhogamma, v2rholapl, v2rhotau, v2gamma2, 
-        v2gammalapl, v2gammatau, v2lapl2, v2lapltau, v2tau2, tden_eval, tdden_x_eval, 
-        tdden_y_eval, tdden_z_eval, ttau, dden_x_eval, dden_y_eval, dden_z_eval, FXC_A, FXC_B, FXC_C );
+      lwd->eval_tmat_mgga_vxc_uks( npts, vgamma, v2rho2, v2rhogamma, v2rholapl_t, v2rhotau, v2gamma2, 
+        v2gammalapl_t, v2gammatau, v2lapl2_t, v2lapltau_t, v2tau2, tden_eval, tdden_x_eval, 
+        tdden_y_eval, tdden_z_eval, ttau, tlapl, dden_x_eval, dden_y_eval, dden_z_eval, FXC_A, FXC_B, FXC_C, FXC_D );
       }
     } else if ( func.is_gga() ) {
       if(is_rks) {
@@ -555,6 +559,12 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         if(not is_rks) FXC_C[sds*i+1] *= weights[i];
       }
     }
+    if( FXC_D ){
+      for( int32_t i = 0; i < npts; ++i) {
+        FXC_D[sds*i] *= weights[i];
+        if(not is_rks) FXC_D[sds*i+1] *= weights[i];
+      }
+    }
 
     // Scalar integrations
     double NEL_local = 0.0;
@@ -570,16 +580,25 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Evaluate Z matrix for VXC
     if( func.is_mgga() ) {
       if(is_rks) {
-        // Because we do not support Laplacian, so mgga will do the same operation as GGA
+        // The GGA part, then delta v_lapl exactly where the ground-state
+        // potential puts v_lapl: D lapl(chi) in Z, D grad(chi) in M
         lwd->eval_zmat_gga_vxc_rks_ts( npts, nbe, FXC_A, FXC_B, basis_eval, dbasis_x_eval,
                                 dbasis_y_eval, dbasis_z_eval, zmat, nbe);
-        lwd->eval_mmat_mgga_vxc_rks( npts, nbe, FXC_C, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
+        if( FXC_D )
+          for( int32_t i = 0; i < npts; ++i )
+            blas::axpy( nbe, FXC_D[i], lbasis_eval + size_t(i)*nbe, 1, zmat + size_t(i)*nbe, 1 );
+        lwd->eval_mmat_mgga_vxc_rks( npts, nbe, FXC_C, FXC_D, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
                                      mmat_x, mmat_y, mmat_z, nbe);
       } else if (is_uks) {
-        // Because we do not support Laplacian, so mgga will do the same operation as GGA
+        // as for RKS, per spin (alpha in Z, beta in Z_z at this stage)
         lwd->eval_zmat_gga_vxc_uks_ts( npts, nbe, FXC_A, FXC_B, basis_eval, dbasis_x_eval,
                                 dbasis_y_eval, dbasis_z_eval, zmat, nbe, zmat_z, nbe);
-        lwd->eval_mmat_mgga_vxc_uks_ts( npts, nbe, FXC_C, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
+        if( FXC_D )
+          for( int32_t i = 0; i < npts; ++i ) {
+            blas::axpy( nbe, FXC_D[2*i],   lbasis_eval + size_t(i)*nbe, 1, zmat   + size_t(i)*nbe, 1 );
+            blas::axpy( nbe, FXC_D[2*i+1], lbasis_eval + size_t(i)*nbe, 1, zmat_z + size_t(i)*nbe, 1 );
+          }
+        lwd->eval_mmat_mgga_vxc_uks_ts( npts, nbe, FXC_C, FXC_D, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
                                      mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe);
       }
     }

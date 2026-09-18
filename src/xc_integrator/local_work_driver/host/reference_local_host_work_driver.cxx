@@ -1222,11 +1222,11 @@ void ReferenceLocalHostWorkDriver::eval_tmat_gga_vxc_uks( size_t npts, const dou
 
 
 void ReferenceLocalHostWorkDriver::eval_tmat_mgga_vxc_rks( size_t npts, const double* vgamma,
-  const double* v2rho2, const double* v2rhogamma, [[maybe_unused]] const double* v2rholapl, const double* v2rhotau,
-  const double* v2gamma2, [[maybe_unused]] const double* v2gammalapl, const double* v2gammatau,
-  [[maybe_unused]] const double* v2lapl2, [[maybe_unused]] const double* v2lapltau, const double* v2tau2, 
-  const double* trho, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, 
-  const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C){
+  const double* v2rho2, const double* v2rhogamma, const double* v2rholapl, const double* v2rhotau,
+  const double* v2gamma2, const double* v2gammalapl, const double* v2gammatau,
+  const double* v2lapl2, const double* v2lapltau, const double* v2tau2, 
+  const double* trho, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, const double* tlapl,
+  const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C, double* D){
 
     for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -1237,6 +1237,17 @@ void ReferenceLocalHostWorkDriver::eval_tmat_mgga_vxc_rks( size_t npts, const do
       C[i] = v2rhotau[i] * trho[i] + 2 * v2gammatau[i] * tgamma + v2tau2[i] * ttau[i];
   
       auto B_coef = v2rhogamma[i] * trho[i] + 2 * v2gamma2[i] * tgamma + v2gammatau[i] * ttau[i];
+
+      // Laplacian-dependent functionals: the trial Laplacian enters every
+      // channel, and D = delta v_lapl is a fourth one
+      if( v2rholapl != nullptr ) {
+        const auto tl = tlapl[i];
+        A[i]   += v2rholapl[i]   * tl;
+        C[i]   += v2lapltau[i]   * tl;
+        B_coef += v2gammalapl[i] * tl;
+        D[i] = v2rholapl[i] * trho[i] + 2 * v2gammalapl[i] * tgamma + v2lapl2[i] * tl
+             + v2lapltau[i] * ttau[i];
+      }
   
       B[i * 3]     = 2 * B_coef * dden_x_eval[i] + 2 * vgamma[i] * tdden_x_eval[i];
       B[i * 3 + 1] = 2 * B_coef * dden_y_eval[i] + 2 * vgamma[i] * tdden_y_eval[i];
@@ -1251,12 +1262,10 @@ void ReferenceLocalHostWorkDriver::eval_tmat_mgga_vxc_uks( size_t npts, const do
   const double* v2rho2, const double* v2rhogamma, const double* v2rholapl, const double* v2rhotau, 
   const double* v2gamma2, const double* v2gammalapl, const double* v2gammatau,
   const double* v2lapl2, const double* v2lapltau, const double* v2tau2, 
-  const double* trho, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, 
-  const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C){
+  const double* trho, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, const double* tlapl,
+  const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C, double* D){
 
-  // Laplacian is not supported now
-  if( v2rholapl != nullptr ||  v2gammalapl != nullptr ||  v2lapltau != nullptr ||  v2lapl2 != nullptr )
-      GAUXC_GENERIC_EXCEPTION(std::string("Laplacian not supported"));
+  const bool lapl = v2rholapl != nullptr;
 
   for( int32_t i = 0; i < (int32_t)npts; ++i ) {
 
@@ -1328,19 +1337,55 @@ void ReferenceLocalHostWorkDriver::eval_tmat_mgga_vxc_uks( size_t npts, const do
     C[2 * i + 1] = v2rhotau_b_b * trho_b + 2 * v2gammatau_bb_b * tgamma_bb + v2gammatau_ab_b * tgamma_ab + v2tau2_b_b * ttau_b
                 +  v2rhotau_a_b * trho_a + 2 * v2gammatau_aa_b * tgamma_aa + v2tau2_a_b * ttau_a;
 
+    // Laplacian-dependent functionals. Libxc orders the mixed blocks with
+    // the non-Laplacian variable first (rho_x lapl_y, sigma_xy lapl_z)
+    // and puts lapl before tau (lapl_x tau_y).
+    double tl_a = 0., tl_b = 0.;
+    double v2gammalapl_aa_a = 0., v2gammalapl_aa_b = 0., v2gammalapl_ab_a = 0.,
+           v2gammalapl_ab_b = 0., v2gammalapl_bb_a = 0., v2gammalapl_bb_b = 0.;
+    if( lapl ) {
+      tl_a = tlapl[2*i]; tl_b = tlapl[2*i+1];
+      const auto v2rholapl_a_a = v2rholapl[4*i],   v2rholapl_a_b = v2rholapl[4*i+1];
+      const auto v2rholapl_b_a = v2rholapl[4*i+2], v2rholapl_b_b = v2rholapl[4*i+3];
+      v2gammalapl_aa_a = v2gammalapl[6*i];   v2gammalapl_aa_b = v2gammalapl[6*i+1];
+      v2gammalapl_ab_a = v2gammalapl[6*i+2]; v2gammalapl_ab_b = v2gammalapl[6*i+3];
+      v2gammalapl_bb_a = v2gammalapl[6*i+4]; v2gammalapl_bb_b = v2gammalapl[6*i+5];
+      const auto v2lapl2_a_a = v2lapl2[3*i], v2lapl2_a_b = v2lapl2[3*i+1], v2lapl2_b_b = v2lapl2[3*i+2];
+      const auto v2lapltau_a_a = v2lapltau[4*i],   v2lapltau_a_b = v2lapltau[4*i+1];
+      const auto v2lapltau_b_a = v2lapltau[4*i+2], v2lapltau_b_b = v2lapltau[4*i+3];
+
+      A[2*i]   += v2rholapl_a_a * tl_a + v2rholapl_a_b * tl_b;
+      A[2*i+1] += v2rholapl_b_a * tl_a + v2rholapl_b_b * tl_b;
+      C[2*i]   += v2lapltau_a_a * tl_a + v2lapltau_b_a * tl_b;
+      C[2*i+1] += v2lapltau_a_b * tl_a + v2lapltau_b_b * tl_b;
+
+      D[2*i]   = v2rholapl_a_a * trho_a + v2rholapl_b_a * trho_b
+               + 2 * v2gammalapl_aa_a * tgamma_aa + v2gammalapl_ab_a * tgamma_ab + 2 * v2gammalapl_bb_a * tgamma_bb
+               + v2lapl2_a_a * tl_a + v2lapl2_a_b * tl_b
+               + v2lapltau_a_a * ttau_a + v2lapltau_a_b * ttau_b;
+      D[2*i+1] = v2rholapl_a_b * trho_a + v2rholapl_b_b * trho_b
+               + 2 * v2gammalapl_aa_b * tgamma_aa + v2gammalapl_ab_b * tgamma_ab + 2 * v2gammalapl_bb_b * tgamma_bb
+               + v2lapl2_a_b * tl_a + v2lapl2_b_b * tl_b
+               + v2lapltau_b_a * ttau_a + v2lapltau_b_b * ttau_b;
+    }
+
     auto B_coef1 = v2rhogamma_a_aa * trho_a + 2 * v2gamma2_aa_aa * tgamma_aa + v2gamma2_aa_ab * tgamma_ab + v2gammatau_aa_a * ttau_a
-                +  v2rhogamma_b_aa * trho_b + 2 * v2gamma2_aa_bb * tgamma_bb + v2gammatau_aa_b * ttau_b;
+                +  v2rhogamma_b_aa * trho_b + 2 * v2gamma2_aa_bb * tgamma_bb + v2gammatau_aa_b * ttau_b
+                +  v2gammalapl_aa_a * tl_a + v2gammalapl_aa_b * tl_b;
     auto B_coef2 = v2rhogamma_a_ab * trho_a + 2 * v2gamma2_aa_ab * tgamma_aa + v2gamma2_ab_ab * tgamma_ab + v2gammatau_ab_a * ttau_a
-                +  v2rhogamma_b_ab * trho_b + 2 * v2gamma2_ab_bb * tgamma_bb + v2gammatau_ab_b * ttau_b;
+                +  v2rhogamma_b_ab * trho_b + 2 * v2gamma2_ab_bb * tgamma_bb + v2gammatau_ab_b * ttau_b
+                +  v2gammalapl_ab_a * tl_a + v2gammalapl_ab_b * tl_b;
 
     B[i * 6]     = 2 * B_coef1 * dden_x_eval_a + B_coef2 * dden_x_eval_b + 2 * vgamma_aa * tdden_x_eval_a + vgamma_ab * tdden_x_eval_b;
     B[i * 6 + 1] = 2 * B_coef1 * dden_y_eval_a + B_coef2 * dden_y_eval_b + 2 * vgamma_aa * tdden_y_eval_a + vgamma_ab * tdden_y_eval_b;
     B[i * 6 + 2] = 2 * B_coef1 * dden_z_eval_a + B_coef2 * dden_z_eval_b + 2 * vgamma_aa * tdden_z_eval_a + vgamma_ab * tdden_z_eval_b;
 
     B_coef1 = v2rhogamma_b_bb * trho_b + 2 * v2gamma2_bb_bb * tgamma_bb + v2gamma2_ab_bb * tgamma_ab + v2gammatau_bb_b * ttau_b
-            + v2rhogamma_a_bb * trho_a + 2 * v2gamma2_aa_bb * tgamma_aa + v2gammatau_bb_a * ttau_a;
+            + v2rhogamma_a_bb * trho_a + 2 * v2gamma2_aa_bb * tgamma_aa + v2gammatau_bb_a * ttau_a
+            + v2gammalapl_bb_a * tl_a + v2gammalapl_bb_b * tl_b;
     B_coef2 = v2rhogamma_b_ab * trho_b + 2 * v2gamma2_ab_bb * tgamma_bb + v2gamma2_ab_ab * tgamma_ab + v2gammatau_ab_b * ttau_b
-            + v2rhogamma_a_ab * trho_a + 2 * v2gamma2_aa_ab * tgamma_aa + v2gammatau_ab_a * ttau_a;
+            + v2rhogamma_a_ab * trho_a + 2 * v2gamma2_aa_ab * tgamma_aa + v2gammatau_ab_a * ttau_a
+            + v2gammalapl_ab_a * tl_a + v2gammalapl_ab_b * tl_b;
 
     B[i * 6 + 3] = 2 * B_coef1 * dden_x_eval_b + B_coef2 * dden_x_eval_a + 2 * vgamma_bb * tdden_x_eval_b + vgamma_ab * tdden_x_eval_a;
     B[i * 6 + 4] = 2 * B_coef1 * dden_y_eval_b + B_coef2 * dden_y_eval_a + 2 * vgamma_bb * tdden_y_eval_b + vgamma_ab * tdden_y_eval_a;
