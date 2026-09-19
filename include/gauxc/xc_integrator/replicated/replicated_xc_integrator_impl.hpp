@@ -80,6 +80,11 @@ protected:
 
   virtual void eval_exc_grad_( int64_t m, int64_t n, const value_type* P, int64_t ldp, 
                                value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings ) = 0;
+  virtual void eval_exc_hess_( int64_t m, int64_t n, const value_type* P, int64_t ldp,
+                              value_type* EXC_HESS, const IntegratorSettingsXC& ks_settings ) {
+    GAUXC_GENERIC_EXCEPTION("EXC Hessian Not Implemented For This Integrator");
+  }
+
   virtual void eval_exc_grad_( int64_t m, int64_t n, const value_type* P, int64_t ldps, 
                                const value_type* Pz, int64_t lpdz, value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual void eval_exx_( int64_t m, int64_t n, const value_type* P,
@@ -155,6 +160,11 @@ public:
 
   void eval_exc_grad( int64_t m, int64_t n, const value_type* P, int64_t ldp, 
                       value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings );
+  void eval_exc_hess( int64_t m, int64_t n, const value_type* P, int64_t ldp,
+                     value_type* EXC_HESS, const IntegratorSettingsXC& ks_settings ) {
+    eval_exc_hess_(m, n, P, ldp, EXC_HESS, ks_settings);
+  }
+
   void eval_exc_grad( int64_t m, int64_t n, const value_type* Ps, int64_t ldps, 
                       const value_type* Pz, int64_t ldpz, value_type* EXC_GRAD, const IntegratorSettingsXC& ks_settings );
 

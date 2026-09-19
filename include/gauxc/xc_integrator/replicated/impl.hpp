@@ -176,6 +176,21 @@ typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type
 }
 
 template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::exc_hess_type
+  ReplicatedXCIntegrator<MatrixType>::eval_exc_hess_( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+
+  const size_t n3 = 3*pimpl_->load_balancer().molecule().natoms();
+  std::vector<value_type> EXC_HESS( n3*n3 );
+  pimpl_->eval_exc_hess( P.rows(), P.cols(), P.data(), P.rows(),
+                         EXC_HESS.data(), ks_settings );
+
+  return EXC_HESS;
+
+}
+
+template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::exc_grad_type 
   ReplicatedXCIntegrator<MatrixType>::eval_exc_grad_( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
 
