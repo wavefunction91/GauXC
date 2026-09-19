@@ -29,4 +29,8 @@ struct IntegratorSettingsEXC_GRAD : public IntegratorSettingsKS {
   bool include_weight_derivatives= true; // whether to include grid weight contribution and employ translational invariance, or just use Hellmann-Feynman gradient
 };
 
+struct IntegratorSettingsEXC_HESS : public IntegratorSettingsKS {
+  bool include_weight_derivatives = true; // as for EXC_GRAD: moving grid (translational invariance) plus the partition-weight first and second derivatives; false gives the fixed-grid, fixed-weight (basis-only) Hessian
+};
+
 }

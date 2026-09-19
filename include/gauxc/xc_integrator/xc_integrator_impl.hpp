@@ -28,6 +28,7 @@ public:
   using exc_vxc_type_uks   = typename XCIntegrator<MatrixType>::exc_vxc_type_uks;
   using exc_vxc_type_gks   = typename XCIntegrator<MatrixType>::exc_vxc_type_gks;
   using exc_grad_type  = typename XCIntegrator<MatrixType>::exc_grad_type;
+  using exc_hess_type  = typename XCIntegrator<MatrixType>::exc_hess_type;
   using exx_type       = typename XCIntegrator<MatrixType>::exx_type;
   using fxc_contraction_type_rks   = typename XCIntegrator<MatrixType>::fxc_contraction_type_rks;
   using fxc_contraction_type_uks   = typename XCIntegrator<MatrixType>::fxc_contraction_type_uks;
@@ -48,6 +49,12 @@ protected:
                                             const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_grad_type eval_exc_grad_( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual exc_grad_type eval_exc_grad_( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) = 0;
+  /** Nuclear Hessian. Defaulted to a refusal rather than pure virtual:
+   *  only the reference host integrator implements it so far, and every
+   *  other backend would otherwise need a stub. */
+  virtual exc_hess_type eval_exc_hess_( const MatrixType&, const IntegratorSettingsXC& ) {
+    GAUXC_GENERIC_EXCEPTION("EXC Hessian Not Implemented For This Integrator");
+  }
   virtual exx_type      eval_exx_     ( const MatrixType&     P, 
                                         const IntegratorSettingsEXX& settings ) = 0;
   virtual fxc_contraction_type_rks  eval_fxc_contraction_ ( const MatrixType& P,
@@ -140,6 +147,15 @@ public:
    */
   exc_grad_type eval_exc_grad( const MatrixType& Ps, const MatrixType& Pz, const IntegratorSettingsXC& ks_settings ) {
     return eval_exc_grad_(Ps, Pz, ks_settings);
+  }
+
+  /** Integrate the EXC nuclear Hessian for RKS
+   *
+   *  @param[in] P The alpha density matrix
+   *  @returns EXC Hessian, row-major (3*natoms) x (3*natoms)
+   */
+  exc_hess_type eval_exc_hess( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
+    return eval_exc_hess_(P, ks_settings);
   }
 
   /** Integrate Exact Exchange for RHF
