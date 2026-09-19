@@ -194,6 +194,24 @@ eval_fxc_contraction( int64_t m, int64_t n, const value_type* Ps,
 
 template <typename ValueType>
 void ReplicatedXCIntegratorImpl<ValueType>::
+eval_fxc_contraction( int64_t m, int64_t n,
+                            const value_type* Ps, int64_t ldps, const value_type* Pz, int64_t ldpz,
+                            const value_type* Py, int64_t ldpy, const value_type* Px, int64_t ldpx,
+                            const value_type* tPs, int64_t ldtps, const value_type* tPz, int64_t ldtpz,
+                            const value_type* tPy, int64_t ldtpy, const value_type* tPx, int64_t ldtpx,
+                            value_type* FXCs, int64_t ldfxcs, value_type* FXCz, int64_t ldfxcz,
+                            value_type* FXCy, int64_t ldfxcy, value_type* FXCx, int64_t ldfxcx,
+                            const IntegratorSettingsXC& ks_settings ) {
+
+  eval_fxc_contraction_( m, n, Ps, ldps, Pz, ldpz, Py, ldpy, Px, ldpx,
+                         tPs, ldtps, tPz, ldtpz, tPy, ldtpy, tPx, ldtpx,
+                         FXCs, ldfxcs, FXCz, ldfxcz, FXCy, ldfxcy, FXCx, ldfxcx,
+                         ks_settings );
+
+}
+
+template <typename ValueType>
+void ReplicatedXCIntegratorImpl<ValueType>::
   eval_dd_psi( int64_t m, int64_t n, const value_type* P,
                int64_t ldp, unsigned max_Ylm, value_type* ddPsi, int64_t ldPsi ) {
 
