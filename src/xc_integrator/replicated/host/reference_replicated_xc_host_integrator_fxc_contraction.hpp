@@ -16,6 +16,7 @@
 #include "host/local_host_work_driver.hpp"
 #include "host/blas.hpp"
 #include <stdexcept>
+#include <vector>
 
 namespace GauXC::detail {
 
@@ -57,6 +58,43 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     GAUXC_GENERIC_EXCEPTION("Invalid LDFXCZ");
 
 
+  // Symmetrize the TRIAL densities.
+  //
+  // The XC energy is a functional of n = Tr[P B B], which sees only the
+  // symmetric part of P: the derivative of Exc along an antisymmetric
+  // direction is identically zero. The density channel gets that for
+  // free -- Tr[P B B] kills an antisymmetric P by itself -- but the
+  // GRADIENT channel does not. eval_uvvar_* builds it as
+  //     d_x n = 2 X . d_x B,   X = fac * P * B,
+  // which equals Tr[(P + P^T) B d_x B] only when P is symmetric. That
+  // holds for the reference density, so exc_vxc and exc_grad are
+  // unaffected; it does NOT hold for a trial density, which a caller has
+  // no reason to hand over symmetric -- a TDDFT B-matrix or stability
+  // block is contracted against the ANTISYMMETRIC combination on
+  // purpose. The result was an XC kernel that answered nonzero to a
+  // direction along which Exc does not vary, breaking the Hermiticity
+  // of the Kohn-Sham Hessian for every GGA and meta-GGA while leaving
+  // LDA (which never touches the gradient channel) looking correct.
+  // See https://github.com/wavefunction91/GauXC/issues/225.
+  //
+  // Symmetrizing here rather than in the uvvar kernels keeps the fix in
+  // one place for every backend and every rung, and costs one nbf^2
+  // copy against a grid loop.
+  std::vector<value_type> tPs_sym, tPz_sym;
+  auto symmetrize = [nbf]( const value_type* A, int64_t lda,
+                           std::vector<value_type>& out ) -> const value_type* {
+    if( !A ) return nullptr;
+    out.resize( nbf*nbf );
+    for( int64_t j = 0; j < nbf; ++j )
+      for( int64_t i = 0; i < nbf; ++i )
+        out[i + j*nbf] = 0.5 * ( A[i + j*lda] + A[j + i*lda] );
+    return out.data();
+  };
+  const value_type* tPs_use = symmetrize( tPs, ldtps, tPs_sym );
+  const value_type* tPz_use = symmetrize( tPz, ldtpz, tPz_sym );
+  const int64_t ldtps_use = tPs_use ? nbf : ldtps;
+  const int64_t ldtpz_use = tPz_use ? nbf : ldtpz;
+
   // Get Tasks
   auto& tasks = this->load_balancer_->get_tasks();
 
@@ -66,7 +104,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Compute Local contributions to FXC contraction
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
     fxc_contraction_local_work_( basis, Ps, ldps, Pz, ldpz, 
-                                             tPs, ldtps, tPz, ldtpz,
+                                             tPs_use, ldtps_use, tPz_use, ldtpz_use,
                                              FXCs, ldfxcs, FXCz, ldfxcz,
                                              &N_EL, ks_settings,
                                              tasks.begin(), tasks.end() );
@@ -117,10 +155,6 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   const auto& mol   = this->load_balancer_->molecule();
 
   const bool needs_laplacian = func.needs_laplacian(); 
-  // not suppport laplacian yet
-  if( needs_laplacian ) {
-    GAUXC_GENERIC_EXCEPTION("Laplacian Not Supported Yet for FXC Contraction");
-  }
 
   // Get basis map
   BasisSetMap basis_map(basis,mol);
@@ -254,6 +288,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         host_data.v2gammalapl.resize(npts * spin_dim_rhogamma);
         host_data.v2lapltau  .resize(npts * spin_dim_rhotau);
         host_data.tlapl      .resize(npts * spin_dim_scal);
+        host_data.FXC_D      .resize(npts * spin_dim_scal);
 
       } else {
         host_data.basis_eval .resize( 4 * npts * nbe ); // basis + grad (3)
@@ -298,6 +333,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     auto* FXC_A          = host_data.FXC_A.data();
     auto* FXC_B          = host_data.FXC_B.data();
     auto* FXC_C          = host_data.FXC_C.data();
+    // delta v_lapl; null for functionals without a Laplacian, which is
+    // what switches the Laplacian terms off downstream
+    auto* FXC_D          = needs_laplacian ? host_data.FXC_D.data() : nullptr;
+    auto* v2rholapl_t    = needs_laplacian ? v2rholapl   : nullptr;
+    auto* v2gammalapl_t  = needs_laplacian ? v2gammalapl : nullptr;
+    auto* v2lapl2_t      = needs_laplacian ? v2lapl2     : nullptr;
+    auto* v2lapltau_t    = needs_laplacian ? v2lapltau   : nullptr;
 
 
     value_type* dbasis_x_eval = nullptr;
@@ -453,9 +495,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         lwd->eval_uvvar_mgga_rks(  npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
           dbasis_z_eval, lbasis_eval, zmat, nbe, mmat_x, mmat_y, mmat_z, 
           nbe, tden_eval, tdden_x_eval, tdden_y_eval, tdden_z_eval, gamma, ttau, tlapl);
-      lwd->eval_tmat_mgga_vxc_rks( npts, vgamma, v2rho2, v2rhogamma, v2rholapl, v2rhotau, v2gamma2, 
-        v2gammalapl, v2gammatau, v2lapl2, v2lapltau, v2tau2, tden_eval, tdden_x_eval, 
-        tdden_y_eval, tdden_z_eval, ttau, dden_x_eval, dden_y_eval, dden_z_eval, FXC_A, FXC_B, FXC_C );
+      lwd->eval_tmat_mgga_vxc_rks( npts, vgamma, v2rho2, v2rhogamma, v2rholapl_t, v2rhotau, v2gamma2, 
+        v2gammalapl_t, v2gammatau, v2lapl2_t, v2lapltau_t, v2tau2, tden_eval, tdden_x_eval, 
+        tdden_y_eval, tdden_z_eval, ttau, tlapl, dden_x_eval, dden_y_eval, dden_z_eval, FXC_A, FXC_B, FXC_C, FXC_D );
       } else if (is_uks) {
       // tgamma is not needed since it has different definitions than gamma
       // gamma  = nabla rho * nabla rho, but tgamma = nabla trho * nabla rho, not both trho
@@ -463,9 +505,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         dbasis_z_eval, lbasis_eval, zmat, nbe, zmat_z, nbe, 
         mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe, 
         tden_eval, tdden_x_eval, tdden_y_eval, tdden_z_eval, gamma, ttau, tlapl);
-      lwd->eval_tmat_mgga_vxc_uks( npts, vgamma, v2rho2, v2rhogamma, v2rholapl, v2rhotau, v2gamma2, 
-        v2gammalapl, v2gammatau, v2lapl2, v2lapltau, v2tau2, tden_eval, tdden_x_eval, 
-        tdden_y_eval, tdden_z_eval, ttau, dden_x_eval, dden_y_eval, dden_z_eval, FXC_A, FXC_B, FXC_C );
+      lwd->eval_tmat_mgga_vxc_uks( npts, vgamma, v2rho2, v2rhogamma, v2rholapl_t, v2rhotau, v2gamma2, 
+        v2gammalapl_t, v2gammatau, v2lapl2_t, v2lapltau_t, v2tau2, tden_eval, tdden_x_eval, 
+        tdden_y_eval, tdden_z_eval, ttau, tlapl, dden_x_eval, dden_y_eval, dden_z_eval, FXC_A, FXC_B, FXC_C, FXC_D );
       }
     } else if ( func.is_gga() ) {
       if(is_rks) {
@@ -517,6 +559,12 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
         if(not is_rks) FXC_C[sds*i+1] *= weights[i];
       }
     }
+    if( FXC_D ){
+      for( int32_t i = 0; i < npts; ++i) {
+        FXC_D[sds*i] *= weights[i];
+        if(not is_rks) FXC_D[sds*i+1] *= weights[i];
+      }
+    }
 
     // Scalar integrations
     double NEL_local = 0.0;
@@ -532,16 +580,25 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     // Evaluate Z matrix for VXC
     if( func.is_mgga() ) {
       if(is_rks) {
-        // Because we do not support Laplacian, so mgga will do the same operation as GGA
+        // The GGA part, then delta v_lapl exactly where the ground-state
+        // potential puts v_lapl: D lapl(chi) in Z, D grad(chi) in M
         lwd->eval_zmat_gga_vxc_rks_ts( npts, nbe, FXC_A, FXC_B, basis_eval, dbasis_x_eval,
                                 dbasis_y_eval, dbasis_z_eval, zmat, nbe);
-        lwd->eval_mmat_mgga_vxc_rks( npts, nbe, FXC_C, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
+        if( FXC_D )
+          for( int32_t i = 0; i < npts; ++i )
+            blas::axpy( nbe, FXC_D[i], lbasis_eval + size_t(i)*nbe, 1, zmat + size_t(i)*nbe, 1 );
+        lwd->eval_mmat_mgga_vxc_rks( npts, nbe, FXC_C, FXC_D, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
                                      mmat_x, mmat_y, mmat_z, nbe);
       } else if (is_uks) {
-        // Because we do not support Laplacian, so mgga will do the same operation as GGA
+        // as for RKS, per spin (alpha in Z, beta in Z_z at this stage)
         lwd->eval_zmat_gga_vxc_uks_ts( npts, nbe, FXC_A, FXC_B, basis_eval, dbasis_x_eval,
                                 dbasis_y_eval, dbasis_z_eval, zmat, nbe, zmat_z, nbe);
-        lwd->eval_mmat_mgga_vxc_uks_ts( npts, nbe, FXC_C, vlapl, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
+        if( FXC_D )
+          for( int32_t i = 0; i < npts; ++i ) {
+            blas::axpy( nbe, FXC_D[2*i],   lbasis_eval + size_t(i)*nbe, 1, zmat   + size_t(i)*nbe, 1 );
+            blas::axpy( nbe, FXC_D[2*i+1], lbasis_eval + size_t(i)*nbe, 1, zmat_z + size_t(i)*nbe, 1 );
+          }
+        lwd->eval_mmat_mgga_vxc_uks_ts( npts, nbe, FXC_C, FXC_D, dbasis_x_eval, dbasis_y_eval, dbasis_z_eval,
                                      mmat_x, mmat_y, mmat_z, nbe, mmat_x_z, mmat_y_z, mmat_z_z, nbe);
       }
     }

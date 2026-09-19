@@ -439,14 +439,14 @@ void LocalHostWorkDriver::eval_tmat_mgga_vxc_rks( size_t npts, const double* vga
   const double* v2rho2, const double* v2rhogamma, const double* v2rholapl, const double* v2rhotau, 
   const double* v2gamma2, const double* v2gammalapl, const double* v2gammatau,
   const double* v2lapl2, const double* v2lapltau, const double* v2tau2, 
-  const double* tden_eval, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, 
-  const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C) {
+  const double* tden_eval, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, const double* tlapl,
+  const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C, double* D) {
 
   throw_if_invalid_pimpl(pimpl_);
   pimpl_->eval_tmat_mgga_vxc_rks(npts, vgamma, v2rho2, v2rhogamma, v2rholapl, v2rhotau,
     v2gamma2, v2gammalapl, v2gammatau, v2lapl2, v2lapltau, v2tau2,
-    tden_eval, tdden_x_eval, tdden_y_eval, tdden_z_eval, ttau, dden_x_eval,
-    dden_y_eval, dden_z_eval, A, B, C);
+    tden_eval, tdden_x_eval, tdden_y_eval, tdden_z_eval, ttau, tlapl, dden_x_eval,
+    dden_y_eval, dden_z_eval, A, B, C, D);
 
 }
 
@@ -471,14 +471,14 @@ void LocalHostWorkDriver::eval_tmat_mgga_vxc_uks( size_t npts, const double* vga
   const double* v2rho2, const double* v2rhogamma, const double* v2rholapl, const double* v2rhotau, 
   const double* v2gamma2, const double* v2gammalapl, const double* v2gamma_tau,
   const double* v2lapl2, const double* v2tau_lapl, const double* v2tau2, 
-  const double* trho, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, 
-  const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C) {
+  const double* trho, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, const double* tlapl,
+  const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C, double* D) {
 
   throw_if_invalid_pimpl(pimpl_);
   pimpl_->eval_tmat_mgga_vxc_uks(npts, vgamma, v2rho2, v2rhogamma, v2rholapl, v2rhotau,
     v2gamma2, v2gammalapl, v2gamma_tau, v2lapl2, v2tau_lapl, v2tau2,
-    trho, tdden_x_eval, tdden_y_eval, tdden_z_eval, ttau, dden_x_eval,
-    dden_y_eval, dden_z_eval, A, B, C);
+    trho, tdden_x_eval, tdden_y_eval, tdden_z_eval, ttau, tlapl, dden_x_eval,
+    dden_y_eval, dden_z_eval, A, B, C, D);
 
 }
 
