@@ -239,6 +239,26 @@ typename ReplicatedXCIntegrator<MatrixType>::fxc_contraction_type_uks
 }
 
 template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::fxc_contraction_type_gks
+  ReplicatedXCIntegrator<MatrixType>::eval_fxc_contraction_( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px,
+    const MatrixType& tPs, const MatrixType& tPz, const MatrixType& tPy, const MatrixType& tPx,
+    const IntegratorSettingsXC& ks_settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  matrix_type FXCs( Ps.rows(), Ps.cols() ), FXCz( Pz.rows(), Pz.cols() );
+  matrix_type FXCy( Py.rows(), Py.cols() ), FXCx( Px.rows(), Px.cols() );
+
+  pimpl_->eval_fxc_contraction( Ps.rows(), Ps.cols(),
+    Ps.data(), Ps.rows(), Pz.data(), Pz.rows(), Py.data(), Py.rows(), Px.data(), Px.rows(),
+    tPs.data(), tPs.rows(), tPz.data(), tPz.rows(), tPy.data(), tPy.rows(), tPx.data(), tPx.rows(),
+    FXCs.data(), FXCs.rows(), FXCz.data(), FXCz.rows(), FXCy.data(), FXCy.rows(), FXCx.data(), FXCx.rows(),
+    ks_settings );
+
+  return std::make_tuple( FXCs, FXCz, FXCy, FXCx );
+
+}
+
+template <typename MatrixType>
 typename ReplicatedXCIntegrator<MatrixType>::dd_psi_type
   ReplicatedXCIntegrator<MatrixType>::eval_dd_psi_( const MatrixType& P, unsigned max_Ylm ) {
 

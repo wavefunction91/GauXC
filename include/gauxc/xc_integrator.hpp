@@ -42,6 +42,7 @@ public:
   using exx_type      = matrix_type;
   using fxc_contraction_type_rks = matrix_type;
   using fxc_contraction_type_uks = std::tuple< matrix_type, matrix_type >;
+  using fxc_contraction_type_gks = std::tuple< matrix_type, matrix_type, matrix_type, matrix_type >;
   using dd_psi_type   = std::vector< value_type >;
   using dd_psi_potential_type   = matrix_type;
 
@@ -80,9 +81,21 @@ public:
   exx_type      eval_exx     ( const MatrixType&, 
                                const IntegratorSettingsEXX& = IntegratorSettingsEXX{} );
 
+  /**
+   *  @brief Contract the XC kernel with a trial density matrix.
+   *
+   *  RKS: eval_fxc_contraction( P, tP ).
+   *  UKS: eval_fxc_contraction( Ps, Pz, tPs, tPz ), returning ( FXCs, FXCz ).
+   *  GKS: eval_fxc_contraction( Ps, Pz, Py, Px, tPs, tPz, tPy, tPx ), returning
+   *       ( FXCs, FXCz, FXCy, FXCx ), in the argument order of the GKS
+   *       eval_exc_vxc. LDA only.
+   */
   fxc_contraction_type_rks  eval_fxc_contraction ( const MatrixType&, const MatrixType&,
                                   const IntegratorSettingsXC& = IntegratorSettingsXC{} );
   fxc_contraction_type_uks  eval_fxc_contraction ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,
+                                  const IntegratorSettingsXC& = IntegratorSettingsXC{} );
+  fxc_contraction_type_gks  eval_fxc_contraction ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,
+                                  const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&,
                                   const IntegratorSettingsXC& = IntegratorSettingsXC{} );
 
   dd_psi_type eval_dd_psi( const MatrixType&, unsigned );
