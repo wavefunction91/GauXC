@@ -1027,33 +1027,58 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Step 4: Scatter Vxc back to tasks
   send_buffer_onedft_outputs(2/*ndm*/, features_dict, tasks, rt, sendcounts, displs, atom_reorder_inv_perm);
 
-  // Scatter eps_on_grid to local tasks (for single rank, just distribute)
-  // For MPI, would need MPI_Scatterv — for now handle single rank
+  // Scatter rank-ordered point values back to the local atom-ordered tasks.
   std::vector<double> eps_on_grid_local;
+  std::vector<double> points_grad_local;
   if (rt.comm_size() == 1) {
     eps_on_grid_local = std::move(eps_on_grid_global);
+    points_grad_local = std::move(points_grad_global);
   } else {
-    // TODO: MPI scatter of eps_on_grid
-    GAUXC_GENERIC_EXCEPTION("OneDFT gradient with MPI not yet implemented");
+    const int local_npts = std::accumulate(
+      tasks.begin(), tasks.end(), 0,
+      [](const auto npts, const auto& task) { return npts + task.npts; });
+    eps_on_grid_local.resize(local_npts);
+    GAUXC_MPI_CODE(
+      MPI_Scatterv(eps_on_grid_global.data(), sendcounts.data(), displs.data(),
+                   MPI_DOUBLE, eps_on_grid_local.data(), local_npts, MPI_DOUBLE,
+                   0, rt.comm());
+
+      int has_points_grad = world_rank == 0 && !points_grad_global.empty();
+      MPI_Bcast(&has_points_grad, 1, MPI_INT, 0, rt.comm());
+      if (has_points_grad) {
+        std::vector<int> sendcounts3(sendcounts.size());
+        std::vector<int> displs3(displs.size());
+        for (size_t i = 0; i < sendcounts.size(); ++i) {
+          sendcounts3[i] = 3 * sendcounts[i];
+          displs3[i] = 3 * displs[i];
+        }
+        points_grad_local.resize(3 * local_npts);
+        MPI_Scatterv(points_grad_global.data(), sendcounts3.data(), displs3.data(),
+                     MPI_DOUBLE, points_grad_local.data(), 3 * local_npts,
+                     MPI_DOUBLE, 0, rt.comm());
+      }
+    )
   }
 
   // Zero out EXC_GRAD
   for (int i = 0; i < 3*natoms; ++i) EXC_GRAD[i] = 0.0;
 
-  // Step 6: Add autograd forces BEFORE Pulay (which re-sorts tasks!)
+  if (!points_grad_local.empty() &&
+      points_grad_local.size() != 3 * eps_on_grid_local.size()) {
+    GAUXC_GENERIC_EXCEPTION("Inconsistent OneDFT point-gradient layout");
+  }
+
+  // Step 6: Add autograd forces before the Pulay work reorders the tasks.
   // points.grad gives ∂E/∂r_g. Since grid points move with their parent atom,
-  // the force on atom A = Σ_{g∈A} points_grad[g].
-  // NOTE: Must be done while tasks are still in iParent-sorted order
-  //       (matching points_grad_global layout). exc_grad_local_work_onedft_
-  //       re-sorts tasks by workload, breaking the correspondence.
-  if (!points_grad_global.empty() && world_rank == 0) {
+  // the derivative for atom A contains Σ_{g∈A} points_grad[g].
+  if (!points_grad_local.empty()) {
     size_t offset = 0;
     for (const auto& task : tasks) {
       int iParent = task.iParent;
       for (size_t ipt = 0; ipt < task.points.size(); ++ipt) {
-        EXC_GRAD[3*iParent + 0] += points_grad_global[(offset + ipt)*3 + 0];
-        EXC_GRAD[3*iParent + 1] += points_grad_global[(offset + ipt)*3 + 1];
-        EXC_GRAD[3*iParent + 2] += points_grad_global[(offset + ipt)*3 + 2];
+        EXC_GRAD[3*iParent + 0] += points_grad_local[(offset + ipt)*3 + 0];
+        EXC_GRAD[3*iParent + 1] += points_grad_local[(offset + ipt)*3 + 1];
+        EXC_GRAD[3*iParent + 2] += points_grad_local[(offset + ipt)*3 + 2];
       }
       offset += task.points.size();
     }
@@ -1114,40 +1139,28 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   auto& tasks = this->load_balancer_->get_tasks();
   const size_t ntasks = tasks.size();
 
-  // Sort tasks for load balancing
+  // The tasks still have the exact order used to assemble eps_on_grid.
+  // Attach each point value to its task before reordering for load balancing.
   auto task_comparator = []( const XCTask& a, const XCTask& b ) {
     return (a.points.size() * a.bfn_screening.nbe) > (b.points.size() * b.bfn_screening.nbe);
   };
-  std::sort( tasks.begin(), tasks.end(), task_comparator );
-
-  // Build global eps_on_grid offset map: since tasks may be re-sorted,
-  // we need to distribute eps_on_grid to tasks. We use the task ordering
-  // from send_buffer_onedft_outputs (which was sorted by iParent).
-  // After re-sorting by task_comparator, we need a different approach.
-  // Actually, eps_on_grid_local was already in the send_buffer_onedft_outputs
-  // task order (sorted by iParent). The tasks are now re-sorted.
-  // We need to store eps per-task before re-sorting.
-  //
-  // WORKAROUND: Store per-task eps in task.feat before sorting.
-  // Actually, the simpler approach: don't re-sort. Use the current task order.
-  // The tasks were already sorted by iParent from prepare_onedft_features.
-  // Let's just rebuild the eps_per_task mapping.
-
-  // Build task -> eps mapping from the eps_on_grid vector (in iParent-sorted order)
-  // First, re-sort back to iParent order to match eps_on_grid
-  std::stable_sort( tasks.begin(), tasks.end(),
-    [](const auto& a, const auto& b) { return a.iParent < b.iParent; });
 
   // Distribute eps_on_grid to per-task storage
   {
     size_t offset = 0;
     for (auto& task : tasks) {
       int64_t npts = task.points.size();
+      if (offset + npts > eps_on_grid.size()) {
+        GAUXC_GENERIC_EXCEPTION("Inconsistent OneDFT energy-density layout");
+      }
       task.feat.eps.resize(npts);
       std::copy(eps_on_grid.data() + offset,
                 eps_on_grid.data() + offset + npts,
                 task.feat.eps.begin());
       offset += npts;
+    }
+    if (offset != eps_on_grid.size()) {
+      GAUXC_GENERIC_EXCEPTION("Inconsistent OneDFT energy-density layout");
     }
   }
 
