@@ -56,6 +56,12 @@ if( GAUXC_HAS_CUDA )
   endif()
 endif()
 
+if( GAUXC_HAS_HIP )
+  enable_language( HIP )
+  find_dependency( hip )
+  find_dependency( hipblas )
+endif()
+
 if( GAUXC_HAS_MPI )
   find_dependency( MPI )
 endif()

@@ -22,7 +22,6 @@
 //#include "device/hip/hip_aos_scheme1_weights.hpp"
 #include "device/hip/kernels/grid_to_center.hpp"
 #include "device/hip/kernels/hip_ssf_1d.hpp"
-#include "device/hip/kernels/hip_ssh_2d.hpp"
       
 
 
@@ -114,7 +113,10 @@ void test_hip_weights( const std::string& filename ) {
   //  weights_d, stream );
   compute_grid_to_center_dist( npts, natoms, coords_d, points_x_d, points_y_d, points_z_d,
     dist_scr_d, LDatoms, stream );
-  partition_weights_ssf_2d( npts, natoms, rab_d, LDatoms, coords_d, dist_scr_d, LDatoms,
+  // partition_weights_ssf_2d (hip_ssh_2d) is a stale, unmaintained kernel
+  // no longer used in production (see hip_aos_scheme1.cxx); test the 1D
+  // path instead, matching CUDA's own cuda_aos_scheme1_weights.cu.
+  partition_weights_ssf_1d( npts, natoms, rab_d, LDatoms, coords_d, dist_scr_d, LDatoms,
     iparent_d, distnea_d, weights_d, stream );
 
   util::hip_device_sync();

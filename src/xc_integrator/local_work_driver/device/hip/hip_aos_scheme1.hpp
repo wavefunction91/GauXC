@@ -31,6 +31,7 @@ struct HipAoSScheme1 : public Base {
 
   // API Overrides
   void partition_weights( XCDeviceData* ) override final;
+  void eval_weight_1st_deriv_contracted( XCDeviceData*, XCWeightAlg ) override final;
 
   std::unique_ptr<XCDeviceData> create_device_data(const DeviceRuntimeEnvironment&) override final;
 

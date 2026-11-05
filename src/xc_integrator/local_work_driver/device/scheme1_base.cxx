@@ -492,14 +492,14 @@ void AoSScheme1Base::eval_collocation_gradient( XCDeviceData* _data ) {
 }
 
 void AoSScheme1Base::eval_collocation_hessian( XCDeviceData* _data ) {
-#ifdef GAUXC_HAS_HIP
-  GAUXC_GENERIC_EXCEPTION("Hessian NYI for HIP Backends");
-#else
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
+#ifdef GAUXC_HAS_HIP
+  GAUXC_GENERIC_EXCEPTION("Hessian NYI for HIP Backends");
+#else
   auto aos_stack     = data->aos_stack;
 
   auto max_l = data->l_batched_shell_to_task.size() - 1;
@@ -512,9 +512,6 @@ void AoSScheme1Base::eval_collocation_hessian( XCDeviceData* _data ) {
 }
 
 void AoSScheme1Base::eval_collocation_laplacian( XCDeviceData* _data ) {
-#ifdef GAUXC_HAS_HIP
-  GAUXC_GENERIC_EXCEPTION("Laplacian NYI for HIP Backends");
-#else
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
@@ -523,23 +520,22 @@ void AoSScheme1Base::eval_collocation_laplacian( XCDeviceData* _data ) {
   auto aos_stack     = data->aos_stack;
 
   auto max_l = data->l_batched_shell_to_task.size() - 1;
-  eval_collocation_shell_to_task_laplacian( max_l, 
+  eval_collocation_shell_to_task_laplacian( max_l,
     data->l_batched_shell_to_task.data(), aos_stack.device_tasks,
     data->device_backend_->queue() );
-#endif
-  
+
   data->device_backend_->check_error("collocation lapl" __FILE__ ": " + std::to_string(__LINE__));
 }
 
 void AoSScheme1Base::eval_collocation_lapgrad( XCDeviceData* _data ) {
-#ifdef GAUXC_HAS_HIP
-  GAUXC_GENERIC_EXCEPTION("Laplacian Gradient NYI for HIP Backends");
-#else
   auto* data = dynamic_cast<Data*>(_data);
   if( !data ) GAUXC_BAD_LWD_DATA_CAST();
 
   if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
 
+#ifdef GAUXC_HAS_HIP
+  GAUXC_GENERIC_EXCEPTION("Laplacian Gradient NYI for HIP Backends");
+#else
   auto aos_stack     = data->aos_stack;
 
   auto max_l = data->l_batched_shell_to_task.size() - 1;
