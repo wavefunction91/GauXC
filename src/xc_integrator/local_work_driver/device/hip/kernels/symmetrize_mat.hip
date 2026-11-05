@@ -18,7 +18,7 @@ namespace GauXC {
 
 __global__ void symmetrize_matrix_device( size_t N, double* A, size_t LDA ) {
 
-  constexpr uint32_t block_size = hip::warp_size;
+  constexpr uint32_t block_size = 32; // fixed, independent of hip::warp_size -- see hipify.sh
 
   __shared__ double buffer[block_size][block_size+1];  // Pad shared memory to resolve shared memory
 
@@ -50,7 +50,7 @@ __global__ void symmetrize_matrix_device( size_t N, double* A, size_t LDA ) {
 
 __global__ void symmetrize_matrix_inc_device( size_t N, double* A, size_t LDA ) {
 
-  constexpr uint32_t block_size = hip::warp_size;
+  constexpr uint32_t block_size = 32; // fixed, independent of hip::warp_size -- see hipify.sh
 
   __shared__ double buffer_0[block_size][block_size+1];  // Pad shared memory to resolve shared memory
   __shared__ double buffer_1[block_size][block_size+1];  // Pad shared memory to resolve shared memory
@@ -97,17 +97,17 @@ __global__ void symmetrize_matrix_inc_device( size_t N, double* A, size_t LDA ) 
 
 void symmetrize_matrix( int32_t N, double* A, size_t LDA, device_queue queue ) {
   hipStream_t stream = queue.queue_as<util::hip_stream>();
-  const size_t num_blocks = ((N + hip::warp_size - 1) / hip::warp_size);
-  // Warp size must equal max_warps_per_thread_block must equal 32
-  dim3 threads(hip::warp_size, hip::max_warps_per_thread_block), blocks(num_blocks);
+  const size_t num_blocks = ((N + 32 - 1) / 32);
+  // block_size is fixed at 32 for HIP, independent of hip::warp_size -- see hipify.sh
+  dim3 threads(32, 32), blocks(num_blocks);
   symmetrize_matrix_device<<<blocks, threads, 0, stream>>>(N, A, LDA);
 }
 
 void symmetrize_matrix_inc( int32_t N, double* A, size_t LDA, device_queue queue ) {
   hipStream_t stream = queue.queue_as<util::hip_stream>();
-  const size_t num_blocks = ((N + hip::warp_size - 1) / hip::warp_size);
-  // Warp size must equal max_warps_per_thread_block must equal 32
-  dim3 threads(hip::warp_size, hip::max_warps_per_thread_block), blocks(num_blocks);
+  const size_t num_blocks = ((N + 32 - 1) / 32);
+  // block_size is fixed at 32 for HIP, independent of hip::warp_size -- see hipify.sh
+  dim3 threads(32, 32), blocks(num_blocks);
   symmetrize_matrix_inc_device<<<blocks, threads, 0, stream>>>(N, A, LDA);
 }
 }

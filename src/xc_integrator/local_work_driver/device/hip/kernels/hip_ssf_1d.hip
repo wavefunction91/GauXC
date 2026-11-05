@@ -10,7 +10,7 @@
  * See LICENSE.txt for details
  */
 #include "hip/hip_runtime.h"
-#include "cuda_ssf_1d.hpp"
+#include "hip_ssf_1d.hpp"
 #include "device_specific/hip_device_constants.hpp"
 #include "common/integrator_constants.hpp"
 #include <gauxc/util/div_ceil.hpp>

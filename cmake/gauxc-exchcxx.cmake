@@ -11,6 +11,14 @@ if( NOT ${ExchCXX_FOUND} )
   set( EXCHCXX_ENABLE_HIP   ${GAUXC_HAS_HIP}  CACHE BOOL "" )
   set( EXCHCXX_ENABLE_TESTS OFF               CACHE BOOL "" )
 
+  if( GAUXC_HAS_HIP )
+    # ROCm's own headers (e.g. amd_hip_vector_types.h) trip -Wshadow.
+    # Pre-seed this so exchcxx's check_cxx_compiler_flag() probe is
+    # skipped and it does not add -Wshadow -Werror=shadow, which would
+    # otherwise turn ROCm's internal warnings into hard build errors.
+    set( EXCHCXX_CXX_HAS_WSHADOW FALSE CACHE INTERNAL "" )
+  endif()
+
   FetchContent_Declare(
     exchcxx
     GIT_REPOSITORY ${GAUXC_EXCHCXX_REPOSITORY} 

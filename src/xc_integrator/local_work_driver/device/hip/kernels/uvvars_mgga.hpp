@@ -25,7 +25,7 @@ template <bool trial, density_id den_select, bool need_lapl>
 __global__ void eval_vvar_mgga_kern( size_t           ntasks,
                                      XCDeviceTask* tasks_device) {
 
-  constexpr auto warp_size = hip::warp_size;
+  constexpr auto warp_size = 32; // tile/launch width, independent of hip::warp_size -- see hipify.sh
   //constexpr auto max_warps_per_thread_block = hip::max_warps_per_thread_block;
 
   const int batch_idx = blockIdx.z;
@@ -129,16 +129,16 @@ __global__ void eval_vvar_mgga_kern( size_t           ntasks,
       for (int sm_y = threadIdx.y; sm_y < MGGA_KERNEL_SM_BLOCK; sm_y += blockDim.y) {
         const int tid_y = bid_y + sm_y;
 
-        register double tx_reg  = den_shared[0][sm_y][threadIdx.x];
-        register double ty_reg  = den_shared[1][sm_y][threadIdx.x];
-        register double tz_reg  = den_shared[2][sm_y][threadIdx.x];
+        double tx_reg  = den_shared[0][sm_y][threadIdx.x];
+        double ty_reg  = den_shared[1][sm_y][threadIdx.x];
+        double tz_reg  = den_shared[2][sm_y][threadIdx.x];
         // Warp blocks are stored col major
-        register double tau_reg = 0.0;
+        double tau_reg = 0.0;
         tau_reg  = 0.5 * hip::warp_reduce_sum<warp_size>( tx_reg );
         tau_reg += 0.5 * hip::warp_reduce_sum<warp_size>( ty_reg );
         tau_reg += 0.5 * hip::warp_reduce_sum<warp_size>( tz_reg );
 
-        register double lapl_reg = 0.0;
+        double lapl_reg = 0.0;
         if constexpr (need_lapl) {
           lapl_reg = den_shared[3][sm_y][threadIdx.x];
           lapl_reg = hip::warp_reduce_sum<warp_size>(lapl_reg);

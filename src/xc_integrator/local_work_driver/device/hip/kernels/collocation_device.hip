@@ -645,7 +645,7 @@ void eval_collocation_shell_to_task_laplacian(
     auto ntask_average = std::max(1ul, l_batched_shell_to_task[l].ntask_average);
     dispatch_shell_to_task_collocation_laplacian( stream, l, pure,
       ntask_average, nshells, shell_to_task_device, device_tasks );
-    auto stat = cudaGetLastError();
+    auto stat = hipGetLastError();
     GAUXC_HIP_ERROR("LAP", stat);
   }
 
@@ -753,7 +753,7 @@ void eval_collocation_shell_to_task_lapgrad(
     auto ntask_average = std::max(1ul, l_batched_shell_to_task[l].ntask_average);
     dispatch_shell_to_task_collocation_lapgrad( stream, l, pure,
       ntask_average, nshells, shell_to_task_device, device_tasks );
-    auto stat = cudaGetLastError();
+    auto stat = hipGetLastError();
     GAUXC_HIP_ERROR("LAPGRAD", stat);
   }
 

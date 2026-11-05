@@ -10,11 +10,9 @@
  * See LICENSE.txt for details
  */
 #pragma once
-#include "hip/hip_runtime.h"
-#include <cuda.h>
 
 namespace GauXC {
-namespace cuda  {
+namespace hip  {
 
 template <size_t warp_sz, typename T>
 __device__ T warp_reduce_sum(T val) {
@@ -45,3 +43,4 @@ __device__ T warp_reduce_max(T val) {
 
 }
 }
+#include "hip/hip_runtime.h"

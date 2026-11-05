@@ -126,7 +126,7 @@ void eval_uvars_gga( size_t ntasks, int32_t npts_max, integrator_ks_scheme ks_sc
 template<bool trial>
 void eval_vvars_gga_impl( size_t ntasks, int32_t nbf_max, int32_t npts_max, density_id den_select,
   XCDeviceTask* device_tasks, device_queue queue ) {
-  dim3 threads( hip::warp_size, hip::max_warps_per_thread_block, 1 );
+  dim3 threads( 32, hip::max_warps_per_thread_block, 1 ); // tile/launch width pinned to 32, independent of hip::warp_size -- see hipify.sh
   dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
                util::div_ceil( npts_max, threads.y ),
                ntasks );
@@ -192,7 +192,7 @@ void eval_vvars_mgga_impl( size_t ntasks, int32_t nbf_max, int32_t npts_max, den
   // First evaluate GGA variables
   eval_vvars_gga_impl<trial>(ntasks, nbf_max, npts_max, den_select, device_tasks, queue);
 
-  dim3 threads( hip::warp_size, hip::max_warps_per_thread_block, 1 );
+  dim3 threads( 32, hip::max_warps_per_thread_block, 1 ); // tile/launch width pinned to 32, independent of hip::warp_size -- see hipify.sh
   dim3 blocks( util::div_ceil( nbf_max,  threads.x ),
                util::div_ceil( npts_max, threads.y ),
                ntasks );

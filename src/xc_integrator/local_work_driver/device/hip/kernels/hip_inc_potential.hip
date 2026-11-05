@@ -108,7 +108,7 @@ void sym_task_inc_potential( size_t        ntasks,
 
   hipStream_t stream = queue.queue_as<util::hip_stream>();
 
-  dim3 threads( hip::warp_size/2, hip::max_warps_per_thread_block * 2, 1 );
+  dim3 threads( 16, 64, 1 ); // matches WARP_X=16, CUT_Y*CUT_X=64 below, independent of hip::warp_size -- see hipify.sh
   dim3 blocks( 1,1, ntasks );
 
   auto n_launch = util::div_ceil( LDV, submat_block_size );
@@ -209,7 +209,7 @@ void asym_task_inc_potential( size_t        ntasks,
 
   hipStream_t stream = queue.queue_as<util::hip_stream>();
 
-  dim3 threads( hip::warp_size/2, hip::max_warps_per_thread_block * 2, 1 );
+  dim3 threads( 16, 64, 1 ); // matches WARP_X=16, CUT_Y*CUT_X=64 below, independent of hip::warp_size -- see hipify.sh
   dim3 blocks( 1,1, ntasks );
 
   auto n_launch = util::div_ceil( LDV, submat_block_size );

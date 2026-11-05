@@ -80,7 +80,7 @@ void dot( device_blas_handle generic_handle,
   hipblasHandle_t handle = generic_handle.blas_handle_as<util::hipblas_handle>();
 
   auto stat = hipblasDdot( handle, N, X, INCX, Y, INCY, RES );
-  GAUXC_CUBLAS_ERROR("CUBLAS DDOT FAILED", stat );
+  GAUXC_HIPBLAS_ERROR("CUBLAS DDOT FAILED", stat );
 
 }
 
@@ -184,7 +184,7 @@ void gemm( device_blas_handle generic_handle,
   auto stat = hipblasDgemm( handle, device_op_to_cublas(TA), 
     device_op_to_cublas(TB), M, N, K, &ALPHA, A, LDA,
     B, LDB, &BETA, C, LDC );
-  GAUXC_CUBLAS_ERROR("CUBLAS DGEMM FAILED", stat);
+  GAUXC_HIPBLAS_ERROR("CUBLAS DGEMM FAILED", stat);
 
 }
 
@@ -200,7 +200,7 @@ void syr2k( device_blas_handle generic_handle,
   auto stat = hipblasDsyr2k( handle, device_uplo_to_cublas(UPLO), 
     device_op_to_cublas(Trans), M, K, &ALPHA, A, LDA, B, LDB,
     &BETA, C, LDC );
-  GAUXC_CUBLAS_ERROR("CUBLAS DSYR2K FAILED", stat);
+  GAUXC_HIPBLAS_ERROR("CUBLAS DSYR2K FAILED", stat);
 
 }
 

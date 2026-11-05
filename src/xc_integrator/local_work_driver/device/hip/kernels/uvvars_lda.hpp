@@ -50,7 +50,7 @@ __global__ void eval_vvar_lda_kern( size_t        ntasks,
   const int tid_x = blockIdx.x * blockDim.x + threadIdx.x;
   const int tid_y = blockIdx.y * blockDim.y + threadIdx.y;
 
-  register double den_reg = 0.;
+  double den_reg = 0.;
 
   if( tid_x < nbf and tid_y < npts ) {
 

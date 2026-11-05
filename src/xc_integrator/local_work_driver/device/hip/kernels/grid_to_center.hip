@@ -29,7 +29,7 @@ __global__ void compute_grid_to_center_dist(
 ) {
 
   __shared__ double3 point_buffer[hip::warp_size];
-  register double3 coord_reg;
+  double3 coord_reg;
 
   const int natoms_block = (natoms + hip::warp_size-1) / hip::warp_size;
   const int coords_block = (npts + hip::warp_size-1) / hip::warp_size;
@@ -55,7 +55,7 @@ __global__ void compute_grid_to_center_dist(
 
       // do the computation
       #pragma unroll 2
-      for (int k = threadIdx.y; k < hip::warp_size; k+=hip::warp_size/2) {
+      for (int k = threadIdx.y; k < hip::warp_size; k+=blockDim.y) { // stride by actual blockDim.y, not a hardcoded warp_size/2 -- see hipify.sh
         const int iPt_sm = k;
         const int iPt = i * hip::warp_size + iPt_sm;
         const double rx = point_buffer[iPt_sm].x - coord_reg.x;
