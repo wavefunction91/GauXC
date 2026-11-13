@@ -40,7 +40,7 @@ jobs:
       # library-path false: the build links the toolkit's cuBLAS, and the
       # tests run under `vgpu run`, which supplies the simulator's libraries.
       - name: Set up the simulated H100 and CUDA toolkit
-        uses: pantheongpu/setup-pantheonsim@68edfd58c091361dd6baf060b63de412e544d858 # v0.1.7
+        uses: pantheongpu/setup-pantheonsim@656f502ef4782d94d34d8ddd368e333960609639 # v0.1.8
         with:
           gpu: nvidia/h100
           cuda-toolkit: "13.0"
@@ -70,9 +70,11 @@ jobs:
       - name: Build
         run: cmake --build build -j3
 
-      # [xc-integrator] is left out: its device sections stop in cublasDdot
-      # (the simulator's host-computed cuBLAS does not accept a device result
-      # pointer in host pointer mode), and each device case takes 10 to 25
-      # minutes on the simulator. Its host sections run in the existing CI.
+      # Most [xc-integrator] device cases take 10 to 25 minutes each on the
+      # simulator, so only its smallest device case (Li, SVWN5, STO-3G) runs
+      # here. Its host sections run in the existing CI.
       - name: Test on the simulated H100
-        run: vgpu run --gpu nvidia/h100 ./build/tests/gauxc_test "~[xc-integrator]"
+        run: |
+          vgpu run --gpu nvidia/h100 ./build/tests/gauxc_test "~[xc-integrator]"
+          vgpu run --gpu nvidia/h100 ./build/tests/gauxc_test "XC Integrator" \
+            -c "Li / SVWN5 / sto-3g" -c "Device"
