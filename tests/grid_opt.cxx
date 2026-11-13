@@ -17,6 +17,7 @@
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
+#include <highfive/eigen.hpp>
 #include "ini_input.hpp"
 #include <gauxc/exceptions.hpp>
 #define EIGEN_DONT_VECTORIZE
@@ -86,16 +87,12 @@ int main(int argc, char** argv) {
     matrix_type P;
     {
       HighFive::File file( ref_file, HighFive::File::ReadOnly );
-      auto dset = file.getDataSet("/DENSITY");
-      auto dims = dset.getDimensions();
-      P       = matrix_type( dims[0], dims[1] );
+      file.getDataSet("/DENSITY").read( P );
 
       if( P.rows() != P.cols() ) 
         throw std::runtime_error("Density Must Be Square");
       if( P.rows() != basis.nbf() ) 
         throw std::runtime_error("Density Not Compatible With Basis");
-
-      dset.read( P.data() );
     }
 
     auto run_integration = [&](auto scheme){

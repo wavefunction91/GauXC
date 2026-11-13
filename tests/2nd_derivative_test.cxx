@@ -65,32 +65,18 @@ void test_fxc_contractioin(ExecutionSpace ex, const RuntimeEnvironment& rt,
       fxc_str = "/FXC_SCALAR";
     }
      
-    auto dset = file.getDataSet(den);
-    auto dims = dset.getDimensions();
-    
-    P = matrix_type(dims[0], dims[1]);
-    dset.read(P.data());
+    file.getDataSet(den).read(P);
     
     if (not rks) {
-      Pz = matrix_type(dims[0], dims[1]);
-      dset = file.getDataSet(den2);
-      dset.read(Pz.data());
+      file.getDataSet(den2).read(Pz);
     }
     
-    tP = matrix_type(dims[0], dims[1]);
-    dset = file.getDataSet(tden_str);
-    dset.read(tP.data());
-    FXC_ref = matrix_type(dims[0], dims[1]);
-    dset = file.getDataSet(fxc_str);
-    dset.read(FXC_ref.data());
+    file.getDataSet(tden_str).read(tP);
+    file.getDataSet(fxc_str).read(FXC_ref);
     
     if (not rks) {
-      FXCz_ref = matrix_type(dims[0], dims[1]);
-      dset = file.getDataSet("/FXC_Z");
-      dset.read(FXCz_ref.data());
-      tPz = matrix_type(dims[0], dims[1]);
-      dset = file.getDataSet("/TRIAL_DENSITY_Z");
-      dset.read(tPz.data());
+      file.getDataSet("/FXC_Z").read(FXCz_ref);
+      file.getDataSet("/TRIAL_DENSITY_Z").read(tPz);
     }
   }
 
