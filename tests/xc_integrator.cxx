@@ -19,6 +19,7 @@
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
+#include <highfive/eigen.hpp>
 #include <Eigen/Core>
 
 using namespace GauXC;
@@ -72,51 +73,26 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
        gks=true;
     }
  
-    auto dset = file.getDataSet(den);
-    
-    auto dims = dset.getDimensions();
-    P        = matrix_type( dims[0], dims[1] );
-    VXC_ref  = matrix_type( dims[0], dims[1] );
-    if (not rks) {
-      Pz       = matrix_type( dims[0], dims[1] );
-      VXCz_ref = matrix_type( dims[0], dims[1] );
-    } 
-    if (gks) {
-      Py       = matrix_type( dims[0], dims[1] );
-      VXCy_ref = matrix_type( dims[0], dims[1] );
-      Px       = matrix_type( dims[0], dims[1] );
-      VXCx_ref = matrix_type( dims[0], dims[1] );
-    }
-
-
-    dset.read( P.data() );
-    dset = file.getDataSet(vxc);
-    dset.read( VXC_ref.data() );
+    file.getDataSet(den).read( P );
+    file.getDataSet(vxc).read( VXC_ref );
 
     if (not rks) {
-      dset = file.getDataSet(den2);
-      dset.read( Pz.data() );
-      dset = file.getDataSet(vxc2);
-      dset.read( VXCz_ref.data() );
+      file.getDataSet(den2).read( Pz );
+      file.getDataSet(vxc2).read( VXCz_ref );
     }
 
     if (gks) {
-      dset = file.getDataSet(den3);
-      dset.read( Py.data() );
-      dset = file.getDataSet(vxc3);
-      dset.read( VXCy_ref.data() );
-      dset = file.getDataSet(den4);
-      dset.read( Px.data() );
-      dset = file.getDataSet(vxc4);
-      dset.read( VXCx_ref.data() );
+      file.getDataSet(den3).read( Py );
+      file.getDataSet(vxc3).read( VXCy_ref );
+      file.getDataSet(den4).read( Px );
+      file.getDataSet(vxc4).read( VXCx_ref );
     }    
 
-    dset = file.getDataSet("/EXC");
-    dset.read( &EXC_ref );
+    file.getDataSet("/EXC").read( EXC_ref );
 
     // Check for new unified /EXC_GRAD dataset with attribute
     if( file.exist("/EXC_GRAD") ) {
-      dset = file.getDataSet("/EXC_GRAD");
+      auto dset = file.getDataSet("/EXC_GRAD");
       EXC_GRAD_ref_Full.resize( 3*mol.size() );
       
       // Check for attribute indicating whether weight derivatives are included
@@ -129,32 +105,29 @@ void test_xc_integrator( ExecutionSpace ex, const RuntimeEnvironment& rt,
       } catch(... ) { }
       
       if( exc_grad_includes_weight_derivatives ) {
-        dset.read( EXC_GRAD_ref_Full.data() );
+        dset.read( EXC_GRAD_ref_Full );
         has_exc_grad_full = true;
       } else {
-        dset.read( EXC_GRAD_ref_HellFey.data() );
+        dset.read( EXC_GRAD_ref_HellFey );
         has_exc_grad_HellFey = true;
       }
     }
     // Check for other type of EXC_GRAD
     if( file.exist("/EXC_GRAD_HELLFEY") and not has_exc_grad_HellFey ) {
       EXC_GRAD_ref_HellFey.resize( 3*mol.size() );
-      dset = file.getDataSet("/EXC_GRAD_HELLFEY");
-      dset.read( EXC_GRAD_ref_HellFey.data() );
+      file.getDataSet("/EXC_GRAD_HELLFEY").read( EXC_GRAD_ref_HellFey );
       has_exc_grad_HellFey = true;
     }
     if( file.exist("/EXC_GRAD_FULL") and not has_exc_grad_full ) {
       EXC_GRAD_ref_Full.resize( 3*mol.size() );
-      dset = file.getDataSet("/EXC_GRAD_FULL");
-      dset.read( EXC_GRAD_ref_Full.data() );
+      file.getDataSet("/EXC_GRAD_FULL").read( EXC_GRAD_ref_Full );
       has_exc_grad_full = true;
     }
     
     has_k = file.exist("/K");
     if(has_k) {
         K_ref = matrix_type(dims[0], dims[1]);
-        dset = file.getDataSet("/K");
-        dset.read( K_ref.data() );
+        file.getDataSet("/K").read( K_ref );
     }
   }
 

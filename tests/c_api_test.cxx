@@ -1153,7 +1153,7 @@ TEST_CASE("C-API XCIntegrator", "[c-api]") {
     auto dims = dset.getDimensions();
     int64_t m = dims[0], n = dims[1];
     std::vector<double> P(m * n);
-    dset.read(P.data());
+    dset.read(P);
 
     double den = 0.0;
     C::gauxc_integrator_integrate_den(
@@ -1175,10 +1175,9 @@ TEST_CASE("C-API XCIntegrator", "[c-api]") {
     auto dims = dset.getDimensions();
     int64_t m = dims[0], n = dims[1];
     std::vector<double> P(m * n);
-    dset.read(P.data());
+    dset.read(P);
 
-    double EXC_ref;
-    file.getDataSet("/EXC").read(&EXC_ref);
+    double EXC_ref = file.getDataSet("/EXC").read<double>();
 
     double exc = 0.0;
     C::gauxc_integrator_eval_exc_rks(
@@ -1198,12 +1197,10 @@ TEST_CASE("C-API XCIntegrator", "[c-api]") {
     auto dims = dset.getDimensions();
     int64_t m = dims[0], n = dims[1];
     std::vector<double> P(m * n);
-    dset.read(P.data());
+    dset.read(P);
 
-    double EXC_ref;
-    file.getDataSet("/EXC").read(&EXC_ref);
-    std::vector<double> VXC_ref(m * n);
-    file.getDataSet("/VXC").read(VXC_ref.data());
+    double EXC_ref = file.getDataSet("/EXC").read<double>();
+    std::vector<double> VXC_ref = file.getDataSet("/VXC").read<std::vector<double>>();
 
     double exc = 0.0;
     std::vector<double> vxc(m * n, 0.0);
@@ -1233,7 +1230,7 @@ TEST_CASE("C-API XCIntegrator", "[c-api]") {
     auto dims = dset.getDimensions();
     int64_t m = dims[0], n = dims[1];
     std::vector<double> P(m * n);
-    dset.read(P.data());
+    dset.read(P);
 
     double exc1 = 0.0, exc2 = 0.0;
     std::vector<double> vxc1(m * n, 0.0), vxc2(m * n, 0.0);
@@ -1263,11 +1260,11 @@ TEST_CASE("C-API XCIntegrator", "[c-api]") {
     int64_t m = dims[0], n = dims[1];
 
     std::vector<double> Ps(m * n), Pz(m * n);
-    file.getDataSet("/DENSITY_SCALAR").read(Ps.data());
-    file.getDataSet("/DENSITY_Z").read(Pz.data());
+    file.getDataSet("/DENSITY_SCALAR").read(Ps);
+    file.getDataSet("/DENSITY_Z").read(Pz);
 
     double EXC_ref;
-    file.getDataSet("/EXC").read(&EXC_ref);
+    file.getDataSet("/EXC").read(EXC_ref);
 
     double exc = 0.0;
     C::gauxc_integrator_eval_exc_uks(
@@ -1287,15 +1284,14 @@ TEST_CASE("C-API XCIntegrator", "[c-api]") {
     int64_t m = dims[0], n = dims[1];
 
     std::vector<double> Ps(m * n), Pz(m * n);
-    file.getDataSet("/DENSITY_SCALAR").read(Ps.data());
-    file.getDataSet("/DENSITY_Z").read(Pz.data());
+    file.getDataSet("/DENSITY_SCALAR").read(Ps);
+    file.getDataSet("/DENSITY_Z").read(Pz);
 
-    double EXC_ref;
-    file.getDataSet("/EXC").read(&EXC_ref);
+    double EXC_ref = file.getDataSet("/EXC").read<double>();
 
     std::vector<double> VXCs_ref(m * n), VXCz_ref(m * n);
-    file.getDataSet("/VXC_SCALAR").read(VXCs_ref.data());
-    file.getDataSet("/VXC_Z").read(VXCz_ref.data());
+    file.getDataSet("/VXC_SCALAR").read(VXCs_ref);
+    file.getDataSet("/VXC_Z").read(VXCz_ref);
 
     double exc = 0.0;
     std::vector<double> vxc_s(m * n, 0.0), vxc_z(m * n, 0.0);
@@ -1338,13 +1334,13 @@ TEST_CASE("C-API XCIntegrator", "[c-api]") {
       int64_t m = dims[0], n = dims[1];
 
       std::vector<double> Ps(m * n), Pz(m * n), Py(m * n), Px(m * n);
-      file.getDataSet("/DENSITY_SCALAR").read(Ps.data());
-      file.getDataSet("/DENSITY_Z").read(Pz.data());
-      file.getDataSet("/DENSITY_Y").read(Py.data());
-      file.getDataSet("/DENSITY_X").read(Px.data());
+      file.getDataSet("/DENSITY_SCALAR").read(Ps);
+      file.getDataSet("/DENSITY_Z").read(Pz);
+      file.getDataSet("/DENSITY_Y").read(Py);
+      file.getDataSet("/DENSITY_X").read(Px);
 
       double EXC_ref;
-      file.getDataSet("/EXC").read(&EXC_ref);
+      file.getDataSet("/EXC").read(EXC_ref);
 
       double exc = 0.0;
       C::gauxc_integrator_eval_exc_gks(
@@ -1375,19 +1371,18 @@ TEST_CASE("C-API XCIntegrator", "[c-api]") {
       int64_t m = dims[0], n = dims[1];
 
       std::vector<double> Ps(m * n), Pz(m * n), Py(m * n), Px(m * n);
-      file.getDataSet("/DENSITY_SCALAR").read(Ps.data());
-      file.getDataSet("/DENSITY_Z").read(Pz.data());
-      file.getDataSet("/DENSITY_Y").read(Py.data());
-      file.getDataSet("/DENSITY_X").read(Px.data());
+      file.getDataSet("/DENSITY_SCALAR").read(Ps);
+      file.getDataSet("/DENSITY_Z").read(Pz);
+      file.getDataSet("/DENSITY_Y").read(Py);
+      file.getDataSet("/DENSITY_X").read(Px);
 
-      double EXC_ref;
-      file.getDataSet("/EXC").read(&EXC_ref);
+      double EXC_ref = file.getDataSet("/EXC").read<double>();
 
       std::vector<double> VXCs_ref(m * n), VXCz_ref(m * n), VXCy_ref(m * n), VXCx_ref(m * n);
-      file.getDataSet("/VXC_SCALAR").read(VXCs_ref.data());
-      file.getDataSet("/VXC_Z").read(VXCz_ref.data());
-      file.getDataSet("/VXC_Y").read(VXCy_ref.data());
-      file.getDataSet("/VXC_X").read(VXCx_ref.data());
+      file.getDataSet("/VXC_SCALAR").read(VXCs_ref);
+      file.getDataSet("/VXC_Z").read(VXCz_ref);
+      file.getDataSet("/VXC_Y").read(VXCy_ref);
+      file.getDataSet("/VXC_X").read(VXCx_ref);
 
       double exc = 0.0;
       std::vector<double> vxc_s(m * n, 0.0), vxc_z(m * n, 0.0),
@@ -1426,10 +1421,9 @@ TEST_CASE("C-API XCIntegrator", "[c-api]") {
     auto dims = dset.getDimensions();
     int64_t m = dims[0], n = dims[1];
     std::vector<double> P(m * n);
-    dset.read(P.data());
+    dset.read(P);
 
-    double EXC_ref;
-    file.getDataSet("/EXC").read(&EXC_ref);
+    double EXC_ref = file.getDataSet("/EXC").read<double>();
 
     double exc = 0.0;
     C::gauxc_integrator_eval_exc_rks(
