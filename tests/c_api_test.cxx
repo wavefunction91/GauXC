@@ -1200,7 +1200,8 @@ TEST_CASE("C-API XCIntegrator", "[c-api]") {
     dset.read(P);
 
     double EXC_ref = file.getDataSet("/EXC").read<double>();
-    std::vector<double> VXC_ref = file.getDataSet("/VXC").read<std::vector<double>>();
+    std::vector<double> VXC_ref(m * n);
+    file.getDataSet("/VXC").read(VXC);
 
     double exc = 0.0;
     std::vector<double> vxc(m * n, 0.0);
