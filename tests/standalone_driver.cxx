@@ -384,11 +384,9 @@ int main(int argc, char** argv) {
         try {
           dset = file.getDataSet("/FXC");
           auto fxc_dims = dset.getDimensions();
-          FXC_ref = matrix_type( fxc_dims[0], fxc_dims[1] );
           dset.read( FXC_ref );
           if( not rks ) {
             dset = file.getDataSet("/FXC_Z");
-            FXCz_ref = matrix_type( fxc_dims[0], fxc_dims[1] );
             dset.read( FXCz_ref );
           }
         } catch(...) {
