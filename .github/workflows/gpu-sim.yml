@@ -1,0 +1,80 @@
+name: GPU Simulator
+
+# Optional, non-required check. The hosted runners have no GPU, so the
+# "NVIDIA Build" job compiles the CUDA backend but does not test it. This
+# builds the same configuration and runs gauxc_test on a simulated NVIDIA H100
+# (https://github.com/pantheongpu/pantheonsim). A simulator cannot reproduce
+# hardware-specific behavior or timing, so it complements real-GPU testing and
+# does not replace it.
+
+on:
+  workflow_dispatch:
+  pull_request:
+    branches: [master]
+    paths:
+      - "include/**"
+      - "src/**"
+      - "tests/**"
+      - "cmake/**"
+      - "CMakeLists.txt"
+      - ".github/workflows/gpu-sim.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  cuda:
+    name: CUDA 13.0 on simulated H100
+    runs-on: ubuntu-24.04
+    timeout-minutes: 90
+
+    steps:
+      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      # library-path false: the build links the toolkit's cuBLAS, and the
+      # tests run under `vgpu run`, which supplies the simulator's libraries.
+      - name: Set up the simulated H100 and CUDA toolkit
+        uses: pantheongpu/setup-pantheonsim@656f502ef4782d94d34d8ddd368e333960609639 # v0.1.8
+        with:
+          gpu: nvidia/h100
+          cuda-toolkit: "13.0"
+          library-path: 'false'
+
+      - name: Install HDF5, OpenBLAS and Ninja
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build libhdf5-dev libopenblas-dev
+
+      # Same features as the "NVIDIA Build" job (MPI, MAGMA and CUTLASS off).
+      # 90-virtual embeds compute_90 PTX only, which the simulator runs. The
+      # simulator needs the shared CUDA runtime (CMake's default is static).
+      - name: Configure
+        run: |
+          cmake -S . -B build -G Ninja \
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_CUDA_COMPILER=/usr/local/cuda-13.0/bin/nvcc \
+            -DCMAKE_CUDA_ARCHITECTURES=90-virtual \
+            -DCMAKE_CUDA_RUNTIME_LIBRARY=Shared \
+            -DGAUXC_ENABLE_CUDA=ON \
+            -DGAUXC_ENABLE_MPI=OFF \
+            -DGAUXC_ENABLE_MAGMA=OFF \
+            -DGAUXC_ENABLE_CUTLASS=OFF \
+            -DGAUXC_ENABLE_NCCL=OFF
+
+      - name: Build
+        run: cmake --build build -j3
+
+      # Most [xc-integrator] device cases take 10 to 25 minutes each on the
+      # simulator, so only its smallest device case (Li, SVWN5, STO-3G) runs
+      # here. Its host sections run in the existing CI.
+      - name: Test on the simulated H100
+        run: |
+          vgpu run --gpu nvidia/h100 ./build/tests/gauxc_test "~[xc-integrator]"
+          vgpu run --gpu nvidia/h100 ./build/tests/gauxc_test "XC Integrator" \
+            -c "Li / SVWN5 / sto-3g" -c "Device"
