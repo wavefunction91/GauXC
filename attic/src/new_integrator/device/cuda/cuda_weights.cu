@@ -30,7 +30,7 @@ __global__ void compute_point_center_dist(
 ) {
 
   __shared__ double3 point_buffer[warp_size];
-  register double3 coord_reg;
+  double3 coord_reg;
 
   const int natoms_block = (natoms + warp_size-1) / warp_size;
   const int coords_block = (npts + warp_size-1) / warp_size;

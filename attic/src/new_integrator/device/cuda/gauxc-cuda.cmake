@@ -22,7 +22,7 @@ target_sources( gauxc PRIVATE
 
 )
 
-target_compile_features( gauxc PRIVATE cuda_std_14 )
+target_compile_features( gauxc PRIVATE cuda_std_17 )
 target_compile_options( gauxc
   PRIVATE
     $<$<COMPILE_LANGUAGE:CUDA>: -Xcudafe --diag_suppress=partial_override -Xptxas -v > 

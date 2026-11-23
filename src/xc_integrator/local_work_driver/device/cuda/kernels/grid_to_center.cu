@@ -28,7 +28,7 @@ __global__ void compute_grid_to_center_dist(
 ) {
 
   __shared__ double3 point_buffer[cuda::warp_size];
-  register double3 coord_reg;
+  double3 coord_reg;
 
   const int natoms_block = (natoms + cuda::warp_size-1) / cuda::warp_size;
   const int coords_block = (npts + cuda::warp_size-1) / cuda::warp_size;
