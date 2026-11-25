@@ -203,6 +203,9 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
       host_data.tau .resize( spin_dim_scal * npts );
       host_data.vtau.resize( spin_dim_scal * npts );
       if ( needs_laplacian ) {
+        // One more block holds 2 P lapl(B), which the nuclear derivative
+        // of lapl(rho) contracts against; see the assembly below.
+        host_data.zmat      .resize( 5 * spin_dim_scal * npts * nbe );
 	host_data.basis_eval.resize( 24 * npts * nbe ); // 11 + lapl_grad(3) + der3(10)
 	host_data.lapl .resize( spin_dim_scal * npts );
 	host_data.vlapl.resize( spin_dim_scal * npts );
@@ -222,6 +225,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     double* xZmat_x = nullptr;
     double* xZmat_y = nullptr;
     double* xZmat_z = nullptr;
+    double* xLmat   = nullptr;   // 2 P lapl(B), laplacian mGGAs only
 
     auto* eps        = host_data.eps.data();
     auto* gamma      = host_data.gamma.data();
@@ -358,6 +362,13 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 	blas::lacpy( 'A', nbe, npts, d3basis_xxz_eval, nbe, dlgradbasis_z_eval, nbe );
         blas::axpy( nbe * npts, 1., d3basis_yyz_eval, 1, dlgradbasis_z_eval, 1);
         blas::axpy( nbe * npts, 1., d3basis_zzz_eval, 1, dlgradbasis_z_eval, 1);
+
+        // lapl(rho) = 2 X . lapl(B) + 2 sum_c X_c . d_c B, so one term of
+        // its nuclear derivative contracts the BARE d_x B against
+        // 2 P lapl(B). That matrix is not otherwise formed, so build it.
+        xLmat = host_data.zmat.data() + 4 * spin_dim_scal * npts * nbe;
+        lwd->eval_xmat( npts, nbf, nbe, submat_map, xmat_fac, Ps, ldps,
+                        lbasis_eval, nbe, xLmat, nbe, nbe_scr );
       }
       if(is_rks)
         lwd->eval_uvvar_mgga_rks( npts, nbe, basis_eval, dbasis_x_eval, dbasis_y_eval,
@@ -557,13 +568,22 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
 
             if( needs_laplacian ) {
               const double vlapl_ipt = weights[ipt] * vlapl[ipt];
-              const double lbf = lbasis_eval[mu_i];
               const double dlbx = dlgradbasis_x_eval[mu_i];
               const double dlby = dlgradbasis_y_eval[mu_i];
               const double dlbz = dlgradbasis_z_eval[mu_i];
-              d2_term_x = xN * dlbx + xNx * lbf + 2.0*d2_term_x;
-              d2_term_y = xN * dlby + xNy * lbf + 2.0*d2_term_y;
-              d2_term_z = xN * dlbz + xNz * lbf + 2.0*d2_term_z;
+              const double xL   = xLmat[mu_i];
+
+              // d/dA lapl(rho) = -2 [ X d_x lapl(B) + d_x B (2P lapl(B))
+              //                       + 2 sum_c (hess B)_xc X_c ].
+              // The middle term pairs the bare gradient with the
+              // density-matrix-contracted laplacian. Pairing them the
+              // other way round -- (2P d_x B) against lapl(B) -- is equal
+              // only after summing over EVERY basis function, so it left
+              // the total gradient and translational invariance intact
+              // while putting the wrong force on each individual atom.
+              d2_term_x = xN * dlbx + dbx * xL + 2.0*d2_term_x;
+              d2_term_y = xN * dlby + dby * xL + 2.0*d2_term_y;
+              d2_term_z = xN * dlbz + dbz * xL + 2.0*d2_term_z;
 
               g_acc_x += vlapl_ipt * d2_term_x;
               g_acc_y += vlapl_ipt * d2_term_y;
