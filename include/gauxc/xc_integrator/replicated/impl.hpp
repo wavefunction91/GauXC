@@ -265,5 +265,20 @@ typename ReplicatedXCIntegrator<MatrixType>::dd_psi_potential_type
 
 }
 
+template <typename MatrixType>
+typename ReplicatedXCIntegrator<MatrixType>::exx_grad_type
+  ReplicatedXCIntegrator<MatrixType>::eval_exx_grad_( const MatrixType& P, const IntegratorSettingsEXX& settings ) {
+
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+
+  std::vector<value_type> EXX_GRAD( 3*pimpl_->load_balancer().molecule().natoms() );
+  pimpl_->eval_exx_grad( P.rows(), P.cols(), P.data(), P.rows(),
+                         EXX_GRAD.data(),
+                         settings );
+
+  return EXX_GRAD;
+
+}
+
 }
 }

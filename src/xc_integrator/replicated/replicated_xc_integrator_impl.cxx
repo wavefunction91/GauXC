@@ -152,6 +152,16 @@ void ReplicatedXCIntegratorImpl<ValueType>::
 
 template <typename ValueType>
 void ReplicatedXCIntegratorImpl<ValueType>::
+  eval_exx_grad( int64_t m, int64_t n, const value_type* P,
+            int64_t ldp, value_type* EXX_GRAD,
+            const IntegratorSettingsEXX& settings ) {
+
+    eval_exx_grad_(m,n,P,ldp,EXX_GRAD,settings);
+
+}
+
+template <typename ValueType>
+void ReplicatedXCIntegratorImpl<ValueType>::
 eval_fxc_contraction( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp,
                       const value_type* tP, int64_t ldtp,

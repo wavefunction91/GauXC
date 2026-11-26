@@ -137,6 +137,92 @@ void __global__ hadamard_product_kernel( int      M,
 
 }
 
+template <typename T>
+void __global__ matrix_reduce_rows_kernel( int      M,
+                                           int      N,
+                                           const T* A,
+                                           int      LDA,
+                                           T*       X ) {
+
+    auto j = blockIdx.x * blockDim.x + threadIdx.x;
+    if( j < M ) {
+        for (size_t i = 0; i < N; i++) {
+            X[j] += A[ j*LDA + i ];
+        }
+    }
+
+}
+
+
+template <typename T>
+void __global__ matrix_reduce_cols_kernel( int      M,
+                                           int      N,
+                                           const T* A,
+                                           int      LDA,
+                                           T*       X ) {
+
+    auto j = blockIdx.x * blockDim.x + threadIdx.x;
+
+    if( j < N ) {
+        for (size_t i = 0; i < M; i++) {
+            X[j] += A[ j + LDA * i ];
+        }
+    }
+
+}
+
+template <typename T>
+void matrix_reduce_rows( device_blas_handle generic_handle,
+                         int            M,
+                         int            N,
+                         const T*       A,
+                         int            LDA,
+                         T*             X ) {
+
+
+  cublasHandle_t handle = generic_handle.blas_handle_as<util::cublas_handle>();
+  auto stream = util::get_stream(handle);
+  dim3 threads(cuda::warp_size, 1, 1);
+  dim3 blocks( util::div_ceil( M, cuda::warp_size ), 1, 1);
+
+  matrix_reduce_rows_kernel<<< blocks, threads, 0, stream >>>( M, N, A, LDA, X );
+
+}
+
+template <typename T>
+void matrix_reduce_cols( device_blas_handle generic_handle,
+                         int            M,
+                         int            N,
+                         const T*       A,
+                         int            LDA,
+                         T*             X ) {
+
+
+  cublasHandle_t handle = generic_handle.blas_handle_as<util::cublas_handle>();
+  auto stream = util::get_stream(handle);
+  dim3 threads(cuda::warp_size, 1, 1);
+  dim3 blocks( util::div_ceil( N, cuda::warp_size ), 1, 1);
+
+  matrix_reduce_cols_kernel<<< blocks, threads, 0, stream >>>( M, N, A, LDA, X );
+
+}
+
+template
+void matrix_reduce_rows( device_blas_handle generic_handle,
+                         int            M,
+                         int            N,
+                         const double*  A,
+                         int            LDA,
+                         double*        X );
+
+template
+void matrix_reduce_cols( device_blas_handle generic_handle,
+                         int            M,
+                         int            N,
+                         const double*  A,
+                         int            LDA,
+                         double*        X );
+
 
 
 template <typename T>

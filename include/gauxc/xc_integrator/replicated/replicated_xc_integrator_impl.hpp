@@ -103,6 +103,9 @@ protected:
   virtual void eval_dd_psi_potential_( int64_t m, int64_t n, const value_type* X, unsigned max_Ylm,
                              value_type* Vddx) = 0;
 
+  virtual void eval_exx_grad_( int64_t m, int64_t n, const value_type* P,
+                          int64_t ldp, value_type* EXX_GRAD,
+                          const IntegratorSettingsEXX& settings ) = 0;
 public:
 
   ReplicatedXCIntegratorImpl( std::shared_ptr< functional_type >   func,
@@ -162,6 +165,9 @@ public:
                  int64_t ldp, value_type* K, int64_t ldk,
                  const IntegratorSettingsEXX& settings );
 
+  void eval_exx_grad( int64_t m, int64_t n, const value_type* P,
+                      int64_t ldp, value_type* EXX_GRAD,
+                      const IntegratorSettingsEXX& settings );
   void eval_fxc_contraction( int64_t m, int64_t n, const value_type* P,
                       int64_t ldp,
                       const value_type* tP, int64_t ldtp,

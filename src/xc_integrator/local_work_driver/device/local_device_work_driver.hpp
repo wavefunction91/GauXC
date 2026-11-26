@@ -115,6 +115,8 @@ public:
   void inc_exc_grad_gga( XCDeviceData*, integrator_ks_scheme, bool );
   void inc_exc_grad_mgga( XCDeviceData*, integrator_ks_scheme , bool, bool );
   void inc_exx_k( XCDeviceData* );
+  void eval_exx_kgrad( XCDeviceData* );
+  void inc_exx_kgrad( XCDeviceData* );
 
   void eval_exx_ek_screening_bfn_stats( XCDeviceData* );
   void exx_ek_shellpair_collision( double eps_E, double eps_K, XCDeviceData*, 

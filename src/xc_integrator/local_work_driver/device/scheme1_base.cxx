@@ -2354,6 +2354,138 @@ void AoSScheme1Base::inc_exx_k( XCDeviceData* _data ) {
 #endif
 }
 
+void AoSScheme1Base::eval_exx_kgrad( XCDeviceData* _data ) {
+#ifndef GAUXC_ENABLE_EXX
+  GAUXC_GENERIC_EXCEPTION("EXX + non-CUDA NYI");
+#else
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  auto& tasks = data->host_device_tasks;
+  const auto ntasks = tasks.size();
+
+  // KX
+  {
+  // Sync blas streams with master stream
+  data->device_backend_->sync_blas_pool_with_master();
+
+  // Launch GEMM in round-robin
+  const auto n_blas_streams = data->device_backend_->blas_pool_size();
+  for( size_t iT = 0; iT < ntasks; ++iT ) {
+    auto& task = tasks[iT];
+    auto handle = data->device_backend_->blas_pool_handle( iT % n_blas_streams );
+    auto npts = task.npts;
+    auto nbe_bfn = task.bfn_screening.nbe;
+    auto nbe_cou = task.cou_screening.nbe;
+    gemm( handle, DeviceBlasOp::Trans, DeviceBlasOp::NoTrans,
+      nbe_bfn, nbe_cou, npts, 1., task.dbfx, npts, task.gmat, npts, 0.,
+      task.nbe_scr, nbe_bfn );
+  }
+
+  // Record completion of BLAS ops on master stream
+  data->device_backend_->sync_master_with_blas_pool();
+
+  // Increment EXX_K
+  const auto nbf = data->global_dims.nbf;
+  const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
+  auto static_stack  = data->static_stack;
+  auto aos_stack     = data->aos_stack;
+  asym_task_inc_potential( ntasks, aos_stack.device_tasks,
+    static_stack.exx_kx_device, nbf, submat_block_size,
+    data->device_backend_->queue() );
+  }
+
+  // KY
+  {
+  // Sync blas streams with master stream
+  data->device_backend_->sync_blas_pool_with_master();
+
+  // Launch GEMM in round-robin
+  const auto n_blas_streams = data->device_backend_->blas_pool_size();
+  for( size_t iT = 0; iT < ntasks; ++iT ) {
+    auto& task = tasks[iT];
+    auto handle = data->device_backend_->blas_pool_handle( iT % n_blas_streams );
+    auto npts = task.npts;
+    auto nbe_bfn = task.bfn_screening.nbe;
+    auto nbe_cou = task.cou_screening.nbe;
+    gemm( handle, DeviceBlasOp::Trans, DeviceBlasOp::NoTrans,
+      nbe_bfn, nbe_cou, npts, 1., task.dbfy, npts, task.gmat, npts, 0.,
+      task.nbe_scr, nbe_bfn );
+  }
+
+  // Record completion of BLAS ops on master stream
+  data->device_backend_->sync_master_with_blas_pool();
+
+  // Increment EXX_K
+  const auto nbf = data->global_dims.nbf;
+  const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
+  auto static_stack  = data->static_stack;
+  auto aos_stack     = data->aos_stack;
+  asym_task_inc_potential( ntasks, aos_stack.device_tasks,
+    static_stack.exx_ky_device, nbf, submat_block_size,
+    data->device_backend_->queue() );
+  }
+
+  // KZ
+  {
+  // Sync blas streams with master stream
+  data->device_backend_->sync_blas_pool_with_master();
+
+  // Launch GEMM in round-robin
+  const auto n_blas_streams = data->device_backend_->blas_pool_size();
+  for( size_t iT = 0; iT < ntasks; ++iT ) {
+    auto& task = tasks[iT];
+    auto handle = data->device_backend_->blas_pool_handle( iT % n_blas_streams );
+    auto npts = task.npts;
+    auto nbe_bfn = task.bfn_screening.nbe;
+    auto nbe_cou = task.cou_screening.nbe;
+    gemm( handle, DeviceBlasOp::Trans, DeviceBlasOp::NoTrans,
+      nbe_bfn, nbe_cou, npts, 1., task.dbfz, npts, task.gmat, npts, 0.,
+      task.nbe_scr, nbe_bfn );
+  }
+
+  // Record completion of BLAS ops on master stream
+  data->device_backend_->sync_master_with_blas_pool();
+
+  // Increment EXX_K
+  const auto nbf = data->global_dims.nbf;
+  const auto submat_block_size = data->get_submat_chunk_size( nbf, 0 );
+  auto static_stack  = data->static_stack;
+  auto aos_stack     = data->aos_stack;
+  asym_task_inc_potential( ntasks, aos_stack.device_tasks,
+    static_stack.exx_kz_device, nbf, submat_block_size,
+    data->device_backend_->queue() );
+  }
+#endif
+}
+
+void AoSScheme1Base::inc_exx_kgrad( XCDeviceData* _data ) {
+#ifndef GAUXC_ENABLE_EXX
+  GAUXC_GENERIC_EXCEPTION("EXX + non-CUDA NYI");
+#else
+  auto* data = dynamic_cast<Data*>(_data);
+  if( !data ) GAUXC_BAD_LWD_DATA_CAST();
+
+  if( not data->device_backend_ ) GAUXC_UNINITIALIZED_DEVICE_BACKEND();
+
+  const auto nbf = data->global_dims.nbf;
+  auto static_stack  = data->static_stack;
+
+  hadamard_product( data->device_backend_->master_blas_handle(), nbf, nbf, static_stack.dmat_s_device, nbf, static_stack.exx_kx_device, nbf );
+  hadamard_product( data->device_backend_->master_blas_handle(), nbf, nbf, static_stack.dmat_s_device, nbf, static_stack.exx_ky_device, nbf );
+  hadamard_product( data->device_backend_->master_blas_handle(), nbf, nbf, static_stack.dmat_s_device, nbf, static_stack.exx_kz_device, nbf );
+
+  matrix_reduce_cols( data->device_backend_->master_blas_handle(), nbf, nbf, static_stack.exx_kx_device, nbf, static_stack.exx_bfgrad_device );
+  matrix_reduce_cols( data->device_backend_->master_blas_handle(), nbf, nbf, static_stack.exx_ky_device, nbf, static_stack.exx_bfgrad_device+nbf );
+  matrix_reduce_cols( data->device_backend_->master_blas_handle(), nbf, nbf, static_stack.exx_kz_device, nbf, static_stack.exx_bfgrad_device+(2*nbf) );
+
+  data->device_backend_->master_queue_synchronize();
+
+#endif
+}
+
 void AoSScheme1Base::symmetrize_exx_k( XCDeviceData* _data ) {
 #ifndef GAUXC_ENABLE_EXX
   GAUXC_GENERIC_EXCEPTION("EXX + non-CUDA NYI");

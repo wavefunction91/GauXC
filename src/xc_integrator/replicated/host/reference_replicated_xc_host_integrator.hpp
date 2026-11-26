@@ -86,6 +86,9 @@ protected:
   void eval_exx_( int64_t m, int64_t n, const value_type* P,
                   int64_t ldp, value_type* K, int64_t ldk,
                   const IntegratorSettingsEXX& settings ) override;
+  void eval_exx_grad_( int64_t m, int64_t n, const value_type* P,
+                       int64_t ldp, value_type* EXX_GRAD,
+                       const IntegratorSettingsEXX& settings ) override;
 
   /// RKS FXC contraction
   void eval_fxc_contraction_( int64_t m, int64_t n, 

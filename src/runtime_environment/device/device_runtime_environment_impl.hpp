@@ -53,6 +53,17 @@ public:
 
   }
 
+  explicit DeviceRuntimeEnvironmentImpl(GAUXC_MPI_CODE(MPI_Comm c,)
+    size_t nbytes) :
+    DeviceRuntimeEnvironmentImpl(GAUXC_MPI_CODE(c,) nullptr, 0) {
+
+    std::tie( device_memory_, device_memory_size_ ) =
+      device_backend_->allocate_device_buffer(nbytes);
+
+    i_own_this_memory_ = true;
+
+  }
+
   ~DeviceRuntimeEnvironmentImpl() noexcept {
     if(i_own_this_memory_ and device_memory_ and device_memory_size_) {
       device_backend_->free_device_buffer(device_memory_);
