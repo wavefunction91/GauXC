@@ -349,4 +349,52 @@ double uff_radius_103(AtomicNumber _Z) {
     }
     return radius_uff_list[Z-1] * RADIUS_UFF_SCALING / DDX_BOHR_TO_ANGSTROM;
 }
+
+/// PySCF's Bragg-Slater radii from JCP 41, 3199 (1964); DOI:10.1063/1.1725697.
+/// Only elements different from Slater-64 are overridden here.
+double pyscf_slater_radius_64(AtomicNumber _Z) {
+  auto Z = _Z.get();
+  if( Z >= 96 && Z <= 130 ) return pm_to_bohr(175.);
+
+  switch(Z) {
+    case 1:  /* H  */ return pm_to_bohr(35. );
+    case 2:  /* He */ return pm_to_bohr(140.);
+    case 10: /* Ne */ return pm_to_bohr(150.);
+    case 18: /* Ar */ return pm_to_bohr(180.);
+    case 36: /* Kr */ return pm_to_bohr(190.);
+    case 54: /* Xe */ return pm_to_bohr(210.);
+    case 85: /* At */ return pm_to_bohr(145.);
+    case 86: /* Rn */ return pm_to_bohr(210.);
+    case 87: /* Fr */ return pm_to_bohr(180.);
+    default: return slater_radius_64(_Z);
+  }
+}
+
+/// PySCF's SG1 radii from
+/// P.M.W. Gill, B.G. Johnson, J.A. Pople, Chem. Phys. Letters 209 (1993) 506-512
+double pyscf_gill_radius_93(AtomicNumber _Z) {
+  auto Z = _Z.get();
+  switch(Z) {
+    case 1:  /* H  */ return 1.0000;
+    case 2:  /* He */ return 0.5882;
+    case 3:  /* Li */ return 3.0769;
+    case 4:  /* Be */ return 2.0513;
+    case 5:  /* B  */ return 1.5385;
+    case 6:  /* C  */ return 1.2308;
+    case 7:  /* N  */ return 1.0256;
+    case 8:  /* O  */ return 0.8791;
+    case 9:  /* F  */ return 0.7692;
+    case 10: /* Ne */ return 0.6838;
+    case 11: /* Na */ return 4.0909;
+    case 12: /* Mg */ return 3.1579;
+    case 13: /* Al */ return 2.5714;
+    case 14: /* Si */ return 2.1687;
+    case 15: /* P  */ return 1.8750;
+    case 16: /* S  */ return 1.6514;
+    case 17: /* Cl */ return 1.4754;
+    case 18: /* Ar */ return 1.3333;
+    default: return -1.;
+  }
+}
+
 }
