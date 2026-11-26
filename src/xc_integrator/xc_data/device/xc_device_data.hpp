@@ -376,6 +376,7 @@ struct required_term_storage {
   bool task_gmat          = false;
   bool task_nbe_scr       = false;
   bool task_bfn_shell_indirection = false;
+  bool task_exx_collision = false;
 
 
   inline size_t task_bfn_size(size_t nbe, size_t npts) {
@@ -507,6 +508,20 @@ struct required_term_storage {
     return PRDVL(task_to_shell_pair_cou, num_subtasks);
   }
 
+  inline size_t task_exx_coll_bitvec_size(size_t nshell_pairs, size_t nshells) {
+    // collision + rc_collision bitvectors
+    const size_t LD_coll = (nshell_pairs + 31) / 32;
+    const size_t LD_rc   = (nshells      + 31) / 32;
+    return PRDVL(task_exx_collision, LD_coll + LD_rc);
+  }
+  inline size_t task_exx_coll_fmax_size(size_t nshells, size_t nbf) {
+    // fmax scratch (fmax_bfn + fmax_shell)
+    return PRDVL(task_exx_collision, nbf + nshells);
+  }
+  inline size_t task_exx_coll_position_size(size_t nshell_pairs, size_t nshells) {
+    // position lists (shell-pairs + shells)
+    return PRDVL(task_exx_collision, nshell_pairs + nshells);
+  }
 
 
   inline explicit required_term_storage(integrator_term_tracker tracker) {
@@ -638,6 +653,7 @@ struct required_term_storage {
       task_shell_offs_bfn        = true;
       task_bfn_shell_indirection = true;
       shell_to_task_bfn          = true;
+      task_exx_collision         = true;
     }
 
   }
