@@ -17,15 +17,15 @@ message( STATUS "Building GauXC Tests" )
 add_library( gauxc_catch2 INTERFACE )
 
 find_package( Catch2 CONFIG QUIET )
-if( Catch2_FOUND AND Catch2_VERSION VERSION_GREATER_EQUAL 3 )
-  message(FATAL_ERROR "Catch2 v${Catch2_VERSION} found, but tests require Catch2 v2 (catch2/catch.hpp). Please install v2.")
+if( Catch2_FOUND AND Catch2_VERSION VERSION_LESS 3 )
+  message(FATAL_ERROR "Catch2 v${Catch2_VERSION} found, but tests require Catch2 v3. Please install Catch2 v3.")
 endif()
 if( NOT Catch2_FOUND )
 
   FetchContent_Declare(
     catch2
     GIT_REPOSITORY https://github.com/catchorg/Catch2.git
-    GIT_TAG        v2.13.10
+    GIT_TAG        v3.7.1
   )
   
   set(CATCH_BUILD_TESTING OFF CACHE BOOL "Build SelfTest project" FORCE)
