@@ -51,9 +51,8 @@ inline void read_points_array(std::vector<std::array<double,3>>& pts,
     return;
   }
   
-  auto dset = file.getDataSet(dset_name);
   std::vector<std::vector<double>> pts_2d;
-  dset.read(pts_2d);
+  auto dset = file.getDataSet(dset_name).read(pts_2d);
   
   pts.resize(pts_2d.size());
   for (size_t i = 0; i < pts_2d.size(); ++i) {
@@ -180,12 +179,7 @@ inline void read_xctask_vector(std::vector<XCTask>& tasks,
   HighFive::File file(filename, HighFive::File::ReadOnly);
   
   // Read number of tasks
-  size_t ntasks;
-  {
-    auto dset = file.getDataSet(group_name + "/ntasks");
-    dset.read(&ntasks);
-  }
-  
+  size_t ntasks = file.getDataSet(group_name + "/ntasks").read<size_t>();
   tasks.resize(ntasks);
   
   // Read each task

@@ -251,44 +251,25 @@ int main(int argc, char** argv) {
       }
 
 
-      auto dset = file.getDataSet(den_str);
-      auto dims = dset.getDimensions();
-      P       = matrix_type( dims[0], dims[1] );
-      VXC_ref = matrix_type( dims[0], dims[1] );
-      K_ref   = matrix_type( dims[0], dims[1] );
-      if (not rks) {
-        Pz        = matrix_type( dims[0], dims[1] );
-        VXCz_ref  = matrix_type( dims[0], dims[1] );
-      }
-      if (gks) {
-        Py        = matrix_type( dims[0], dims[1] );
-        VXCy_ref  = matrix_type( dims[0], dims[1] );
-        Px        = matrix_type( dims[0], dims[1] );
-        VXCx_ref  = matrix_type( dims[0], dims[1] );
-      }
+      file.getDataSet(den_str).read( P );
 
       if( P.rows() != P.cols() ) GAUXC_GENERIC_EXCEPTION("Density Must Be Square");
       if( P.rows() != basis.nbf() ) 
         GAUXC_GENERIC_EXCEPTION("Density Not Compatible With Basis");
 
-      dset.read( P.data() );
 
       if( not rks) {
-        dset = file.getDataSet("/DENSITY_Z");
-        dset.read( Pz.data() );
+        file.getDataSet("/DENSITY_Z").read( Pz );
       }
       if(gks) {
-        dset = file.getDataSet("/DENSITY_Y");
-        dset.read( Py.data() );
-        dset = file.getDataSet("/DENSITY_X");
-        dset.read( Px.data() );
+        file.getDataSet("/DENSITY_Y").read( Py );
+        file.getDataSet("/DENSITY_X").read( Px );
       }
         
 
       if( integrate_vxc ) {
         try {
-          dset = file.getDataSet(vxc_str);
-          dset.read( VXC_ref.data() );
+          file.getDataSet(vxc_str).read( VXC_ref );
         } catch(...) {
           if(world_rank == 0) {
             std::cout << "** Warning: Could Not Find Reference VXC" << std::endl;
@@ -297,8 +278,7 @@ int main(int argc, char** argv) {
         }
         if( not rks ) {
           try {
-            dset = file.getDataSet("/VXC_Z");
-            dset.read( VXCz_ref.data() );
+            file.getDataSet("/VXC_Z").read( VXCz_ref );
           } catch(...) {
             if(world_rank == 0) {
               std::cout << "** Warning: Could Not Find Reference VXCz" << std::endl;
@@ -308,10 +288,8 @@ int main(int argc, char** argv) {
         }
         if( gks ) {
           try {
-            dset = file.getDataSet("/VXC_Y");
-            dset.read( VXCy_ref.data() );
-            dset = file.getDataSet("/VXC_X");
-            dset.read( VXCx_ref.data() );
+            file.getDataSet("/VXC_Y").read( VXCy_ref );
+            file.getDataSet("/VXC_X").read( VXCx_ref );
           } catch(...) {
             if(world_rank == 0) {
               std::cout << "** Warning: Could Not Find Reference VXCy/x" << std::endl;
@@ -322,8 +300,7 @@ int main(int argc, char** argv) {
         }
 
         try {
-          dset = file.getDataSet("/EXC");
-          dset.read( &EXC_ref );
+          EXC_ref = file.getDataSet("/EXC").read<double>();
         } catch(...) {
           if(world_rank == 0) {
             std::cout << "** Warning: Could Not Find Reference EXC" << std::endl;
@@ -339,7 +316,7 @@ int main(int argc, char** argv) {
           auto xc_grad_dims = dset.getDimensions();
           if( xc_grad_dims[0] != mol.size() or xc_grad_dims[1] != 3 )
             GAUXC_GENERIC_EXCEPTION("Incorrect dims for EXC_GRAD");
-          dset.read( EXC_GRAD_ref.data() );
+          dset.read( EXC_GRAD_ref );
         } catch(...) {
           if(world_rank == 0) {
             std::cout << "** Warning: Could Not Find Reference EXC_GRAD" 
@@ -351,8 +328,7 @@ int main(int argc, char** argv) {
 
       if( integrate_exx ) {
         try {
-          dset = file.getDataSet("/K");
-          dset.read( K_ref.data() );
+          file.getDataSet("/K").read( K_ref );
         } catch(...) {
           if(world_rank == 0) {
             std::cout << "** Warning: Could Not Find Reference K" << std::endl;
@@ -365,7 +341,7 @@ int main(int argc, char** argv) {
         ddPsi_ref = matrix_type( mol.size(), nharmonics );
         try {
           dset = file.getDataSet("/DD_PSI");
-          dset.read( ddPsi_ref.data());
+          dset.read( ddPsi_ref );
           auto dd_psi_dims = dset.getDimensions();
           if (dd_psi_dims[0] != mol.size() or dd_psi_dims[1] != nharmonics)
             GAUXC_GENERIC_EXCEPTION("Incorrect dims for DD_PSI");
@@ -386,7 +362,7 @@ int main(int argc, char** argv) {
           auto dd_x_dims = dset.getDimensions();
           if (dd_x_dims[0] != nharmonics or dd_x_dims[1] != mol.size())
             GAUXC_GENERIC_EXCEPTION("Incorrect dims for DD_X");
-          dset.read(ddX.data());
+          dset.read( ddX );
         } catch(...) {
           throw std::runtime_error("Could Not Find Input DD_X for DD_PSI_POTENTIAL");
         }
@@ -395,7 +371,7 @@ int main(int argc, char** argv) {
           auto dd_psi_potential_dims = dset.getDimensions();
           if (dd_psi_potential_dims[0] != basis.nbf() or dd_psi_potential_dims[1] != basis.nbf())
             GAUXC_GENERIC_EXCEPTION("Incorrect dims for DD_PSI_POTENTIAL");
-          dset.read(ddPsi_potential_ref.data());
+          dset.read( ddPsi_potential_ref );
         } catch(...) {
           if(world_rank == 0) {
             std::cout << "** Warning: Could Not Find Reference DD_PSI_POTENTIAL" << std::endl;
@@ -408,12 +384,10 @@ int main(int argc, char** argv) {
         try {
           dset = file.getDataSet("/FXC");
           auto fxc_dims = dset.getDimensions();
-          FXC_ref = matrix_type( fxc_dims[0], fxc_dims[1] );
-          dset.read( FXC_ref.data() );
+          dset.read( FXC_ref );
           if( not rks ) {
             dset = file.getDataSet("/FXC_Z");
-            FXCz_ref = matrix_type( fxc_dims[0], fxc_dims[1] );
-            dset.read( FXCz_ref.data() );
+            dset.read( FXCz_ref );
           }
         } catch(...) {
           if(world_rank == 0) {
@@ -533,27 +507,18 @@ int main(int argc, char** argv) {
       }
 
       try {
-        auto dset = file.getDataSet(tden_str);
-        auto dims = dset.getDimensions();
-        tP = matrix_type(dims[0], dims[1]);
-        dset.read(tP.data());
+        file.getDataSet(tden_str).read(tP);
 
         if (!rks) {
-          dset = file.getDataSet("/TRIAL_DENSITY_Z");
-          tPz = matrix_type(dims[0], dims[1]);
-          dset.read(tPz.data());
+          file.getDataSet("/TRIAL_DENSITY_Z").read(tPz);
         }
 
         // Also try to read reference FXC matrices if available
         try {
-          dset = file.getDataSet(fxc_str);
-          FXC_ref = matrix_type(dims[0], dims[1]);
-          dset.read(FXC_ref.data());
+          file.getDataSet(fxc_str).read(FXC_ref);
 
           if (!rks) {
-            dset = file.getDataSet("/FXC_Z");
-            FXCz_ref = matrix_type(dims[0], dims[1]);
-            dset.read(FXCz_ref.data());
+            file.getDataSet("/FXC_Z").read(FXCz_ref);
           }
         } catch(...) {
           if(world_rank == 0) {

@@ -61,10 +61,7 @@ inline void read_collocation_data(std::vector<ref_collocation_data>& ref_data,
   
   // Read number of data entries
   size_t nentries;
-  {
-    auto dset = file.getDataSet("/nentries");
-    dset.read(&nentries);
-  }
+  file.getDataSet("/nentries").read(nentries);
   
   ref_data.resize(nentries);
   

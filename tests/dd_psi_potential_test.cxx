@@ -19,6 +19,7 @@
 
 #include <gauxc/external/hdf5.hpp>
 #include <highfive/H5File.hpp>
+#include <highfive/eigen.hpp>
 #include <Eigen/Core>
 
 using namespace GauXC;
@@ -37,24 +38,15 @@ void test_dd_psi (
 
     HighFive::File file( reference_file, HighFive::File::ReadOnly );
     std::string den_str = "/DENSITY";
-    auto dset = file.getDataSet(den_str);
-    auto dims = dset.getDimensions();
-    P = matrix_type( dims[0], dims[1] );
-    dset.read( P.data() );
+    file.getDataSet(den_str).read( P );
 
     int nharmonics = (lmax + 1) * (lmax + 1);
 
-    ddX = matrix_type( nharmonics, mol.size() );
-    dset = file.getDataSet("/DD_X");
-    dset.read(ddX.data());
+    file.getDataSet("/DD_X").read( ddX );
 
-    ddPsi_ref = matrix_type( mol.size(), nharmonics );
-    dset = file.getDataSet("/DD_PSI");
-    dset.read( ddPsi_ref.data());
+    file.getDataSet("/DD_PSI").read( ddPsi_ref );
 
-    ddPsi_potential_ref = matrix_type( basis.nbf(), basis.nbf() );
-    dset = file.getDataSet("/DD_PSI_POTENTIAL");
-    dset.read( ddPsi_potential_ref.data() );
+    file.getDataSet("/DD_PSI_POTENTIAL").read( ddPsi_potential_ref );
 
 
     #ifdef GAUXC_HAS_DEVICE

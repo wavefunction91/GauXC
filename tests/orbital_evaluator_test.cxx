@@ -1482,7 +1482,7 @@ TEST_CASE("write_cube_hdf5 round-trip", "[cube]") {
   CHECK(dims[2] == static_cast<size_t>(grid.nz));
 
   std::vector<double> read_field(npts);
-  ds.read(read_field.data());
+  ds.read(read_field);
   for (int64_t i = 0; i < npts; ++i) {
     CHECK(read_field[i] == Approx(field[i]).epsilon(1e-14));
   }
@@ -1520,7 +1520,7 @@ TEST_CASE("write_cube_hdf5 round-trip", "[cube]") {
   }
 
   std::vector<double> coords(mol.size() * 3);
-  grp_atoms.getDataSet("coords").read(coords.data());
+  grp_atoms.getDataSet("coords").read(coords);
   for (size_t i = 0; i < mol.size(); ++i) {
     CHECK(coords[3 * i + 0] == Approx(mol[i].x).epsilon(1e-14));
     CHECK(coords[3 * i + 1] == Approx(mol[i].y).epsilon(1e-14));
