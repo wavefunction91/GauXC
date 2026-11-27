@@ -31,6 +31,7 @@ public:
   using exx_type       = typename XCIntegrator<MatrixType>::exx_type;
   using fxc_contraction_type_rks   = typename XCIntegrator<MatrixType>::fxc_contraction_type_rks;
   using fxc_contraction_type_uks   = typename XCIntegrator<MatrixType>::fxc_contraction_type_uks;
+  using fxc_contraction_type_gks   = typename XCIntegrator<MatrixType>::fxc_contraction_type_gks;
   using dd_psi_type       = typename XCIntegrator<MatrixType>::dd_psi_type;
   using dd_psi_potential_type       = typename XCIntegrator<MatrixType>::dd_psi_potential_type;
 
@@ -54,6 +55,12 @@ protected:
     const MatrixType& tP, const IntegratorSettingsXC& ks_settings ) = 0;
   virtual fxc_contraction_type_uks  eval_fxc_contraction_ ( const MatrixType& Ps, const MatrixType& Pz, 
     const MatrixType& tPs, const MatrixType& tPz,  const IntegratorSettingsXC& ks_settings ) = 0;
+  // GKS: not pure, so integrators without it (the device ones) need no stub
+  virtual fxc_contraction_type_gks  eval_fxc_contraction_ ( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px,
+    const MatrixType& tPs, const MatrixType& tPz, const MatrixType& tPy, const MatrixType& tPx,
+    const IntegratorSettingsXC& ) {
+    GAUXC_GENERIC_EXCEPTION("GKS FXC Contraction Not Implemented For This Integrator");
+  }
 
 
   virtual dd_psi_type   eval_dd_psi_( const MatrixType& P, unsigned max_Ylm ) = 0;
@@ -173,6 +180,15 @@ public:
   fxc_contraction_type_uks eval_fxc_contraction( const MatrixType& Ps, const MatrixType& Pz, 
     const MatrixType& tPs, const MatrixType& tPz, const IntegratorSettingsXC& ks_settings ) {
     return eval_fxc_contraction_(Ps, Pz, tPs, tPz, ks_settings);
+  }
+
+  /** Evaluate the GKS FXC contraction (LDA only), returning
+   *  ( FXCs, FXCz, FXCy, FXCx ).
+   */
+  fxc_contraction_type_gks eval_fxc_contraction( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px,
+    const MatrixType& tPs, const MatrixType& tPz, const MatrixType& tPy, const MatrixType& tPx,
+    const IntegratorSettingsXC& ks_settings ) {
+    return eval_fxc_contraction_(Ps, Pz, Py, Px, tPs, tPz, tPy, tPx, ks_settings);
   }
 
   /** Evaluate Psi vector for ddX

@@ -98,6 +98,17 @@ protected:
                             value_type* FXCs, int64_t ldfxcs,
                             value_type* FXCz, int64_t ldfxcz,
                             const IntegratorSettingsXC& ks_settings )=0;
+  // GKS: not pure, so the device integrators need no stub
+  virtual void eval_fxc_contraction_( int64_t m, int64_t n,
+                            const value_type* Ps, int64_t ldps, const value_type* Pz, int64_t ldpz,
+                            const value_type* Py, int64_t ldpy, const value_type* Px, int64_t ldpx,
+                            const value_type* tPs, int64_t ldtps, const value_type* tPz, int64_t ldtpz,
+                            const value_type* tPy, int64_t ldtpy, const value_type* tPx, int64_t ldtpx,
+                            value_type* FXCs, int64_t ldfxcs, value_type* FXCz, int64_t ldfxcz,
+                            value_type* FXCy, int64_t ldfxcy, value_type* FXCx, int64_t ldfxcx,
+                            const IntegratorSettingsXC&  ) {
+    GAUXC_GENERIC_EXCEPTION("GKS FXC Contraction Not Implemented For This Integrator");
+  }
   virtual void eval_dd_psi_( int64_t m, int64_t n, const value_type* P, int64_t ldp, unsigned max_Ylm, 
                              value_type* ddPsi, int64_t ldPsi ) = 0;
   virtual void eval_dd_psi_potential_( int64_t m, int64_t n, const value_type* X, unsigned max_Ylm,
@@ -176,6 +187,15 @@ public:
                       value_type* FXCs, int64_t ldfxcs,
                       value_type* FXCz, int64_t ldfxcz,
                       const IntegratorSettingsXC& ks_settings );
+
+  void eval_fxc_contraction( int64_t m, int64_t n,
+                            const value_type* Ps, int64_t ldps, const value_type* Pz, int64_t ldpz,
+                            const value_type* Py, int64_t ldpy, const value_type* Px, int64_t ldpx,
+                            const value_type* tPs, int64_t ldtps, const value_type* tPz, int64_t ldtpz,
+                            const value_type* tPy, int64_t ldtpy, const value_type* tPx, int64_t ldtpx,
+                            value_type* FXCs, int64_t ldfxcs, value_type* FXCz, int64_t ldfxcz,
+                            value_type* FXCy, int64_t ldfxcy, value_type* FXCx, int64_t ldfxcx,
+                            const IntegratorSettingsXC& ks_settings );
 
   void eval_dd_psi( int64_t m, int64_t n, const value_type* P,
                      int64_t ldp, unsigned max_Ylm, 

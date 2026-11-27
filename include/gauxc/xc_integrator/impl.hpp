@@ -117,6 +117,15 @@ typename XCIntegrator<MatrixType>::fxc_contraction_type_uks
 };
 
 template <typename MatrixType>
+typename XCIntegrator<MatrixType>::fxc_contraction_type_gks
+  XCIntegrator<MatrixType>::eval_fxc_contraction( const MatrixType& Ps, const MatrixType& Pz, const MatrixType& Py, const MatrixType& Px,
+    const MatrixType& tPs, const MatrixType& tPz, const MatrixType& tPy, const MatrixType& tPx,
+    const IntegratorSettingsXC& ks_settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_fxc_contraction(Ps, Pz, Py, Px, tPs, tPz, tPy, tPx, ks_settings);
+};
+
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::dd_psi_type
   XCIntegrator<MatrixType>::eval_dd_psi(const MatrixType& P, unsigned max_Ylm) {
   if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();

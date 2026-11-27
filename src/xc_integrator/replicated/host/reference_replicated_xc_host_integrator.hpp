@@ -104,6 +104,16 @@ protected:
                     value_type* FXCz, int64_t ldfxcz,
                     const IntegratorSettingsXC& ks_settings ) override;
 
+  // GKS FXC contraction (LDA)
+  void eval_fxc_contraction_( int64_t m, int64_t n,
+                            const value_type* Ps, int64_t ldps, const value_type* Pz, int64_t ldpz,
+                            const value_type* Py, int64_t ldpy, const value_type* Px, int64_t ldpx,
+                            const value_type* tPs, int64_t ldtps, const value_type* tPz, int64_t ldtpz,
+                            const value_type* tPy, int64_t ldtpy, const value_type* tPx, int64_t ldtpx,
+                            value_type* FXCs, int64_t ldfxcs, value_type* FXCz, int64_t ldfxcz,
+                            value_type* FXCy, int64_t ldfxcy, value_type* FXCx, int64_t ldfxcx,
+                            const IntegratorSettingsXC& ks_settings ) override;
+
   /// ddX PSi 
   void eval_dd_psi_( int64_t m, int64_t n, const value_type* P,
                      int64_t ldp, unsigned max_Ylm, value_type* ddPsi, int64_t ldPsi ) override;
@@ -143,6 +153,14 @@ protected:
                             value_type* FXCs, int64_t ldfxcs,
                             value_type* FXCz, int64_t ldfxcz,
                             value_type *N_EL, const IntegratorSettingsXC& ks_settings,
+                            task_iterator task_begin, task_iterator task_end );
+
+  // Implementation details of GKS FXC contraction
+  void fxc_contraction_gks_local_work_( const basis_type& basis,
+                            const value_type* const P[4], const int64_t ldP[4],
+                            const value_type* const tP[4], const int64_t ldtP[4],
+                            value_type* const FXC[4], const int64_t ldFXC[4],
+                            const IntegratorSettingsXC& ks_settings,
                             task_iterator task_begin, task_iterator task_end );
 
   // Implementation details of ddX Psi
