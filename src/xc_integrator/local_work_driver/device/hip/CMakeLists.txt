@@ -18,14 +18,17 @@ target_sources(gauxc PRIVATE
   kernels/collocation_device.hip
   kernels/grid_to_center.hip
   kernels/hip_ssf_1d.hip
-  kernels/hip_ssh_2d.hip
+  #kernels/hip_ssh_2d.hip # stale/unmaintained 2D SSF weight kernel; see hip_aos_scheme1.cxx
   #cuda_aos_scheme1_weights.cu # cuda_ssf_2d w/ CudaAoSScheme1 constants
   kernels/pack_submat.hip
   kernels/hipblas_extensions.hip
   kernels/uvvars.hip
   kernels/zmat_vxc.hip
+  kernels/zmat_fxc.hip
   kernels/hip_inc_potential.hip
   kernels/symmetrize_mat.hip
+  kernels/increment_exc_grad.hip
+  kernels/exx_ek_screening_bfn_stats.hip
 
 )
 

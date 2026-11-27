@@ -52,26 +52,32 @@ include( gauxc-eigen3 )
 #add_executable( gauxc_grid_test grid_test.cxx )
 #target_link_libraries( gauxc_grid_test PUBLIC gauxc catch2_main )
 
-add_executable( gauxc_test 
-  ut_main.cxx 
-  moltypes_test.cxx 
-  grid_test.cxx 
-  molgrid_test.cxx 
-  basisset_test.cxx 
-  load_balancer_test.cxx 
-  xc_integrator.cxx 
+set( GAUXC_TEST_SOURCES
+  ut_main.cxx
+  moltypes_test.cxx
+  grid_test.cxx
+  molgrid_test.cxx
+  basisset_test.cxx
+  load_balancer_test.cxx
+  xc_integrator.cxx
   environment.cxx
   collocation.cxx
   weights.cxx
   weight_derivative_test.cxx
-  standards.cxx 
+  standards.cxx
   runtime.cxx
   basis/parse_basis.cxx
   dd_psi_potential_test.cxx
-  2nd_derivative_test.cxx
   orbital_evaluator_test.cxx
   c_api_test.cxx
 )
+if( NOT GAUXC_HAS_HIP )
+  # 2nd_derivative_test.cxx exercises Fxc/vxc_fxc evaluation, which
+  # ExchCXX's HIP backend does not implement (CUDA and SYCL only) --
+  # linking it in fails with undefined ExchCXX::detail symbols.
+  list( APPEND GAUXC_TEST_SOURCES 2nd_derivative_test.cxx )
+endif()
+add_executable( gauxc_test ${GAUXC_TEST_SOURCES} )
 target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen )
 if(GAUXC_ENABLE_CUTLASS)
   include(gauxc-cutlass)

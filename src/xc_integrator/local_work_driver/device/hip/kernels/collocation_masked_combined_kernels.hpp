@@ -17,7 +17,7 @@
 
 #include "device/hip/kernels/collocation/collocation_angular_cartesian.hpp"
 #include "device/hip/kernels/collocation/collocation_angular_spherical_unnorm.hpp"
-//#include "device/hip/kernels/hip_alg_variant_control.hpp"
+//#include "device/hip/kernels/cuda_alg_variant_control.hpp"
 #include "device/xc_device_task.hpp"
 
 namespace GauXC {
@@ -39,7 +39,7 @@ void collocation_device_masked_combined_kernel(
     auto& task = device_tasks[ blockIdx.z ];
   
     const auto               nshells     = task.bfn_screening.nshells;
-    const auto               nbf         = task.bfn_screening.nbe;
+    //const auto               nbf         = task.bfn_screening.nbe;
     const auto               npts        = task.npts;
     //const auto* __restrict__ pts_device  = task.points;
     const auto* __restrict__ pts_x_device  = task.points_x;
@@ -123,7 +123,7 @@ void collocation_device_masked_combined_kernel_deriv1(
     auto& task = device_tasks[ blockIdx.z ];
   
     const auto               nshells     = task.bfn_screening.nshells;
-    const auto               nbf         = task.bfn_screening.nbe;
+    //const auto               nbf         = task.bfn_screening.nbe;
     const auto               npts        = task.npts;
     //const auto* __restrict__ pts_device  = task.points;
     const auto* __restrict__ pts_x_device  = task.points_x;

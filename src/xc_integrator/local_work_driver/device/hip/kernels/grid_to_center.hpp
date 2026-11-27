@@ -18,3 +18,4 @@ void compute_grid_to_center_dist( int32_t npts, int32_t natoms,
   const double* points_z, double* dist, int32_t lddist, hipStream_t stream );
 
 }
+#include "hip/hip_runtime.h"

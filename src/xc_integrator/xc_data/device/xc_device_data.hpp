@@ -346,18 +346,21 @@ struct required_term_storage {
       if( ref_tracker.ks_scheme == RKS ) return npts;
       if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 2*npts;
     }
+    return 0ul;
   }
   inline size_t grid_FXC_B_size(size_t npts){
     if( grid_FXC_B ) {
       if( ref_tracker.ks_scheme == RKS ) return 3*npts;
       if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 6*npts;
     }
+    return 0ul;
   }
   inline size_t grid_FXC_C_size(size_t npts){
     if( grid_FXC_C ) {
       if( ref_tracker.ks_scheme == RKS ) return npts;
       if( ref_tracker.ks_scheme == UKS or ref_tracker.ks_scheme == GKS ) return 2*npts;
     }
+    return 0ul;
   }
 
 

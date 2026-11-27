@@ -577,6 +577,11 @@ int main(int argc, char** argv) {
       }
       
       // Compute FXC contraction
+#ifdef GAUXC_HAS_HIP
+      // ExchCXX's HIP backend does not implement Fxc/vxc_fxc evaluation
+      // (CUDA and SYCL only), so eval_fxc_contraction is unlinkable here.
+      std::cout << "Warning: FXC contraction NYI for HIP!" << std::endl;
+#else
       if( rks ) {
         FXC = integrator.eval_fxc_contraction( P, tP, IntegratorSettingsXC{} );
       } else if( uks ) {
@@ -584,6 +589,7 @@ int main(int argc, char** argv) {
       } else if( gks ) {
         std::cout << "Warning: FXC contraction with GKS NYI!" << std::endl;
       }
+#endif
 
     }
 
