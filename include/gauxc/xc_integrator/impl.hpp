@@ -93,6 +93,13 @@ typename XCIntegrator<MatrixType>::exc_grad_type
 };
 
 template <typename MatrixType>
+typename XCIntegrator<MatrixType>::exc_hess_type
+  XCIntegrator<MatrixType>::eval_exc_hess( const MatrixType& P, const IntegratorSettingsXC& ks_settings ) {
+  if( not pimpl_ ) GAUXC_PIMPL_NOT_INITIALIZED();
+  return pimpl_->eval_exc_hess(P, ks_settings);
+};
+
+template <typename MatrixType>
 typename XCIntegrator<MatrixType>::exx_type
   XCIntegrator<MatrixType>::eval_exx( const MatrixType&     P,
                                       const IntegratorSettingsEXX& settings ) {

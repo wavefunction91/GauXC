@@ -36,6 +36,7 @@ public:
   using exc_vxc_type_uks   = typename XCIntegratorImpl<MatrixType>::exc_vxc_type_uks;
   using exc_vxc_type_gks   = typename XCIntegratorImpl<MatrixType>::exc_vxc_type_gks;
   using exc_grad_type  = typename XCIntegratorImpl<MatrixType>::exc_grad_type;
+  using exc_hess_type  = typename XCIntegratorImpl<MatrixType>::exc_hess_type;
   using exx_type       = typename XCIntegratorImpl<MatrixType>::exx_type;
   using fxc_contraction_type_rks   = typename XCIntegratorImpl<MatrixType>::fxc_contraction_type_rks;
   using fxc_contraction_type_uks   = typename XCIntegratorImpl<MatrixType>::fxc_contraction_type_uks;
@@ -56,6 +57,7 @@ private:
   exc_vxc_type_gks  eval_exc_vxc_ ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType&, const IntegratorSettingsXC& ) override;
   exc_grad_type eval_exc_grad_( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
+  exc_hess_type eval_exc_hess_( const MatrixType&, const IntegratorSettingsXC& ) override;
   exx_type      eval_exx_     ( const MatrixType&, const IntegratorSettingsEXX& ) override;
   fxc_contraction_type_rks  eval_fxc_contraction_ ( const MatrixType&, const MatrixType&, const IntegratorSettingsXC& ) override;
   fxc_contraction_type_uks  eval_fxc_contraction_ ( const MatrixType&, const MatrixType&, const MatrixType&, const MatrixType&, const IntegratorSettingsXC&) override;

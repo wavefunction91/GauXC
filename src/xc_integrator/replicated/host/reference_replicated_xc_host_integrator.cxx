@@ -13,6 +13,7 @@
 #include "reference_replicated_xc_host_integrator_exc.hpp"
 #include "reference_replicated_xc_host_integrator_exc_vxc.hpp"
 #include "reference_replicated_xc_host_integrator_exc_grad.hpp"
+#include "reference_replicated_xc_host_integrator_exc_hess.hpp"
 #include "reference_replicated_xc_host_integrator_exx.hpp"
 #include "reference_replicated_xc_host_integrator_fxc_contraction.hpp"
 #include "reference_replicated_xc_host_integrator_dd_psi.hpp"
