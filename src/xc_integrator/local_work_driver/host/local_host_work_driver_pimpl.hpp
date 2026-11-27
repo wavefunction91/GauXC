@@ -193,14 +193,14 @@ struct LocalHostWorkDriverPIMPL {
     const double* v2rho2, const double* v2rhogamma, const double* v2rholapl, const double* v2rhotau, 
     const double* v2gamma2, const double* v2gammalapl, const double* v2gammatau,
     const double* v2lapl2, const double* v2lapltau, const double* v2tau2, 
-    const double* tden_eval, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, 
-    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C) = 0;
+    const double* tden_eval, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, const double* tlapl,
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C, double* D) = 0;
   virtual void eval_tmat_mgga_vxc_uks( size_t npts, const double* vgamma, 
     const double* v2rho2, const double* v2rhogamma, const double* v2rholapl, const double* v2rhotau, 
     const double* v2gamma2, const double* v2gammalapl, const double* v2gamma_tau,
     const double* v2lapl2, const double* v2tau_lapl, const double* v2tau2, 
-    const double* trho, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, 
-    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C) = 0;
+    const double* trho, const double* tdden_x_eval, const double* tdden_y_eval, const double* tdden_z_eval, const double* ttau, const double* tlapl,
+    const double* dden_x_eval, const double* dden_y_eval, const double* dden_z_eval, double* A, double* B, double* C, double* D) = 0;
 
   virtual void eval_zmat_lda_vxc_uks_ts( size_t npts, size_t nbe, const double* vrho,
     const double* basis_eval, double* Za, size_t ldza, double* Zb, size_t ldzb ) = 0;

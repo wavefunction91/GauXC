@@ -343,10 +343,15 @@ extern void gauxc_integrator_eval_exx_rks(
  * @param n Number of columns in the density matrix.
  * @param density_matrix Pointer to the density matrix data.
  * @param ldp Leading dimension of the density matrix.
- * @param t_density_matrix Pointer to the density matrix data.
- * @param ldtp Leading dimension of the density matrix.
+ * @param t_density_matrix Pointer to the trial density matrix data.
+ * @param ldtp Leading dimension of the trial density matrix.
  * @param fxc Matrix container to store the FXC contraction result.
  * @param ldfxc Leading dimension of the FXC contraction matrix.
+ * @note Exc depends only on the symmetric part of a density matrix, so the
+ *       kernel is contracted with the symmetric part (tP + tP^T)/2 of each
+ *       trial density tP; any antisymmetric part contributes exactly zero.
+ *       For linear response, pass the perturbed density P1 = T + T^T:
+ *       passing a one-sided transition density T yields half that response.
  */
 extern void gauxc_integrator_eval_fxc_contraction_rks(
   GauXCStatus* status,
@@ -371,14 +376,19 @@ extern void gauxc_integrator_eval_fxc_contraction_rks(
  * @param ldp_s Leading dimension of the total density matrix.
  * @param density_matrix_z Pointer to the density matrix data for spin density.
  * @param ldp_z Leading dimension of the spin density matrix.
- * @param t_density_matrix_s Pointer to the density matrix data for total density.
- * @param ldtp_s Leading dimension of the total density matrix.
- * @param t_density_matrix_z Pointer to the density matrix data for spin density.
- * @param ldtp_z Leading dimension of the spin density matrix.
+ * @param t_density_matrix_s Pointer to the trial density matrix data for total density.
+ * @param ldtp_s Leading dimension of the total trial density matrix.
+ * @param t_density_matrix_z Pointer to the trial density matrix data for spin density.
+ * @param ldtp_z Leading dimension of the spin trial density matrix.
  * @param fxc_s Matrix container to store the FXC contraction result for total density.
  * @param ldfxc_s Leading dimension of the FXC contraction matrix for total density.
  * @param fxc_z Matrix container to store the FXC contraction result for spin density.
  * @param ldfxc_z Leading dimension of the FXC contraction matrix for spin density.
+ * @note Exc depends only on the symmetric part of a density matrix, so the
+ *       kernel is contracted with the symmetric part (tP + tP^T)/2 of each
+ *       trial density tP; any antisymmetric part contributes exactly zero.
+ *       For linear response, pass the perturbed density P1 = T + T^T:
+ *       passing a one-sided transition density T yields half that response.
  */
 extern void gauxc_integrator_eval_fxc_contraction_uks(
   GauXCStatus* status,
