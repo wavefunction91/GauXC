@@ -27,6 +27,10 @@ int main( int argc, char* argv[] ) {
   MPI_Comm_rank(MPI_COMM_WORLD, &rank);
 #ifdef GAUXC_HAS_CUDA
   cudaSetDevice(rank);
+#elif defined(GAUXC_HAS_SYCL)
+  // SYCL has no per-process cudaSetDevice equivalent: device visibility for
+  // rank-to-GPU binding is controlled externally via ZE_AFFINITY_MASK /
+  // ONEAPI_DEVICE_SELECTOR, so there is nothing to do here.
 #endif
   int result = Catch::Session().run( argc, argv );
   MPI_Finalize();

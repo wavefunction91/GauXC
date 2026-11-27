@@ -21,3 +21,8 @@ if( GAUXC_ENABLE_NCCL )
   set(GAUXC_HAS_NCCL TRUE CACHE BOOL "GauXC has NCCL" FORCE)
 endif()
 
+if( GAUXC_ENABLE_ONECCL )
+  target_sources( gauxc PRIVATE oneccl_reduction_driver.cxx )
+  gauxc_sycl_device_sources( oneccl_reduction_driver.cxx )
+  message( STATUS "oneCCL Has Been Enabled" )
+endif()

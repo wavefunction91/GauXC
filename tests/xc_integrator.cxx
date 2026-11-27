@@ -339,6 +339,12 @@ void test_integrator(std::string reference_file, functional_type& func, PruningS
     #ifdef GAUXC_HAS_HIP
     check_grad = false;
     check_k    = false;
+    #elif defined(GAUXC_HAS_SYCL)
+    // The Obara-Saika GPU integrals backing EXX/snK are CUDA-only
+    // (GAUXC_ENABLE_EXX is only defined under GAUXC_HAS_CUDA in
+    // scheme1_base.cxx), so K cannot be checked on SYCL. Gradients have no
+    // such restriction and remain enabled.
+    check_k    = false;
     #endif
     SECTION( "Incore - MPI Reduction" ) {
       test_xc_integrator( ExecutionSpace::Device, rt,

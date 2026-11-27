@@ -14,6 +14,7 @@
 #ifdef GAUXC_HAS_DEVICE
 #include "device/cuda/cuda_aos_scheme1.hpp"
 #include "device/hip/hip_aos_scheme1.hpp"
+#include "device/sycl/sycl_aos_scheme1.hpp"
 #endif
 
 namespace GauXC {
@@ -54,6 +55,9 @@ LocalWorkDriverFactory::ptr_return_t
 #ifdef GAUXC_HAS_MAGMA
     using scheme1_magma   = HipAoSScheme1<AoSScheme1MAGMABase>;
 #endif
+#elif defined(GAUXC_HAS_SYCL)
+    using scheme1_default = SyclAoSScheme1<>;
+    using scheme1_onemkl  = SyclAoSScheme1<AoSScheme1OneMKLBase>;
 #endif
 
 #ifdef GAUXC_HAS_DEVICE
@@ -66,6 +70,10 @@ LocalWorkDriverFactory::ptr_return_t
 #ifdef GAUXC_HAS_CUTLASS
     else if( name == "SCHEME1-CUTLASS" )
       return std::make_unique<LocalDeviceWorkDriver>( std::make_unique<scheme1_cutlass>() );
+#endif
+#ifdef GAUXC_HAS_SYCL
+    else if( name == "SCHEME1-ONEMKL" )
+      return std::make_unique<LocalDeviceWorkDriver>( std::make_unique<scheme1_onemkl>() );
 #endif
     else
 #endif

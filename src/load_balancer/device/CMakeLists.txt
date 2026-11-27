@@ -20,3 +20,7 @@ endif()
 if( GAUXC_HAS_HIP )
   add_subdirectory( hip )
 endif()
+
+if( GAUXC_HAS_SYCL )
+  add_subdirectory( sycl )
+endif()

@@ -16,6 +16,10 @@
 #include "device/nccl_reduction_driver.hpp"
 #endif
 
+#ifdef GAUXC_HAS_ONECCL
+#include "device/oneccl_reduction_driver.hpp"
+#endif
+
 
 #include <algorithm>
 #include <iostream>
@@ -39,6 +43,11 @@ std::shared_ptr<ReductionDriver> ReductionDriverFactory::get_shared_instance(
   #ifdef GAUXC_HAS_NCCL
     if( kernel_name == "NCCL" )
       ptr = std::make_unique<NCCLReductionDriver>(rt);
+  #endif
+
+  #ifdef GAUXC_HAS_ONECCL
+    if( kernel_name == "ONECCL" )
+      ptr = std::make_unique<OneCCLReductionDriver>(rt);
   #endif
 
   if( !ptr ) GAUXC_GENERIC_EXCEPTION("Unknown Reduction Driver " + kernel_name);

@@ -104,6 +104,10 @@ target_link_libraries( gauxc PUBLIC
   ExchCXX::ExchCXX 
   IntegratorXX::IntegratorXX 
 )
+
+if( GAUXC_HAS_SYCL )
+  include( gauxc-sycl )
+endif()
 if( GAUXC_HAS_OPENMP AND TARGET OpenMP::OpenMP_CXX )
   target_link_libraries( gauxc PUBLIC OpenMP::OpenMP_CXX )
 else()
@@ -122,6 +126,14 @@ add_subdirectory( xc_integrator )
 add_subdirectory( load_balancer )
 add_subdirectory( reduction_driver )
 add_subdirectory( external )
+
+# oneMKL serves both the host and device BLAS for the SYCL backend, so its
+# integer interface has to track the one the host BLAS resolved to. Deferred
+# to here because GAUXC_BLAS_IS_LP64 is only known once the host driver has
+# been configured above.
+if( GAUXC_HAS_SYCL )
+  gauxc_sycl_pin_mkl_interface( ${GAUXC_BLAS_IS_LP64} )
+endif()
 
 
 add_library( gauxc::gauxc ALIAS gauxc )
@@ -162,9 +174,11 @@ set(export_properties
   "GAUXC_HAS_DEVICE"
   "GAUXC_HAS_CUDA"
   "GAUXC_HAS_HIP"
+  "GAUXC_HAS_SYCL"
   "GAUXC_HAS_MAGMA"
   "GAUXC_HAS_CUTLASS"
   "GAUXC_HAS_NCCL"
+  "GAUXC_HAS_ONECCL"
   "GAUXC_HAS_MPI"
   "GAUXC_HAS_OPENMP"
   "GAUXC_HAS_HDF5"
@@ -183,9 +197,11 @@ set_target_properties(gauxc
     "GAUXC_HAS_DEVICE"     ${GAUXC_HAS_DEVICE}
     "GAUXC_HAS_CUDA"       ${GAUXC_HAS_CUDA}
     "GAUXC_HAS_HIP"        ${GAUXC_HAS_HIP}
+    "GAUXC_HAS_SYCL"       ${GAUXC_HAS_SYCL}
     "GAUXC_HAS_MAGMA"      ${GAUXC_HAS_MAGMA}
     "GAUXC_HAS_CUTLASS"    ${GAUXC_HAS_CUTLASS}
     "GAUXC_HAS_NCCL"       ${GAUXC_HAS_NCCL}
+    "GAUXC_HAS_ONECCL"     ${GAUXC_HAS_ONECCL}
     "GAUXC_HAS_MPI"        ${GAUXC_HAS_MPI}
     "GAUXC_HAS_OPENMP"     ${GAUXC_HAS_OPENMP}
     "GAUXC_HAS_HDF5"       ${GAUXC_HAS_HDF5}
@@ -243,6 +259,7 @@ configure_package_config_file(
 install( FILES
   ${PROJECT_SOURCE_DIR}/cmake/modules/FindMAGMA.cmake
   ${PROJECT_SOURCE_DIR}/cmake/modules/FindNCCL.cmake
+  ${PROJECT_SOURCE_DIR}/cmake/modules/FindSYCL.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/gauxc-config.cmake
   ${CMAKE_CURRENT_BINARY_DIR}/gauxc-config-version.cmake
   DESTINATION ${INSTALL_CONFIGDIR}

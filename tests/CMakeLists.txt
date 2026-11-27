@@ -73,6 +73,14 @@ add_executable( gauxc_test
   c_api_test.cxx
 )
 target_link_libraries( gauxc_test PUBLIC gauxc gauxc_catch2 Eigen3::Eigen )
+
+# collocation.cxx and weights.cxx submit SYCL kernels directly, so those two
+# translation units carry device code and need the SYCL device flags. The rest
+# of the test suite is host-only and is left alone; -fsycl is not free on a
+# translation unit that produces no device image.
+if( GAUXC_HAS_SYCL )
+  gauxc_sycl_device_sources( collocation.cxx weights.cxx )
+endif()
 if(GAUXC_ENABLE_CUTLASS)
   include(gauxc-cutlass)
   target_link_libraries(gauxc_test PUBLIC gauxc_cutlass)
