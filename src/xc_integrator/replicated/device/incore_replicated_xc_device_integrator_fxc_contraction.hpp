@@ -13,6 +13,7 @@
 #include "incore_replicated_xc_device_integrator.hpp"
 #include <gauxc/util/misc.hpp>
 #include <gauxc/util/unused.hpp>
+#include <vector>
 
 namespace GauXC::detail {
 
@@ -65,6 +66,26 @@ namespace GauXC::detail {
       if( ldfxcz < nbf )
         GAUXC_GENERIC_EXCEPTION("Invalid LDFXCz");
     }
+
+    // Symmetrize the TRIAL densities -- see the host integrator for why:
+    // Exc sees only the symmetric part of a density matrix, but the
+    // gradient channel of the uvvar kernels assumes symmetry rather than
+    // enforcing it, so an antisymmetric trial direction (a TDDFT
+    // B-matrix or stability block) produced a nonzero kernel and broke
+    // the Hermiticity of the Kohn-Sham Hessian for every GGA and
+    // meta-GGA. https://github.com/wavefunction91/GauXC/issues/225
+    std::vector<value_type> tPs_sym, tPz_sym;
+    auto symmetrize = [nbf]( const value_type* A, int64_t lda,
+                             std::vector<value_type>& out ) -> const value_type* {
+      if( !A ) return nullptr;
+      out.resize( nbf*nbf );
+      for( int64_t j = 0; j < nbf; ++j )
+        for( int64_t i = 0; i < nbf; ++i )
+          out[i + j*nbf] = 0.5 * ( A[i + j*lda] + A[j + i*lda] );
+      return out.data();
+    };
+    tPs = symmetrize( tPs, ldtps, tPs_sym ); if( tPs ) ldtps = nbf;
+    tPz = symmetrize( tPz, ldtpz, tPz_sym ); if( tPz ) ldtpz = nbf;
 
     // Get Tasks
     auto& tasks = this->load_balancer_->get_tasks();

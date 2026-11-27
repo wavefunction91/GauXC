@@ -16,6 +16,7 @@
 #include "host/local_host_work_driver.hpp"
 #include "host/blas.hpp"
 #include <stdexcept>
+#include <vector>
 
 namespace GauXC::detail {
 
@@ -57,6 +58,43 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
     GAUXC_GENERIC_EXCEPTION("Invalid LDFXCZ");
 
 
+  // Symmetrize the TRIAL densities.
+  //
+  // The XC energy is a functional of n = Tr[P B B], which sees only the
+  // symmetric part of P: the derivative of Exc along an antisymmetric
+  // direction is identically zero. The density channel gets that for
+  // free -- Tr[P B B] kills an antisymmetric P by itself -- but the
+  // GRADIENT channel does not. eval_uvvar_* builds it as
+  //     d_x n = 2 X . d_x B,   X = fac * P * B,
+  // which equals Tr[(P + P^T) B d_x B] only when P is symmetric. That
+  // holds for the reference density, so exc_vxc and exc_grad are
+  // unaffected; it does NOT hold for a trial density, which a caller has
+  // no reason to hand over symmetric -- a TDDFT B-matrix or stability
+  // block is contracted against the ANTISYMMETRIC combination on
+  // purpose. The result was an XC kernel that answered nonzero to a
+  // direction along which Exc does not vary, breaking the Hermiticity
+  // of the Kohn-Sham Hessian for every GGA and meta-GGA while leaving
+  // LDA (which never touches the gradient channel) looking correct.
+  // See https://github.com/wavefunction91/GauXC/issues/225.
+  //
+  // Symmetrizing here rather than in the uvvar kernels keeps the fix in
+  // one place for every backend and every rung, and costs one nbf^2
+  // copy against a grid loop.
+  std::vector<value_type> tPs_sym, tPz_sym;
+  auto symmetrize = [nbf]( const value_type* A, int64_t lda,
+                           std::vector<value_type>& out ) -> const value_type* {
+    if( !A ) return nullptr;
+    out.resize( nbf*nbf );
+    for( int64_t j = 0; j < nbf; ++j )
+      for( int64_t i = 0; i < nbf; ++i )
+        out[i + j*nbf] = 0.5 * ( A[i + j*lda] + A[j + i*lda] );
+    return out.data();
+  };
+  const value_type* tPs_use = symmetrize( tPs, ldtps, tPs_sym );
+  const value_type* tPz_use = symmetrize( tPz, ldtpz, tPz_sym );
+  const int64_t ldtps_use = tPs_use ? nbf : ldtps;
+  const int64_t ldtpz_use = tPz_use ? nbf : ldtpz;
+
   // Get Tasks
   auto& tasks = this->load_balancer_->get_tasks();
 
@@ -66,7 +104,7 @@ void ReferenceReplicatedXCHostIntegrator<ValueType>::
   // Compute Local contributions to FXC contraction
   this->timer_.time_op("XCIntegrator.LocalWork", [&](){
     fxc_contraction_local_work_( basis, Ps, ldps, Pz, ldpz, 
-                                             tPs, ldtps, tPz, ldtpz,
+                                             tPs_use, ldtps_use, tPz_use, ldtpz_use,
                                              FXCs, ldfxcs, FXCz, ldfxcz,
                                              &N_EL, ks_settings,
                                              tasks.begin(), tasks.end() );
